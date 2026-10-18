@@ -1337,6 +1337,7 @@ Ty const* ty_intersection_keeping_empty_object(Checker* me, Ty const* const* typ
 // tsc's getIntersectionType with NoConstraintReduction: `T & P` stays when T's constraint is a subtype of P
 Ty const* ty_intersection_no_constraint_reduction(Checker* me, Ty const* const* types, u32 len);
 Ty const* ty_intersection_unaliased(Checker* me, Ty const* ty);
+Ty const* ty_intersection_apparent_unaliased(Checker* me, Ty const* ty);
 Ty const* ty_type_param(Checker* me, Symbol const* decl);
 Ty const* ty_distributed_type_param(Checker* me, Ty const* param); // plan 57
 Ty const* ty_synthetic_type_param(Checker* me, csview name);

@@ -1,10 +1,15 @@
-ttttImplicitAnyIndexIntersectionAlias.ts(11,3): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'User & { [__loadedType]?: User | undefined; }'.
-ttttImplicitAnyIndexIntersectionAlias.ts(13,3): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'User & { [__loadedType]?: User | undefined; }'.
+ttttImplicitAnyIndexIntersectionAlias.ts(12,3): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'User & { [__loadedType]?: User | undefined; }'.
+ttttImplicitAnyIndexIntersectionAlias.ts(14,3): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'User & { [__loadedType]?: User | undefined; }'.
+ttttImplicitAnyIndexIntersectionAlias.ts(19,1): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'Recovered'.
+  Property '0' does not exist on type 'Recovered'.
+ttttImplicitAnyIndexIntersectionAlias.ts(23,1): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'WithIface'.
+  Property '0' does not exist on type 'WithIface'.
 
 
-==== ttttImplicitAnyIndexIntersectionAlias.ts (2 errors) ====
+==== ttttImplicitAnyIndexIntersectionAlias.ts (4 errors) ====
     // TS7053 prints the indexed object's apparent type: an intersection made again from its members, without the alias
     // that named it (tsc's getApparentTypeOfIntersectionType; mikro-orm's Loaded<User>)
+    // only when a member changes (a class, an interface with a this type): an alias of plain object types stays
     declare const __loadedType: unique symbol;
     type LoadedInternal<T, L extends string> = [L] extends [never] ? T & {} : T & { l: L };
     type Loaded<T, L extends string = never> = LoadedInternal<T, L> & { [__loadedType]?: T };
@@ -21,4 +26,18 @@ ttttImplicitAnyIndexIntersectionAlias.ts(13,3): error TS7053: Element implicitly
       ~~~~~
 !!! error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'User & { [__loadedType]?: User | undefined; }'.
     }
+    type Sig = { r: bigint };
+    type Recovered = Sig & { readonly recovery: number };
+    declare const rs: Recovered;
+    rs[0];
+    ~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'Recovered'.
+!!! error TS7053:   Property '0' does not exist on type 'Recovered'.
+    interface Thisless { a: number }
+    type WithIface = Thisless & { b: 1 };
+    declare const wi: WithIface;
+    wi[0];
+    ~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'WithIface'.
+!!! error TS7053:   Property '0' does not exist on type 'WithIface'.
     

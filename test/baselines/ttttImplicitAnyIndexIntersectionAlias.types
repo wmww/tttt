@@ -3,6 +3,7 @@
 === ttttImplicitAnyIndexIntersectionAlias.ts ===
 // TS7053 prints the indexed object's apparent type: an intersection made again from its members, without the alias
 // that named it (tsc's getApparentTypeOfIntersectionType; mikro-orm's Loaded<User>)
+// only when a member changes (a class, an interface with a this type): an alias of plain object types stays
 declare const __loadedType: unique symbol;
 >__loadedType : unique symbol
 
@@ -51,4 +52,34 @@ async function f() {
 >u2 : Loaded<User, never>
 >k : any
 }
+type Sig = { r: bigint };
+>Sig : Sig
+>r : bigint
+
+type Recovered = Sig & { readonly recovery: number };
+>Recovered : Recovered
+>recovery : number
+
+declare const rs: Recovered;
+>rs : Recovered
+
+rs[0];
+>rs[0] : any
+>rs : Recovered
+>0 : 0
+
+interface Thisless { a: number }
+>a : number
+
+type WithIface = Thisless & { b: 1 };
+>WithIface : WithIface
+>b : 1
+
+declare const wi: WithIface;
+>wi : WithIface
+
+wi[0];
+>wi[0] : any
+>wi : WithIface
+>0 : 0
 

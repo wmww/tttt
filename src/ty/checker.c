@@ -1735,6 +1735,32 @@ Ty const* ty_intersection_unaliased(Checker* me, Ty const* ty) {
     return intern_composite(me, TY_INTERSECTION, ty->composite.types.data, ty->composite.types.len, nullptr, (TyList){0});
 }
 
+// Whether tsc's getTypeWithThisArgument(t, this, needApparentType) makes a member of an intersection anew: a class or
+// interface with a `this` type (a reference gets the this-argument), a nested intersection with such a member, or
+// what has an apparent type of its own (a primitive, a type parameter)
+static bool apparent_member_changes(Checker* me, Ty const* ty, u32 depth) {
+    if (ty->kind == TY_DECLARED) return ty->declared.this_param != nullptr;
+    if (ty->kind == TY_REFERENCE) return !ty->reference.this_arg && ty->reference.target->declared.this_param;
+    if (ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len && depth < 8; i++) {
+            if (apparent_member_changes(me, ty->composite.types.data[i], depth + 1)) return true;
+        }
+        return false;
+    }
+    return ty_apparent_type(me, ty) != ty;
+}
+
+// The apparent type of an intersection as it prints (tsc's getApparentTypeOfIntersectionType): made again without its
+// alias when a member changes (`Loaded<User>` is `User & {...}`, a class), itself otherwise (an alias of an
+// intersection of object literal types stays `RecoveredSignatureType`)
+Ty const* ty_intersection_apparent_unaliased(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_INTERSECTION || !ty->alias) return ty;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (apparent_member_changes(me, ty->composite.types.data[i], 0)) return ty_intersection_unaliased(me, ty);
+    }
+    return ty;
+}
+
 Ty const* ty_intersection_keeping_empty_object(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
     return intersection_cached(me, types, len, alias, alias_args, INTERSECT_KEEP_EMPTY_OBJECT);
 }

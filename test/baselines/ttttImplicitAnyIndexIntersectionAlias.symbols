@@ -3,67 +3,99 @@
 === ttttImplicitAnyIndexIntersectionAlias.ts ===
 // TS7053 prints the indexed object's apparent type: an intersection made again from its members, without the alias
 // that named it (tsc's getApparentTypeOfIntersectionType; mikro-orm's Loaded<User>)
+// only when a member changes (a class, an interface with a this type): an alias of plain object types stays
 declare const __loadedType: unique symbol;
->__loadedType : Symbol(__loadedType, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 2, 13))
+>__loadedType : Symbol(__loadedType, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 13))
 
 type LoadedInternal<T, L extends string> = [L] extends [never] ? T & {} : T & { l: L };
->LoadedInternal : Symbol(LoadedInternal, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 2, 42))
->T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 20))
->L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 22))
->L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 22))
->T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 20))
->T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 20))
->l : Symbol(l, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 79))
->L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 22))
+>LoadedInternal : Symbol(LoadedInternal, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 42))
+>T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 20))
+>L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 22))
+>L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 22))
+>T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 20))
+>T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 20))
+>l : Symbol(l, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 79))
+>L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 22))
 
 type Loaded<T, L extends string = never> = LoadedInternal<T, L> & { [__loadedType]?: T };
->Loaded : Symbol(Loaded, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 87))
->T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 12))
->L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 14))
->LoadedInternal : Symbol(LoadedInternal, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 2, 42))
->T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 12))
->L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 14))
->[__loadedType] : Symbol([__loadedType], Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 67))
->__loadedType : Symbol(__loadedType, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 2, 13))
->T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 12))
+>Loaded : Symbol(Loaded, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 87))
+>T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 12))
+>L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 14))
+>LoadedInternal : Symbol(LoadedInternal, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 42))
+>T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 12))
+>L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 14))
+>[__loadedType] : Symbol([__loadedType], Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 67))
+>__loadedType : Symbol(__loadedType, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 13))
+>T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 12))
 
 class User { name!: string }
->User : Symbol(User, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 89))
->name : Symbol(User.name, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 12))
+>User : Symbol(User, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 89))
+>name : Symbol(User.name, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 12))
 
 declare function find<E extends object, H extends string = never>(e: new () => E): Promise<Loaded<E, H>>;
->find : Symbol(find, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 28))
->E : Symbol(E, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 22))
->H : Symbol(H, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 39))
->e : Symbol(e, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 66))
->E : Symbol(E, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 22))
+>find : Symbol(find, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 28))
+>E : Symbol(E, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 7, 22))
+>H : Symbol(H, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 7, 39))
+>e : Symbol(e, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 7, 66))
+>E : Symbol(E, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 7, 22))
 >Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
->Loaded : Symbol(Loaded, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 87))
->E : Symbol(E, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 22))
->H : Symbol(H, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 39))
+>Loaded : Symbol(Loaded, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 87))
+>E : Symbol(E, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 7, 22))
+>H : Symbol(H, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 7, 39))
 
 declare const k: any;
->k : Symbol(k, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 7, 13))
+>k : Symbol(k, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 8, 13))
 
 async function f() {
->f : Symbol(f, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 7, 21))
+>f : Symbol(f, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 8, 21))
 
   const user = await find(User);
->user : Symbol(user, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 9, 7))
->find : Symbol(find, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 28))
->User : Symbol(User, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 89))
+>user : Symbol(user, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 10, 7))
+>find : Symbol(find, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 28))
+>User : Symbol(User, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 89))
 
   user[k];
->user : Symbol(user, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 9, 7))
->k : Symbol(k, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 7, 13))
+>user : Symbol(user, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 10, 7))
+>k : Symbol(k, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 8, 13))
 
   const u2 = null! as Loaded<User>;
->u2 : Symbol(u2, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 11, 7))
->Loaded : Symbol(Loaded, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 87))
->User : Symbol(User, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 89))
+>u2 : Symbol(u2, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 12, 7))
+>Loaded : Symbol(Loaded, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 87))
+>User : Symbol(User, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 89))
 
   u2[k];
->u2 : Symbol(u2, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 11, 7))
->k : Symbol(k, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 7, 13))
+>u2 : Symbol(u2, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 12, 7))
+>k : Symbol(k, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 8, 13))
 }
+type Sig = { r: bigint };
+>Sig : Symbol(Sig, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 14, 1))
+>r : Symbol(r, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 15, 12))
+
+type Recovered = Sig & { readonly recovery: number };
+>Recovered : Symbol(Recovered, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 15, 25))
+>Sig : Symbol(Sig, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 14, 1))
+>recovery : Symbol(recovery, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 16, 24))
+
+declare const rs: Recovered;
+>rs : Symbol(rs, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 17, 13))
+>Recovered : Symbol(Recovered, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 15, 25))
+
+rs[0];
+>rs : Symbol(rs, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 17, 13))
+
+interface Thisless { a: number }
+>Thisless : Symbol(Thisless, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 18, 6))
+>a : Symbol(Thisless.a, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 19, 20))
+
+type WithIface = Thisless & { b: 1 };
+>WithIface : Symbol(WithIface, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 19, 32))
+>Thisless : Symbol(Thisless, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 18, 6))
+>b : Symbol(b, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 20, 29))
+
+declare const wi: WithIface;
+>wi : Symbol(wi, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 21, 13))
+>WithIface : Symbol(WithIface, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 19, 32))
+
+wi[0];
+>wi : Symbol(wi, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 21, 13))
 
