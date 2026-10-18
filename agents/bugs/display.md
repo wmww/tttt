@@ -229,5 +229,5 @@ Same diagnostics, other text; each needs a cut-down repro first (`scripts/clidif
   truncated at another depth), pinia nuxt playground (a union member printed `WritableStream<...>` by tsc and
   `import("node:stream/web").WritableStream<any>` by tttt in a truncated union), inbox-zero/apps/web, hop-protocol,
   react-scan (not looked at).
-- webpack (`--corpora`): `HookMap<SyncBailHook<ParserOptions | [EmptyParserOptions], ...>>` in tsc, tttt drops the
-  `ParserOptions |` member of a JS-inferred type argument.
+- webpack (`--corpora`): fixed 2026-10-18 (inference's visited set keyed on the mode, ece423b2); what's left there is
+  TS5115's name order, like zod's above.
