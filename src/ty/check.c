@@ -907,8 +907,9 @@ void ty_check_type_assertion(Checker* me, Ty const* expr_type, Ty const* target,
     if (ty_is_related(me, target, widened, TY_RELATION_COMPARABLE)) return;
     VecTyReportLine lines = {0};
     if (relate_explaining(me, TY_RELATION_COMPARABLE, source, target, 2352, &lines, errs)) return;
-    cstr source_str = ty_to_cstr(me, source);
-    cstr target_str = ty_to_cstr(me, target);
+    // (reportRelationError's head: two types printed alike are qualified, `import("...").Locator`)
+    cstr source_str, target_str;
+    ty_report_pair_cstr(me, source, target, &source_str, &target_str);
     cstr head = cstr_d("Conversion of type '", source_str, "' to type '", target_str, "' may be a mistake because neither "
         "type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.");
     report_explained_with_head(errs, &lines, 2352, head, false, span);

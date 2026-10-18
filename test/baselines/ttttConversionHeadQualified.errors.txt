@@ -1,0 +1,15 @@
+b.ts(4,11): error TS2352: Conversion of type 'import("a").Locator' to type 'Locator' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'import("a").Locator' is missing the following properties from type 'Locator': b, c
+
+
+==== a.ts (0 errors) ====
+    export interface Locator { a: number }
+==== b.ts (1 errors) ====
+    import * as A from "./a";
+    interface Locator { b: string; c: number }
+    declare const l: A.Locator;
+    const x = l as Locator;
+              ~~~~~~~~~~~~
+!!! error TS2352: Conversion of type 'import("a").Locator' to type 'Locator' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+!!! error TS2352:   Type 'import("a").Locator' is missing the following properties from type 'Locator': b, c
+    

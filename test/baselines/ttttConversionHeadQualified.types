@@ -1,0 +1,23 @@
+//// [test/cases/ttttConversionHeadQualified.ts] ////
+
+=== a.ts ===
+export interface Locator { a: number }
+>a : number
+
+=== b.ts ===
+import * as A from "./a";
+>A : typeof A
+
+interface Locator { b: string; c: number }
+>b : string
+>c : number
+
+declare const l: A.Locator;
+>l : A.Locator
+>A : any
+
+const x = l as Locator;
+>x : Locator
+>l as Locator : Locator
+>l : A.Locator
+
