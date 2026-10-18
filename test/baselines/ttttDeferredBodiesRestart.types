@@ -17,9 +17,18 @@ export function missing(x: Unknwn) { const Unknown = 1; return x; }
 >1 : 1
 >x : Unknwn
 
+export function takes(x: typeof helper) { function helper() { return 1; } return x; }
+>takes : (x: () => number) => () => number
+>x : () => number
+>helper : () => number
+>helper : () => number
+>1 : 1
+>x : () => number
+
 === b.ts ===
-import { sees } from "./a";
+import { sees, takes } from "./a";
 >sees : () => { a: number; }
+>takes : (x: () => number) => () => number
 
 export const a: string = sees().a;
 >a : string
@@ -27,4 +36,12 @@ export const a: string = sees().a;
 >sees() : { a: number; }
 >sees : () => { a: number; }
 >a : number
+
+export const b: string = takes(() => 1)();
+>b : string
+>takes(() => 1)() : number
+>takes(() => 1) : () => number
+>takes : (x: () => number) => () => number
+>() => 1 : () => number
+>1 : 1
 

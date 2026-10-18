@@ -307,10 +307,17 @@ typedef struct DeferredBody {
 
 typedef struct DeferredSignatureName {
     csview name;
-    u32 meaning; // SymbolFlags
-    // The walk reported the name not found: its spelling suggestion may have been one the body declares
-    bool not_found;
+    // The meanings (SymbolFlags) looked up from each place: DEFERRED_FROM_*. A lookup without a meaning is one for any
+    u32 meaning[3];
+    uint8_t looked_up; // Bit DEFERRED_FROM_*: looked up from there at all
+    // Reported not found from there (bits), and with what meaning: its spelling suggestion may have been one the body
+    // declares
+    uint8_t not_found;
+    u32 not_found_meaning[3];
 } DeferredSignatureName;
+
+// Where a signature's walk looked a name up from (what of the body it would have seen: function_local_hidden())
+enum { DEFERRED_FROM_OTHER, DEFERRED_FROM_PARAMETERS, DEFERRED_FROM_RETURN_TYPE };
 
 // program.c: materializes the file of a deferred function, returns its body
 Block* function_impl_deferred_body(FunctionImpl const* me);

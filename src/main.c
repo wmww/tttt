@@ -336,6 +336,8 @@ static intptr_t print_diagnostics(Options const* opts, Output* out, Program* pro
     cstr_clear(&out->emitted);
     if (program && (opts->list_files || opts->list_files_only)) {
         for (intptr_t i = 0; i < program_get_file_count(program); i++) {
+            // (A second copy of a package is tsc's redirect, no file of its program)
+            if (program_source_at(program, (u32)i)->package_redirect) continue;
             cstr path = source_file_message_path(program_source_at(program, (u32)i));
             cstr_append_d(&text, DEFAULT_DISPLAY, path, "\n");
             cstr_drop(&path);

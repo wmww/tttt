@@ -510,6 +510,23 @@ static void walk_rare_drop(void* rare) {
     ast_free(rare, sizeof(FunctionImplRare));
 }
 
+// Whether a signature's lookups of a name (`bits` and `meanings`, DeferredSignatureName's) would have seen the body's
+// `found`. A body's value of the name of a type in the signature isn't found (`props: Props` and `...Props` in the
+// body), nor a body's variable from the parameters (`inner: typeof fetch` and `const fetch`)
+static bool deferred_signature_sees(uint8_t bits, u32 const* meanings, Symbol const* found) {
+    if (!found || found->is_parameter) return false;
+    for (u32 from = 0; from < 3; from++) {
+        if (!(bits & (1u << from))) continue;
+        u32 meaning = meanings[from] ? meanings[from] | SYMBOL_ALIAS : ~(u32)0;
+        if (((found->flags & meaning) || found->is_placeholder) &&
+            !function_local_hidden(found, meaning, from == DEFERRED_FROM_PARAMETERS, from == DEFERRED_FROM_RETURN_TYPE)
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
     FunctionImpl* me = body->function;
     Scope* function_scope = body->function_scope;
@@ -558,21 +575,23 @@ bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
     csview* added = nullptr;
     for (u32 i = 0; i < body->signature_name_count && !collides; i++) {
         DeferredSignatureName const* name = &body->signature_names[i];
-        // (A body's value of the name of a type in the signature isn't found: `props: Props` and `...Props` in the body)
-        Symbol const* found = symbol_table_get(locals, name->name);
-        u32 meaning = name->meaning ? name->meaning | SYMBOL_ALIAS : ~(u32)0;
-        collides = found && !found->is_parameter && ((found->flags & meaning) || found->is_placeholder);
+        collides = deferred_signature_sees(name->looked_up, name->meaning, symbol_table_get(locals, name->name));
         if (collides || !name->not_found || locals->count == before) continue;
-        // (A body's name a suggestion could have picked: one within the spelling distance, whatever its meaning)
-        if (!added) {
-            added = c_new_n(csview, locals->count - before);
-            for (u32 j = before; j < locals->count; j++) {
-                added[j - before] = (csview){ locals->entries[j].name_buf, locals->entries[j].name_len };
-            }
+        // (A body's name a suggestion could have picked: one the lookup would have seen within the spelling distance.
+        // `Buffer` not found as a type doesn't suggest the body's `const buffer`)
+        if (!added) added = c_new_n(csview, locals->count - before);
+        for (u32 j = before; j < locals->count; j++) {
+            bool seen = deferred_signature_sees(name->not_found, name->not_found_meaning, locals->entries[j].symbol);
+            added[j - before] = seen ? (csview){ locals->entries[j].name_buf, locals->entries[j].name_len } : (csview){0};
         }
         collides = spelling_suggestion(name->name, added, locals->count - before) >= 0;
     }
     free(added);
+    if (collides && debug_env.defer_stats) {
+        Span at = span_valid(me->name) ? me->name : me->full_span;
+        fprintf(stderr, "defer: collided %s:%u: %.*s\n", cstr_str(&span_source(at)->canonical_path), span_line_index(at) + 1,
+            (int)(at.size > 60 ? 60 : at.size), at.buf);
+    }
     function_impl_lookup_body(me, &flow, nullptr, function_scope, false, false, false, errs);
     function_scope->flow = nullptr;
     if (!rare && me->rare) deferred_bodies_undo_made((void**)&me->rare, nullptr, walk_rare_drop);

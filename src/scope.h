@@ -945,6 +945,9 @@ void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, Er
 // Reports what scope_report_value_not_found() deferred, with the checker current
 void scope_report_missing_prefixes(Binder* me);
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning);
+// Whether a function's local `found` is out of sight of its signature (tsc's resolveNameHelper with lastLocation not
+// the body), looked up from its parameter list or its return type
+bool function_local_hidden(Symbol const* found, u32 meaning, bool from_parameters, bool from_return_type);
 // Whether an alias resolves to nothing (tsc's unknownSymbol: an import of a module that doesn't resolve)
 bool symbol_alias_of_unknown(Symbol const* symbol);
 // How tsc names its unknownSymbol from here (getAccessibleSymbolChain matches aliases by what they resolve to): the

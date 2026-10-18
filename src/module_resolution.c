@@ -26,6 +26,9 @@ typedef enum Search {
 
 typedef struct Found {
     cstr path;
+    // The package whose `exports` or `imports` mapped to it (tsc's getPackageId of the scope): its package id, outside
+    // node_modules too (a package importing itself by name)
+    cstr package_dir;
     ResolvedKind kind;
     bool used_ts_extension;
     bool ts_extension_from_star; // used_ts_extension of a package.json target's `*` (load_package_json_field())
@@ -543,21 +546,26 @@ static void append_peer_dependencies(State* me, csview package_dir, PackageJson 
 
 // tsc's parseNodeModuleFromPath + withPackageId: the package directory after the last node_modules (`@scope/name`
 // for a scoped one) and what its package.json says
-static cstr package_id_of(State* me, csview path, cstr* package_name) {
-    isize at = -1;
-    for (isize i = csview_find_sv(path, c_sv("/node_modules/")); i != c_NPOS;) {
-        at = i;
-        isize next = csview_find_sv(csview_from_n(path.buf + i + 1, path.size - i - 1), c_sv("/node_modules/"));
-        i = next == c_NPOS ? c_NPOS : i + 1 + next;
+static cstr package_id_of(State* me, csview path, csview package_dir, cstr* package_name) {
+    isize end = -1;
+    if (package_dir.size && path.size > package_dir.size && sv_starts_with(path, package_dir) && path.buf[package_dir.size] == '/') {
+        end = package_dir.size;
+    } else {
+        isize at = -1;
+        for (isize i = csview_find_sv(path, c_sv("/node_modules/")); i != c_NPOS;) {
+            at = i;
+            isize next = csview_find_sv(csview_from_n(path.buf + i + 1, path.size - i - 1), c_sv("/node_modules/"));
+            i = next == c_NPOS ? c_NPOS : i + 1 + next;
+        }
+        if (at < 0) return cstr_null;
+        isize start = at + (isize)strlen("/node_modules/");
+        end = start;
+        for (int segments = path.buf[start] == '@' ? 2 : 1; segments--;) {
+            while (end < path.size && path.buf[end] != '/') end++;
+            if (segments) end++;
+        }
+        if (end >= path.size) return cstr_null;
     }
-    if (at < 0) return cstr_null;
-    isize start = at + (isize)strlen("/node_modules/");
-    isize end = start;
-    for (int segments = path.buf[start] == '@' ? 2 : 1; segments--;) {
-        while (end < path.size && path.buf[end] != '/') end++;
-        if (segments) end++;
-    }
-    if (end >= path.size) return cstr_null;
     PackageJson const* package = package_json_of(me, csview_from_n(path.buf, end));
     if (!package) return cstr_null;
     csview name = json_get_string(&package->json, "name");
@@ -1211,10 +1219,12 @@ static Search load_from_exports(
         JsonValue const* main_export = is_subpath_map ? json_get(exports, ".") : exports;
         if (main_export) {
             Search result = load_target(me, main_export, c_sv(""), false, false, package_dir, extensions, out);
+            if (result == SEARCH_FOUND) cstr_assign_sv(&out->package_dir, package_dir);
             return result == SEARCH_FOUND ? SEARCH_FOUND : SEARCH_STOP;
         }
     } else if (is_subpath_map) {
         Search result = load_from_map(me, exports, subpath, false, package_dir, extensions, out);
+        if (result == SEARCH_FOUND) cstr_assign_sv(&out->package_dir, package_dir);
         if (result != SEARCH_CONTINUE) return result;
     }
     return SEARCH_STOP;
@@ -1231,6 +1241,7 @@ static Search load_from_imports(State* me, csview name, csview from_dir, int ext
         JsonValue const* imports = json_get_tagged(&scope->json, "imports", JSON_OBJECT);
         if (imports) {
             result = load_from_map(me, imports, name, true, cstr_sv(&scope_dir), extensions, out);
+            if (result == SEARCH_FOUND) cstr_assign_sv(&out->package_dir, cstr_sv(&scope_dir));
             if (result == SEARCH_CONTINUE) result = SEARCH_STOP;
         }
     }
@@ -1536,6 +1547,29 @@ static cstr absolute_containing_dir(ModuleResolver* me, csview containing_file) 
     return ret;
 }
 
+// The package id a resolution through the package's own `exports` would give a file outside node_modules (tsc's
+// getPackageId of the nearest enclosing package.json with a name: a package importing itself by name). Empty if none
+cstr module_resolver_source_package_id(ModuleResolver* me, csview path) {
+    cstr absolute = absolute_path_fast(cstr_sv(&my cwd), path);
+    cstr ret = cstr_null;
+    if (csview_find_sv(cstr_sv(&absolute), c_sv("/node_modules/")) == c_NPOS) {
+        State state = state_make(me, RESOLUTION_MODE_COMMONJS);
+        for (csview dir = parent_of(cstr_sv(&absolute)), up; dir.size > 1; dir = up) {
+            PackageJson const* package = package_json_of(&state, dir);
+            if (package && json_get_string(&package->json, "name").size) {
+                cstr name = cstr_null;
+                ret = package_id_of(&state, cstr_sv(&absolute), dir, &name);
+                cstr_drop(&name);
+                break;
+            }
+            up = parent_of(dir);
+            if (up.size >= dir.size) break;
+        }
+    }
+    cstr_drop(&absolute);
+    return ret;
+}
+
 // module_resolver_resolve()'s cache key: the containing directory (absolute), a line break (no path has one), the mode
 // and the specifier. Built in place for the usual normalized containing file
 static cstr resolution_key(ModuleResolver* me, csview containing_file, ResolutionMode mode, csview specifier) {
@@ -1623,7 +1657,7 @@ static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csv
         ret.used_ts_extension = found.used_ts_extension;
         ret.ts_extension_from_star = found.ts_extension_from_star;
         ret.arbitrary_extension = found.arbitrary_extension;
-        ret.package_id = package_id_of(&state, cstr_sv(&ret.path), &ret.package_name);
+        ret.package_id = package_id_of(&state, cstr_sv(&ret.path), cstr_sv(&found.package_dir), &ret.package_name);
         // (Not for a relative name, external or not: tsgo's relative branch is createResolvedModule, without
         // createResolvedModuleHandlingSymlink's realpath)
         if (!module_name_is_relative(specifier)) apply_realpath(me, &ret);
@@ -1656,6 +1690,7 @@ static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csv
     ret.ambiguous_root_entry = state.ambiguous_root_entry;
     ret.ambiguous_root_package_json = state.ambiguous_root_package_json;
     ret.ambiguous_root_in_imports = state.ambiguous_root_in_imports;
+    cstr_drop(&found.package_dir);
     return ret;
 }
 
@@ -1801,6 +1836,7 @@ ResolvedModule module_resolver_resolve_type_reference(
         ret.is_external_library = path_contains_node_modules(cstr_sv(&ret.path));
         follow_symlinks(me, &ret);
     }
+    cstr_drop(&found.package_dir);
     cstr_drop(&containing_dir);
     return ret;
 }

@@ -7402,6 +7402,11 @@ static bool skip_body(Parser* parent, FunctionImpl* func, bool expression) {
         defer = !arg->initializer.value && !binding_has_expressions(&arg->initializer.binding);
     }
     if (defer && body_starts_with_string(parent->pos)) defer = false;
+    if (defer && func->ret_explicit) {
+        // (A `typeof` in the return type sees the body's values: `(): typeof groups` with a body's `const groups`)
+        Span ret = function_impl_ret_span(func);
+        defer = !span_valid(ret) || !csview_contains(span_sv(ret), "typeof");
+    }
     if (defer && expression) {
         Span args = function_impl_args_span(func);
         char const* from = span_valid(args) ? span_start_ptr(args) : parent->pos;

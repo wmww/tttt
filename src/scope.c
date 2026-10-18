@@ -167,19 +167,38 @@ static DeferredSignatureName* deferred_signature_name(DeferredBody* body, Binder
     return &body->signature_names[body->signature_name_count++];
 }
 
-// A name the signature of a deferred body (plan 78) looks up through its function's scope
-[[gnu::noinline]] static void note_deferred_signature_name(Scope const* function_scope, csview name, u32 meaning) {
-    deferred_signature_name(function_scope->function->body_.deferred, function_scope->binder, name)->meaning |= meaning;
+// Records a lookup (or a not-found report) from where: DEFERRED_FROM_*. Without a meaning the lookup was for any, and
+// stays so
+static void deferred_signature_note(uint8_t* bits, u32* meanings, u32 from, u32 meaning) {
+    bool first = !(*bits & (1u << from));
+    meanings[from] = first ? meaning : meanings[from] && meaning ? meanings[from] | meaning : 0;
+    *bits |= (uint8_t)(1u << from);
+}
+
+static u32 deferred_signature_from(bool from_parameters, bool from_return_type) {
+    return from_parameters ? DEFERRED_FROM_PARAMETERS : from_return_type ? DEFERRED_FROM_RETURN_TYPE : DEFERRED_FROM_OTHER;
+}
+
+// A name the signature of a deferred body (plan 78) looks up through its function's scope, from where
+[[gnu::noinline]] static void note_deferred_signature_name(
+    Scope const* function_scope, csview name, u32 meaning, bool from_parameters, bool from_return_type
+) {
+    DeferredSignatureName* entry = deferred_signature_name(function_scope->function->body_.deferred, function_scope->binder, name);
+    deferred_signature_note(&entry->looked_up, entry->meaning, deferred_signature_from(from_parameters, from_return_type), meaning);
 }
 
 // A name the walk didn't find: in the signature of a deferred body (plan 78), its suggestion could have been one the
 // body declares
-static void note_deferred_signature_not_found(Scope const* me, csview name) {
+static void note_deferred_signature_not_found(Scope const* me, csview name, u32 meaning) {
+    bool from_parameters = false, from_return_type = false;
     for (Scope const* scope = me; scope; scope = scope->parent) {
         if (scope->deferred_body) {
-            deferred_signature_name(scope->function->body_.deferred, scope->binder, name)->not_found = true;
+            DeferredSignatureName* entry = deferred_signature_name(scope->function->body_.deferred, scope->binder, name);
+            deferred_signature_note(&entry->not_found, entry->not_found_meaning, deferred_signature_from(from_parameters, from_return_type), meaning);
             return;
         }
+        from_parameters = scope->parameters && !scope->parameters_see_body;
+        from_return_type = scope->return_type;
     }
 }
 
@@ -4872,9 +4891,7 @@ static bool suggest_in_table(SymbolTable const* table, bool globals, bool export
 }
 
 // tsc's resolveNameForSymbolSuggestion: the innermost table with a close enough name decides
-// Whether a function's local `found` is out of sight of its signature (tsc's resolveNameHelper with lastLocation not
-// the body), looked up from its parameter list or its return type
-static bool function_local_hidden(Symbol const* found, u32 meaning, bool from_parameters, bool from_return_type) {
+bool function_local_hidden(Symbol const* found, u32 meaning, bool from_parameters, bool from_return_type) {
     if (found->is_parameter) return false;
     // (From the parameters no body variable, nor a local type: "local types not visible outside the function body")
     if (from_parameters) {
@@ -5052,7 +5069,7 @@ static bool walk_unvisited(Expr const* left) {
 }
 
 void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs) {
-    note_deferred_signature_not_found(me, span_sv(name));
+    note_deferred_signature_not_found(me, span_sv(name), meaning);
     ResolveShard* shard = binder_shard(my binder);
     if (shard) {
         DeferredEvent* event = defer_event(shard, DEFERRED_NOT_FOUND, me, errs);
@@ -5076,7 +5093,7 @@ static void report_misspelled_fallback(Span at, csview name, MisspelledFallback 
 static void report_misspelled_or(
     Scope const* me, Span at, csview name, u32 meaning, bool namespace, MisspelledFallback fallback, ErrorCtx* errs
 ) {
-    note_deferred_signature_not_found(me, name);
+    note_deferred_signature_not_found(me, name, meaning);
     ResolveShard* shard = binder_shard(my binder);
     if (shard) {
         DeferredEvent* event = defer_event(shard, DEFERRED_MISSPELLED, me, errs);
@@ -5130,7 +5147,7 @@ typedef struct PendingNotFound {
 } PendingNotFound;
 
 void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, ErrorCtx* errs) {
-    note_deferred_signature_not_found(me, span_sv(name));
+    note_deferred_signature_not_found(me, span_sv(name), SYMBOL_VALUE);
     bool in_class = false;
     for (Scope const* scope = me; scope && !in_class; scope = scope->parent) in_class = scope_rare(scope)->this_ref.class_decl;
     if (!in_class || (my flow && my flow->in_type_query)) {
@@ -5287,7 +5304,7 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
     bool from_parameters = false, from_return_type = false;
     bool arguments = (meaning & SYMBOL_VARIABLE) && csview_equals(name, "arguments");
     for (Scope const* scope = me; scope; scope = scope->parent) {
-        if (__builtin_expect(scope->deferred_body, 0)) note_deferred_signature_name(scope, name, meaning);
+        if (__builtin_expect(scope->deferred_body, 0)) note_deferred_signature_name(scope, name, meaning, from_parameters, from_return_type);
         SymbolTable const* table = scope->kind == SCOPE_GLOBAL ? &scope->binder->globals : scope_locals(scope);
         if (table->count || table->parent) {
             Symbol* found = symbol_table_lookup(table, name, hash);

@@ -15,13 +15,25 @@ export function missing(x: Unknwn) { const Unknown = 1; return x; }
 >Unknown : Symbol(Unknown, Decl(a.ts, 1, 42))
 >x : Symbol(x, Decl(a.ts, 1, 24))
 
+export function takes(x: typeof helper) { function helper() { return 1; } return x; }
+>takes : Symbol(takes, Decl(a.ts, 1, 67))
+>x : Symbol(x, Decl(a.ts, 2, 22))
+>helper : Symbol(helper, Decl(a.ts, 2, 41))
+>helper : Symbol(helper, Decl(a.ts, 2, 41))
+>x : Symbol(x, Decl(a.ts, 2, 22))
+
 === b.ts ===
-import { sees } from "./a";
+import { sees, takes } from "./a";
 >sees : Symbol(sees, Decl(b.ts, 0, 8))
+>takes : Symbol(takes, Decl(b.ts, 0, 14))
 
 export const a: string = sees().a;
 >a : Symbol(a, Decl(b.ts, 1, 12))
 >sees().a : Symbol(a, Decl(a.ts, 0, 54))
 >sees : Symbol(sees, Decl(b.ts, 0, 8))
 >a : Symbol(a, Decl(a.ts, 0, 54))
+
+export const b: string = takes(() => 1)();
+>b : Symbol(b, Decl(b.ts, 2, 12))
+>takes : Symbol(takes, Decl(b.ts, 0, 14))
 

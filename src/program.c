@@ -119,6 +119,9 @@ typedef struct Program {
     // program_copy_globals_from()) come before this one's, like tsc's default library files
     u32 order_base;
     HMapSourceFilePtr files_by_package_id; // ResolvedModule.package_id -> the first file found with it
+    // A source file outside node_modules loaded without a package id -> the id its package's own `exports` would give it
+    // (the first such file): see program_load_resolved()
+    HMapSourceFilePtr sources_by_package_id;
     // The file being added is a package's second copy of this first one (program_load_resolved())
     SourceFile* adding_package_redirect;
     // tsc's getPackagesMap: the package name of every module resolution that found a file of a package, whether one of
@@ -282,6 +285,7 @@ static void program_drop(Program* me) {
     drop_source_files(me);
     hmap_box_source_file_drop(&my source_files_map);
     hmap_source_file_ptr_drop(&my files_by_package_id);
+    hmap_source_file_ptr_drop(&my sources_by_package_id);
     hmap_source_file_ptr_drop(&my emit_blocked);
     hmap_package_flag_drop(&my packages);
     vec_source_file_ptr_drop(&my source_files_ordered);
@@ -914,6 +918,15 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                 bool dedup = cstr_size(&resolved.package_id) && my options.deduplicate_packages;
                 auto found = dedup ? hmap_source_file_ptr_get(&my files_by_package_id, cstr_sv(&resolved.package_id)) : nullptr;
                 SourceFile* first = found ? found->second : nullptr;
+                // A file loaded before without an id that a resolution with it will reach: tsc gives a file the id of
+                // any resolution that reached it, whichever came first, and keeps the first file in program order with
+                // it. A package's sources are reached through its exports by its own imports by name, and again
+                // through node_modules from the other packages, at their real path: through a symlinked directory
+                // that's another path (HACK: assumed reached, see SourceFile.package_redirect)
+                if (dedup && !found) {
+                    auto source = hmap_source_file_ptr_get(&my sources_by_package_id, cstr_sv(&resolved.package_id));
+                    if (source) first = source->second;
+                }
                 my adding_package_redirect = first;
                 ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
                 my adding_package_redirect = nullptr;
@@ -930,9 +943,8 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                             ref->file->unchecked = true;
                         }
                         ref->file = first;
-                    } else {
-                        hmap_source_file_ptr_insert(&my files_by_package_id, cstr_clone(resolved.package_id), ref->file);
                     }
+                    if (!found) hmap_source_file_ptr_insert(&my files_by_package_id, cstr_clone(resolved.package_id), ref->file);
                 }
             }
             break;
@@ -1794,6 +1806,14 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 // join the program, it after them
 static SourceFile* program_add_made_source(Program* me, cstr canonical_path, SourceFile* source_file) {
     if (source_file->is_json) source_file->is_module = true;
+    if (!my include_package_id.size && my options.deduplicate_packages && !source_file->is_json && !source_file->is_js) {
+        cstr id = module_resolver_source_package_id(program_resolver(me), cstr_sv(&canonical_path));
+        if (cstr_size(&id) && !hmap_source_file_ptr_contains(&my sources_by_package_id, cstr_sv(&id))) {
+            hmap_source_file_ptr_insert(&my sources_by_package_id, id, source_file);
+        } else {
+            cstr_drop(&id);
+        }
+    }
 
     hmap_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
     source_file->found_searching_node_modules = my node_modules_depth > 0;

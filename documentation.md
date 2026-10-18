@@ -413,13 +413,16 @@ materialization's pages fault: a reader that doesn't hold it crashes; the suite 
 
 **Exactness**: a materialization that can be told from the eager parse and walk sets `program_defer_failed()` and the
 program runs again without deferral (`check_files()`, the harness's `run_baseline_test_case()`): a parse error in a
-body or an end other than the skipper's (syntax errors), a recorded signature name the body declares (or a name the
-signature didn't find while the body declares any: its suggestion could have been one of them). An output that needs
+body or an end other than the skipper's (syntax errors), a recorded signature name the body declares that the lookup
+would have seen from where it was made (`deferred_signature_sees()`: from the parameters no body variable, from the
+return type no local type or `var`, `function_local_hidden()`), or a body declaration a not-found signature name's
+spelling suggestion could have picked (same filter, by the not-found lookup's meaning). A return type with `typeof`
+isn't deferred at all (`skip_body()`: it sees the body's `const`s). An output that needs
 every body's syntax errors without checking (gated by syntactic or options diagnostics, `--listFilesOnly`) parses the
 unmaterialized bodies for them and drops them (`program_deferred_bodies_parse()`), running again only if one has one
 (the rest of a body's diagnostics are semantic, gated). Real code never pays; error runs pay a second parse. The CLI and the harness defer by default (`--no-defer-bodies` for both: `scripts/oracles.py`
 runs the suite both ways); `TTTT_DEFER_STATS=1` prints counts at exit (bodies skipped, files materialized,
-cross-file materializations, failures, restarts).
+cross-file materializations, failures, restarts) and each colliding body (`defer: collided FILE:LINE`).
 
 ### Typecheck
 The AST is now in it's finished state, so we can traverse it looking for type errors. This is the phase when the `*_evaluate_type()` functions are called (via `ty_from_node()` / `ty_expr_type()` -> `lazy_type_get()` -> `lazy_type_evaluate()` -> `*_evaluate_type()`), each returning a `Ty const*`. Before the walk, `ty_init_global_types()` creates the global types tsc's

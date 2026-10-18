@@ -574,6 +574,14 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   and bound with its own AST (tsc: the first copy's AST, nothing bound), only unchecked; its imports share the first
   copy's resolutions by path text (`program_share_redirect_ref()`, own resolution as fallback) and its globals still
   merge. Shown by: sourcesweep projects with duplicated packages (duplicate global declarations).
+  Its representative is decided when the first resolution with the package id arrives, in load order: tsgo loads every
+  file first, gives each the id of any resolution that reached it, then keeps the first file in DFS order with that id
+  (filesparser.go collectFiles) and skips the redirects' imports. So a workspace source loaded id-less as a root and
+  self-referenced only later would lose to its real-path copy reached through node_modules (a project opened through a
+  symlinked directory, plan 84). HACK `sources_by_package_id` (program.c): a file outside node_modules loaded without an
+  id is assumed to be reached by its package's own `exports` later (`module_resolver_source_package_id()`), so a new
+  file with that id is its redirect. Wrong when nothing self-references it: tsc keeps both copies (effect through a
+  symlinked checkout: 5 such files, ~20 diagnostics apart; it was 3165 against 5 before). Correct: plan 84's two-phase load.
 - `symbol_chain_enter_class()`: a thread-local the baseline traversal sets names a CommonJS-exported named class
   expression by its own name inside its body; error messages still name it from the file.
 - `ty_report_enclosing()` / `statement_scope_at()` (ty_display.c): tsc prints a relation message's type from its value
