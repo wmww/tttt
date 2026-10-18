@@ -1166,7 +1166,7 @@ static bool is_valid_base_type(Checker* me, Ty const* ty, u32 depth) {
     }
     if (ty->flags & TYF_NON_PRIMITIVE) return true;
     if (!(ty->flags & TYF_OBJECT)) return false;
-    return ty->kind != TY_ANONYMOUS || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || !ty_members(me, ty)->mapped;
+    return ty->kind != TY_ANONYMOUS || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || !ty_generic_mapped(me, ty);
 }
 
 // tsc's isValidBaseType, which takes `any`: what an interface may extend and a class implement (TS2312, TS2422)
@@ -4063,7 +4063,7 @@ static bool intersection_has_generic_part(Checker* me, Ty const* intersection) {
     for (u32 i = 0; i < intersection->composite.types.len; i++) {
         Ty const* part = intersection->composite.types.data[i];
         if (part->kind == TY_TYPE_PARAM || (part->flags & TYF_DEFERRED)) return true;
-        if (part->kind == TY_ANONYMOUS && (part->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, part)->mapped) return true;
+        if (part->kind == TY_ANONYMOUS && (part->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_generic_mapped(me, part)) return true;
         if (!(part->flags & TYF_OBJECT)) return true;
     }
     return false;

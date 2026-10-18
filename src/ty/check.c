@@ -184,7 +184,7 @@ bool ty_is_generic_object(Checker* me, Ty const* ty) {
     // (Only an anonymous type can be mapped: a class or interface isn't resolved, `[Self] extends [never]` with Self
     // the class whose base is being resolved, tsc's isGenericMappedType reads objectFlags)
     return (ty->flags & TYF_OBJECT) &&
-        ((ty->kind == TY_ANONYMOUS && ty_members(me, ty)->mapped) || ty_is_generic_tuple(me, ty));
+        ((ty->kind == TY_ANONYMOUS && ty_generic_mapped(me, ty)) || ty_is_generic_tuple(me, ty));
 }
 
 // Where a type is declared (tsc's target.symbol.declarations[0], as an error span), invalid if nowhere

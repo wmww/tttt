@@ -1754,7 +1754,7 @@ static bool is_instantiated_generic_param(Checker* me, Signature const* sig, u32
     Ty const* type = param_type_at(me, sig->target, i);
     if (!type) return false;
     if (ty_is_generic_index(type)) return true;
-    return (type->flags & TYF_OBJECT) && (type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, type)->mapped;
+    return (type->flags & TYF_OBJECT) && (type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_generic_mapped(me, type);
 }
 
 // The one call signature of a callback parameter's type, if it is one
@@ -3097,7 +3097,7 @@ static Ternary index_signatures_related(
 // `{ [S in K]: [a: number] }[K]` simplified), tttt keeps X, whose elements are X[number]
 static bool is_rest_array(Checker* me, Ty const* rest) {
     if (rest->kind == TY_TYPE_PARAM) return false;
-    if (rest->kind == TY_ANONYMOUS && (rest->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, rest)->mapped) return false;
+    if (rest->kind == TY_ANONYMOUS && (rest->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_generic_mapped(me, rest)) return false;
     return true;
 }
 

@@ -1536,7 +1536,7 @@ static bool reduce_intersection_target(Checker* me, Inference* inf, Ty const** s
     bool reduce = false;
     for (u32 i = 0; i < targets.len && !reduce; i++) {
         Ty const* t = targets.data[i];
-        bool generic_mapped = t->kind == TY_ANONYMOUS && (t->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, t)->mapped;
+        bool generic_mapped = t->kind == TY_ANONYMOUS && (t->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_generic_mapped(me, t);
         reduce = !(t->flags & TYF_OBJECT) || generic_mapped;
     }
     if (!reduce) return true;

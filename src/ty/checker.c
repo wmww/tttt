@@ -2494,7 +2494,7 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
 // A spread element whose type isn't known yet stays a spread (tsc's Variadic element)
 static bool is_generic_spread(Checker* me, Ty const* ty) {
     if (ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED)) return true;
-    return ty->kind == TY_ANONYMOUS && (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, ty)->mapped;
+    return ty->kind == TY_ANONYMOUS && (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_generic_mapped(me, ty);
 }
 
 typedef struct TupleBuilder {
@@ -3260,7 +3260,7 @@ bool ty_is_generic_tuple(Checker* me, Ty const* ty) {
         Ty const* arg = args.data[i];
         if (arg->kind == TY_TYPE_PARAM || (arg->flags & TYF_DEFERRED)) return true;
         // (A generic mapped type is variadic too, tsc's createNormalizedTupleType with isGenericMappedType)
-        if (arg->kind == TY_ANONYMOUS && (arg->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, arg)->mapped) return true;
+        if (arg->kind == TY_ANONYMOUS && (arg->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_generic_mapped(me, arg)) return true;
     }
     return false;
 }

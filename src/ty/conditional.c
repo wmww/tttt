@@ -437,7 +437,7 @@ static bool is_generic_mapped(Checker* me, Ty const* ty, u32 depth) {
         }
         return false;
     }
-    return ty->kind == TY_ANONYMOUS && ty_members(me, ty)->mapped != nullptr;
+    return ty->kind == TY_ANONYMOUS && ty_generic_mapped(me, ty) != nullptr;
 }
 
 // A type parameter without a constraint standing in for `param` (tsc's getRestrictiveTypeParameter)
