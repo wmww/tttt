@@ -3689,8 +3689,19 @@ static bool mentions_mapped(Checker* me, Signature const* sig, Signature const* 
     }
     TyPredicate const* predicate = signature_predicate(me, root);
     if (predicate && predicate->type && mentions(me, predicate->type, mapped)) return true;
-    return (root->this_type && mentions(me, root->this_type, mapped)) ||
-        mentions(me, signature_return_type(me, root), mapped);
+    Ty const* ret = signature_return_type(me, root);
+    if ((root->this_type && mentions(me, root->this_type, mapped)) || mentions(me, ret, mapped)) return true;
+    // (An annotation whose type is an error, an unresolved import in it, mentions nothing as a type, but tsc's check is
+    // syntactic: `x: Unresolved | ((s: Readonly<S>) => void)` is instantiated, its reused node prints the mapped `S`)
+    bool error = (ret->flags & TYF_ERROR) != 0;
+    for (u32 i = 0; i < root->param_count && !error; i++) error = (root->params[i].type->flags & TYF_ERROR) != 0;
+    if (!error) return false;
+    TyList free_params;
+    if (!function || !ty_function_free_params(me, function, &free_params)) return true;
+    for (u32 i = 0; i < free_params.len; i++) {
+        for (u32 j = 0; j < mapped.len; j++) if (mapped.data[j] == free_params.data[i]) return true;
+    }
+    return false;
 }
 
 // Whether an instantiated signature's mapper maps a type parameter of a merged declaration (an interface declared twice):

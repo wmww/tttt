@@ -5,6 +5,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAliasBodyMappedTypeIdentity': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttAliasThroughImportNewIdentity': {
         errors: true,
         symbols: true,
@@ -546,6 +552,12 @@ const baselines = {
         dts: true,
     },
     'ttttDeclarationReexportModeMismatch': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationReusedNodeMappedUnderError': {
         errors: true,
         symbols: true,
         types: true,

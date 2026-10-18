@@ -1,0 +1,51 @@
+//// [test/cases/ttttDeclarationReusedNodeMappedUnderError.ts] ////
+
+=== ttttDeclarationReusedNodeMappedUnderError.ts ===
+// A method whose parameter's type is an error (an unresolved import in its union) is still instantiated: tsc's
+// isTypeParameterPossiblyReferenced is syntactic, so the reused annotation prints the mapped type parameter (by its
+// type, the innermost failing node's recovery), not the declared one renamed
+import type { Missing } from 'nonexistent';
+>Missing : Symbol(Missing, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 3, 13))
+
+type Common<S> = { dispatch(action: Missing | ((state: Readonly<S>) => Missing)): void };
+>Common : Symbol(Common, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 3, 43))
+>S : Symbol(S, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 4, 12))
+>dispatch : Symbol(dispatch, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 4, 18))
+>action : Symbol(action, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 4, 28))
+>Missing : Symbol(Missing, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 3, 13))
+>state : Symbol(state, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 4, 48))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>S : Symbol(S, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 4, 12))
+>Missing : Symbol(Missing, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 3, 13))
+
+export function a<State>(h: Common<State>) { return h.dispatch; }
+>a : Symbol(a, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 4, 89))
+>State : Symbol(State, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 5, 18))
+>h : Symbol(h, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 5, 25))
+>Common : Symbol(Common, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 3, 43))
+>State : Symbol(State, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 5, 18))
+>h.dispatch : Symbol(dispatch, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 4, 18))
+>h : Symbol(h, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 5, 25))
+>dispatch : Symbol(dispatch, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 4, 18))
+
+type Common2<State> = { dispatch(action: Missing | ((state: Readonly<State>) => Missing)): void };
+>Common2 : Symbol(Common2, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 5, 65))
+>State : Symbol(State, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 6, 13))
+>dispatch : Symbol(dispatch, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 6, 23))
+>action : Symbol(action, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 6, 33))
+>Missing : Symbol(Missing, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 3, 13))
+>state : Symbol(state, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 6, 53))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>State : Symbol(State, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 6, 13))
+>Missing : Symbol(Missing, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 3, 13))
+
+export function b<State>(h: Common2<State>) { return h.dispatch; }
+>b : Symbol(b, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 6, 98))
+>State : Symbol(State, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 7, 18))
+>h : Symbol(h, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 7, 25))
+>Common2 : Symbol(Common2, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 5, 65))
+>State : Symbol(State, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 7, 18))
+>h.dispatch : Symbol(dispatch, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 6, 23))
+>h : Symbol(h, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 7, 25))
+>dispatch : Symbol(dispatch, Decl(ttttDeclarationReusedNodeMappedUnderError.ts, 6, 23))
+

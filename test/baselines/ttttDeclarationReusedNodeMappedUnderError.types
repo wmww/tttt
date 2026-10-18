@@ -1,0 +1,35 @@
+//// [test/cases/ttttDeclarationReusedNodeMappedUnderError.ts] ////
+
+=== ttttDeclarationReusedNodeMappedUnderError.ts ===
+// A method whose parameter's type is an error (an unresolved import in its union) is still instantiated: tsc's
+// isTypeParameterPossiblyReferenced is syntactic, so the reused annotation prints the mapped type parameter (by its
+// type, the innermost failing node's recovery), not the declared one renamed
+import type { Missing } from 'nonexistent';
+>Missing : any
+
+type Common<S> = { dispatch(action: Missing | ((state: Readonly<S>) => Missing)): void };
+>Common : Common<S>
+>dispatch : (action: Missing | ((state: Readonly<S>) => Missing)) => void
+>action : any
+>state : Readonly<S>
+
+export function a<State>(h: Common<State>) { return h.dispatch; }
+>a : <State>(h: Common<State>) => (action: Missing | ((state: Readonly<State>) => Missing)) => void
+>h : Common<State>
+>h.dispatch : (action: Missing | ((state: Readonly<State>) => Missing)) => void
+>h : Common<State>
+>dispatch : (action: Missing | ((state: Readonly<State>) => Missing)) => void
+
+type Common2<State> = { dispatch(action: Missing | ((state: Readonly<State>) => Missing)): void };
+>Common2 : Common2<State>
+>dispatch : (action: Missing | ((state: Readonly<State>) => Missing)) => void
+>action : any
+>state : Readonly<State>
+
+export function b<State>(h: Common2<State>) { return h.dispatch; }
+>b : <State>(h: Common2<State>) => (action: Missing | ((state: Readonly<State>) => Missing)) => void
+>h : Common2<State>
+>h.dispatch : (action: Missing | ((state: Readonly<State>) => Missing)) => void
+>h : Common2<State>
+>dispatch : (action: Missing | ((state: Readonly<State>) => Missing)) => void
+
