@@ -22,15 +22,36 @@ and walks only the demanded body (documentation.md "Deferred bodies"): vscode de
 bodies instead of 43k (0.80 -> 0.16 s CPU), K1 1.2k of 16k. Left: the first materialization's cost (cold state), the
 skip scan.
 
-## Slower than bun at the defaults: inbox-zero (triage 2026-10-18)
-After the triage's deferral fixes (apps/web no longer restarts without deferral: 1.46 -> 1.22 s, -25% peak), at 4
-checkers: inbox-zero 1.25 s against bun's 0.86, apps/web 1.23 against 0.97; webcmd 0.24 against 0.35 and solid 0.79
-against 0.79 are level or ahead now (bun numbers: `/tmp/perfsweep-tttt-bun.json` of 2026-10-17). inbox-zero isn't
-balance (four checkers at ~376 ms each) nor the budget (`--checker-memory 100000`: 1.24 s): K1 is 1.40 s, K4 1.26 s,
-user time 1.86 -> 2.49 s. Each checker re-derives the same declaration-file types (react, next, prisma .d.ts) for its
-share of ~4.9 MB of app source, plus ~200 ms serial load and names. Lead: what plan 72 calls shared warm state (a
-checker's declaration-level types seen by the others), or fewer checkers when the shares are small next to the shared
-declarations they need (dokploy's lead below is the same shape).
+## Shared warm state at the defaults (perf session 2026-10-18, todo entry 8)
+**inbox-zero was not warm state**: it reports ~22k errors (tsc too), and `error_ctx_merge()` inserted them one at a
+time (quadratic): ~380 ms merging the checkers' contexts, ~500 ms more in the resolve walk's per-file shard merges at
+the root project. Fixed (one-pass merge): inbox-zero 1.29 -> 0.85 s (bun 0.86), apps/web 1.28 -> 0.86 (bun 0.97).
+**Recycle thrash on a big shared graph** is real but already faster than bun everywhere measured. On this 4-vCPU box,
+best of 2, s / MB:
+
+| project | K1 (256 MB) | K4 (default) | K2 off | K4 off | bun |
+|---|---|---|---|---|---|
+| dokploy/apps/dokploy | 2.49 / 815 | 3.66 / 1187 | 1.32 / 1139 | 1.42 / 1521 | 7.95 / 1882 |
+| monkeytype/frontend | 0.67 / 401 | 1.28 / 517 | 0.51 / 507 | 0.55 / 682 | 4.66 / 781 |
+| karakeep/packages/api | 0.42 / 364 | 0.55 / 429 | 0.34 / 439 | 0.39 / 578 | 1.10 / 582 |
+
+At K4 monkeytype spends 4.6 s of CPU against K1's 0.58: each recycle's next segment rebuilds a 60-150 MB graph
+(contracts/zod schemas, trpc/drizzle) in one or two files costing 100-550 ms each, and the budget ramps from 16 MB
+one doubling per short segment. `TTTT_FILE_TIMES=1`'s recycle line now prints the budget, the segment's time and its
+slowest file. Tried (prototypes, all reverted):
+- a learned budget shared by the checkers, a jump to what was held after a short segment: no change;
+- recycle only once the segment did 4x its slowest file's work: dokploy 2.01 s, monkeytype 0.77, react-select's
+  tests 0.54 -> 0.31, but the corpora's peaks rise past bun's (zod 275 -> 377 MB, effect 332 -> 432, drizzle 372 ->
+  440, tsc 207 -> 249): plan 81 stage 2's frontier again, already declined by the insights;
+- the same guard only at the cap (no corpus ever recycles at its cap): ~-7% on the thrashers, too little, since
+  they thrash mostly below it;
+- retiring a checker that thrashes at its cap (its files stolen, the others' budgets grow): retires too late
+  (dokploy once, near the end; monkeytype never).
+No signal found that separates these from the corpora: held/budget overshoot (type-fest 3.7x), slowest-file share of
+the segments (type-fest 61% vs karakeep 60%), node_modules declaration bytes per checked byte (react-select 0.83,
+drizzle 2.8) all overlap. What's left is the insights' frontier call (a guard costing the corpora's memory against
+bun) or a re-derivation measure that isn't time or bytes (e.g. types a fresh checker makes that the previous
+incarnation also made, counted by declaration).
 
 ## What the recycle budget costs at the defaults (perf session 2026-10-17, todo entry 8)
 The corpora at the defaults against `--checker-memory off` (best of 2, 4 checkers): 11.43 s / 4573 MB against 9.99 s /
@@ -50,10 +71,7 @@ but twice the table memory, also in the budget), a stronger intern hash (probe c
 ## tttt at its defaults (triage 2026-10-16, `scripts/perfsweep.py --defaults`, 4 cores)
 The first run at the default threads and checkers over the source sweep's 1786 checked projects (under load: only the
 quiet rerun of the worst 14 is trustworthy). Quiet: nothing worse than 1.25x its own K1 wall; the mid-size ones gain
-1.4-2x at 4 checkers. Leads: **dokploy/apps/dokploy** gains nothing at K4 (3.08 -> 2.89 s) for twice the memory (766 ->
-1453 MB) and still recycles 11 times: its ~150 MB warm trpc/drizzle state is re-derived per checker and per recycle,
-so the defaults should give it fewer checkers (a checker count from the warm state's size, not the source bytes) or
-keep it at K1. **rxjs/packages/rxjs** (0.54 -> 0.68 s, one recycle) and qwik-cli-e2e (1.11x): small programs where K4
+1.4-2x at 4 checkers. Leads: **dokploy/apps/dokploy**: see "Shared warm state at the defaults" (2026-10-18). **rxjs/packages/rxjs** (0.54 -> 0.68 s, one recycle) and qwik-cli-e2e (1.11x): small programs where K4
 costs more than it parallelises. A full quiet run (`--defaults -j 1`, ~10 min) is still to do: the cheap check after
 any change to `check_share()` or the checker-count heuristics.
 

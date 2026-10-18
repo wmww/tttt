@@ -4382,6 +4382,7 @@ static void check_share(Program* me, u32 c, u32 count) {
     // A recycle only pays when the checker has grown well past it (dokploy's trpc graph is ~150 MB, over a 128 MB
     // budget after any one file: recycled after nearly every file it was 20x slower)
     u64 segment_base = 0;
+    double segment_ms = 0, segment_max_ms = 0; // The segment's check time and its slowest file's (TTTT_FILE_TIMES)
     u64 budget = my checker_start_budget;
     u32 stolen = 0;
     isize scanned = 0; // Of checker->errs->errors, for declaration_walk_moot()
@@ -4413,6 +4414,7 @@ static void check_share(Program* me, u32 c, u32 count) {
             source_texts_release();
             segment_count = 0;
             segment_base = 0;
+            segment_ms = segment_max_ms = 0;
             recycle_due = false;
         }
         segment[segment_count++] = at;
@@ -4434,6 +4436,11 @@ static void check_share(Program* me, u32 c, u32 count) {
         checker->defer_checks = false;
         checker->checking_file = nullptr;
         if (debug_env.file_times) {
+            struct timespec file_end;
+            timespec_get(&file_end, TIME_UTC);
+            double file_ms = (double)(file_end.tv_sec - file_start.tv_sec) * 1e3 + (double)(file_end.tv_nsec - file_start.tv_nsec) / 1e6;
+            segment_ms += file_ms;
+            if (file_ms > segment_max_ms) segment_max_ms = file_ms;
             print_file_time(my file_shares[at] == c ? "check" : "check (taken)", file_start, source);
             fprintf(stderr, "file time: checker %u holds %.1f MB\n", c, (double)checker_memory(checker) / (1 << 20));
         }
@@ -4452,8 +4459,10 @@ static void check_share(Program* me, u32 c, u32 count) {
         // much, up to the full budget)
         if (segment_count < CHECKER_MEMORY_BACKOFF_FILES) budget = 2 * budget < my checker_budget ? 2 * budget : my checker_budget;
         if (debug_env.file_times) {
-            fprintf(stderr, "file time: recycle checker %u after %u files, held %llu MB, warm-up %llu MB\n", c,
-                segment_count, (unsigned long long)(held >> 20), (unsigned long long)(segment_base >> 20));
+            fprintf(stderr, "file time: recycle checker %u after %u files, held %llu MB, warm-up %llu MB, budget %llu of %llu MB, "
+                "%.0f ms, slowest file %.0f\n", c, segment_count, (unsigned long long)(held >> 20),
+                (unsigned long long)(segment_base >> 20), (unsigned long long)(budget >> 20),
+                (unsigned long long)(my checker_budget >> 20), segment_ms, segment_max_ms);
         }
         recycle_due = true;
     }
