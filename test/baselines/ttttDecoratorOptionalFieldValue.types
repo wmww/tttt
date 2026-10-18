@@ -1,0 +1,45 @@
+//// [test/cases/ttttDecoratorOptionalFieldValue.ts] ////
+
+=== ttttDecoratorOptionalFieldValue.ts ===
+// An ES decorator on an optional field gets the field's type with undefined (tsc's getTypeOfNode, the symbol's type):
+// ClassFieldDecoratorContext<A, B | undefined> (mikro-orm's legacy decorators used without experimentalDecorators)
+declare function Dec(options: string): (target: any, propertyName: string) => void;
+>Dec : (options: string) => (target: any, propertyName: string) => void
+>options : string
+>target : any
+>propertyName : string
+
+declare function Dec2(): (target: any, propertyName: string) => void;
+>Dec2 : () => (target: any, propertyName: string) => void
+>target : any
+>propertyName : string
+
+class B {}
+>B : B
+
+export class A {
+>A : A
+
+  @Dec("x")
+>Dec("x") : (target: any, propertyName: string) => void
+>Dec : (options: string) => (target: any, propertyName: string) => void
+>"x" : "x"
+
+  b?: B;
+>b : B | undefined
+
+  @Dec2()
+>Dec2() : (target: any, propertyName: string) => void
+>Dec2 : () => (target: any, propertyName: string) => void
+
+  c?: B;
+>c : B | undefined
+
+  @Dec2()
+>Dec2() : (target: any, propertyName: string) => void
+>Dec2 : () => (target: any, propertyName: string) => void
+
+  d!: B;
+>d : B
+}
+

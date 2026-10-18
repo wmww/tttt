@@ -4046,6 +4046,8 @@ static bool decorator_call(Checker* me, DecoratorSite site, DecoratorCall* out, 
         bool field = item->tag == CLASS_ITEM_FIELD;
         bool auto_accessor = field && item->field.is_auto_accessor;
         Ty const* value = class_item_get_type(item);
+        // (An optional field's is its symbol's type, with undefined: tsc's getTypeOfNode)
+        if (field && item->field.is_optional) value = ty_optional_prop_type(me, value);
         Ty const* this_type = member_this_type(me, class_decl, item);
         out->head_code = field ? 1240 : 1241;
         if (legacy) {

@@ -1,0 +1,32 @@
+ttttDecoratorOptionalFieldValue.ts(7,4): error TS1240: Unable to resolve signature of property decorator when called as an expression.
+  Argument of type 'ClassFieldDecoratorContext<A, B | undefined> & { name: "b"; private: false; static: false; }' is not assignable to parameter of type 'string'.
+ttttDecoratorOptionalFieldValue.ts(9,4): error TS1240: Unable to resolve signature of property decorator when called as an expression.
+  Argument of type 'ClassFieldDecoratorContext<A, B | undefined> & { name: "c"; private: false; static: false; }' is not assignable to parameter of type 'string'.
+ttttDecoratorOptionalFieldValue.ts(11,4): error TS1240: Unable to resolve signature of property decorator when called as an expression.
+  Argument of type 'ClassFieldDecoratorContext<A, B> & { name: "d"; private: false; static: false; }' is not assignable to parameter of type 'string'.
+
+
+==== ttttDecoratorOptionalFieldValue.ts (3 errors) ====
+    // An ES decorator on an optional field gets the field's type with undefined (tsc's getTypeOfNode, the symbol's type):
+    // ClassFieldDecoratorContext<A, B | undefined> (mikro-orm's legacy decorators used without experimentalDecorators)
+    declare function Dec(options: string): (target: any, propertyName: string) => void;
+    declare function Dec2(): (target: any, propertyName: string) => void;
+    class B {}
+    export class A {
+      @Dec("x")
+       ~~~~~~~~
+!!! error TS1240: Unable to resolve signature of property decorator when called as an expression.
+!!! error TS1240:   Argument of type 'ClassFieldDecoratorContext<A, B | undefined> & { name: "b"; private: false; static: false; }' is not assignable to parameter of type 'string'.
+      b?: B;
+      @Dec2()
+       ~~~~~~
+!!! error TS1240: Unable to resolve signature of property decorator when called as an expression.
+!!! error TS1240:   Argument of type 'ClassFieldDecoratorContext<A, B | undefined> & { name: "c"; private: false; static: false; }' is not assignable to parameter of type 'string'.
+      c?: B;
+      @Dec2()
+       ~~~~~~
+!!! error TS1240: Unable to resolve signature of property decorator when called as an expression.
+!!! error TS1240:   Argument of type 'ClassFieldDecoratorContext<A, B> & { name: "d"; private: false; static: false; }' is not assignable to parameter of type 'string'.
+      d!: B;
+    }
+    

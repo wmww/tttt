@@ -1,0 +1,44 @@
+//// [test/cases/ttttDecoratorOptionalFieldValue.ts] ////
+
+=== ttttDecoratorOptionalFieldValue.ts ===
+// An ES decorator on an optional field gets the field's type with undefined (tsc's getTypeOfNode, the symbol's type):
+// ClassFieldDecoratorContext<A, B | undefined> (mikro-orm's legacy decorators used without experimentalDecorators)
+declare function Dec(options: string): (target: any, propertyName: string) => void;
+>Dec : Symbol(Dec, Decl(ttttDecoratorOptionalFieldValue.ts, 0, 0))
+>options : Symbol(options, Decl(ttttDecoratorOptionalFieldValue.ts, 2, 21))
+>target : Symbol(target, Decl(ttttDecoratorOptionalFieldValue.ts, 2, 40))
+>propertyName : Symbol(propertyName, Decl(ttttDecoratorOptionalFieldValue.ts, 2, 52))
+
+declare function Dec2(): (target: any, propertyName: string) => void;
+>Dec2 : Symbol(Dec2, Decl(ttttDecoratorOptionalFieldValue.ts, 2, 83))
+>target : Symbol(target, Decl(ttttDecoratorOptionalFieldValue.ts, 3, 26))
+>propertyName : Symbol(propertyName, Decl(ttttDecoratorOptionalFieldValue.ts, 3, 38))
+
+class B {}
+>B : Symbol(B, Decl(ttttDecoratorOptionalFieldValue.ts, 3, 69))
+
+export class A {
+>A : Symbol(A, Decl(ttttDecoratorOptionalFieldValue.ts, 4, 10))
+
+  @Dec("x")
+>Dec : Symbol(Dec, Decl(ttttDecoratorOptionalFieldValue.ts, 0, 0))
+
+  b?: B;
+>b : Symbol(A.b, Decl(ttttDecoratorOptionalFieldValue.ts, 5, 16))
+>B : Symbol(B, Decl(ttttDecoratorOptionalFieldValue.ts, 3, 69))
+
+  @Dec2()
+>Dec2 : Symbol(Dec2, Decl(ttttDecoratorOptionalFieldValue.ts, 2, 83))
+
+  c?: B;
+>c : Symbol(A.c, Decl(ttttDecoratorOptionalFieldValue.ts, 7, 8))
+>B : Symbol(B, Decl(ttttDecoratorOptionalFieldValue.ts, 3, 69))
+
+  @Dec2()
+>Dec2 : Symbol(Dec2, Decl(ttttDecoratorOptionalFieldValue.ts, 2, 83))
+
+  d!: B;
+>d : Symbol(A.d, Decl(ttttDecoratorOptionalFieldValue.ts, 9, 8))
+>B : Symbol(B, Decl(ttttDecoratorOptionalFieldValue.ts, 3, 69))
+}
+
