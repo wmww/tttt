@@ -33,6 +33,15 @@ gap to bun is per-checker re-derivation (bugs/perf_leads.md).
   (test/order.test.ts:62, 'Values', 'StateId'); the cell alone and a second full run had the usual two. Timing-
   dependent output at one K (work stealing decides which checker sees which file first): TS5115's checker dependence
   is tsgo's own (bugs/tsgo_divergences.md), but tttt's K-fixed output shouldn't vary run to run. Worth a few
-  `-c xstate -F sloppy` runs under load to see how often.
+  `-c xstate -F sloppy` runs under load to see how often. Seen again 2026-10-18 (todo entry 6, agent D): flagflip 18 / 9 / 3, the extra spurious an xstate
+  TS5115 whose count varied between runs on the same binary.
 - From human: fan out to parallel sub-agents in worktrees where possible, makes things go faster
 - types baseline: a reused node's `import("./routers")` printed `import("./routers.js")` in hover-style types output (`>mk : () => ... | ((s: string) => import("./routers").Action)`, tsgo keeps the node's specifier without .js for the reused return annotation of a function type in a union); found by agent C 2026-10-18 writing ttttAliasBodyMappedTypeIdentity
+- (2026-10-18, todo entry 6) **dtsdiff's tail is now mostly tsgo's checker split.** After the fan-out (1206+ / 1233),
+  the biggest bucket left is member order (11 projects: the per-checker undefinedProperties cache, incl. vscode's
+  `readonly id?: undefined`, the readonly copied from whichever declaration made the symbol), and three agents
+  independently found single files that match `tsgo --checkers 1`/`--singleThreaded` but not tsgo's default 4
+  checkers (babel-parser's inferred predicate, sequelize's `models: any`, mcp-sdk's hono specifier). tsgo 7.1 assigns
+  files to checkers by weighted FENNEL partitioning (compiler/checkerpool.go), so emulating it means porting that and
+  matching per-checker check order: not worth it. Decide: have dtsdiff (and maybe the sweeps) also cache tsgo's
+  `--singleThreaded` output and report "matches tsgo single-threaded" as its own verdict, so the real tail is visible.
