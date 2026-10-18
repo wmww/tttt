@@ -3330,8 +3330,10 @@ static bool is_generic_operand(Checker* me, Ty const* ty, u32 depth) {
         }
         return false;
     }
-    // A mapped type whose keys aren't known yet
-    if (ty->kind == TY_ANONYMOUS) return ty_members(me, ty)->mapped != nullptr;
+    // A mapped type whose keys aren't known yet (from its declaration when it says so, as tsc's isGenericMappedType:
+    // expanding a homomorphic one resolves its type variable's apparent type, typesaurus's
+    // `AllRequired<AllRequired<Model>[K1]>[K2]` chains made 2x tsgo's types in date-fns/pkgs/docs)
+    if (ty->kind == TY_ANONYMOUS) return ty_generic_mapped(me, ty) != nullptr;
     return ty_is_generic_tuple(me, ty);
 }
 

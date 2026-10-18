@@ -3418,6 +3418,7 @@ static void measure_variances(Checker* me, VarianceSubject subject, Variances* v
         Symbol const* sym = subject_symbol(subject);
         fprintf(stderr, "VAR> %.*s depth=%u\n", (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "", my variance_stack_len);
     }
+    u32 types_before = my next_type_id;
     for (u32 i = 0; i < variances->len; i++) {
         // Variance annotations (`in T`, `out T`, `in out T`) are taken as they are (tsc's getVariancesWorker), those of
         // every declaration of a merged interface together
@@ -3452,7 +3453,7 @@ static void measure_variances(Checker* me, VarianceSubject subject, Variances* v
             unsigned tsgo = (v & 7) | (v & VARIANCE_UNMEASURABLE ? 8 : 0) | (v & VARIANCE_UNRELIABLE ? 16 : 0);
             fprintf(stderr, i ? " %u" : "%u", tsgo);
         }
-        fprintf(stderr, "] stored=%s\n", variances->state == LAZY_STATE_DONE ? "false" : "true");
+        fprintf(stderr, "] stored=%s types=%u\n", variances->state == LAZY_STATE_DONE ? "false" : "true", my next_type_id - types_before);
     }
     if (pushed) my variance_stack_len--;
     my variance_depth--;

@@ -9,7 +9,7 @@ the shared thirdparty/typescript checkout) into /tmp/tsgo-vartrace/tsc, once. It
 TTTT_DEBUG_VARIANCE=1 log (both single-threaded) have the same format:
 
     VAR> Name depth=N                      a measurement starts (N: the variance stack's depth)
-    VAR< Name [v...] stored=B              it ends: tsgo's VarianceFlags (0 in out, 1 out, 2 in, 3 bi, 4 independent,
+    VAR< Name [v...] stored=B types=N      it ends (N: the types made inside, nested measurements too): tsgo's VarianceFlags (0 in out, 1 out, 2 in, 3 bi, 4 independent,
                                            +8 unmeasurable, +16 unreliable); stored=false when a restart got there first
     VAR circular Name restart=Other        a measurement in flight was asked for
     REL> S -> T / REL< S -> T = R flags=F  a structural comparison inside a measurement (R: T, F, U(nknown), M(aybe);
@@ -132,12 +132,13 @@ PATCHES = [
 			if ttttDebugVar {
 				c.ttttLog("VAR> %s depth=%d", symbol.Name, len(c.varianceStack))
 			}
+			ttttTypes := c.TypeCount
 '''),
     ('''			// Store the results unless a restarted computation has already stored them.
 			if len(links.variances) == 0 {
 ''', '''			// Store the results unless a restarted computation has already stored them.
 			if ttttDebugVar {
-				c.ttttLog("VAR< %s %v stored=%v", symbol.Name, ttttVarianceInts(variances), len(links.variances) == 0)
+				c.ttttLog("VAR< %s %v stored=%v types=%d", symbol.Name, ttttVarianceInts(variances), len(links.variances) == 0, c.TypeCount-ttttTypes)
 			}
 			if len(links.variances) == 0 {
 '''),
@@ -243,7 +244,7 @@ def stored(lines):
     """name -> the variances of its stored measurements"""
     ret = {}
     for line in lines:
-        m = re.match(r'^VAR< (\S+) \[(.*)\] stored=true$', line)
+        m = re.match(r'^VAR< (\S+) \[(.*)\] stored=true', line)
         if m:
             ret.setdefault(m[1], set()).add(m[2])
     return ret
@@ -256,7 +257,7 @@ def block(lines, name):
             stack.append((line.split()[1], i))
         elif line.startswith('VAR< '):
             n, start = stack.pop()
-            if n == name and line.endswith('stored=true'):
+            if n == name and 'stored=true' in line:
                 return lines[start:i + 1]
     return []
 

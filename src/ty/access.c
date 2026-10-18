@@ -244,8 +244,10 @@ static bool is_string_index_signature_only(Checker* me, Ty const* ty) {
         }
         return true;
     }
-    // (A tuple has `length`: no need to make its members)
-    if (!(ty->flags & TYF_OBJECT) || ty_tuple_shape(ty)) return false;
+    // (A tuple has `length`: no need to make its members. Nor a generic mapped type's, as tsc's !isGenericMappedType:
+    // expanding one goes through its keys' constraints, typesaurus's `AllRequired<AllRequired<Model>[K1]>[K2]` chains
+    // made 2x tsgo's types in date-fns/pkgs/docs)
+    if (!(ty->flags & TYF_OBJECT) || ty_tuple_shape(ty) || ty_generic_mapped(me, ty)) return false;
     Members const* members = ty_members(me, ty);
     return !members->mapped && !members->prop_count && members->index_count == 1 && (members->index[0].key->flags & TYF_STRING);
 }
