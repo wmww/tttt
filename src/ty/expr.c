@@ -3387,10 +3387,10 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
         for (Prop const* i = prop; i && !synthetic; i = i->target) synthetic = i->synthetic;
         if (synthetic) flags &= (u32)~PROP_METHOD;
         if (partial || setonly || readonly != !!(prop->flags & PROP_READONLY)) flags |= PROP_NO_VALUE_DECLARATION;
-        if (partial && !(flags & PROP_OPTIONAL)) {
-            flags |= PROP_OPTIONAL;
-            // (tsc's addOptionality: missing under exactOptionalPropertyTypes, `{ ...(c ? {} : { d: o.d }) }` is
-            // `{ d?: string }`)
+        if (partial) {
+            // (A property, even of a method: tsc's tryMergeUnionOfObjectTypeAndEmptyObject. With addOptionality,
+            // missing under exactOptionalPropertyTypes: `{ ...(c ? {} : { d: o.d }) }` is `{ d?: string }`)
+            flags = (flags | PROP_OPTIONAL) & ~(u32)PROP_METHOD;
             type = ty_optional_prop_type(me, type);
         }
         // The annotation of the property it comes from still says what it is, unless instantiated (or made optional:
@@ -3432,7 +3432,8 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
             while (declared_at->target && !declared_at->decl->decl_span_count) declared_at = declared_at->target;
         }
         TypeNode const* annotation_required = nullptr;
-        if (annotation && type != declared_type) {
+        // (Under exactOptionalPropertyTypes a partial spread's missing doesn't count: the printer takes it out)
+        if (annotation && type != declared_type && ty_remove_missing(me, type, (flags & PROP_OPTIONAL) != 0) != declared_type) {
             annotation_required = annotation;
             annotation = nullptr;
         }

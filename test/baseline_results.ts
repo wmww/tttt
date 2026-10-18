@@ -858,6 +858,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttIntersectionInheritedPropExactOptional': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttIntersectionOfManyMembersProperty': {
         errors: true,
         symbols: true,
@@ -1176,6 +1181,18 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'ttttPartialSpreadExactOptionalAnnotation': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttPartialSpreadMethodIsProperty': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
     },
     'ttttPatternParamFirstElementScope': {
         errors: true,
@@ -32202,7 +32219,7 @@ const baselines = {
     'spreadObjectPermutations(exactoptionalpropertytypes=true)': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'spreadObjectWithIndexDoesNotAddUndefinedToLocalIndex': {
         errors: true,

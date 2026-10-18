@@ -1,0 +1,35 @@
+//// [test/cases/ttttPartialSpreadExactOptionalAnnotation.ts] ////
+
+=== ttttPartialSpreadExactOptionalAnnotation.ts ===
+// A partial spread's properties keep their annotations under exactOptionalPropertyTypes, whose missing type the
+// printer takes out (vscode's agentHostTelemetryReporter)
+export interface Ctx {
+    readonly state: 'signedIn' | 'signedOut' | 'unknown';
+>state : "signedIn" | "signedOut" | "unknown"
+
+    readonly week: 'available' | 'unavailable' | 'missing' | 'nonWeekly' | 'stale' | 'expired' | 'invalid';
+>week : "available" | "expired" | "invalid" | "missing" | "nonWeekly" | "stale" | "unavailable"
+}
+declare function get(c: Ctx | undefined): Ctx | undefined;
+>get : (c: Ctx | undefined) => Ctx | undefined
+>c : Ctx | undefined
+
+declare const b: boolean;
+>b : boolean
+
+declare const c: Ctx;
+>c : Ctx
+
+export const r = { ...(b ? get(c) : undefined), x: 1 };
+>r : { state?: 'signedIn' | 'signedOut' | 'unknown'; week?: 'available' | 'unavailable' | 'missing' | 'nonWeekly' | 'stale' | 'expired' | 'invalid'; x: number; }
+>{ ...(b ? get(c) : undefined), x: 1 } : { state?: 'signedIn' | 'signedOut' | 'unknown'; week?: 'available' | 'unavailable' | 'missing' | 'nonWeekly' | 'stale' | 'expired' | 'invalid'; x: number; }
+>(b ? get(c) : undefined) : Ctx | undefined
+>b ? get(c) : undefined : Ctx | undefined
+>b : boolean
+>get(c) : Ctx | undefined
+>get : (c: Ctx | undefined) => Ctx | undefined
+>c : Ctx
+>undefined : undefined
+>x : number
+>1 : 1
+

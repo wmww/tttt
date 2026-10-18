@@ -1,0 +1,20 @@
+//// [test/cases/ttttPartialSpreadMethodIsProperty.ts] ////
+
+=== ttttPartialSpreadMethodIsProperty.ts ===
+// A method spread from one branch of a conditional is an optional property, not an optional method (tsc's
+// tryMergeUnionOfObjectTypeAndEmptyObject; better-auth's get-id-field.ts)
+declare const b: boolean;
+>b : Symbol(b, Decl(ttttPartialSpreadMethodIsProperty.ts, 2, 13))
+
+export const f = () => ({ a: 1, ...(b ? { m() { return 1; }, n: "" } : {}) });
+>f : Symbol(f, Decl(ttttPartialSpreadMethodIsProperty.ts, 3, 12))
+>a : Symbol(a, Decl(ttttPartialSpreadMethodIsProperty.ts, 3, 25))
+>b : Symbol(b, Decl(ttttPartialSpreadMethodIsProperty.ts, 2, 13))
+>m : Symbol(m, Decl(ttttPartialSpreadMethodIsProperty.ts, 3, 41))
+>n : Symbol(n, Decl(ttttPartialSpreadMethodIsProperty.ts, 3, 60))
+
+export const g = { ...(b ? { m(): string | undefined { return ""; } } : {}) };
+>g : Symbol(g, Decl(ttttPartialSpreadMethodIsProperty.ts, 4, 12))
+>b : Symbol(b, Decl(ttttPartialSpreadMethodIsProperty.ts, 2, 13))
+>m : Symbol(m, Decl(ttttPartialSpreadMethodIsProperty.ts, 4, 28))
+

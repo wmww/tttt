@@ -1,6 +1,6 @@
 # Plan 82: optional members' types carry their undefined
-Written by the hacks audit of 2026-10-17. Stage 1 (the investigation) was done 2026-10-18 (todo entry 2) and sized
-stage 2 at **one session**. Stage 3 (tuples and parameters) is also one session, scheduled after the insights entry.
+Written by the hacks audit of 2026-10-17. Stage 1 (the investigation) and stage 2 (properties) were done 2026-10-18.
+Stage 3 (tuples and parameters) is one session, scheduled after the insights entry.
 
 ## The problem
 tttt stores an optional property's type (`Prop.type`, `prop_type()`) and an optional parameter's type
@@ -97,30 +97,32 @@ anyway (`scripts/instrcount.sh`).
 - **Parameters and tuples go in stage 3**, not stage 2: they're a separate representation (SigParam,
   TupleShape.flags), and stage 2 is already a full session.
 
-## Stage 2: properties (one session)
-1. Construct sites (inventory below): `prop_type_slow()`'s store for declared props (interface/type-literal members
-   via `builder_add_interface_member()`, class fields/methods/parameter properties via `builder_add_class_items()`,
-   optional object-literal methods via `check_object()`), `instantiated_prop_type()` (mapped rule),
-   `widen_object_literal()`'s undefined stand-in (store `ty_undefined_or_missing()` instead of `never` under exact:
-   a hack today), and FoundProp's union/intersection branches. Spreads (expr.c `spread_props_of()`/`spread_into()`)
-   store the read type under exact too and use tsc's getSpreadType rule.
-   `resolve_reverse_mapped_members()` already adds it for its source props: verify it becomes a no-op.
-2. Bare-reliant readers, mostly the exact-mode ones that deliberately compared bare types. They get
-   `prop_non_missing_type()` or `ty_remove_missing()`:
-   - relate.c: `props_related_impl()` (2876-2884), `related_to_discriminated()` (4915, 4953, 5003-5022),
-     `intersection_props_related()`, `index_signatures_related()` (3140-3150: NEUndefined for string keys under
-     non-exact, as now), `identity_prop_type()`
-   - infer.c: `infer_from_objects()` (1203-1215, and its index part 1253: removeMissingOrUndefined)
-   - check.c: `ty_check_index_constraints()` (4488), `heritage_prop_type()`/`ty_check_heritage()` (919/970: they add a
-     plain undefined even under exact; tsc's type has missing)
-   - checker.c: `is_reducible_intersection()` (3239)
-   - iterate.c: `property_type()`. `value_of`'s `value?:` then includes undefined, which is tsc's behaviour, a change.
-   - ty_display.c: `display_structure()`'s `ty_without_undefined(type) == type` add (5506, 5605: becomes the missing
-     strip). Optional methods: strip Undefined before printing as a method.
-   - the reverse-mapped `reverse_declared` comparison in `prop_type_slow()`.
-3. The cross-check pass, then delete the reader adds. The idempotent adders stay only for tuple elements and
-   parameters until stage 3.
-4. Delete hacks.md's "Optional property types lack their undefined" entry.
+## Stage 2: properties (done 2026-10-18)
+`prop_type()` is tsc's getTypeOfSymbol for properties. What was done, and what differed from the plan:
+- **Construct sites**: `prop_type_slow()` adds for a declared optional prop (`ty_optional_param_type()`, a real
+  undefined, for a parameter property), not for PROP_PATTERN_OPTIONAL. `instantiated_prop_type()` applies
+  getTypeOfMappedSymbol when its target is a mapped template (`Prop.is_template`, set on the three template props in
+  members.c): add unless the type may be undefined/void, else StripOptional; a plain instantiation inherits. Optional
+  object-literal methods add in `check_object()`. Partial spreads add `ty_optional_prop_type()` (missing under exact),
+  exact spreads keep the read type, `spread_into()` uses removeMissingOrUndefined on both sides.
+  `widen_object_literal()`'s stand-in is `ty_undefined_or_missing()`.
+- **Binding-pattern props were already right**: `binding_element_implied_type()` adds a real undefined for an
+  initialized element, which is tsgo's getTypeFromBindingElement (`addOptionality`), so they did *not* need the
+  PROP_PATTERN_OPTIONAL flag the plan proposed (tsc prints `{ a?: number | undefined }` for them).
+- **FoundProp**: `find_prop_in()`'s intersection branch intersects the read types; the react-select collapse, the
+  per-part adds and the `keeps_undefined` drop are gone, and so is `intersection_prop_type()`'s add. The predicted
+  tiptap TS2590 is checked by the source sweep (see the commit).
+- **Readers**: relations (`props_related_impl()`, the discriminated paths, `intersection_props_related()`, identity),
+  inference (removeMissing; index part removeMissingOrUndefined), index constraints (both sides) and the printer take
+  missing out. The printer takes an optional method's signatures from its type without undefined (structure, pseudo
+  member, the harness's method lines). Heritage checks, discriminators, `prop_or_index_type()`, reverse mapped
+  sources, flow's dotted names and access read the stored type.
+- **Cross-check**: `TTTT_CHECK_OPTIONALITY` fired only where tsc keeps the type bare too (destructuring-default
+  props; `typeof globalThis & { x?: T }`, whose namespace variable has no say), on the suite and every corpus; the
+  helper and every reader add are deleted. `optional_adds_undefined()` is gone.
+- Left as is: the annotation-based adds (class fields' contextual/declared types, interface members, computed index
+  signatures from AST types), `optional_type()` comparisons in `spread_props_of()`'s annotation reuse (normalizing,
+  correct either way), `is_reducible_intersection()` strips an optional literal's undefined (hacks.md).
 
 ## Stage 3: tuples and parameters (one session, after the insights entry)
 - **Tuples**: put addOptionality in the tuple normalizer (`normalized_tuple()` and the builder in checker.c: tsc's
@@ -147,7 +149,7 @@ Per stage:
 - instructions within ~3% (`scripts/instrcount.sh`; effect is the one to watch).
 - the hacks.md entries deleted.
 
-## Inventory (stage 1, 2026-10-18; line numbers at 68076fd5)
+## Inventory (stage 1, 2026-10-18; line numbers at 68076fd5, stale since stage 2)
 ~140 sites. READ ~27 (all become no-ops). WRITE ~5 (already `ty_remove_missing`). DISPLAY ~18 (no-ops without exact;
 the strip in `display_structure()` with it). RELATION ~30 (no-ops without exact; ~7 exact-mode sites need the strip,
 listed in stage 2). CONSTRUCT ~37 (~10 must add, 4 keep bare, the rest already tsc-shaped or copies). The rest are

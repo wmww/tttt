@@ -1557,6 +1557,7 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
             // `{ name?: X } & { name: undefined }` the property is required and `undefined`, not `X & undefined`
             ret.type = ty_intersection(me, parts, len, nullptr, (TyList){0});
             ret.flags = flags | (all_optional && any_member ? PROP_OPTIONAL : 0);
+            ret.synthetic = len > 1;
         }
         if (parts != stack_buf) free(parts);
         FoundProp* memo = arena_new(&my arena, FoundProp);
@@ -2757,9 +2758,7 @@ static Ternary props_related_impl(
         // The same property (tsc's `sourceProp !== targetProp`): a member a derived class inherits against its base.
         // (Not an intersection's property combined from several members: tsc's is a synthetic symbol, `IC & V`'s
         // `reference` against IC's own)
-        if (source_prop.found && source_prop.prop == target_prop &&
-            (source->kind != TY_INTERSECTION || !source_prop.type || source_prop.type == prop_type(me, target_prop))
-        ) {
+        if (source_prop.found && source_prop.prop == target_prop && !source_prop.synthetic) {
             continue;
         }
         if (!source_prop.found) {

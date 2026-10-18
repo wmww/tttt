@@ -1,0 +1,21 @@
+ttttIntersectionInheritedPropExactOptional.ts(8,7): error TS2375: Type 'Cont & V' is not assignable to type 'Expr' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'type' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+
+
+==== ttttIntersectionInheritedPropExactOptional.ts (1 errors) ====
+    // An intersection's property that two members have is a property of its own, even when the target inherits one of
+    // them: `Cont & V`'s `type` is `string | undefined` against Expr's (Cont's) `type?: string` (vscode's
+    // `IExpressionContainer & Variable` after `instanceof`)
+    interface Cont { readonly type?: string; }
+    interface Expr extends Cont { name: string; }
+    class V { name = ""; type: string | undefined = ""; }
+    declare const x: Cont & V;
+    const e: Expr = x;
+          ~
+!!! error TS2375: Type 'Cont & V' is not assignable to type 'Expr' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2375:   Types of property 'type' are incompatible.
+!!! error TS2375:     Type 'string | undefined' is not assignable to type 'string'.
+!!! error TS2375:       Type 'undefined' is not assignable to type 'string'.
+    

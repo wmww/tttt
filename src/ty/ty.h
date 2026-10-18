@@ -495,7 +495,7 @@ typedef struct TyDeferredRef {
 } TyDeferredRef;
 
 typedef enum PropFlags {
-    PROP_OPTIONAL = 1 << 0,
+    PROP_OPTIONAL = 1 << 0, // Its type has undefined (tsc's addOptionality): see prop_type()
     PROP_READONLY = 1 << 1,
     PROP_METHOD   = 1 << 2,
     PROP_STRIP_UNDEFINED = 1 << 3, // `-?` made it required: undefined is taken out of its type (tsc's StripOptional)
@@ -515,7 +515,7 @@ typedef enum PropFlags {
     PROP_SET_PRIVATE = 1 << 11,
     PROP_SET_PROTECTED = 1 << 12,
     // Optional because a destructuring pattern's element has a default (`{ x = 1 } = a`): tsc only sets the flag, the
-    // type doesn't get undefined added like a declared `x?: T` (which tttt adds when printing)
+    // type doesn't get undefined added like a declared `x?: T`
     PROP_PATTERN_OPTIONAL = 1 << 13,
     PROP_PROTOTYPE = 1 << 14, // A class's `prototype` (tsc's SymbolFlags.Prototype): relations skip it as a target
     PROP_CLASS_GETTER = 1 << 15, // A class accessor with a getter (tsc's SymbolFlags.GetAccessor, PROP_GETTER for literals)
@@ -950,8 +950,9 @@ typedef enum TyIntrinsic {
     TY_CIRCULAR,
     TY_UNKNOWN_,
     TY_UNDEFINED,
-    // tsc's missingType: the undefined an optional property or tuple element adds under exactOptionalPropertyTypes
-    // (and only then: ty_undefined_or_missing()), which the property's declared-type view takes out again
+    // tsc's missingType: the undefined an optional property's or tuple element's type has under
+    // exactOptionalPropertyTypes (and only then: ty_undefined_or_missing()), which getNonMissingTypeOfSymbol takes out
+    // (ty_remove_missing())
     TY_MISSING,
     // tsc's optionalType: the undefined of an optional chain that ended (`a?.b` in `a?.b.c`), which only the rest of the
     // chain sees: it takes that out again and adds a plain undefined at the chain's end (ty_optional_expression_type())

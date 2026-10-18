@@ -1,0 +1,10 @@
+// @strict: true
+// @exactOptionalPropertyTypes: true
+// An intersection's property that two members have is a property of its own, even when the target inherits one of
+// them: `Cont & V`'s `type` is `string | undefined` against Expr's (Cont's) `type?: string` (vscode's
+// `IExpressionContainer & Variable` after `instanceof`)
+interface Cont { readonly type?: string; }
+interface Expr extends Cont { name: string; }
+class V { name = ""; type: string | undefined = ""; }
+declare const x: Cont & V;
+const e: Expr = x;

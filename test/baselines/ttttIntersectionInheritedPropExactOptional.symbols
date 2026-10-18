@@ -1,0 +1,30 @@
+//// [test/cases/ttttIntersectionInheritedPropExactOptional.ts] ////
+
+=== ttttIntersectionInheritedPropExactOptional.ts ===
+// An intersection's property that two members have is a property of its own, even when the target inherits one of
+// them: `Cont & V`'s `type` is `string | undefined` against Expr's (Cont's) `type?: string` (vscode's
+// `IExpressionContainer & Variable` after `instanceof`)
+interface Cont { readonly type?: string; }
+>Cont : Symbol(Cont, Decl(ttttIntersectionInheritedPropExactOptional.ts, 0, 0))
+>type : Symbol(Cont.type, Decl(ttttIntersectionInheritedPropExactOptional.ts, 3, 16))
+
+interface Expr extends Cont { name: string; }
+>Expr : Symbol(Expr, Decl(ttttIntersectionInheritedPropExactOptional.ts, 3, 42))
+>Cont : Symbol(Cont, Decl(ttttIntersectionInheritedPropExactOptional.ts, 0, 0))
+>name : Symbol(Expr.name, Decl(ttttIntersectionInheritedPropExactOptional.ts, 4, 29))
+
+class V { name = ""; type: string | undefined = ""; }
+>V : Symbol(V, Decl(ttttIntersectionInheritedPropExactOptional.ts, 4, 45))
+>name : Symbol(V.name, Decl(ttttIntersectionInheritedPropExactOptional.ts, 5, 9))
+>type : Symbol(V.type, Decl(ttttIntersectionInheritedPropExactOptional.ts, 5, 20))
+
+declare const x: Cont & V;
+>x : Symbol(x, Decl(ttttIntersectionInheritedPropExactOptional.ts, 6, 13))
+>Cont : Symbol(Cont, Decl(ttttIntersectionInheritedPropExactOptional.ts, 0, 0))
+>V : Symbol(V, Decl(ttttIntersectionInheritedPropExactOptional.ts, 4, 45))
+
+const e: Expr = x;
+>e : Symbol(e, Decl(ttttIntersectionInheritedPropExactOptional.ts, 7, 5))
+>Expr : Symbol(Expr, Decl(ttttIntersectionInheritedPropExactOptional.ts, 3, 42))
+>x : Symbol(x, Decl(ttttIntersectionInheritedPropExactOptional.ts, 6, 13))
+

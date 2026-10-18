@@ -1,0 +1,36 @@
+//// [test/cases/ttttPartialSpreadMethodIsProperty.ts] ////
+
+=== ttttPartialSpreadMethodIsProperty.ts ===
+// A method spread from one branch of a conditional is an optional property, not an optional method (tsc's
+// tryMergeUnionOfObjectTypeAndEmptyObject; better-auth's get-id-field.ts)
+declare const b: boolean;
+>b : boolean
+
+export const f = () => ({ a: 1, ...(b ? { m() { return 1; }, n: "" } : {}) });
+>f : () => { a: number; m?: (() => number) | undefined; n?: string | undefined; }
+>() => ({ a: 1, ...(b ? { m() { return 1; }, n: "" } : {}) }) : () => { a: number; m?: (() => number) | undefined; n?: string | undefined; }
+>({ a: 1, ...(b ? { m() { return 1; }, n: "" } : {}) }) : { a: number; m?: (() => number) | undefined; n?: string | undefined; }
+>{ a: 1, ...(b ? { m() { return 1; }, n: "" } : {}) } : { a: number; m?: (() => number) | undefined; n?: string | undefined; }
+>a : number
+>1 : 1
+>(b ? { m() { return 1; }, n: "" } : {}) : { m(): number; n: string; } | {}
+>b ? { m() { return 1; }, n: "" } : {} : { m(): number; n: string; } | {}
+>b : boolean
+>{ m() { return 1; }, n: "" } : { m(): number; n: string; }
+>m : () => number
+>1 : 1
+>n : string
+>"" : ""
+>{} : {}
+
+export const g = { ...(b ? { m(): string | undefined { return ""; } } : {}) };
+>g : { m?: (() => string | undefined) | undefined; }
+>{ ...(b ? { m(): string | undefined { return ""; } } : {}) } : { m?: (() => string | undefined) | undefined; }
+>(b ? { m(): string | undefined { return ""; } } : {}) : { m(): string | undefined; } | {}
+>b ? { m(): string | undefined { return ""; } } : {} : { m(): string | undefined; } | {}
+>b : boolean
+>{ m(): string | undefined { return ""; } } : { m(): string | undefined; }
+>m : () => string | undefined
+>"" : ""
+>{} : {}
+

@@ -1,0 +1,35 @@
+//// [test/cases/ttttPartialSpreadExactOptionalAnnotation.ts] ////
+
+=== ttttPartialSpreadExactOptionalAnnotation.ts ===
+// A partial spread's properties keep their annotations under exactOptionalPropertyTypes, whose missing type the
+// printer takes out (vscode's agentHostTelemetryReporter)
+export interface Ctx {
+>Ctx : Symbol(Ctx, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 0, 0))
+
+    readonly state: 'signedIn' | 'signedOut' | 'unknown';
+>state : Symbol(Ctx.state, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 2, 22))
+
+    readonly week: 'available' | 'unavailable' | 'missing' | 'nonWeekly' | 'stale' | 'expired' | 'invalid';
+>week : Symbol(Ctx.week, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 3, 57))
+}
+declare function get(c: Ctx | undefined): Ctx | undefined;
+>get : Symbol(get, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 5, 1))
+>c : Symbol(c, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 6, 21))
+>Ctx : Symbol(Ctx, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 0, 0))
+>Ctx : Symbol(Ctx, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 0, 0))
+
+declare const b: boolean;
+>b : Symbol(b, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 7, 13))
+
+declare const c: Ctx;
+>c : Symbol(c, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 8, 13))
+>Ctx : Symbol(Ctx, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 0, 0))
+
+export const r = { ...(b ? get(c) : undefined), x: 1 };
+>r : Symbol(r, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 9, 12))
+>b : Symbol(b, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 7, 13))
+>get : Symbol(get, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 5, 1))
+>c : Symbol(c, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 8, 13))
+>undefined : Symbol(undefined)
+>x : Symbol(x, Decl(ttttPartialSpreadExactOptionalAnnotation.ts, 9, 47))
+

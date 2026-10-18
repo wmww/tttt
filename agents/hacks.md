@@ -211,7 +211,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `ty_merged_value_type`: a second `Ty` beside the unmerged one (`ty_static_type_of`, what static `this` sees). Correct:
   one type per merged symbol (tsc's getTypeOfFuncClassEnumModule).
 - Optional parameters are `T` in the signature, `| undefined` added at use (`value_entry_type()`,
-  `ty_optional_param_type()`); tsc's parameter type has it (addOptionality). Same root as optional properties below (plan 82).
+  `ty_optional_param_type()`); tsc's parameter type has it (addOptionality). Properties carry theirs since plan 82 stage 2;
+  parameters and tuple elements are its stage 3.
 - `ty_report_pattern_iterable()`: TS2318 'Iterable' gated on an array/object literal initializer because tttt computes
   the pattern's contextual type eagerly (tsc's createIterableType only when asked).
 
@@ -312,14 +313,9 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   error reports run plainly first, like tsc's. One one-run caller still runs plainly first: the static side
   (`ty_check_static_heritage`, TS2417: it relates to each intersection member plainly to name the one that fails, which
   tsc's single run does inside typeRelatedToEachType).
-- **Optional property types lack their undefined** (`find_prop()`/`find_prop_in()`, also optional parameters above):
-  readers add it; tsc's getTypeOfSymbol has it. All-optional intersection parts intersect read types only when one has
-  undefined and all are one type (react-select), not under exactOptionalPropertyTypes; a non-member part (`typeof f &
-  { m?: X }`) drops PROP_OPTIONAL (required as a target). Always intersecting read types (tsc) is clean except a spurious
-  TS2590 in tiptap/demos' NodeViewContent.tsx:19 (a part differing in identity). Correct: types that carry undefined (plan 82).
-  Tuple elements, partial spreads and union signatures already carry it, declared/mapped props and SigParams don't:
-  readers only work because the adds are idempotent. `widen_object_literal()` stores `never` under exact so readers
-  make it missing.
+- `is_reducible_intersection()` (checker.c) looks for a literal property against a type parameter one in the shape
+  tsc's never-filled instantiation would reduce; an optional literal's undefined is stripped first (as before plan 82),
+  where tsc's getReducedType would reduce through `"a" | undefined` too. Correct: getUniqueLiteralFilledInstantiation.
 - `conditional_source_related()` relates the distributive constraint without tsc's hasNonCircularBaseConstraint(source)
   gate: computing it inside an alias's resolution gives spurious TS2456 (type-fest's `_ConditionalPickDeep`, crawlee).
   Correct: lazier alias references, or the gate after the alias resolves. Its default-constraint step also pushes the
