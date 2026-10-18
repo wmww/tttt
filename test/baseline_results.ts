@@ -1663,6 +1663,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTruncationReadonlyReused': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTupleMissingPropertiesElaboration': {
         errors: true,
         symbols: true,

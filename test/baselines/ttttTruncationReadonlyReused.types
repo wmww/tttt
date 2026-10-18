@@ -1,0 +1,87 @@
+//// [test/cases/ttttTruncationReadonlyReused.ts] ////
+
+=== ttttTruncationReadonlyReused.ts ===
+// A readonly property printed from its declaration's syntax still counts its modifier towards the truncation length
+// (tsc's addPropertyToElementList: an `as const` literal's members, inbox-zero's error.test.ts)
+function make() {
+>make : () => { readonly attempted: true; readonly successful: false; readonly label: "Categorize sender"; readonly provider: "openai"; readonly model: "gpt-test"; readonly inputLength: 12; readonly inputFingerprint: "abc123"; readonly startsWithQuote: true; readonly startsWithBrace: false; readonly startsWithBracket: false; readonly looksCodeFenced: false; readonly candidateKindsTried: readonly ["trimmed", "original"]; }
+
+  return {
+>{    attempted: true,    successful: false,    label: "Categorize sender",    provider: "openai",    model: "gpt-test",    inputLength: 12,    inputFingerprint: "abc123",    startsWithQuote: true,    startsWithBrace: false,    startsWithBracket: false,    looksCodeFenced: false,    candidateKindsTried: ["trimmed", "original"],  } as const : { readonly attempted: true; readonly successful: false; readonly label: "Categorize sender"; readonly provider: "openai"; readonly model: "gpt-test"; readonly inputLength: 12; readonly inputFingerprint: "abc123"; readonly startsWithQuote: true; readonly startsWithBrace: false; readonly startsWithBracket: false; readonly looksCodeFenced: false; readonly candidateKindsTried: readonly ["trimmed", "original"]; }
+>{    attempted: true,    successful: false,    label: "Categorize sender",    provider: "openai",    model: "gpt-test",    inputLength: 12,    inputFingerprint: "abc123",    startsWithQuote: true,    startsWithBrace: false,    startsWithBracket: false,    looksCodeFenced: false,    candidateKindsTried: ["trimmed", "original"],  } : { readonly attempted: true; readonly successful: false; readonly label: "Categorize sender"; readonly provider: "openai"; readonly model: "gpt-test"; readonly inputLength: 12; readonly inputFingerprint: "abc123"; readonly startsWithQuote: true; readonly startsWithBrace: false; readonly startsWithBracket: false; readonly looksCodeFenced: false; readonly candidateKindsTried: readonly ["trimmed", "original"]; }
+
+    attempted: true,
+>attempted : true
+>true : true
+
+    successful: false,
+>successful : false
+>false : false
+
+    label: "Categorize sender",
+>label : "Categorize sender"
+>"Categorize sender" : "Categorize sender"
+
+    provider: "openai",
+>provider : "openai"
+>"openai" : "openai"
+
+    model: "gpt-test",
+>model : "gpt-test"
+>"gpt-test" : "gpt-test"
+
+    inputLength: 12,
+>inputLength : 12
+>12 : 12
+
+    inputFingerprint: "abc123",
+>inputFingerprint : "abc123"
+>"abc123" : "abc123"
+
+    startsWithQuote: true,
+>startsWithQuote : true
+>true : true
+
+    startsWithBrace: false,
+>startsWithBrace : false
+>false : false
+
+    startsWithBracket: false,
+>startsWithBracket : false
+>false : false
+
+    looksCodeFenced: false,
+>looksCodeFenced : false
+>false : false
+
+    candidateKindsTried: ["trimmed", "original"],
+>candidateKindsTried : readonly ["trimmed", "original"]
+>["trimmed", "original"] : readonly ["trimmed", "original"]
+>"trimmed" : "trimmed"
+>"original" : "original"
+
+  } as const;
+}
+interface M { candidateKindsTried: string[] }
+>candidateKindsTried : string[]
+
+declare function take(m: M): void;
+>take : (m: M) => void
+>m : M
+
+take(make());
+>take(make()) : void
+>take : (m: M) => void
+>make() : { readonly attempted: true; readonly successful: false; readonly label: "Categorize sender"; readonly provider: "openai"; readonly model: "gpt-test"; readonly inputLength: 12; readonly inputFingerprint: "abc123"; readonly startsWithQuote: true; readonly startsWithBrace: false; readonly startsWithBracket: false; readonly looksCodeFenced: false; readonly candidateKindsTried: readonly ["trimmed", "original"]; }
+>make : () => { readonly attempted: true; readonly successful: false; readonly label: "Categorize sender"; readonly provider: "openai"; readonly model: "gpt-test"; readonly inputLength: 12; readonly inputFingerprint: "abc123"; readonly startsWithQuote: true; readonly startsWithBrace: false; readonly startsWithBracket: false; readonly looksCodeFenced: false; readonly candidateKindsTried: readonly ["trimmed", "original"]; }
+
+const x = make();
+>x : { readonly attempted: true; readonly successful: false; readonly label: "Categorize sender"; readonly provider: "openai"; readonly model: "gpt-test"; readonly inputLength: 12; readonly inputFingerprint: "abc123"; readonly startsWithQuote: true; readonly startsWithBrace: false; readonly startsWithBracket: false; readonly looksCodeFenced: false; readonly candidateKindsTried: readonly ["trimmed", "original"]; }
+>make() : { readonly attempted: true; readonly successful: false; readonly label: "Categorize sender"; readonly provider: "openai"; readonly model: "gpt-test"; readonly inputLength: 12; readonly inputFingerprint: "abc123"; readonly startsWithQuote: true; readonly startsWithBrace: false; readonly startsWithBracket: false; readonly looksCodeFenced: false; readonly candidateKindsTried: readonly ["trimmed", "original"]; }
+>make : () => { readonly attempted: true; readonly successful: false; readonly label: "Categorize sender"; readonly provider: "openai"; readonly model: "gpt-test"; readonly inputLength: 12; readonly inputFingerprint: "abc123"; readonly startsWithQuote: true; readonly startsWithBrace: false; readonly startsWithBracket: false; readonly looksCodeFenced: false; readonly candidateKindsTried: readonly ["trimmed", "original"]; }
+
+take(x);
+>take(x) : void
+>take : (m: M) => void
+>x : { readonly attempted: true; readonly successful: false; readonly label: "Categorize sender"; readonly provider: "openai"; readonly model: "gpt-test"; readonly inputLength: 12; readonly inputFingerprint: "abc123"; readonly startsWithQuote: true; readonly startsWithBrace: false; readonly startsWithBracket: false; readonly looksCodeFenced: false; readonly candidateKindsTried: readonly ["trimmed", "original"]; }
+

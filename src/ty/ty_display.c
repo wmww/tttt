@@ -5912,7 +5912,11 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             PseudoReporter storage;
             if (pseudo_equivalent(me, d, pseudo, item_type, false, display_reporter(d, &storage))) {
                 member_begin_node(d, prop_comment_span(d, prop, 0));
-                if (prop->flags & PROP_READONLY) out_lit(d, "readonly ");
+                // (tsc's addPropertyToElementList counts the modifier whatever prints the type)
+                if (prop->flags & PROP_READONLY) {
+                    approx_add(d, 9);
+                    out_lit(d, "readonly ");
+                }
                 TyDisplay name_d = d;
                 name_d.tracker = nullptr; // (named from its own declaration, see track_property())
                 display_member_name(me, name_d, prop);

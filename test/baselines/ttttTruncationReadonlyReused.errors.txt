@@ -1,0 +1,41 @@
+ttttTruncationReadonlyReused.ts(21,6): error TS2345: Argument of type '{ readonly attempted: true; readonly successful: false; readonly label: "Categorize sender"; readonly provider: "openai"; readonly model: "gpt-test"; readonly inputLength: 12; readonly inputFingerprint: "abc123"; ... 4 more ...; readonly candidateKindsTried: readonly ["trimmed", "original"]; }' is not assignable to parameter of type 'M'.
+  Types of property 'candidateKindsTried' are incompatible.
+    The type 'readonly ["trimmed", "original"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+ttttTruncationReadonlyReused.ts(23,6): error TS2345: Argument of type '{ readonly attempted: true; readonly successful: false; readonly label: "Categorize sender"; readonly provider: "openai"; readonly model: "gpt-test"; readonly inputLength: 12; readonly inputFingerprint: "abc123"; ... 4 more ...; readonly candidateKindsTried: readonly ["trimmed", "original"]; }' is not assignable to parameter of type 'M'.
+  Types of property 'candidateKindsTried' are incompatible.
+    The type 'readonly ["trimmed", "original"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+
+
+==== ttttTruncationReadonlyReused.ts (2 errors) ====
+    // A readonly property printed from its declaration's syntax still counts its modifier towards the truncation length
+    // (tsc's addPropertyToElementList: an `as const` literal's members, inbox-zero's error.test.ts)
+    function make() {
+      return {
+        attempted: true,
+        successful: false,
+        label: "Categorize sender",
+        provider: "openai",
+        model: "gpt-test",
+        inputLength: 12,
+        inputFingerprint: "abc123",
+        startsWithQuote: true,
+        startsWithBrace: false,
+        startsWithBracket: false,
+        looksCodeFenced: false,
+        candidateKindsTried: ["trimmed", "original"],
+      } as const;
+    }
+    interface M { candidateKindsTried: string[] }
+    declare function take(m: M): void;
+    take(make());
+         ~~~~~~
+!!! error TS2345: Argument of type '{ readonly attempted: true; readonly successful: false; readonly label: "Categorize sender"; readonly provider: "openai"; readonly model: "gpt-test"; readonly inputLength: 12; readonly inputFingerprint: "abc123"; ... 4 more ...; readonly candidateKindsTried: readonly ["trimmed", "original"]; }' is not assignable to parameter of type 'M'.
+!!! error TS2345:   Types of property 'candidateKindsTried' are incompatible.
+!!! error TS2345:     The type 'readonly ["trimmed", "original"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+    const x = make();
+    take(x);
+         ~
+!!! error TS2345: Argument of type '{ readonly attempted: true; readonly successful: false; readonly label: "Categorize sender"; readonly provider: "openai"; readonly model: "gpt-test"; readonly inputLength: 12; readonly inputFingerprint: "abc123"; ... 4 more ...; readonly candidateKindsTried: readonly ["trimmed", "original"]; }' is not assignable to parameter of type 'M'.
+!!! error TS2345:   Types of property 'candidateKindsTried' are incompatible.
+!!! error TS2345:     The type 'readonly ["trimmed", "original"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+    

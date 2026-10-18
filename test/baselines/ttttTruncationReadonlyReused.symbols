@@ -1,0 +1,69 @@
+//// [test/cases/ttttTruncationReadonlyReused.ts] ////
+
+=== ttttTruncationReadonlyReused.ts ===
+// A readonly property printed from its declaration's syntax still counts its modifier towards the truncation length
+// (tsc's addPropertyToElementList: an `as const` literal's members, inbox-zero's error.test.ts)
+function make() {
+>make : Symbol(make, Decl(ttttTruncationReadonlyReused.ts, 0, 0))
+
+  return {
+    attempted: true,
+>attempted : Symbol(attempted, Decl(ttttTruncationReadonlyReused.ts, 3, 10))
+
+    successful: false,
+>successful : Symbol(successful, Decl(ttttTruncationReadonlyReused.ts, 4, 20))
+
+    label: "Categorize sender",
+>label : Symbol(label, Decl(ttttTruncationReadonlyReused.ts, 5, 22))
+
+    provider: "openai",
+>provider : Symbol(provider, Decl(ttttTruncationReadonlyReused.ts, 6, 31))
+
+    model: "gpt-test",
+>model : Symbol(model, Decl(ttttTruncationReadonlyReused.ts, 7, 23))
+
+    inputLength: 12,
+>inputLength : Symbol(inputLength, Decl(ttttTruncationReadonlyReused.ts, 8, 22))
+
+    inputFingerprint: "abc123",
+>inputFingerprint : Symbol(inputFingerprint, Decl(ttttTruncationReadonlyReused.ts, 9, 20))
+
+    startsWithQuote: true,
+>startsWithQuote : Symbol(startsWithQuote, Decl(ttttTruncationReadonlyReused.ts, 10, 31))
+
+    startsWithBrace: false,
+>startsWithBrace : Symbol(startsWithBrace, Decl(ttttTruncationReadonlyReused.ts, 11, 26))
+
+    startsWithBracket: false,
+>startsWithBracket : Symbol(startsWithBracket, Decl(ttttTruncationReadonlyReused.ts, 12, 27))
+
+    looksCodeFenced: false,
+>looksCodeFenced : Symbol(looksCodeFenced, Decl(ttttTruncationReadonlyReused.ts, 13, 29))
+
+    candidateKindsTried: ["trimmed", "original"],
+>candidateKindsTried : Symbol(candidateKindsTried, Decl(ttttTruncationReadonlyReused.ts, 14, 27))
+
+  } as const;
+>const : Symbol(const)
+}
+interface M { candidateKindsTried: string[] }
+>M : Symbol(M, Decl(ttttTruncationReadonlyReused.ts, 17, 1))
+>candidateKindsTried : Symbol(M.candidateKindsTried, Decl(ttttTruncationReadonlyReused.ts, 18, 13))
+
+declare function take(m: M): void;
+>take : Symbol(take, Decl(ttttTruncationReadonlyReused.ts, 18, 45))
+>m : Symbol(m, Decl(ttttTruncationReadonlyReused.ts, 19, 22))
+>M : Symbol(M, Decl(ttttTruncationReadonlyReused.ts, 17, 1))
+
+take(make());
+>take : Symbol(take, Decl(ttttTruncationReadonlyReused.ts, 18, 45))
+>make : Symbol(make, Decl(ttttTruncationReadonlyReused.ts, 0, 0))
+
+const x = make();
+>x : Symbol(x, Decl(ttttTruncationReadonlyReused.ts, 21, 5))
+>make : Symbol(make, Decl(ttttTruncationReadonlyReused.ts, 0, 0))
+
+take(x);
+>take : Symbol(take, Decl(ttttTruncationReadonlyReused.ts, 18, 45))
+>x : Symbol(x, Decl(ttttTruncationReadonlyReused.ts, 21, 5))
+
