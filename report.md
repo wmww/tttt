@@ -380,3 +380,29 @@ tsgo's two-phase program load. It also includes a fan-out on declaration emit (o
 second refresh of fresh repositories aimed at libraries and checkJs projects, and a perf session. **A question for
 you**: memory was "first, features later". Now that memory is done, should `--watch`/`--incremental` (plan 76, parked)
 come back?
+
+## 2026-10-18 — insights (after the twenty-first window)
+This window paid down debt, and it worked. Three representation hacks are gone, each replaced by the rule tsc
+actually uses: optional properties now carry their `undefined`, member resolution can be re-entered, and files are
+collected in two phases the way TypeScript 7 does it. The deferred-body memory leak is fixed. A second batch of 22
+fresh repositories (libraries that emit declarations, and checkJs JavaScript) matched TypeScript 7 on 97.1% of their
+projects on day one. The suite is at 13833 / 13869, and every other oracle held.
+
+Your point about "saturated" oracles was right. Message text is now an oracle of its own: tttt's whole CLI output
+compared byte for byte with tsc's on every corpus and source-sweep project. 3612 / 3675 projects match exactly; 54
+differ only in message text and 9 in their diagnostics. webpack and drizzle now print tsc's exact bytes. That number
+will sit in this report next to the others. Declaration emit is at 1244 / 1274 projects, and 6 of the 30 that differ
+come from tsgo's own multi-checker split.
+
+Your 12-core numbers answered the open question, and the answer is uncomfortable. tttt is the fastest tool on every
+corpus, at the defaults and single-threaded. Single-threaded it uses 2-2.5x less CPU than Bun or tsc-rs. But at the
+defaults it spends 3-7x its own single-threaded CPU (drizzle: 6.4 s against 0.85 s), and it uses 1.2-1.8x Bun's
+memory (Bun is lowest on 10 / 14). The cause is that every checker rebuilds the same declared world, and recycling
+makes them rebuild it again. Budget tweaks have been tried five times and only trade memory for CPU. So the next
+window measures re-derivation directly and decides, with a go/no-go gate, whether to build a shared declared layer
+(plan 85). It also sets a many-core checker-count policy and adds a CPU column to the bench. I'll track tsc-rs next to
+Bun from now on: it is a Rust port of tsgo at our pin, matches tsgo's output exactly, and spends the least CPU at its
+defaults, which is precisely our weak spot.
+
+**Still open for you**: whether `--watch`/`--incremental` (plan 76) should come back. Once entry 1 lands, a 12-core
+rerun of the bench with the new CPU column would also help.

@@ -16,4 +16,5 @@ dtsdiff numbers went to bugs/dts_emit.md. The human's two directives and tsc-rs 
   this session; 1245 at entry 7): the "member order" bucket (angular-cli, postiz, ...) is per-checker
   undefinedProperties history, and tttt's defaults assign files to checkers by work stealing, so it's timing-dependent.
   tsgo's own split is deterministic per K (FENNEL). Worth deciding whether dtsdiff should run tttt at `--checkers 1`
-  (comparable to its `--tsc-single` hashes) so the headline stops flickering.
+  (comparable to its `--tsc-single` hashes) so the headline stops flickering. (Insights 2026-10-18: scheduled as
+  todo entry 1(d); a timing-dependent output breaks the byte-identical rule unless it is tsgo's own split.)
