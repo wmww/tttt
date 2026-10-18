@@ -735,10 +735,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
                     me, declared->declared.type_params, declared->declared.outer_count, &identifier->generic_params, ctx, args_buf,
                     identifier_in_js(identifier)
                 );
-                // (Not marked from_type_node, unlike tsc: tttt's signature relations don't instantiate a fresh reference
-                // at each level like tsc's do, so a generic interface reference written in a signature would never nest,
-                // performanceComparisonOfStructurallyIdenticalInterfacesWithGenericSignatures)
-                return ty_reference(me, declared, args);
+                return reference_from_type_node(me, declared, args);
             }
             return declared;
     }

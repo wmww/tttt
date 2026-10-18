@@ -116,6 +116,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttConditionalIdentityInstantiationKeepsDistributed': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttConditionalInferAliasedIntersectionFlattened': {
         errors: true,
         symbols: true,
@@ -745,6 +750,11 @@ const baselines = {
         types: true,
     },
     'ttttDeferredCheckErrorLocation': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDeferredReferenceNormalizedInRelation': {
         errors: true,
         symbols: true,
         types: true,
@@ -1379,6 +1389,11 @@ const baselines = {
         types: true,
     },
     'ttttRecursiveUnionInferenceDepth': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttReferenceFromTypeNodeRecursionIdentity': {
         errors: true,
         symbols: true,
         types: true,

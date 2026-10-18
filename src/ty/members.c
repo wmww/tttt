@@ -3474,11 +3474,23 @@ static void members_in_flight_push(Checker* me, Ty const* ty) {
 // (pushTypeResolution: a declaration's type, an alias, a base constraint...), which the second round finds in flight:
 // tttt's resolving stack, unchanged since the members started. HACK: an approximation, tsc pushes some entries tttt
 // doesn't (a mapped type's constraint from isGenericMappedType)
+// A deferred reference stands for the plain reference of its arguments, which the relation normalizes it to (tsc's
+// getNormalizedType): resolving the plain one's members while the deferred one's are in flight is that second round
+static bool same_reference_members(Checker* me, Ty const* a, Ty const* b) {
+    if (a == b) return true;
+    if (a->kind != TY_REFERENCE || b->kind != TY_REFERENCE || a->reference.target != b->reference.target) return false;
+    if (!a->reference.deferred == !b->reference.deferred) return false;
+    Ty const* deferred = a->reference.deferred ? a : b;
+    if (deferred->reference.deferred->state != LAZY_STATE_DONE) return false;
+    TyList x = ty_reference_args(me, a), y = ty_reference_args(me, b);
+    return x.len == y.len && !memcmp(x.data, y.data, sizeof(Ty const*) * x.len);
+}
+
 static void members_reentered_unguarded(Checker* me, Ty const* ty) {
     if (my eager_probe_reported) return;
     for (u32 i = my eager_probe_floor; i-- > 0;) {
         MembersInFlight const* entry = &my members_in_flight[i];
-        if (entry->ty != ty) continue;
+        if (!same_reference_members(me, entry->ty, ty)) continue;
         if (entry->resolving_len != my resolving_len) return;
         my eager_probe_reported = true;
         // The stack tsc has when it stops: the instantiations since the members started, repeated
@@ -5054,6 +5066,7 @@ Members const* ty_members_resolving(Checker* me, Ty const* ty) {
                 ty_reference_args(me, ty);
                 if (state->members_state != LAZY_STATE_NOT_STARTED) return ty_members(me, ty);
             }
+            if (my eager_probe_depth && ty->kind == TY_REFERENCE && !ty->reference.deferred) members_reentered_unguarded(me, ty);
             state->members_state = LAZY_STATE_IN_FLIGHT;
             if (ty->kind == TY_DECLARED || ty->kind == TY_REFERENCE) {
                 members_in_flight_push(me, ty);

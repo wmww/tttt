@@ -1,0 +1,39 @@
+ttttReferenceFromTypeNodeRecursionIdentity.ts(22,5): error TS2322: Type 'Base<HKT2, false, never>' is not assignable to type 'Base<HKT, false, never>'.
+  The types returned by 'where().$dynamic()' are incompatible between these types.
+    Type 'Dynamic<Base<HKT2, false, "where">>' is not assignable to type 'Dynamic<Base<HKT, false, "where">>'.
+      Type 'HKT' is not assignable to type 'HKT2'.
+        Types of property 'type' are incompatible.
+          Type 'unknown' is not assignable to type 'string[]'.
+
+
+==== ttttReferenceFromTypeNodeRecursionIdentity.ts (1 errors) ====
+    // drizzle-orm's query builders (MySqlUpdateBase): a class or interface reference written in a type annotation is its
+    // own recursion identity (tsgo's ObjectFlags.FromTypeNode), so `x`'s Base<HKT2> doesn't count towards Base's deep
+    // nesting: where()'s Omit<Base<...>> and its $dynamic() aren't deeply nested, and that is where the error is
+    interface HKT { readonly brand: 'HKT'; readonly type: unknown; }
+    interface HKT2 extends HKT { type: string[]; }
+    
+    type Without<T extends AnyBase, D extends boolean, K extends keyof T & string> = D extends true ? T : Omit<
+        Base<T['_']['q'], D, T['_']['excluded'] | K>,
+        T['_']['excluded'] | K
+    >;
+    type Dynamic<T extends AnyBase> = Base<T['_']['q'], true>;
+    type AnyBase = Base<any, any, any>;
+    
+    declare class Base<Q extends HKT, D extends boolean = false, E extends string = never> {
+        readonly _: { readonly q: Q; readonly d: D; readonly excluded: E };
+        f: (x: Q['brand']) => void;
+        where(): Without<this, D, 'where'>;
+        $dynamic(): Dynamic<this>;
+    }
+    
+    declare let x: Base<HKT2>;
+    let y: Base<HKT> = x;
+        ~
+!!! error TS2322: Type 'Base<HKT2, false, never>' is not assignable to type 'Base<HKT, false, never>'.
+!!! error TS2322:   The types returned by 'where().$dynamic()' are incompatible between these types.
+!!! error TS2322:     Type 'Dynamic<Base<HKT2, false, "where">>' is not assignable to type 'Dynamic<Base<HKT, false, "where">>'.
+!!! error TS2322:       Type 'HKT' is not assignable to type 'HKT2'.
+!!! error TS2322:         Types of property 'type' are incompatible.
+!!! error TS2322:           Type 'unknown' is not assignable to type 'string[]'.
+    

@@ -7459,14 +7459,20 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         if (report) report_relation_error(me, st, source, target, top, false);
         return TERNARY_FALSE;
     }
-    // A deferred reference's arguments are resolved here (getNormalizedType: getTypeArguments, where a reference whose
-    // arguments need it is TS4109). Only resolved: making the plain reference cost 1.6% instructions on drizzle
-    if (source->kind == TY_REFERENCE && source->reference.deferred && source->reference.deferred->state != LAZY_STATE_DONE) {
-        ty_reference_args(me, source);
+    // A deferred reference is related as the plain reference of its arguments (getNormalizedType: createTypeReference
+    // of getTypeArguments, where a reference whose arguments need it is TS4109): `Dynamic<this>` (`type Dynamic<T> =
+    // Base<T['q'], true>`) of two different `this` types is one Base<Q, true>, the same pair on the maybe stack and in
+    // the cache, and a Base on the recursion stacks. Errors still name the alias (tsc's reportErrorResults)
+    Ty const* deferred_source = nullptr, *deferred_target = nullptr;
+    if (source->kind == TY_REFERENCE && source->reference.deferred) {
+        deferred_source = source;
+        source = ty_reference(me, source->reference.target, ty_reference_args(me, source));
     }
-    if (target->kind == TY_REFERENCE && target->reference.deferred && target->reference.deferred->state != LAZY_STATE_DONE) {
-        ty_reference_args(me, target);
+    if (target->kind == TY_REFERENCE && target->reference.deferred) {
+        deferred_target = target;
+        target = ty_reference(me, target->reference.target, ty_reference_args(me, target));
     }
+    if (source == target) return TERNARY_TRUE;
     // (And reduced: getNormalizedType's getReducedType)
     Ty const* unreduced_target = target;
     if (source->kind == TY_UNION || source->kind == TY_INTERSECTION) source = ty_reduced(me, source);
@@ -7545,8 +7551,10 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     // (And a class or interface that adds nothing to its base, as written: tsc's reportErrorResults)
     Ty const* report_target = original_target->alias ? original_target : target;
     if (report && unnormalized_target != original_target && ty_non_augmenting_base(me, unnormalized_target)) report_target = unnormalized_target;
+    if (deferred_target && deferred_target->alias) report_target = deferred_target;
     Ty const* report_source = source_has_base || (unnormalized_source->alias && unnormalized_source != source) ?
         unnormalized_source : source;
+    if (deferred_source && deferred_source->alias) report_source = deferred_source;
     // Comparability is mostly bidirectional (tsc's isRelatedTo: simple relations the other way around count too)
     if (st->relation == TY_RELATION_COMPARABLE && !(target->flags & TYF_NEVER) && is_simple_related(me, st, target, source)) {
         return TERNARY_TRUE;

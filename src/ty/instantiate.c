@@ -995,11 +995,17 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
         Ty const** sources = malloc(sizeof(Ty const*) * (len ? len * 2 : 1));
         Ty const** kept = sources + len;
         u32 kept_len = 0;
+        // (Mapping every outer type parameter to itself is the conditional type as written: tsgo seeds
+        // root.instantiations with it, getTypeFromConditionalTypeNode. A derived class's members instantiated for
+        // `this` keep the distributed twins of the conditional types in its base's arguments, which an interface
+        // merged with it then has as well)
+        bool identity = key[0] == KEY_CONDITIONAL_INSTANCE;
+        for (u32 i = 0; i < len && identity; i++) identity = targets[i] == outer->params.data[i];
         for (u32 i = 0; i < len; i++) {
             // (Except for a type parameter with a distributed twin: mapping it to itself maps the twin back to it, as
             // tsgo's newTypeMapper of all the outer type parameters does, plan 57)
             Ty const* param = outer->params.data[i];
-            if (targets[i] == param && !(param->kind == TY_TYPE_PARAM && param->param.state->distributed)) continue;
+            if (targets[i] == param && (identity || !(param->kind == TY_TYPE_PARAM && param->param.state->distributed))) continue;
             sources[kept_len] = outer->params.data[i];
             kept[kept_len++] = targets[i];
         }

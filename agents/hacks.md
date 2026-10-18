@@ -489,12 +489,12 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   syntax in the unwidened type, told syntactically because tttt's tuples/arrays have no fresh twin (tsgo:
   ContainsObjectOrArrayLiteral). A real rule, not an artifact (without it only
   declarationEmitUsingAlternativeContainingModules1/2 lose their types). Correct fix: fresh array/tuple literal types.
-- `reference_from_type_node()` / `recursion_identity()`: ObjectFlags.FromTypeNode is only ported for tuple type nodes;
-  interface/class references written as nodes keep the target identity because signature relations don't instantiate
-  fresh references per level (performanceComparisonOf...Signatures would hit TS2589). Order-dependent like tsc's.
+- `reference_from_type_node()` / `recursion_identity()`: ObjectFlags.FromTypeNode, for tuple, class and interface
+  references made from a type node first. Order-dependent like tsc's (whoever makes the reference first decides).
 - `ty_distributed_type_param()`: tsgo distributes the conditional's own check type node too; tttt keeps the original
   (its `conditional.check ==` identity tests broke 12 tests) and emulates the rest: `conditional_source_related()`
-  maps twins back, `instantiate_conditional()` keeps identity mappings of params with a twin, the identity relation
+  maps twins back, `instantiate_conditional()` keeps identity mappings of params with a twin (unless every outer
+  parameter maps to itself: tsgo's seeded root.instantiations), the identity relation
   treats a twin as its original. Correct: distribute the node and replace the identity tests.
 - `ty_tuple_target()`: all tuple targets share `Checker.tuple_params` (tsgo: fresh per target; type-fest's IntRange
   made 4.5M). Unsound if a type mentions two targets' raw parameters at once. Element props share the read-only

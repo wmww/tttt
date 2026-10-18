@@ -1,0 +1,34 @@
+ttttConditionalIdentityInstantiationKeepsDistributed.ts(9,18): error TS2430: Interface 'Del<R>' incorrectly extends interface 'QP<R extends undefined ? number : R[]>'.
+  The types returned by 'execute()' are incompatible between these types.
+    Type 'Promise<string>' is not assignable to type 'Promise<R extends undefined ? number : R[]>'.
+      Type 'string' is not assignable to type 'R extends undefined ? number : R[]'.
+ttttConditionalIdentityInstantiationKeepsDistributed.ts(11,14): error TS2416: Property 'execute' in type 'Del<R>' is not assignable to the same property in base type 'QP<R extends undefined ? number : R[]>'.
+  Type '() => Promise<string>' is not assignable to type '() => Promise<R extends undefined ? number : R[]>'.
+    Type 'Promise<string>' is not assignable to type 'Promise<R extends undefined ? number : R[]>'.
+      Type 'string' is not assignable to type 'R extends undefined ? number : R[]'.
+
+
+==== ttttConditionalIdentityInstantiationKeepsDistributed.ts (2 errors) ====
+    // drizzle-orm's QueryPromise subclasses (clidiff on drizzle): a conditional type instantiated with every outer type
+    // parameter mapped to itself is the one written (tsgo seeds root.instantiations with it), so the class's members,
+    // instantiated for `this`, keep the distributed R of `R[]`: the inherited fin() is identical to the interface's base's
+    // and the error is about execute()
+    declare abstract class QP<T> {
+        fin(): Promise<T>;
+        abstract execute(): Promise<T>;
+    }
+    export interface Del<R> extends QP<R extends undefined ? number : R[]> {}
+                     ~~~
+!!! error TS2430: Interface 'Del<R>' incorrectly extends interface 'QP<R extends undefined ? number : R[]>'.
+!!! error TS2430:   The types returned by 'execute()' are incompatible between these types.
+!!! error TS2430:     Type 'Promise<string>' is not assignable to type 'Promise<R extends undefined ? number : R[]>'.
+!!! error TS2430:       Type 'string' is not assignable to type 'R extends undefined ? number : R[]'.
+    export class Del<R> extends QP<R extends undefined ? number : R[]> {
+        override execute: () => Promise<string> = undefined!;
+                 ~~~~~~~
+!!! error TS2416: Property 'execute' in type 'Del<R>' is not assignable to the same property in base type 'QP<R extends undefined ? number : R[]>'.
+!!! error TS2416:   Type '() => Promise<string>' is not assignable to type '() => Promise<R extends undefined ? number : R[]>'.
+!!! error TS2416:     Type 'Promise<string>' is not assignable to type 'Promise<R extends undefined ? number : R[]>'.
+!!! error TS2416:       Type 'string' is not assignable to type 'R extends undefined ? number : R[]'.
+    }
+    
