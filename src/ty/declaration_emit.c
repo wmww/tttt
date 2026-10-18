@@ -142,6 +142,7 @@ typedef struct Emitting {
     // `name` is only the message's name, not a node of the declaration (tsgo's errorDeclarationNameWithFallback of a
     // JavaScript `exports.x = e`, whose BinaryExpression has no Name()): the tracker's diagnostics go to `at`
     bool name_not_node;
+    TyPrintedTypes* printed; // Its serializedTypes cache: the walk's printed_types or class_printed_types
 } Emitting;
 
 typedef struct Walk {
@@ -177,6 +178,15 @@ typedef struct Walk {
     // (late painting: tsc's aliasesToMakeVisible and lateMarkedStatements). `painted_done` of them were walked
     Symbol const** painted;
     TyPrintedTypes printed_types; // What the declaration being emitted printed so far (TyDisplay.printed)
+    // tsgo's serializedTypes cache is per enclosing declaration, which a class's property declarations share (the
+    // class: a property isn't an enclosing declaration) and a function's parameters share (the function). The next
+    // emit_enter's owner (printed_next: a function, or &class_printed_types for the class being walked), the owner
+    // printed_types is about, the class being walked and the one class_printed_types is about
+    void const* printed_next;
+    void const* printed_owner;
+    TyPrintedTypes class_printed_types;
+    ClassDecl const* printed_class;
+    ClassDecl const* class_printed_owner;
     u32 painted_count, painted_cap;
     bool* painted_done;
     bool late_pass; // Walking the statements again for painted ones only
@@ -486,8 +496,19 @@ static void report_access(Walk* me, SymbolAccessibility kind, csview symbol_name
 static Emitting emit_enter(Walk* me, EmitKind kind, EmitSig sig, Span name, Span at) {
     Emitting saved = my emitting;
     // (tsgo's serializedTypes cache is per enclosing declaration)
-    if (my printed_types.count) ty_printed_types_clear(&my printed_types);
+    void const* owner = my printed_next;
+    my printed_next = nullptr;
+    TyPrintedTypes* printed = &my printed_types;
+    if (owner == &my class_printed_types) {
+        printed = &my class_printed_types;
+        if (my class_printed_owner != my printed_class && printed->count) ty_printed_types_clear(printed);
+        my class_printed_owner = my printed_class;
+    } else {
+        if ((!owner || owner != my printed_owner) && printed->count) ty_printed_types_clear(printed);
+        my printed_owner = owner;
+    }
     my emitting = (Emitting){
+        .printed = printed,
         .kind = kind, .sig = sig, .is_static = my member_static, .in_class = my member_in_class, .name = name,
         .at = span_valid(at) ? at : name,
     };
@@ -1704,6 +1725,7 @@ static void check_declaration_parameters(Walk* me, FunctionImpl const* fn, EmitS
     my root = (Root){ .kind = ROOT_FUNCTION, .function = fn };
     for_each (i, vec_function_arg, &fn->args) {
         Span name = i->initializer.binding.content_span;
+        my printed_next = fn;
         Emitting saved = emit_enter(me, EMIT_PARAMETER, sig, name, name);
         check_pattern_keys(me, &i->initializer.binding);
         serialize_parameter(me, fn, i, true);
@@ -2067,6 +2089,7 @@ static void find_setter(ClassDecl const* cls, ClassItem const* getter, Accessors
 // ensureType of a class's property declaration (typeFromProperty)
 static void check_field(Walk* me, ClassItem const* item) {
     if (item->access == ACCESS_MODIFIER_PRIVATE) return;
+    my printed_next = &my class_printed_types;
     Emitting saved = emit_enter(me, EMIT_PROPERTY, SIG_CLASS, item->field.name_span, item->field.name_span);
     Root outer_root = my root;
     my root = (Root){ .kind = ROOT_FIELD, .field = item };
@@ -2399,6 +2422,8 @@ static void check_js_this_property_types(Walk* me, ClassDecl const* cls) {
 }
 
 static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
+    ClassDecl const* outer_printed_class = my printed_class;
+    my printed_class = cls;
     bool outer_static = my member_static, outer_in_class = my member_in_class;
     my member_in_class = true;
     check_late_indexes(me, cls);
@@ -2523,6 +2548,7 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
         }
     }
     my member_static = outer_static, my member_in_class = outer_in_class;
+    my printed_class = outer_printed_class;
     check_generic(me, &cls->generic, SIG_CLASS);
     for_each (i, vec_spanned_type, &cls->implements) {
         Emitting saved = emit_enter(me, EMIT_IMPLEMENTS, SIG_CLASS, cls->name, i->span);
@@ -3301,7 +3327,8 @@ static TyDisplay emit_display(Walk* me, cstr* target) {
     }
     return (TyDisplay){
         .target = target, .target_start = cstr_size(target), .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = at,
-        .multiline = true, .indent = my indent, .comments = &my comments, .printed = &my printed_types,
+        .multiline = true, .indent = my indent, .comments = &my comments,
+        .printed = my emitting.printed ? my emitting.printed : &my printed_types,
         .printed_params = my in_return ? &my return_params : nullptr,
     };
 }
@@ -3705,6 +3732,7 @@ static void w_parameter_inner(Walk* me, FunctionImpl const* fn, FunctionArg cons
     cstr text = cstr_init();
     cstr* outer = my type_out;
     my type_out = &text;
+    my printed_next = fn; // (A function's parameters share its cache)
     Emitting saved = emit_enter(me, EMIT_PARAMETER, SIG_FUNCTION, binding->content_span, binding->content_span);
     serialize_parameter(me, fn, arg, true);
     emit_leave(me, saved);
@@ -4459,6 +4487,7 @@ static void emit_parameter_property(Walk* me, FunctionImpl const* ctor, Function
         cstr text = cstr_init();
         cstr* outer = my type_out;
         my type_out = &text;
+        my printed_next = &my class_printed_types;
         Emitting saved = emit_enter(me, EMIT_PROPERTY, SIG_CONSTRUCTOR, binding->content_span, binding->content_span);
         serialize_parameter(me, ctor, arg, false);
         emit_leave(me, saved);
@@ -4583,6 +4612,8 @@ static void emit_js_this_properties(Walk* me, ClassDecl const* cls) {
 
 // (Without a statement: `modifiers` are written, `declare ` where empty in a file)
 static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statement, Container container, csview name, csview modifiers) {
+    ClassDecl const* outer_printed_class = my printed_class;
+    my printed_class = cls;
     // A base that isn't a name is a variable of its type, `C_base` (transformClassDeclaration)
     Expr const* base = &cls->extends;
     Expr const* base_name = base->tag == EXPR_GENERIC_PARAMS ? &base->generic_params->expr : base;
@@ -4856,6 +4887,7 @@ static void emit_class(Walk* me, ClassDecl const* cls, Statement const* statemen
     }
     cstr_drop(&class_modifiers);
     cstr_drop(&base_variable_name);
+    my printed_class = outer_printed_class;
 }
 
 // A type literal's members, one per line, braces and all (an interface's body: `{` and `}` on lines of their own even
@@ -6121,6 +6153,7 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
     free(walk.exported_locals);
     free(walk.painted);
     ty_printed_types_clear(&walk.printed_types);
+    ty_printed_types_clear(&walk.class_printed_types);
     free(walk.painted_done);
     free(walk.late_taken);
     for (u32 i = 0; i < walk.specifier_count; i++) c_drop(cstr, &walk.specifiers[i].plain, &walk.specifiers[i].unsafe);

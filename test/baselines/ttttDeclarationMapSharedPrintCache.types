@@ -1,0 +1,72 @@
+//// [test/cases/ttttDeclarationMapSharedPrintCache.ts] ////
+
+=== ttttDeclarationMapSharedPrintCache.ts ===
+// tsgo's serializedTypes cache is per enclosing declaration: a class's property declarations (parameter properties
+// included) share the class's, a function's parameters share the function's, while a method, an accessor and a return
+// type have their own. A type printed again from the same cache is an unmapped clone (xterm's CoreTerminal
+// `onRender` after `_onRender`).
+declare function mk<T>(): T;
+>mk : <T>() => T
+
+const o = mk<{ s: number, e: number }>();
+>o : { s: number; e: number; }
+>mk<{ s: number, e: number }>() : { s: number; e: number; }
+>mk : <T>() => T
+>s : number
+>e : number
+
+export function f(a = o, b = o) { return o; }
+>f : (a?: { s: number; e: number; }, b?: { s: number; e: number; }) => { s: number; e: number; }
+>a : { s: number; e: number; }
+>o : { s: number; e: number; }
+>b : { s: number; e: number; }
+>o : { s: number; e: number; }
+>o : { s: number; e: number; }
+
+export class D {
+>D : D
+
+  m(a = o) { return o; }
+>m : (a?: { s: number; e: number; }) => { s: number; e: number; }
+>a : { s: number; e: number; }
+>o : { s: number; e: number; }
+>o : { s: number; e: number; }
+
+  constructor(public p = o, q = o) {}
+>p : { s: number; e: number; }
+>o : { s: number; e: number; }
+>q : { s: number; e: number; }
+>o : { s: number; e: number; }
+
+  x = o;
+>x : { s: number; e: number; }
+>o : { s: number; e: number; }
+
+  get g() { return o; }
+>g : { s: number; e: number; }
+>o : { s: number; e: number; }
+
+  y = o;
+>y : { s: number; e: number; }
+>o : { s: number; e: number; }
+
+  [k: string]: any;
+>k : string
+}
+export class E {
+>E : E
+
+    a = mk<{ s: number, e: number }>();
+>a : { s: number; e: number; }
+>mk<{ s: number, e: number }>() : { s: number; e: number; }
+>mk : <T>() => T
+>s : number
+>e : number
+
+    b = this.a;
+>b : { s: number; e: number; }
+>this.a : { s: number; e: number; }
+>this : this
+>a : { s: number; e: number; }
+}
+

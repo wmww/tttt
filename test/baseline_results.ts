@@ -479,6 +479,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationMapSharedPrintCache': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationMappedOverSubstitution': {
         errors: true,
         symbols: true,

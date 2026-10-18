@@ -1,0 +1,72 @@
+//// [test/cases/ttttDeclarationMapSharedPrintCache.ts] ////
+
+=== ttttDeclarationMapSharedPrintCache.ts ===
+// tsgo's serializedTypes cache is per enclosing declaration: a class's property declarations (parameter properties
+// included) share the class's, a function's parameters share the function's, while a method, an accessor and a return
+// type have their own. A type printed again from the same cache is an unmapped clone (xterm's CoreTerminal
+// `onRender` after `_onRender`).
+declare function mk<T>(): T;
+>mk : Symbol(mk, Decl(ttttDeclarationMapSharedPrintCache.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDeclarationMapSharedPrintCache.ts, 4, 20))
+>T : Symbol(T, Decl(ttttDeclarationMapSharedPrintCache.ts, 4, 20))
+
+const o = mk<{ s: number, e: number }>();
+>o : Symbol(o, Decl(ttttDeclarationMapSharedPrintCache.ts, 5, 5))
+>mk : Symbol(mk, Decl(ttttDeclarationMapSharedPrintCache.ts, 0, 0))
+>s : Symbol(s, Decl(ttttDeclarationMapSharedPrintCache.ts, 5, 14))
+>e : Symbol(e, Decl(ttttDeclarationMapSharedPrintCache.ts, 5, 25))
+
+export function f(a = o, b = o) { return o; }
+>f : Symbol(f, Decl(ttttDeclarationMapSharedPrintCache.ts, 5, 41))
+>a : Symbol(a, Decl(ttttDeclarationMapSharedPrintCache.ts, 6, 18))
+>o : Symbol(o, Decl(ttttDeclarationMapSharedPrintCache.ts, 5, 5))
+>b : Symbol(b, Decl(ttttDeclarationMapSharedPrintCache.ts, 6, 24))
+>o : Symbol(o, Decl(ttttDeclarationMapSharedPrintCache.ts, 5, 5))
+>o : Symbol(o, Decl(ttttDeclarationMapSharedPrintCache.ts, 5, 5))
+
+export class D {
+>D : Symbol(D, Decl(ttttDeclarationMapSharedPrintCache.ts, 6, 45))
+
+  m(a = o) { return o; }
+>m : Symbol(D.m, Decl(ttttDeclarationMapSharedPrintCache.ts, 7, 16))
+>a : Symbol(a, Decl(ttttDeclarationMapSharedPrintCache.ts, 8, 4))
+>o : Symbol(o, Decl(ttttDeclarationMapSharedPrintCache.ts, 5, 5))
+>o : Symbol(o, Decl(ttttDeclarationMapSharedPrintCache.ts, 5, 5))
+
+  constructor(public p = o, q = o) {}
+>p : Symbol(D.p, Decl(ttttDeclarationMapSharedPrintCache.ts, 9, 14))
+>o : Symbol(o, Decl(ttttDeclarationMapSharedPrintCache.ts, 5, 5))
+>q : Symbol(q, Decl(ttttDeclarationMapSharedPrintCache.ts, 9, 27))
+>o : Symbol(o, Decl(ttttDeclarationMapSharedPrintCache.ts, 5, 5))
+
+  x = o;
+>x : Symbol(D.x, Decl(ttttDeclarationMapSharedPrintCache.ts, 9, 37))
+>o : Symbol(o, Decl(ttttDeclarationMapSharedPrintCache.ts, 5, 5))
+
+  get g() { return o; }
+>g : Symbol(D.g, Decl(ttttDeclarationMapSharedPrintCache.ts, 10, 8))
+>o : Symbol(o, Decl(ttttDeclarationMapSharedPrintCache.ts, 5, 5))
+
+  y = o;
+>y : Symbol(D.y, Decl(ttttDeclarationMapSharedPrintCache.ts, 11, 23))
+>o : Symbol(o, Decl(ttttDeclarationMapSharedPrintCache.ts, 5, 5))
+
+  [k: string]: any;
+>k : Symbol(k, Decl(ttttDeclarationMapSharedPrintCache.ts, 13, 3))
+}
+export class E {
+>E : Symbol(E, Decl(ttttDeclarationMapSharedPrintCache.ts, 14, 1))
+
+    a = mk<{ s: number, e: number }>();
+>a : Symbol(E.a, Decl(ttttDeclarationMapSharedPrintCache.ts, 15, 16))
+>mk : Symbol(mk, Decl(ttttDeclarationMapSharedPrintCache.ts, 0, 0))
+>s : Symbol(s, Decl(ttttDeclarationMapSharedPrintCache.ts, 16, 12))
+>e : Symbol(e, Decl(ttttDeclarationMapSharedPrintCache.ts, 16, 23))
+
+    b = this.a;
+>b : Symbol(E.b, Decl(ttttDeclarationMapSharedPrintCache.ts, 16, 39))
+>this.a : Symbol(E.a, Decl(ttttDeclarationMapSharedPrintCache.ts, 15, 16))
+>this : Symbol(E, Decl(ttttDeclarationMapSharedPrintCache.ts, 14, 1))
+>a : Symbol(E.a, Decl(ttttDeclarationMapSharedPrintCache.ts, 15, 16))
+}
+
