@@ -49,6 +49,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAugmentationReexportParent': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAutoAccessorModifiers': {
         errors: true,
         symbols: true,

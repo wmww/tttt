@@ -1,0 +1,68 @@
+//// [test/cases/ttttAugmentationReexportParent.ts] ////
+
+=== /node_modules/solid/types/jsx.d.ts ===
+export namespace JSX {
+    type Element = Node | number | null;
+>Element : Element
+
+    interface Node { solid: true }
+>solid : true
+>true : true
+}
+=== /node_modules/solid/types/index.d.ts ===
+import type { JSX } from "./jsx.js";
+>JSX : any
+
+export type { JSX };
+>JSX : any
+
+=== /node_modules/web/index.d.ts ===
+import type { JSX } from "solid";
+>JSX : any
+
+export declare function mount(fn: () => JSX.Element): void;
+>mount : (fn: () => JSX.Element) => void
+>fn : () => JSX.Element
+>JSX : any
+
+=== /node_modules/@types/react/index.d.ts ===
+export = React;
+>React : any
+
+export as namespace React;
+>React : any
+
+declare namespace React {
+    namespace JSX { interface Element { react: true } }
+>react : true
+>true : true
+}
+=== /a.ts ===
+import { mount } from "web";
+>mount : (fn: () => import("solid").JSX.Element) => void
+
+declare const e: React.JSX.Element;
+>e : import("react").JSX.Element
+>React : any
+>JSX : any
+
+mount(() => e);
+>mount(() => e) : void
+>mount : (fn: () => import("solid").JSX.Element) => void
+>() => e : () => import("react").JSX.Element
+>e : import("react").JSX.Element
+
+=== /node_modules/router/index.d.ts ===
+declare module "solid" {
+>"solid" : typeof import("solid")
+
+    namespace JSX {
+        interface Extra { x: 1 }
+>x : 1
+    }
+}
+export {};
+=== /b.ts ===
+
+import "router";
+

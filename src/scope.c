@@ -4019,6 +4019,9 @@ static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbo
     if (through_alias && existing->binder == binder && !conflict) {
         i32 own = symbol_table_own_index(owner->exports, name, hash);
         if (own >= 0) owner->exports->entries[own].symbol = existing;
+        // (That clone's parent is the module the augmentation merged into, mergeSymbolTable's mergedParent: what the
+        // alias resolved to is named through it from then on)
+        existing->parent = owner;
     }
     // (What `export *` brought is then the module's own export too, which the augmentation's blocks see: tsc's
     // mergeModuleAugmentation merges into the resolved export, then the augmentation into the module. After a

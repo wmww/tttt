@@ -1,0 +1,39 @@
+/a.ts(3,13): error TS2322: Type 'React.JSX.Element' is not assignable to type 'import("/node_modules/solid/types/index").JSX.Element'.
+
+
+==== /node_modules/solid/package.json (0 errors) ====
+    { "name": "solid", "types": "./types/index.d.ts" }
+==== /node_modules/solid/types/jsx.d.ts (0 errors) ====
+    export namespace JSX {
+        type Element = Node | number | null;
+        interface Node { solid: true }
+    }
+==== /node_modules/solid/types/index.d.ts (0 errors) ====
+    import type { JSX } from "./jsx.js";
+    export type { JSX };
+==== /node_modules/web/index.d.ts (0 errors) ====
+    import type { JSX } from "solid";
+    export declare function mount(fn: () => JSX.Element): void;
+==== /node_modules/@types/react/index.d.ts (0 errors) ====
+    export = React;
+    export as namespace React;
+    declare namespace React {
+        namespace JSX { interface Element { react: true } }
+    }
+==== /a.ts (1 errors) ====
+    import { mount } from "web";
+    declare const e: React.JSX.Element;
+    mount(() => e);
+                ~
+!!! error TS2322: Type 'React.JSX.Element' is not assignable to type 'import("/node_modules/solid/types/index").JSX.Element'.
+!!! related TS6502 /node_modules/web/index.d.ts:2:35: The expected type comes from the return type of this signature.
+==== /node_modules/router/index.d.ts (0 errors) ====
+    declare module "solid" {
+        namespace JSX {
+            interface Extra { x: 1 }
+        }
+    }
+    export {};
+==== /b.ts (0 errors) ====
+    import "router";
+    

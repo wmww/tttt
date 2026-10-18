@@ -1,0 +1,77 @@
+//// [test/cases/ttttAugmentationReexportParent.ts] ////
+
+=== /node_modules/solid/types/jsx.d.ts ===
+export namespace JSX {
+>JSX : Symbol(JSX, Decl(jsx.d.ts, 0, 0), Decl(index.d.ts, 0, 24))
+
+    type Element = Node | number | null;
+>Element : Symbol(Element, Decl(jsx.d.ts, 0, 22))
+>Node : Symbol(Node, Decl(jsx.d.ts, 1, 40))
+
+    interface Node { solid: true }
+>Node : Symbol(Node, Decl(jsx.d.ts, 1, 40))
+>solid : Symbol(Node.solid, Decl(jsx.d.ts, 2, 20))
+}
+=== /node_modules/solid/types/index.d.ts ===
+import type { JSX } from "./jsx.js";
+>JSX : Symbol(JSX, Decl(index.d.ts, 0, 13))
+
+export type { JSX };
+>JSX : Symbol(JSX, Decl(index.d.ts, 1, 13))
+
+=== /node_modules/web/index.d.ts ===
+import type { JSX } from "solid";
+>JSX : Symbol(JSX, Decl(index.d.ts, 0, 13))
+
+export declare function mount(fn: () => JSX.Element): void;
+>mount : Symbol(mount, Decl(index.d.ts, 0, 33))
+>fn : Symbol(fn, Decl(index.d.ts, 1, 30))
+>JSX : Symbol(JSX, Decl(index.d.ts, 0, 13))
+>Element : Symbol(JSX.Element, Decl(jsx.d.ts, 0, 22))
+
+=== /node_modules/@types/react/index.d.ts ===
+export = React;
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+
+export as namespace React;
+>React : Symbol(React, Decl(index.d.ts, 0, 15))
+
+declare namespace React {
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+
+    namespace JSX { interface Element { react: true } }
+>JSX : Symbol(JSX, Decl(index.d.ts, 2, 25))
+>Element : Symbol(Element, Decl(index.d.ts, 3, 19))
+>react : Symbol(Element.react, Decl(index.d.ts, 3, 39))
+}
+=== /a.ts ===
+import { mount } from "web";
+>mount : Symbol(mount, Decl(a.ts, 0, 8))
+
+declare const e: React.JSX.Element;
+>e : Symbol(e, Decl(a.ts, 1, 13))
+>React : Symbol(React, Decl(index.d.ts, 0, 15))
+>JSX : Symbol(React.JSX, Decl(index.d.ts, 2, 25))
+>Element : Symbol(React.JSX.Element, Decl(index.d.ts, 3, 19))
+
+mount(() => e);
+>mount : Symbol(mount, Decl(a.ts, 0, 8))
+>e : Symbol(e, Decl(a.ts, 1, 13))
+
+=== /node_modules/router/index.d.ts ===
+declare module "solid" {
+>"solid" : Symbol("solid", Decl(index.d.ts, 0, 0), Decl(index.d.ts, 0, 0))
+
+    namespace JSX {
+>JSX : Symbol(JSX, Decl(jsx.d.ts, 0, 0), Decl(index.d.ts, 0, 24))
+
+        interface Extra { x: 1 }
+>Extra : Symbol(Extra, Decl(index.d.ts, 1, 19))
+>x : Symbol(Extra.x, Decl(index.d.ts, 2, 25))
+    }
+}
+export {};
+=== /b.ts ===
+
+import "router";
+
