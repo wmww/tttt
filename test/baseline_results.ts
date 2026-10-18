@@ -341,6 +341,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationImportedDistributiveAlias': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationIndexSignatureBrandedKey': {
         errors: true,
         symbols: true,
@@ -384,6 +390,12 @@ const baselines = {
         dts: true,
     },
     'ttttDeclarationLateIndexAccessors': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationLatePaintedMergedConst': {
         errors: true,
         symbols: true,
         types: true,
@@ -612,6 +624,12 @@ const baselines = {
         dts: true,
     },
     'ttttDeclarationReusedNodeMappedUnderError': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationScriptImportAlias': {
         errors: true,
         symbols: true,
         types: true,
@@ -1324,6 +1342,12 @@ const baselines = {
         dts: true,
     },
     'ttttPatternTrailingCommaComment': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttPermissiveWildcardKeyofMapped': {
         errors: true,
         symbols: true,
         types: true,
@@ -5572,7 +5596,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'classSideInheritance1': {
         errors: true,
