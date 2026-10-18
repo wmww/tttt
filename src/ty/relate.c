@@ -7555,6 +7555,9 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         // getNormalizedUnionOrIntersectionType, shouldNormalizeIntersection): `NonNullable<Partial<T>[keyof T]>` is
         // `T[keyof T] & {}`, which is what the members of a union source are related to (and reported against) below
         if (target->kind == TY_INTERSECTION) target = ty_regular(me, normalized_intersection(me, target, true));
+        // (A source's too, as read: `Partial<T>[K] & null` is `T[K] & null`, the comment on tsc's
+        // getNormalizedUnionOrIntersectionType)
+        if (source->kind == TY_INTERSECTION) source = ty_regular(me, normalized_intersection(me, source, false));
         if (source == target) return TERNARY_TRUE;
     }
     Ty const* stripped = ty_strip_nullable_target(me, source, target);

@@ -1,0 +1,55 @@
+//// [test/cases/ttttSourceIntersectionNormalized.ts] ////
+
+=== ttttSourceIntersectionNormalized.ts ===
+// A source intersection is normalized like a target one (tsc's getNormalizedUnionOrIntersectionType):
+// `Partial<T>[K] & null` is reported as `T[K] & null` (vitepress's deepMerge)
+declare const isObject: any;
+>isObject : Symbol(isObject, Decl(ttttSourceIntersectionNormalized.ts, 2, 13))
+
+function deepMerge<T>(target: T, source: Partial<T>): T {
+>deepMerge : Symbol(deepMerge, Decl(ttttSourceIntersectionNormalized.ts, 2, 28))
+>T : Symbol(T, Decl(ttttSourceIntersectionNormalized.ts, 3, 19))
+>target : Symbol(target, Decl(ttttSourceIntersectionNormalized.ts, 3, 22))
+>T : Symbol(T, Decl(ttttSourceIntersectionNormalized.ts, 3, 19))
+>source : Symbol(source, Decl(ttttSourceIntersectionNormalized.ts, 3, 32))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttSourceIntersectionNormalized.ts, 3, 19))
+>T : Symbol(T, Decl(ttttSourceIntersectionNormalized.ts, 3, 19))
+
+  const result = { ...target } as any;
+>result : Symbol(result, Decl(ttttSourceIntersectionNormalized.ts, 4, 7))
+>target : Symbol(target, Decl(ttttSourceIntersectionNormalized.ts, 3, 22))
+
+  for (const key in source) {
+>key : Symbol(key, Decl(ttttSourceIntersectionNormalized.ts, 5, 12))
+>source : Symbol(source, Decl(ttttSourceIntersectionNormalized.ts, 3, 32))
+
+    const value = source[key];
+>value : Symbol(value, Decl(ttttSourceIntersectionNormalized.ts, 6, 9))
+>source : Symbol(source, Decl(ttttSourceIntersectionNormalized.ts, 3, 32))
+>key : Symbol(key, Decl(ttttSourceIntersectionNormalized.ts, 5, 12))
+
+    if (value === undefined) continue;
+>value : Symbol(value, Decl(ttttSourceIntersectionNormalized.ts, 6, 9))
+>undefined : Symbol(undefined)
+
+    if (isObject(value) && isObject(result[key])) {
+>isObject : Symbol(isObject, Decl(ttttSourceIntersectionNormalized.ts, 2, 13))
+>value : Symbol(value, Decl(ttttSourceIntersectionNormalized.ts, 6, 9))
+>isObject : Symbol(isObject, Decl(ttttSourceIntersectionNormalized.ts, 2, 13))
+>result : Symbol(result, Decl(ttttSourceIntersectionNormalized.ts, 4, 7))
+>key : Symbol(key, Decl(ttttSourceIntersectionNormalized.ts, 5, 12))
+
+      result[key] = deepMerge(result[key], value);
+>result : Symbol(result, Decl(ttttSourceIntersectionNormalized.ts, 4, 7))
+>key : Symbol(key, Decl(ttttSourceIntersectionNormalized.ts, 5, 12))
+>deepMerge : Symbol(deepMerge, Decl(ttttSourceIntersectionNormalized.ts, 2, 28))
+>result : Symbol(result, Decl(ttttSourceIntersectionNormalized.ts, 4, 7))
+>key : Symbol(key, Decl(ttttSourceIntersectionNormalized.ts, 5, 12))
+>value : Symbol(value, Decl(ttttSourceIntersectionNormalized.ts, 6, 9))
+    }
+  }
+  return result;
+>result : Symbol(result, Decl(ttttSourceIntersectionNormalized.ts, 4, 7))
+}
+

@@ -1539,6 +1539,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSourceIntersectionNormalized': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttSpellingSuggestionTie': {
         errors: true,
         symbols: true,

@@ -1,0 +1,62 @@
+//// [test/cases/ttttSourceIntersectionNormalized.ts] ////
+
+=== ttttSourceIntersectionNormalized.ts ===
+// A source intersection is normalized like a target one (tsc's getNormalizedUnionOrIntersectionType):
+// `Partial<T>[K] & null` is reported as `T[K] & null` (vitepress's deepMerge)
+declare const isObject: any;
+>isObject : any
+
+function deepMerge<T>(target: T, source: Partial<T>): T {
+>deepMerge : <T>(target: T, source: Partial<T>) => T
+>target : T
+>source : Partial<T>
+
+  const result = { ...target } as any;
+>result : any
+>{ ...target } as any : any
+>{ ...target } : T
+>target : T
+
+  for (const key in source) {
+>key : Extract<keyof T, string>
+>source : Partial<T>
+
+    const value = source[key];
+>value : Partial<T>[Extract<keyof T, string>]
+>source[key] : Partial<T>[Extract<keyof T, string>]
+>source : Partial<T>
+>key : Extract<keyof T, string>
+
+    if (value === undefined) continue;
+>value === undefined : boolean
+>value : Partial<T>[Extract<keyof T, string>]
+>undefined : undefined
+
+    if (isObject(value) && isObject(result[key])) {
+>isObject(value) && isObject(result[key]) : any
+>isObject(value) : any
+>isObject : any
+>value : Partial<T>[Extract<keyof T, string>] & ({} | null)
+>isObject(result[key]) : any
+>isObject : any
+>result[key] : any
+>result : any
+>key : Extract<keyof T, string>
+
+      result[key] = deepMerge(result[key], value);
+>result[key] = deepMerge(result[key], value) : any
+>result[key] : any
+>result : any
+>key : Extract<keyof T, string>
+>deepMerge(result[key], value) : any
+>deepMerge : <T>(target: T, source: Partial<T>) => T
+>result[key] : any
+>result : any
+>key : Extract<keyof T, string>
+>value : Partial<T>[Extract<keyof T, string>] & ({} | null)
+    }
+  }
+  return result;
+>result : any
+}
+

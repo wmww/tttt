@@ -1,0 +1,23 @@
+ttttSourceIntersectionNormalized.ts(10,44): error TS2345: Argument of type 'Partial<T>[Extract<keyof T, string>] & ({} | null)' is not assignable to parameter of type 'Partial<any>'.
+  Type 'T[Extract<keyof T, string>] & null' is not assignable to type 'Partial<any>'.
+
+
+==== ttttSourceIntersectionNormalized.ts (1 errors) ====
+    // A source intersection is normalized like a target one (tsc's getNormalizedUnionOrIntersectionType):
+    // `Partial<T>[K] & null` is reported as `T[K] & null` (vitepress's deepMerge)
+    declare const isObject: any;
+    function deepMerge<T>(target: T, source: Partial<T>): T {
+      const result = { ...target } as any;
+      for (const key in source) {
+        const value = source[key];
+        if (value === undefined) continue;
+        if (isObject(value) && isObject(result[key])) {
+          result[key] = deepMerge(result[key], value);
+                                               ~~~~~
+!!! error TS2345: Argument of type 'Partial<T>[Extract<keyof T, string>] & ({} | null)' is not assignable to parameter of type 'Partial<any>'.
+!!! error TS2345:   Type 'T[Extract<keyof T, string>] & null' is not assignable to type 'Partial<any>'.
+        }
+      }
+      return result;
+    }
+    
