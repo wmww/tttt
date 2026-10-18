@@ -1,0 +1,39 @@
+//// [test/cases/ttttTruncatedSymbollessObject.ts] ////
+
+=== ttttTruncatedSymbollessObject.ts ===
+// A type tsc makes without a symbol (the decorator context's name/private/static override) prints from its members past
+// the truncation length, `{ ...; }`, not `...` (createAnonymousTypeNodeEx; mikro-orm's TS1240 chains)
+declare function Dec(options: string): (target: any, propertyName: string) => void;
+>Dec : Symbol(Dec, Decl(ttttTruncatedSymbollessObject.ts, 0, 0))
+>options : Symbol(options, Decl(ttttTruncatedSymbollessObject.ts, 2, 21))
+>target : Symbol(target, Decl(ttttTruncatedSymbollessObject.ts, 2, 40))
+>propertyName : Symbol(propertyName, Decl(ttttTruncatedSymbollessObject.ts, 2, 52))
+
+class SomeVeryLongClassNameForTheEntityUnderTest {}
+>SomeVeryLongClassNameForTheEntityUnderTest : Symbol(SomeVeryLongClassNameForTheEntityUnderTest, Decl(ttttTruncatedSymbollessObject.ts, 2, 83))
+
+interface AnotherQuiteLongInterfaceName<T> { value: T; other: T }
+>AnotherQuiteLongInterfaceName : Symbol(AnotherQuiteLongInterfaceName, Decl(ttttTruncatedSymbollessObject.ts, 3, 51))
+>T : Symbol(T, Decl(ttttTruncatedSymbollessObject.ts, 4, 40))
+>value : Symbol(AnotherQuiteLongInterfaceName.value, Decl(ttttTruncatedSymbollessObject.ts, 4, 44))
+>T : Symbol(T, Decl(ttttTruncatedSymbollessObject.ts, 4, 40))
+>other : Symbol(AnotherQuiteLongInterfaceName.other, Decl(ttttTruncatedSymbollessObject.ts, 4, 54))
+>T : Symbol(T, Decl(ttttTruncatedSymbollessObject.ts, 4, 40))
+
+export class AVeryLongOwnerClassNameThatTakesSpace {
+>AVeryLongOwnerClassNameThatTakesSpace : Symbol(AVeryLongOwnerClassNameThatTakesSpace, Decl(ttttTruncatedSymbollessObject.ts, 4, 65))
+
+  @Dec("x")
+>Dec : Symbol(Dec, Decl(ttttTruncatedSymbollessObject.ts, 0, 0))
+
+  someVeryLongPropertyName?: AnotherQuiteLongInterfaceName<SomeVeryLongClassNameForTheEntityUnderTest> & { id: number; anotherPropertyName: string; yetAnotherPropertyName: string; andOneMore: number; andTheLastOne: boolean };
+>someVeryLongPropertyName : Symbol(AVeryLongOwnerClassNameThatTakesSpace.someVeryLongPropertyName, Decl(ttttTruncatedSymbollessObject.ts, 5, 52))
+>AnotherQuiteLongInterfaceName : Symbol(AnotherQuiteLongInterfaceName, Decl(ttttTruncatedSymbollessObject.ts, 3, 51))
+>SomeVeryLongClassNameForTheEntityUnderTest : Symbol(SomeVeryLongClassNameForTheEntityUnderTest, Decl(ttttTruncatedSymbollessObject.ts, 2, 83))
+>id : Symbol(id, Decl(ttttTruncatedSymbollessObject.ts, 7, 106))
+>anotherPropertyName : Symbol(anotherPropertyName, Decl(ttttTruncatedSymbollessObject.ts, 7, 118))
+>yetAnotherPropertyName : Symbol(yetAnotherPropertyName, Decl(ttttTruncatedSymbollessObject.ts, 7, 147))
+>andOneMore : Symbol(andOneMore, Decl(ttttTruncatedSymbollessObject.ts, 7, 179))
+>andTheLastOne : Symbol(andTheLastOne, Decl(ttttTruncatedSymbollessObject.ts, 7, 199))
+}
+

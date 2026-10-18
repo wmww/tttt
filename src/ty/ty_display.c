@@ -6996,8 +6996,9 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             // the next is the elided information placeholder (tsc's visitAndTransformType's symbolDepth); `any`
             // without truncation (the types baseline, declaration emit), `...` in messages
             // (Declaration emit reports it: the node builder's truncating, ReportTruncationError, TS7056)
-            // (Past the truncation length: tsc's visitAndTransformType, before the depth)
-            if (display_over(d)) {
+            // (Past the truncation length: tsc's visitAndTransformType, before the depth. Not a type without a symbol,
+            // which createAnonymousTypeNodeEx prints from its members: `{ ...; }`)
+            if (display_over(d) && !ty->anonymous.no_symbol) {
                 out_elided(d);
                 break;
             }

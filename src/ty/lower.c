@@ -3299,7 +3299,7 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
         }
         // (tsc's getTypeFromObjectBindingPattern makes it without a symbol: no inferable index)
         Ty const* ret = ty_object_literal(me, props, count, index_count ? &index : nullptr, index_count,
-            OBJECT_SYNTHETIC | OBJECT_NO_INFERABLE_INDEX);
+            OBJECT_SYNTHETIC | OBJECT_NO_INFERABLE_INDEX | OBJECT_NO_SYMBOL);
         free(props);
         if (!include_pattern) return ret;
         ret = ty_pattern_clone(me, ret);

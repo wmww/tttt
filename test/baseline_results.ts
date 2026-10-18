@@ -1648,6 +1648,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTruncatedSymbollessObject': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTupleMissingPropertiesElaboration': {
         errors: true,
         symbols: true,

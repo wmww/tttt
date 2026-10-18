@@ -393,6 +393,7 @@ struct Ty {
             bool is_reverse : 1; // `reverse` is set, not `merged_value`
             bool no_inferable_index : 1; // OBJECT_NO_INFERABLE_INDEX
             bool contains_spread : 1; // OBJECT_CONTAINS_SPREAD
+            bool no_symbol : 1; // OBJECT_NO_SYMBOL
             // The type of a namespace import of an `export =` module, made anew (tsc's cloneTypeAsModuleType: an anonymous
             // type whose symbol is a clone of the assigned one, `typeof x`): KEY_MODULE_CLONE says for which alias
             bool module_clone : 1;
@@ -2075,6 +2076,9 @@ typedef enum ObjectLiteralKind {
     // Or'ed with an object literal kind: something was spread into it (tsc's ObjectFlags.ContainsSpread, what its
     // getSpreadType makes: `{ ...{} }` too, not `{ ...0 }`), kept by its regular version, not by its widened one
     OBJECT_CONTAINS_SPREAD = 1 << 6,
+    // Or'ed with OBJECT_SYNTHETIC: tsc's type has no symbol at all, so its node builder prints it straight from its
+    // members (createAnonymousTypeNodeEx), past the truncation length `{ ...; }` rather than `...`
+    OBJECT_NO_SYMBOL = 1 << 7,
 } ObjectLiteralKind;
 Ty const* ty_object_literal(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind
