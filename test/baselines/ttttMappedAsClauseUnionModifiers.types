@@ -1,0 +1,35 @@
+//// [test/cases/ttttMappedAsClauseUnionModifiers.ts] ////
+
+=== ttttMappedAsClauseUnionModifiers.ts ===
+// An instantiated generic mapped type with an `as` clause takes its keys from its own modifiers type's apparent
+// properties, a union's common ones too, not its generic declaration's expansion (xstate's ToStateSchema<TConfig>)
+type StateSchema = { id?: string; states?: Record<string, StateSchema>; type?: unknown; };
+>StateSchema : StateSchema
+>id : string | undefined
+>states : Record<string, StateSchema> | undefined
+>type : unknown
+
+type ToStateSchema<TSchema extends StateSchema> = {
+>ToStateSchema : ToStateSchema<TSchema>
+
+  -readonly [K in keyof TSchema as K & ('id' | 'states')]: K extends 'states'
+    ? { [SK in keyof TSchema['states']]: ToStateSchema<NonNullable<TSchema['states'][SK]>> }
+    : TSchema[K];
+};
+interface Inner<C> { id?: string | undefined; ctx?: C; states?: Record<string, Inner<C>>; }
+>id : string | undefined
+>ctx : C | undefined
+>states : Record<string, Inner<C>> | undefined
+
+type Config<C> = Inner<C> & ({ version?: string } | { output?: C });
+>Config : Config<C>
+>version : string | undefined
+>output : C | undefined
+
+interface Box<S extends StateSchema> { s: S }
+>s : S
+
+declare function g<C, const T extends Config<C>>(c: T): Box<ToStateSchema<T>>;
+>g : <C, const T extends Config<C>>(c: T) => Box<ToStateSchema<T>>
+>c : T
+

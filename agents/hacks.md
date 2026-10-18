@@ -374,13 +374,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   rule in `relation_line_said()` (vitest TS2344), `intersection_props_related`'s TS2741 member choice (a valibot probe).
 
 ## Type core (`src/ty/`)
-- **A mapped type's `as` clause kind by shape, then by relation unless it mentions `keyof`**
-  (`mapped_name_type_filters()`, members.c): tsc's getMappedTypeNameTypeKind relates the clause to the key; tttt
-  first reads the shape (`name_type_filters()`), then relates (cached per declared mapped type, KEY_MAPPED_FILTERING)
-  only when the clause's source text has no `keyof` token: relating `${K}.${keyof Self<T[K]>}` from inside member
-  resolution resolves members of mapped types in flight, which tttt then keeps incomplete
-  (mappedTypeAsClauseRecursiveNoCrash1 loses keys). A keyof clause the shape can't read, or a pending lazy branch (`peek_cond_branch()`), counts as remapping (no
-  declarations linked: member order by name). Fix: make member resolution re-entrant like tsc's empty-members-upfront (plan 83).
 - **An indexed access type node's missing key prints its object to a dropped string** (`lower()` TYPE_INDEXED,
   lower.c): tsc reports the key inside getIndexedAccessType, and the typeToString of its message resolves an
   anonymous object's member types while the alias resolves (`type A = { a: A }["x"]` is TS2456). tttt reproduces

@@ -1,0 +1,76 @@
+//// [test/cases/ttttMappedAsClauseUnionModifiers.ts] ////
+
+=== ttttMappedAsClauseUnionModifiers.ts ===
+// An instantiated generic mapped type with an `as` clause takes its keys from its own modifiers type's apparent
+// properties, a union's common ones too, not its generic declaration's expansion (xstate's ToStateSchema<TConfig>)
+type StateSchema = { id?: string; states?: Record<string, StateSchema>; type?: unknown; };
+>StateSchema : Symbol(StateSchema, Decl(ttttMappedAsClauseUnionModifiers.ts, 0, 0))
+>id : Symbol(id, Decl(ttttMappedAsClauseUnionModifiers.ts, 2, 20))
+>states : Symbol(states, Decl(ttttMappedAsClauseUnionModifiers.ts, 2, 33))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>StateSchema : Symbol(StateSchema, Decl(ttttMappedAsClauseUnionModifiers.ts, 0, 0))
+>type : Symbol(type, Decl(ttttMappedAsClauseUnionModifiers.ts, 2, 71))
+
+type ToStateSchema<TSchema extends StateSchema> = {
+>ToStateSchema : Symbol(ToStateSchema, Decl(ttttMappedAsClauseUnionModifiers.ts, 2, 90))
+>TSchema : Symbol(TSchema, Decl(ttttMappedAsClauseUnionModifiers.ts, 3, 19))
+>StateSchema : Symbol(StateSchema, Decl(ttttMappedAsClauseUnionModifiers.ts, 0, 0))
+
+  -readonly [K in keyof TSchema as K & ('id' | 'states')]: K extends 'states'
+>K : Symbol(K, Decl(ttttMappedAsClauseUnionModifiers.ts, 4, 13))
+>TSchema : Symbol(TSchema, Decl(ttttMappedAsClauseUnionModifiers.ts, 3, 19))
+>K : Symbol(K, Decl(ttttMappedAsClauseUnionModifiers.ts, 4, 13))
+>K : Symbol(K, Decl(ttttMappedAsClauseUnionModifiers.ts, 4, 13))
+
+    ? { [SK in keyof TSchema['states']]: ToStateSchema<NonNullable<TSchema['states'][SK]>> }
+>SK : Symbol(SK, Decl(ttttMappedAsClauseUnionModifiers.ts, 5, 9))
+>TSchema : Symbol(TSchema, Decl(ttttMappedAsClauseUnionModifiers.ts, 3, 19))
+>ToStateSchema : Symbol(ToStateSchema, Decl(ttttMappedAsClauseUnionModifiers.ts, 2, 90))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>TSchema : Symbol(TSchema, Decl(ttttMappedAsClauseUnionModifiers.ts, 3, 19))
+>SK : Symbol(SK, Decl(ttttMappedAsClauseUnionModifiers.ts, 5, 9))
+
+    : TSchema[K];
+>TSchema : Symbol(TSchema, Decl(ttttMappedAsClauseUnionModifiers.ts, 3, 19))
+>K : Symbol(K, Decl(ttttMappedAsClauseUnionModifiers.ts, 4, 13))
+
+};
+interface Inner<C> { id?: string | undefined; ctx?: C; states?: Record<string, Inner<C>>; }
+>Inner : Symbol(Inner, Decl(ttttMappedAsClauseUnionModifiers.ts, 7, 2))
+>C : Symbol(C, Decl(ttttMappedAsClauseUnionModifiers.ts, 8, 16))
+>id : Symbol(Inner.id, Decl(ttttMappedAsClauseUnionModifiers.ts, 8, 20))
+>ctx : Symbol(Inner.ctx, Decl(ttttMappedAsClauseUnionModifiers.ts, 8, 45))
+>C : Symbol(C, Decl(ttttMappedAsClauseUnionModifiers.ts, 8, 16))
+>states : Symbol(Inner.states, Decl(ttttMappedAsClauseUnionModifiers.ts, 8, 54))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Inner : Symbol(Inner, Decl(ttttMappedAsClauseUnionModifiers.ts, 7, 2))
+>C : Symbol(C, Decl(ttttMappedAsClauseUnionModifiers.ts, 8, 16))
+
+type Config<C> = Inner<C> & ({ version?: string } | { output?: C });
+>Config : Symbol(Config, Decl(ttttMappedAsClauseUnionModifiers.ts, 8, 91))
+>C : Symbol(C, Decl(ttttMappedAsClauseUnionModifiers.ts, 9, 12))
+>Inner : Symbol(Inner, Decl(ttttMappedAsClauseUnionModifiers.ts, 7, 2))
+>C : Symbol(C, Decl(ttttMappedAsClauseUnionModifiers.ts, 9, 12))
+>version : Symbol(version, Decl(ttttMappedAsClauseUnionModifiers.ts, 9, 30))
+>output : Symbol(output, Decl(ttttMappedAsClauseUnionModifiers.ts, 9, 53))
+>C : Symbol(C, Decl(ttttMappedAsClauseUnionModifiers.ts, 9, 12))
+
+interface Box<S extends StateSchema> { s: S }
+>Box : Symbol(Box, Decl(ttttMappedAsClauseUnionModifiers.ts, 9, 68))
+>S : Symbol(S, Decl(ttttMappedAsClauseUnionModifiers.ts, 10, 14))
+>StateSchema : Symbol(StateSchema, Decl(ttttMappedAsClauseUnionModifiers.ts, 0, 0))
+>s : Symbol(Box.s, Decl(ttttMappedAsClauseUnionModifiers.ts, 10, 38))
+>S : Symbol(S, Decl(ttttMappedAsClauseUnionModifiers.ts, 10, 14))
+
+declare function g<C, const T extends Config<C>>(c: T): Box<ToStateSchema<T>>;
+>g : Symbol(g, Decl(ttttMappedAsClauseUnionModifiers.ts, 10, 45))
+>C : Symbol(C, Decl(ttttMappedAsClauseUnionModifiers.ts, 11, 19))
+>T : Symbol(T, Decl(ttttMappedAsClauseUnionModifiers.ts, 11, 21))
+>Config : Symbol(Config, Decl(ttttMappedAsClauseUnionModifiers.ts, 8, 91))
+>C : Symbol(C, Decl(ttttMappedAsClauseUnionModifiers.ts, 11, 19))
+>c : Symbol(c, Decl(ttttMappedAsClauseUnionModifiers.ts, 11, 49))
+>T : Symbol(T, Decl(ttttMappedAsClauseUnionModifiers.ts, 11, 21))
+>Box : Symbol(Box, Decl(ttttMappedAsClauseUnionModifiers.ts, 9, 68))
+>ToStateSchema : Symbol(ToStateSchema, Decl(ttttMappedAsClauseUnionModifiers.ts, 2, 90))
+>T : Symbol(T, Decl(ttttMappedAsClauseUnionModifiers.ts, 11, 21))
+

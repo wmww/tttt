@@ -1,0 +1,40 @@
+ttttMappedAsClauseUnionModifiers.ts(12,61): error TS2344: Type 'ToStateSchema<T>' does not satisfy the constraint 'StateSchema'.
+  Types of property 'id' are incompatible.
+    Type 'T["id"]' is not assignable to type 'string'.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+ttttMappedAsClauseUnionModifiers.ts(12,75): error TS2344: Type 'T' does not satisfy the constraint 'StateSchema'.
+  Type 'Config<C>' is not assignable to type 'StateSchema' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Type 'Inner<C> & { version?: string; }' is not assignable to type 'StateSchema' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Types of property 'id' are incompatible.
+        Type 'string | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.
+
+
+==== ttttMappedAsClauseUnionModifiers.ts (2 errors) ====
+    // An instantiated generic mapped type with an `as` clause takes its keys from its own modifiers type's apparent
+    // properties, a union's common ones too, not its generic declaration's expansion (xstate's ToStateSchema<TConfig>)
+    type StateSchema = { id?: string; states?: Record<string, StateSchema>; type?: unknown; };
+    type ToStateSchema<TSchema extends StateSchema> = {
+      -readonly [K in keyof TSchema as K & ('id' | 'states')]: K extends 'states'
+        ? { [SK in keyof TSchema['states']]: ToStateSchema<NonNullable<TSchema['states'][SK]>> }
+        : TSchema[K];
+    };
+    interface Inner<C> { id?: string | undefined; ctx?: C; states?: Record<string, Inner<C>>; }
+    type Config<C> = Inner<C> & ({ version?: string } | { output?: C });
+    interface Box<S extends StateSchema> { s: S }
+    declare function g<C, const T extends Config<C>>(c: T): Box<ToStateSchema<T>>;
+                                                                ~~~~~~~~~~~~~~~~
+!!! error TS2344: Type 'ToStateSchema<T>' does not satisfy the constraint 'StateSchema'.
+!!! error TS2344:   Types of property 'id' are incompatible.
+!!! error TS2344:     Type 'T["id"]' is not assignable to type 'string'.
+!!! error TS2344:       Type 'string | undefined' is not assignable to type 'string'.
+!!! error TS2344:         Type 'undefined' is not assignable to type 'string'.
+                                                                              ~
+!!! error TS2344: Type 'T' does not satisfy the constraint 'StateSchema'.
+!!! error TS2344:   Type 'Config<C>' is not assignable to type 'StateSchema' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2344:     Type 'Inner<C> & { version?: string; }' is not assignable to type 'StateSchema' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2344:       Types of property 'id' are incompatible.
+!!! error TS2344:         Type 'string | undefined' is not assignable to type 'string'.
+!!! error TS2344:           Type 'undefined' is not assignable to type 'string'.
+    

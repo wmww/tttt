@@ -4118,11 +4118,21 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
             // over the type parameter's properties)
             if (!keyed || keyed->kind == TY_INTERSECTION) return members;
             Ty const* apparent = ty_apparent_type(me, keyed);
-            if (apparent == keyed || !(apparent->flags & TYF_OBJECT) || (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
-                return members;
-            }
-            keyed = apparent;
+            if (apparent == keyed) return members;
             generic = true;
+            if (apparent->kind == TY_UNION) {
+                // (Of a union, the properties every member has: tsc's getPropertiesOfType of the apparent modifiers
+                // type, xstate's MachineConfig)
+                Ty const* common = ty_keyof(me, apparent);
+                if (common->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) return members;
+                constraint = common;
+                keyed = nullptr;
+            } else {
+                // (Of an intersection, its parts' when none is generic, see keyed_intersection below)
+                bool parts = apparent->kind == TY_INTERSECTION && !intersection_has_generic_part(me, apparent);
+                if (!(apparent->flags & TYF_OBJECT) && !parts) return members;
+                keyed = apparent;
+            }
         }
     }
     if (ty_is_generic_index(constraint) && !generic) {
@@ -4765,7 +4775,7 @@ MappedInfo const* ty_mapped_info_unexpanded(Checker* me, Ty const* ty) {
 // A mapped type node's members before expansion (its declaration's MappedInfo), what an instantiation of it is
 // instantiated from (tsc's instantiateMappedType keeps the declaration, resolveMappedTypeMembers reads it with the
 // mapper): never the generic target's expansion, whose `as` clause kind relates types that may reach this very
-// instantiation's keys (`${K}.${keyof Self<T[K]>}`, plan 83). Null if it isn't a mapped type node
+// instantiation's keys (`${K}.${keyof Self<T[K]>}`, mappedTypeAsClauseRecursiveNoCrash1). Null if it isn't a mapped type node
 static Members const* declared_mapped_members(Checker* me, Ty const* target) {
     if (target->kind != TY_ANONYMOUS || !target->anonymous.mapped || target->anonymous.target) return nullptr;
     TyObjectState* state = object_state(target);
@@ -4776,7 +4786,7 @@ static Members const* declared_mapped_members(Checker* me, Ty const* target) {
 
 // tsc's isGenericMappedType: the mapped type's info if it stays generic (its members then are those its keys' lower
 // bound has). A constraint that is a generic index answers from the declaration, as tsc's does: expanding the type to
-// find out relates its `as` clause, which may reach this very type (`${K}.${keyof Self<T[K]>}`, plan 83)
+// find out relates its `as` clause, which may reach this very type (`${K}.${keyof Self<T[K]>}`, mappedTypeAsClauseRecursiveNoCrash1)
 MappedInfo const* ty_generic_mapped(Checker* me, Ty const* ty) {
     if (ty->kind == TY_ANONYMOUS && ty->anonymous.mapped && !ty_members_done(ty)) {
         MappedInfo const* mapped = ty_mapped_info_unexpanded(me, ty);

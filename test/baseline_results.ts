@@ -1052,6 +1052,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMappedAsClauseUnionModifiers': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedFilterDistributiveKeepsDeclarations': {
         errors: true,
         symbols: true,
