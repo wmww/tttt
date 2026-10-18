@@ -2665,6 +2665,9 @@ typedef struct TyDisplay {
     // The type parameters of an instantiated generic signature being printed: tsc gives it fresh ones, so nothing that
     // mentions them is reused inside of it
     TyList fresh_params;
+    // Declaration emit: the signature being printed is a method of a class instance type printed as a literal that tsgo
+    // instantiates for `this` (not thisless: isThisless wants one declaration), so its own type parameters are fresh
+    bool own_params_fresh;
     // Print unique symbol types as `typeof sym` rather than `unique symbol` (tsc's typeToString without
     // AllowUniqueESSymbolType, which its default flags have: messages' fully qualified names, getTypeNameForErrorDisplay)
     bool typeof_unique_symbols;

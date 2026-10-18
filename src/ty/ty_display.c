@@ -3810,6 +3810,19 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     }
     bool instantiated = root != sig;
     bool fresh_anonymous = instantiated && merged_mapped;
+    bool own_params_fresh = d.own_params_fresh && (!instantiated || this_only) &&
+        !(instantiated && (sibling_mapped || merged_mapped || mentions_mapped(me, sig, root)));
+    d.own_params_fresh = false;
+    if (own_params_fresh && root->type_params.len) {
+        if (d.fresh_params.len) {
+            Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + root->type_params.len);
+            memcpy(both, d.fresh_params.data, sizeof(Ty const*) * d.fresh_params.len);
+            memcpy(both + d.fresh_params.len, root->type_params.data, sizeof(Ty const*) * root->type_params.len);
+            d.fresh_params = (TyList){ .data = both, .len = d.fresh_params.len + root->type_params.len };
+        } else {
+            d.fresh_params = root->type_params;
+        }
+    }
     // (Added to an enclosing signature's: a function type in a parameter of `then<U>` of `P<number>` doesn't reuse a
     // `U` it mentions either)
     // (Instantiated for `this` only, it's the same: tsc instantiates a member that mentions `this` (a class or interface
@@ -3959,8 +3972,9 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         // The parameter's pseudo type where it says the same (tsgo's serializeTypeForDeclaration of the parameter):
         // an initialized parameter before a required one has undefined added (requiresAddingImplicitUndefined), an
         // optional one's undefined isn't in its annotation (isOptionalAnnotated)
+        // (Not where its type mentions fresh type parameters: tsgo's is then another type than its annotation's)
         if (reusable && reuses_nodes(param_d) && !d.reused && param->decl && !contextual_jsdoc &&
-            !function->jsdoc_callback && !function->jsdoc_type &&
+            !function->jsdoc_callback && !function->jsdoc_type && !(own_params_fresh && mentions(me, param->type, d.fresh_params)) &&
             param->decl >= function->args.data && param->decl < function->args.data + vec_function_arg_size(&function->args)
         ) {
             Pseudo const* pseudo = pseudo_of_parameter(me, function, param->decl);
@@ -5325,6 +5339,98 @@ static bool item_is_literal(ObjectExprItem const* item) {
     return value->tag == EXPR_ARRAY || value->tag == EXPR_OBJECT;
 }
 
+// Whether a span's text has the word `this` or `typeof` (a part of a signature walked by its text)
+static bool span_says_this(Span span) {
+    if (!span_valid(span)) return true;
+    for (isize_t i = 0; i < span.size; i++) {
+        bool start = i == 0 || !(isalnum((unsigned char)span.buf[i - 1]) || span.buf[i - 1] == '_' || span.buf[i - 1] == '$');
+        if (!start) continue;
+        for (u32 w = 0; w < 2; w++) {
+            char const* word = w ? "typeof" : "this";
+            isize_t n = (isize_t)strlen(word);
+            if (span.size - i < n || memcmp(span.buf + i, word, (size_t)n)) continue;
+            char after = i + n < span.size ? span.buf[i + n] : ' ';
+            if (!(isalnum((unsigned char)after) || after == '_' || after == '$')) return true;
+        }
+    }
+    return false;
+}
+
+static bool function_may_reference_this(FunctionImpl const* function);
+// tsc's isTypeParameterPossiblyReferenced of a class's `this` type in a type node: a `this` type, or a type query (one
+// of a name declared outside the class wouldn't be, left out). What isn't walked here goes by its text
+static bool node_may_reference_this(TypeNode const* node) {
+    switch (node->tag) {
+        case TYPE_ANY: case TYPE_UNKNOWN: case TYPE_NEVER: case TYPE_VOID: case TYPE_BOOLEAN: case TYPE_NUMBER:
+        case TYPE_STRING: case TYPE_SYMBOL: case TYPE_BIGINT: case TYPE_VALUE: case TYPE_UNIQUE_SYMBOL:
+            return false;
+        case TYPE_IDENTIFIER:
+            if (node->identifier->keyword == KEYWORD_IDENTIFIER_THIS) return true;
+            for_each (i, vec_spanned_type, &node->identifier->generic_params) {
+                if (node_may_reference_this(&i->type)) return true;
+            }
+            return false;
+        case TYPE_ARRAY: return node_may_reference_this(node->array.element);
+        case TYPE_TUPLE:
+            for_each (i, vec_tuple_element, &node->tuple.elements) {
+                if (node_may_reference_this(&i->type)) return true;
+            }
+            return false;
+        case TYPE_UNION: case TYPE_INTERSECTION:
+            for_each (i, vec_type, &node->composite) {
+                if (!i->placeholder && node_may_reference_this(i)) return true;
+            }
+            return false;
+        case TYPE_INDEXED: return node_may_reference_this(&node->indexed->interface) || node_may_reference_this(&node->indexed->index);
+        case TYPE_KEYOF: return node_may_reference_this(&node->keyof->interface);
+        case TYPE_TERNARY:
+            return node_may_reference_this(&node->ternary->maybe_sub) || node_may_reference_this(&node->ternary->maybe_super) ||
+                node_may_reference_this(&node->ternary->if_true) || node_may_reference_this(&node->ternary->if_false);
+        case TYPE_TYPEOF: return true;
+        case TYPE_CALLABLE: return !node->callable || !node->callable->function || function_may_reference_this(node->callable->function);
+        case TYPE_INTERFACE: return span_says_this(node->interface.span);
+        default: return true;
+    }
+}
+
+// The same of a method's declaration: tsc's containsReference of a MethodDeclaration (without a return type, its body
+// counts; a `this` parameter is a name, not a reference)
+static bool function_may_reference_this(FunctionImpl const* function) {
+    if (!function->ret_explicit && function->has_body && !function->is_type) return true;
+    if (function->predicate) {
+        if (function->predicate->is_this) return true;
+        if (function->predicate->has_type && node_may_reference_this(&function->predicate->type)) return true;
+    } else if (function->ret_explicit && node_may_reference_this(&function->ret)) {
+        return true;
+    }
+    for_each (i, vec_function_arg, &function->args) {
+        Binding const* binding = &i->initializer.binding;
+        if (binding->has_explicit_type && node_may_reference_this(binding_type(binding))) return true;
+    }
+    for_each (i, vec_generic_item, &function->generic.items) {
+        if (i->extends_explicit && node_may_reference_this(&i->extends)) return true;
+    }
+    return false;
+}
+
+// Whether tsgo instantiates a class method for `this` (resolveClassOrInterfaceMembers' mapper), giving its signatures
+// fresh type parameters: instantiateSymbol keeps a thisless one (isThisless: one declaration), and the method's type is
+// only instantiated when some declaration possibly references `this` (getObjectTypeInstantiation's outer type
+// parameters, isTypeParameterPossiblyReferenced)
+static bool method_this_instantiated(Prop const* declared) {
+    if (declared->thisless && declared->decl->decl_span_count <= 1) return false;
+    PropDeclRare const* rare = prop_decl_rare(declared->decl);
+    for (u32 i = 0; i < rare->overload_count; i++) {
+        if (function_may_reference_this(rare->overloads[i])) return true;
+    }
+    // (And the implementation of overloads)
+    FunctionImpl const* function = declared->decl->node && declared->decl->node->tag == TYPE_CALLABLE ?
+        declared->decl->node->callable->function : declared->decl->function;
+    if (function && function_may_reference_this(function)) return true;
+    FunctionImpl const* implementation = function ? function_impl_rare(function)->overload_implementation : nullptr;
+    return implementation && implementation != function && function_may_reference_this(implementation);
+}
+
 static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     if (reuses_nodes(d) && !span_valid(d.decl_literal) && ty->kind == TY_ANONYMOUS && ty->anonymous.node &&
         ty->anonymous.node->tag == TYPE_INTERFACE && annotates_name_at(d.at, ty->anonymous.node->interface.span)
@@ -5501,6 +5607,15 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         Members const* type_members = ((prop->flags & PROP_METHOD) && !(prop->flags & PROP_READONLY) && !synthetic) || function_symbol ?
             ((method_type->flags & TYF_OBJECT) ? ty_members(me, method_type) : nullptr) : nullptr;
         if (type_members && type_members->call_count && !type_members->prop_count) {
+            // (A class instance's method: tsgo's resolveClassOrInterfaceMembers instantiates the members for `this`,
+            // all but the thisless ones with one declaration (isThisless), with fresh type parameters: what mentions
+            // them isn't reused. babel-traverse's overloaded generic methods of `class NodePath`)
+            TyDisplay method_d = d;
+            method_d.own_params_fresh = d.tracker && !(prop->flags & PROP_STATIC) &&
+                ((ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_CLASS_INSTANCE) ||
+                 (ty->kind == TY_REFERENCE && ty->reference.target->kind == TY_DECLARED &&
+                  ty->reference.target->declared.kind == TY_DECLARED_CLASS_INSTANCE)) &&
+                method_this_instantiated(declared);
             // Methods print once per signature
             for (u32 j = 0; j < type_members->call_count; j++) {
                 // (A method named `new` is quoted: it would read as a construct signature)
@@ -5509,7 +5624,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 if (csview_equals(atom_sv(prop->name), "new")) out_lit(d, "\"new\"");
                 else display_member_name(me, d, prop);
                 if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
-                display_signature(me, d, type_members->call[j], ": ", false);
+                display_signature(me, method_d, type_members->call[j], ": ", false);
                 member_end_node(d, comments, ";");
             }
             continue;

@@ -1,0 +1,87 @@
+//// [test/cases/ttttDeclarationMapClassLiteralFreshTypeParams.ts] ////
+
+=== ttttDeclarationMapClassLiteralFreshTypeParams.ts ===
+// A class instance printed as a type literal: tsgo instantiates its members for `this` (resolveClassOrInterfaceMembers)
+// except the thisless ones, and isThisless wants a single declaration, so an overloaded generic method's signatures
+// get fresh type parameters and the parameters mentioning them are printed from their types, unmapped
+// (babel-traverse's `const NodePath_Final = class NodePath { ... }`): getObjectTypeInstantiation only instantiates the
+// method type where a declaration possibly references `this` (an implementation without a return type does).
+export interface V<S> { s: S }
+>V : Symbol(V, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 0, 0))
+>S : Symbol(S, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 5, 19))
+>s : Symbol(V.s, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 5, 23))
+>S : Symbol(S, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 5, 19))
+
+export const C = class N {
+>C : Symbol(C, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 6, 12))
+>N : Symbol(N, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 6, 16))
+
+    t<S>(x: V<S>, s: S): void;
+>t : Symbol(N.t, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 6, 26), Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 7, 30), Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 8, 23))
+>S : Symbol(S, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 7, 6))
+>x : Symbol(x, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 7, 9))
+>V : Symbol(V, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 0, 0))
+>S : Symbol(S, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 7, 6))
+>s : Symbol(s, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 7, 17))
+>S : Symbol(S, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 7, 6))
+
+    t(x: V<any>): void;
+>t : Symbol(N.t, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 6, 26), Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 7, 30), Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 8, 23))
+>x : Symbol(x, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 8, 6))
+>V : Symbol(V, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 0, 0))
+
+    t(x: any, s?: any) {}
+>t : Symbol(N.t, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 6, 26), Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 7, 30), Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 8, 23))
+>x : Symbol(x, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 9, 6))
+>s : Symbol(s, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 9, 13))
+
+    u<T>(x: V<T>): void {}
+>u : Symbol(N.u, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 9, 25))
+>T : Symbol(T, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 10, 6))
+>x : Symbol(x, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 10, 9))
+>V : Symbol(V, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 10, 6))
+
+    w<T>(x: V<T>) {}
+>w : Symbol(N.w, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 10, 26))
+>T : Symbol(T, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 11, 6))
+>x : Symbol(x, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 11, 9))
+>V : Symbol(V, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 11, 6))
+
+};
+// A method whose declarations don't possibly reference `this` (each with a return type) isn't instantiated: mapped
+export const D = class M {
+>D : Symbol(D, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 14, 12))
+>M : Symbol(M, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 14, 16))
+
+    o<S>(x: V<S>, s: S): void;
+>o : Symbol(M.o, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 14, 26), Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 15, 30), Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 16, 23))
+>S : Symbol(S, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 15, 6))
+>x : Symbol(x, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 15, 9))
+>V : Symbol(V, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 0, 0))
+>S : Symbol(S, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 15, 6))
+>s : Symbol(s, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 15, 17))
+>S : Symbol(S, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 15, 6))
+
+    o(x: V<any>): void;
+>o : Symbol(M.o, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 14, 26), Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 15, 30), Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 16, 23))
+>x : Symbol(x, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 16, 6))
+>V : Symbol(V, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 0, 0))
+
+    o(x: any, s?: any): void {}
+>o : Symbol(M.o, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 14, 26), Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 15, 30), Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 16, 23))
+>x : Symbol(x, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 17, 6))
+>s : Symbol(s, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 17, 13))
+
+    q<T>(x: V<T>, z: string | number): T { return null!; }
+>q : Symbol(M.q, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 17, 31))
+>T : Symbol(T, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 18, 6))
+>x : Symbol(x, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 18, 9))
+>V : Symbol(V, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 18, 6))
+>z : Symbol(z, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 18, 17))
+>T : Symbol(T, Decl(ttttDeclarationMapClassLiteralFreshTypeParams.ts, 18, 6))
+
+};
+
