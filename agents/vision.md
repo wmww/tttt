@@ -92,6 +92,11 @@ types components) are the oracle, not the goal; real projects that are clean und
   types). tsgo's output is K-independent and so is tttt's now (kdiff: only inbox-zero's undefinedProperties order,
   which tsgo shares). On 12 cores / 24 threads (2026-10-16): K4 -> K12
   1.2-2.0x faster, K12 -> K24 0-11%, at ~170 MB per checker on vscode: the CLI caps the checkers' budget at 1.5 GB together (plan 75).
+  **Since 2026-10-18 the default checkers stop at the physical cores** (but every thread up to 4: on 2 cores / 4
+  threads K2 is 10-26% slower than K4, vscode then level with bun): 24 threads oversubscribed on 4 vCPUs spend 6-26%
+  more CPU at K24 than K12 on the corpora, 31-42% on the thrashers (dokploy, monkeytype) and 0.2-2 GB more peak
+  (measurements.md "Checkers per physical core"). Unconfirmed on the 12-core box; the human's command is there. The
+  budgets stay (larger ones from the start trade along plan 81's frontier: vscode K12 -10% CPU, +1.2 GB).
 - **Fan-out merge discipline** (2026-10-13): full source sweep match-set diffs and flagflip against a session-start
   run at every fan-out merge (they caught 11 lost projects and a -31 TS6196 nothing else saw).
 - **Fan-out sessions** (four Opus sub-agents in worktrees, one failstats/displaydiff/jsstats bucket each, disjoint

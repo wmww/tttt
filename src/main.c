@@ -1,5 +1,5 @@
-// realpath() and PATH_MAX, which strict -std=c2x hides
-#define _XOPEN_SOURCE 700
+// realpath() and PATH_MAX, which strict -std=c2x hides, and sched_getaffinity()
+#define _GNU_SOURCE
 #include <limits.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -30,6 +30,7 @@
 #include <strings.h>
 #include <ctype.h>
 #include <errno.h>
+#include <sched.h>
 
 enum { MAX_COMPILER_OPTION_ARGS = 64 };
 // --checker-memory's default (plan 67 stage 1)
@@ -58,6 +59,7 @@ typedef struct Options {
     bool build; // -b: paths are projects, each checked with everything it references, in build order
     bool stop_build_on_errors; // --stopBuildOnErrors
     u32 checkers; // --checkers
+    u32 checker_cap; // Unless --checkers is given: default_checker_cap()
     u64 checker_memory; // --checker-memory, bytes (UINT64_MAX: off)
     bool checker_memory_given; // Else CHECKER_MEMORY_CAP_MB caps it
     u32 threads; // --threads
@@ -571,6 +573,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     program_set_realpath(program, real_path_of, nullptr);
     program_set_file_size(program, file_size_of, nullptr);
     program_set_checkers(program, opts->checkers);
+    program_set_checker_cap(program, opts->checker_cap);
     // (--expect-types reads each file's types in the checker that checked it)
     if (!opts->expect_types) program_set_checker_memory(program, opts->checker_memory);
     if (!opts->expect_types && !opts->checker_memory_given) {
@@ -990,6 +993,8 @@ static_failable build(Options const* opts, returns int) {
     Build b = { .opts = opts, .project_opts = *opts, .projects = projects, .order = order, .count = count };
     b.project_opts.path_count = 0;
     b.project_opts.threads = opts->threads / jobs ? opts->threads / jobs : 1;
+    // (The physical cores split between the projects checking at once like the threads)
+    if (opts->checker_cap) b.project_opts.checker_cap = opts->checker_cap / jobs ? opts->checker_cap / jobs : 1;
     b.jobs = calloc((size_t)count + 1, sizeof(BuildJob));
     atomic_init(&b.next, 0);
     atomic_init(&b.end, count);
@@ -1134,8 +1139,9 @@ static void print_help(void) {
         "  --listFilesOnly  print the program's files and stop\n"
         "  --listEmittedFiles  print the written declaration files after the diagnostics\n"
         "  -v, --version print the version of TypeScript tttt checks like\n"
-        "  --checkers K  check with K checkers (default: one per thread, at most one per 64 KB of checked\n"
-        "                source). Each gets contiguous runs of the files; the output doesn't depend on K\n"
+        "  --checkers K  check with K checkers (default: one per thread, at most one per physical core past 4\n"
+        "                and one per 64 KB of checked source). Each gets contiguous runs of the files; the output\n"
+        "                doesn't depend on K\n"
         "  --builders J  with -b, check J projects at once, each on threads/J threads (default: 2 with\n"
         "                4 threads, else 1). The output doesn't depend on it\n"
         "  --singleThreaded  one checker on one thread, one project at a time\n"
@@ -1158,6 +1164,48 @@ static void print_help(void) {
         "  --keep-going  typecheck and report everything even after parse or options errors (tsc stops)\n"
         "  --no-defer-bodies  parse and resolve every function body up front, not when a checker needs it"
     );
+}
+
+// The physical cores among the CPUs this process may run on (distinct package and core ids in sysfs), 0 when unknown
+static u32 physical_cores(void) {
+    cpu_set_t allowed;
+    if (sched_getaffinity(0, sizeof allowed, &allowed)) return 0;
+    enum { MAX_CORES = 1024 };
+    static u64 seen[MAX_CORES];
+    u32 count = 0;
+    for (int cpu = 0; cpu < CPU_SETSIZE; cpu++) {
+        if (!CPU_ISSET(cpu, &allowed)) continue;
+        long ids[2];
+        char const* names[2] = { "physical_package_id", "core_id" };
+        for (int i = 0; i < 2; i++) {
+            char path[96];
+            snprintf(path, sizeof path, "/sys/devices/system/cpu/cpu%d/topology/%s", cpu, names[i]);
+            FILE* file = fopen(path, "r");
+            if (!file) return 0;
+            int read = fscanf(file, "%ld", &ids[i]);
+            fclose(file);
+            if (read != 1) return 0;
+        }
+        u64 id = (u64)ids[0] << 32 | (u32)ids[1];
+        u32 j = 0;
+        while (j < count && seen[j] != id) j++;
+        if (j < count) continue;
+        if (count == MAX_CORES) return 0;
+        seen[count++] = id;
+    }
+    return count;
+}
+
+// The default checker count's ceiling: one checker per physical core, not per hardware thread, but every thread up
+// to 4. A second hardware thread checking on a core doubles the checkers' CPU and memory (each builds the declared
+// world again) for little: on 12 cores / 24 threads K12 -> K24 bought 0-11% wall, while 24 threads oversubscribed on
+// 4 vCPUs spent 6-26% more CPU at K24 than at K12 on the corpora (dokploy 42%, monkeytype 31%) and 0.2-2 GB more
+// peak. Below 4 hardware threads the second one is worth it (4 vCPUs on 2 cores: K2 is 10-26% slower than K4)
+static u32 default_checker_cap(u32 threads) {
+    u32 cores = physical_cores();
+    if (!cores) return 0;
+    u32 few = threads < 4 ? threads : 4;
+    return cores > few ? cores : few;
 }
 
 static int run(int argc, const char** argv) {
@@ -1302,6 +1350,7 @@ static int run(int argc, const char** argv) {
         return 0;
     }
     if (single_threaded) opts.checkers = opts.threads = opts.build_jobs = 1;
+    if (!opts.checkers) opts.checker_cap = default_checker_cap(opts.threads);
     // tttt only checks: it is `tsc --noEmit` (no emit-only option errors), unless the command line says otherwise or the
     // options only emit declarations. -b is tsc -b's, which emits
     bool no_emit_given = false;

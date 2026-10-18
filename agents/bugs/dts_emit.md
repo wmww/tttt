@@ -44,7 +44,17 @@ size on real code, each with an example:
     `getShadowStyle` `?: never` too): tsgo's getUndefinedProperty caches one symbol per name per checker, declared
     where the first property it was made for is, so the order depends on which file that checker checked first (tsgo
     runs 4 checkers). tttt emulates the cache (KEY_UNDEFINED_PROPERTY) but its checking order/distribution differs.
-    Plan-sized: needs tsgo's file-to-checker assignment and check order.
+    Plan-sized: needs tsgo's file-to-checker assignment and check order. tttt's K>1 emit follows its own history the
+    same way (`dtsdiff.py --kdiff 4` on the bucket: 5 / 18 projects write other files at K4, the same 5 twice; at the
+    defaults work stealing makes that timing-dependent), accepted as tsgo's split (2026-10-18, todo entry 1(d));
+    dtsdiff runs tttt at one checker and is deterministic (five runs byte-identical per project). **One that isn't
+    the split**: ui `apps/v4/registry/config.d.ts:241` (`parseRegistryBaseParts`), tsgo writes `error?: undefined`
+    last at `--singleThreaded` and at 4 checkers, tttt K1 first; tttt K4 and `TTTT_CHECK_ONLY=apps/v4/registry/config.ts`
+    match tsgo. Bisected (TTTT_CHECK_ONLY over the files before it): checking `apps/v4/app/(app)/(create)/lib/
+    parse-config.test.ts` first is enough (its `result.error` on parse-config.ts's `{ success, error } | { success,
+    data: DesignSystemConfig }` makes tttt's undefinedProperties `error` symbol there, which sorts before config.ts).
+    So tsgo's single checker doesn't make the cached `error` while checking that test, or makes it from a later file;
+    a three-file repro of that shape (also with `data` typed from the later file) matches tsgo.
   - qwik mcp `page.d.ts`: union order, checker-side. `inc ? { ...signal, value } : signal` with `signal` a parameter's
     rest binding (`({ value, ...signal }: T)`) is `{ name; hookType } | { name; hookType; value }` in tsgo (the rest
     type made first) and the other way in tttt (filetest repro; a declared `signal` matches). tttt's rest type

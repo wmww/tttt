@@ -12,6 +12,62 @@ text since 2026-10-18 but webpack's TS5115 name order, `scripts/clidiff.py --cor
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Checkers per physical core (2026-10-18, todo entry 1, 99676b23 + the policy)
+**Oversubscribed** (`--threads 24 --checkers K` on these 4 vCPUs): wall means nothing, CPU (user + sys) and peak are
+the many-core costs without the 12-core box's SMT and clock effects (which inflate its CPU further: drizzle K24 6.37
+s there vs 3.81 here). Median of 3, CPU s / peak MB (K1 at 24 threads parses in parallel and has 23 materialize-ahead
+helpers, so it isn't `--singleThreaded`):
+| project | K1 | K4 | K8 | K12 | K24 | K24 / K12 cpu, MB |
+|---|---|---|---|---|---|---|
+| TypeScript6 | 0.64 / 363 | 0.93 / 333 | 0.95 / 385 | 1.01 / 434 | 1.07 / 440 | 1.06, 1.01 |
+| type-fest | 0.90 / 527 | 1.41 / 462 | 1.49 / 672 | 1.52 / 721 | 1.59 / 918 | 1.05, 1.27 |
+| valibot | 0.52 / 396 | 0.93 / 246 | 1.01 / 291 | 1.10 / 330 | 1.19 / 409 | 1.08, 1.24 |
+| bulletproof-react | 0.24 / 213 | 0.40 / 296 | 0.48 / 351 | 0.55 / 370 | 0.60 / 437 | 1.09, 1.18 |
+| nestjs-boilerplate | 0.26 / 220 | 0.30 / 257 | 0.32 / 274 | 0.34 / 288 | 0.36 / 314 | 1.06, 1.09 |
+| webpack | 1.44 / 621 | 2.21 / 514 | 2.48 / 552 | 2.67 / 609 | 2.86 / 712 | 1.07, 1.17 |
+| zod | 0.75 / 489 | 1.46 / 407 | 1.74 / 468 | 1.95 / 542 | 2.07 / 670 | 1.06, 1.24 |
+| xstate | 0.39 / 323 | 0.74 / 310 | 0.91 / 314 | 1.05 / 393 | 1.41 / 540 | 1.34, 1.37 |
+| drizzle | 1.00 / 544 | 2.26 / 507 | 2.89 / 592 | 3.05 / 689 | 3.81 / 894 | 1.25, 1.30 |
+| vue | 0.82 / 465 | 1.32 / 322 | 1.43 / 361 | 1.53 / 472 | 1.77 / 505 | 1.16, 1.07 |
+| effect | 1.60 / 636 | 2.35 / 490 | 2.47 / 562 | 2.64 / 618 | 2.86 / 775 | 1.08, 1.25 |
+| excalidraw | 1.03 / 519 | 2.06 / 428 | 2.21 / 488 | 2.33 / 545 | 2.54 / 645 | 1.09, 1.18 |
+| tanstack-router | 0.72 / 424 | 1.23 / 341 | 1.36 / 362 | 1.44 / 394 | 1.53 / 524 | 1.06, 1.33 |
+| vscode | 15.52 / 1596 | 23.43 / 1291 | 25.55 / 1487 | 26.89 / 1538 | 28.64 / 1832 | 1.07, 1.19 |
+| dokploy/apps/dokploy | 3.57 / 891 | 11.39 / 1348 | 21.46 / 1919 | 28.06 / 2744 | 48.06 / 4809 | 1.71, 1.75 |
+| monkeytype/frontend | 0.86 / 504 | 5.01 / 643 | 8.07 / 856 | 9.57 / 1083 | 13.89 / 1719 | 1.45, 1.59 |
+- On the corpora CPU grows slowly with K (vscode +15% K4 -> K12), the thrashers almost linearly: each dokploy checker
+  rebuilds a ~170 MB warm state (`--time`: every checker holds 170-226 MB at most and recycles 2-4 times at any K),
+  ~1.5-2 CPU s each. That is plan 85's subject; the policy only stops paying it twice per core.
+- Budgets at K12 (`--checker-memory M`, so no 16 MB start): 1152 (96 each) vs the default's growing start: monkeytype
+  CPU 4.93 vs 9.57 (peak 1219 vs 1083), drizzle 2.61 vs 3.05 (775 vs 689), vscode 24.4 vs 26.9 (**2707 vs 1538**);
+  dokploy at 200 each 21.2 vs 28.1 CPU at the same peak. Plan 81's frontier again: not changed.
+**Real threads** (`--threads 4`, this box: 2 cores x 2 SMT), wall s / CPU s / peak MB:
+| project | K2 | K3 | K4 | K2 / K4 wall |
+|---|---|---|---|---|
+| TypeScript6 | 0.30 / 0.75 / 226 | 0.30 / 0.86 / 233 | 0.31 / 0.90 / 230 | 0.97 |
+| type-fest | 0.49 / 0.96 / 335 | 0.46 / 1.25 / 300 | 0.49 / 1.39 / 422 | 1.00 |
+| valibot | 0.31 / 0.66 / 140 | 0.28 / 0.84 / 150 | 0.26 / 0.92 / 164 | 1.19 |
+| webpack | 0.69 / 1.59 / 378 | 0.66 / 1.98 / 383 | 0.60 / 2.21 / 420 | 1.15 |
+| zod | 0.46 / 0.98 / 238 | 0.41 / 1.25 / 258 | 0.38 / 1.44 / 282 | 1.21 |
+| drizzle | 0.75 / 1.55 / 272 | 0.65 / 1.93 / 284 | 0.60 / 2.27 / 370 | 1.25 |
+| effect | 0.75 / 1.70 / 338 | 0.65 / 2.07 / 363 | 0.61 / 2.31 / 333 | 1.23 |
+| excalidraw | 0.66 / 1.48 / 255 | 0.59 / 1.82 / 286 | 0.54 / 2.03 / 262 | 1.22 |
+| tanstack-router | 0.39 / 0.82 / 196 | 0.36 / 1.03 / 220 | 0.31 / 1.16 / 268 | 1.26 |
+| vscode | 7.70 / 16.58 / 1127 | 6.86 / 20.53 / 1175 | 6.11 / 23.05 / 1168 | 1.26 |
+| dokploy/apps/dokploy | 3.62 / 7.54 / 929 | 2.62 / 7.32 / 1160 | 3.00 / 11.19 / 1214 | 1.21 |
+| monkeytype/frontend | 1.16 / 2.36 / 443 | 1.31 / 3.86 / 433 | 1.31 / 4.92 / 521 | 0.89 |
+  (react, nest, xstate, vue within 1.14.) The SMT sibling buys 15-26% wall on 2 cores: vscode K2 would tie bun
+  (7.70 vs 7.73, plan 67 "Where it stands").
+- **Policy shipped** (`default_checker_cap()`, main.c): without `--checkers`, the checkers are at most the physical
+  cores (distinct package/core ids among the affinity's CPUs in sysfs), but every thread up to 4. Here: 4 as before
+  (`--threads 24` now 4 too: oversubscribing takes `--checkers`). 12 cores / 24 threads: 12, where K12 -> K24 bought
+  0-11% wall (vscode 2.81 vs 2.50 s, bun 2.92, 2026-10-16) for the CPU and peak above. **Unconfirmed there**: the
+  human's command is `scripts/bench.sh --runs 3 --checkers 24 --bun PATH --tscrs PATH` (the default row is now K12,
+  `--checkers 24` the old default; the CPU column is new).
+- dtsdiff's flicker (triage): not reproduced, five runs byte-identical per project at one checker (it always ran
+  tttt at `--threads 1`); tttt's K4 emit differs from K1 on 5 / 18 of the member order bucket, tsgo's own split
+  (bugs/dts_emit.md "Member order", one K1 exception there).
+
 ## Triage: message text as an oracle (2026-10-18, todo entry 9)
 - clidiff from the caches (tsc's `--pretty false` text in test/sourcesweep/tsc.jsonl.gz and test/corpora.tsc.jsonl):
   **3612 / 3675 projects byte-identical, 54 text, 9 diagnostics**, 0 order / exit code / crash; corpora 15 / 17 (vue

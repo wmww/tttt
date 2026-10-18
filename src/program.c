@@ -145,6 +145,7 @@ typedef struct Program {
     _Atomic u64* share_left;
     bool steal_files; // While typechecking: checkers take each other's files (TTTT_NO_STEAL=1: never, to measure)
     u32 requested_checkers; // program_set_checkers()
+    u32 checker_cap; // program_set_checker_cap(), 0: the threads
     u64 checker_memory; // program_set_checker_memory(), bytes: UINT64_MAX never recycles
     u64 checker_memory_cap; // program_set_checker_memory_cap(), bytes: UINT64_MAX none
     u64 checker_memory_shared; // program_set_checker_memory_shared(), bytes: UINT64_MAX none
@@ -3593,6 +3594,11 @@ void program_set_checkers(Program* me, u32 count) {
     my requested_checkers = count;
 }
 
+void program_set_checker_cap(Program* me, u32 count) {
+    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+    my checker_cap = count;
+}
+
 void program_set_checker_memory(Program* me, u64 bytes) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     my checker_memory = bytes;
@@ -4565,6 +4571,7 @@ u64 program_checked_source_bytes(Program const* me) {
 static u32 auto_checker_count(Program const* me) {
     u64 count = program_checked_source_bytes(me) / CHECKER_BYTES;
     u32 threads = my threads ? my threads : 1;
+    if (my checker_cap && my checker_cap < threads) threads = my checker_cap;
     return count < 1 ? 1 : count > threads ? threads : (u32)count;
 }
 

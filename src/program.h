@@ -102,6 +102,9 @@ void program_report_global_diagnostics(Program* me);
 // How many checkers program_typecheck() deals the files to (tsgo's --checkers). 0, the default: one per thread, fewer
 // for a small program (auto_checker_count()). The diagnostics don't depend on it (plan 62). Call it while loading
 void program_set_checkers(Program* me, u32 count);
+// The default checker count's ceiling below the threads (0, the default: the threads): the CLI's checkers per physical
+// core on a machine with many (main.c's default_checker_cap()). Call it while loading
+void program_set_checker_cap(Program* me, u32 count);
 // How much memory (bytes, split between the checkers) program_typecheck()'s checkers may hold before it drops one and
 // goes on in a fresh one (see check_share()); UINT64_MAX, the default, never; 0 a fresh checker per file. The
 // diagnostics don't depend on it. A recycled checker is gone: program_checker_of() needs the default. Call it while

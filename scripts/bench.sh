@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Perf benchmark: tttt vs tsgo (the pinned TypeScript 7.1 oracle, thirdparty/typescript/built/tsc), both at their
 # defaults (every core; tttt one checker per core for a big enough program, tsgo 4 checkers) and single-threaded.
-# Wall time and peak RSS, best and median of RUNS runs, plus tttt's phase split, on the pinned corpora. See
+# Wall time, CPU time (user + sys) and peak RSS, best and median of RUNS runs, plus tttt's phase split, on the pinned corpora. See
 # agents/measurements.md for recorded numbers and caveats.
 #
 #   scripts/bench.sh [--runs N]
@@ -38,19 +38,21 @@ TSGO=thirdparty/typescript/built/tsc
 
 mkdir -p build/bench
 
-# measure NAME CMD...: runs CMD RUNS times, prints best/median wall seconds and peak RSS
+# measure NAME CMD...: runs CMD RUNS times, prints best/median wall seconds, the median run's CPU seconds (user + sys,
+# all threads: the cost of the defaults' parallelism, which wall hides) and peak RSS
 measure() {
     local name="$1"; shift
-    local walls=() rss=0 status=0
+    local runs=() rss=0 status=0
     for _ in $(seq "$RUNS"); do
-        /usr/bin/time -f '%e %M' -o build/bench/time.txt "$@" > build/bench/last_output.txt 2>&1 || status=$?
-        read -r wall mem < <(tail -1 build/bench/time.txt)
-        walls+=("$wall")
+        /usr/bin/time -f '%e %M %U %S' -o build/bench/time.txt "$@" > build/bench/last_output.txt 2>&1 || status=$?
+        read -r wall mem user sys < <(tail -1 build/bench/time.txt)
+        runs+=("$wall $(echo "$user + $sys" | bc)")
         if test "$mem" -gt "$rss"; then rss="$mem"; fi
     done
-    local sorted=($(printf '%s\n' "${walls[@]}" | sort -n))
-    printf '%-24s best %7.3fs  median %7.3fs  peak RSS %6d MB  exit %d\n' \
-        "$name" "${sorted[0]}" "${sorted[$((RUNS / 2))]}" "$((rss / 1024))" "$status"
+    local sorted=() ; mapfile -t sorted < <(printf '%s\n' "${runs[@]}" | sort -n)
+    local median=(${sorted[$((RUNS / 2))]})
+    printf '%-24s best %7.3fs  median %7.3fs  cpu %7.2fs  peak RSS %6d MB  exit %d\n' \
+        "$name" "${sorted[0]%% *}" "${median[0]}" "${median[1]}" "$((rss / 1024))" "$status"
 }
 
 # The pinned benchmark: TypeScript 6's compiler sources (the TypeScript6 corpus), the same files every session

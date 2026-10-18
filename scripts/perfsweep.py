@@ -44,7 +44,7 @@ MACHINE = socket.gethostname()
 
 
 def run(cmd, cwd, timeout, mem_gb):
-    """Runs cmd, returns (stdout+stderr text, exit status or 'timeout', wall s, peak RSS KB)"""
+    """Runs cmd, returns (stdout+stderr text, exit status or 'timeout', wall s, peak RSS KB, CPU s (user + sys))"""
     limit = mem_gb << 30
     start = time.time()
     proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -66,7 +66,7 @@ def run(cmd, cwd, timeout, mem_gb):
     proc.returncode = 0  # (Reaped above: keep Popen from waiting again)
     reader.result()
     wall = time.time() - start
-    return (out[0] if out else b'').decode(errors='replace'), status, wall, usage.ru_maxrss
+    return (out[0] if out else b'').decode(errors='replace'), status, wall, usage.ru_maxrss, usage.ru_utime + usage.ru_stime
 
 
 def project_args(project):
@@ -93,7 +93,7 @@ def run_tsgo(project, timeout, mem_gb, jobs):
     # (A cold check, the build info out of the checkout: a fresh file of our own)
     with tempfile.TemporaryDirectory(prefix='perfsweep-') as tmp:
         build_info = ['--tsBuildInfoFile', os.path.join(tmp, 'x.tsbuildinfo')] if incremental(cwd, p) else []
-        text, status, wall, rss = run([TSGO, '-p', p, '--noEmit', '--singleThreaded', '--extendedDiagnostics',
+        text, status, wall, rss, _ = run([TSGO, '-p', p, '--noEmit', '--singleThreaded', '--extendedDiagnostics',
                                        '--pretty', 'false', *build_info], cwd, timeout, mem_gb)
     stat = lambda name, conv=int: conv(m.group(1)) if (m := re.search(rf'^{name}:\s+([\d.]+)', text, re.M)) else None
     return {'project': project, 'status': status if status in (0, 1, 2) else str(status), 'types': stat('Types'),
@@ -105,26 +105,27 @@ def run_tsgo(project, timeout, mem_gb, jobs):
 def run_tttt(project, timeout, mem_gb, defaults=False, extra=()):
     cwd, p = project_args(project)
     single = [] if defaults else ['--checkers', '1', '--threads', '1']
-    text, status, wall, rss = run([os.path.join(ROOT, 'release/tttt'), '-p', p, '--noEmit', '--pretty', 'false', *single,
+    text, status, wall, rss, cpu = run([os.path.join(ROOT, 'release/tttt'), '-p', p, '--noEmit', '--pretty', 'false', *single,
                                    *extra, '--time'], cwd, timeout, mem_gb)
     phases = {m.group(1): float(m.group(2)) for m in re.finditer(r'^time: ([a-z+ ]+?) ([\d.]+) ms', text, re.M)}
     checker = re.search(r'^time: checker 0: ([\d.]+) ms, arena (\d+) MB, (\d+) types', text, re.M)
     return {'project': project, 'status': status if status in (0, 1, 2) else str(status),
             'check_s': phases.get('typecheck', 0) / 1000, 'total_s': sum(phases.values()) / 1000, 'wall_s': wall,
-            'types': int(checker.group(3)) if checker else 0, 'arena_mb': int(checker.group(2)) if checker else 0,
+            'cpu_s': round(cpu, 3), 'types': int(checker.group(3)) if checker else 0, 'arena_mb': int(checker.group(2)) if checker else 0,
             'rss_kb': rss, 'recycles': sum(int(m) for m in re.findall(r'^time: checker \d+ recycled (\d+) times', text, re.M)),
             'checkers': int(m.group(1)) if (m := re.search(r'^time: checkers: (\d+)', text, re.M)) else 0}
 
 
 def run_bun(bun, project, timeout, mem_gb):
-    """bun's `bun check` (a Rust port of tsgo 7.0, plan 67) at its defaults: only its wall and peak RSS matter"""
+    """bun's `bun check` (a Rust port of tsgo 7.0, plan 67) at its defaults: its wall, CPU and peak RSS"""
     cwd, p = project_args(project)
     # (Run from an empty directory: in one whose package.json has a "check" script, `bun check` runs that instead)
     with tempfile.TemporaryDirectory(prefix='perfsweep-') as tmp:
         build_info = ['--tsBuildInfoFile', os.path.join(tmp, 'x.tsbuildinfo')] if incremental(cwd, p) else []
-        _, status, wall, rss = run([bun, 'check', '-p', os.path.join(cwd, p), '--noEmit', '--pretty', 'false', *build_info],
+        _, status, wall, rss, cpu = run([bun, 'check', '-p', os.path.join(cwd, p), '--noEmit', '--pretty', 'false', *build_info],
                                    tmp, timeout, mem_gb)
-    return {'project': project, 'status': status if status in (0, 1, 2) else str(status), 'wall_s': wall, 'rss_kb': rss}
+    return {'project': project, 'status': status if status in (0, 1, 2) else str(status), 'wall_s': wall, 'rss_kb': rss,
+            'cpu_s': round(cpu, 3)}
 
 
 def load_cache():
@@ -205,29 +206,40 @@ def report_defaults(rows, n, bun=None):
         return
     walls = sorted(ratio(d['wall_s'], t['wall_s']) for _, t, d in rows)
     q = lambda xs, f: xs[min(len(xs) - 1, int(f * len(xs)))]
+    # (Runs from before CPU was recorded have none)
+    cpu = lambda r: r.get('cpu_s', 0)
+    cpus = sorted(ratio(cpu(d), cpu(t)) for _, t, d in rows if cpu(t))
     tw, dw = sum(t['wall_s'] for _, t, _ in rows), sum(d['wall_s'] for _, _, d in rows)
-    print(f'\ntttt at its defaults ({os.cpu_count()} cores) against K1, {len(rows)} projects, wall ratios defaults / K1:')
-    print(f'  median {statistics.median(walls):5.2f}  p90 {q(walls, .9):5.2f}  worst {walls[-1]:6.2f}  '
-          f'(> 1: {sum(1 for x in walls if x > 1)}); total {dw:.0f}s vs {tw:.0f}s; '
+    tc, dc = sum(cpu(t) for _, t, _ in rows), sum(cpu(d) for _, _, d in rows)
+    print(f'\ntttt at its defaults ({os.cpu_count()} cores) against K1, {len(rows)} projects, ratios defaults / K1:')
+    for name, xs in (('wall', walls), ('cpu', cpus)):
+        if xs:
+            print(f'  {name:4} median {statistics.median(xs):5.2f}  p90 {q(xs, .9):5.2f}  worst {xs[-1]:6.2f}  '
+                  f'(> 1: {sum(1 for x in xs if x > 1)})')
+    print(f'  total wall {dw:.0f}s vs {tw:.0f}s, cpu {dc:.0f}s vs {tc:.0f}s; '
           f'{sum(1 for _, _, d in rows if d["recycles"])} projects recycled a checker, '
           f'{sum(d["recycles"] for _, _, d in rows)} recycles')
-    print(f'  {"project":52} {"ratio":>6} {"K1 s":>7} {"dflt s":>7} {"chk":>4} {"recyc":>6} {"K1 MB":>6} {"dflt MB":>7}')
+    print(f'  {"project":52} {"ratio":>6} {"K1 s":>7} {"dflt s":>7} {"cpu":>5} {"chk":>4} {"recyc":>6} {"K1 MB":>6} {"dflt MB":>7}')
     # (Projects under 0.3 s at K1 are startup noise)
     worst = sorted((r for r in rows if r[1]['wall_s'] > 0.3 or r[2]['recycles']), key=lambda r: -ratio(r[2]['wall_s'], r[1]['wall_s']))
     for p, t, d in worst[:n]:
         print(f'  {p[:52]:52} {ratio(d["wall_s"], t["wall_s"]):6.2f} {t["wall_s"]:7.2f} {d["wall_s"]:7.2f} '
-              f'{d["checkers"]:4} {d["recycles"]:6} {t["rss_kb"] >> 10:6} {d["rss_kb"] >> 10:7}')
+              f'{ratio(cpu(d), cpu(t)):5.2f} {d["checkers"]:4} {d["recycles"]:6} {t["rss_kb"] >> 10:6} {d["rss_kb"] >> 10:7}')
     both = [(p, d, bun[p]) for p, _, d in rows if bun and p in bun and bun[p]['status'] in (0, 1, 2)]
     if not both:
         return
     walls = sorted(ratio(d['wall_s'], b['wall_s']) for _, d, b in both)
     peaks = sorted(ratio(d['rss_kb'], b['rss_kb']) for _, d, b in both)
+    bcpus = sorted(ratio(cpu(d), cpu(b)) for _, d, b in both if cpu(d) and cpu(b))
     dw, bw = sum(d['wall_s'] for _, d, _ in both), sum(b['wall_s'] for _, _, b in both)
     print(f'\ntttt at its defaults against bun at its defaults, {len(both)} projects, ratios tttt / bun:')
-    for name, xs in (('wall', walls), ('peak RSS', peaks)):
+    for name, xs in (('wall', walls), ('cpu', bcpus), ('peak RSS', peaks)):
+        if not xs:
+            continue
         print(f'  {name:9} median {statistics.median(xs):5.2f}  p90 {q(xs, .9):5.2f}  worst {xs[-1]:6.2f}  '
               f'best {xs[0]:5.2f}  (< 1: {sum(1 for x in xs if x < 1)} / {len(xs)})')
-    print(f'  total wall {dw:.0f}s vs {bw:.0f}s; peak RSS {sum(d["rss_kb"] for _, d, _ in both) >> 20:.0f} GB vs '
+    print(f'  total wall {dw:.0f}s vs {bw:.0f}s, cpu {sum(cpu(d) for _, d, _ in both):.0f}s vs '
+          f'{sum(cpu(b) for _, _, b in both):.0f}s; peak RSS {sum(d["rss_kb"] for _, d, _ in both) >> 20:.0f} GB vs '
           f'{sum(b["rss_kb"] for _, _, b in both) >> 20:.0f} GB summed')
     print(f'  {"project":52} {"wall":>5} {"tttt s":>7} {"bun s":>7} {"peak":>5} {"tttt MB":>7} {"bun MB":>7} {"recyc":>6}')
     worst = sorted(both, key=lambda r: -max(ratio(r[1]['wall_s'], r[2]['wall_s']), ratio(r[1]['rss_kb'], r[2]['rss_kb'])))

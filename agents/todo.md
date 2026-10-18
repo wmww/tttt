@@ -20,16 +20,11 @@ Rules of the window: output byte-identical at every K, budget and thread count; 
 the defaults stay faster than bun on every corpus and the sweep's tail, and now **report CPU (user + sys) next to wall
 and RSS** for every perf claim at the defaults.
 
-1. **Many-core defaults, measurement and policy** (execution). (a) `scripts/bench.sh` gets a CPU column (user + sys
-   from `/usr/bin/time`) for every tool, and `scripts/perfsweep.py --defaults` reports CPU ratios too. (b) Oversubscribe
-   this box (`--threads 24 --checkers K` for K = 4, 8, 12, 24, and the budget the CLI would pick for each) to measure
-   CPU-seconds and peak RSS per K on the corpora and the thrashers (dokploy, monkeytype); wall is meaningless here,
-   take wall from the 12-core tables in measurements.md. (c) Pick a checker-count policy for many cores (per physical
-   core rather than per hardware thread, a cap, larger per-checker budgets when there are fewer) and implement it if
-   the numbers support it; write the human a one-line 12-core bench command to confirm it (vision.md "Thread
-   defaults" is the decision to update). (d) triage.md's dtsdiff flicker: tttt's output at the defaults depends on
-   timing through work stealing (per-checker undefinedProperties history), which breaks the byte-identical rule:
-   find whether that is tsgo's own K split (accept, and run dtsdiff at a fixed K) or a tttt dependence (fix).
+1. Done (2026-10-18): `scripts/bench.sh` and `perfsweep.py --defaults` report CPU; oversubscribed K tables in
+   measurements.md "Checkers per physical core" (K24 vs K12: corpora +5-34% CPU, dokploy +71%, monkeytype +45%, peak
+   +1-75%); default checkers now capped at the physical cores but every thread up to 4 (no change on 4 vCPUs, K12 on
+   the 12-core box, unconfirmed: the human's command is in that section); dtsdiff deterministic at K1 (the flicker
+   wasn't tttt's timing), K>1 emit is tsgo's own split, one ui K1 history case in bugs/dts_emit.md.
 2. **Plan 85 planning** (re-derivation census, designs, prototype, gate). Uses entry 1's CPU numbers. Its outcome
    decides entries 5-6.
 3. **Plan 82 stage 3**: optional parameters and tuple elements carry their undefined; delete the readers' adds and
