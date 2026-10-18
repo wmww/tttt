@@ -457,17 +457,22 @@ static void merge_related_info(Error* into, Error* from) {
     into->sub_errors = kept;
 }
 
+static intptr_t insertion_index_in(VecError const* errors, Error const* error);
 static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
-    for (intptr_t i = vec_error_size(&my errors); i > 0; i--) {
-        int cmp = error_cmp(vec_error_at(&my errors, i - 1), error);
+    return insertion_index_in(&my errors, error);
+}
+
+static intptr_t insertion_index_in(VecError const* errors, Error const* error) {
+    for (intptr_t i = vec_error_size(errors); i > 0; i--) {
+        int cmp = error_cmp(vec_error_at(errors, i - 1), error);
         if (cmp < 0) {
             return i;
         } else if (cmp == 0) {
             if (error->phase == ERROR_PHASE_TYPECHECK || error->phase == ERROR_PHASE_RESOLVE_NAMES) {
                 // tsc's diagnostic collection drops an identical diagnostic (the binder's too: a third default export
                 // reports the first one again, related to itself, merged by sortAndDeduplicateDiagnostics)
-                for (intptr_t j = i; j > 0 && !error_cmp(vec_error_at(&my errors, j - 1), error); j--) {
-                    Error const* other = vec_error_at(&my errors, j - 1);
+                for (intptr_t j = i; j > 0 && !error_cmp(vec_error_at(errors, j - 1), error); j--) {
+                    Error const* other = vec_error_at(errors, j - 1);
                     // (One with other related information is another diagnostic until they're merged:
                     // error_vec_merge_related())
                     if (span_eq(other->span, error->span) && same_message_chain(other, error) && same_related_info(other, error)) {
@@ -476,21 +481,21 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
                 }
                 // Allow multiple typechecking errors for the same span
                 return i - 1;
-            } else if (error->phase == ERROR_PHASE_PARSE && vec_error_at(&my errors, i - 1)->ts_code != error->ts_code &&
-                (error_is_js_syntax(error) != error_is_js_syntax(vec_error_at(&my errors, i - 1)) ||
-                    error->grammar || vec_error_at(&my errors, i - 1)->grammar ||
-                    error->scanner || vec_error_at(&my errors, i - 1)->scanner)
+            } else if (error->phase == ERROR_PHASE_PARSE && vec_error_at(errors, i - 1)->ts_code != error->ts_code &&
+                (error_is_js_syntax(error) != error_is_js_syntax(vec_error_at(errors, i - 1)) ||
+                    error->grammar || vec_error_at(errors, i - 1)->grammar ||
+                    error->scanner || vec_error_at(errors, i - 1)->scanner)
             ) {
                 // A JavaScript file's TypeScript-only syntax error (tsc's getJSSyntacticDiagnosticsForFile), a
                 // grammar error (the checker's) or a scanner error the parser's dedupe already saw (see
                 // last_error_starts_at() in parser.c) is a diagnostic of its own next to another there: by code
-                Error const* other = vec_error_at(&my errors, i - 1);
+                Error const* other = vec_error_at(errors, i - 1);
                 return other->ts_code < error->ts_code ? i : i - 1;
-            } else if (error->phase == ERROR_PHASE_PARSE && cstr_cmp(&vec_error_at(&my errors, i - 1)->message, &error->message) != 0) {
+            } else if (error->phase == ERROR_PHASE_PARSE && cstr_cmp(&vec_error_at(errors, i - 1)->message, &error->message) != 0) {
                 // Two parse errors the parser kept at one span with other messages (`':' expected.` and `'</'
                 // expected.` at the end of the file): tsc's sortAndDeduplicateDiagnostics only drops identical ones,
                 // by code, then message
-                Error const* other = vec_error_at(&my errors, i - 1);
+                Error const* other = vec_error_at(errors, i - 1);
                 bool after = other->ts_code != error->ts_code ? other->ts_code < error->ts_code :
                     cstr_cmp(&other->message, &error->message) < 0;
                 return after ? i : i - 1;
@@ -602,9 +607,10 @@ static bool error_same_head(Error const* a, Error const* b) {
 }
 
 void error_ctx_merge(ErrorCtx* me, ErrorCtx* from) {
+    bool located = false;
     for_each (i, vec_error, &from->errors) {
         if (span_valid(i->span)) {
-            error_ctx_append_error(me, *i);
+            located = true;
             continue;
         }
         // (Several checkers may each report the same global diagnostic)
@@ -619,6 +625,39 @@ void error_ctx_merge(ErrorCtx* me, ErrorCtx* from) {
             global_insert(me, (Error){ .message = i->message, .ts_code = i->ts_code, .phase = i->phase,
                 .sub_errors = i->sub_errors });
         }
+    }
+    if (located && my frozen) log_error("Merged into a frozen ErrorCtx");
+    if (located) {
+        // One pass rather than an insertion each (quadratic: inbox-zero's 21k errors from 4 checkers took 380 ms).
+        // Before each error goes what of ours is at or before its span: the rest is after it in error_cmp() too, so
+        // the insertion's scan from the end (insertion_index_in()) sees exactly what it would have in all of ours.
+        // What of ours is at or before the first one's span stays where it is (a file's errors join at the end)
+        Span first = span_null;
+        for_each (i, vec_error, &from->errors) {
+            if (span_valid(i->span)) {
+                first = i->span;
+                break;
+            }
+        }
+        isize kept = vec_error_size(&my errors);
+        while (kept > 0 && span_valid(my errors.data[kept - 1].span) && span_cmp(my errors.data[kept - 1].span, first) > 0) kept--;
+        isize ours = vec_error_size(&my errors) - kept;
+        // (error_ctx_append_error() keeps them in span order)
+        for (isize i = kept + 1; i < kept + ours; i++) check(span_cmp(my errors.data[i - 1].span, my errors.data[i].span) <= 0);
+        Error* tail = ours ? c_new_n(Error, ours) : nullptr;
+        if (ours) memcpy(tail, my errors.data + kept, sizeof(Error) * (size_t)ours);
+        my errors.size = kept;
+        vec_error_reserve(&my errors, kept + ours + vec_error_size(&from->errors));
+        isize next = 0;
+        for_each (i, vec_error, &from->errors) {
+            if (!span_valid(i->span)) continue;
+            for (; next < ours && span_cmp(tail[next].span, i->span) <= 0; next++) vec_error_push(&my errors, tail[next]);
+            intptr_t at = insertion_index_in(&my errors, i);
+            if (at >= 0) vec_error_insert_n(&my errors, at, i, 1);
+            else error_drop(i);
+        }
+        for (; next < ours; next++) vec_error_push(&my errors, tail[next]);
+        free(tail);
     }
     from->errors.size = 0;
 }
