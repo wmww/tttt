@@ -1,0 +1,47 @@
+//// [test/cases/ttttSignatureSuggestionBodyLocals.ts] ////
+
+=== a.ts ===
+export function g(x: typeof Coutn) { const Count = 1; return x; }
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 18))
+>Count : Symbol(Count, Decl(a.ts, 0, 42))
+>x : Symbol(x, Decl(a.ts, 0, 18))
+
+export function h(x = Coutn) { const Count = 1; return x; }
+>h : Symbol(h, Decl(a.ts, 0, 65))
+>x : Symbol(x, Decl(a.ts, 1, 18))
+>Count : Symbol(Count, Decl(a.ts, 1, 36))
+>x : Symbol(x, Decl(a.ts, 1, 18))
+
+export function k(x: Coutn) { type Count = 1; return x; }
+>k : Symbol(k, Decl(a.ts, 1, 59))
+>x : Symbol(x, Decl(a.ts, 2, 18))
+>Coutn : Symbol(Coutn)
+>Count : Symbol(Count, Decl(a.ts, 2, 29))
+>x : Symbol(x, Decl(a.ts, 2, 18))
+
+export function r(): typeof Totl { const Total = 1; return Total; }
+>r : Symbol(r, Decl(a.ts, 2, 57))
+>Total : Symbol(Total, Decl(a.ts, 3, 40))
+>Total : Symbol(Total, Decl(a.ts, 3, 40))
+
+export function v(): typeof Totl { var Total = 1; return Total; }
+>v : Symbol(v, Decl(a.ts, 3, 67))
+>Total : Symbol(Total, Decl(a.ts, 4, 38))
+>Total : Symbol(Total, Decl(a.ts, 4, 38))
+
+export function far(x: Buffr) { const unrelated = 1; return x; }
+>far : Symbol(far, Decl(a.ts, 4, 65))
+>x : Symbol(x, Decl(a.ts, 5, 20))
+>Buffr : Symbol(Buffr)
+>unrelated : Symbol(unrelated, Decl(a.ts, 5, 37))
+>x : Symbol(x, Decl(a.ts, 5, 20))
+
+=== b.ts ===
+import { r } from "./a";
+>r : Symbol(r, Decl(b.ts, 0, 8))
+
+export const a: string = r();
+>a : Symbol(a, Decl(b.ts, 1, 12))
+>r : Symbol(r, Decl(b.ts, 0, 8))
+

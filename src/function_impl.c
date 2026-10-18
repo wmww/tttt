@@ -553,13 +553,26 @@ bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
     u32 before = scope_locals(function_scope)->count;
     block_add_names(&body->block, function_scope);
     // Had the body's names been there, would the signature's walk have found one of them (or suggested one)?
-    bool collides = body->signature_not_found && scope_locals(function_scope)->count > before;
+    SymbolTable const* locals = scope_locals(function_scope);
+    bool collides = false;
+    csview* added = nullptr;
     for (u32 i = 0; i < body->signature_name_count && !collides; i++) {
+        DeferredSignatureName const* name = &body->signature_names[i];
         // (A body's value of the name of a type in the signature isn't found: `props: Props` and `...Props` in the body)
-        Symbol const* found = symbol_table_get(scope_locals(function_scope), body->signature_names[i].name);
-        u32 meaning = body->signature_names[i].meaning ? body->signature_names[i].meaning | SYMBOL_ALIAS : ~(u32)0;
+        Symbol const* found = symbol_table_get(locals, name->name);
+        u32 meaning = name->meaning ? name->meaning | SYMBOL_ALIAS : ~(u32)0;
         collides = found && !found->is_parameter && ((found->flags & meaning) || found->is_placeholder);
+        if (collides || !name->not_found || locals->count == before) continue;
+        // (A body's name a suggestion could have picked: one within the spelling distance, whatever its meaning)
+        if (!added) {
+            added = c_new_n(csview, locals->count - before);
+            for (u32 j = before; j < locals->count; j++) {
+                added[j - before] = (csview){ locals->entries[j].name_buf, locals->entries[j].name_len };
+            }
+        }
+        collides = spelling_suggestion(name->name, added, locals->count - before) >= 0;
     }
+    free(added);
     function_impl_lookup_body(me, &flow, nullptr, function_scope, false, false, false, errs);
     function_scope->flow = nullptr;
     if (!rare && me->rare) deferred_bodies_undo_made((void**)&me->rare, nullptr, walk_rare_drop);

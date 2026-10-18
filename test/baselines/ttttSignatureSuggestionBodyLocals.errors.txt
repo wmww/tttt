@@ -1,0 +1,32 @@
+a.ts(1,29): error TS2304: Cannot find name 'Coutn'.
+a.ts(2,23): error TS2304: Cannot find name 'Coutn'.
+a.ts(3,22): error TS2304: Cannot find name 'Coutn'.
+a.ts(4,29): error TS2552: Cannot find name 'Totl'. Did you mean 'Total'?
+a.ts(5,29): error TS2304: Cannot find name 'Totl'.
+a.ts(6,24): error TS2304: Cannot find name 'Buffr'.
+
+
+==== a.ts (6 errors) ====
+    export function g(x: typeof Coutn) { const Count = 1; return x; }
+                                ~~~~~
+!!! error TS2304: Cannot find name 'Coutn'.
+    export function h(x = Coutn) { const Count = 1; return x; }
+                          ~~~~~
+!!! error TS2304: Cannot find name 'Coutn'.
+    export function k(x: Coutn) { type Count = 1; return x; }
+                         ~~~~~
+!!! error TS2304: Cannot find name 'Coutn'.
+    export function r(): typeof Totl { const Total = 1; return Total; }
+                                ~~~~
+!!! error TS2552: Cannot find name 'Totl'. Did you mean 'Total'?
+!!! related TS2728 a.ts:4:42: 'Total' is declared here.
+    export function v(): typeof Totl { var Total = 1; return Total; }
+                                ~~~~
+!!! error TS2304: Cannot find name 'Totl'.
+    export function far(x: Buffr) { const unrelated = 1; return x; }
+                           ~~~~~
+!!! error TS2304: Cannot find name 'Buffr'.
+==== b.ts (0 errors) ====
+    import { r } from "./a";
+    export const a: string = r();
+    

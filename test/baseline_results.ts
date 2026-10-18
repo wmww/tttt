@@ -1238,6 +1238,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSignatureSuggestionBodyLocals': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttSpellingSuggestionTie': {
         errors: true,
         symbols: true,

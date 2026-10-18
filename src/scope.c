@@ -152,31 +152,32 @@ static ResolveShard* binder_shard(Binder const* me) {
     return resolve_shard && resolve_shard->binder == me ? resolve_shard : nullptr;
 }
 
-// A name the signature of a deferred body (plan 78) looks up through its function's scope
-[[gnu::noinline]] static void note_deferred_signature_name(Scope const* function_scope, csview name, u32 meaning) {
-    DeferredBody* body = function_scope->function->body_.deferred;
+static DeferredSignatureName* deferred_signature_name(DeferredBody* body, Binder* binder, csview name) {
     for (u32 i = 0; i < body->signature_name_count; i++) {
-        if (csview_equals_sv(body->signature_names[i].name, name)) {
-            body->signature_names[i].meaning |= meaning;
-            return;
-        }
+        if (csview_equals_sv(body->signature_names[i].name, name)) return &body->signature_names[i];
     }
     if (body->signature_name_count == body->signature_name_cap) {
         u32 cap = body->signature_name_cap ? body->signature_name_cap * 2 : 4;
-        DeferredSignatureName* grown = arena_new_n(binder_arena(function_scope->binder), DeferredSignatureName, cap);
+        DeferredSignatureName* grown = arena_new_n(binder_arena(binder), DeferredSignatureName, cap);
         if (body->signature_name_count) memcpy(grown, body->signature_names, sizeof(DeferredSignatureName) * body->signature_name_count);
         body->signature_names = grown;
         body->signature_name_cap = cap;
     }
-    body->signature_names[body->signature_name_count++] = (DeferredSignatureName){ name, meaning };
+    body->signature_names[body->signature_name_count] = (DeferredSignatureName){ .name = name };
+    return &body->signature_names[body->signature_name_count++];
+}
+
+// A name the signature of a deferred body (plan 78) looks up through its function's scope
+[[gnu::noinline]] static void note_deferred_signature_name(Scope const* function_scope, csview name, u32 meaning) {
+    deferred_signature_name(function_scope->function->body_.deferred, function_scope->binder, name)->meaning |= meaning;
 }
 
 // A name the walk didn't find: in the signature of a deferred body (plan 78), its suggestion could have been one the
 // body declares
-static void note_deferred_signature_not_found(Scope const* me) {
+static void note_deferred_signature_not_found(Scope const* me, csview name) {
     for (Scope const* scope = me; scope; scope = scope->parent) {
         if (scope->deferred_body) {
-            scope->function->body_.deferred->signature_not_found = true;
+            deferred_signature_name(scope->function->body_.deferred, scope->binder, name)->not_found = true;
             return;
         }
     }
@@ -4871,11 +4872,33 @@ static bool suggest_in_table(SymbolTable const* table, bool globals, bool export
 }
 
 // tsc's resolveNameForSymbolSuggestion: the innermost table with a close enough name decides
+// Whether a function's local `found` is out of sight of its signature (tsc's resolveNameHelper with lastLocation not
+// the body), looked up from its parameter list or its return type
+static bool function_local_hidden(Symbol const* found, u32 meaning, bool from_parameters, bool from_return_type) {
+    if (found->is_parameter) return false;
+    // (From the parameters no body variable, nor a local type: "local types not visible outside the function body")
+    if (from_parameters) {
+        return (found->flags & SYMBOL_VARIABLE) || ((meaning & found->flags & SYMBOL_TYPE) && !(found->flags & SYMBOL_TYPE_PARAMETER));
+    }
+    // From the return type the function's own locals are visible but for its local types and its body's `var`s:
+    // `(): typeof groups` names the body's `const groups`
+    return from_return_type && (((meaning & found->flags & SYMBOL_TYPE) && !(found->flags & SYMBOL_TYPE_PARAMETER)) ||
+        (meaning & found->flags & SYMBOL_FUNCTION_SCOPED_VARIABLE));
+}
+
 static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion* out) {
+    bool from_parameters = false, from_return_type = false;
     for (Scope const* scope = me; scope; scope = scope->parent) {
         bool globals = scope->kind == SCOPE_GLOBAL;
         SymbolTable const* table = globals ? &scope->binder->globals : scope_locals(scope);
-        if ((table->count || table->parent || globals) && suggest_in_table(table, globals, false, name, meaning, out)) return true;
+        if ((table->count || table->parent || globals) && suggest_in_table(table, globals, false, name, meaning, out)) {
+            // (A suggestion the signature can't see is none: tsc's resolveNameHelper filters it like a name found, and
+            // looks on outside)
+            if (!out->symbol || !function_local_hidden(out->symbol, meaning, from_parameters, from_return_type)) return true;
+            *out = (Suggestion){0};
+        }
+        from_parameters = scope->parameters && !scope->parameters_see_body;
+        from_return_type = scope->return_type;
         // (A module's or namespace's exports by tsc's `meaning & SymbolFlags.ModuleMember`: not `export default <expr>`,
         // a property; an enum's by `meaning & SymbolFlags.EnumMember`)
         u32 const module_member = SYMBOL_VARIABLE | SYMBOL_FUNCTION | SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_ENUM |
@@ -5029,7 +5052,7 @@ static bool walk_unvisited(Expr const* left) {
 }
 
 void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs) {
-    note_deferred_signature_not_found(me);
+    note_deferred_signature_not_found(me, span_sv(name));
     ResolveShard* shard = binder_shard(my binder);
     if (shard) {
         DeferredEvent* event = defer_event(shard, DEFERRED_NOT_FOUND, me, errs);
@@ -5053,7 +5076,7 @@ static void report_misspelled_fallback(Span at, csview name, MisspelledFallback 
 static void report_misspelled_or(
     Scope const* me, Span at, csview name, u32 meaning, bool namespace, MisspelledFallback fallback, ErrorCtx* errs
 ) {
-    note_deferred_signature_not_found(me);
+    note_deferred_signature_not_found(me, name);
     ResolveShard* shard = binder_shard(my binder);
     if (shard) {
         DeferredEvent* event = defer_event(shard, DEFERRED_MISSPELLED, me, errs);
@@ -5107,7 +5130,7 @@ typedef struct PendingNotFound {
 } PendingNotFound;
 
 void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, ErrorCtx* errs) {
-    note_deferred_signature_not_found(me);
+    note_deferred_signature_not_found(me, span_sv(name));
     bool in_class = false;
     for (Scope const* scope = me; scope && !in_class; scope = scope->parent) in_class = scope_rare(scope)->this_ref.class_decl;
     if (!in_class || (my flow && my flow->in_type_query)) {
@@ -5268,24 +5291,11 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
         SymbolTable const* table = scope->kind == SCOPE_GLOBAL ? &scope->binder->globals : scope_locals(scope);
         if (table->count || table->parent) {
             Symbol* found = symbol_table_lookup(table, name, hash);
-            bool body_variable = from_parameters && found && (found->flags & SYMBOL_VARIABLE) && !found->is_parameter;
-            // From the return type the function's own locals are visible but for its local types and its body's `var`s
-            // (tsc's resolveNameHelper with lastLocation the return type node): `(): typeof groups` names the body's
-            // `const groups`
-            if (from_return_type && found && !found->is_parameter &&
-                (((meaning & found->flags & SYMBOL_TYPE) && !(found->flags & SYMBOL_TYPE_PARAMETER)) ||
-                    (meaning & found->flags & SYMBOL_FUNCTION_SCOPED_VARIABLE))
+            if (found && !function_local_hidden(found, meaning, from_parameters, from_return_type) &&
+                symbol_has_meaning(found, meaning)
             ) {
-                found = nullptr;
+                return found;
             }
-            // (Nor are its local types in the parameter list: tsc's resolveNameHelper, "local types not visible outside
-            // the function body")
-            if (from_parameters && found && (meaning & found->flags & SYMBOL_TYPE) && !(found->flags & SYMBOL_TYPE_PARAMETER) &&
-                !found->is_parameter
-            ) {
-                found = nullptr;
-            }
-            if (found && !body_variable && symbol_has_meaning(found, meaning)) return found;
         }
         if (scope->kind == SCOPE_GLOBAL_AUGMENTATION) {
             // A name the block declares is the merged global before the module file's locals: tsc's resolveNameHelper

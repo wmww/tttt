@@ -1,0 +1,55 @@
+//// [test/cases/ttttSignatureSuggestionBodyLocals.ts] ////
+
+=== a.ts ===
+export function g(x: typeof Coutn) { const Count = 1; return x; }
+>g : (x: typeof Coutn) => any
+>x : any
+>Coutn : any
+>Count : 1
+>1 : 1
+>x : any
+
+export function h(x = Coutn) { const Count = 1; return x; }
+>h : (x?: any) => any
+>x : any
+>Coutn : any
+>Count : 1
+>1 : 1
+>x : any
+
+export function k(x: Coutn) { type Count = 1; return x; }
+>k : (x: Coutn) => Coutn
+>x : Coutn
+>Count : 1
+>x : Coutn
+
+export function r(): typeof Totl { const Total = 1; return Total; }
+>r : () => typeof Totl
+>Totl : any
+>Total : 1
+>1 : 1
+>Total : 1
+
+export function v(): typeof Totl { var Total = 1; return Total; }
+>v : () => typeof Totl
+>Totl : any
+>Total : number
+>1 : 1
+>Total : number
+
+export function far(x: Buffr) { const unrelated = 1; return x; }
+>far : (x: Buffr) => Buffr
+>x : Buffr
+>unrelated : 1
+>1 : 1
+>x : Buffr
+
+=== b.ts ===
+import { r } from "./a";
+>r : () => typeof Totl
+
+export const a: string = r();
+>a : string
+>r() : any
+>r : () => typeof Totl
+

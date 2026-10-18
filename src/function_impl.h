@@ -297,8 +297,6 @@ typedef struct DeferredBody {
     bool has_flow_effects : 1;
     bool within_unreachable : 1;
     bool ambient : 1;
-    // The signature's walk reported a name it didn't find: its suggestion may have been one the body declares
-    bool signature_not_found : 1;
     // The names the signature's walk looked up through the function's scope, with the meanings it looked for (in the
     // binder's arena): had the body's declarations been there, one of them could have been found
     // (function_impl_lookup_deferred_body() checks)
@@ -310,6 +308,8 @@ typedef struct DeferredBody {
 typedef struct DeferredSignatureName {
     csview name;
     u32 meaning; // SymbolFlags
+    // The walk reported the name not found: its spelling suggestion may have been one the body declares
+    bool not_found;
 } DeferredSignatureName;
 
 // program.c: materializes the file of a deferred function, returns its body
