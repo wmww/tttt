@@ -306,6 +306,9 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   `ty_function_free_params()` can't tell syntactically (unannotated non-literal parameter defaults, unannotated returns
   with bodies); tsc's getPermissiveInstantiation is lazy, so tttt can leave a conditional deferred for good when that
   return type needs what's being resolved (mikro-orm's `toJSON(strict = true): Omit<EntityDTO<this>, I>`).
+- `ty_literal_rechecked()` (elaborate_element's tsc checkExpressionForMutableLocationWithContextualType): re-reads a
+  literal's cached element/property types against the new context (literals kept, arrays tuples where the context is
+  one) instead of re-checking the expression in CheckModeContextual; calls and functions keep what they inferred.
 
 ## Relations (`ty/relate.c`)
 - Reporting runs: tsc's error-node checkTypeAssignableTo callers run once, explaining (check.c relate_explaining(),
@@ -552,6 +555,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `SourceFile.unchecked` + `error_ctx_remove_unchecked`: skipLibCheck/noCheck/JS filtering happens after checking, so
   skipLibCheck'd `.d.ts` are checked in full for nothing (tsc's skipTypeChecking doesn't): a perf lead, if checking
   them first doesn't change what checked files see. Plain JS is checked in full and filtered (as tsc).
+- `ty_check_element_implicit_any` (TS7053...): unaliases the apparent intersection itself
+  (`ty_intersection_apparent_unaliased`) because `ty_apparent_type()` keeps an intersection's alias where tsc's
+  getApparentTypeOfIntersectionType makes it anew when a member changes. Other messages printing an apparent
+  intersection may show the alias tsc doesn't. Correct: apparent type without the alias (mind relation caches).
 - `ty_check_destructured_member` HACK (`from_this`): `({ m } = this)` inside method m isn't a read of private m;
   "inside" is by position, so a function nested in m counts as m.
 

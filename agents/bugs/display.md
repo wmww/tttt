@@ -219,18 +219,17 @@ Same diagnostics by (file, line, column, code), other text. Full run 2026-10-18 
 3675 projects): 3612 match, **54 `text`**, 9 `diagnostics` (the sweeps' business), 0 order/exit code/crash. Each needs
 a cut-down repro first (`scripts/clidiff.py -f '^PROJECT$' -v`; `-k KIND --last` lists a bucket's diagnostics). By
 mechanism, roughly by projects:
-- **Literal/tuple widening in a printed source type** (inbox-zero x2: 30 diags `value: true` printed `value: boolean`,
-  `[{...}]` vs `{...}[]`; react-router `__tests__/utils/framework.ts:49` `matches: never[]` printed `[]`; jotai `(true |
-  ...)[]` printed `(boolean | ...)[]`; mikro-orm 121 TS1240 chains `ClassFieldDecoratorContext<Dup2, Dup1 | undefined>`
-  printed without `| undefined`): the type tsc reports for an expression checked against a contextual type keeps
-  literals / arrays / optionality where tttt's doesn't (or the reverse). The biggest bucket by diagnostics.
 - **Truncation depth / alias vs structure** (gemini-cli `scripts/tests/eval-inventory.test.ts:21`: tsc expands
   `location: { line: number; column: number; }`, tttt prints the alias `EvalSourceLocation`; graphql-yoga envelop
   `SpreadTwo<{}, {}>` vs `...`; react-scan `types.ts:35` a member elided as `...` at another depth; apollo-client
   integration-tests/vite `DeepPartial<TValue>` vs `DeepPartial<...>`, `(...)` vs `...`; es-toolkit `isEmpty.spec.ts:56`
   `prototype: ...` vs `any`; babel-traverse `visitors.ts:168` the union's leading `{}` member missing and `... 755
   more` vs `753`; quicktype/test TS2322 `Partial<RendererOptions<"csharp", OptionMap<...>>>` printed without its
-  defaulted type argument; mikro-orm TS7053 `Loaded<User, never, never, never>` vs its expansion).
+  defaulted type argument; rxjs `combine-latest-all.spec.ts`/`zip-all.spec.ts` x11: the groupBy overloads printed for
+  `(string | number)[]` elide `KeyedGroupObservable<...>` where tsc still prints `<true, K>` (the same print for
+  `string[]` matches: the approximate length runs ahead somewhere in the three `(string | number)[]`s before it);
+  mikro-orm `decorator.transactional.test.ts:84` TS1270 `FindOneOptions<Entity, Hint, Fields, Excludes>` vs
+  `FindOneOptions<...>` in a parameter of a generic signature in a union).
 - **Zod v4 TS5115 list order** (crawlee x4, unocss x2, knip fixture, webpack: `schemas.d.cts(804,5)`): tsc `'IsOptionalIn',
   '$ZodTypeInternals', '$InferZodRecordInput'`, tttt starts at `$ZodTypeInternals`: where the instantiation stack is
   cut, or its rotation (TS5115's checker dependence is tsgo's own: bugs/tsgo_divergences.md).
@@ -240,17 +239,6 @@ mechanism, roughly by projects:
   approximateLength counts twice and the reprint's type arguments pass the truncation length; tttt's name_collisions()
   decides up front and prints them once. Fix: in display_union/display_list, count a colliding member's bare print
   before its qualified one, in tsc's order (all members first, then the reprints).
-- **Elaboration path picks** (react-router `__tests__/setup.ts:35`, quill, vscode-project-manager: tsc's `prototype[
-  Symbol.iterator]()` / `[Symbol.iterator]().next(...)` vs tttt's `entries()...`: which member the return-type
-  elaboration names first; sequelize x2 `No constituent of type 'Function | undefined' is callable` vs `Type 'undefined'
-  has no call signatures`; vitest/test/browser TS2769 the last overload's excess-property target `Omit<ScreenshotOptions,
-  "element">` vs `LocatorScreenshotOptions`; rxjs `zip-all.spec.ts:24` missing-properties list order `[create], [tak..`
-  vs `subscribe, [cr..`; docmost TS2322 chain stops before tsc's `... is missing the following properties from type
-  'any[]'`).
-- **Property list order** (trpc `ws.ts:587` TS2739 `close, [Symbol.dispose], _onTimeout` vs `close, _onTimeout,
-  [Symbol.dispose]`: symbol-keyed members' place).
-- **Union member order** (vitest/docs `resolveConfig.ts:796`: the reporter tuple union in another order).
-- **Simplified indexed access** (vitepress x2: `T[Extract<keyof T, string>] & null` vs `Partial<T>[...] & null`).
 - **Suggestion pick** (TS2551: gemini-cli/packages/cli `maybeStartExtension` -> tsc `startExtension`, tttt
   `restartExtension`; sequelize/packages/sqlite3 `createTableQuery` -> `truncateTableQuery` vs `_replaceTableQuery`;
   ngx-formly TS7052 `Did you mean to call 'get...'`): getSpellingSuggestion's candidates and tie-breaking.
