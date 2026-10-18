@@ -45,20 +45,21 @@ size on real code, each with an example:
   - trpc next-prisma `context.d.ts`, ui `registry-health/directory.d.ts`: uninvestigated.
 - **Checker types, uninvestigated** (agent C's leftovers, 2026-10-15): corpus:effect `test/Effect/query-repro.test.d.ts`
   (`Equals<Omit<A, ...>, {}> extends true ? void : {...}` resolved to its false branch by tttt, deferred by tsgo);
-  excalidraw `App.d.ts` (`callback?: () => void` reused where tsgo prints `(() => void) | undefined`: React's
-  `Component<any, AppState>["setState"]` through useContext; a probe with the same class shape in a `.d.ts` matches,
-  so the Block-rule guess below may not be it either), `tests/helpers/api.d.ts` (tsgo keeps `declare
+  excalidraw `tests/helpers/api.d.ts` (tsgo keeps `declare
   const { h }: Window & typeof globalThis;`); feathers `next?: HookContext` (tsgo names the unresolved NextFunction
-  through another unresolved import alias, the unknown-symbol quirk below) and better-auth's similar wrong-looking
-  names (`GenericEndpointContext[]`, `AuthContext`).
-- **Type literals inside a generic function's block body are instantiated (tsc's isTypeParameterPossiblyReferenced
-  Block rule)**: walking up from a type node to a type parameter's declaration, tsc assumes the parameter possibly
-  referenced as soon as it passes a Block, so `create = <T>(fn: () => T) => { return (h: { g?: () => any }) => 1 }`
-  instantiated (`create(() => 1)`) makes new type literal and function types, whose annotations no longer say the
-  same: tsgo prints `g?: (() => any) | undefined` where tttt reuses `g?: () => any` (an expression body keeps the
-  identity in both). better-auth test-utils `suites/*.d.ts`, likely excalidraw `App.d.ts` `callback?:` too. tttt
-  lowers type nodes with only the type parameters they mention (anonymous_set_free_params, lower.c): needs a "possibly
-  referenced through a block" bit there; touches identity of many types, so run every oracle and perfsweep.
+  through another unresolved import alias, the unknown-symbol quirk below).
+- **isTypeParameterPossiblyReferenced leftovers** (agent A 2026-10-18 did the Block rule and merged owners by node:
+  `TypeFlow.scope`, a function body's Block or a class/interface declaration's owner, set by the resolve walk; the
+  order-dependent `LowerCtx.merged_owner` is gone). Not modelled: the `this` type of a class around a method body
+  (tsc's Block rule makes it possibly referenced; the Block marker carries only OuterGenerics, which a class without
+  type parameters has none of, and the deferred body walk doesn't see the class's marker), and a context-sensitive
+  function's inferred signature type parameters (tsc's getOuterTypeParameters adds them).
+- **react-three-fiber `__mocks__/react-native.d.ts`** (uninvestigated): `render()` returns `React.createElement('view',
+  props)` with `props` the rest of `this.props` (`Readonly<Omit<ViewProps, 'children'> & {...}>`); tsgo reuses each
+  property's annotation (`accessibilityActions?: ReadonlyArray<AccessibilityActionInfo> | undefined`, `'none' |
+  'polite' | 'assertive'` in single quotes, `style?: StyleProp<ViewStyle> | undefined`), tttt prints the types (the
+  alias `AccessibilityActionInfo` lost, literal unions sorted, `style` without `| undefined`): the rest of a
+  homomorphic mapped type over interface properties should keep their declarations for reuse.
 - **keyof the wildcard**: tsc's getIndexType returns the wildcard for the wildcard, which defers `Equals<Omit<A, K>,
   {}>` (effect query-repro: tttt resolves it to false). The one-line fix in ty_keyof() makes ramdaToolsNoInfinite2
   report a spurious TS5114: the permissive instantiation of ts-toolbelt's `__ListOf` then recurses 40 iterations, and
@@ -124,7 +125,8 @@ size on real code, each with an example:
   checker-side, see "type text" leftovers).
 - **Unknown-symbol naming (tsgo quirk, matched)**: tsgo names an unresolved type through any import alias that also
   resolves to the unknown symbol (`node is isIdentifierChar`, babel-parser with unbuilt workspace deps; a reused
-  annotation from another file, `Plugin<Plugin>`, ttttDeclarationUnknownImportRenamed) and paints that import; a
+  annotation from another file, `Plugin<Plugin>`, ttttDeclarationUnknownImportRenamed; a reused `typeof X` too,
+  ttttDeclarationUnknownImportTypeof) and paints that import; a
   type printed from its type (not a reused node) may still not paint it (unverified).
 - **Declaration maps** (stage 5 done; agent C 2026-10-16 modelled tsgo's per-enclosing-declaration serializedTypes
   cache, TyPrintedTypes: a type printed again in the same scope is an unmapped clone, a signature with parameters a
