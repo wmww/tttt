@@ -934,10 +934,14 @@ bool ty_check_heritage(
     }
     cstr derived_str = ty_to_cstr(me, derived);
     cstr base_str = ty_to_cstr(me, base);
+    // (The whole type's head names both as reportRelationError does, fully qualified if they'd print the same:
+    // `Class 'import("./a").Addon' incorrectly implements class 'import("./b").Addon'`. A member's TS2416 doesn't)
+    cstr head_derived, head_base;
+    ty_report_pair_cstr(me, derived, base, &head_derived, &head_base);
     if (!members) {
-        report_explained_with_head(errs, &lines, ts_code, cstr_d(what, " '", derived_str, "' ", relation, " '", base_str, "'."),
+        report_explained_with_head(errs, &lines, ts_code, cstr_d(what, " '", head_derived, "' ", relation, " '", head_base, "'."),
             false, span);
-        c_drop(cstr, &derived_str, &base_str);
+        c_drop(cstr, &derived_str, &base_str, &head_derived, &head_base);
         return false;
     }
     // Each of the type's own members that doesn't fit the base's (tsc's issueMemberSpecificError), else the whole type
@@ -970,11 +974,11 @@ bool ty_check_heritage(
         issued = true;
     }
     if (!issued) {
-        cstr head = cstr_d(what, " '", derived_str, "' ", relation, " '", base_str, "'.");
-        if (ts_code == 2720) cstr_append_d(&head, DEFAULT_DISPLAY, " Did you mean to extend '", base_str, "' and inherit its members as a subclass?");
+        cstr head = cstr_d(what, " '", head_derived, "' ", relation, " '", head_base, "'.");
+        if (ts_code == 2720) cstr_append_d(&head, DEFAULT_DISPLAY, " Did you mean to extend '", head_base, "' and inherit its members as a subclass?");
         report_unassignable_with_head(me, derived, base, ts_code, head, false, span, errs);
     }
-    c_drop(cstr, &derived_str, &base_str);
+    c_drop(cstr, &derived_str, &base_str, &head_derived, &head_base);
     return false;
 }
 

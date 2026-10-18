@@ -895,6 +895,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttHeritageHeadSameNames': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttImportExportEqualsPropertyUmdNamespace': {
         errors: true,
         symbols: true,

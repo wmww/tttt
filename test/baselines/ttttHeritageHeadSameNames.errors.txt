@@ -1,0 +1,54 @@
+a.ts(2,14): error TS2720: Class 'import("a").Addon' incorrectly implements class 'import("b").Addon'. Did you mean to extend 'import("b").Addon' and inherit its members as a subclass?
+  Property 'dispose' is missing in type 'import("a").Addon' but required in type 'import("b").Addon'.
+a.ts(5,14): error TS2420: Class 'import("a").Shape' incorrectly implements interface 'import("b").Shape'.
+  Property 'dispose' is missing in type 'import("a").Shape' but required in type 'import("b").Shape'.
+a.ts(8,5): error TS2416: Property 'dispose' in type 'Plain' is not assignable to the same property in base type 'Plain'.
+  Type 'number' is not assignable to type '() => void'.
+a.ts(10,18): error TS2430: Interface 'Mixed' incorrectly extends interface 'Shape'.
+  Types of property 'dispose' are incompatible.
+    Type 'number' is not assignable to type '() => void'.
+c.ts(2,18): error TS2430: Interface 'import("c").Shape' incorrectly extends interface 'import("b").Shape'.
+  Types of property 'dispose' are incompatible.
+    Type 'string' is not assignable to type '() => void'.
+
+
+==== b.ts (0 errors) ====
+    export declare class Addon { dispose(): void; activate(): void; }
+    export interface Shape { dispose(): void; }
+    export declare class Plain { dispose(): void; }
+    
+==== a.ts (4 errors) ====
+    import { Addon as Base, Shape as ShapeBase, Plain as PlainBase } from './b';
+    export class Addon implements Base {
+                 ~~~~~
+!!! error TS2720: Class 'import("a").Addon' incorrectly implements class 'import("b").Addon'. Did you mean to extend 'import("b").Addon' and inherit its members as a subclass?
+!!! error TS2720:   Property 'dispose' is missing in type 'import("a").Addon' but required in type 'import("b").Addon'.
+!!! related TS2728 b.ts:1:30: 'dispose' is declared here.
+        activate(): void {}
+    }
+    export class Shape implements ShapeBase {
+                 ~~~~~
+!!! error TS2420: Class 'import("a").Shape' incorrectly implements interface 'import("b").Shape'.
+!!! error TS2420:   Property 'dispose' is missing in type 'import("a").Shape' but required in type 'import("b").Shape'.
+!!! related TS2728 b.ts:2:26: 'dispose' is declared here.
+    }
+    export class Plain extends PlainBase {
+        dispose = 1;
+        ~~~~~~~
+!!! error TS2416: Property 'dispose' in type 'Plain' is not assignable to the same property in base type 'Plain'.
+!!! error TS2416:   Type 'number' is not assignable to type '() => void'.
+    }
+    export interface Mixed extends ShapeBase { dispose: number }
+                     ~~~~~
+!!! error TS2430: Interface 'Mixed' incorrectly extends interface 'Shape'.
+!!! error TS2430:   Types of property 'dispose' are incompatible.
+!!! error TS2430:     Type 'number' is not assignable to type '() => void'.
+    
+==== c.ts (1 errors) ====
+    import type { Shape as S } from './b';
+    export interface Shape extends S { dispose: string }
+                     ~~~~~
+!!! error TS2430: Interface 'import("c").Shape' incorrectly extends interface 'import("b").Shape'.
+!!! error TS2430:   Types of property 'dispose' are incompatible.
+!!! error TS2430:     Type 'string' is not assignable to type '() => void'.
+    

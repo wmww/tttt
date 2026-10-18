@@ -213,3 +213,21 @@ Size: a fresh/regular distinction for object literal types at display (or a real
 relations and widening already approximate with flags): investigate how far tttt's TYF_FRESH/regular handling goes
 for object literals before choosing; ~1 session.
 
+
+## CLI text mismatches (clidiff `text` verdicts, 2026-10-18 `--sample 4`: 17, 3 fixed since)
+Same diagnostics, other text; each needs a cut-down repro first (`scripts/clidiff.py -f '^PROJECT$' -v`):
+- TS5115's list order (zod v4 `schemas.d.cts(804,5)`: crawlee x2, unocss): tsc `'IsOptionalIn', '$ZodTypeInternals',
+  '$InferZodRecordInput'`, tttt starts at `$ZodTypeInternals`: where the instantiation stack is cut, or its rotation.
+- `include pattern` paths in TS6307-style "Matched by include pattern" lines (unovis/packages/react/autogen, vest/
+  packages/vast): tsc prints the pattern relative to the config as written (`../src/**/*.ts`), tttt normalized.
+- TS2551 suggestion pick (gemini-cli/packages/cli: `maybeStartExtension`, tsc `startExtension`, tttt
+  `restartExtension`): getSpellingSuggestion's tie-breaking.
+- Elaboration path picks: react-router `__tests__` (`prototype[Symbol.iterator]()` vs `prototype.entries()`: property
+  order with symbol keys), sequelize/packages/core/test (`No constituent of type 'Function | undefined' is callable`
+  vs `Type 'undefined' has no call signatures`), vitepress (`T[Extract<keyof T, string>] & null` vs
+  `Partial<T>[...] & null`: the simplified indexed access), apollo-client integration-tests/vite (`DeepPartial<...>`
+  truncated at another depth), pinia nuxt playground (a union member printed `WritableStream<...>` by tsc and
+  `import("node:stream/web").WritableStream<any>` by tttt in a truncated union), inbox-zero/apps/web, hop-protocol,
+  react-scan (not looked at).
+- webpack (`--corpora`): `HookMap<SyncBailHook<ParserOptions | [EmptyParserOptions], ...>>` in tsc, tttt drops the
+  `ParserOptions |` member of a JS-inferred type argument.
