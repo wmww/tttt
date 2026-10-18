@@ -92,11 +92,22 @@ size on real code, each with an example:
   - ui `registry/config.d.ts` (its ZodEnum fixed 2026-10-18): left is `parseRegistryBaseParts`'s `error?: undefined`
     member order, the undefinedProperties cache of "Member order" above.
   - feathers generators `language: "js" | "ts"` (tsgo prints, no comments, an intersection member repeated) after a
-    long `.then()` chain of prompts: checker-side identity, uninvestigated.
+    long `.then()` chain of prompts: checker-side identity. `initializeBaseContext()` (commons.ts, a generic arrow
+    returning `{ ...ctx, dependencyVersions: { ...pkg.devDependencies, ...ctx.dependencyVersions, '@feathersjs/cli':
+    version } }` through `.then`s) is applied twice: tsgo's result keeps two distinct `{ '@feathersjs/cli': any }`
+    intersection members (instantiations of the literal under two mappers), tttt makes one (it interns them), and
+    tsgo's spread type no longer reuses the properties' nodes. Not reduced (agent B 2026-10-18).
   - react-scan `Component<P>` vs `Component<Attributes, {}>`: a checker bug, bugs/expando_instantiation.md (a
     function with expandos is a TY_DECLARED namespace, never instantiated). The `Readonly<{...}>` reprinted where tsc
-    no longer reuses an alias body's annotation: hacks.md "An alias body's homomorphic mapped instance". mockoon `Observable<any>`, react-three-fiber `ReadonlyArray<...>` reuse, headlessui/vueuse long signatures: one file
-    each, not looked at. excalidraw `LibraryUnit.d.ts` drops the comment in `LibraryItem["id"] | /** for pending item
+    no longer reuses an alias body's annotation: hacks.md "An alias body's homomorphic mapped instance".
+    react-three-fiber `ReadonlyArray<...>` reuse: see agent A's note. mockoon
+    `deploy.service.d.ts` `Observable<any>` (tttt `Observable<DeployInstance>`): only under the root `mockoon`
+    config (`scripts/tsctypeat.sh` says `instance: any` in the `tap` after `switchMap` there, DeployInstance under
+    packages/app's); `forkJoin([any, any])` is `Observable<[any]>` in both and an rxjs probe with a local `post<T>`
+    matches, so it's in Angular's `HttpClient.post<T>` overloads or the unresolved services, not reduced. vueuse
+    `.test/mount.d.ts`: `defineComponent({ components: Comp, ... })` where tsgo prints Comp's `DefineComponent<...>`
+    expanded (its constructor type & ComponentOptionsBase...) and tttt keeps the alias: alias lost somewhere in Vue's
+    inference, not reduced. headlessui's use-controllable matched in 2026-10-18 runs (an order effect, may come back). excalidraw `LibraryUnit.d.ts` drops the comment in `LibraryItem["id"] | /** for pending item
     */ null` of a reused node the node builder copies (the "comments of nodes the node builder copies" item below; the
     transformer's own nodes keep theirs). effect's and excalidraw's others: see "Checker types, uninvestigated"
     (effect ExecutionPlan and fiberRuntime fixed 2026-10-16).
@@ -114,7 +125,7 @@ size on real code, each with an example:
   parentheses, `typeof f` in unions, empty multi-line tuples, synthesized literals): still open, each small:
   a parenthesized type's inner node's comments (`( /** c */ A)`: tttt keeps one `parenthesized` flag, no node);
   comments on their own line before a list delimiter (emitListItems' emitLeadingComments(previousSibling.End()));
-  comments of nodes the node builder copies (tsgo's clones keep positions: `setTextRange`); trpc's `'global-errorFormatter'`
+  comments of nodes the node builder copies (tsgo's clones keep positions: `setTextRange`; a union's or intersection's members' done 2026-10-18 when in the file being written, display_node_list()); trpc's `'global-errorFormatter'`
   of an `as const` pseudo type mapped where tsgo doesn't map it (dtsdiff `map: extra at string (message)`,
   `'RATE_LIMIT`); feathers' `language: 'js' | 'ts'` and comments of a spread's properties where tsgo prints the type
   (`"js" | "ts"`, no comments, an intersection member repeated: a spread of an intersection with prompt answers,
@@ -127,25 +138,16 @@ size on real code, each with an example:
 - **Declaration maps** (stage 5 done; agent C 2026-10-16 modelled tsgo's per-enclosing-declaration serializedTypes
   cache, TyPrintedTypes: a type printed again in the same scope is an unmapped clone, a signature with parameters a
   new scope; mapped types left out since tttt interns instantiations tsgo doesn't). `scripts/dtsdiff.py -k 'map:'`
-  lists the rest, single files: babel-standalone `presets`, babel-traverse `traverse`, babel-types `_skip`, lit
-  (`NodeListOf`, `[Symbol`, `'_` constructor), redux-toolkit helpers `K (})`, telegraf `(tg`, xterm `number (start)`.
+  lists the rest, single files: babel-types `_skip`, lit (`NodeListOf`, `[Symbol`, `'_` constructor), redux-toolkit
+  helpers `K (})`, telegraf `(tg`. Agent B 2026-10-18: the cache is per *enclosing declaration*, which a class's
+  property declarations share (the class) and a function's parameters share (Walk.class_printed_types,
+  printed_next); a keyword annotation's file is its signature's (TyDisplay.node_file); a class literal's methods
+  tsgo instantiates for `this` have fresh type parameters (method_this_instantiated(): not thisless, or more than
+  one declaration, and some declaration possibly references `this`, e.g. an implementation without a return type).
   Not modelled: the printer flags in tsgo's cache key; a type reprinted in a new signature scope misses mappings
   tsgo has (probe: an object literal with `use: () => p, withArg: (x: number) => p` of an inline conditional).
 
 ## 2026-10-16 worktree agent (wt-a): JS maps / missing files / small buckets, leftovers
-- **babel-standalone preset-stage-1.d.ts.map**: a keyword annotation of a signature declared in *another* file is
-  mapped because node_in_mapped_file() checks a keyword TypeNode (no file) by its text at the same offset here (the
-  twin file has `any` there too). Turning mapping off for other-file signatures' parameters (67fec73a, reverted)
-  unmapped trpc's/apollo-client's names tsgo does map: a keyword TypeNode needs to know its file.
-- **xterm CoreTerminal `new Emitter<{ start: number, end: number }>()`**: tsgo doesn't map the `number`s (its
-  serializeTypeForDeclaration goes through the pseudochecker; maybe the property isn't reused there), but it maps the
-  `1` of `type S = { a: 1 } & ...` printed structurally. tttt does the opposite. Unexplained.
-- **babel-traverse `const NodePath_Final = class NodePath {...}`**: overloaded methods printed from the instance type:
-  tsgo doesn't map the parameters of overloads with type parameters (isThisless is false for several declarations, so
-  the signatures are instantiated with fresh type parameters and not reused). tttt's members.c thisless ignores the
-  declaration count; making it `visible == 1` alone changed nothing in the display (the class expression's members
-  don't seem to go through the this-instantiation there). Probe: /tmp-style `export const C = class N { t<S>(x: V<S>,
-  s: S): void; t(x: V<any>): void; t(x, s?) {} }`.
 - **lit ssr-dom-shim `labels = [] as unknown as NodeListOf<...>`** in a class expression printed as a literal: tsgo
   maps the asserted type (pseudo type of the field initializer); tttt's class-literal members don't use pseudo_of_field.
 - **telegraf `as (tg.MessageEntity & { type: SelectedTypes; ... })[]`**: tsgo reuses the node with only the local alias
@@ -153,3 +155,19 @@ size on real code, each with an example:
 - **formatjs err.tsx** `import from 'foo'` recovery: tsgo writes `import from = ;`.
 - Suite JS dts quirks left as tsgo bugs: jsdocTemplateTagDefault (`= ` empty default), jsdocReadonlyDeclarations
   (`readonly constructor`), jsdocAccessibilityTagsDeclarations (`c;`).
+
+## 2026-10-18 worktree agent B: babel-parser and friends
+- **babel-parser `maybeAsyncOrAccessorProp(...): boolean`** (tsgo) vs tttt's `prop is typeof prop & {...}`: a tsgo
+  checker-distribution quirk, not emulated. `tsc --singleThreaded` prints the predicate like tttt (so do
+  `--checkers 1/2` on the probe below; 3+ print `boolean`). In a checker that resolves `new A().m` before checking
+  A's file, the signature's parameters are instantiated copies, `typeof prop` in the reused predicate resolves to the
+  original parameter but the fake scope has the copy (trackExistingEntityName's getSymbolIfSameReference fails), the
+  reuse fails and reuseTypeNode's fallback is getTypeFromTypeNode(predicate) = boolean. Probe: types.ts with two
+  interfaces, a.ts `class A { m(prop: OP | OM): prop is typeof prop & { key: string } }` (a union parameter
+  matters), c.ts `export const v = new A().m;` with `--checkers 3`. tsgo single-threaded also differs from its
+  default on babel-parser's `parseVarStatement`/`parseExportSpecifier` (`any` by default, as tttt).
+- **babel-parser placeholders/plugin-utils `comments: N.Comment[]` member order**: in the mixins' flattened
+  instance types tsgo splits BaseParser's `declare` fields (`options` ... `comments` in one place, `locData` and the
+  methods after it elsewhere); tttt places `comments` with `locData`. Same with `--singleThreaded`. Unexplained (the
+  "Member order" item above: compareSymbols of each resolved level).
+
