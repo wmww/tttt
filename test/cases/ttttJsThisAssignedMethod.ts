@@ -25,3 +25,13 @@ export class E {
   }
   f() { this.open = true; }
 }
+// @filename: b.js
+// (An accessor isn't: assigning a getter-only one relates to the getter's type, TS2322)
+class L {
+  /** @param {{ a: number }} loader */
+  constructor(loader) {
+    this.request = loader;
+  }
+  /** @returns {string} */
+  get request() { return ""; }
+}

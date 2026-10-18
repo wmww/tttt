@@ -81,4 +81,25 @@ export class E {
 >open : boolean
 >true : true
 }
+=== b.js ===
+// (An accessor isn't: assigning a getter-only one relates to the getter's type, TS2322)
+class L {
+>L : L
+
+  /** @param {{ a: number }} loader */
+  constructor(loader) {
+>loader : { a: number; }
+
+    this.request = loader;
+>this.request = loader : { a: number; }
+>this.request : string
+>this : this
+>request : string
+>loader : { a: number; }
+  }
+  /** @returns {string} */
+  get request() { return ""; }
+>request : string
+>"" : ""
+}
 

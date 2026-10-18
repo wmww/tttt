@@ -1,0 +1,37 @@
+b.js(5,5): error TS2322: Type '{ a: number; }' is not assignable to type 'string'.
+
+
+==== a.js (0 errors) ====
+    export class C {
+      m() {
+        this.f = this.f.bind(this);
+      }
+      f() {}
+    }
+    export class D {
+      m() {
+        this.f = this.f.bind(this);
+      }
+      /** @param {number} ev */
+      f(ev) {}
+    }
+    export class E {
+      constructor() { this.open = false; }
+      m() {
+        this.f = this.f.bind(this);
+      }
+      f() { this.open = true; }
+    }
+==== b.js (1 errors) ====
+    // (An accessor isn't: assigning a getter-only one relates to the getter's type, TS2322)
+    class L {
+      /** @param {{ a: number }} loader */
+      constructor(loader) {
+        this.request = loader;
+        ~~~~~~~~~~~~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'string'.
+      }
+      /** @returns {string} */
+      get request() { return ""; }
+    }
+    

@@ -6026,11 +6026,12 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             if (!class_symbol) return;
             AssignmentDeclKind kind = function && function->is_constructor ?
                 ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR : ASSIGNMENT_DECL_THIS_IN_METHOD;
-            // A method or accessor the class body declares is the member, whatever is assigned to it (tsgo merges the
-            // assignment into the method's symbol, whose type getTypeOfFuncClassEnumModule takes from the method)
+            // A method the class body declares is the member, whatever is assigned to it (tsgo merges the assignment
+            // into the method's symbol, whose type getTypeOfFuncClassEnumModule takes from the method). Not an
+            // accessor: assigning a getter-only one is TS2322 against the getter's type, not TS2540
             ClassDecl const* class_decl = symbol_find_node(class_symbol, SYMBOL_DECL_CLASS);
             ClassItem* field = class_decl ? class_decl_find_member(class_decl, span_sv(name), false) : nullptr;
-            if (field && field->tag == CLASS_ITEM_METHOD) return;
+            if (field && field->tag == CLASS_ITEM_METHOD && field->method.accessor == CLASS_ACCESSOR_NONE) return;
             declare_assignment_member(me, &symbol_rare_mut(class_symbol)->members, class_symbol, name, left, value, jsdoc_type, kind, jsdoc_modifiers);
             if (left->property->context) expr_link_assignment_declaration(left, my binder);
             Symbol* member = (Symbol*)symbol_table_get(symbol_rare(class_symbol)->members, span_sv(name));

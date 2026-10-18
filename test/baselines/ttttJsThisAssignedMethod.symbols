@@ -71,4 +71,23 @@ export class E {
 >this : Symbol(E, Decl(a.js, 12, 1))
 >open : Symbol(E.open, Decl(a.js, 14, 17), Decl(a.js, 18, 7))
 }
+=== b.js ===
+// (An accessor isn't: assigning a getter-only one relates to the getter's type, TS2322)
+class L {
+>L : Symbol(L, Decl(b.js, 0, 0))
+
+  /** @param {{ a: number }} loader */
+  constructor(loader) {
+>loader : Symbol(loader, Decl(b.js, 3, 14))
+
+    this.request = loader;
+>this.request : Symbol(L.request, Decl(b.js, 3, 23), Decl(b.js, 5, 3))
+>this : Symbol(L, Decl(b.js, 0, 0))
+>request : Symbol(L.request, Decl(b.js, 3, 23), Decl(b.js, 5, 3))
+>loader : Symbol(loader, Decl(b.js, 3, 14))
+  }
+  /** @returns {string} */
+  get request() { return ""; }
+>request : Symbol(L.request, Decl(b.js, 3, 23), Decl(b.js, 5, 3))
+}
 
