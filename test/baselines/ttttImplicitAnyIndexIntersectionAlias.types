@@ -1,0 +1,54 @@
+//// [test/cases/ttttImplicitAnyIndexIntersectionAlias.ts] ////
+
+=== ttttImplicitAnyIndexIntersectionAlias.ts ===
+// TS7053 prints the indexed object's apparent type: an intersection made again from its members, without the alias
+// that named it (tsc's getApparentTypeOfIntersectionType; mikro-orm's Loaded<User>)
+declare const __loadedType: unique symbol;
+>__loadedType : unique symbol
+
+type LoadedInternal<T, L extends string> = [L] extends [never] ? T & {} : T & { l: L };
+>LoadedInternal : LoadedInternal<T, L>
+>l : L
+
+type Loaded<T, L extends string = never> = LoadedInternal<T, L> & { [__loadedType]?: T };
+>Loaded : Loaded<T, L>
+>[__loadedType] : T | undefined
+>__loadedType : unique symbol
+
+class User { name!: string }
+>User : User
+>name : string
+
+declare function find<E extends object, H extends string = never>(e: new () => E): Promise<Loaded<E, H>>;
+>find : <E extends object, H extends string = never>(e: new () => E) => Promise<Loaded<E, H>>
+>e : new () => E
+
+declare const k: any;
+>k : any
+
+async function f() {
+>f : () => Promise<void>
+
+  const user = await find(User);
+>user : Loaded<User, never>
+>await find(User) : Loaded<User, never>
+>find(User) : Promise<Loaded<User, never>>
+>find : <E extends object, H extends string = never>(e: new () => E) => Promise<Loaded<E, H>>
+>User : typeof User
+
+  user[k];
+>user[k] : any
+>user : Loaded<User, never>
+>k : any
+
+  const u2 = null! as Loaded<User>;
+>u2 : Loaded<User, never>
+>null! as Loaded<User> : Loaded<User, never>
+>null! : never
+
+  u2[k];
+>u2[k] : any
+>u2 : Loaded<User, never>
+>k : any
+}
+

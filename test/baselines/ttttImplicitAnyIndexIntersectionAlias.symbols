@@ -1,0 +1,69 @@
+//// [test/cases/ttttImplicitAnyIndexIntersectionAlias.ts] ////
+
+=== ttttImplicitAnyIndexIntersectionAlias.ts ===
+// TS7053 prints the indexed object's apparent type: an intersection made again from its members, without the alias
+// that named it (tsc's getApparentTypeOfIntersectionType; mikro-orm's Loaded<User>)
+declare const __loadedType: unique symbol;
+>__loadedType : Symbol(__loadedType, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 2, 13))
+
+type LoadedInternal<T, L extends string> = [L] extends [never] ? T & {} : T & { l: L };
+>LoadedInternal : Symbol(LoadedInternal, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 2, 42))
+>T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 20))
+>L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 22))
+>L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 22))
+>T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 20))
+>T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 20))
+>l : Symbol(l, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 79))
+>L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 22))
+
+type Loaded<T, L extends string = never> = LoadedInternal<T, L> & { [__loadedType]?: T };
+>Loaded : Symbol(Loaded, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 87))
+>T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 12))
+>L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 14))
+>LoadedInternal : Symbol(LoadedInternal, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 2, 42))
+>T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 12))
+>L : Symbol(L, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 14))
+>[__loadedType] : Symbol([__loadedType], Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 67))
+>__loadedType : Symbol(__loadedType, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 2, 13))
+>T : Symbol(T, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 12))
+
+class User { name!: string }
+>User : Symbol(User, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 89))
+>name : Symbol(User.name, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 12))
+
+declare function find<E extends object, H extends string = never>(e: new () => E): Promise<Loaded<E, H>>;
+>find : Symbol(find, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 28))
+>E : Symbol(E, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 22))
+>H : Symbol(H, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 39))
+>e : Symbol(e, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 66))
+>E : Symbol(E, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 22))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Loaded : Symbol(Loaded, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 87))
+>E : Symbol(E, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 22))
+>H : Symbol(H, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 6, 39))
+
+declare const k: any;
+>k : Symbol(k, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 7, 13))
+
+async function f() {
+>f : Symbol(f, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 7, 21))
+
+  const user = await find(User);
+>user : Symbol(user, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 9, 7))
+>find : Symbol(find, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 5, 28))
+>User : Symbol(User, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 89))
+
+  user[k];
+>user : Symbol(user, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 9, 7))
+>k : Symbol(k, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 7, 13))
+
+  const u2 = null! as Loaded<User>;
+>u2 : Symbol(u2, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 11, 7))
+>Loaded : Symbol(Loaded, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 3, 87))
+>User : Symbol(User, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 4, 89))
+
+  u2[k];
+>u2 : Symbol(u2, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 11, 7))
+>k : Symbol(k, Decl(ttttImplicitAnyIndexIntersectionAlias.ts, 7, 13))
+}
+

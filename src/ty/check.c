@@ -2573,7 +2573,9 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
     if (object->kind == TY_TYPE_PARAM && !ty_param_constraint(me, object)) {
         object = ty_intrinsic(me, TY_UNKNOWN_);
     } else {
-        object = ty_apparent_type(me, object);
+        // (An intersection's apparent type is made again from its members, without the alias that named it: tsc's
+        // getApparentTypeOfIntersectionType, `Loaded<User>` printed `User & { ... }`)
+        object = ty_intersection_unaliased(me, ty_apparent_type(me, object));
     }
     Ty const* index = (object->flags & TYF_UNKNOWN) ? full_index : missing_index_member(me, object, full_index);
     if (!index) return;

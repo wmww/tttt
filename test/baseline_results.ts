@@ -734,6 +734,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDecoratorOptionalFieldValue': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeepNestingObjectLiteralSource': {
         errors: true,
         symbols: true,
@@ -921,6 +926,11 @@ const baselines = {
         types: true,
     },
     'ttttHeritageHeadSameNames': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttImplicitAnyIndexIntersectionAlias': {
         errors: true,
         symbols: true,
         types: true,
