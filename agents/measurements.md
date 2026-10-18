@@ -11,6 +11,28 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Deferred bodies: drops leak nothing, single-body re-materialization (2026-10-18, todo entry 1)
+- Drop leak (malloc a block_drop() walk would still free at exit, vscode K1 T1): 12.6 -> 0.7 MB after sealing
+  literals/templates/object keys and moving the walk's lists into the arena; valgrind on vscode K1 then ~62 KB
+  (class member names, binding keys, namesakes: fixed). Live malloc at exit 169.3 -> 151.3 MB. No peak change from
+  this alone (freed malloc isn't returned).
+- Single-body re-materialization (`TTTT_DEFER_STATS`, vscode): defaults 1276 files re-materialized, 43k bodies, 0.80 s
+  CPU -> 3.4k single bodies, 34 completions, 0.16 s; K1 16k -> 1.2k bodies. Of 18.5 MB of re-materialized body source
+  at the defaults 3.5 MB was demanded, 18.4 MB of it in `singly` files.
+- Session start (538aaee5) -> now, `/usr/bin/time`: vscode defaults 6.17 / 1253 MB -> **6.10 / 1221**; K1 (default
+  threads) 11.55 / 1516 -> **11.32 / 1475**. K1 T1 resident after load+parse / after names / peak MB, then defaults
+  wall and peak: vscode 765/839/1402 -> 769/843/1369, defaults 6.18 s 1220 -> 6.11 s 1192; effect 133/175/504 ->
+  133/176/507, 0.61 s 332 -> 0.60 s 329; webpack 218/269/515 -> 220/271/517, 0.63 s 419 -> 0.62 s 420; drizzle
+  91/108/389 -> 90/108/389, 0.60 s 354 -> 0.59 s 345; type-fest 43/50/418 -> 43/50/417, 0.48 s 411 -> 0.49 s 413.
+- `--checker-memory 0` recycles after every file again (the warm-up rule had stopped it in small programs): the
+  suite at -m 0 drops 6.1k materializations (111 re-materialized, 136 single bodies), and `scripts/oracles.py`'s
+  recycle line is 4 / 3566 (inbox-zero, sequelize x2's TS7022, dokploy flaky), the same with single bodies off.
+- Oracles: suite 13792 (--no-defer-bodies, -m 0: 0 differ), corpora 0/0 (vue 0/2), DT 8595, `$ExpectType` 68639,
+  flagflip 18/8/3, source sweep sample 856/860, dts 1193/1233, kdiff 1 (inbox-zero), threadcheck identical,
+  `TTTT_AST_POISON=1 --checker-memory 0` and K1 -m 0 identical to the defaults on 12 corpora.
+- Instructions (callgrind, saved): vscode 89.70 -> **88.41 G (-1.45%)**, the rest within +-0.5% (valibot +0.44, nest
+  +0.28: the string seal's copy).
+
 ## Perf session paying for the budget (2026-10-17, todo entry 8)
 The 4-vCPU box. **Instructions** (`scripts/instrcount.sh`, callgrind, K1 T1; now saved in `test/instrcount.txt`, which
 the script compares against and flags changes over 2%) b4129d18 -> now: tsc 4.609 -> **4.479**, type-fest 10.992 ->

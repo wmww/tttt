@@ -12,19 +12,18 @@ starts (`npm view typescript dist-tags`: on 2026-10-18 `latest` was 7.0.2 and `n
 58 (the re-pin) first, then plan 66 stage 5**, and push the rest down. `claude-stop` is gitignored: never commit it.
 
 Starting point (40afe12a + this commit): suite 13792 / 13829 (dts 1837 / 1860), corpora 0 / 0 but vue 0 / 2, DT
-8595 / 8595, `$ExpectType` 68639 / 68640, flagflip 18 / 6 / 3, scenarios 210 / 0, source sweep 3559 / 3566, dtsdiff
+8595 / 8595, `$ExpectType` 68639 / 68640, flagflip 18 / 8 / 3, scenarios 210 / 0, source sweep 3559 / 3566, dtsdiff
 1193 / 1233, clidiff `--emit` 369 / 396. Memory and wall against bun: plan 67 "Where it stands" (2026-10-18);
 instructions: `test/instrcount.txt`.
 
 Rules of the window (vision.md "Memory target"): a memory change costs at most ~3% wall at K1; at the defaults it must
 stay faster than bun on every corpus and the sweep's tail. Output byte-identical at every K and budget.
 
-1. **Deferred bodies: the drop leak, then per-body re-materialization** (hacks.md "Deferred bodies", perf_leads.md
-   "Deferred bodies"). A dropped materialization leaks what its parse and walk malloc'd (~8 MB per round of vscode's
-   bodies): move it into the body's arena or free it at the drop, valgrind and `TTTT_AST_POISON` clean. Then a
-   re-materialization parses and walks only the demanded body when its first materialization's cross-body writes
-   survive the drop (check `deferred_bodies_undo()`'s log first; stop and write it up if they don't). Gate: vscode
-   defaults' wall and peak, every oracle unchanged.
+1. Done (2026-10-18): deferred bodies leak nothing at a drop (strings sealed into the arena, the walk's lists the
+   AST's; vscode K1 drop leak 12.6 MB -> ~60 KB) and a drop's re-materialization makes the demanded body alone
+   (vscode defaults 0.80 -> 0.16 s CPU re-materializing, 6.17 -> 6.10 s, peak 1253 -> 1221 MB). `--checker-memory 0`
+   recycles after every file again (the -m 0 oracles weren't recycling small programs): recycle oracle 4 / 3566,
+   pre-existing (measurements.md).
 2. **Plan 82 stage 1** (optional types carry their undefined): the investigation; it ends with stage 2 sized in the
    plan.
 3. **Plan 82 stage 2**: the migration, if stage 1 sized it at one session. If not, do as much as fits with the

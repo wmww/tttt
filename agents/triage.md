@@ -10,3 +10,9 @@ thirdparty/sources); TS5115/TS2589's checker dependence is tsgo's own (bugs/tsgo
 list is empty again (materialized bodies walked before their drop under the counting allocator). inbox-zero's remaining
 gap to bun is per-checker re-derivation (bugs/perf_leads.md).
 
+- (2026-10-18, todo entry 1) `--checker-memory 0` now really recycles after every file (it hadn't for small programs
+  since the warm-up rule), and `scripts/oracles.py`'s recycle line went 1 -> 4 / 3566: inbox-zero/apps/web (known,
+  the undefinedProperties order), sequelize and sequelize/packages/core (TS7022 on `models`,
+  sequelize-typescript.ts:335: tsgo's own output differs by checker count there, CLAUDE.md), dokploy/apps/dokploy
+  (didn't reproduce on a rerun: flaky). All the same with single-body re-materialization off. Worth a look whether
+  dokploy's is a real order dependence (`scripts/kdiff.py -k 1 -m 0 -f dokploy`, a few runs).
