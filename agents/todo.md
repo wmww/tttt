@@ -36,8 +36,11 @@ and RSS** for every perf claim at the defaults.
    3675 (text 54 -> 3: apollo vite, babel-traverse, tiptap/demos truncation; diagnostics 9 -> 7, written up in
    bugs/sourcesweep_checker.md), webpack's text matches; suite 13833 -> 13865, every other oracle unchanged,
    instructions flat (type-fest -0.9%).
-5. **Perf session**: per-body re-materialization (~20% of vscode's recycle cost, perf_leads.md "What the recycle
-   budget costs") and the source sweep's types-ratio tail (`scripts/perfsweep.py`).
+5. Done (2026-10-18): perf session. Per-body re-materialization had already landed (ccb6129a). Types tail:
+   date-fns/pkgs/docs 1.62 -> 0.64 (genericity of mapped types read from the declaration, tsc's
+   isGenericMappedType; 681 more projects -56k types), worst now 1.54 on 1-3k-type projects; the K1 check-ratio tail
+   was load noise (perf_leads.md "The types-ratio tail"); `variancetrace.py` prints types per measurement. Every
+   oracle unchanged.
 6. **Real-code tail fan-out**: dtsdiff's real tail (bugs/dts_emit.md), the source sweep's 8
    (bugs/sourcesweep_checker.md, vue's 2 TS7006 included), bugs/expando_instantiation.md.
 7. **Third fresh-repository refresh**, a new rule: monorepos type-checked with `tsc -b` solution configs (project

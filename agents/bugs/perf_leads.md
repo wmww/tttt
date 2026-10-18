@@ -8,6 +8,26 @@ checker's arena size and type count. Memory: `scripts/memtrack.sh -p DIR` for th
 allocating function; massif's extra-heap estimate is wrong for glibc), `scripts/arenasites.sh -p DIR` for the mmapped binder
 and checker arenas by call site.
 
+## The types-ratio tail and K1 check ratios (perf session 2026-10-18, todo entry 5)
+**date-fns/pkgs/docs 1.62 -> 0.64** (34483 -> 13679 types, tsgo 21221; worst of the perfsweep for ten sessions, after
+round 2's 0.94 below had regressed unnoticed): `is_generic_operand()` and `is_string_index_signature_only()` expanded
+an anonymous type to learn whether it is a generic mapped type, where tsc's isGenericMappedType reads the declaration
+(`ty_generic_mapped()`). Found with `scripts/variancetrace.py`'s per-measurement type counts (VAR< `types=N`, both
+sides): typesaurus's Builder measurement made 18453 types against tsgo's 1606, the log's lines growing per `field`
+overload (58, 212, ... 8238 against tsgo's 3), then gdb on `indexed()` creating fresh types inside a measurement
+(`break checker.c:LINE if fresh != 0 && me->variance_depth > 0`, `bt 80`, aggregated by function). The other
+predicates that asked `ty_members(me, ty)->mapped` only to decide genericity went the same way (the next commit:
+681 perfsweep projects -56k types); the remaining `ty_members(...)->mapped` reads use the mapped info itself.
+What's left above 1.3 are 1-3k-type projects (lightweight-charts plugins, rpg-js vue-gui, query's vue examples:
+a few hundred types each, no runaway; not chased). **The check-time tail is noise**: perfsweep's "> 1" K1 check
+ratios (ethereumjs 2.4, dokploy 1.2, arktype 1.25) were tttt under load (another session's kdiff, load 8 on 4 vCPUs)
+against tsgo's cached quiet times: measured back to back, ethereumjs statemanager 0.33 s vs 0.39-0.56, dokploy 6.0 vs
+10.2, arktype 4.6 vs 7.8. Compare live (`tsc --tsBuildInfoFile /tmp/x` for composite projects: without it tsgo writes
+`dist/tsconfig.tsbuildinfo` into the checkout, perfsweep.py deletes such strays) before chasing a check ratio.
+K1 profiles (callgrind, effect, webpack, type-fest) are flat: type-fest's tuple work (resolve_tuple_members,
+tuple_shapes_related ~15%) is ~9.6k tuples of ~340 elements related elementwise, what tsgo does too; webpack's flow
+analysis 16% inclusive with no hot spot.
+
 ## Instructions the triage of 2026-10-18 added (accepted)
 Against the session start (4d387955), callgrind: excalidraw +2.95% (7.344 -> 7.561 G), drizzle +0.95%, the rest under
 1%. excalidraw's is 44b8b83a (an alias body's mapped twin, `type A = Readonly<{...}>`, instantiated back into the
@@ -177,7 +197,7 @@ found: `A_VAR`-style logging of the types each variance measurement makes (next_
 measure_variances(), and the same in a patched tsgo's getVariancesWorker built with `go build -overlay` into /tmp, not
 through ensure-typescript.sh, whose built/ is shared), then a probe of the costliest measurement with a log of the
 same-named property pairs that relate as distinct types (`sourceProp != targetProp` in tsgo).
-- **date-fns/pkgs/docs** fixed in round 2 (1.56 -> 0.94): erasing an unresolved instantiated signature resolved it first.
+- **date-fns/pkgs/docs** fixed in round 2 (1.56 -> 0.94): erasing an unresolved instantiated signature resolved it first. (Back at 1.62 later; fixed again 2026-10-18, the section at the top.)
 - **A getter resolved inside its own circularity**: a correctness bug, not only perf. Object literals with a getter are
   still instantiated by the whole mapper (56a730f2): with the identity instance (what tsgo does) zod's
   recursive-types.test.ts gets a spurious TS2344. Round 2 found it isn't about the circularity marker (no

@@ -12,6 +12,15 @@ text since 2026-10-18 but webpack's TS5115 name order, `scripts/clidiff.py --cor
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Perf session: the types-ratio tail (2026-10-18, todo entry 5)
+- perfsweep: worst types ratio 1.62 -> **1.54** (date-fns/pkgs/docs 34483 -> 13679 types, tsgo 21221: 0.64), the
+  rest of the tail 1-3k-type projects; 681 projects -56k types from the second commit; types 68.2M -> 68.1M vs tsgo's
+  131.8M. Check median 0.23 (oracles' run). K1 check ratios above 1 were load noise (perf_leads.md).
+- Every oracle as at the session start: suite 13865 / 13900 (dts 1864 / 1886), corpora 0/0 but vue 0/2, DT 8595,
+  `$ExpectType` 68640, flagflip 18 / 8 / 3, source sweep sample 881 / 884, dtsdiff 1244 / 1274, clidiff 3665 / 3675,
+  kdiff 2, recycle 4 / 3658.
+- Instructions (callgrind) against test/instrcount.txt: type-fest -1.01%, the rest within 0.25%; not re-saved.
+
 ## Plan 85's census: what the checkers re-derive (2026-10-18, todo entry 2, 6ae5f65a)
 **Work vs inflation** (CPU s, best of 2): `--threads 1` runs every checker on one thread, so its CPU is the work
 done; `--threads 4` K4 is this box's default (2 cores x 2 SMT). `off` is `--checker-memory off` (no recycling):
