@@ -1973,7 +1973,7 @@ static Ty const* base_class_property_type(Checker* me, Symbol const* member) {
     // (Its getTypeOfSymbol: an optional one with its undefined, or exactOptionalPropertyTypes' missing type)
     FoundProp found = ty_find_prop(me, ty_apparent_type(me, base), checker_atom(me, member->name));
     if (!found.found) return nullptr;
-    return found.flags & PROP_OPTIONAL ? ty_optional_prop_type(me, found.type) : found.type;
+    return found.flags & PROP_OPTIONAL ? ty_optional_prop_read(me, found.type, "base_class_property_type") : found.type;
 }
 
 // What `this.x` is at `flow` in the class constructor that declares x by assignment (tsc's getFlowTypeOfProperty: it

@@ -1553,7 +1553,7 @@ static Atom const* never_reduced_literal_prop(Checker* me, Ty const* const* type
                     if (!b_type || (b_type->flags & TYF_NEVER)) continue;
                     if (!a_type) {
                         a_type = prop_type(me, prop);
-                        if (prop->flags & PROP_OPTIONAL) a_type = ty_optional_prop_type(me, a_type);
+                        if (prop->flags & PROP_OPTIONAL) a_type = ty_optional_prop_read(me, a_type, "never reduced");
                         if (!is_literal_like(a_type) || (a_type->flags & TYF_NEVER)) break;
                     }
                     Ty const* both[2] = { a_type, b_type };
@@ -1562,14 +1562,14 @@ static Atom const* never_reduced_literal_prop(Checker* me, Ty const* const* type
                 }
                 if (!a_type) {
                     a_type = prop_type(me, prop);
-                    if (prop->flags & PROP_OPTIONAL) a_type = ty_optional_prop_type(me, a_type);
+                    if (prop->flags & PROP_OPTIONAL) a_type = ty_optional_prop_read(me, a_type, "never reduced");
                     if (!is_literal_like(a_type) || (a_type->flags & TYF_NEVER)) break;
                 }
                 if (ty_is_generic_object(me, other_type)) continue;
                 Prop const* other = ty_get_prop(me, other_type, prop->name);
                 if (!other || (prop->flags & other->flags & PROP_OPTIONAL)) continue;
                 Ty const* b_type = prop_type(me, other);
-                if (other->flags & PROP_OPTIONAL) b_type = ty_optional_prop_type(me, b_type);
+                if (other->flags & PROP_OPTIONAL) b_type = ty_optional_prop_read(me, b_type, "never reduced");
                 // (A literal part on one side is enough, tsc's CheckFlags.HasLiteralPart)
                 if (b_type->flags & TYF_NEVER) continue;
                 Ty const* both[2] = { a_type, b_type };
@@ -1607,10 +1607,10 @@ static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 l
                 if (!other || (prop->flags & other->flags & PROP_OPTIONAL)) continue;
                 if (!a_type) {
                     a_type = prop_type(me, prop);
-                    if (prop->flags & PROP_OPTIONAL) a_type = ty_optional_prop_type(me, a_type);
+                    if (prop->flags & PROP_OPTIONAL) a_type = ty_optional_prop_read(me, a_type, "never reduced");
                 }
                 Ty const* b_type = prop_type(me, other);
-                if (other->flags & PROP_OPTIONAL) b_type = ty_optional_prop_type(me, b_type);
+                if (other->flags & PROP_OPTIONAL) b_type = ty_optional_prop_read(me, b_type, "never reduced");
                 if (!is_literal_like(a_type) && !is_literal_like(b_type)) continue;
                 // (Not when one of them is never: tsc's isDiscriminantWithNeverType, CheckFlags.HasNeverType)
                 if ((a_type->flags | b_type->flags) & TYF_NEVER) continue;
@@ -3661,6 +3661,19 @@ Ty const* ty_optional_prop_type(Checker* me, Ty const* ty) {
     Ty const* add = ty_undefined_or_missing(me);
     if (ty == add || (ty->kind == TY_UNION && ty->composite.types.data[0] == add)) return ty;
     return ty_union(me, (Ty const*[]){ ty, add }, 2, nullptr, (TyList){0});
+}
+
+// (Plan 82's migration cross-check, TTTT_CHECK_OPTIONALITY=1: says when it would add anything)
+Ty const* ty_optional_prop_read(Checker* me, Ty const* ty, char const* site) {
+    static int check = -1;
+    if (check < 0) check = getenv("TTTT_CHECK_OPTIONALITY") != nullptr;
+    Ty const* added = ty_optional_prop_type(me, ty);
+    if (check && added != ty) {
+        cstr shown = ty_to_cstr(me, ty);
+        log_error("optional property type without its undefined at ", site, ": ", shown);
+        cstr_drop(&shown);
+    }
+    return added;
 }
 
 Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch) {

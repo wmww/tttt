@@ -1183,7 +1183,7 @@ bool ty_check_assignable_to_access(
         FoundProp prop = name ? ty_find_prop(me, ty_apparent_type(me, ty_expr_type(me, &left->property->expr)), name) :
             (FoundProp){0};
         if (prop.found && (prop.flags & PROP_OPTIONAL) &&
-            ty_exact_optional_mismatch(me, source, ty_optional_prop_type(me, prop.type))
+            ty_exact_optional_mismatch(me, source, ty_optional_prop_read(me, prop.type, "exact assignment"))
         ) {
             head = HEAD_EXACT_PROP;
         }
@@ -4481,12 +4481,9 @@ void ty_check_index_constraints(
                 is_local_span(owner, info->decl_span) ? span_with_member_separator(info->decl_span) :
                 interface && !base_has_both(me, bases, base_count, prop->name, nullptr, info->key) ? name : (Span){0};
             if (!span_valid(at)) continue;
-            // (An optional property's type has undefined: tsc's getTypeOfSymbol, but not exactOptionalPropertyTypes'
-            // missing type, which tsc's checkIndexConstraintForProperty doesn't see: getNonMissingTypeOfSymbol)
-            if (!prop_ty) {
-                prop_ty = prop_type(me, prop);
-                if ((prop->flags & PROP_OPTIONAL) && !compiler_options()->exact_optional_property_types) prop_ty = ty_optional_prop_type(me, prop_ty);
-            }
+            // (An optional property's type has undefined, but not exactOptionalPropertyTypes' missing type, which tsc's
+            // checkIndexConstraintForProperty doesn't see: getNonMissingTypeOfSymbol)
+            if (!prop_ty) prop_ty = ty_remove_missing(me, prop_type(me, prop), prop->flags & PROP_OPTIONAL);
             if (ty_is_related(me, prop_ty, info->value, TY_RELATION_ASSIGNABLE)) continue;
             cstr prop_str = ty_prop_written_name(me, prop);
             cstr type_str = ty_to_cstr(me, prop_ty);

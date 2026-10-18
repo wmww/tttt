@@ -5357,7 +5357,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         approx_add(d, prop_symbol_name_length(me, prop->name) + 1); // (tsc's addPropertyToElementList)
         bool reverse_prop = prop_decl_rare(prop->decl)->reverse_of != nullptr;
         bool placeholder = reverse_prop && reverse_placeholder(d, prop);
-        Ty const* type = placeholder ? ty_intrinsic(me, TY_ANY) : prop_type(me, prop);
+        // (Without the missing type of an optional one under exactOptionalPropertyTypes: tsc's getNonMissingTypeOfSymbol)
+        Ty const* type = placeholder ? ty_intrinsic(me, TY_ANY) : ty_remove_missing(me, prop_type(me, prop), prop->flags & PROP_OPTIONAL);
         if (reverse_prop && !placeholder) {
             reverse_frame = (TyDisplayReverse){ .prop = prop, .outer = d.reverse_stack };
             d.reverse_stack = &reverse_frame;
@@ -5367,14 +5368,16 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         Prop const* declared = prop;
         while (declared->target) declared = declared->target;
         Symbol const* member_symbol = declared->decl->symbol ? declared->decl->symbol : prop_decl_rare(declared->decl)->spread_variable;
+        // (An optional one's signatures are those of its type without undefined)
+        Ty const* method_type = (prop->flags & PROP_OPTIONAL) ? ty_without_undefined(me, type) : type;
         bool function_symbol = member_symbol && (member_symbol->flags & SYMBOL_FUNCTION) && member_symbol->parent &&
-            !(prop->flags & PROP_READONLY) && (type->flags & TYF_OBJECT);
+            !(prop->flags & PROP_READONLY) && (method_type->flags & TYF_OBJECT);
         // (Not a readonly one, `as const`: tsc's addPropertyToElementList prints it as a property; nor one several parts
         // of an intersection have, whose symbol createUnionOrIntersectionProperty makes a Property)
         bool synthetic = false;
         for (Prop const* i = prop; i && !synthetic; i = i->target) synthetic = i->synthetic;
         Members const* type_members = ((prop->flags & PROP_METHOD) && !(prop->flags & PROP_READONLY) && !synthetic) || function_symbol ?
-            ty_members(me, type) : nullptr;
+            ((method_type->flags & TYF_OBJECT) ? ty_members(me, method_type) : nullptr) : nullptr;
         if (type_members && type_members->call_count && !type_members->prop_count) {
             // Methods print once per signature
             for (u32 j = 0; j < type_members->call_count; j++) {
@@ -5506,7 +5509,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             if ((prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_PATTERN_OPTIONAL) && compiler_options()->strict_null_checks &&
                 !compiler_options()->exact_optional_property_types && ty_without_undefined(me, type) == type
             ) {
-                item_type = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+                item_type = ty_optional_prop_read(me, type, "display item");
             }
             PseudoReporter storage;
             if (pseudo_equivalent(me, d, pseudo, item_type, false, display_reporter(d, &storage))) {
@@ -5605,7 +5608,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         if ((prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_PATTERN_OPTIONAL) && compiler_options()->strict_null_checks &&
             !compiler_options()->exact_optional_property_types && ty_without_undefined(me, type) == type
         ) {
-            shown = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+            shown = ty_optional_prop_read(me, type, "display");
         }
         bool optional = (prop->flags & PROP_OPTIONAL) != 0;
         // (A mapped property whose template added `| undefined` to what the annotation says: the annotation in a new

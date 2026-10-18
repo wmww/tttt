@@ -1744,8 +1744,10 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
                 Ty const* merged = prop && (prop->flags & PROP_METHOD) ? prop_type(checker, prop) : nullptr;
                 Prop const* origin = prop;
                 while (origin && origin->target) origin = origin->target;
-                if (merged && (merged->flags & TYF_OBJECT) &&
-                    (ty_members(checker, merged)->call_count > 1 || origin->decl->function != &my method.func)
+                // (An optional one's type has undefined)
+                Ty const* signatures = merged && (prop->flags & PROP_OPTIONAL) ? ty_without_undefined(checker, merged) : merged;
+                if (signatures && (signatures->flags & TYF_OBJECT) &&
+                    (ty_members(checker, signatures)->call_count > 1 || origin->decl->function != &my method.func)
                 ) {
                     type = merged;
                 }

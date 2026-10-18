@@ -3348,10 +3348,10 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
                 if (count > 1 && ty_props_distinct(me, having, count)) all.props[j].flags &= ~(u32)PROP_METHOD;
             }
             Ty const* type = ty_access(me, object, ty_prop_name_literal(me, all.props[j].name));
-            // (Under exactOptionalPropertyTypes the optional property keeps its declared type: the read's missing goes)
+            // (Under exactOptionalPropertyTypes the optional property's type is the read's, missing included)
             bool exact = compiler_options()->exact_optional_property_types && compiler_options()->strict_null_checks;
             if (type && exact && (all.props[j].flags & PROP_OPTIONAL)) {
-                all.props[j].type = ty_remove_missing(me, type, true);
+                all.props[j].type = type;
                 literal_builder_add(out, all.props[j]);
                 continue;
             }
@@ -3389,11 +3389,9 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
         if (partial || setonly || readonly != !!(prop->flags & PROP_READONLY)) flags |= PROP_NO_VALUE_DECLARATION;
         if (partial && !(flags & PROP_OPTIONAL)) {
             flags |= PROP_OPTIONAL;
-            if (compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types) type = optional_type(me, type);
-            // (Under exactOptionalPropertyTypes tsc's addOptionality adds missing, which a read of an optional property
-            // already has: `{ ...(c ? {} : { d: o.d }) }` is `{ d?: string }`. An optional property holds its type without
-            // it here)
-            else type = ty_remove_missing(me, type, true);
+            // (tsc's addOptionality: missing under exactOptionalPropertyTypes, `{ ...(c ? {} : { d: o.d }) }` is
+            // `{ d?: string }`)
+            type = ty_optional_prop_type(me, type);
         }
         // The annotation of the property it comes from still says what it is, unless instantiated (or made optional:
         // an optional one of a partial spread, `{ ...(o as Opts | undefined) }`, still is what it says)
@@ -3503,11 +3501,10 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
         merged.flags = (l->flags & (PROP_OPTIONAL | PROP_METHOD)) | PROP_NO_VALUE_DECLARATION; // (tsc: a fresh symbol)
         merged.own_merged = merged.own || merged.own_merged;
         merged.own = false;
-        // (Under exactOptionalPropertyTypes only the missing goes, which the declared type doesn't have: tsc's
-        // removeMissingOrUndefinedType)
+        // (Under exactOptionalPropertyTypes only the missing goes: tsc's removeMissingOrUndefinedType)
         bool exact = compiler_options()->exact_optional_property_types;
-        Ty const* right_type = exact ? r->type : ty_without_undefined(me, r->type);
-        if (l->type && (exact ? l->type : ty_without_undefined(me, l->type)) != right_type) {
+        Ty const* right_type = exact ? ty_remove_missing(me, r->type, true) : ty_without_undefined(me, r->type);
+        if (l->type && (exact ? ty_remove_missing(me, l->type, true) : ty_without_undefined(me, l->type)) != right_type) {
             Ty const* both[2] = { l->type, right_type };
             merged.type = ty_union_subtype_reduced(me, both, 2);
         }
@@ -4811,7 +4808,7 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
     }
     if (prop && own) {
         // (An optional method's symbol has undefined in its type, tsc's getTypeOfFuncClassEnumModule)
-        if ((prop->flags & PROP_OPTIONAL) && (prop->flags & PROP_METHOD)) return ty_optional_prop_type(me, prop_type(me, prop));
+        if ((prop->flags & PROP_OPTIONAL) && (prop->flags & PROP_METHOD)) return ty_optional_prop_read(me, prop_type(me, prop), "literal method");
         return prop_type(me, prop);
     }
     // A computed key that made no property: its part of an index signature, as the literal checked it (tsc's

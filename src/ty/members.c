@@ -934,7 +934,7 @@ static void builder_add_interface(
             bool included = k == 0 ? !symbol_name : k == 1 ? ty_is_numeric_name(name) : symbol_name;
             if (included) {
                 Ty const* type = prop_type(me, builder->props[j]);
-                ty_buf_push(&types, builder->props[j]->flags & PROP_OPTIONAL ? ty_optional_prop_type(me, type) : type);
+                ty_buf_push(&types, builder->props[j]->flags & PROP_OPTIONAL ? ty_optional_prop_read(me, type, "computed index") : type);
             }
         }
         IndexInfo info = {
@@ -1756,7 +1756,7 @@ static void builder_add_computed_index_infos(Checker* me, MembersBuilder* builde
             // instance type")
             if (included) {
                 Ty const* type = prop_type(me, builder->props[j]);
-                ty_buf_push(&types, builder->props[j]->flags & PROP_OPTIONAL ? ty_optional_prop_type(me, type) : type);
+                ty_buf_push(&types, builder->props[j]->flags & PROP_OPTIONAL ? ty_optional_prop_read(me, type, "computed index") : type);
             }
         }
         IndexInfo info = {
@@ -3760,6 +3760,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     Prop* template = prop_new(me);
     template->type = ty_mapped_template(me, mapped);
     template->type_state = LAZY_STATE_DONE;
+    template->is_template = true;
     MembersBuilder builder = { .mapped = mapped };
     for (u32 i = 0; i < source->prop_count; i++) {
         Prop const* from = source->props[i];
@@ -3883,6 +3884,7 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
                 template = prop_new(me);
                 template->type = ty_mapped_template(me, mapped);
                 template->type_state = LAZY_STATE_DONE;
+                template->is_template = true;
             }
             Ty const* key = ty_prop_key_literal(me, from);
             TyMapper const* mapper = ty_mapper_new(
@@ -4288,6 +4290,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     // getTypeOfMappedSymbol: the members can be there before the template can be lowered)
     Prop* template = prop_new_declared(me);
     prop_decl_rare_mut(me, template->decl)->template_of = mapped;
+    template->is_template = true;
 
     MembersBuilder builder = { .mapped = generic ? mapped : nullptr };
     // (Of the declared mapped type, tsc's type.target)
@@ -5179,17 +5182,33 @@ static bool setter_is_annotated(FunctionImpl const* setter) {
     return vec_function_arg_size(&setter->args) && vec_function_arg_at(&setter->args, 0)->initializer.binding.has_explicit_type;
 }
 
+// tsc's maybeTypeOfKind(type, Undefined | Void)
+static bool maybe_undefined_or_void(Ty const* type) {
+    if (type->flags & (TYF_UNDEFINED | TYF_VOID)) return true;
+    if (type->kind != TY_UNION && type->kind != TY_INTERSECTION) return false;
+    for (u32 i = 0; i < type->composite.types.len; i++) {
+        if (maybe_undefined_or_void(type->composite.types.data[i])) return true;
+    }
+    return false;
+}
+
 static Ty const* instantiated_prop_type(Checker* me, Prop const* prop) {
     MappedInfo const* template_of = prop_decl_rare(prop->target->decl)->template_of;
     Ty const* type = template_of && template_of->template_from ? ty_mapped_template_instantiated(me, template_of, prop->mapper) :
         ty_instantiate(me, prop_type(me, prop->target), prop->mapper);
+    // A mapped type's property: optional ones get undefined unless the template's type may be undefined or void
+    // already (tsc's getTypeOfMappedSymbol). An instantiation of another property has it from its target
+    if (prop->target->is_template && (prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks &&
+        !maybe_undefined_or_void(type)
+    ) {
+        return ty_optional_prop_type(me, type);
+    }
     // (Only set with strictNullChecks. With exactOptionalPropertyTypes only the missing type goes: tsc's
     // removeMissingOrUndefinedType, `Required<{ a?: number | undefined }>` is `{ a: number | undefined }`)
     if (prop->flags & PROP_STRIP_UNDEFINED) {
         type = compiler_options()->exact_optional_property_types ? ty_remove_missing(me, type, true) : ty_without_undefined(me, type);
     }
-    // (An optional property's declared-type view: tsc's getNonMissingTypeOfSymbol)
-    return ty_remove_missing(me, type, prop->flags & PROP_OPTIONAL);
+    return type;
 }
 
 // How deep instantiated properties are being re-entered (see prop_type()): a backstop, the instantiation depth is
@@ -5275,12 +5294,11 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
     } else {
         type = ty_from_node(me, prop->decl->node, prop->decl->ctx);
     }
-    // An optional parameter property has the parameter's type, with a real undefined even under
-    // exactOptionalPropertyTypes (tsc's addOptionality with isProperty false: it's not a property declaration)
-    if (prop->decl->parameter_property && !prop->target && (prop->flags & PROP_OPTIONAL) &&
-        compiler_options()->exact_optional_property_types && compiler_options()->strict_null_checks
-    ) {
-        type = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+    // An optional property's type has undefined, the missing type under exactOptionalPropertyTypes (tsc's
+    // addOptionality). An optional parameter property's is a real undefined even then (isProperty false: it's not a
+    // property declaration). Not one made optional by a destructuring default (tsc only sets the flag)
+    if (!prop->target && (prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_PATTERN_OPTIONAL)) {
+        type = prop->decl->parameter_property ? ty_optional_param_type(me, type) : ty_optional_prop_type(me, type);
     }
     if (resolving && ty_resolving_pop(me)) prop->circular = true;
     if (prop->circular && prop->mapped) {

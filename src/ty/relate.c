@@ -128,12 +128,6 @@ typedef struct RelationState {
     struct RelationState* outer;
 } RelationState;
 
-// Relations compare an optional property's type with its optionality's undefined, except under
-// exactOptionalPropertyTypes, where they compare the declared-type view (tsc's getNonMissingTypeOfSymbol)
-static inline bool optional_adds_undefined(void) {
-    return compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types;
-}
-
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report);
 static bool template_related(Checker* me, void* st, Ty const* source, Ty const* target) {
     return is_related_to(me, st, source, target, false) != TERNARY_FALSE;
@@ -1182,10 +1176,10 @@ static bool exact_optional_unassignable_in(Checker* me, Ty const* source, Ty con
             // (A union's or an intersection's property is the combined one)
             FoundProp common = ty_find_prop(me, target, target_prop->name);
             if (!common.found || !(common.flags & PROP_OPTIONAL)) continue;
-            target_type = ty_optional_prop_type(me, common.type);
+            target_type = ty_optional_prop_read(me, common.type, "exact mismatch");
         } else {
             if (!(target_prop->flags & PROP_OPTIONAL)) continue;
-            target_type = ty_optional_prop_type(me, prop_type(me, target_prop));
+            target_type = ty_optional_prop_read(me, prop_type(me, target_prop), "exact mismatch");
         }
         FoundProp source_prop = ty_find_prop(me, source, target_prop->name);
         if (!source_prop.found) {
@@ -1198,7 +1192,7 @@ static bool exact_optional_unassignable_in(Checker* me, Ty const* source, Ty con
             }
             continue;
         }
-        Ty const* source_type = source_prop.flags & PROP_OPTIONAL ? ty_optional_prop_type(me, source_prop.type) :
+        Ty const* source_type = source_prop.flags & PROP_OPTIONAL ? ty_optional_prop_read(me, source_prop.type, "exact mismatch") :
             source_prop.type;
         if (ty_exact_optional_mismatch(me, source_type, target_type)) return true;
     }
@@ -1498,15 +1492,6 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
     return find_prop_in(me, ty, name, depth, false);
 }
 
-static bool union_has_undefined(Ty const* ty) {
-    if (ty->flags & TYF_UNDEFINED) return true;
-    if (ty->kind != TY_UNION) return false;
-    for (u32 i = 0; i < ty->composite.types.len; i++) {
-        if (ty->composite.types.data[i]->flags & TYF_UNDEFINED) return true;
-    }
-    return false;
-}
-
 static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 depth, bool skip_augment) {
     FoundProp ret = {0};
     if (depth > 8) return ret;
@@ -1519,14 +1504,11 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
         // (Every member's: an intersection of many objects that all have the property, UnionToIntersection of a big
         // union, has as many parts)
         Ty const* stack_buf[16];
-        bool stack_optional[16];
         Ty const** parts = stack_buf;
-        bool* optional_part = stack_optional;
         u32 cap = c_arraylen(stack_buf);
         u32 len = 0;
-        bool all_optional = true, any_member = false, any_non_member = false, all_readonly = true, any_public = false;
+        bool all_optional = true, any_member = false, all_readonly = true, any_public = false;
         u32 flags = 0;
-        bool optional_parts = false; // (Some part came from an optional property: optional_part[i])
         // (The members' own properties first, Object's and Function's only if none has one)
         bool own_only = true;
         again:
@@ -1545,27 +1527,18 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
             if (len == cap) {
                 u32 grown = cap * 2;
                 Ty const** more = malloc(sizeof(Ty const*) * grown);
-                bool* more_optional = malloc(sizeof(bool) * grown);
-                panic_if(!more || !more_optional, "out of memory");
+                panic_if(!more, "out of memory");
                 memcpy(more, parts, sizeof(Ty const*) * len);
-                memcpy(more_optional, optional_part, sizeof(bool) * len);
-                if (parts != stack_buf) {
-                    free(parts);
-                    free(optional_part);
-                }
+                if (parts != stack_buf) free(parts);
                 parts = more;
-                optional_part = more_optional;
                 cap = grown;
             }
-            optional_part[len] = (part.flags & PROP_OPTIONAL) != 0;
-            optional_parts |= optional_part[len];
             parts[len++] = part.type;
             // Only class members (properties, methods, accessors) have a say: a variable of a namespace or of
             // `typeof globalThis` is neither optional nor required (tsc's createUnionOrIntersectionProperty)
             bool class_member = !part.prop || !part.prop->decl->symbol;
             if (class_member) all_optional &= (part.flags & PROP_OPTIONAL) != 0;
             any_member |= class_member;
-            any_non_member |= !class_member;
             flags |= part.flags & ~(u32)PROP_OPTIONAL;
             all_readonly &= (part.flags & PROP_READONLY) != 0;
             any_public |= !(part.flags & (PROP_PRIVATE | PROP_PROTECTED));
@@ -1582,64 +1555,11 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
         if (len) {
             ret.found = true;
             // tsc intersects the members' getTypeOfSymbol, which includes an optional property's undefined: in
-            // `{ name?: X } & { name: undefined }` the property is required and `undefined`, not `X & undefined`.
-            // When all are optional too: `{ v?: A | B } & Pick<{ v?: A | B }, "v">` intersects `A | B | undefined`
-            // twice (one type, the mapped property's being the indexed access of the optional one), not `A | B` with
-            // `A | B | undefined`, which would distribute (react-select's useStateManager(useAsync(props)) inferred
-            // `Option & MultiValue<Option>` candidates from that). Its readers add undefined again, to no effect
-            bool optional_result = all_optional && any_member;
-            // (Under exactOptionalPropertyTypes that's the missing type: `{ x: X | undefined } & { x?: X }` has a
-            // required x of `X | missing`, which an optional target property doesn't take)
-            if (optional_parts && !optional_result && compiler_options()->strict_null_checks) {
-                for (u32 i = 0; i < len; i++) {
-                    if (optional_part[i]) parts[i] = ty_optional_prop_type(me, parts[i]);
-                }
-            }
-            // All optional: the declared types are intersected, readers add undefined. Unless one part's type has
-            // undefined already and the parts' read types are one type: that one (react-select's
-            // `Partial<P<Option>> & Omit<AsyncProps<...>, K>`, a declared `value?: PropsValue<Option>` and a mapped Pick's
-            // `PropsValue<Option> | undefined`, whose declared intersection distributes into `Option & MultiValue<Option>`
-            // members tsc doesn't have). HACK: tsc always intersects the read types (hacks.md); not under
-            // exactOptionalPropertyTypes, whose missing type an explicit undefined would make undefined
-            if (optional_parts && optional_result && len > 1 && compiler_options()->strict_null_checks &&
-                !compiler_options()->exact_optional_property_types
-            ) {
-                bool has_undefined = false;
-                for (u32 i = 0; i < len && !has_undefined; i++) has_undefined = union_has_undefined(parts[i]);
-                Ty const* same = nullptr;
-                for (u32 i = 0; i < len && has_undefined; i++) {
-                    Ty const* read = optional_part[i] ? ty_optional_prop_type(me, parts[i]) : parts[i];
-                    if (!same) same = read;
-                    else if (same != read) has_undefined = false;
-                }
-                if (has_undefined && same) {
-                    parts[0] = same;
-                    len = 1;
-                }
-            }
+            // `{ name?: X } & { name: undefined }` the property is required and `undefined`, not `X & undefined`
             ret.type = ty_intersection(me, parts, len, nullptr, (TyList){0});
             ret.flags = flags | (all_optional && any_member ? PROP_OPTIONAL : 0);
-            // An optional member's property next to one that isn't a member's (a namespace's function: `typeof f &
-            // { m?: X }`) is optional, but its type is `F & (X | undefined)`, without undefined: as readers add it to
-            // an optional property's type, it is required to them
-            if (optional_result && any_non_member && optional_adds_undefined()) {
-                Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
-                bool keeps_undefined = true;
-                for (u32 i = 0; i < len && keeps_undefined; i++) {
-                    Ty const* part = parts[i];
-                    keeps_undefined = optional_part[i] ||
-                        (part->flags & (TYF_ANY | TYF_UNKNOWN | TYF_UNDEFINED | TYF_VOID | TYF_TYPE_PARAM | TYF_DEFERRED));
-                    for (u32 j = 0; part->kind == TY_UNION && j < part->composite.types.len && !keeps_undefined; j++) {
-                        keeps_undefined = part->composite.types.data[j] == undefined;
-                    }
-                }
-                if (!keeps_undefined) ret.flags &= ~(u32)PROP_OPTIONAL;
-            }
         }
-        if (parts != stack_buf) {
-            free(parts);
-            free(optional_part);
-        }
+        if (parts != stack_buf) free(parts);
         FoundProp* memo = arena_new(&my arena, FoundProp);
         *memo = ret;
         *intern_slot(me, &my intersection_props, key, 2) = memo;
@@ -2801,7 +2721,6 @@ static Ternary props_related_impl(
     }
 
     Ternary result = TERNARY_TRUE;
-    Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
     for (u32 i = 0; i < target_members->prop_count; i++) {
         Prop const* target_prop = target_members->props[i];
         if (optionals_only && !(target_prop->flags & PROP_OPTIONAL)) continue;
@@ -2873,15 +2792,9 @@ static Ternary props_related_impl(
             source_prop.prop && (source_prop.prop->flags & PROP_GETTER);
         if (!skip) {
             Ty const* source_type = source_prop.type ? source_prop.type : prop_type(me, source_prop.prop);
-            if ((target_prop->flags & PROP_OPTIONAL) && optional_adds_undefined()) {
-                Ty const* parts[2] = { target_type, undefined };
-                target_type = ty_union(me, parts, 2, nullptr, (TyList){0});
-            }
-            // (An optional source is only related to a required target when comparing: it may be undefined too)
-            if ((source_prop.flags & PROP_OPTIONAL) && optional_adds_undefined()) {
-                Ty const* source_parts[2] = { source_type, undefined };
-                source_type = ty_union(me, source_parts, 2, nullptr, (TyList){0});
-            }
+            // (tsc's getNonMissingTypeOfSymbol of both)
+            target_type = ty_remove_missing(me, target_type, target_prop->flags & PROP_OPTIONAL);
+            source_type = ty_remove_missing(me, source_type, source_prop.flags & PROP_OPTIONAL);
             related = is_related_to(me, st, source_type, target_type, report);
         }
         if (debug_env.debug_variance && my variance_depth) {
@@ -3135,18 +3048,14 @@ static Ternary index_signatures_related(
                 }
                 // (tsc's isIgnoredJsxProperty)
                 if (source->kind == TY_ANONYMOUS && source->anonymous.jsx_attributes && csview_contains(atom_sv(prop->name), "-")) continue;
-                // An optional property's undefined doesn't count (tsc's membersRelatedToIndexer)
-                Ty const* type = props[j].type;
-                if ((props[j].flags & PROP_OPTIONAL) && !(target_info->key->flags & TYF_NUMBER) && !(type->flags & TYF_UNDEFINED) &&
+                // An optional property's undefined doesn't count, unless the property is just undefined or the key is
+                // number (tsc's membersRelatedToIndexInfo: getNonMissingTypeOfSymbol, NEUndefined facts for a string key)
+                bool optional = (props[j].flags & PROP_OPTIONAL) != 0;
+                Ty const* type = ty_remove_missing(me, props[j].type, optional);
+                if (optional && !(target_info->key->flags & TYF_NUMBER) && type != ty_intrinsic(me, TY_UNDEFINED) &&
                     !compiler_options()->exact_optional_property_types
                 ) {
                     type = ty_without_undefined(me, type);
-                }
-                // (For a numeric index signature it does: tsc relates getNonMissingTypeOfSymbol as is)
-                if ((props[j].flags & PROP_OPTIONAL) && (target_info->key->flags & TYF_NUMBER) &&
-                    compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types
-                ) {
-                    type = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
                 }
                 Ternary related = is_related_to(me, st, type, target_info->value, report);
                 if (!related) {
@@ -4912,9 +4821,7 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
             FoundProp found = apparent->kind == TY_INTERSECTION ? find_prop(me, apparent, prop->name, 0) : (FoundProp){0};
             Ty const* type = apparent->kind == TY_INTERSECTION ? found.type : prop_type(me, prop);
             // (Optional ones with their undefined: tsc's getNonMissingTypeOfSymbol)
-            if (((apparent->kind == TY_INTERSECTION ? found.flags : prop->flags) & PROP_OPTIONAL) && optional_adds_undefined()) {
-                type = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
-            }
+            type = ty_remove_missing(me, type, (apparent->kind == TY_INTERSECTION ? found.flags : prop->flags) & PROP_OPTIONAL);
             if (type->kind == TY_UNION) {
                 values[count] = type->composite.types;
             } else {
@@ -4949,11 +4856,7 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
                 }
                 // (An optional target property takes `undefined`, which a source property typed `T | undefined` has
                 // among its values: tsc's isPropertySymbolTypeRelated adds the optionality to the target's type)
-                Ty const* target_type = target_prop.type;
-                if ((target_prop.flags & PROP_OPTIONAL) && optional_adds_undefined()) {
-                    Ty const* target_parts[2] = { target_type, ty_intrinsic(me, TY_UNDEFINED) };
-                    target_type = ty_union(me, target_parts, 2, nullptr, (TyList){0});
-                }
+                Ty const* target_type = ty_remove_missing(me, target_prop.type, target_prop.flags & PROP_OPTIONAL);
                 fits = is_related_to(me, st, value, target_type, false) != TERNARY_FALSE;
             }
             if (fits) {
@@ -5009,16 +4912,8 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
                     result = TERNARY_FALSE;
                     continue;
                 }
-                Ty const* target_type = target_prop.type;
-                Ty const* source_type = source_prop.type;
-                if ((target_prop.flags & PROP_OPTIONAL) && optional_adds_undefined()) {
-                    Ty const* target_parts[2] = { target_type, ty_intrinsic(me, TY_UNDEFINED) };
-                    target_type = ty_union(me, target_parts, 2, nullptr, (TyList){0});
-                    if (source_prop.flags & PROP_OPTIONAL) {
-                        Ty const* source_parts[2] = { source_type, ty_intrinsic(me, TY_UNDEFINED) };
-                        source_type = ty_union(me, source_parts, 2, nullptr, (TyList){0});
-                    }
-                }
+                Ty const* target_type = ty_remove_missing(me, target_prop.type, target_prop.flags & PROP_OPTIONAL);
+                Ty const* source_type = ty_remove_missing(me, source_prop.type, source_prop.flags & PROP_OPTIONAL);
                 result &= is_related_to(me, st, source_type, target_type, false);
             }
             if (result) {
@@ -5092,17 +4987,11 @@ static bool prop_modifiers_identical(Prop const* source, Prop const* target) {
     return is_readonly_prop(source) == is_readonly_prop(target);
 }
 
-// The type tsc's compareProperties compares: an optional property's includes undefined with strictNullChecks (tsc's
-// getTypeOfSymbol adds optionality; its missing type is identical to undefined), so `{ a?: string }` is identical to
-// `{ a?: string | undefined }` and to `Partial<{ a: string }>` mapped again (whose template read added undefined)
+// The type tsc's compareProperties compares, getNonMissingTypeOfSymbol: an optional property's has undefined with
+// strictNullChecks, so `{ a?: string }` is identical to `{ a?: string | undefined }`, but not under
+// exactOptionalPropertyTypes, where its missing type is taken out
 static Ty const* identity_prop_type(Checker* me, Prop const* prop) {
-    Ty const* type = prop_type(me, prop);
-    // (Under exactOptionalPropertyTypes the type without missing: tsc 6.0's getNonMissingTypeOfSymbol, so
-    // `{ a?: string }` isn't identical to `{ a?: string | undefined }` there)
-    if (compiler_options()->exact_optional_property_types) return ty_remove_missing(me, type, (prop->flags & PROP_OPTIONAL) != 0);
-    if (!(prop->flags & PROP_OPTIONAL) || !compiler_options()->strict_null_checks) return type;
-    Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
-    return ty_union(me, parts, 2, nullptr, (TyList){0});
+    return ty_remove_missing(me, prop_type(me, prop), (prop->flags & PROP_OPTIONAL) != 0);
 }
 
 static Ternary props_identical(Checker* me, RelationState* st, Prop const* source, Prop const* target) {
@@ -5277,16 +5166,8 @@ static Ternary identity_structured(Checker* me, RelationState* st, Ty const* sou
 }
 
 // The type of an intersection's property from its members' (`parts` is scratch)
-static Ty const* intersection_prop_type(
-    Checker* me, Ty const** parts, Prop const* const* part_props, u32 part_count, u32 optional_parts, bool all_optional
-) {
+static Ty const* intersection_prop_type(Checker* me, Ty const** parts, Prop const* const* part_props, u32 part_count) {
     for (u32 j = 0; j < part_count; j++) parts[j] = prop_type(me, part_props[j]);
-    // (An optional part's undefined counts when the property is required: see find_prop_in())
-    if (optional_parts && !all_optional && compiler_options()->strict_null_checks) {
-        for (u32 j = 0; j < part_count; j++) {
-            if (optional_parts & (1u << j)) parts[j] = ty_optional_prop_type(me, parts[j]);
-        }
-    }
     return part_count == 1 ? parts[0] : ty_intersection(me, parts, part_count, nullptr, (TyList){0});
 }
 
@@ -5336,11 +5217,9 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             u32 part_members[16];
             u32 part_count = 0;
             bool all_optional = true;
-            u32 optional_parts = 0;
             for (u32 j = m; j < members.len && part_count < c_arraylen(parts); j++) {
                 Prop const* part = ty_get_prop(me, members.data[j], name);
                 if (!part) continue;
-                if (part->flags & PROP_OPTIONAL) optional_parts |= 1u << part_count;
                 part_members[part_count] = j;
                 part_props[part_count++] = part;
                 all_optional &= (part->flags & PROP_OPTIONAL) != 0;
@@ -5366,7 +5245,7 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             // JSX.IntrinsicElements member. One member's property is that very symbol, whose type is only resolved when
             // it is related: relating `{ children?: ReactNode }` to every JSX.IntrinsicElements member would otherwise
             // resolve all ~300 of DOM attributes' property types for each, lit's ssr-react)
-            if (part_count == 2) target_prop.type = intersection_prop_type(me, parts, part_props, part_count, optional_parts, all_optional);
+            if (part_count == 2) target_prop.type = intersection_prop_type(me, parts, part_props, part_count);
             FoundProp source_prop = find_prop(me, apparent_type(me, source), name, 0);
             if (!source_prop.found) {
                 // Usually the members' business already, but a member can have been related without looking at its
@@ -5387,14 +5266,10 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
                 result = TERNARY_FALSE;
                 break;
             }
-            if (!target_prop.type) target_prop.type = intersection_prop_type(me, parts, part_props, part_count, optional_parts, all_optional);
-            Ty const* target_type = target_prop.type;
-            Ty const* source_type = source_prop.type;
-            if (optional_adds_undefined()) {
-                Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
-                if (target_prop.flags & PROP_OPTIONAL) target_type = ty_union(me, (Ty const*[]){ target_type, undefined }, 2, nullptr, (TyList){0});
-                if (source_prop.flags & PROP_OPTIONAL) source_type = ty_union(me, (Ty const*[]){ source_type, undefined }, 2, nullptr, (TyList){0});
-            }
+            if (!target_prop.type) target_prop.type = intersection_prop_type(me, parts, part_props, part_count);
+            // (tsc's getNonMissingTypeOfSymbol of both)
+            Ty const* target_type = ty_remove_missing(me, target_prop.type, target_prop.flags & PROP_OPTIONAL);
+            Ty const* source_type = ty_remove_missing(me, source_prop.type, source_prop.flags & PROP_OPTIONAL);
             Ternary related = is_related_to(me, st, source_type, target_type, report);
             if (!related && report) {
                 cstr prop_name = ty_prop_name_cstr(me, name);
