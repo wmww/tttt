@@ -1,0 +1,80 @@
+//// [test/cases/ttttJsDeclarationMapsThisMembersAndJsDocTrivia.ts] ////
+
+=== a.js ===
+export class MainMenu {
+>MainMenu : Symbol(MainMenu, Decl(a.js, 0, 0))
+
+  constructor() {
+    /** @type {string} */
+    // @ts-ignore
+    this.pageTree = undefined;
+>this.pageTree : Symbol(MainMenu.pageTree, Decl(a.js, 1, 17))
+>this : Symbol(MainMenu, Decl(a.js, 0, 0))
+>pageTree : Symbol(MainMenu.pageTree, Decl(a.js, 1, 17))
+>undefined : Symbol(undefined)
+
+    this.currentPath = '';
+>this.currentPath : Symbol(MainMenu.currentPath, Decl(a.js, 4, 30))
+>this : Symbol(MainMenu, Decl(a.js, 0, 0))
+>currentPath : Symbol(MainMenu.currentPath, Decl(a.js, 4, 30))
+
+    this["a-b"] = 1;
+>this : Symbol(MainMenu, Decl(a.js, 0, 0))
+>"a-b" : Symbol(MainMenu["a-b"], Decl(a.js, 5, 26))
+  }
+}
+
+/**
+ * @param {string} a
+ * @param {Object} [options]
+ * @param {string} [options.title]
+ * @param {number} [options.menu] render
+ */
+export function document(a, { title, menu } = {}) {}
+>document : Symbol(document, Decl(a.js, 8, 1))
+>a : Symbol(a, Decl(a.js, 16, 25))
+>title : Symbol(title, Decl(a.js, 16, 29))
+>menu : Symbol(menu, Decl(a.js, 16, 36))
+
+/**
+ * @param {number} [b]
+ */
+export function h(b = 1) {}
+>h : Symbol(h, Decl(a.js, 16, 52))
+>b : Symbol(b, Decl(a.js, 21, 18))
+
+/**
+ * @typedef {{
+ *   value: string
+ * }} ValueObject
+ */
+
+/**
+ * @typedef {{
+ *   m(): void,
+ *   (): void,
+ *   readonly x: number,
+ *   new (): string,
+ *   props: {
+ *     [key: string]: ValueObject|null,
+ *   },
+ *   exported?: boolean
+ * }} T
+ */
+
+/**
+ * @param {T} x
+ * @returns {ValueObject}
+ */
+export function f(x) { return { value: "" }; }
+>f : Symbol(f, Decl(a.js, 21, 27))
+>x : Symbol(x, Decl(a.js, 46, 18))
+>value : Symbol(value, Decl(a.js, 46, 31))
+
+/** @type {(a: string, b: number
+ * ) => void} */
+export const g = (a, b) => {};
+>g : Symbol(g, Decl(a.js, 50, 12))
+>a : Symbol(a, Decl(a.js, 50, 18))
+>b : Symbol(b, Decl(a.js, 50, 20))
+

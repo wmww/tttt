@@ -3358,7 +3358,7 @@ static void m(Walk* me, char const* at) {
 
 // (A span's end may take in the whitespace after it: a node ends at its last token)
 static void m_span(Walk* me, Span span, bool end) {
-    if (span_valid(span)) m(me, end ? decl_map_back_trivia(span_end_ptr(span), span.buf) : span.buf);
+    if (span_valid(span)) m(me, end ? decl_map_node_end(my file, span_end_ptr(span), span.buf) : span.buf);
 }
 
 // A name as written, mapped
@@ -3718,8 +3718,10 @@ static void w_parameter_inner(Walk* me, FunctionImpl const* fn, FunctionArg cons
     if (!is_this && is_optional_parameter(fn, arg)) {
         // (The `?` written, or one added for an initializer: new)
         Span question = arg->explicit_optional ? function_arg_question_span(arg) : span_null;
-        if (!span_valid(question) && arg->explicit_optional && arg->jsdoc_question && span_valid(*arg->jsdoc_question)) {
-            // (A JSDoc `[name]`'s question token is its tag, ending exactly where the tag does: tsgo's reparser)
+        if (!span_valid(question) && (arg->explicit_optional || arg->jsdoc_optional_initialized) && arg->jsdoc_question &&
+            span_valid(*arg->jsdoc_question)) {
+            // (A JSDoc `[name]`'s question token is its tag, ending exactly where the tag does: tsgo's reparser, which
+            // gives an initialized parameter one too)
             m(me, arg->jsdoc_question->buf);
             w_lit(me, "?");
             m(me, span_end_ptr(*arg->jsdoc_question));
@@ -4594,8 +4596,21 @@ static void emit_js_this_properties(Walk* me, ClassDecl const* cls) {
         csview literal = this_property_literal_name(me, p->decl);
         bool identifier = name.size && !isdigit((unsigned char)name.buf[0]);
         for (isize_t c = 0; c < name.size; c++) identifier &= is_word_char(name.buf[c]);
+        // (The name is the source's, mapped; the synthesized property isn't: tsgo's reparsed declaration)
+        // (`decl->name` is the whole `this.x` access: the name is its last `name.size` bytes)
+        Span name_span = p->decl->name;
+        bool mapped = span_valid(name_span) && span_source(name_span) == my file;
+        if (mapped && !literal.size) {
+            char const* end = decl_map_back_trivia(span_end_ptr(name_span), name_span.buf);
+            mapped = end - name_span.buf >= name.size && memcmp(end - name.size, name.buf, (size_t)name.size) == 0;
+            if (mapped) name_span = span_make((SourceFile*)my file, end - name.size, end);
+        }
+        if (mapped && literal.size) m(me, literal.buf);
         if (literal.size) {
             w(me, literal);
+            if (mapped) m(me, literal.buf + literal.size);
+        } else if (identifier && mapped) {
+            w_name(me, name_span);
         } else if (identifier) {
             w(me, name);
         } else {

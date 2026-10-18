@@ -1,0 +1,91 @@
+//// [test/cases/ttttJsDeclarationMapsThisMembersAndJsDocTrivia.ts] ////
+
+=== a.js ===
+export class MainMenu {
+>MainMenu : MainMenu
+
+  constructor() {
+    /** @type {string} */
+    // @ts-ignore
+    this.pageTree = undefined;
+>this.pageTree = undefined : undefined
+>this.pageTree : string
+>this : this
+>pageTree : string
+>undefined : undefined
+
+    this.currentPath = '';
+>this.currentPath = '' : ""
+>this.currentPath : any
+>this : this
+>currentPath : any
+>'' : ""
+
+    this["a-b"] = 1;
+>this["a-b"] = 1 : 1
+>this["a-b"] : any
+>this : this
+>"a-b" : "a-b"
+>1 : 1
+  }
+}
+
+/**
+ * @param {string} a
+ * @param {Object} [options]
+ * @param {string} [options.title]
+ * @param {number} [options.menu] render
+ */
+export function document(a, { title, menu } = {}) {}
+>document : (a: string, { title, menu }?: { title?: string; menu?: number; }) => void
+>a : string
+>title : string | undefined
+>menu : number | undefined
+>{} : {}
+
+/**
+ * @param {number} [b]
+ */
+export function h(b = 1) {}
+>h : (b?: number) => void
+>b : number | undefined
+>1 : 1
+
+/**
+ * @typedef {{
+ *   value: string
+ * }} ValueObject
+ */
+
+/**
+ * @typedef {{
+ *   m(): void,
+ *   (): void,
+ *   readonly x: number,
+ *   new (): string,
+ *   props: {
+ *     [key: string]: ValueObject|null,
+ *   },
+ *   exported?: boolean
+ * }} T
+ */
+
+/**
+ * @param {T} x
+ * @returns {ValueObject}
+ */
+export function f(x) { return { value: "" }; }
+>f : (x: T) => ValueObject
+>x : T
+>{ value: "" } : { value: string; }
+>value : string
+>"" : ""
+
+/** @type {(a: string, b: number
+ * ) => void} */
+export const g = (a, b) => {};
+>g : (a: string, b: number) => void
+>(a, b) => {} : (a: string, b: number) => void
+>a : string
+>b : number
+

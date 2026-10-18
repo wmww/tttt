@@ -34,6 +34,9 @@ struct TypeNode;
 char const* decl_map_skip_trivia(char const* at, char const* end);
 // Back over the whitespace and block comments before `at` (not before `start`)
 char const* decl_map_back_trivia(char const* at, char const* start);
+// The same where a node ends in `file`: in a JavaScript file a JSDoc continuation line's leading `*` is trivia too (a
+// JSDoc type's node ends at its last token)
+char const* decl_map_node_end(SourceFile const* file, char const* at, char const* start);
 // Where a parsed type node starts and ends in `file` (TypeNode.pos, the ends from its parts), null if it wasn't parsed
 // there. A parenthesized node's are its parentheses', decl_map_type_inner() what is in them
 // A JSDoc type's mapped start: a node on a comment's continuation line starts at its `*` (tsgo maps

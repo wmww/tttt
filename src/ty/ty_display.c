@@ -89,7 +89,7 @@ static void map_at(TyDisplay d, char const* at) {
 
 // (A span's end may take in the whitespace after it: a node ends at its last token)
 static void map_span(TyDisplay d, Span span, bool end) {
-    if (D_MAP(d) && span_valid(span)) map_at(d, end ? decl_map_back_trivia(span_end_ptr(span), span.buf) : span.buf);
+    if (D_MAP(d) && span_valid(span)) map_at(d, end ? decl_map_node_end(D_MAP(d), span_end_ptr(span), span.buf) : span.buf);
 }
 
 // A name as written, its start and end mapped
@@ -2754,7 +2754,14 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
         Span comment_span = i->key.tag == INTERFACE_KEY_MAPPED ? span_null : i->declaration;
         if (described && i->key.tag == INTERFACE_KEY_NAME) out_jsdoc_description(d, i);
         member_begin_node(d, comment_span);
-        map_span(d, comment_span, false);
+        if (D_MAP(d) && span_valid(comment_span) && !(i->key.tag == INTERFACE_KEY_NAME && i->key.span.buf == comment_span.buf &&
+            !(i->readonly && csview_starts_with(span_sv(comment_span), "readonly")))) {
+            // (A JSDoc type literal's member first on its line starts at the line's `*` unless it starts with its name:
+            // tsgo maps a property or method signature from its name, others from skipTrivia(pos))
+            map_at(d, decl_map_jsdoc_line_start(D_MAP(d), comment_span.buf));
+        } else {
+            map_span(d, comment_span, false);
+        }
         switch (i->key.tag) {
             case INTERFACE_KEY_MAPPED: {
                 u32 saved = param_names_enter(d); // (A mapped type is a scope)
@@ -2853,7 +2860,11 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
             case INTERFACE_KEY_EXPR:
             case INTERFACE_KEY_NAME:
                 if (i->readonly) {
-                    out_token_mapped(d, D_MAP(d) && span_valid(i->declaration) ? i->declaration.buf : nullptr, c_sv("readonly"));
+                    // (From the JSDoc line's `*` where it's first on its line, like the member)
+                    char const* at = D_MAP(d) && span_valid(i->declaration) ? i->declaration.buf : nullptr;
+                    map_at(d, at ? decl_map_jsdoc_line_start(D_MAP(d), at) : nullptr);
+                    out_lit(d, "readonly");
+                    if (at) map_at(d, at + 8);
                     out_lit(d, " ");
                 }
                 if (i->key.tag == INTERFACE_KEY_EXPR) {

@@ -250,6 +250,17 @@ char const* decl_map_back_trivia(char const* at, char const* start) {
     return at;
 }
 
+char const* decl_map_node_end(SourceFile const* file, char const* at, char const* start) {
+    at = decl_map_back_trivia(at, start);
+    while (file && file->is_js && at > start && at[-1] == '*') {
+        char const* line = at - 1;
+        while (line > start && (line[-1] == ' ' || line[-1] == '\t')) line--;
+        if (line <= start || (line[-1] != '\n' && line[-1] != '\r')) break;
+        at = decl_map_back_trivia(at - 1, start);
+    }
+    return at;
+}
+
 static bool in_file(SourceFile const* file, char const* at) {
     char const* text = cstr_str(&file->contents);
     return at && at >= text && at <= text + cstr_size(&file->contents);

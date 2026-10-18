@@ -241,6 +241,17 @@ static void write_comments(DeclComments const* me, cstr* out, u32 indent, Commen
 char const* decl_comments_end(DeclComments const* me, char const* end, char const* separators) {
     if (!me || !decl_comments_in_file(me, end)) return end;
     end = full_start(me->file, end);
+    // (In a JavaScript file's JSDoc, a line's leading `*` is trivia too: a JSDoc type literal's member ends at its last
+    // token, not past the `*` of the next line)
+    while (me->file->is_js) {
+        char const* line = end;
+        if (line <= text_start(me->file) || line[-1] != '*') break;
+        line--;
+        char const* star = line;
+        while (line > text_start(me->file) && (line[-1] == ' ' || line[-1] == '\t')) line--;
+        if (line > text_start(me->file) && line[-1] != '\n' && line[-1] != '\r') break;
+        end = full_start(me->file, star);
+    }
     if (!separators) return end;
     char const* c = end;
     char const* stop = text_end(me->file);
