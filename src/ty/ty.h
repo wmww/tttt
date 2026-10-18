@@ -2668,6 +2668,9 @@ typedef struct TyDisplay {
     // Declaration emit: the signature being printed is a method of a class instance type printed as a literal that tsgo
     // instantiates for `this` (not thisless: isThisless wants one declaration), so its own type parameters are fresh
     bool own_params_fresh;
+    // The file of the signature whose annotations are being reused, if known: what a keyword node (no span of its
+    // own) was written in, for declaration maps and comments (null: decided by the text at its offset)
+    struct SourceFile const* node_file;
     // Print unique symbol types as `typeof sym` rather than `unique symbol` (tsc's typeToString without
     // AllowUniqueESSymbolType, which its default flags have: messages' fully qualified names, getTypeNameForErrorDisplay)
     bool typeof_unique_symbols;

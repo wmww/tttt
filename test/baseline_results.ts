@@ -437,6 +437,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationMapForeignKeywordAnnotation': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationMapOtherFileNode': {
         errors: true,
         symbols: true,

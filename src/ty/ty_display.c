@@ -2762,7 +2762,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
     }
     brace_close(outer);
 }
-static bool node_in_mapped_file(TypeNode const* node, SourceFile const* file);
+static bool node_in_mapped_file(TypeNode const* node, SourceFile const* file, SourceFile const* node_file);
 
 // Declaration emit: the comments before a reused list element starting at `start`, on the line of the delimiter before
 // it (or of the list's start), unfiltered (the printer's emitListItems' intervening ones)
@@ -2782,7 +2782,7 @@ static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list,
     if (comments && !d.transformer_node) {
         // (Only from the file being written: the comments are looked up at the nodes' offsets in its text)
         for_each (i, vec_type, list) {
-            if (!i->placeholder && !node_in_mapped_file(i, d.comments->file)) comments = false;
+            if (!i->placeholder && !node_in_mapped_file(i, d.comments->file, d.node_file)) comments = false;
         }
     }
     for_each (i, vec_type, list) {
@@ -2947,9 +2947,10 @@ static SourceFile const* node_source_file(TypeNode const* node, u32 depth) {
 
 // Declaration maps: whether a reused node is one of the file being written (the node builder reuses annotations of
 // other files too, whose positions mean nothing here). A keyword is checked by its text there
-static bool node_in_mapped_file(TypeNode const* node, SourceFile const* file) {
+static bool node_in_mapped_file(TypeNode const* node, SourceFile const* file, SourceFile const* node_file) {
     SourceFile const* source = node_source_file(node, 0);
     if (source) return source == file;
+    if (node_file) return node_file == file;
     char const* keyword = nullptr;
     switch (node->tag) {
         case TYPE_ANY: keyword = "any"; break;
@@ -2989,7 +2990,7 @@ static void display_node_mapped(Checker* me, TyDisplay d, TypeNode const* node) 
 }
 
 static void display_node_mapped_inner(Checker* me, TyDisplay d, TypeNode const* node) {
-    if (D_MAP(d) && (d.reprinted || !node_in_mapped_file(node, D_MAP(d)))) d.no_map = true;
+    if (D_MAP(d) && (d.reprinted || !node_in_mapped_file(node, D_MAP(d), d.node_file))) d.no_map = true;
     if (D_MAP(d)) {
         // (A node printed as its type isn't mapped, nor is one that has no position here)
         isize_t marked_at = cstr_size(d.target);
@@ -3842,6 +3843,8 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     // (A JSDoc `@this` makes a parameter of its own, which isn't reused)
     bool jsdoc_this = function && vec_function_arg_size(&function->args) && function->args.data[0].jsdoc_this;
     bool reusable = (d.types_baseline || d.reuse_nodes) && function;
+    // (Its annotations were written in its file: babel-standalone's keyword annotations of another file's signature)
+    d.node_file = function && span_valid(function->full_span) ? span_source(function->full_span) : nullptr;
     // (An instantiated signature's parameters that could contain type variables are copies: one named like a type
     // parameter shadows it, see TyParamNames.value_params)
     SigParam* copies = nullptr;
@@ -5437,6 +5440,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     ) {
         d.decl_literal = ty->anonymous.node->interface.span;
     }
+    d.node_file = nullptr; // (Its members' nodes are their own declarations')
     Members const* members = ty_members(me, ty);
     if (members->mapped) {
         display_mapped(me, d, members->mapped);

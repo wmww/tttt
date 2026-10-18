@@ -1,0 +1,24 @@
+//// [test/cases/ttttDeclarationMapForeignKeywordAnnotation.ts] ////
+
+=== c.ts ===
+export class Q { m(code: number): void {} }
+>Q : Q
+>m : (code: number) => void
+>code : number
+
+=== d.ts ===
+export class R { m(code: number): void {} }
+>R : R
+>m : (code: number) => void
+>code : number
+
+import { Q } from "./c";
+>Q : typeof Q
+
+export const v = new Q().m;
+>v : (code: number) => void
+>new Q().m : (code: number) => void
+>new Q() : Q
+>Q : typeof Q
+>m : (code: number) => void
+

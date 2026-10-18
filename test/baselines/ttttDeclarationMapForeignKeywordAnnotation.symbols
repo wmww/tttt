@@ -1,0 +1,23 @@
+//// [test/cases/ttttDeclarationMapForeignKeywordAnnotation.ts] ////
+
+=== c.ts ===
+export class Q { m(code: number): void {} }
+>Q : Symbol(Q, Decl(c.ts, 0, 0))
+>m : Symbol(Q.m, Decl(c.ts, 0, 16))
+>code : Symbol(code, Decl(c.ts, 0, 19))
+
+=== d.ts ===
+export class R { m(code: number): void {} }
+>R : Symbol(R, Decl(d.ts, 0, 0))
+>m : Symbol(R.m, Decl(d.ts, 0, 16))
+>code : Symbol(code, Decl(d.ts, 0, 19))
+
+import { Q } from "./c";
+>Q : Symbol(Q, Decl(d.ts, 1, 8))
+
+export const v = new Q().m;
+>v : Symbol(v, Decl(d.ts, 2, 12))
+>new Q().m : Symbol(Q.m, Decl(c.ts, 0, 16))
+>Q : Symbol(Q, Decl(d.ts, 1, 8))
+>m : Symbol(Q.m, Decl(c.ts, 0, 16))
+
