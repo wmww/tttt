@@ -1,0 +1,56 @@
+//// [test/cases/ttttCyclicPlaceholderInMessage.ts] ////
+
+=== ttttCyclicPlaceholderInMessage.ts ===
+// A message's cyclic structure placeholder is `...` (tsc's createElidedInformationPlaceholder without NoTruncation), the
+// types baseline's `any`
+function g1() {
+>g1 : () => void
+
+    function Foo() {}
+>Foo : { (): void; prototype: { constructor: any; }; }
+
+    Foo.prototype = { constructor: Foo };
+>Foo.prototype = { constructor: Foo } : { constructor: { (): void; prototype: { constructor: any; }; }; }
+>Foo.prototype : { constructor: { (): void; prototype: any; }; }
+>Foo : { (): void; prototype: { constructor: any; }; }
+>prototype : { constructor: { (): void; prototype: any; }; }
+>{ constructor: Foo } : { constructor: { (): void; prototype: { constructor: any; }; }; }
+>constructor : { (): void; prototype: { constructor: any; }; }
+>Foo : { (): void; prototype: { constructor: any; }; }
+
+    Foo.prototype.a = 1;
+>Foo.prototype.a = 1 : 1
+>Foo.prototype.a : any
+>Foo.prototype : { constructor: { (): void; prototype: any; }; }
+>Foo : { (): void; prototype: { constructor: any; }; }
+>prototype : { constructor: { (): void; prototype: any; }; }
+>a : any
+>1 : 1
+}
+function g2() {
+>g2 : () => void
+
+  function f() { return f }
+>f : () => any
+>f : () => any
+
+  const x: number = f;
+>x : number
+>f : () => any
+
+  type R = R[];
+>R : any[]
+
+  const o = { a: 1, get self() { return o } };
+>o : { a: number; readonly self: any; }
+>{ a: 1, get self() { return o } } : { a: number; readonly self: { a: number; readonly self: any; }; }
+>a : number
+>1 : 1
+>self : { a: number; readonly self: any; }
+>o : { a: number; readonly self: any; }
+
+  const y: number = o;
+>y : number
+>o : { a: number; readonly self: any; }
+}
+

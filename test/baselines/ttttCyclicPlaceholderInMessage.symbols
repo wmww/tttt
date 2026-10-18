@@ -1,0 +1,49 @@
+//// [test/cases/ttttCyclicPlaceholderInMessage.ts] ////
+
+=== ttttCyclicPlaceholderInMessage.ts ===
+// A message's cyclic structure placeholder is `...` (tsc's createElidedInformationPlaceholder without NoTruncation), the
+// types baseline's `any`
+function g1() {
+>g1 : Symbol(g1, Decl(ttttCyclicPlaceholderInMessage.ts, 0, 0))
+
+    function Foo() {}
+>Foo : Symbol(Foo, Decl(ttttCyclicPlaceholderInMessage.ts, 2, 15))
+
+    Foo.prototype = { constructor: Foo };
+>Foo.prototype : Symbol(Foo.prototype, Decl(ttttCyclicPlaceholderInMessage.ts, 3, 21))
+>Foo : Symbol(Foo, Decl(ttttCyclicPlaceholderInMessage.ts, 2, 15))
+>prototype : Symbol(Foo.prototype, Decl(ttttCyclicPlaceholderInMessage.ts, 3, 21))
+>constructor : Symbol(constructor, Decl(ttttCyclicPlaceholderInMessage.ts, 4, 21))
+>Foo : Symbol(Foo, Decl(ttttCyclicPlaceholderInMessage.ts, 2, 15))
+
+    Foo.prototype.a = 1;
+>Foo.prototype : Symbol(Foo.prototype, Decl(ttttCyclicPlaceholderInMessage.ts, 3, 21))
+>Foo : Symbol(Foo, Decl(ttttCyclicPlaceholderInMessage.ts, 2, 15))
+>prototype : Symbol(Foo.prototype, Decl(ttttCyclicPlaceholderInMessage.ts, 3, 21))
+}
+function g2() {
+>g2 : Symbol(g2, Decl(ttttCyclicPlaceholderInMessage.ts, 6, 1))
+
+  function f() { return f }
+>f : Symbol(f, Decl(ttttCyclicPlaceholderInMessage.ts, 7, 15))
+>f : Symbol(f, Decl(ttttCyclicPlaceholderInMessage.ts, 7, 15))
+
+  const x: number = f;
+>x : Symbol(x, Decl(ttttCyclicPlaceholderInMessage.ts, 9, 7))
+>f : Symbol(f, Decl(ttttCyclicPlaceholderInMessage.ts, 7, 15))
+
+  type R = R[];
+>R : Symbol(R, Decl(ttttCyclicPlaceholderInMessage.ts, 9, 22))
+>R : Symbol(R, Decl(ttttCyclicPlaceholderInMessage.ts, 9, 22))
+
+  const o = { a: 1, get self() { return o } };
+>o : Symbol(o, Decl(ttttCyclicPlaceholderInMessage.ts, 11, 7))
+>a : Symbol(a, Decl(ttttCyclicPlaceholderInMessage.ts, 11, 13))
+>self : Symbol(self, Decl(ttttCyclicPlaceholderInMessage.ts, 11, 19))
+>o : Symbol(o, Decl(ttttCyclicPlaceholderInMessage.ts, 11, 7))
+
+  const y: number = o;
+>y : Symbol(y, Decl(ttttCyclicPlaceholderInMessage.ts, 12, 7))
+>o : Symbol(o, Decl(ttttCyclicPlaceholderInMessage.ts, 11, 7))
+}
+

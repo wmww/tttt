@@ -949,7 +949,7 @@ static void display_class_literal(Checker* me, TyDisplay d, Ty const* ty) {
     for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
         if (i->ty == ty) {
             if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
-            out_lit(d, "any");
+            out_elided(d); // (A message\'s cyclic structure placeholder is `...`: tsc\'s createElidedInformationPlaceholder)
             return;
         }
     }
@@ -6776,7 +6776,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     }
                     if (expando_cyclic_placeholder(d, ty)) {
                         if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
-                        out_lit(d, "any");
+                        out_elided(d); // (A message\'s cyclic structure placeholder is `...`: tsc\'s createElidedInformationPlaceholder)
                         break;
                     }
                     if (class_as_literal(d, ty)) {
@@ -6825,7 +6825,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 for (TyDisplayVisit const* i = d.visiting; i && !recursive; i = i->outer) recursive = i->ty == ty;
                 if (recursive) {
                     if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
-                    out_lit(d, "any");
+                    out_elided(d); // (A message\'s cyclic structure placeholder is `...`: tsc\'s createElidedInformationPlaceholder)
                     break;
                 }
             }
@@ -6939,7 +6939,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     // structural fallback, which is the cyclic placeholder, tsgo's shouldWriteTypeOfFunctionSymbol)
                     if (here && d.tracker) {
                         d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
-                        out_lit(d, "any");
+                        out_elided(d); // (A message\'s cyclic structure placeholder is `...`: tsc\'s createElidedInformationPlaceholder)
                         return;
                     }
                     if (here && span_valid(expression->name) && expression->symbol) out(d, span_sv(expression->name));
@@ -6970,7 +6970,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     return;
                 }
                 if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
-                out_lit(d, "any");
+                out_elided(d); // (A message\'s cyclic structure placeholder is `...`: tsc\'s createElidedInformationPlaceholder)
                 return;
             }
             // An instantiation expression made by `typeof f<T>` reprints that node (tsc's createAnonymousTypeNode with an

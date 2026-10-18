@@ -201,6 +201,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttCyclicPlaceholderInMessage': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeclarationAbstractClassLiteral': {
         errors: true,
         symbols: true,

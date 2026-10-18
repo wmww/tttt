@@ -1,0 +1,27 @@
+ttttCyclicPlaceholderInMessage.ts(6,19): error TS2339: Property 'a' does not exist on type '{ constructor: { (): void; prototype: any; }; }'.
+ttttCyclicPlaceholderInMessage.ts(10,9): error TS2322: Type '() => any' is not assignable to type 'number'.
+ttttCyclicPlaceholderInMessage.ts(13,9): error TS2322: Type '{ a: number; readonly self: any; }' is not assignable to type 'number'.
+
+
+==== ttttCyclicPlaceholderInMessage.ts (3 errors) ====
+    // A message's cyclic structure placeholder is `...` (tsc's createElidedInformationPlaceholder without NoTruncation), the
+    // types baseline's `any`
+    function g1() {
+        function Foo() {}
+        Foo.prototype = { constructor: Foo };
+        Foo.prototype.a = 1;
+                      ~
+!!! error TS2339: Property 'a' does not exist on type '{ constructor: { (): void; prototype: any; }; }'.
+    }
+    function g2() {
+      function f() { return f }
+      const x: number = f;
+            ~
+!!! error TS2322: Type '() => any' is not assignable to type 'number'.
+      type R = R[];
+      const o = { a: 1, get self() { return o } };
+      const y: number = o;
+            ~
+!!! error TS2322: Type '{ a: number; readonly self: any; }' is not assignable to type 'number'.
+    }
+    
