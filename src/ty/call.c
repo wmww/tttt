@@ -908,6 +908,21 @@ Signature const* ty_single_signature_non_nullable(Checker* me, Ty const* ty, boo
 // same kind (the one in `*contextual`), else null
 static Signature const* generic_function_argument(Checker* me, Ty const* arg_type, Ty const* param_type, Signature const** contextual) {
     if (!arg_type || !param_type) return nullptr;
+    if (param_type->kind == TY_UNION) {
+        // (Each member of a union by its apparent type, a mapped type's aside: tsc's getApparentTypeOfContextualType
+        // with NoConstraints leaves alone only a bare type variable, so `f?: T` (`T | undefined`) is T's constraint's
+        // signature where `f: T` has none)
+        TyBuf members = {0};
+        bool changed = false;
+        for (u32 i = 0; i < param_type->composite.types.len; i++) {
+            Ty const* member = param_type->composite.types.data[i];
+            Ty const* apparent = member->kind == TY_ANONYMOUS && ty_members(me, member)->mapped ? member : ty_apparent_type(me, member);
+            changed |= apparent != member;
+            ty_buf_push(&members, apparent);
+        }
+        if (changed) param_type = ty_union(me, members.data, members.len, nullptr, (TyList){0});
+        ty_buf_drop(&members);
+    }
     for (u32 construct = 0; construct < 2; construct++) {
         Signature const* sig = ty_single_signature(me, arg_type, construct, true);
         if (!sig) continue;

@@ -841,6 +841,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttGenericFunctionArgOptionalParam': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttGetterMissingBody': {
         errors: true,
         symbols: true,

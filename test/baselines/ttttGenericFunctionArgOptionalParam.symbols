@@ -1,0 +1,99 @@
+//// [test/cases/ttttGenericFunctionArgOptionalParam.ts] ////
+
+=== ttttGenericFunctionArgOptionalParam.ts ===
+// A generic function argument whose parameter is `f?: T` is instantiated in the context of T's constraint's signature:
+// tsc's getApparentTypeOfContextualType (NoConstraints) leaves alone a bare type variable only, `T | undefined` is
+// its members' apparent types (vitest's `vi.fn(<T extends Message>(type: T['type'], ...) => ...)`)
+enum Bus { A = 'a', B = 'b' }
+>Bus : Symbol(Bus, Decl(ttttGenericFunctionArgOptionalParam.ts, 0, 0))
+>A : Symbol(Bus.A, Decl(ttttGenericFunctionArgOptionalParam.ts, 3, 10))
+>B : Symbol(Bus.B, Decl(ttttGenericFunctionArgOptionalParam.ts, 3, 19))
+
+type Message = { type: Bus.A; x: number } | { type: Bus.B; y: string };
+>Message : Symbol(Message, Decl(ttttGenericFunctionArgOptionalParam.ts, 3, 29))
+>type : Symbol(type, Decl(ttttGenericFunctionArgOptionalParam.ts, 4, 16))
+>Bus : Symbol(Bus, Decl(ttttGenericFunctionArgOptionalParam.ts, 0, 0))
+>A : Symbol(Bus.A, Decl(ttttGenericFunctionArgOptionalParam.ts, 3, 10))
+>x : Symbol(x, Decl(ttttGenericFunctionArgOptionalParam.ts, 4, 29))
+>type : Symbol(type, Decl(ttttGenericFunctionArgOptionalParam.ts, 4, 45))
+>Bus : Symbol(Bus, Decl(ttttGenericFunctionArgOptionalParam.ts, 0, 0))
+>B : Symbol(Bus.B, Decl(ttttGenericFunctionArgOptionalParam.ts, 3, 19))
+>y : Symbol(y, Decl(ttttGenericFunctionArgOptionalParam.ts, 4, 58))
+
+type Procedure = (...args: any[]) => any;
+>Procedure : Symbol(Procedure, Decl(ttttGenericFunctionArgOptionalParam.ts, 4, 71))
+>args : Symbol(args, Decl(ttttGenericFunctionArgOptionalParam.ts, 5, 18))
+
+interface Mock<T extends Procedure = Procedure> { (...args: Parameters<T>): ReturnType<T>; mock: T }
+>Mock : Symbol(Mock, Decl(ttttGenericFunctionArgOptionalParam.ts, 5, 41))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 6, 15))
+>Procedure : Symbol(Procedure, Decl(ttttGenericFunctionArgOptionalParam.ts, 4, 71))
+>Procedure : Symbol(Procedure, Decl(ttttGenericFunctionArgOptionalParam.ts, 4, 71))
+>args : Symbol(args, Decl(ttttGenericFunctionArgOptionalParam.ts, 6, 51))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 6, 15))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 6, 15))
+>mock : Symbol(Mock.mock, Decl(ttttGenericFunctionArgOptionalParam.ts, 6, 90))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 6, 15))
+
+declare function fn<T extends Procedure = Procedure>(f?: T): Mock<T>;
+>fn : Symbol(fn, Decl(ttttGenericFunctionArgOptionalParam.ts, 6, 100))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 7, 20))
+>Procedure : Symbol(Procedure, Decl(ttttGenericFunctionArgOptionalParam.ts, 4, 71))
+>Procedure : Symbol(Procedure, Decl(ttttGenericFunctionArgOptionalParam.ts, 4, 71))
+>f : Symbol(f, Decl(ttttGenericFunctionArgOptionalParam.ts, 7, 53))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 7, 20))
+>Mock : Symbol(Mock, Decl(ttttGenericFunctionArgOptionalParam.ts, 5, 41))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 7, 20))
+
+declare function fnRequired<T extends Procedure = Procedure>(f: T): Mock<T>;
+>fnRequired : Symbol(fnRequired, Decl(ttttGenericFunctionArgOptionalParam.ts, 7, 69))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 8, 28))
+>Procedure : Symbol(Procedure, Decl(ttttGenericFunctionArgOptionalParam.ts, 4, 71))
+>Procedure : Symbol(Procedure, Decl(ttttGenericFunctionArgOptionalParam.ts, 4, 71))
+>f : Symbol(f, Decl(ttttGenericFunctionArgOptionalParam.ts, 8, 61))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 8, 28))
+>Mock : Symbol(Mock, Decl(ttttGenericFunctionArgOptionalParam.ts, 5, 41))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 8, 28))
+
+declare function id<T extends Procedure>(f?: T): T;
+>id : Symbol(id, Decl(ttttGenericFunctionArgOptionalParam.ts, 8, 76))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 9, 20))
+>Procedure : Symbol(Procedure, Decl(ttttGenericFunctionArgOptionalParam.ts, 4, 71))
+>f : Symbol(f, Decl(ttttGenericFunctionArgOptionalParam.ts, 9, 41))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 9, 20))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 9, 20))
+
+export const optional = fn(<T extends Message>(type: T['type'], listener: (message: T) => void) => {});
+>optional : Symbol(optional, Decl(ttttGenericFunctionArgOptionalParam.ts, 10, 12))
+>fn : Symbol(fn, Decl(ttttGenericFunctionArgOptionalParam.ts, 6, 100))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 10, 28))
+>Message : Symbol(Message, Decl(ttttGenericFunctionArgOptionalParam.ts, 3, 29))
+>type : Symbol(type, Decl(ttttGenericFunctionArgOptionalParam.ts, 10, 47))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 10, 28))
+>listener : Symbol(listener, Decl(ttttGenericFunctionArgOptionalParam.ts, 10, 63))
+>message : Symbol(message, Decl(ttttGenericFunctionArgOptionalParam.ts, 10, 75))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 10, 28))
+
+export const required = fnRequired(<T extends Message>(type: T['type'], listener: (message: T) => void) => {});
+>required : Symbol(required, Decl(ttttGenericFunctionArgOptionalParam.ts, 11, 12))
+>fnRequired : Symbol(fnRequired, Decl(ttttGenericFunctionArgOptionalParam.ts, 7, 69))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 11, 36))
+>Message : Symbol(Message, Decl(ttttGenericFunctionArgOptionalParam.ts, 3, 29))
+>type : Symbol(type, Decl(ttttGenericFunctionArgOptionalParam.ts, 11, 55))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 11, 36))
+>listener : Symbol(listener, Decl(ttttGenericFunctionArgOptionalParam.ts, 11, 71))
+>message : Symbol(message, Decl(ttttGenericFunctionArgOptionalParam.ts, 11, 83))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 11, 36))
+
+export const any = id(<T extends string>(x: T, y: T[]) => x);
+>any : Symbol(any, Decl(ttttGenericFunctionArgOptionalParam.ts, 12, 12))
+>id : Symbol(id, Decl(ttttGenericFunctionArgOptionalParam.ts, 8, 76))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 12, 23))
+>x : Symbol(x, Decl(ttttGenericFunctionArgOptionalParam.ts, 12, 41))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 12, 23))
+>y : Symbol(y, Decl(ttttGenericFunctionArgOptionalParam.ts, 12, 46))
+>T : Symbol(T, Decl(ttttGenericFunctionArgOptionalParam.ts, 12, 23))
+>x : Symbol(x, Decl(ttttGenericFunctionArgOptionalParam.ts, 12, 41))
+
