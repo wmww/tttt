@@ -205,5 +205,6 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 21. **Now**: debt (the materialized bodies' leak and per-body re-materialization, plans 82, 83, 84), the declaration
    emit tail by fan-out, a second fresh-repository refresh aimed at emit and checkJs, a perf session (webpack's serial
    declare). Plan 58 (7.1.0 stable, then plan 66 stage 5's fan-out) as soon as it's on npm.
-22. Then: the 12-core numbers decide whether the shared declared world is worth a plan (re-derivation's scaling);
+22. Then: the 12-core numbers (arrived 2026-10-18: measurements.md "tttt, tsgo, bun, tsc-rs") decide whether the
+   shared declared world is worth a plan (re-derivation's scaling);
    plan 76 only if the human reopens it.

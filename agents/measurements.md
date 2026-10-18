@@ -7,7 +7,8 @@ AMD EPYC-Turin, 4 vCPUs = 2 cores x 2 SMT threads (KVM), 31 GB; Ubuntu 26.04, GC
 is tsgo 7.1.0-dev fed0bf24 (`thirdparty/typescript`, plan 54; every cache since 2026-10-09). `scripts/bench.sh` compares against the pinned tsgo only (since 2026-10-12). Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
 them: compare walls only within one session. Callgrind instruction counts (`valgrind --tool=callgrind ./release/tttt
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
-vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **The 12-core machine** (the human's
+vscode (exit 2): the same (file, line, code) on both (realworld.py), so equal work, but webpack's and drizzle's
+elaboration text differs (`scripts/clidiff.py --corpora`). **The 12-core machine** (the human's
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
@@ -478,6 +479,44 @@ its worst file 11 -> 0.6 s), index atoms per checker and a typed member sort (ty
 dedup by a set (type-fest -> 14.11). `scripts/oracles.py`: suite 13764 / 13803 (+8 own tests of the mutation agent),
 every other line unchanged, perfsweep median check ratio 0.21 (0.22 at the start), worst types ratio 1.62 (date-fns
 docs). Scaleprobe: every kind linear as on 2026-10-14. Mutation seed 81 (6000 mutants): 16 of 2909 differing -> 7.
+
+## The 12-core machine: tttt, tsgo, bun, tsc-rs (2026-10-18, 2d1ea533)
+The human's laptop (below), "balanced" on AC, idle. Each `-p` corpus as `scripts/bench.sh` does, but plain `--noEmit`
+for every tool (tttt without `--keep-going`), run from an empty directory; median of 3 runs: wall s / CPU s (user +
+sys) / peak RSS MB (`/usr/bin/time`). Defaults: tttt 24 threads and its budget, tsgo 4 checkers, bun every core, tsc-rs
+0.7.0 4 checkers (`--fast`: one per core, up to 16). `-1t` = `--singleThreaded` / bun `--threads=1`. tsc-rs
+(pingdotgg/ts-rust) is a Rust port of tsgo **at our pin fed0bf24**; `scripts/bench.sh --tscrs PATH` now runs it.
+| corpus | tttt | tttt-1t | tsgo | tsgo-1t | bun | bun-1t | tscrs | tscrs-fast | tscrs-1t |
+|---|---|---|---|---|---|---|---|---|---|
+| TypeScript6 | 0.29 / 1.65 / 467 | 0.51 / 0.50 / 217 | 0.64 / 3.09 / 499 | 1.17 / 2.47 / 394 | 0.43 / 2.45 / 342 | 1.11 / 1.10 / 213 | 0.46 / 1.23 / 332 | 0.46 / 1.25 / 326 | 1.02 / 1.01 / 280 |
+| type-fest | 0.30 / 2.23 / 919 | 0.78 / 0.77 / 421 | 4.20 / 20.78 / 5150 | 5.96 / 13.81 / 4399 | 1.14 / 6.41 / 839 | 4.29 / 4.27 / 1009 | 2.36 / 4.85 / 3134 | 1.59 / 4.81 / 3284 | 3.62 / 3.60 / 2304 |
+| valibot | 0.16 / 2.33 / 481 | 0.44 / 0.43 / 253 | 0.72 / 5.03 / 782 | 1.71 / 3.55 / 621 | 0.24 / 2.96 / 274 | 1.22 / 1.21 / 279 | 0.46 / 1.79 / 486 | 0.24 / 2.37 / 645 | 1.15 / 1.15 / 400 |
+| bulletproof-react | 0.15 / 0.51 / 285 | 0.19 / 0.18 / 145 | 0.45 / 2.68 / 440 | 0.59 / 1.29 / 292 | 0.29 / 1.65 / 372 | 0.60 / 0.59 / 175 | 0.22 / 0.64 / 311 | 0.21 / 0.65 / 300 | 0.41 / 0.40 / 235 |
+| nestjs-boilerplate | 0.10 / 0.58 / 266 | 0.18 / 0.17 / 132 | 0.15 / 1.46 / 249 | 0.36 / 0.72 / 205 | 0.12 / 1.02 / 225 | 0.38 / 0.38 / 154 | 0.12 / 0.54 / 221 | 0.11 / 0.53 / 237 | 0.28 / 0.28 / 188 |
+| webpack | 0.33 / 4.42 / 697 | 1.15 / 1.14 / 519 | 1.20 / 8.07 / 1184 | 2.58 / 5.20 / 933 | 0.60 / 5.93 / 511 | 2.17 / 2.17 / 371 | 0.69 / 2.50 / 841 | 0.49 / 4.70 / 1207 | 1.77 / 1.75 / 716 |
+| zod | 0.25 / 3.59 / 743 | 0.63 / 0.63 / 388 | 1.07 / 7.24 / 1310 | 2.16 / 5.52 / 908 | 0.37 / 4.04 / 512 | 1.46 / 1.45 / 388 | 0.56 / 2.19 / 789 | 0.35 / 2.61 / 866 | 1.14 / 1.13 / 587 |
+| xstate | 0.20 / 2.36 / 550 | 0.33 / 0.32 / 192 | 0.43 / 2.97 / 464 | 0.85 / 1.71 / 359 | 0.20 / 1.51 / 244 | 1.04 / 1.03 / 175 | 0.28 / 0.95 / 321 | 0.26 / 1.02 / 319 | 0.67 / 0.66 / 261 |
+| drizzle | 0.39 / 6.37 / 895 | 0.86 / 0.85 / 391 | 1.52 / 10.53 / 1623 | 2.16 / 5.46 / 932 | 0.49 / 5.83 / 592 | 2.18 / 2.17 / 376 | 0.66 / 2.39 / 997 | 0.58 / 6.26 / 1685 | 1.65 / 1.63 / 595 |
+| vue | 0.20 / 2.58 / 530 | 0.67 / 0.66 / 301 | 0.88 / 5.65 / 753 | 1.87 / 3.55 / 683 | 0.31 / 3.20 / 338 | 1.54 / 1.54 / 280 | 0.52 / 1.80 / 495 | 0.34 / 2.87 / 675 | 1.28 / 1.27 / 417 |
+| effect | 0.30 / 4.36 / 766 | 1.28 / 1.27 / 506 | 1.52 / 11.33 / 1553 | 3.33 / 6.03 / 1291 | 0.56 / 8.47 / 497 | 3.65 / 3.64 / 369 | 1.36 / 5.32 / 1261 | 0.89 / 8.69 / 1577 | 4.18 / 4.15 / 1048 |
+| excalidraw | 0.30 / 3.97 / 671 | 0.82 / 0.81 / 363 | 1.50 / 10.43 / 1763 | 2.22 / 4.11 / 884 | 0.38 / 4.78 / 417 | 1.55 / 1.54 / 357 | 0.72 / 2.84 / 616 | 0.82 / 10.23 / 951 | 1.56 / 1.55 / 474 |
+| tanstack-router | 0.23 / 2.50 / 584 | 0.60 / 0.59 / 301 | 1.22 / 7.40 / 945 | 2.11 / 4.40 / 675 | 0.45 / 4.29 / 466 | 1.39 / 1.38 / 325 | 0.58 / 1.89 / 536 | 0.58 / 2.34 / 527 | 1.48 / 1.46 / 420 |
+| vscode | 2.65 / 43.31 / 1863 | 12.24 / 12.17 / 1368 | 8.25 / 62.01 / 7876 | 20.49 / 35.71 / 6528 | 3.01 / 58.19 / 2111 | 20.10 / 20.05 / 1414 | 5.24 / 22.07 / 5494 | 3.39 / 36.74 / 6368 | 14.54 / 14.47 / 4925 |
+
+Geometric means against tsgo at its defaults (wall / CPU / RSS): tttt 0.26 / 0.41 / 0.56, bun 0.41 / 0.60 / 0.41,
+tsc-rs 0.59 / 0.31 / 0.64, tsc-rs `--fast` 0.47 / 0.44 / 0.77; single-threaded tttt 0.66 / 0.10 / 0.30, tsc-rs 1.38 /
+0.21 / 0.51, bun 1.64 / 0.25 / 0.31, tsgo 1.88 / 0.59 / 0.74 (tsgo's CPU above its wall single-threaded: GC threads).
+- **Wall**: tttt fastest on all 14 at the defaults and all 14 single-threaded (vscode 2.65 s vs bun 3.01, tsc-rs
+  `--fast` 3.39, tsgo 8.25).
+- **CPU**: single-threaded tttt is 2-2.5x below bun and tsc-rs. At the defaults tsc-rs (4 checkers) spends the least
+  CPU on 11 / 14 (vscode 22 s vs tttt 43, bun 58): tttt's 24 threads buy wall with CPU.
+- **Memory**: at the defaults bun is lowest on 10 / 14, tttt usually 1.2-1.8x bun (vscode 1.86 vs 2.11 GB, tttt
+  lower); single-threaded tttt and bun split 7 / 7. tsc-rs is near tsgo on type-heavy code (type-fest 3.1 GB, vscode
+  5.5 GB).
+- **Output**: tsc-rs byte-identical to tsgo on 13 / 14 (effect: its built-in Effect plugin diagnostics, TS377xxx, extra
+  work). tttt byte-identical on 11 / 14: vue 2 spurious TS7006 (known, bugs/sourcesweep_checker.md), webpack and drizzle
+  the same (file, line, code) but other elaboration text (`scripts/clidiff.py --corpora`). bun prints its own format,
+  differs on the five corpora with errors and reports none on vscode (exit 0).
 
 ## The 12-core machine: checkers per K, bun, tsgo (2026-10-16, f760ecdc)
 **Framework laptop**: AMD Ryzen AI 9 HX 370, 12 cores / 24 threads, 62 GB, GCC 16.2, "balanced" power profile on

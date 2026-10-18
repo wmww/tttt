@@ -16,4 +16,16 @@ gap to bun is per-checker re-derivation (bugs/perf_leads.md).
   sequelize-typescript.ts:335: tsgo's own output differs by checker count there, CLAUDE.md), dokploy/apps/dokploy
   (didn't reproduce on a rerun: flaky). All the same with single-body re-materialization off. Worth a look whether
   dokploy's is a real order dependence (`scripts/kdiff.py -k 1 -m 0 -f dokploy`, a few runs).
+- (2026-10-18, human's laptop) **Message text is a blind spot of the "saturated" oracles.** The corpora, both sweeps
+  and flagflip compare (file, line, code) only; the text (elaboration chains, printed types) is checked byte for byte
+  only by the suite's errors component and `scripts/clidiff.py`, which isn't in `scripts/oracles.py` and was last run
+  as `--sample 4` (827 / 839, 2026-10-15). `clidiff --corpora` now: 11 / 14, webpack (TS2322 at
+  NormalModuleFactory.js:658: tsc prints `SyncBailHook<ParserOptions | [EmptyParserOptions], ...>`, tttt drops the
+  `ParserOptions |` member) and drizzle (tsc's "types returned by 'with(...).update(...).set(...)'", tttt's one call
+  deeper, `.$dynamic()`) text, vue the known 0 / 2. The human was told correctness is saturated and was surprised by
+  these: add a full `clidiff.py` line to oracles.py (or a text-level count to the sweep caches), report it alongside
+  the others, and write the two up / fix them.
+- (2026-10-18) tsc-rs 0.7.0 (pingdotgg/ts-rust, Rust port of tsgo at our very pin) is a new comparator: least CPU at
+  4 checkers, byte-identical to tsgo on 13 / 14 corpora, but 3-5 GB on vscode/type-fest. `scripts/bench.sh --tscrs`.
+  The next insights should decide whether report.md tracks it next to bun.
 - From human: please claude-stop after triage, before next insights
