@@ -1,0 +1,108 @@
+//// [test/cases/ttttTruncatedDeferredReference.ts] ////
+
+=== ttttTruncatedDeferredReference.ts ===
+// A deferred reference (a class with a defaulted type parameter left out, inside an alias) past the truncation length
+// prints as `...` like an array or tuple does (tsgo's visitAndTransformType for a reference with a node), not `Box<...>`
+interface InterfaceNumber1 { property1: string }
+>InterfaceNumber1 : Symbol(InterfaceNumber1, Decl(ttttTruncatedDeferredReference.ts, 0, 0))
+>property1 : Symbol(InterfaceNumber1.property1, Decl(ttttTruncatedDeferredReference.ts, 2, 28))
+
+interface InterfaceNumber2 { property2: string }
+>InterfaceNumber2 : Symbol(InterfaceNumber2, Decl(ttttTruncatedDeferredReference.ts, 2, 48))
+>property2 : Symbol(InterfaceNumber2.property2, Decl(ttttTruncatedDeferredReference.ts, 3, 28))
+
+interface InterfaceNumber3 { property3: string }
+>InterfaceNumber3 : Symbol(InterfaceNumber3, Decl(ttttTruncatedDeferredReference.ts, 3, 48))
+>property3 : Symbol(InterfaceNumber3.property3, Decl(ttttTruncatedDeferredReference.ts, 4, 28))
+
+interface InterfaceNumber4 { property4: string }
+>InterfaceNumber4 : Symbol(InterfaceNumber4, Decl(ttttTruncatedDeferredReference.ts, 4, 48))
+>property4 : Symbol(InterfaceNumber4.property4, Decl(ttttTruncatedDeferredReference.ts, 5, 28))
+
+interface InterfaceNumber5 { property5: string }
+>InterfaceNumber5 : Symbol(InterfaceNumber5, Decl(ttttTruncatedDeferredReference.ts, 5, 48))
+>property5 : Symbol(InterfaceNumber5.property5, Decl(ttttTruncatedDeferredReference.ts, 6, 28))
+
+interface InterfaceNumber6 { property6: string }
+>InterfaceNumber6 : Symbol(InterfaceNumber6, Decl(ttttTruncatedDeferredReference.ts, 6, 48))
+>property6 : Symbol(InterfaceNumber6.property6, Decl(ttttTruncatedDeferredReference.ts, 7, 28))
+
+interface InterfaceNumber7 { property7: string }
+>InterfaceNumber7 : Symbol(InterfaceNumber7, Decl(ttttTruncatedDeferredReference.ts, 7, 48))
+>property7 : Symbol(InterfaceNumber7.property7, Decl(ttttTruncatedDeferredReference.ts, 8, 28))
+
+interface InterfaceNumber8 { property8: string }
+>InterfaceNumber8 : Symbol(InterfaceNumber8, Decl(ttttTruncatedDeferredReference.ts, 8, 48))
+>property8 : Symbol(InterfaceNumber8.property8, Decl(ttttTruncatedDeferredReference.ts, 9, 28))
+
+interface InterfaceNumber9 { property9: string }
+>InterfaceNumber9 : Symbol(InterfaceNumber9, Decl(ttttTruncatedDeferredReference.ts, 9, 48))
+>property9 : Symbol(InterfaceNumber9.property9, Decl(ttttTruncatedDeferredReference.ts, 10, 28))
+
+interface InterfaceNumber10 { property10: string }
+>InterfaceNumber10 : Symbol(InterfaceNumber10, Decl(ttttTruncatedDeferredReference.ts, 10, 48))
+>property10 : Symbol(InterfaceNumber10.property10, Decl(ttttTruncatedDeferredReference.ts, 11, 29))
+
+interface InterfaceNumber11 { property11: string }
+>InterfaceNumber11 : Symbol(InterfaceNumber11, Decl(ttttTruncatedDeferredReference.ts, 11, 50))
+>property11 : Symbol(InterfaceNumber11.property11, Decl(ttttTruncatedDeferredReference.ts, 12, 29))
+
+interface InterfaceNumber12 { property12: string }
+>InterfaceNumber12 : Symbol(InterfaceNumber12, Decl(ttttTruncatedDeferredReference.ts, 12, 50))
+>property12 : Symbol(InterfaceNumber12.property12, Decl(ttttTruncatedDeferredReference.ts, 13, 29))
+
+interface InterfaceNumber13 { property13: string }
+>InterfaceNumber13 : Symbol(InterfaceNumber13, Decl(ttttTruncatedDeferredReference.ts, 13, 50))
+>property13 : Symbol(InterfaceNumber13.property13, Decl(ttttTruncatedDeferredReference.ts, 14, 29))
+
+interface InterfaceNumber14 { property14: string }
+>InterfaceNumber14 : Symbol(InterfaceNumber14, Decl(ttttTruncatedDeferredReference.ts, 14, 50))
+>property14 : Symbol(InterfaceNumber14.property14, Decl(ttttTruncatedDeferredReference.ts, 15, 29))
+
+interface InterfaceNumber15 { property15: string }
+>InterfaceNumber15 : Symbol(InterfaceNumber15, Decl(ttttTruncatedDeferredReference.ts, 15, 50))
+>property15 : Symbol(InterfaceNumber15.property15, Decl(ttttTruncatedDeferredReference.ts, 16, 29))
+
+interface InterfaceNumber16 { property16: string }
+>InterfaceNumber16 : Symbol(InterfaceNumber16, Decl(ttttTruncatedDeferredReference.ts, 16, 50))
+>property16 : Symbol(InterfaceNumber16.property16, Decl(ttttTruncatedDeferredReference.ts, 17, 29))
+
+declare class Box<T, U = string> { t: T; u: U }
+>Box : Symbol(Box, Decl(ttttTruncatedDeferredReference.ts, 17, 50))
+>T : Symbol(T, Decl(ttttTruncatedDeferredReference.ts, 18, 18))
+>U : Symbol(U, Decl(ttttTruncatedDeferredReference.ts, 18, 20))
+>t : Symbol(Box.t, Decl(ttttTruncatedDeferredReference.ts, 18, 34))
+>T : Symbol(T, Decl(ttttTruncatedDeferredReference.ts, 18, 18))
+>u : Symbol(Box.u, Decl(ttttTruncatedDeferredReference.ts, 18, 40))
+>U : Symbol(U, Decl(ttttTruncatedDeferredReference.ts, 18, 20))
+
+type W<T> = [InterfaceNumber1 & InterfaceNumber2 & InterfaceNumber3 & InterfaceNumber4 & InterfaceNumber5 & InterfaceNumber6 & InterfaceNumber7 & InterfaceNumber8 & InterfaceNumber9 & InterfaceNumber10 & InterfaceNumber11 & InterfaceNumber12 & InterfaceNumber13 & InterfaceNumber14 & InterfaceNumber15 & InterfaceNumber16 & Box<T>];
+>W : Symbol(W, Decl(ttttTruncatedDeferredReference.ts, 18, 47))
+>T : Symbol(T, Decl(ttttTruncatedDeferredReference.ts, 19, 7))
+>InterfaceNumber1 : Symbol(InterfaceNumber1, Decl(ttttTruncatedDeferredReference.ts, 0, 0))
+>InterfaceNumber2 : Symbol(InterfaceNumber2, Decl(ttttTruncatedDeferredReference.ts, 2, 48))
+>InterfaceNumber3 : Symbol(InterfaceNumber3, Decl(ttttTruncatedDeferredReference.ts, 3, 48))
+>InterfaceNumber4 : Symbol(InterfaceNumber4, Decl(ttttTruncatedDeferredReference.ts, 4, 48))
+>InterfaceNumber5 : Symbol(InterfaceNumber5, Decl(ttttTruncatedDeferredReference.ts, 5, 48))
+>InterfaceNumber6 : Symbol(InterfaceNumber6, Decl(ttttTruncatedDeferredReference.ts, 6, 48))
+>InterfaceNumber7 : Symbol(InterfaceNumber7, Decl(ttttTruncatedDeferredReference.ts, 7, 48))
+>InterfaceNumber8 : Symbol(InterfaceNumber8, Decl(ttttTruncatedDeferredReference.ts, 8, 48))
+>InterfaceNumber9 : Symbol(InterfaceNumber9, Decl(ttttTruncatedDeferredReference.ts, 9, 48))
+>InterfaceNumber10 : Symbol(InterfaceNumber10, Decl(ttttTruncatedDeferredReference.ts, 10, 48))
+>InterfaceNumber11 : Symbol(InterfaceNumber11, Decl(ttttTruncatedDeferredReference.ts, 11, 50))
+>InterfaceNumber12 : Symbol(InterfaceNumber12, Decl(ttttTruncatedDeferredReference.ts, 12, 50))
+>InterfaceNumber13 : Symbol(InterfaceNumber13, Decl(ttttTruncatedDeferredReference.ts, 13, 50))
+>InterfaceNumber14 : Symbol(InterfaceNumber14, Decl(ttttTruncatedDeferredReference.ts, 14, 50))
+>InterfaceNumber15 : Symbol(InterfaceNumber15, Decl(ttttTruncatedDeferredReference.ts, 15, 50))
+>InterfaceNumber16 : Symbol(InterfaceNumber16, Decl(ttttTruncatedDeferredReference.ts, 16, 50))
+>Box : Symbol(Box, Decl(ttttTruncatedDeferredReference.ts, 17, 50))
+>T : Symbol(T, Decl(ttttTruncatedDeferredReference.ts, 19, 7))
+
+declare const v: W<number>[0] | undefined;
+>v : Symbol(v, Decl(ttttTruncatedDeferredReference.ts, 20, 13))
+>W : Symbol(W, Decl(ttttTruncatedDeferredReference.ts, 18, 47))
+
+const n: number = v;
+>n : Symbol(n, Decl(ttttTruncatedDeferredReference.ts, 21, 5))
+>v : Symbol(v, Decl(ttttTruncatedDeferredReference.ts, 20, 13))
+

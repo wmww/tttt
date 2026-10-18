@@ -6658,8 +6658,9 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     break;
                 }
             }
-            // (Past the truncation length: tsc's visitAndTransformType of an array or tuple)
-            if (container && display_over(d)) {
+            // (Past the truncation length: tsc's visitAndTransformType of an array or tuple, or of a deferred reference,
+            // `Hook<X, Y>` in an alias with a defaulted type parameter left out: one with a node)
+            if ((container || ty->reference.deferred) && display_over(d)) {
                 out_elided(d);
                 break;
             }

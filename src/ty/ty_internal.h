@@ -230,6 +230,21 @@ typedef enum InferPriority {
 
 #define INFER_MAX_DEPTH 24
 
+// A (source id, target id) pair an inference walk visits, with the mode it is walked in (priority and variances:
+// tsgo's InferenceKey). A zero pair is an empty slot
+typedef struct VisitKey {
+    u64 pair;
+    u32 mode;
+} VisitKey;
+
+static inline bool visit_key_eq(VisitKey a, VisitKey b) {
+    return a.pair == b.pair && a.mode == b.mode;
+}
+
+static inline u32 visit_key_hash(VisitKey k) {
+    return (u32)(((k.pair ^ (u64)k.mode * 0xFF51AFD7ED558CCDull) * 0x9E3779B97F4A7C15ull) >> 32);
+}
+
 typedef struct Inference {
     InferParam* params;
     u32 len;
@@ -261,15 +276,15 @@ typedef struct Inference {
     u32 depth;
     Ty const* visiting_sources[INFER_MAX_DEPTH];
     Ty const* visiting_targets[INFER_MAX_DEPTH];
-    // (source id, target id) of the object pairs one infer_types() walked already (tsc's `visited`): a type graph
-    // is a DAG with a lot of sharing, and walking every path to a pair is exponential. Open addressing, 0 is empty
-    u64* visited;
+    // The (source id, target id) object pairs one infer_types() walked already, by mode (tsc's `visited`): a type
+    // graph is a DAG with a lot of sharing, and walking every path to a pair is exponential. Open addressing
+    VisitKey* visited;
     u32* visited_priority; // Of each pair in visited: the best priority its walk inferred at (tsc's invokeOnce status)
     u32 visited_cap;
     u32 visited_len;
     // The visited pairs whose walk was cut short by circularity: met again, they are circular too (tsc's invokeOnce
     // remembers each pair's inference priority)
-    u64* circular;
+    VisitKey* circular;
     u32 circular_cap;
     u32 circular_len;
     // tsc's invokeOnce: the object pairs being walked, and whether each side is expanding (the same recursion identity

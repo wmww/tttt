@@ -1,0 +1,24 @@
+// @strict: true
+// @noErrorTruncation: false
+// A deferred reference (a class with a defaulted type parameter left out, inside an alias) past the truncation length
+// prints as `...` like an array or tuple does (tsgo's visitAndTransformType for a reference with a node), not `Box<...>`
+interface InterfaceNumber1 { property1: string }
+interface InterfaceNumber2 { property2: string }
+interface InterfaceNumber3 { property3: string }
+interface InterfaceNumber4 { property4: string }
+interface InterfaceNumber5 { property5: string }
+interface InterfaceNumber6 { property6: string }
+interface InterfaceNumber7 { property7: string }
+interface InterfaceNumber8 { property8: string }
+interface InterfaceNumber9 { property9: string }
+interface InterfaceNumber10 { property10: string }
+interface InterfaceNumber11 { property11: string }
+interface InterfaceNumber12 { property12: string }
+interface InterfaceNumber13 { property13: string }
+interface InterfaceNumber14 { property14: string }
+interface InterfaceNumber15 { property15: string }
+interface InterfaceNumber16 { property16: string }
+declare class Box<T, U = string> { t: T; u: U }
+type W<T> = [InterfaceNumber1 & InterfaceNumber2 & InterfaceNumber3 & InterfaceNumber4 & InterfaceNumber5 & InterfaceNumber6 & InterfaceNumber7 & InterfaceNumber8 & InterfaceNumber9 & InterfaceNumber10 & InterfaceNumber11 & InterfaceNumber12 & InterfaceNumber13 & InterfaceNumber14 & InterfaceNumber15 & InterfaceNumber16 & Box<T>];
+declare const v: W<number>[0] | undefined;
+const n: number = v;

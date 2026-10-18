@@ -1,0 +1,32 @@
+ttttInferVisitedPairByVariance.ts(14,62): error TS2322: Type 'Hook<B, string | number>' is not assignable to type 'Hook<[A], number> & Hook<[B], string>'.
+  Type 'Hook<B, string | number>' is not assignable to type 'Hook<[A], number>'.
+    The types returned by 'promise(...)' are incompatible between these types.
+      Type 'Promise<string | number>' is not assignable to type 'Promise<number>'.
+        Type 'string | number' is not assignable to type 'number'.
+          Type 'string' is not assignable to type 'number'.
+
+
+==== ttttInferVisitedPairByVariance.ts (1 errors) ====
+    // An inference walk visits a (source, target) pair once per mode, its priority and variances being part of the key
+    // (tsgo's InferenceKey): `[A]` to `AsArray<T>` met in `promise`'s parameter (contravariant) is walked again in `tap`'s
+    // callback parameter (covariant), whose candidates `A` and `B` (the conditional's false branch unwraps the tuple)
+    // reduce the union to `B`. With one walk per pair the inferred T was `[A]` (webpack's tapable hooks)
+    type AsArray<T> = T extends any[] ? T : [T];
+    interface Interceptor<T, R> {}
+    declare class Hook<T, R> {
+    	intercept(interceptor: Interceptor<T, R>): void;
+    	promise(...args: AsArray<T>): Promise<R>;
+    	tap(fn: (...args: AsArray<T>) => R): void;
+    }
+    type A = { a?: string };
+    type B = {};
+    const f: () => Hook<[A], number> & Hook<[B], string> = () => new Hook();
+                                                                 ~~~~~~~~~~
+!!! error TS2322: Type 'Hook<B, string | number>' is not assignable to type 'Hook<[A], number> & Hook<[B], string>'.
+!!! error TS2322:   Type 'Hook<B, string | number>' is not assignable to type 'Hook<[A], number>'.
+!!! error TS2322:     The types returned by 'promise(...)' are incompatible between these types.
+!!! error TS2322:       Type 'Promise<string | number>' is not assignable to type 'Promise<number>'.
+!!! error TS2322:         Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:           Type 'string' is not assignable to type 'number'.
+!!! related TS6502 ttttInferVisitedPairByVariance.ts:14:10: The expected type comes from the return type of this signature.
+    

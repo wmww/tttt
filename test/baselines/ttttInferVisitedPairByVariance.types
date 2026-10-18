@@ -1,0 +1,40 @@
+//// [test/cases/ttttInferVisitedPairByVariance.ts] ////
+
+=== ttttInferVisitedPairByVariance.ts ===
+// An inference walk visits a (source, target) pair once per mode, its priority and variances being part of the key
+// (tsgo's InferenceKey): `[A]` to `AsArray<T>` met in `promise`'s parameter (contravariant) is walked again in `tap`'s
+// callback parameter (covariant), whose candidates `A` and `B` (the conditional's false branch unwraps the tuple)
+// reduce the union to `B`. With one walk per pair the inferred T was `[A]` (webpack's tapable hooks)
+type AsArray<T> = T extends any[] ? T : [T];
+>AsArray : AsArray<T>
+
+interface Interceptor<T, R> {}
+declare class Hook<T, R> {
+>Hook : Hook<T, R>
+
+	intercept(interceptor: Interceptor<T, R>): void;
+>intercept : (interceptor: Interceptor<T, R>) => void
+>interceptor : Interceptor<T, R>
+
+	promise(...args: AsArray<T>): Promise<R>;
+>promise : (...args: AsArray<T>) => Promise<R>
+>args : AsArray<T>
+
+	tap(fn: (...args: AsArray<T>) => R): void;
+>tap : (fn: (...args: AsArray<T>) => R) => void
+>fn : (...args: AsArray<T>) => R
+>args : AsArray<T>
+}
+type A = { a?: string };
+>A : A
+>a : string | undefined
+
+type B = {};
+>B : B
+
+const f: () => Hook<[A], number> & Hook<[B], string> = () => new Hook();
+>f : () => Hook<[A], number> & Hook<[B], string>
+>() => new Hook() : () => Hook<B, string | number>
+>new Hook() : Hook<B, string | number>
+>Hook : typeof Hook
+

@@ -946,6 +946,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttInferVisitedPairByVariance': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInferenceContextNotInDeclarationInitializer': {
         errors: true,
         symbols: true,
@@ -1524,6 +1529,11 @@ const baselines = {
         types: true,
     },
     'ttttThisParameterAliasedIntersectionCycle': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTruncatedDeferredReference': {
         errors: true,
         symbols: true,
         types: true,

@@ -1,0 +1,62 @@
+//// [test/cases/ttttInferVisitedPairByVariance.ts] ////
+
+=== ttttInferVisitedPairByVariance.ts ===
+// An inference walk visits a (source, target) pair once per mode, its priority and variances being part of the key
+// (tsgo's InferenceKey): `[A]` to `AsArray<T>` met in `promise`'s parameter (contravariant) is walked again in `tap`'s
+// callback parameter (covariant), whose candidates `A` and `B` (the conditional's false branch unwraps the tuple)
+// reduce the union to `B`. With one walk per pair the inferred T was `[A]` (webpack's tapable hooks)
+type AsArray<T> = T extends any[] ? T : [T];
+>AsArray : Symbol(AsArray, Decl(ttttInferVisitedPairByVariance.ts, 0, 0))
+>T : Symbol(T, Decl(ttttInferVisitedPairByVariance.ts, 4, 13))
+>T : Symbol(T, Decl(ttttInferVisitedPairByVariance.ts, 4, 13))
+>T : Symbol(T, Decl(ttttInferVisitedPairByVariance.ts, 4, 13))
+>T : Symbol(T, Decl(ttttInferVisitedPairByVariance.ts, 4, 13))
+
+interface Interceptor<T, R> {}
+>Interceptor : Symbol(Interceptor, Decl(ttttInferVisitedPairByVariance.ts, 4, 44))
+>T : Symbol(T, Decl(ttttInferVisitedPairByVariance.ts, 5, 22))
+>R : Symbol(R, Decl(ttttInferVisitedPairByVariance.ts, 5, 24))
+
+declare class Hook<T, R> {
+>Hook : Symbol(Hook, Decl(ttttInferVisitedPairByVariance.ts, 5, 30))
+>T : Symbol(T, Decl(ttttInferVisitedPairByVariance.ts, 6, 19))
+>R : Symbol(R, Decl(ttttInferVisitedPairByVariance.ts, 6, 21))
+
+	intercept(interceptor: Interceptor<T, R>): void;
+>intercept : Symbol(Hook.intercept, Decl(ttttInferVisitedPairByVariance.ts, 6, 26))
+>interceptor : Symbol(interceptor, Decl(ttttInferVisitedPairByVariance.ts, 7, 11))
+>Interceptor : Symbol(Interceptor, Decl(ttttInferVisitedPairByVariance.ts, 4, 44))
+>T : Symbol(T, Decl(ttttInferVisitedPairByVariance.ts, 6, 19))
+>R : Symbol(R, Decl(ttttInferVisitedPairByVariance.ts, 6, 21))
+
+	promise(...args: AsArray<T>): Promise<R>;
+>promise : Symbol(Hook.promise, Decl(ttttInferVisitedPairByVariance.ts, 7, 49))
+>args : Symbol(args, Decl(ttttInferVisitedPairByVariance.ts, 8, 9))
+>AsArray : Symbol(AsArray, Decl(ttttInferVisitedPairByVariance.ts, 0, 0))
+>T : Symbol(T, Decl(ttttInferVisitedPairByVariance.ts, 6, 19))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>R : Symbol(R, Decl(ttttInferVisitedPairByVariance.ts, 6, 21))
+
+	tap(fn: (...args: AsArray<T>) => R): void;
+>tap : Symbol(Hook.tap, Decl(ttttInferVisitedPairByVariance.ts, 8, 42))
+>fn : Symbol(fn, Decl(ttttInferVisitedPairByVariance.ts, 9, 5))
+>args : Symbol(args, Decl(ttttInferVisitedPairByVariance.ts, 9, 10))
+>AsArray : Symbol(AsArray, Decl(ttttInferVisitedPairByVariance.ts, 0, 0))
+>T : Symbol(T, Decl(ttttInferVisitedPairByVariance.ts, 6, 19))
+>R : Symbol(R, Decl(ttttInferVisitedPairByVariance.ts, 6, 21))
+}
+type A = { a?: string };
+>A : Symbol(A, Decl(ttttInferVisitedPairByVariance.ts, 10, 1))
+>a : Symbol(a, Decl(ttttInferVisitedPairByVariance.ts, 11, 10))
+
+type B = {};
+>B : Symbol(B, Decl(ttttInferVisitedPairByVariance.ts, 11, 24))
+
+const f: () => Hook<[A], number> & Hook<[B], string> = () => new Hook();
+>f : Symbol(f, Decl(ttttInferVisitedPairByVariance.ts, 13, 5))
+>Hook : Symbol(Hook, Decl(ttttInferVisitedPairByVariance.ts, 5, 30))
+>A : Symbol(A, Decl(ttttInferVisitedPairByVariance.ts, 10, 1))
+>Hook : Symbol(Hook, Decl(ttttInferVisitedPairByVariance.ts, 5, 30))
+>B : Symbol(B, Decl(ttttInferVisitedPairByVariance.ts, 11, 24))
+>Hook : Symbol(Hook, Decl(ttttInferVisitedPairByVariance.ts, 5, 30))
+

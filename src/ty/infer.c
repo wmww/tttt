@@ -31,18 +31,18 @@ void inference_drop(Inference* inf) {
     *inf = (Inference){0};
 }
 
-// The pair's slot in `visited` (its priority in visited_priority), added if it wasn't there (`*existed` says)
-static u32 visited_slot(Inference* inf, u64 key, bool* existed) {
+// The key's slot in `visited` (its priority in visited_priority), added if it wasn't there (`*existed` says)
+static u32 visited_slot(Inference* inf, VisitKey key, bool* existed) {
     if ((inf->visited_len + 1) * 2 > inf->visited_cap) {
         u32 cap = inf->visited_cap ? inf->visited_cap * 2 : 64;
-        u64* grown = calloc(cap, sizeof(u64));
+        VisitKey* grown = calloc(cap, sizeof(VisitKey));
         u32* grown_priority = calloc(cap, sizeof(u32));
         panic_if(!grown || !grown_priority, "out of memory");
         for (u32 i = 0; i < inf->visited_cap; i++) {
-            u64 old = inf->visited[i];
-            if (!old) continue;
-            u32 at = (u32)((old * 0x9E3779B97F4A7C15ull) >> 32) & (cap - 1);
-            while (grown[at]) at = (at + 1) & (cap - 1);
+            VisitKey old = inf->visited[i];
+            if (!old.pair) continue;
+            u32 at = visit_key_hash(old) & (cap - 1);
+            while (grown[at].pair) at = (at + 1) & (cap - 1);
             grown[at] = old;
             grown_priority[at] = inf->visited_priority[i];
         }
@@ -52,9 +52,9 @@ static u32 visited_slot(Inference* inf, u64 key, bool* existed) {
         inf->visited_priority = grown_priority;
         inf->visited_cap = cap;
     }
-    u32 at = (u32)((key * 0x9E3779B97F4A7C15ull) >> 32) & (inf->visited_cap - 1);
-    while (inf->visited[at]) {
-        if (inf->visited[at] == key) {
+    u32 at = visit_key_hash(key) & (inf->visited_cap - 1);
+    while (inf->visited[at].pair) {
+        if (visit_key_eq(inf->visited[at], key)) {
             *existed = true;
             return at;
         }
@@ -67,16 +67,21 @@ static u32 visited_slot(Inference* inf, u64 key, bool* existed) {
     return at;
 }
 
-static u64 visited_key(Ty const* source, Ty const* target) {
-    return ((u64)source->id << 32) | target->id;
+// A pair in the mode of the walk that meets it: the priority and variances it is inferred at are part of tsgo's
+// InferenceKey, so a pair met contravariantly (a method's parameter) is walked again covariantly (a callback's
+// parameter), each making its own candidates (webpack's tapable hooks: `promise(...args: AsArray<T>)` beside
+// `tap(options, fn: (...args: AsArray<T>) => R)`)
+static VisitKey visited_key(Inference const* inf, Ty const* source, Ty const* target) {
+    u32 mode = inf->priority | (u32)inf->contravariant << 24 | (u32)inf->bivariant << 25 | (u32)inf->always_strict << 26;
+    return (VisitKey){ .pair = ((u64)source->id << 32) | target->id, .mode = mode };
 }
 
 // False if the pair was there already; then what its walk inferred at counts as inferred here too (tsc's invokeOnce:
 // `inferencePriority = min(inferencePriority, status)`), so a source seen before is still used up for a naked type
 // parameter beside the target
 static bool visited_add(Inference* inf, Ty const* source, Ty const* target) {
-    u64 key = visited_key(source, target);
-    if (!key) return true;
+    VisitKey key = visited_key(inf, source, target);
+    if (!key.pair) return true;
     bool existed;
     u32 at = visited_slot(inf, key, &existed);
     if (existed && inf->visited_priority[at] < inf->hit_priority) inf->hit_priority = inf->visited_priority[at];
@@ -86,8 +91,8 @@ static bool visited_add(Inference* inf, Ty const* source, Ty const* target) {
 // After the walk of a pair visited_add() added: what it inferred at (the best priority since `saved`, which the caller
 // reset hit_priority from)
 static void visited_done(Inference* inf, Ty const* source, Ty const* target, u32 saved) {
-    u64 key = visited_key(source, target);
-    if (key) {
+    VisitKey key = visited_key(inf, source, target);
+    if (key.pair) {
         bool existed;
         u32 at = visited_slot(inf, key, &existed);
         inf->visited_priority[at] = inf->hit_priority;
@@ -1606,10 +1611,10 @@ static Ty const* empty_object_from_string_literals(Checker* me, Ty const* ty) {
 static void record_circular(Inference* inf, Ty const* source, Ty const* target) {
     if (inf->circular_len == inf->circular_cap) {
         inf->circular_cap = inf->circular_cap ? inf->circular_cap * 2 : 8;
-        inf->circular = realloc(inf->circular, sizeof(u64) * inf->circular_cap);
+        inf->circular = realloc(inf->circular, sizeof(VisitKey) * inf->circular_cap);
         panic_if(!inf->circular, "out of memory");
     }
-    inf->circular[inf->circular_len++] = ((u64)source->id << 32) | target->id;
+    inf->circular[inf->circular_len++] = visited_key(inf, source, target);
 }
 
 static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
@@ -1717,8 +1722,8 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             for (u32 i = 0; i < inf->object_depth && !inf->circularity; i++) {
                 inf->circularity = inf->object_sources[i] == source && inf->object_targets[i] == target;
             }
-            u64 key = ((u64)source->id << 32) | target->id;
-            for (u32 i = 0; i < inf->circular_len && !inf->circularity; i++) inf->circularity = inf->circular[i] == key;
+            VisitKey key = visited_key(inf, source, target);
+            for (u32 i = 0; i < inf->circular_len && !inf->circularity; i++) inf->circularity = visit_key_eq(inf->circular[i], key);
             inf->depth--;
             return;
         }
@@ -1875,8 +1880,8 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             for (u32 i = 0; i < inf->object_depth && !inf->circularity; i++) {
                 inf->circularity = inf->object_sources[i] == source && inf->object_targets[i] == target;
             }
-            u64 key = ((u64)source->id << 32) | target->id;
-            for (u32 i = 0; i < inf->circular_len && !inf->circularity; i++) inf->circularity = inf->circular[i] == key;
+            VisitKey key = visited_key(inf, source, target);
+            for (u32 i = 0; i < inf->circular_len && !inf->circularity; i++) inf->circularity = visit_key_eq(inf->circular[i], key);
         } else if (source->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
             u32 saved_hit = inf->hit_priority;
             inf->hit_priority = UINT32_MAX;
@@ -1944,7 +1949,7 @@ static void infer_types_from(Checker* me, Inference* inf, Ty const* source, Ty c
     inf->original_target = target;
     inf->depth = 0;
     if (inf->visited_len) {
-        memset(inf->visited, 0, sizeof(u64) * inf->visited_cap);
+        memset(inf->visited, 0, sizeof(VisitKey) * inf->visited_cap);
         inf->visited_len = 0;
     }
     inf->circular_len = 0;

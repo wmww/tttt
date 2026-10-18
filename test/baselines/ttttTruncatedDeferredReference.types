@@ -1,0 +1,68 @@
+//// [test/cases/ttttTruncatedDeferredReference.ts] ////
+
+=== ttttTruncatedDeferredReference.ts ===
+// A deferred reference (a class with a defaulted type parameter left out, inside an alias) past the truncation length
+// prints as `...` like an array or tuple does (tsgo's visitAndTransformType for a reference with a node), not `Box<...>`
+interface InterfaceNumber1 { property1: string }
+>property1 : string
+
+interface InterfaceNumber2 { property2: string }
+>property2 : string
+
+interface InterfaceNumber3 { property3: string }
+>property3 : string
+
+interface InterfaceNumber4 { property4: string }
+>property4 : string
+
+interface InterfaceNumber5 { property5: string }
+>property5 : string
+
+interface InterfaceNumber6 { property6: string }
+>property6 : string
+
+interface InterfaceNumber7 { property7: string }
+>property7 : string
+
+interface InterfaceNumber8 { property8: string }
+>property8 : string
+
+interface InterfaceNumber9 { property9: string }
+>property9 : string
+
+interface InterfaceNumber10 { property10: string }
+>property10 : string
+
+interface InterfaceNumber11 { property11: string }
+>property11 : string
+
+interface InterfaceNumber12 { property12: string }
+>property12 : string
+
+interface InterfaceNumber13 { property13: string }
+>property13 : string
+
+interface InterfaceNumber14 { property14: string }
+>property14 : string
+
+interface InterfaceNumber15 { property15: string }
+>property15 : string
+
+interface InterfaceNumber16 { property16: string }
+>property16 : string
+
+declare class Box<T, U = string> { t: T; u: U }
+>Box : Box<T, U>
+>t : T
+>u : U
+
+type W<T> = [InterfaceNumber1 & InterfaceNumber2 & InterfaceNumber3 & InterfaceNumber4 & InterfaceNumber5 & InterfaceNumber6 & InterfaceNumber7 & InterfaceNumber8 & InterfaceNumber9 & InterfaceNumber10 & InterfaceNumber11 & InterfaceNumber12 & InterfaceNumber13 & InterfaceNumber14 & InterfaceNumber15 & InterfaceNumber16 & Box<T>];
+>W : W<T>
+
+declare const v: W<number>[0] | undefined;
+>v : (InterfaceNumber1 & InterfaceNumber2 & InterfaceNumber3 & InterfaceNumber4 & InterfaceNumber5 & InterfaceNumber6 & InterfaceNumber7 & InterfaceNumber8 & InterfaceNumber9 & InterfaceNumber10 & InterfaceNumber11 & InterfaceNumber12 & InterfaceNumber13 & InterfaceNumber14 & InterfaceNumber15 & InterfaceNumber16 & Box<number, string>) | undefined
+
+const n: number = v;
+>n : number
+>v : (InterfaceNumber1 & InterfaceNumber2 & InterfaceNumber3 & InterfaceNumber4 & InterfaceNumber5 & InterfaceNumber6 & InterfaceNumber7 & InterfaceNumber8 & InterfaceNumber9 & InterfaceNumber10 & InterfaceNumber11 & InterfaceNumber12 & InterfaceNumber13 & InterfaceNumber14 & InterfaceNumber15 & InterfaceNumber16 & Box<number, string>) | undefined
+
