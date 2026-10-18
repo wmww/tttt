@@ -135,7 +135,7 @@ def recycle():
     # (Plan 67: a fresh checker per file, --checker-memory 0, against one checker that never recycles, on the source
     # sweep: what a file's diagnostics depend on beyond its own checks, a stronger order-independence oracle than K)
     out = run(['scripts/kdiff.py', '-k', '1', '-m', '0'], timeout=3600)
-    m = re.search(r'(\d+ / \d+) projects differ.*?(, \d+ timed out)?: ', out + ': ')
+    m = re.search(r'(\d+ / \d+) projects differ[^\n]*?(, \d+ timed out)?(?::|$)', out, re.M)
     projects = [re.search(r'"project": "([^"]+)"', l).group(1) for l in out.splitlines() if l.startswith('{')]
     print(f'recycle (fresh checker per file vs one): sources {m.group(1) if m else "?"} differ{m.group(2) or "" if m else ""}' +
           (': ' + ', '.join(projects[:12]) if projects else ''), flush=True)

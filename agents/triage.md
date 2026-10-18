@@ -12,3 +12,8 @@ in `scripts/oracles.py` (see its commit), the source sweep's `text` buckets are 
 divergence in bugs/tsgo_divergences.md. Berry lockfiles install (algoliasearch back, 24 / 24). Refresh 2's checkJs
 dtsdiff numbers went to bugs/dts_emit.md. The human's two directives and tsc-rs went to todo.md's insights entry.
 
+- (2026-10-18, triage) dtsdiff's project count flickers by 1-2 between runs of one binary (1242 / 1243 / 1244 / 1274
+  this session; 1245 at entry 7): the "member order" bucket (angular-cli, postiz, ...) is per-checker
+  undefinedProperties history, and tttt's defaults assign files to checkers by work stealing, so it's timing-dependent.
+  tsgo's own split is deterministic per K (FENNEL). Worth deciding whether dtsdiff should run tttt at `--checkers 1`
+  (comparable to its `--tsc-single` hashes) so the headline stops flickering.

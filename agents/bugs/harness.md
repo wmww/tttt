@@ -90,9 +90,7 @@
   content-mapper executable, Windows drive-letter paths) or unsupported build modes (`--clean`, `--dry`: both need build
   info tttt doesn't write; TS6377). `--dry` would print "A non-dry build would build project ..." per project.
 - clidiff `--sample 4` text mismatches left (2026-10-14; nodemailer, nest, vitest/browser-preview fixed):
-  - rxjs/packages/rxjs: the elaboration path `'[bufferTime](...)[bufferTime](...)[groupBy]'` (tsc) against
-    `'[bufferTime](...)[groupBy]'`, and `boolean[][]` against `boolean[]` below it: a different first failing member
-    of a deep return-type chain; not looked at.
+  - rxjs/packages/rxjs: fixed at K1 2026-10-18 (b3c2fbfa); its K dependence is tsgo's own (tsgo_divergences.md).
   - es-toolkit isEmpty.spec.ts:56: `{ constructor: { (): void; prototype: ...; }; }` (tsc) against `prototype: any`.
     `function Foo() {}; Foo.prototype = { constructor: Foo }`: tsc types `{ constructor: Foo }` while Foo's type is
     in flight (the expando `prototype` reads itself: any, printed `...` at depth); tttt's types baseline shows it

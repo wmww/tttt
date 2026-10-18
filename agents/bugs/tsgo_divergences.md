@@ -84,3 +84,8 @@ argued here instead. Nothing a user sees differs in any of them.
   kdiff/recycle oracles use default flags, which never hit the limit. Accepted: a program-wide "reported" set would
   still depend on which checker gets there first. Read flagflip's TS5115/TS2589 deltas as noise.
 - sequelize/packages/core's TS7022 differs with the checker count in tsgo too (kdiff, plan 62).
+- rxjs/packages/rxjs's TS2322 elaborations (2026-10-18, since b3c2fbfa normalized deferred references in the
+  relation): tsgo `--singleThreaded` (the cached oracle) says "types returned by '[bufferTime](...)[bufferTime](...)
+  [groupBy]'" with `number[][]` below, tsgo `--checkers 16` "'[bufferTime](...)[groupBy]'" with `number[]`: which
+  nested pairs a checker related before decides where the chain fails. tttt prints the same two texts at K1 and K16
+  (kdiff and the recycle oracle list it): matching tsgo, not a tttt order bug.

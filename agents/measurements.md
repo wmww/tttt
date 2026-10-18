@@ -7,10 +7,23 @@ AMD EPYC-Turin, 4 vCPUs = 2 cores x 2 SMT threads (KVM), 31 GB; Ubuntu 26.04, GC
 is tsgo 7.1.0-dev fed0bf24 (`thirdparty/typescript`, plan 54; every cache since 2026-10-09). `scripts/bench.sh` compares against the pinned tsgo only (since 2026-10-12). Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
 them: compare walls only within one session. Callgrind instruction counts (`valgrind --tool=callgrind ./release/tttt
 -q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
-vscode (exit 2): the same (file, line, code) on both (realworld.py), so equal work, but webpack's and drizzle's
-elaboration text differs (`scripts/clidiff.py --corpora`). **The 12-core machine** (the human's
+vscode (exit 2): the same (file, line, code) on both (realworld.py), so equal work (and the same
+text since 2026-10-18 but webpack's TS5115 name order, `scripts/clidiff.py --corpora`). **The 12-core machine** (the human's
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
+
+## Triage: message text as an oracle (2026-10-18, todo entry 9)
+- clidiff from the caches (tsc's `--pretty false` text in test/sourcesweep/tsc.jsonl.gz and test/corpora.tsc.jsonl):
+  **3612 / 3675 projects byte-identical, 54 text, 9 diagnostics**, 0 order / exit code / crash; corpora 15 / 17 (vue
+  diagnostics, webpack the zod TS5115 name order). ~3 min at -j 2. Buckets: bugs/display.md.
+- dtsdiff 1244 / 1274 projects, 100683 / 100826 files; +5 projects match tsgo `--singleThreaded` (tsgo's own checker
+  split); the count flickers 1242-1245 run to run (triage.md).
+- Suite 13833 / 13869 (dts 1864 / 1886), `--no-defer-bodies` and `-m 0` clean; corpora 0/0 but vue 0/2; DT 8595;
+  `$ExpectType` 68639; flagflip 18 / 8 / 3; source sweep sample 880 / 884 (algoliasearch's 24 projects added);
+  kdiff 2 / 3658 (inbox-zero, rxjs: tsgo's own, tsgo_divergences.md); recycle 5 (+rxjs, rocket's known TS7031),
+  dokploy's earlier one a `-m 0` timeout.
+- Instructions against the session start: excalidraw +2.95%, drizzle +0.95%, rest < 1% (perf_leads.md "Instructions
+  the triage of 2026-10-18 added"); test/instrcount.txt saved.
 
 ## Perf session: serial declare, error merges, shared warm state (2026-10-18, todo entry 8)
 - webpack declare (`TTTT_RESOLVE_TIMES`, defaults): 40 -> 18 ms (the CommonJS export walk at parse time); link 7,

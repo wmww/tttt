@@ -8,6 +8,15 @@ checker's arena size and type count. Memory: `scripts/memtrack.sh -p DIR` for th
 allocating function; massif's extra-heap estimate is wrong for glibc), `scripts/arenasites.sh -p DIR` for the mmapped binder
 and checker arenas by call site.
 
+## Instructions the triage of 2026-10-18 added (accepted)
+Against the session start (4d387955), callgrind: excalidraw +2.95% (7.344 -> 7.561 G), drizzle +0.95%, the rest under
+1%. excalidraw's is 44b8b83a (an alias body's mapped twin, `type A = Readonly<{...}>`, instantiated back into the
+ordinary instance under any mapper, as tsc's couldContainTypeVariables does): +750 types (+0.5%), subtype relations
+18750 -> 19872, strict subtype 27318 -> 28680 at K1. Semantics tsc shares, so accepted; if excalidraw's types ratio
+against tsgo (`scripts/perfsweep.py --corpora`) rose too, look at which unions now reduce twin against ordinary.
+drizzle's is b3c2fbfa (deferred references normalized in the relation) and ece423b2 (inference visits a pair once
+per mode). `test/instrcount.txt` saved after them.
+
 ## Deferred bodies (plan 78, closed 2026-10-17)
 vscode K1 T1 is 13.5 s deferred against 13.1 eager (+3%; K1 T4 +1%, the defaults +2%, measurements.md "Plan 78 stage
 3"). Where it goes (`TTTT_DEFER_STATS=1`, `--time`): materializing the bodies the first time costs ~1.69 s against the

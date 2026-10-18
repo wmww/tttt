@@ -60,9 +60,22 @@ stay faster than bun on every corpus and the sweep's tail. Output byte-identical
    checker count: measured, five policies prototyped and reverted, none off plan 81's declined frontier
    (perf_leads.md "Shared warm state at the defaults"). Every oracle at the starting point, instructions flat; bench
    in plan 67 "Where it stands".
-9. **Triage.**
+9. Done (2026-10-18): triage, three worktree agents. The human's message-text blind spot closed: tsc's `--pretty
+   false` text is cached (source sweep and corpora caches) and `scripts/clidiff.py` (from the caches, every corpus and
+   source sweep project) is an oracles.py line: **3612 / 3675 match, 54 text, 9 diagnostics** (buckets in
+   bugs/display.md). webpack (inference's visited set keyed on the variance mode) and drizzle (three relation
+   divergences) now print tsc's bytes; the triage's `.js` specifier was an alias-body twin not instantiated.
+   dtsdiff `--tsc-single`: 6 of its 31 mismatching projects match tsgo `--singleThreaded` fully, real tail 25.
+   algoliasearch back (berry installs). Suite 13833 / 13869, every other oracle at the starting point but recycle 5 /
+   3675 (+rxjs: tsgo's own K dependence, now matched; rocket known) and kdiff 2 (+rxjs), dtsdiff 1244 / 1274.
 10. **Insights.** report.md: did the debt plans delete their hacks, the refresh's two day-one numbers, whether the
-    human's 12-core numbers arrived (vision.md item 22 waits on them).
+    human's 12-core numbers arrived (vision.md item 22 waits on them), clidiff's text number as a headline next to the
+    others (the human was surprised "saturated" oracles hid 54 text mismatches). Decide whether report.md tracks tsc-rs
+    0.7.0 (pingdotgg/ts-rust, a Rust port of tsgo at our pin; least CPU at 4 checkers, byte-identical on 13 / 14
+    corpora, 3-5 GB on vscode/type-fest; `scripts/bench.sh --tscrs`) next to bun. Standing directions from the human
+    (2026-10-18): keep working on correctness where applicable and on perf/memory; when no reasonable perf progress is
+    left, look at the last tests and more real-world code bases for remaining fixes that make sense; fan out to
+    parallel sub-agents in worktrees where possible (this machine has 4 cores: three agents worked).
 
 After the insights entry (for the next window): plan 58 + plan 66 stage 5 when 7.1.0 is out (expected after
 2026-11-24); plan 82 stage 3 (tuples and parameters, one session), plus stage 2's remainder if any; plan 76 only if the human reopens it.
