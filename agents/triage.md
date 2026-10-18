@@ -29,3 +29,4 @@ gap to bun is per-checker re-derivation (bugs/perf_leads.md).
   4 checkers, byte-identical to tsgo on 13 / 14 corpora, but 3-5 GB on vscode/type-fest. `scripts/bench.sh --tscrs`.
   The next insights should decide whether report.md tracks it next to bun.
 - From human: please claude-stop after triage, before next insights
+- From human: continue working on correctness where applicable and perf/memory. If there's no reasonable way to make any progress on perf look at the final tests/more real-world code bases and make sure there's no remaining fixes that make sense
