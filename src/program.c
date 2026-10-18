@@ -3757,6 +3757,9 @@ typedef struct DeferredScopeSnapshot {
     SymbolTable* locals;
     SymbolTable copy;
     u32 flow_flags[4]; // DeferredBody.start, container_start, current, return_target
+    // ...as all the bodies' walks left them: what a body materialized alone puts back (its walk alone marks a node
+    // another body's walk marks too, referenced rather than shared)
+    u32 walked_flow_flags[4];
     FlowList* return_antecedents;
 } DeferredScopeSnapshot;
 
@@ -3822,25 +3825,56 @@ static u64 defer_stats_now(void) {
     return (u64)now.tv_sec * 1000000 + (u64)now.tv_nsec / 1000;
 }
 
-static ResolveShard* program_materialize_locked(Program* me, SourceFile* file, bool cross) {
+// Whether a materialization makes body i: `only` if it is one (a body alone, DeferredBodies.singly), else every pending
+static bool materializes(DeferredBody const* i, DeferredBody const* only) {
+    return only ? i == only : !atomic_load_explicit(&i->ready, memory_order_relaxed);
+}
+
+// The bodies' unused registrations in walk order (SourceFile.unused), once every body of a materialization that made
+// some alone is made: the eager walk's order, which unused_report() reports in
+static void deferred_bodies_unused_in_order(SourceFile* file) {
+    DeferredBodies* list = file->deferred_bodies;
+    u32 count = file->unused_count - list->unused_before;
+    if (!count) return;
+    UnusedCandidate* ordered = c_new_n(UnusedCandidate, count);
+    u32 n = 0;
+    for (DeferredBody* i = list->first; i; i = i->next) {
+        memcpy(ordered + n, file->unused + i->unused_from, sizeof(UnusedCandidate) * (i->unused_to - i->unused_from));
+        n += i->unused_to - i->unused_from;
+    }
+    check(n == count);
+    memcpy(file->unused + list->unused_before, ordered, sizeof(UnusedCandidate) * count);
+    free(ordered);
+}
+
+// `only`: that body alone (the file's bodies are singly and were materialized before), else every pending one
+static ResolveShard* program_materialize_locked(Program* me, SourceFile* file, bool cross, DeferredBody* only) {
     u64 start = defer_stats_now();
     DeferredBodies* list = file->deferred_bodies;
     bool first = !atomic_load_explicit(&list->materialized, memory_order_relaxed);
+    DeferredBodiesState state = atomic_load_explicit(&list->state, memory_order_relaxed);
+    check(!only || (!first && list->singly));
     SourceFile const* outer = materializing_file;
     materializing_file = file;
     ErrorCtx scratch = { .phase = ERROR_PHASE_RESOLVE_NAMES };
     ErrorCtx* errs = first ? &list->errs : &scratch;
     list->errs.parent = my errs;
     bool same = true;
-    ast_materialize_begin(&list->memory, cross);
+    // (Going on with a materialization some bodies of are made: in the same kind of memory)
+    ast_materialize_begin(&list->memory, state == DEFERRED_BODIES_PARTIAL ? list->memory.lasting : cross);
     lazy_slots_new_block();
+    u32 walking = 0;
     for (DeferredBody* i = list->first; i; i = i->next) {
+        if (!materializes(i, only)) continue;
         bool parsed = parse_deferred_body(file, i->function, errs);
         if (!parsed) defer_stat_add(DEFER_STAT_PARSE_FAILED, 1);
         same &= parsed;
+        walking++;
     }
-    defer_stat_add(first ? DEFER_STAT_FILES : DEFER_STAT_REMATERIALIZED, 1);
-    defer_stat_add(DEFER_STAT_BODIES, list->count);
+    if (state == DEFERRED_BODIES_PENDING) defer_stat_add(first ? DEFER_STAT_FILES : DEFER_STAT_REMATERIALIZED, 1);
+    if (only) defer_stat_add(DEFER_STAT_SINGLY, 1);
+    else if (state == DEFERRED_BODIES_PARTIAL) defer_stat_add(DEFER_STAT_SINGLY_COMPLETED, 1);
+    defer_stat_add(DEFER_STAT_BODIES, walking);
     u64* decls_before = nullptr;
     if (first) {
         list->unused_before = file->unused_count;
@@ -3883,15 +3917,48 @@ static ResolveShard* program_materialize_locked(Program* me, SourceFile* file, b
     u32 suppressed = unused_marking_suppressed;
     unused_marking_suppressed = 0;
     resolve_shard = shard;
-    for (DeferredBody* i = list->first; i; i = i->next) {
+    if (only) list->out_of_order = true;
+    u32 index = 0;
+    for (DeferredBody* i = list->first; i; i = i->next, index++) {
+        if (!materializes(i, only)) continue;
+        i->unused_from = file->unused_count;
         bool walked = function_impl_lookup_deferred_body(i, &shard->errs);
         if (!walked) defer_stat_add(DEFER_STAT_COLLIDED, 1);
         same &= walked;
+        i->unused_to = file->unused_count;
+        if (!first) {
+            DeferredScopeSnapshot const* snapshot = &list->snapshots[index];
+            for (u32 n = 0; n < 4; n++) {
+                FlowNode* node = *snapshot_flow_node(i, n);
+                if (node && !flow_is_unreachable(node)) node->flags = snapshot->walked_flow_flags[n];
+            }
+        }
     }
     resolve_shard = outer_shard;
     unused_marking_suppressed = suppressed;
     ast_materialize_end();
     materializing_file = outer;
+    for (DeferredBody* i = list->first; i; i = i->next) {
+        if (materializes(i, only)) atomic_store_explicit(&i->ready, true, memory_order_release);
+    }
+    bool all = true;
+    for (DeferredBody* i = list->first; i && all; i = i->next) all = atomic_load_explicit(&i->ready, memory_order_relaxed);
+    if (all && list->out_of_order) {
+        deferred_bodies_unused_in_order(file);
+        list->out_of_order = false;
+    }
+    if (first) {
+        u32 at = 0;
+        for (DeferredBody* i = list->first; i; i = i->next, at++) {
+            for (u32 n = 0; n < 4; n++) {
+                FlowNode* node = *snapshot_flow_node(i, n);
+                list->snapshots[at].walked_flow_flags[n] = node ? node->flags : 0;
+            }
+        }
+        // (A body alone: when no walk wrote anything outside the bodies but what a drop puts back per body)
+        list->singly = true;
+        for (u32 i = 0; i < list->undo_count; i++) list->singly &= list->undo[i].drop != nullptr;
+    }
     if (first) {
         u32 index = 0;
         for (DeferredBody* i = list->first; i && !list->pinned; i = i->next, index++) {
@@ -3905,7 +3972,8 @@ static ResolveShard* program_materialize_locked(Program* me, SourceFile* file, b
     }
     error_ctx_drop(&scratch);
     if (start) defer_stat_add(first ? DEFER_STAT_MATERIALIZE_US : DEFER_STAT_REMATERIALIZE_US, (i64)(defer_stats_now() - start));
-    atomic_store_explicit(&list->state, same ? DEFERRED_BODIES_READY : DEFERRED_BODIES_FAILED, memory_order_release);
+    atomic_store_explicit(&list->state, !same ? DEFERRED_BODIES_FAILED : all ? DEFERRED_BODIES_READY : DEFERRED_BODIES_PARTIAL,
+        memory_order_release);
     atomic_store_explicit(&list->materialized, true, memory_order_release);
     if (first) return shard;
     resolve_shard_discard(shard);
@@ -3939,7 +4007,9 @@ static void deferred_bodies_drop_locked(SourceFile* file) {
         // (Not block_drop(): what the bodies' AST owns is all in the arena, their strings too, ast_cstr_seal(). The
         // harness's leak check holds a drop to that)
         i->block = (Block){0};
+        atomic_store_explicit(&i->ready, false, memory_order_relaxed);
     }
+    list->out_of_order = false;
     ast_arena_drop(&list->memory);
     defer_stat_add(DEFER_STAT_DROPPED, 1);
     if (start) defer_stat_add(DEFER_STAT_DROP_US, (i64)(defer_stats_now() - start));
@@ -3949,7 +4019,8 @@ static void deferred_bodies_drop_locked(SourceFile* file) {
 static void deferred_bodies_release_one(DeferredBodies* list, SourceFile* file) {
     pthread_mutex_lock(&list->lock);
     check(list->refs);
-    if (--list->refs == 0 && !list->pinned && atomic_load_explicit(&list->state, memory_order_relaxed) == DEFERRED_BODIES_READY) {
+    DeferredBodiesState state = atomic_load_explicit(&list->state, memory_order_relaxed);
+    if (--list->refs == 0 && !list->pinned && (state == DEFERRED_BODIES_READY || state == DEFERRED_BODIES_PARTIAL)) {
         deferred_bodies_drop_locked(file);
     }
     pthread_mutex_unlock(&list->lock);
@@ -4005,26 +4076,34 @@ static pthread_cond_t ahead_taken = PTHREAD_COND_INITIALIZER;
 #define AHEAD_LIMIT_KB 4096
 
 // The file's deferred bodies for the current checker incarnation (materialized unless some holder has them), held
-// until it is dropped. A helper (no checker) holds them for the first checker to come
-static void deferred_bodies_acquire(Program* me, SourceFile* file) {
+// until it is dropped. A helper (no checker) holds them for the first checker to come. `only`: a checker needs that
+// body (null: all of them); materialized before and singly, a file's pending bodies are materialized one at a time
+static void deferred_bodies_acquire(Program* me, SourceFile* file, DeferredBody* only) {
     DeferredBodies* list = file->deferred_bodies;
     if (!list) return;
     Checker* checker = current_checker;
-    if (checker && checker_holds(checker, file)) {
-        if (checker->checking_file && checker->checking_file != file) checker->cross_files[file->id / 64] |= (u64)1 << (file->id % 64);
+    bool held = checker && checker_holds(checker, file);
+    bool cross_file = checker && checker->checking_file && checker->checking_file != file;
+    if (held && (only ? atomic_load_explicit(&only->ready, memory_order_acquire) :
+        atomic_load_explicit(&list->state, memory_order_acquire) != DEFERRED_BODIES_PARTIAL)
+    ) {
+        if (cross_file) checker->cross_files[file->id / 64] |= (u64)1 << (file->id % 64);
         return;
     }
     pthread_mutex_lock(&list->lock);
     ResolveShard* unfinished = nullptr;
-    if (!checker && (list->refs || atomic_load_explicit(&list->state, memory_order_relaxed) != DEFERRED_BODIES_PENDING)) {
+    DeferredBodiesState state = atomic_load_explicit(&list->state, memory_order_relaxed);
+    if (!checker && (list->refs || state != DEFERRED_BODIES_PENDING)) {
         // (Someone has it already: nothing for the helper to do)
         pthread_mutex_unlock(&list->lock);
         return;
     }
-    if (atomic_load_explicit(&list->state, memory_order_relaxed) == DEFERRED_BODIES_PENDING) {
-        bool cross = checker && checker->checking_file && checker->checking_file != file;
-        if (cross) defer_stat_add(DEFER_STAT_CROSS, 1);
-        unfinished = program_materialize_locked(me, file, cross);
+    if (only && !(list->singly && atomic_load_explicit(&list->materialized, memory_order_relaxed))) only = nullptr;
+    if ((state == DEFERRED_BODIES_PENDING || state == DEFERRED_BODIES_PARTIAL) &&
+        !(only && atomic_load_explicit(&only->ready, memory_order_relaxed))
+    ) {
+        if (cross_file && state == DEFERRED_BODIES_PENDING) defer_stat_add(DEFER_STAT_CROSS, 1);
+        unfinished = program_materialize_locked(me, file, cross_file, only);
     }
     if (!checker) {
         list->ahead = true;
@@ -4033,6 +4112,12 @@ static void deferred_bodies_acquire(Program* me, SourceFile* file) {
         // (A helper has no checker: the first checker to take the file makes the reports)
         atomic_store_explicit(&list->unfinished, unfinished, memory_order_release);
         pthread_mutex_unlock(&list->lock);
+        return;
+    }
+    if (held) {
+        // (A first materialization is never held before: no reports to make)
+        pthread_mutex_unlock(&list->lock);
+        if (cross_file) checker->cross_files[file->id / 64] |= (u64)1 << (file->id % 64);
         return;
     }
     if (list->ahead) {
@@ -4049,14 +4134,14 @@ static void deferred_bodies_acquire(Program* me, SourceFile* file) {
     if (!unfinished) unfinished = atomic_exchange(&list->unfinished, nullptr);
     pthread_mutex_unlock(&list->lock);
     checker_hold(checker, file, list);
-    if (checker->checking_file && checker->checking_file != file) checker->cross_files[file->id / 64] |= (u64)1 << (file->id % 64);
+    if (cross_file) checker->cross_files[file->id / 64] |= (u64)1 << (file->id % 64);
     if (unfinished) program_finish_materialized(list, unfinished);
 }
 
 void deferred_bodies_materialize(SourceFile const* file) {
     if (file == materializing_file) return;
     Checker* checker = current_checker;
-    if (checker) deferred_bodies_acquire(checker->program, (SourceFile*)file);
+    if (checker) deferred_bodies_acquire(checker->program, (SourceFile*)file, nullptr);
     else log_error("Deferred function bodies needed outside a checker");
 }
 
@@ -4065,7 +4150,7 @@ Block* function_impl_deferred_body(FunctionImpl const* me) {
     SourceFile* file = (SourceFile*)span_source(me->full_span);
     if (file == materializing_file) return &body->block;
     Checker* checker = current_checker;
-    if (checker) deferred_bodies_acquire(checker->program, file);
+    if (checker) deferred_bodies_acquire(checker->program, file, body);
     else log_error("A deferred function body needed outside a checker");
     if (!body->function) log_error("A deferred function body the resolve walk never reached");
     return &body->block;
@@ -4080,7 +4165,7 @@ static void program_finish_deferred_bodies(Program* me) {
         SourceFile* file = *i;
         if (!file->deferred_bodies) continue;
         any = true;
-        if (!program_defer_failed(me) && !atomic_load(&file->deferred_bodies->materialized)) deferred_bodies_acquire(me, file);
+        if (!program_defer_failed(me) && !atomic_load(&file->deferred_bodies->materialized)) deferred_bodies_acquire(me, file, nullptr);
         ResolveShard* unfinished = atomic_exchange(&file->deferred_bodies->unfinished, nullptr);
         if (unfinished) program_finish_materialized(file->deferred_bodies, unfinished);
         error_ctx_merge(my errs, &file->deferred_bodies->errs);
@@ -4285,7 +4370,7 @@ static void check_share(Program* me, u32 c, u32 count) {
         segment[segment_count++] = at;
         checker->file_order = at;
         checker->flow_analysis_disabled = false;
-        deferred_bodies_acquire(me, source);
+        deferred_bodies_acquire(me, source, nullptr);
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
         if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
@@ -4313,7 +4398,8 @@ static void check_share(Program* me, u32 c, u32 count) {
         u64 held = checker_memory(checker);
         if (held > checker->peak_memory) checker->peak_memory = held;
         if (!segment_base) segment_base = held;
-        if (held <= budget || held <= 2 * segment_base) continue;
+        // (A budget of 0 recycles after every file, warm-up or not: kdiff's fresh checker per file)
+        if (budget && (held <= budget || held <= 2 * segment_base)) continue;
         // (A segment this short rebuilt a shared warm state the first file didn't show: the next may hold twice as
         // much, up to the full budget)
         if (segment_count < CHECKER_MEMORY_BACKOFF_FILES) budget = 2 * budget < my checker_budget ? 2 * budget : my checker_budget;
@@ -4455,7 +4541,7 @@ static void* materialize_ahead_thread(void* arg) {
             pthread_mutex_unlock(&ahead_lock);
             if (atomic_load_explicit(&my ahead_next, memory_order_relaxed) >= total) break;
         }
-        deferred_bodies_acquire(me, file);
+        deferred_bodies_acquire(me, file, nullptr);
     }
     clear_compiler_options();
     scope_release_thread();

@@ -8944,6 +8944,8 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
                 item.constructor.func.is_abstract_constructor = true;
             }
         }
+        if (item.tag == CLASS_ITEM_METHOD) ast_cstr_seal(&item.method.name_string);
+        if (item.tag == CLASS_ITEM_FIELD) ast_cstr_seal(&item.field.name_string);
         list_push(vec_class_item, &ret->items, item);
         hop_whitespace(&p);
 
@@ -12593,6 +12595,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                     binding.default_value = ast_new(Expr, default_value);
                 }
             }
+            if (key.tag == VALUE_STRING) ast_cstr_seal(&key.string);
             vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
                 .source = key,
                 .source_span = name,

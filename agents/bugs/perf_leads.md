@@ -17,10 +17,10 @@ bodies for cross-file demands (95% are inferred return types; the walk's cross-b
 `referenced`, `flow_start`, would have to be proven irrelevant to them), a SIMD skip scan (words and whitespace runs 16
 bytes at a time), gated runs materializing every body for its syntax errors rather than restarting (hacks.md).
 Measured 2026-10-17 (callgrind, vscode K1 T1, 95.9 G): `program_materialize_locked()` is 16.1 G (parse 9.5, walk 6.6)
-for 115.8k body materializations of 90.6k bodies: the 724 re-materialized files are big ones (~25k bodies, ~22% of the
-materializing instructions by count, 0.23 s of 1.96 s by `TTTT_DEFER_STATS` time). **The cheapest lever left on
-vscode**: a *re*-materialization needs the one demanded body only, and its cross-body writes were all made by the first
-materialization (if they live outside the dropped arena: check `deferred_bodies_undo()`'s log, which puts some back).
+for 115.8k body materializations of 90.6k bodies. **Done 2026-10-18**: a re-materialization of a `singly` file parses
+and walks only the demanded body (documentation.md "Deferred bodies"): vscode defaults re-materialize 3.4k single
+bodies instead of 43k (0.80 -> 0.16 s CPU), K1 1.2k of 16k. Left: the first materialization's cost (cold state), the
+skip scan.
 
 ## Slower than bun at the defaults: inbox-zero (triage 2026-10-18)
 After the triage's deferral fixes (apps/web no longer restarts without deferral: 1.46 -> 1.22 s, -25% peak), at 4

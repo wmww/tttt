@@ -500,9 +500,8 @@ static bool item_has_computed_key(ClassItem const* item) {
 }
 
 static void drop_namesakes(ClassDecl* me) {
-    free(my namesake_first);
-    free(my namesake_next);
-    free(my computed_items);
+    // (One block of the AST's, as link_namesakes() made it)
+    ast_free(my namesake_first, sizeof(i32) * 3 * (size_t)vec_class_item_size(&my items));
     my namesake_first = my namesake_next = my computed_items = nullptr;
     my computed_item_count = 0;
 }
@@ -512,10 +511,10 @@ static void link_namesakes(ClassDecl* me) {
     drop_namesakes(me);
     isize count = vec_class_item_size(&my items);
     if (count <= CLASS_NAMESAKES_FROM) return;
-    my namesake_first = malloc(sizeof(i32) * (size_t)count);
-    my namesake_next = malloc(sizeof(i32) * (size_t)count);
-    my computed_items = malloc(sizeof(i32) * (size_t)count);
-    panic_if(!my namesake_first || !my namesake_next || !my computed_items, "out of memory");
+    // (The AST's: a deferred body's class goes with its materialization)
+    my namesake_first = ast_malloc(sizeof(i32) * 3 * (size_t)count);
+    my namesake_next = my namesake_first + count;
+    my computed_items = my namesake_next + count;
     NameIndex last = name_index_make(count); // The last item of each name so far, its chain's end
     for (isize i = 0; i < count; i++) {
         ClassItem const* item = vec_class_item_at(&my items, i);

@@ -305,10 +305,13 @@ typedef struct SourceFile {
 } SourceFile;
 
 // The deferred function bodies of a file (plan 78), in the resolve walk's order, and their materialization: all of them
-// at once, the first time a checker needs one (program_materialize_file())
+// at once, the first time a checker needs one (program_materialize_file()); after a drop, a single body a checker of
+// another file needs alone when the file's bodies are `singly`
 typedef enum DeferredBodiesState : uint8_t {
     DEFERRED_BODIES_PENDING,
     DEFERRED_BODIES_READY,
+    // Some of the bodies are materialized (DeferredBody.ready), the others pending
+    DEFERRED_BODIES_PARTIAL,
     // Something tells the materialization from what the eager parse and walk would have made (a syntax error in a body,
     // a signature that would have seen the body's names): the program is run again without deferral
     DEFERRED_BODIES_FAILED,
@@ -333,6 +336,12 @@ typedef struct DeferredBodies {
     // Never dropped: the first walk changed something outside the bodies a drop doesn't undo (a body's declaration
     // merged into a parameter)
     bool pinned;
+    // After a drop a body may be materialized alone (DEFERRED_BODIES_PARTIAL): the first walk wrote nothing outside the
+    // bodies but their functions' fields, their scopes' locals and their flow nodes' marks (deferred_bodies_undo()
+    // logged no other write: no expando container, `this` assignment, field assignment)
+    bool singly;
+    // This materialization made some bodies alone: once all are, their unused registrations are put in walk order
+    bool out_of_order;
     u32 unused_before; // SourceFile.unused_count before the bodies' walk registered theirs
     // What a drop restores: each body's function scope's locals as the signature's walk left them (in list order, made
     // by the first materialization) and the walk's writes to outer nodes (deferred_bodies_undo()). malloc'd
@@ -385,6 +394,8 @@ typedef enum DeferStat {
     DEFER_STAT_COLLIDED, // Bodies whose signature could have seen their names
     DEFER_STAT_RESTARTS, // Programs run again without deferral
     DEFER_STAT_REMATERIALIZED, // Files materialized again after a drop
+    DEFER_STAT_SINGLY, // ...a single body of them (DEFERRED_BODIES_PARTIAL)
+    DEFER_STAT_SINGLY_COMPLETED, // Files whose bodies were materialized singly, then all
     DEFER_STAT_DROPPED, // Materializations dropped
     DEFER_STAT_PINNED, // Files whose materialization is never dropped
     DEFER_STAT_AHEAD_WAITS, // Times a materialize-ahead helper waited for the checkers

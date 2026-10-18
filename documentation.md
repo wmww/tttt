@@ -400,6 +400,15 @@ again, so nothing keyed by a node's address meets another node), puts back what 
 log: the functions' walk fields, the outer flow nodes' reference counts and labels, fields' `ts_assigned`, a class's
 `computed_this_assignments`, the file's expando containers and unused registrations) and makes the bodies pending again;
 the next reader materializes them again (the same parse and walk; its diagnostics are dropped, the first's stand).
+After a drop a file whose first walk wrote nothing outside the bodies but what a drop puts back per body
+(`DeferredBodies.singly`: no expando container, `this` or field assignment in the undo log) is materialized a body at a
+time: a checker that needs one body (`function_impl_body()`, `function_impl_walked()`: 95% are another file's inferred
+return types) parses and walks that one alone (`DEFERRED_BODIES_PARTIAL`, `DeferredBody.ready`), a whole-file demand
+(the file's own check) the rest; the outer flow nodes a body's walk marks are set to what the first materialization's
+walks left (`walked_flow_flags`: a node two bodies reference is shared), and once every body of such a materialization
+is made its unused registrations are put back in walk order. The memory goes on in the same arena
+(`ast_materialize_begin()` again, its chunks counted once). vscode at the defaults re-materializes ~19% of the bytes it
+did (0.80 -> 0.16 s CPU).
 A body declaration merged into a parameter pins the file (never dropped). At a recycle the new incarnation keeps what
 the old one read for other files (`Checker.cross_files`: modules many files import), so it isn't materialized again at
 once, if that materialization was made for another file (`AstArena.lasting`). The materializations' 2 MB chunks may be

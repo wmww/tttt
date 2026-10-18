@@ -20,6 +20,7 @@ typedef struct AstArena {
     AstRange* ranges; // The address ranges the file's allocations lie in, usually one
     u32 range_count;
     u32 range_cap;
+    u32 ranges_counted; // A materialization's ranges whose chunks ast_materialize_end() counted (it may go on later)
     size_t total; // Bytes bumped
     bool materialization; // ast_materialize_begin()'s: ranges start on a page of their own and end on one
     bool lasting; // A lasting materialization's
@@ -41,7 +42,8 @@ void ast_arena_drop(AstArena* arena);
 // meet another node. Their 2 MB chunks may be huge pages, so a chunk is given back whole, once every materialization in
 // it is dropped (most go together, at a checker's recycle). A `lasting` one (made for another file than the checker's,
 // likely kept across recycles: program.c's checker_recycled()) would keep its chunk alive: those come from a slab of
-// small pages, given back page by page
+// small pages, given back page by page. A materialization may go on later (begin again with the same `lasting`) until
+// it's dropped
 void ast_materialize_begin(AstArena* arena, bool lasting);
 void ast_materialize_end(void);
 // Zeroed, 8 (or 16) byte aligned, in the thread's current materialization (an Arena.ast_backed's allocation or chunk)

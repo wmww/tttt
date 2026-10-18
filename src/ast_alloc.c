@@ -140,7 +140,7 @@ static void chunks_ref(char const* start, char const* end, int delta) {
 
 static void add_range(AstArena* arena, char* start, char* end) {
     if (start == end) return;
-    if (arena->range_count && arena->ranges[arena->range_count - 1].end == start) {
+    if (arena->range_count > arena->ranges_counted && arena->ranges[arena->range_count - 1].end == start) {
         arena->ranges[arena->range_count - 1].end = end;
         return;
     }
@@ -211,7 +211,10 @@ void ast_materialize_end(void) {
         all_stats.bumped += t->arena->total;
         pthread_mutex_unlock(&stats_lock);
     }
-    for (u32 i = 0; i < t->arena->range_count && !t->no_huge; i++) chunks_ref(t->arena->ranges[i].start, t->arena->ranges[i].end, 1);
+    for (u32 i = t->arena->ranges_counted; i < t->arena->range_count && !t->no_huge; i++) {
+        chunks_ref(t->arena->ranges[i].start, t->arena->ranges[i].end, 1);
+    }
+    t->arena->ranges_counted = t->arena->range_count;
     // (The chunk the slab continues in stays until the thread's next materialization is past it)
     char* cursor = t->pos < t->end ? chunk_of(t->pos) : nullptr;
     if (!t->no_huge && cursor != t->cursor_chunk) {

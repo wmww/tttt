@@ -297,6 +297,11 @@ typedef struct DeferredBody {
     bool has_flow_effects : 1;
     bool within_unreachable : 1;
     bool ambient : 1;
+    // In the file's current materialization (DeferredBodies.memory), set once its walk is done
+    _Atomic(bool) ready;
+    // Where its walk's unused registrations are in SourceFile.unused (DeferredBodies.out_of_order)
+    u32 unused_from;
+    u32 unused_to;
     // The names the signature's walk looked up through the function's scope, with the meanings it looked for (in the
     // binder's arena): had the body's declarations been there, one of them could have been found
     // (function_impl_lookup_deferred_body() checks)

@@ -57,6 +57,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   - A new write outside the bodies from their walk must be undone at a drop (`deferred_bodies_undo()`) or a new way of
     keeping a materialization alive must allocate it lasting (`AstArena.lasting`; owner materializations carried cost
     vscode K1 +155 MB). Oracle: `TTTT_AST_POISON=1 --checker-memory 0` on the corpora, `kdiff.py -k 1 -m 0`.
+  - A body materialized alone (`DeferredBodies.singly`, documentation.md) assumes its walk writes outside its body only
+    its function's walk fields, its scope's locals, its four outer flow nodes' marks (set to the whole walk's,
+    `walked_flow_flags`) and unused registrations (put in order once all are made); `singly` is decided by the undo
+    log alone. A new cross-body write that isn't in the undo log (or isn't per body) silently makes a single body's
+    walk differ from the whole file's. Oracle: `--checker-memory 0` (every file, since 2026-10-18) with
+    `TTTT_AST_POISON=1` on the corpora, `scripts/kdiff.py -k 1 -m 0`, the suite at `--checker-memory 0` (136 single
+    bodies).
   - AST strings are in the arena only where the parser seals them (`ast_cstr_seal()`: literals, template texts, object
     keys); a long string another AST site makes (an enum member's string name, a computed class key's text, JSDoc
     names) is still malloc'd, and leaks when a materialization holding it is dropped (cleat's cstrs aren't counted by

@@ -143,7 +143,7 @@ static _Atomic i64 defer_stats[DEFER_STAT_COUNT];
 static void defer_stats_print(void) {
     static char const* const names[DEFER_STAT_COUNT] = {
         "skipped", "undeferred", "skipped bytes", "files materialized", "bodies materialized", "cross-file materializations",
-        "parse failed", "signature collided", "restarts", "rematerialized", "dropped", "pinned", "ahead waits", "materialize us", "rematerialize us", "drop us",
+        "parse failed", "signature collided", "restarts", "rematerialized", "bodies singly", "singly completed", "dropped", "pinned", "ahead waits", "materialize us", "rematerialize us", "drop us",
     };
     for (u32 i = 0; i < DEFER_STAT_COUNT; i++) fprintf(stderr, "defer: %s %lld\n", names[i], (long long)defer_stats[i]);
 }
