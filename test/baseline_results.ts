@@ -894,6 +894,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttFullyQualifiedUmdGlobal': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttFunctionDeclarationErrorSpan': {
         errors: true,
         symbols: true,

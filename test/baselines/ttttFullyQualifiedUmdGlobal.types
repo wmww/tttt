@@ -1,0 +1,57 @@
+//// [test/cases/ttttFullyQualifiedUmdGlobal.ts] ////
+
+=== /node_modules/lib/node_modules/react/index.d.ts ===
+export = React;
+>React : any
+
+export as namespace React;
+>React : any
+
+declare namespace React {
+    type Node = string | number;
+>Node : Node
+
+    type Ctor<P> = (props: P) => Node;
+>Ctor : Ctor<P>
+>props : P
+}
+=== /node_modules/lib/index.d.ts ===
+import type { Ctor, Node } from "react";
+>Ctor : Ctor<P>
+>Node : Node
+
+export declare function render(wrapper: Ctor<{ children: Node }>): void;
+>render : (wrapper: Ctor<{ children: Node; }>) => void
+>wrapper : Ctor<{ children: Node; }>
+>children : Node
+
+=== /node_modules/react/index.d.ts ===
+export = React;
+>React : any
+
+export as namespace React;
+>React : any
+
+declare namespace React {
+    type Node = string | bigint;
+>Node : Node
+}
+=== /a.ts ===
+import { render } from "lib";
+>render : (wrapper: import("lib/node_modules/react").Ctor<{ children: import("lib/node_modules/react").Node; }>) => void
+
+import { type Node } from "react";
+>Node : any
+
+const wrapper = ({ children }: { children: Node }) => 1;
+>wrapper : ({ children }: { children: Node; }) => number
+>({ children }: { children: Node }) => 1 : ({ children }: { children: Node; }) => number
+>children : Node
+>children : Node
+>1 : 1
+
+render(wrapper);
+>render(wrapper) : void
+>render : (wrapper: import("lib/node_modules/react").Ctor<{ children: import("lib/node_modules/react").Node; }>) => void
+>wrapper : ({ children }: { children: Node; }) => number
+

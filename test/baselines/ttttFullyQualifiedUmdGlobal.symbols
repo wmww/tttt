@@ -1,0 +1,64 @@
+//// [test/cases/ttttFullyQualifiedUmdGlobal.ts] ////
+
+=== /node_modules/lib/node_modules/react/index.d.ts ===
+export = React;
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+
+export as namespace React;
+>React : Symbol(React, Decl(index.d.ts, 0, 15))
+
+declare namespace React {
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+
+    type Node = string | number;
+>Node : Symbol(Node, Decl(index.d.ts, 2, 25))
+
+    type Ctor<P> = (props: P) => Node;
+>Ctor : Symbol(Ctor, Decl(index.d.ts, 3, 32))
+>P : Symbol(P, Decl(index.d.ts, 4, 14))
+>props : Symbol(props, Decl(index.d.ts, 4, 20))
+>P : Symbol(P, Decl(index.d.ts, 4, 14))
+>Node : Symbol(Node, Decl(index.d.ts, 2, 25))
+}
+=== /node_modules/lib/index.d.ts ===
+import type { Ctor, Node } from "react";
+>Ctor : Symbol(Ctor, Decl(index.d.ts, 0, 13))
+>Node : Symbol(Node, Decl(index.d.ts, 0, 19))
+
+export declare function render(wrapper: Ctor<{ children: Node }>): void;
+>render : Symbol(render, Decl(index.d.ts, 0, 40))
+>wrapper : Symbol(wrapper, Decl(index.d.ts, 1, 31))
+>Ctor : Symbol(Ctor, Decl(index.d.ts, 0, 13))
+>children : Symbol(children, Decl(index.d.ts, 1, 46))
+>Node : Symbol(Node, Decl(index.d.ts, 0, 19))
+
+=== /node_modules/react/index.d.ts ===
+export = React;
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+
+export as namespace React;
+>React : Symbol(React, Decl(index.d.ts, 0, 15))
+
+declare namespace React {
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+
+    type Node = string | bigint;
+>Node : Symbol(Node, Decl(index.d.ts, 2, 25))
+}
+=== /a.ts ===
+import { render } from "lib";
+>render : Symbol(render, Decl(a.ts, 0, 8))
+
+import { type Node } from "react";
+>Node : Symbol(Node, Decl(a.ts, 1, 8))
+
+const wrapper = ({ children }: { children: Node }) => 1;
+>wrapper : Symbol(wrapper, Decl(a.ts, 2, 5))
+>children : Symbol(children, Decl(a.ts, 2, 18))
+>children : Symbol(children, Decl(a.ts, 2, 32))
+>Node : Symbol(Node, Decl(a.ts, 1, 8))
+
+render(wrapper);
+>render : Symbol(render, Decl(a.ts, 0, 8))
+>wrapper : Symbol(wrapper, Decl(a.ts, 2, 5))
+

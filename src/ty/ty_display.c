@@ -633,9 +633,38 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
     approx_add(d, entity_name_length(csview_slice(cstr_sv(d.target), start, cstr_size(d.target))));
 }
 
+// tsc's UseFullyQualifiedType without an enclosing declaration (two types that print the same in a message):
+// getSymbolChain from the globals alone, so a global (a UMD global's namespace too) is its name, anything else is named
+// from its module, `import("/path/to/file")` (no context file: the module's path)
+static void out_fully_qualified_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
+    Scope const* globals = program_get_binder(my program)->global_scope;
+    SymbolChain chain = symbol->flags & SYMBOL_TYPE_PARAMETER || !globals ?
+        (SymbolChain){ .items = { symbol }, .len = 1 } : symbol_chain_at(globals, symbol, meaning, true);
+    u32 start = 0;
+    if (chain.len && !chain.items[0]->is_module && symbol_is_augmented_export_equals(chain.items[0])) {
+        // (What an augmented `export =` assigns stands for its module: the file of its first declaration)
+        SourceFile const* file = chain.items[0]->decl_count ? span_source(chain.items[0]->decls[0].full) : nullptr;
+        Symbol const* module = file && file->scope ? file->scope->container : nullptr;
+        if (module && module->is_module && module->module) {
+            out_module_import(me, d, module);
+            start = 1;
+        }
+    } else if (chain.len && chain.items[0]->is_module) {
+        out_module_import(me, d, chain.items[0]);
+        start = 1;
+    }
+    cstr text = cstr_init();
+    SymbolChain rest = { .len = chain.len - start };
+    memcpy(rest.items, chain.items + start, rest.len * sizeof(*rest.items));
+    if (start && rest.len) cstr_append_lit(&text, ".");
+    symbol_chain_append_entity(&text, globals, &rest, true, start != 0);
+    out(d, cstr_sv(&text));
+    cstr_drop(&text);
+}
+
 static void out_symbol_name_impl(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
     if (d.tracker) d.tracker->track_symbol(d.tracker, symbol, meaning);
-    if (!d.enclosing && symbol_is_augmented_export_equals(symbol) && symbol->decl_count) {
+    if (!d.enclosing && !d.fully_qualified && symbol_is_augmented_export_equals(symbol) && symbol->decl_count) {
         // What an augmented `export =` assigns is a module to tsc's printer (see below), in a message too
         SourceFile const* file = span_source(symbol->decls[0].full);
         out_lit(d, "import(\"");
@@ -643,23 +672,12 @@ static void out_symbol_name_impl(Checker* me, TyDisplay d, Symbol const* symbol,
         out_lit(d, "\")");
         return;
     }
-    Symbol const* parent = symbol->parent;
-    if ((!parent && !d.enclosing) || (symbol->is_global_this && !d.enclosing) || (!d.enclosing && !d.fully_qualified)) {
+    if ((!d.enclosing && !d.fully_qualified) || (symbol->is_global_this && !d.enclosing)) {
         out(d, span_sv(ty_symbol_display_name(symbol)));
         return;
     }
     if (!d.enclosing) {
-        bool quoted_parent = parent->name.size && (*parent->name.buf == '"' || *parent->name.buf == '\'');
-        // A module or ambient module (`declare module "m"`) at the root is `import("m")` (tsc's getSymbolChain walks
-        // up to it, symbolToTypeNode makes the import type)
-        if (parent->is_module || quoted_parent) {
-            out_module_import(me, d, parent);
-        } else {
-            out_symbol_name(me, d, parent, SYMBOL_NAMESPACE);
-        }
-        out_lit(d, ".");
-        // (An `export default` declaration is `default` through its module: tsc's getNameOfSymbolAsWritten)
-        out(d, symbol->is_default_export && (parent->is_module || quoted_parent) ? c_sv("default") : span_sv(ty_symbol_display_name(symbol)));
+        out_fully_qualified_name(me, d, symbol, meaning);
         return;
     }
     // An augmentation that merged into nothing (TS2671/TS2649) is a module symbol of its own to tsgo, without a file:
