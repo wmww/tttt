@@ -293,7 +293,7 @@ bool type_literal_has_index_constraints(TypeNode const* me) {
 static thread_local TypeFlow const* current_flow;
 
 static TypeFlow const* flow_flipped(TypeFlow const* flow) {
-    if (!flow || flow->block) return flow;
+    if (!flow || flow->scope) return flow;
     return flow->ternary ? &flow->ternary->true_flow[flow->covariant] : &flow->mapped->key.mapped->template_flow[flow->covariant];
 }
 
@@ -313,16 +313,32 @@ TypeFlow const* type_flow_enter_parameter(void) {
 
 TypeFlow const* type_flow_enter_statements(OuterGenerics const* generics, bool block, Arena* arena) {
     TypeFlow const* saved = current_flow;
-    // (Only a Block's flow can be around a function: functions aren't in types)
-    TypeFlow const* outer_block = current_flow && current_flow->block ? current_flow : nullptr;
-    if (!block || !generics) {
-        current_flow = outer_block;
-    } else if (outer_block && outer_block->block_generics == generics) {
-        current_flow = outer_block;
+    // (Only scopes can be around a function: functions aren't in types. The Block's starts a chain of its own: a
+    // deferred body is walked outside the walk of what is around it)
+    TypeFlow const* outer_scope = current_flow && current_flow->scope ? current_flow : nullptr;
+    if (!block) {
+        current_flow = outer_scope;
+    } else if (!generics) {
+        current_flow = nullptr;
+    } else if (outer_scope && outer_scope->scope == TYPE_FLOW_BLOCK && outer_scope->block_generics == generics) {
+        current_flow = outer_scope;
     } else {
         TypeFlow* flow = arena_new(arena, TypeFlow);
-        *flow = (TypeFlow){ .block = true, .block_generics = generics, .covariant = true };
+        *flow = (TypeFlow){ .scope = TYPE_FLOW_BLOCK, .block_generics = generics, .covariant = true };
         current_flow = flow;
+    }
+    return saved;
+}
+
+TypeFlow const* type_flow_enter_owner(Symbol const* owner, Arena* arena) {
+    TypeFlow const* saved = current_flow;
+    TypeFlow const* outer_scope = current_flow && current_flow->scope ? current_flow : nullptr;
+    if (owner) {
+        TypeFlow* flow = arena_new(arena, TypeFlow);
+        *flow = (TypeFlow){ .scope = TYPE_FLOW_OWNER, .owner = owner, .covariant = true, .outer = outer_scope };
+        current_flow = flow;
+    } else {
+        current_flow = outer_scope;
     }
     return saved;
 }

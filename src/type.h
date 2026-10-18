@@ -85,24 +85,32 @@ typedef struct UniqueSymbolDecl {
 // The true branches of conditional types a type node is in, innermost first, as tsc's getConditionalFlowTypeOfType
 // walks up to them from the node (up to the enclosing statement), and the templates of mapped types without `as`.
 // Set by the resolve walk (type_lookup_names()), so a node lowers to the same type whoever lowers it: see
-// conditional_flow_type() (lower.c). The outermost may be a Block's (`block`): the node is inside a function body (or a
-// nested block), past which tsc's isTypeParameterPossiblyReferenced takes every type parameter declared outside to be
-// referenced (`block_generics`, the type parameter lists around the body; never null)
+// conditional_flow_type() (lower.c). Outermost, past the true branches and templates, come the scopes tsc's
+// isTypeParameterPossiblyReferenced cares about (`scope`): a Block (a function body: every type parameter declared
+// around it is possibly referenced, `block_generics`, never null) or a class or interface declaration (`owner`: its
+// type parameters and `this` are when it is declared more than once). Every node lowers to the same type whoever
+// lowers it first
 typedef struct Arena Arena;
+typedef enum TypeFlowScope : uint8_t {
+    TYPE_FLOW_BRANCH = 0, // A true branch or a mapped type's template, not a scope
+    TYPE_FLOW_BLOCK,
+    TYPE_FLOW_OWNER,
+} TypeFlowScope;
 typedef struct TypeFlow {
-    struct TernaryType const* ternary; // Null for a mapped type's template and a Block
+    struct TernaryType const* ternary; // Null for a mapped type's template and a scope
     union {
         struct InterfaceMember const* mapped;
         struct OuterGenerics const* block_generics;
+        struct Symbol const* owner;
     };
     bool covariant; // An even number of parameter positions lie between the true branch and the node
-    bool block;
+    TypeFlowScope scope;
     struct TypeFlow const* outer;
 } TypeFlow;
 
-// The true branches and mapped type templates around the node (not just a Block's flow)
+// The true branches and mapped type templates around the node (not just scopes)
 static inline bool type_flow_in_branch(TypeFlow const* flow) {
-    return flow && !flow->block;
+    return flow && flow->scope == TYPE_FLOW_BRANCH;
 }
 
 typedef struct TypeNode {
@@ -161,7 +169,7 @@ typedef struct TypeNode {
     // first token's (`readonly`, a parenthesized one's `(`): declaration maps map the nodes declaration emit reuses
     // (decl_map_type_start(), decl_map.h), and their comments are copied
     u32 pos;
-    TypeFlow const* flow; // Null outside true branches
+    TypeFlow const* flow; // Null outside true branches and scopes
     union {
         struct {
             bool self_referential_error;
@@ -330,6 +338,8 @@ TypeFlow const* type_flow_enter_parameter(void);
 // parameter lists around a block body (TypeFlow.block), null for an arrow function's expression body (no Block)
 TypeFlow const* type_flow_enter_statements(struct OuterGenerics const* generics, bool block, Arena* arena);
 TypeFlow const* type_flow_enter_mapped_template(struct InterfaceMember* mapped);
+// The members (and heritage and type parameters) of a class or interface declaration, `owner` its symbol
+TypeFlow const* type_flow_enter_owner(struct Symbol const* owner, Arena* arena);
 void type_flow_restore(TypeFlow const* saved);
 // A type literal with index signatures whose members type_typecheck() checks against them (TS2411/TS2413)
 bool type_literal_has_index_constraints(TypeNode const* me);

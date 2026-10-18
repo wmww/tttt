@@ -860,6 +860,9 @@ typedef struct FreeParams {
     // The type parameter lists around the Block the nodes are in (TypeFlow.block), which tsc's
     // isTypeParameterPossiblyReferenced takes to be referenced whatever the nodes mention: free_params_add_block()
     struct OuterGenerics const* block;
+    // The class or interface declaration the nodes are in (TypeFlow.owner): when it's declared more than once, its type
+    // parameters and `this` are free too (tsc's isTypeParameterPossiblyReferenced: more than one declaration)
+    Symbol const* owner;
 } FreeParams;
 
 static void free_params_bind(FreeParams* out, Ty const* param) {
@@ -890,9 +893,16 @@ static void free_params_add(FreeParams* out, Ty const* param) {
 // nodes mention (tsc's isTypeParameterPossiblyReferenced walks up from the node and gives up at a Block). After the
 // walk: none of them is bound in the nodes
 static void free_params_add_block(Checker* me, FreeParams* out) {
-    if (!out->block || out->unknown) return;
-    TyList around = ty_outer_type_params(me, out->block);
-    for (u32 i = 0; i < around.len; i++) free_params_add(out, around.data[i]);
+    if (out->unknown) return;
+    if (out->block) {
+        TyList around = ty_outer_type_params(me, out->block);
+        for (u32 i = 0; i < around.len; i++) free_params_add(out, around.data[i]);
+    }
+    Ty const* owner = out->owner ? ty_declared_type_of(me, out->owner) : nullptr;
+    if (owner && ty_declared_is_merged(owner)) {
+        for (u32 i = 0; i < owner->declared.type_params.len; i++) free_params_add(out, owner->declared.type_params.data[i]);
+        if (owner->declared.this_param) free_params_add(out, owner->declared.this_param);
+    }
 }
 
 static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* out);
@@ -936,8 +946,12 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
         u32 saved_extends = out->in_extends;
         out->in_extends = 0;
         for (TypeFlow const* flow = node->flow; flow; flow = flow->outer) {
-            if (flow->block) {
+            if (flow->scope == TYPE_FLOW_BLOCK) {
                 out->block = flow->block_generics;
+                continue;
+            }
+            if (flow->scope == TYPE_FLOW_OWNER) {
+                out->owner = flow->owner;
                 continue;
             }
             if (!flow->ternary) continue;
@@ -1189,26 +1203,8 @@ bool ty_function_free_params(Checker* me, FunctionImpl const* function, TyList* 
     return cached->known;
 }
 
-// Whether `at` is in one of the declarations of a merged owner (LowerCtx.merged_owner): the walk of a declaration
-// (ty_of_node()) can lower nodes elsewhere, an annotation it needs the type of
-static bool span_in_merged_owner(Checker* me, uint16_t owner, Span at) {
-    Symbol const* symbol = my merged_owners.data[owner - 1]->declared.symbol;
-    char const* start = span_start_ptr(at);
-    for (u32 i = 0; span_source(at) && i < symbol->decl_count; i++) {
-        Span full = symbol->decls[i].full;
-        if (span_source(full) == span_source(at) && start >= full.buf && start < full.buf + full.size) return true;
-    }
-    return false;
-}
-
-// Only when some type parameter is in scope (ctx.generic), otherwise there's nothing to find. `at`: where the node is
-static void anonymous_set_free_params(Checker* me, Ty* ty, FreeParams found, Span at) {
-    // (The type parameters of a class or interface declared more than once count wherever they're in scope)
-    if (ty->anonymous.ctx.merged_owner && !found.unknown && span_in_merged_owner(me, ty->anonymous.ctx.merged_owner, at)) {
-        Ty const* owner = my merged_owners.data[ty->anonymous.ctx.merged_owner - 1];
-        for (u32 i = 0; i < owner->declared.type_params.len; i++) free_params_add(&found, owner->declared.type_params.data[i]);
-        if (owner->declared.this_param) free_params_add(&found, owner->declared.this_param);
-    }
+// Only when some type parameter is in scope (ctx.generic), otherwise there's nothing to find
+static void anonymous_set_free_params(Checker* me, Ty* ty, FreeParams found) {
     u32 kept = 0;
     for (u32 i = 0; i < found.len; i++) {
         bool bound = false;
@@ -1317,8 +1313,7 @@ Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx
             if (found.len == MAX_FREE_PARAMS) found.unknown = true;
             else found.params[found.len++] = arg;
         }
-        Span span = node->tag == TYPE_CALLABLE ? function_impl_args_span(node->callable->function) : node->interface.span;
-        anonymous_set_free_params(me, ret, found, span);
+        anonymous_set_free_params(me, ret, found);
     }
     // Collecting can intern type parameters, so the slot is looked up again
     *intern_slot(me, &my links, key, 2) = ret;
@@ -1339,7 +1334,7 @@ Ty const* ty_anonymous_from_overloads(Checker* me, FunctionImpl const* const* ov
     if (ctx.generic) {
         FreeParams found = {0};
         for (u32 i = 0; i < count; i++) collect_free_params_of_function(me, overloads[i], &found);
-        anonymous_set_free_params(me, ret, found, count ? function_impl_args_span(overloads[0]) : span_null);
+        anonymous_set_free_params(me, ret, found);
     }
     *intern_slot(me, &my links, key, 2) = ret;
     return ret;
@@ -3920,7 +3915,7 @@ static Ty const* conditional_flow_type(Checker* me, TypeNode const* node, Ty con
     Ty const* actual = nullptr;
     TyBuf constraints = {0};
     bool type_variable = ty->kind == TY_TYPE_PARAM || ty->kind == TY_INDEXED;
-    for (TypeFlow const* flow = node->flow; flow && !flow->block; flow = flow->outer) {
+    for (TypeFlow const* flow = node->flow; flow && !flow->scope; flow = flow->outer) {
         if (flow->mapped) {
             Ty const* implied = mapped_key_flow_constraint(me, flow->mapped, ty, &actual);
             if (implied) ty_buf_push(&constraints, implied);

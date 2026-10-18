@@ -39,6 +39,8 @@ void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs
     scope_rare_mut(this_scope)->this_ref = (ThisRef){ .kind = THIS_INTERFACE, .symbol = my symbol, .interface = me };
     names = this_scope;
     check(my type.tag == TYPE_INTERFACE);
+    // (Its nodes know which interface they are in: tsc's isTypeParameterPossiblyReferenced, TypeFlow.owner)
+    TypeFlow const* saved_flow = type_flow_enter_owner(my symbol, binder_arena(names->binder));
     // HACK (tsc's too, for pre-3.0 libs): a `symbol` property of the global `SymbolConstructor` is a unique symbol
     bool symbol_constructor = my symbol && !my symbol->parent && !my symbol->is_local &&
         csview_equals(my symbol->name, "SymbolConstructor");
@@ -64,6 +66,7 @@ void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs
         interface_member_lookup_names(i, names, errs);
     }
     names->flow->in_type_query = saved_type_query;
+    type_flow_restore(saved_flow);
     scope_release(this_scope, pending_mark);
 }
 
@@ -247,11 +250,7 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
             "An interface can only extend an identifier/qualified-name with optional type arguments.");
     }
 
-    // (Its members' anonymous types know the declared type is merged whoever lowers them first, see LowerCtx.merged_owner)
-    uint16_t saved_owner = current_checker->walk_merged_owner;
-    if (my symbol) current_checker->walk_merged_owner = ty_merged_owner_index(current_checker, ty_declared_type_of(current_checker, my symbol));
     interface_typecheck(&my type.interface, my symbol, errs);
-    current_checker->walk_merged_owner = saved_owner;
     // Once for all declarations of the interface, by the first one that is checked (a lib's aren't, nor one in a
     // declaration file under skipLibCheck: a global augmentation in a .d.ts, react-scan's `interface Window`)
     InterfaceDecl const* first_checked = nullptr;

@@ -1096,6 +1096,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMergedOwnerPossiblyReferenced': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttMethodLiteralDefaultFreeParams': {
         errors: true,
         symbols: true,

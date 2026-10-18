@@ -1463,7 +1463,7 @@ void ty_check_spread_overrides(Checker* me, Ty const* type, TyWrittenProp const*
 }
 
 Ty const* ty_of_node(TypeNode const* node) {
-    return ty_from_node(current_checker, node, (LowerCtx){ .generic = true, .merged_owner = current_checker->walk_merged_owner });
+    return ty_from_node(current_checker, node, (LowerCtx){ .generic = true });
 }
 
 // Property and element access

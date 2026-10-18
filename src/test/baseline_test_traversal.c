@@ -1740,10 +1740,11 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
                 Ty const* owner = my method.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
                     ty_declared_type_of(checker, ctx->class_symbol);
                 Prop const* prop = name ? ty_get_prop(checker, owner, name) : nullptr;
-                // (A single signature prints as declared by the declaration it is: its annotations are reused)
-                Ty const* merged = prop && (prop->flags & PROP_METHOD) ? prop_type(checker, prop) : nullptr;
+                // (A single signature prints as declared by the declaration it is: its annotations are reused. The
+                // declared member, `this` not instantiated: tsc's type of the merged symbol)
                 Prop const* origin = prop;
                 while (origin && origin->target) origin = origin->target;
+                Ty const* merged = prop && (prop->flags & PROP_METHOD) ? prop_type(checker, origin) : nullptr;
                 // (An optional one's type has undefined)
                 Ty const* signatures = merged && (prop->flags & PROP_OPTIONAL) ? ty_without_undefined(checker, merged) : merged;
                 if (signatures && (signatures->flags & TYF_OBJECT) &&

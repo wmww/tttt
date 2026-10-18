@@ -622,7 +622,6 @@ void checker_drop(Checker* me) {
     free(my flow_shared);
     for (u32 i = 0; i < my call_errors_len; i++) error_ctx_drop(my call_errors[i]);
     free(my call_errors);
-    ty_buf_drop(&my merged_owners);
     arena_drop(&my arena);
     free(me);
 }

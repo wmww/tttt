@@ -623,7 +623,16 @@ static void link_overload_implementations(ClassDecl* me) {
     }
 }
 
+static void class_decl_lookup_names_in_owner(ClassDecl* me, Scope* names, ErrorCtx* errs);
+
 void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
+    // (Its nodes know which class they are in: tsc's isTypeParameterPossiblyReferenced, TypeFlow.owner)
+    TypeFlow const* saved_flow = type_flow_enter_owner(my symbol, binder_arena(names->binder));
+    class_decl_lookup_names_in_owner(me, names, errs);
+    type_flow_restore(saved_flow);
+}
+
+static void class_decl_lookup_names_in_owner(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     // tsc's setNodeLinksForPrivateIdentifierScope and checkWeakMapSetCollision: private members are emitted through
     // WeakMap and WeakSet up to ES2021, which a runtime declaration of those names around the class would shadow
     CompilerOptions const* options = compiler_options();
