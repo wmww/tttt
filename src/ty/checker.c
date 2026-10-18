@@ -3345,21 +3345,15 @@ static bool mapped_keys_have_index_signature(Ty const* constraint) {
     // resolving its members here would, xstate's recursive StateId then ran into TS5115 without strictNullChecks)
     // HACK: an anonymous object indexed by never is never, its members unresolved. tsc reads an index signature there
     // (`{ [k: string]: X }[never]` is X), but resolving the members of xstate's `{ [K in never]: StateId<...> }` (and
-    // the other `{}`s on the way), or even just their keys (ty_mapped_info_unexpanded() of the instantiation),
-    // instantiated enough to push its recursive StateId into TS5115 without strictNullChecks (flagflip nosnc/sloppy:
-    // +7); tsc never instantiates a keyless mapped type's template. Only a mapped type whose keys are known from its
-    // declaration reads its index signature: keys written as a primitive or as a type parameter the instantiation maps
-    // to string, number or symbol (`Record<string, T>[never]` is T, es-toolkit's sampleSize)
+    // the other `{}`s on the way) instantiated enough to push its recursive StateId into TS5115 without
+    // strictNullChecks (flagflip nosnc/sloppy: +7); tsc never instantiates a keyless mapped type's template. Only a
+    // mapped type reads its index signature, its keys known from its declaration (instantiated, unexpanded):
+    // `Record<string, T>[never]` is T (es-toolkit's sampleSize), `Partial<Record<string, T>>[never]` T | undefined
     if (object->kind == TY_ANONYMOUS) {
         if (!object->anonymous.mapped) return index;
-        Ty const* declared = object->anonymous.target ? object->anonymous.target : object;
-        if (declared->kind != TY_ANONYMOUS || declared->anonymous.target || !declared->anonymous.mapped) return index;
-        MappedInfo const* mapped = ty_mapped_info_unexpanded(me, declared);
-        if (!mapped || mapped->name_type) return index;
-        Ty const* keys = mapped->constraint;
-        if (keys->kind == TY_TYPE_PARAM && object->anonymous.mapper) keys = ty_instantiate(me, keys, object->anonymous.mapper);
-        else if (keys->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) return index;
-        return mapped_keys_have_index_signature(keys) ? nullptr : index;
+        MappedInfo const* mapped = ty_mapped_info_unexpanded(me, object);
+        if (!mapped || mapped->name_type || (mapped->constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return index;
+        return mapped_keys_have_index_signature(mapped->constraint) ? nullptr : index;
     }
     if (ty_is_tuple(object)) {
         TyList elements = ty_reference_args(me, object);

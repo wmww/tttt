@@ -495,8 +495,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   `index_signatures_incomplete` (MembersRare) and check_access/TS7053 don't report what it seems to lack (react-
   navigation's `Partial<{ [E in keyof (EventMap & Core)]: X }>[string]`, better-auth); its accesses are still the
   error type where tsc has `X[string] | undefined`. Fixing the inference removes both.
-- `never_index_read` (checker.c): an anonymous object indexed by never is never, except a mapped type whose keys its
-  declaration tells (`Record<string, T>[never]` is T); tsc reads index signatures everywhere, but resolving xstate's
+- `never_index_read` (checker.c): an anonymous object indexed by never is never, except a mapped type, whose keys its
+  declaration tells (`Record<string, T>[never]` is T, the instantiated declaration's keys); tsc reads index signatures everywhere, but resolving xstate's
   keyless mapped types tipped TS5115 (flagflip nosnc/sloppy +7). Correct: instantiation accounting that doesn't
   depend on member resolution, or a lazy template for keyless mapped types.
 - `rest_literal()` (ty/lower.c) / `object_symbol()` (ty/order.c): a destructuring rest's binding symbol, which orders

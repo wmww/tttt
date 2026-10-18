@@ -1,0 +1,26 @@
+//// [test/cases/ttttNeverIndexMappedKeys.ts] ////
+
+=== ttttNeverIndexMappedKeys.ts ===
+// A mapped type over keys with an index signature indexed by never reads it, its keys known from its declaration
+// instantiated (tsc's getIndexedAccessType reads the index signature: `Partial<Record<string, V>>[never]` is V | undefined)
+type R<T> = { [K in keyof T]: number };
+>R : Symbol(R, Decl(ttttNeverIndexMappedKeys.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverIndexMappedKeys.ts, 2, 7))
+>K : Symbol(K, Decl(ttttNeverIndexMappedKeys.ts, 2, 15))
+>T : Symbol(T, Decl(ttttNeverIndexMappedKeys.ts, 2, 7))
+
+type X = R<{ [k: string]: 1 }>[never];
+>X : Symbol(X, Decl(ttttNeverIndexMappedKeys.ts, 2, 39))
+>R : Symbol(R, Decl(ttttNeverIndexMappedKeys.ts, 0, 0))
+>k : Symbol(k, Decl(ttttNeverIndexMappedKeys.ts, 3, 14))
+
+type Y = R<{ a: 1 }>[never];
+>Y : Symbol(Y, Decl(ttttNeverIndexMappedKeys.ts, 3, 38))
+>R : Symbol(R, Decl(ttttNeverIndexMappedKeys.ts, 0, 0))
+>a : Symbol(a, Decl(ttttNeverIndexMappedKeys.ts, 4, 12))
+
+type Z = Partial<Record<string, boolean>>[never];
+>Z : Symbol(Z, Decl(ttttNeverIndexMappedKeys.ts, 4, 28))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+

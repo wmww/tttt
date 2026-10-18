@@ -1126,6 +1126,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttNeverIndexMappedKeys': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNeverIndexRecord': {
         errors: true,
         symbols: true,
