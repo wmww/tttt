@@ -2620,7 +2620,8 @@ static Ternary props_related_impl(
         u32 missing_count = 0;
         for (u32 i = 0; i < target_members->prop_count; i++) {
             Prop const* target_prop = target_members->props[i];
-            if ((target_prop->flags & PROP_OPTIONAL) || find_prop(me, source, target_prop->name, 0).found) continue;
+            // (Untyped: tsc's getUnmatchedProperties asks getPropertyOfType)
+            if ((target_prop->flags & PROP_OPTIONAL) || source_has_prop(me, source, target_prop->name, 0)) continue;
             if (is_static_private_name(me, target_prop)) continue;
             if (missing_count < c_arraylen(missing)) missing[missing_count] = target_prop;
             if (!missing_count) missing_prop = target_prop;
