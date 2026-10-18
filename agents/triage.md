@@ -45,3 +45,11 @@ gap to bun is per-checker re-derivation (bugs/perf_leads.md).
   files to checkers by weighted FENNEL partitioning (compiler/checkerpool.go), so emulating it means porting that and
   matching per-checker check order: not worth it. Decide: have dtsdiff (and maybe the sweeps) also cache tsgo's
   `--singleThreaded` output and report "matches tsgo single-threaded" as its own verdict, so the real tail is visible.
+- (2026-10-18, todo entry 7, refresh 2) **dtsdiff on the new checkJs projects, uninvestigated**: rocket 264 / 316
+  files, eslint-plugin-jsdoc 319 / 338, markdown-magic 124 / 131 and its packages/core 64 / 80, block-transformer
+  0 / 1 (JavaScript declaration emit, plan 64 stage 6 territory: `.d.ts.map` mappings missing at names and line ends,
+  "type text", "comment", "member order", markdown-magic's 10 extra files where tsgo reports a declaration diagnostic).
+  `scripts/dtsdiff.py -f '^(rocket|eslint-plugin-jsdoc|markdown-magic)'` then `--show`. Worth a fan-out bucket once
+  the TypeScript tail is thin. Also: 3 refresh repos were dropped for their installs (repos.txt comments); the
+  installer runs yarn 1 flags when a berry lockfile has no `packageManager` (algoliasearch), fixable in
+  thirdparty/ensure-sources.sh's install_command() by sniffing the lockfile's `__metadata`.

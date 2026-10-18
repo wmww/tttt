@@ -77,9 +77,11 @@ types components) are the oracle, not the goal; real projects that are clean und
   `/usr/bin/time` peak at K1 and at the defaults next to bun's, every corpus (`scripts/bench.sh --bun`); the 12-core
   run is the human's.
 - **Refresh the breadth oracles** (2026-10-16): a saturated sweep measures nothing; every few windows add repositories
-  chosen by a different rule and report the day-one match rate (done once, 2026-10-17: 96.1%; the recipe is
+  chosen by a different rule and report the day-one match rate (2026-10-17: 96.1%; 2026-10-18, declaration-emitting
+  libraries and checkJs projects: 97.1%, dtsdiff 34 / 41 projects; the recipe is
   repos.txt's "Plan 77" comment, the steps measurements.md "Plan 77": append rows, `thirdparty/ensure-sources.sh
-  NAMES`, `scripts/sourcesweep.py --tsc-new`, then `-f '^(names)(/|$)'` before fixing anything).
+  NAMES`, `scripts/sourcesweep.py --tsc-new`, `scripts/dtsdiff.py --tsc -f RE`, then both with `-f '^(names)(/|$)'` before
+  fixing anything; candidates from `scripts/reposearch.py`).
 - **The type count is the perf oracle** (2026-10-11): tsgo's `--extendedDiagnostics` `Types`/`Instantiations` are
   machine-independent and directly comparable with tttt's; a ratio far above 1 is a missing cache or a runaway, found
   without timing anything on this shared 4-vCPU box (`scripts/perfsweep.py`).

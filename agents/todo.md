@@ -48,10 +48,12 @@ stay faster than bun on every corpus and the sweep's tail. Output byte-identical
    `--emit` 403 / 410; suite 13823 / 13859 (dts 1864 / 1886; +24 own tests, +1 tsc test), every oracle at the starting point
    (sourcesweep 3559 / 3566, redux-toolkit's text now tsc's). Tail is mostly tsgo's checker split (triage.md);
    new bug: bugs/expando_instantiation.md (an expando function in a generic one is never instantiated).
-7. **Second fresh-repository refresh** (plan 77's recipe, vision.md "Refresh the breadth oracles"): ~25 repositories
-   chosen by a new rule: libraries that emit declarations (`declaration`/`emitDeclarationOnly` configs, feeding
-   dtsdiff) and JavaScript projects with `checkJs`. Report the day-one match rate on both the source sweep and dtsdiff
-   before fixing anything, then fix what fits.
+7. Done (2026-10-18): second refresh, 22 repositories (16 declaration-emitting libraries, 9 checkJs projects, 3
+   dropped for their installs; repos.txt "Refresh 2"). **Day one: source sweep 66 / 68 projects (97.1%), dtsdiff
+   34 / 41 projects, 4007 / 4100 files**. Fixed: `export default async x =>` (parser), `this.f = this.f.bind(this)`
+   (binder), elaborated JSDoc `export default` (checker); left rocket's order-dependent TS7031
+   (bugs/context_on_demand.md, architectural) and vest's dts items (bugs/dts_emit.md). Source sweep 3626 / 3634,
+   dtsdiff 1245 / 1274, every other oracle at the starting point; suite 13826 / 13862.
 8. **Perf session**: webpack's serial declare (plan 72 "Declare + link"), the checker count for a large shared warm
    state (perf_leads.md: dokploy, inbox-zero; must not lose a corpus against bun), instructions; `scripts/bench.sh
    --runs 3 --bun` into plan 67 "Where it stands".

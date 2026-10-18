@@ -12,6 +12,20 @@ elaboration text differs (`scripts/clidiff.py --corpora`). **The 12-core machine
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Refresh 2, declaration-emitting libraries and checkJs projects (2026-10-18, todo entry 7)
+25 repositories by a third rule (repos.txt's "Refresh 2" comment, candidates from `scripts/reposearch.py`): 16
+TypeScript libraries whose root tsconfig.json emits declarations, 9 JavaScript projects with checkJs (rarer: 19 topics
+searched for 9); 3 dropped for their installs. 68 projects, 41 of them dtsdiff projects. **Day one (35d49066,
+before any fix): source sweep 66 / 68 (97.1%), 20 / 22 repos; dtsdiff 34 / 41 projects, 4007 / 4100 files** (the
+mismatching files mostly the checkJs projects' JavaScript emit, plus vest). Root causes on the sweep, all JavaScript:
+`export default async x =>` parsed with an `async` modifier (TS1042), `this.f = this.f.bind(this)` declaring a
+member beside the method (TS7008), JSDoc-typed `export default {...}` related without elaboration (TS2322 position),
+and an order-dependent TS7031 (bugs/context_on_demand.md). **After: 67 / 68**, the whole sweep 3626 / 3634 (the old 7
+plus rocket), dtsdiff 1245 / 1274. Both refreshes say the same: the checker generalizes to new TypeScript (>= 96%);
+JavaScript is where new code finds bugs (3 of 4 root causes here). Instructions flat (tsc 4.483, type-fest 10.469,
+webpack 9.237, drizzle 6.512 +1.3%, effect 9.351, vscode 88.314 G; all within 2% of test/instrcount.txt); every other
+oracle at the window's starting point.
+
 ## Deferred bodies: drops leak nothing, single-body re-materialization (2026-10-18, todo entry 1)
 - Drop leak (malloc a block_drop() walk would still free at exit, vscode K1 T1): 12.6 -> 0.7 MB after sealing
   literals/templates/object keys and moving the walk's lists into the arena; valgrind on vscode K1 then ~62 KB
