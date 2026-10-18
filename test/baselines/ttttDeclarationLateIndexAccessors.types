@@ -1,0 +1,54 @@
+//// [test/cases/ttttDeclarationLateIndexAccessors.ts] ////
+
+=== backref.ts ===
+export declare const BACK_REF: symbol;
+>BACK_REF : symbol
+
+=== a.ts ===
+import { BACK_REF } from './backref';
+>BACK_REF : symbol
+
+declare function getProp(): any;
+>getProp : () => any
+
+declare const k2: symbol;
+>k2 : symbol
+
+declare const k3: string;
+>k3 : string
+
+export class SsrNode {
+>SsrNode : SsrNode
+
+  parentComponent: number = 1;
+>parentComponent : number
+>1 : 1
+
+  get [BACK_REF]() { return getProp(); }
+>[BACK_REF] : any
+>BACK_REF : symbol
+>getProp() : any
+>getProp : () => any
+
+  get [k2]() { return 1; }
+>[k2] : number
+>k2 : symbol
+>1 : 1
+
+  set [k2](v: number) {}
+>[k2] : number
+>k2 : symbol
+>v : number
+
+  set [k3](v: string) {}
+>[k3] : string
+>k3 : string
+>v : string
+
+  static get [k3]() { return "a" as const; }
+>[k3] : "a"
+>k3 : string
+>"a" as const : "a"
+>"a" : "a"
+}
+

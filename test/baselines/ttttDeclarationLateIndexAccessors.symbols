@@ -1,0 +1,50 @@
+//// [test/cases/ttttDeclarationLateIndexAccessors.ts] ////
+
+=== backref.ts ===
+export declare const BACK_REF: symbol;
+>BACK_REF : Symbol(BACK_REF, Decl(backref.ts, 0, 20))
+
+=== a.ts ===
+import { BACK_REF } from './backref';
+>BACK_REF : Symbol(BACK_REF, Decl(a.ts, 0, 8))
+
+declare function getProp(): any;
+>getProp : Symbol(getProp, Decl(a.ts, 0, 37))
+
+declare const k2: symbol;
+>k2 : Symbol(k2, Decl(a.ts, 2, 13))
+
+declare const k3: string;
+>k3 : Symbol(k3, Decl(a.ts, 3, 13))
+
+export class SsrNode {
+>SsrNode : Symbol(SsrNode, Decl(a.ts, 3, 25))
+
+  parentComponent: number = 1;
+>parentComponent : Symbol(SsrNode.parentComponent, Decl(a.ts, 4, 22))
+
+  get [BACK_REF]() { return getProp(); }
+>[BACK_REF] : Symbol(SsrNode[BACK_REF], Decl(a.ts, 5, 30))
+>BACK_REF : Symbol(BACK_REF, Decl(a.ts, 0, 8))
+>getProp : Symbol(getProp, Decl(a.ts, 0, 37))
+
+  get [k2]() { return 1; }
+>[k2] : Symbol(SsrNode[k2], Decl(a.ts, 6, 40))
+>k2 : Symbol(k2, Decl(a.ts, 2, 13))
+
+  set [k2](v: number) {}
+>[k2] : Symbol(SsrNode[k2], Decl(a.ts, 7, 26))
+>k2 : Symbol(k2, Decl(a.ts, 2, 13))
+>v : Symbol(v, Decl(a.ts, 8, 11))
+
+  set [k3](v: string) {}
+>[k3] : Symbol(SsrNode[k3], Decl(a.ts, 8, 24))
+>k3 : Symbol(k3, Decl(a.ts, 3, 13))
+>v : Symbol(v, Decl(a.ts, 9, 11))
+
+  static get [k3]() { return "a" as const; }
+>[k3] : Symbol(SsrNode[k3], Decl(a.ts, 9, 24))
+>k3 : Symbol(k3, Decl(a.ts, 3, 13))
+>const : Symbol(const)
+}
+

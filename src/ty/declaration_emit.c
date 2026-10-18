@@ -2225,7 +2225,8 @@ static LateIndexMember* late_index_members(ClassDecl const* cls, u32* count) {
     } while (0)
     for_each (i, vec_class_item, &cls->items) {
         if (is_internal_declaration(i->span)) continue;
-        Expr const* key = i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_NONE ? i->method.computed_key :
+        // (Accessors too, each its own symbol of its own type: a getter and a setter of one name are two members)
+        Expr const* key = i->tag == CLASS_ITEM_METHOD ? i->method.computed_key :
             i->tag == CLASS_ITEM_FIELD ? i->field.computed_key : nullptr;
         uint8_t kind = late_index_kind(key);
         if (!kind) continue;
@@ -4493,7 +4494,10 @@ static void emit_late_indexes(Walk* me, ClassDecl const* cls) {
                 w_lit(me, "]");
                 if (m->optional) w_lit(me, "?");
                 w_lit(me, ": ");
-                if (m->item && m->item->tag == CLASS_ITEM_METHOD) {
+                if (m->item && m->item->tag == CLASS_ITEM_METHOD && m->item->method.accessor != CLASS_ACCESSOR_NONE) {
+                    w_type(me, ty_object_literal_accessor_type(my checker, &m->item->method.func,
+                        m->item->method.accessor == CLASS_ACCESSOR_GET));
+                } else if (m->item && m->item->tag == CLASS_ITEM_METHOD) {
                     Ty const* type = ty_function_type(my checker, &m->item->method.func);
                     if (m->optional && my strict_null_checks) {
                         type = ty_union(my checker, (Ty const*[]){ type, ty_intrinsic(my checker, TY_UNDEFINED) }, 2, nullptr, (TyList){0});

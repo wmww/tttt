@@ -377,6 +377,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationLateIndexAccessors': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationLiteralText': {
         errors: true,
         symbols: true,
