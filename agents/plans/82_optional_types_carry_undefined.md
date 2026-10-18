@@ -120,6 +120,12 @@ anyway (`scripts/instrcount.sh`).
 - **Cross-check**: `TTTT_CHECK_OPTIONALITY` fired only where tsc keeps the type bare too (destructuring-default
   props; `typeof globalThis & { x?: T }`, whose namespace variable has no say), on the suite and every corpus; the
   helper and every reader add are deleted. `optional_adds_undefined()` is gone.
+- **What the full oracles found** (the suite and corpora were clean after the flip; flagflip's vscode eopt cell and
+  dtsdiff were not): an intersection's property against the target's own inherited one was skipped as "the same
+  symbol" because its type now equalled it (`FoundProp.synthetic` says it directly); a partial spread's missing
+  dropped the annotation reuse; a partial spread's method printed as a method (tsc makes them Properties; the bare
+  representation's union got it right by accident). Each has a `test/cases` repro. Lesson for stage 3: run flagflip
+  and dtsdiff early, they see what the suite doesn't.
 - Left as is: the annotation-based adds (class fields' contextual/declared types, interface members, computed index
   signatures from AST types), `optional_type()` comparisons in `spread_props_of()`'s annotation reuse (normalizing,
   correct either way), `is_reducible_intersection()` strips an optional literal's undefined (hacks.md).

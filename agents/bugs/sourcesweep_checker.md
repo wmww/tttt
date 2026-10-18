@@ -261,3 +261,24 @@ full sweep: pixijs (binder merge unit), better-auth (2), es-toolkit, knip (entri
   needs the property's existence, which the scope pass doesn't know (lower.c export_equals_property_type() decides it
   later). Only in programs that already have an error at the import. Repro: test/cases/ttttImportExportEqualsPropertyUmdNamespace.ts
   with the `{ dbg: ... }` intersection dropped and the import renamed.
+
+## tiptap/demos NodeViewContent.tsx:19 +TS2590 (plan 82 stage 2, 2026-10-18)
+New since optional property types carry their undefined; tsgo reports TS2604 at the tag (`<Tag>`: "does not have any
+construct or call signatures") and nothing else. Cut-down (react from tiptap's `node_modules/@types/react` via `paths`):
+```tsx
+export type P<T extends keyof React.JSX.IntrinsicElements = 'div'> = { as?: NoInfer<T> } & ComponentProps<T>
+export function C<T extends keyof React.JSX.IntrinsicElements = 'div'>({ as: Tag = 'div' as T }: P<T>) { return <Tag /> }
+```
+The root cause predates plan 82: tttt's type of the tag reference is `NoInfer<T> | (NoInfer<T> & string)` (before:
+`NoInfer<T> | (NoInfer<T> & (string | undefined))`), where tsgo's is `T` (types baseline: the binding is `NoInfer<T>`, the
+reference `T`). Without the `ComponentProps<T>` part (`{ as?: NoInfer<T> }` alone) tttt says `T` and matches; with a
+custom JSX namespace it matches too, so it's React's typings: something adds a `string` part (LinkHTMLAttributes'
+`as?: string` is the only `as` in them). The old 3-member tag union had a member without signatures, so
+`ty_resolve_jsx_element()` found none and said TS2604 like tsgo by luck; the new 2-member one gets the union signature of
+all ~178 intrinsic elements (tsgo's getUnionSignatures would combine them too, for `T`'s apparent union), whose props
+intersection then explodes in `is_discriminant_property()` (`ref` over 170 parts). Two things to find: where the
+`& string` comes from (the flow type of the reference, or the destructured element's type from the intersection
+`P<T>["as"]`), and why tsgo gets TS2604 for `T` (its apparent type: maybe `keyof IntrinsicElements` stays an index
+type whose apparent is `string | number | symbol`, a member without signatures). tsgo also defers an intersection
+property's type past two parts (createUnionOrIntersectionProperty) and decides discriminants from part flags; tttt's
+`is_discriminant_property()` computes the intersection.

@@ -28,8 +28,10 @@ stay faster than bun on every corpus and the sweep's tail. Output byte-identical
    because the adds are idempotent. A one-line flip loses 36 tests and adds 20 corpus diagnostics, all in predicted
    classes. Cost: +0.1% types, effect +4% / ~+1% wall. Stage 2 sized at one session, stage 3 (tuples, parameters) at
    one more.
-3. **Plan 82 stage 2** (properties): the flip, bare-reliant readers fixed, the `TTTT_CHECK_OPTIONALITY` cross-check,
-   reader adds deleted, the intersection hack gone.
+3. Done (2026-10-18): plan 82 stage 2. Properties store their undefined (missing under exact), every reader add and
+   the intersection hacks deleted, `TTTT_CHECK_OPTIONALITY` silent before deletion. Suite 13795 / 13832 (+3 own
+   repro tests, +1 tsc test), every oracle at the starting point except the source sweep 3558 / 3566: tiptap/demos'
+   predicted TS2590, a pre-existing JSX tag type bug that matched tsc by luck before (bugs/sourcesweep_checker.md).
 4. **Plan 83** (re-entrant member resolution): fix, or a sized plan.
 5. **Plan 84** (tsgo's two-phase load): the package-id HACK deleted.
 6. **Declaration emit tail by fan-out** (bugs/dts_emit.md): up to four Opus sub-agents in worktrees, one dtsdiff /

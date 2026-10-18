@@ -32219,7 +32219,7 @@ const baselines = {
     'spreadObjectPermutations(exactoptionalpropertytypes=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadObjectWithIndexDoesNotAddUndefinedToLocalIndex': {
         errors: true,

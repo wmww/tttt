@@ -16,3 +16,4 @@ gap to bun is per-checker re-derivation (bugs/perf_leads.md).
   sequelize-typescript.ts:335: tsgo's own output differs by checker count there, CLAUDE.md), dokploy/apps/dokploy
   (didn't reproduce on a rerun: flaky). All the same with single-body re-materialization off. Worth a look whether
   dokploy's is a real order dependence (`scripts/kdiff.py -k 1 -m 0 -f dokploy`, a few runs).
+- From human: please claude-stop after triage, before next insights
