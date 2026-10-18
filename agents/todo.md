@@ -32,9 +32,10 @@ and RSS** for every perf claim at the defaults.
 3. Done (2026-10-18): plan 82 stage 3, the plan is complete and deleted (documentation.md "The missing type").
    Optional parameters and tuple elements carry their undefined, `ty_sig_param_type()` and `KEY_OPTIONAL_PARAM` are
    gone; every oracle unchanged (suite 13833, dtsdiff 1244, clidiff 3612, source sweep 3650 / 3658).
-4. **clidiff fan-out** (three worktree agents): the 54 text and 9 diagnostics mismatches (bugs/display.md buckets),
-   disjoint buckets per agent, 0 lost at merge (source sweep match sets and flagflip against the session start).
-   Target: half of them.
+4. Done (2026-10-18): clidiff fan-out (3 agents, 37 picks, 0 conflicts kept, 0 lost): clidiff 3612 -> **3665** /
+   3675 (text 54 -> 3: apollo vite, babel-traverse, tiptap/demos truncation; diagnostics 9 -> 7, written up in
+   bugs/sourcesweep_checker.md), webpack's text matches; suite 13833 -> 13865, every other oracle unchanged,
+   instructions flat (type-fest -0.9%).
 5. **Perf session**: per-body re-materialization (~20% of vscode's recycle cost, perf_leads.md "What the recycle
    budget costs") and the source sweep's types-ratio tail (`scripts/perfsweep.py`).
 6. **Real-code tail fan-out**: dtsdiff's real tail (bugs/dts_emit.md), the source sweep's 8

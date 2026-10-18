@@ -215,10 +215,10 @@ for object literals before choosing; ~1 session.
 
 
 ## CLI text mismatches (clidiff `text` verdicts)
-Same diagnostics by (file, line, column, code), other text. Full run 2026-10-18 (`scripts/clidiff.py`, from the caches,
-3675 projects): 3612 match, **54 `text`**, 9 `diagnostics` (the sweeps' business), 0 order/exit code/crash. Each needs
-a cut-down repro first (`scripts/clidiff.py -f '^PROJECT$' -v`; `-k KIND --last` lists a bucket's diagnostics). By
-mechanism, roughly by projects:
+Same diagnostics by (file, line, column, code), other text. After the 2026-10-18 fan-out (`scripts/clidiff.py`, 3675
+projects): 3665 match, **3 `text`** (was 54), 7 `diagnostics` (bugs/sourcesweep_checker.md), 0 order/exit code/crash.
+Each needs a cut-down repro first (`scripts/clidiff.py -f '^PROJECT$' -v`; `-k KIND --last` lists a bucket's
+diagnostics). Left:
 - **Truncation depth** (apollo-client/integration-tests/vite: `DeepPartial<TValue>` vs `DeepPartial<...>`, `(...)` vs
   `...`, and a TS2322 chain three lines shorter, `'undefined & TData' ... 'RegExp & CustomMaybeMaskedImplementation'`;
   babel-traverse `visitors.ts:168`: tsc's union starts with a `{}` member tttt lacks, `... 753 more` vs `754`, maybe a

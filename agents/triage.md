@@ -40,3 +40,6 @@ dtsdiff numbers went to bugs/dts_emit.md. The human's two directives and tsc-rs 
   interface JI extends _JI { output: unknown }
   interface J extends _J { _z: JI }
   ```
+- 2026-10-18 (clidiff fan-out): one oracles.py run reported dtsdiff tanstack-table/packages/table-core at 0 / 198
+  files; three reruns of `dtsdiff.py -f` matched 198 / 198 at the same commit. Load (clidiff/perfsweep running
+  alongside) or a sandbox flake; if it recurs, look at what dtsdiff records for that project (timeout? empty tree?).
