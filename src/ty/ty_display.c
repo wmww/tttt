@@ -6597,6 +6597,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         out_lit(d, "NoInfer<");
         ty_display(me, d, ty->substitution.base);
         out_lit(d, ">");
+        // (The global alias's name, after its argument: tsc's symbolToTypeNode, createAccessFromSymbolChain)
+        approx_add(d, entity_name_length(c_sv("NoInfer")));
         return;
     }
     // (A union or intersection prints reduced: tsc's typeToTypeNodeHelper without NoTypeReduction)

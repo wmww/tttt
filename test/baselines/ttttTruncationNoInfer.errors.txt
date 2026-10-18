@@ -1,0 +1,37 @@
+ttttTruncationNoInfer.ts(9,3): error TS1241: Unable to resolve signature of method decorator when called as an expression.
+  The runtime will invoke the decorator with 2 arguments, but the decorator expects 3.
+ttttTruncationNoInfer.ts(9,4): error TS1270: Decorator function return type 'void | TypedPropertyDescriptor<unknown>' is not assignable to type 'void | (<Entity extends EntityType, Hint extends string = never, Fields extends string = "*", Excludes extends string = never>(entityName: EntityName<Entity>, where: Partial<NoInfer<Entity>>, options?: FindOneOptions<...> | undefined) => Promise<...>)'.
+  Type 'TypedPropertyDescriptor<unknown>' is not assignable to type 'void | (<Entity extends EntityType, Hint extends string = never, Fields extends string = "*", Excludes extends string = never>(entityName: EntityName<Entity>, where: Partial<NoInfer<Entity>>, options?: FindOneOptions<...> | undefined) => Promise<...>)'.
+
+
+==== ttttTruncationNoInfer.ts (2 errors) ====
+    // `NoInfer<T>` counts its alias name towards the truncation length (tsc's symbolToTypeNode; mikro-orm's TS1270)
+    type EntityType = object;
+    type EntityName<T> = string | (new () => T);
+    type FilterQuery<T> = Partial<T>;
+    interface FindOneOptions<E, H extends string = never, F extends string = "*", X extends string = never> { e?: E; h?: H; f?: F; x?: X }
+    declare function Transactional(): MethodDecorator;
+    declare const em: { findOne(a: any, b: any, c: any): Promise<number> };
+    export class Repo {
+      @Transactional()
+      ~~~~~~~~~~~~~~~~
+!!! error TS1241: Unable to resolve signature of method decorator when called as an expression.
+!!! error TS1241:   The runtime will invoke the decorator with 2 arguments, but the decorator expects 3.
+!!! related TS6210 lib.decorators.legacy.d.ts:--:--: An argument for 'descriptor' was not provided.
+       ~~~~~~~~~~~~~~~
+!!! error TS1270: Decorator function return type 'void | TypedPropertyDescriptor<unknown>' is not assignable to type 'void | (<Entity extends EntityType, Hint extends string = never, Fields extends string = "*", Excludes extends string = never>(entityName: EntityName<Entity>, where: Partial<NoInfer<Entity>>, options?: FindOneOptions<...> | undefined) => Promise<...>)'.
+!!! error TS1270:   Type 'TypedPropertyDescriptor<unknown>' is not assignable to type 'void | (<Entity extends EntityType, Hint extends string = never, Fields extends string = "*", Excludes extends string = never>(entityName: EntityName<Entity>, where: Partial<NoInfer<Entity>>, options?: FindOneOptions<...> | undefined) => Promise<...>)'.
+      async findOne<
+        Entity extends EntityType,
+        Hint extends string = never,
+        Fields extends string = '*',
+        Excludes extends string = never,
+      >(
+        entityName: EntityName<Entity>,
+        where: FilterQuery<NoInfer<Entity>>,
+        options?: FindOneOptions<Entity, Hint, Fields, Excludes>,
+      ) {
+        return em.findOne(entityName, where as any, options);
+      }
+    }
+    

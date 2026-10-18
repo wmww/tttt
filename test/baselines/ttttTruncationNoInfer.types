@@ -1,0 +1,66 @@
+//// [test/cases/ttttTruncationNoInfer.ts] ////
+
+=== ttttTruncationNoInfer.ts ===
+// `NoInfer<T>` counts its alias name towards the truncation length (tsc's symbolToTypeNode; mikro-orm's TS1270)
+type EntityType = object;
+>EntityType : object
+
+type EntityName<T> = string | (new () => T);
+>EntityName : EntityName<T>
+
+type FilterQuery<T> = Partial<T>;
+>FilterQuery : Partial<T>
+
+interface FindOneOptions<E, H extends string = never, F extends string = "*", X extends string = never> { e?: E; h?: H; f?: F; x?: X }
+>e : E | undefined
+>h : H | undefined
+>f : F | undefined
+>x : X | undefined
+
+declare function Transactional(): MethodDecorator;
+>Transactional : () => MethodDecorator
+
+declare const em: { findOne(a: any, b: any, c: any): Promise<number> };
+>em : { findOne(a: any, b: any, c: any): Promise<number>; }
+>findOne : (a: any, b: any, c: any) => Promise<number>
+>a : any
+>b : any
+>c : any
+
+export class Repo {
+>Repo : Repo
+
+  @Transactional()
+>Transactional() : MethodDecorator
+>Transactional : () => MethodDecorator
+
+  async findOne<
+>findOne : <Entity extends EntityType, Hint extends string = never, Fields extends string = "*", Excludes extends string = never>(entityName: EntityName<Entity>, where: FilterQuery<NoInfer<Entity>>, options?: FindOneOptions<Entity, Hint, Fields, Excludes>) => Promise<number>
+
+    Entity extends EntityType,
+    Hint extends string = never,
+    Fields extends string = '*',
+    Excludes extends string = never,
+  >(
+    entityName: EntityName<Entity>,
+>entityName : EntityName<Entity>
+
+    where: FilterQuery<NoInfer<Entity>>,
+>where : Partial<NoInfer<Entity>>
+
+    options?: FindOneOptions<Entity, Hint, Fields, Excludes>,
+>options : FindOneOptions<Entity, Hint, Fields, Excludes> | undefined
+
+  ) {
+    return em.findOne(entityName, where as any, options);
+>em.findOne(entityName, where as any, options) : Promise<number>
+>em.findOne : (a: any, b: any, c: any) => Promise<number>
+>em : { findOne(a: any, b: any, c: any): Promise<number>; }
+>findOne : (a: any, b: any, c: any) => Promise<number>
+>entityName : EntityName<Entity>
+>where as any : any
+>where : Partial<NoInfer<Entity>>
+>options : FindOneOptions<Entity, Hint, Fields, Excludes> | undefined
+  }
+}
+

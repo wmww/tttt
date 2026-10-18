@@ -1,0 +1,98 @@
+//// [test/cases/ttttTruncationNoInfer.ts] ////
+
+=== ttttTruncationNoInfer.ts ===
+// `NoInfer<T>` counts its alias name towards the truncation length (tsc's symbolToTypeNode; mikro-orm's TS1270)
+type EntityType = object;
+>EntityType : Symbol(EntityType, Decl(ttttTruncationNoInfer.ts, 0, 0))
+
+type EntityName<T> = string | (new () => T);
+>EntityName : Symbol(EntityName, Decl(ttttTruncationNoInfer.ts, 1, 25))
+>T : Symbol(T, Decl(ttttTruncationNoInfer.ts, 2, 16))
+>T : Symbol(T, Decl(ttttTruncationNoInfer.ts, 2, 16))
+
+type FilterQuery<T> = Partial<T>;
+>FilterQuery : Symbol(FilterQuery, Decl(ttttTruncationNoInfer.ts, 2, 44))
+>T : Symbol(T, Decl(ttttTruncationNoInfer.ts, 3, 17))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttTruncationNoInfer.ts, 3, 17))
+
+interface FindOneOptions<E, H extends string = never, F extends string = "*", X extends string = never> { e?: E; h?: H; f?: F; x?: X }
+>FindOneOptions : Symbol(FindOneOptions, Decl(ttttTruncationNoInfer.ts, 3, 33))
+>E : Symbol(E, Decl(ttttTruncationNoInfer.ts, 4, 25))
+>H : Symbol(H, Decl(ttttTruncationNoInfer.ts, 4, 27))
+>F : Symbol(F, Decl(ttttTruncationNoInfer.ts, 4, 53))
+>X : Symbol(X, Decl(ttttTruncationNoInfer.ts, 4, 77))
+>e : Symbol(FindOneOptions.e, Decl(ttttTruncationNoInfer.ts, 4, 105))
+>E : Symbol(E, Decl(ttttTruncationNoInfer.ts, 4, 25))
+>h : Symbol(FindOneOptions.h, Decl(ttttTruncationNoInfer.ts, 4, 112))
+>H : Symbol(H, Decl(ttttTruncationNoInfer.ts, 4, 27))
+>f : Symbol(FindOneOptions.f, Decl(ttttTruncationNoInfer.ts, 4, 119))
+>F : Symbol(F, Decl(ttttTruncationNoInfer.ts, 4, 53))
+>x : Symbol(FindOneOptions.x, Decl(ttttTruncationNoInfer.ts, 4, 126))
+>X : Symbol(X, Decl(ttttTruncationNoInfer.ts, 4, 77))
+
+declare function Transactional(): MethodDecorator;
+>Transactional : Symbol(Transactional, Decl(ttttTruncationNoInfer.ts, 4, 134))
+>MethodDecorator : Symbol(MethodDecorator, Decl(lib.decorators.legacy.d.ts, --, --))
+
+declare const em: { findOne(a: any, b: any, c: any): Promise<number> };
+>em : Symbol(em, Decl(ttttTruncationNoInfer.ts, 6, 13))
+>findOne : Symbol(findOne, Decl(ttttTruncationNoInfer.ts, 6, 19))
+>a : Symbol(a, Decl(ttttTruncationNoInfer.ts, 6, 28))
+>b : Symbol(b, Decl(ttttTruncationNoInfer.ts, 6, 35))
+>c : Symbol(c, Decl(ttttTruncationNoInfer.ts, 6, 43))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+export class Repo {
+>Repo : Symbol(Repo, Decl(ttttTruncationNoInfer.ts, 6, 71))
+
+  @Transactional()
+>Transactional : Symbol(Transactional, Decl(ttttTruncationNoInfer.ts, 4, 134))
+
+  async findOne<
+>findOne : Symbol(Repo.findOne, Decl(ttttTruncationNoInfer.ts, 7, 19))
+
+    Entity extends EntityType,
+>Entity : Symbol(Entity, Decl(ttttTruncationNoInfer.ts, 9, 16))
+>EntityType : Symbol(EntityType, Decl(ttttTruncationNoInfer.ts, 0, 0))
+
+    Hint extends string = never,
+>Hint : Symbol(Hint, Decl(ttttTruncationNoInfer.ts, 10, 30))
+
+    Fields extends string = '*',
+>Fields : Symbol(Fields, Decl(ttttTruncationNoInfer.ts, 11, 32))
+
+    Excludes extends string = never,
+>Excludes : Symbol(Excludes, Decl(ttttTruncationNoInfer.ts, 12, 32))
+
+  >(
+    entityName: EntityName<Entity>,
+>entityName : Symbol(entityName, Decl(ttttTruncationNoInfer.ts, 14, 4))
+>EntityName : Symbol(EntityName, Decl(ttttTruncationNoInfer.ts, 1, 25))
+>Entity : Symbol(Entity, Decl(ttttTruncationNoInfer.ts, 9, 16))
+
+    where: FilterQuery<NoInfer<Entity>>,
+>where : Symbol(where, Decl(ttttTruncationNoInfer.ts, 15, 35))
+>FilterQuery : Symbol(FilterQuery, Decl(ttttTruncationNoInfer.ts, 2, 44))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>Entity : Symbol(Entity, Decl(ttttTruncationNoInfer.ts, 9, 16))
+
+    options?: FindOneOptions<Entity, Hint, Fields, Excludes>,
+>options : Symbol(options, Decl(ttttTruncationNoInfer.ts, 16, 40))
+>FindOneOptions : Symbol(FindOneOptions, Decl(ttttTruncationNoInfer.ts, 3, 33))
+>Entity : Symbol(Entity, Decl(ttttTruncationNoInfer.ts, 9, 16))
+>Hint : Symbol(Hint, Decl(ttttTruncationNoInfer.ts, 10, 30))
+>Fields : Symbol(Fields, Decl(ttttTruncationNoInfer.ts, 11, 32))
+>Excludes : Symbol(Excludes, Decl(ttttTruncationNoInfer.ts, 12, 32))
+
+  ) {
+    return em.findOne(entityName, where as any, options);
+>em.findOne : Symbol(findOne, Decl(ttttTruncationNoInfer.ts, 6, 19))
+>em : Symbol(em, Decl(ttttTruncationNoInfer.ts, 6, 13))
+>findOne : Symbol(findOne, Decl(ttttTruncationNoInfer.ts, 6, 19))
+>entityName : Symbol(entityName, Decl(ttttTruncationNoInfer.ts, 14, 4))
+>where : Symbol(where, Decl(ttttTruncationNoInfer.ts, 15, 35))
+>options : Symbol(options, Decl(ttttTruncationNoInfer.ts, 16, 40))
+  }
+}
+
