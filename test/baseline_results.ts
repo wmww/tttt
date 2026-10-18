@@ -63,6 +63,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttBlockTypeParamPossiblyReferenced': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttCircularAliasArity': {
         errors: true,
         symbols: true,
@@ -1210,6 +1216,12 @@ const baselines = {
         dts: true,
     },
     'ttttPatternParamFirstElementScope': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttPatternTrailingCommaComment': {
         errors: true,
         symbols: true,
         types: true,

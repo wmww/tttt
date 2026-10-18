@@ -4003,14 +4003,41 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     display_annotated(me, ret_d, reused ? ret_annotation : nullptr, ret, false);
 }
 
-// The pattern ends with a comma before its `]` or `}` (tsc's NodeArray.hasTrailingComma, which the printer keeps)
+// The pattern ends with a comma before its `]` or `}` (tsc's NodeArray.hasTrailingComma, which the printer keeps):
+// what follows its last element, comments skipped (`b = 1, // why`)
 static bool pattern_has_trailing_comma(Binding const* binding) {
     csview text = span_sv(binding->content_span);
-    isize_t i = text.size - 1; // On the closing bracket
-    while (i-- > 0) {
-        char c = text.buf[i];
-        if (c == ' ' || c == '\t' || c == '\n' || c == '\r') continue;
-        return c == ',';
+    if (!text.size) return false;
+    char const* end = text.buf + text.size - 1; // On the closing bracket
+    Binding const* last = nullptr;
+    if (binding->tag == BINDING_ARRAY && binding->array.size) last = &binding->array.data[binding->array.size - 1];
+    if (binding->tag == BINDING_OBJECT && binding->object.size) last = &binding->object.data[binding->object.size - 1].target;
+    char const* c = nullptr;
+    if (last) {
+        Span after = last->default_value ? expr_outer_span(last->default_value) : last->content_span;
+        if (span_valid(after) && span_end_ptr(after) > text.buf && span_end_ptr(after) <= end) c = span_end_ptr(after);
+    }
+    if (!c) {
+        // (No element to start from, an omitted one: the last character before the bracket)
+        for (isize_t i = text.size - 2; i >= 0; i--) {
+            char ch = text.buf[i];
+            if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') continue;
+            return ch == ',';
+        }
+        return false;
+    }
+    while (c < end) {
+        if (*c == ' ' || *c == '\t' || *c == '\n' || *c == '\r') {
+            c++;
+        } else if (c + 1 < end && c[0] == '/' && c[1] == '/') {
+            while (c < end && *c != '\n') c++;
+        } else if (c + 1 < end && c[0] == '/' && c[1] == '*') {
+            c += 2;
+            while (c + 1 < end && !(c[0] == '*' && c[1] == '/')) c++;
+            c += 2;
+        } else {
+            return *c == ',';
+        }
     }
     return false;
 }
