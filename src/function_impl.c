@@ -38,7 +38,7 @@ void function_impl_drop(FunctionImpl* me) {
     }
     FunctionImplRare* rare = my rare;
     if (!rare) return;
-    ast_delete(rare->yields_);
+    ast_free(rare->yields_, sizeof(Expr const*) * rare->yield_count_);
     if (rare->jsdoc_signature_type) {
         type_drop(rare->jsdoc_signature_type);
         ast_delete(rare->jsdoc_signature_type);
@@ -488,9 +488,12 @@ static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow, FlowB
     my has_bare_return_ = flow->has_bare_return;
     if (flow->yields || my rare) {
         FunctionImplRare* rare = function_impl_rare_mut(me);
-        rare->yields_ = flow->yields;
+        // (Copied out exact into the AST's memory: a deferred body's go with its materialization)
+        rare->yields_ = flow->yield_count ? ast_malloc(sizeof(Expr const*) * flow->yield_count) : nullptr;
+        if (flow->yield_count) memcpy(rare->yields_, flow->yields, sizeof(Expr const*) * flow->yield_count);
         rare->yield_count_ = flow->yield_count;
     }
+    free(flow->yields);
     flow->yields = nullptr;
     if (flow->return_target) {
         flow_add_antecedent(flow, flow->return_target, flow->current);
@@ -506,7 +509,7 @@ static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow, FlowB
 
 // A rare struct a deferred body's walk made (what of it the walk can have made)
 static void walk_rare_drop(void* rare) {
-    free(((FunctionImplRare*)rare)->yields_);
+    ast_free(((FunctionImplRare*)rare)->yields_, sizeof(Expr const*) * ((FunctionImplRare*)rare)->yield_count_);
     ast_free(rare, sizeof(FunctionImplRare));
 }
 
@@ -560,7 +563,7 @@ bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
     me->has_bare_return_ = false;
     FunctionImplRare* rare = me->rare;
     if (rare) {
-        free(rare->yields_);
+        ast_free(rare->yields_, sizeof(Expr const*) * rare->yield_count_);
         rare->yields_ = nullptr;
         rare->yield_count_ = 0;
         rare->return_flow_ = nullptr;

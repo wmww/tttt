@@ -268,7 +268,7 @@ static void display_generic(Display d, Generic const* me) {
 }
 
 static void display_identifier_type(Display d, IdentifierType* me) {
-    for_each (i, vec_span, identifier_type_namespaces(me)) {
+    for_each (i, ast_spans, identifier_type_namespaces(me)) {
         display_colored_span(d, color_type, *i);
         display_lit(d, ".");
     }
@@ -597,13 +597,13 @@ void display_type(Display d, TypeNode const* me) {
 
         case TYPE_TEMPLATE:
             display_lit(d, "`");
-            for (isize_t i = 0; i < vec_cstr_size(&my template_->texts); i++) {
+            for (isize_t i = 0; i < ast_cstrs_size(&my template_->texts); i++) {
                 if (i) {
                     display_lit(d, "${");
                     display_type(d, vec_type_at(&my template_->types, i - 1));
                     display_lit(d, "}");
                 }
-                display_sv(d, cstr_sv(vec_cstr_at(&my template_->texts, i)));
+                display_sv(d, cstr_sv(ast_cstrs_at(&my template_->texts, i)));
             }
             display_lit(d, "`");
             break;

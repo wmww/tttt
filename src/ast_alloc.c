@@ -457,6 +457,17 @@ void ast_stats_print(void) {
         s.lost_small >> 20, " MB small and ", s.lost_large >> 20, " MB large");
 }
 
+void ast_cstr_seal(cstr* s) {
+    if (!ast_thread.arena || !cstr_is_long(s) || ast_owns(cstr_l_data(s))) return;
+    isize size = cstr_l_size(s);
+    char* data = ast_malloc(size + 1);
+    memcpy(data, cstr_l_data(s), (size_t)size + 1);
+    cstr_drop(s);
+    s->lon.data = data;
+    s->lon.size = (uintptr_t)size;
+    cstr_l_set_cap(s, size);
+}
+
 void* ast_materialize_alloc(size_t size, bool align16) {
     AstThread* t = &ast_thread;
     size_t n = round8((isize)size);

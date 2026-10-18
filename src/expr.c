@@ -1167,8 +1167,8 @@ void expr_drop(Expr* me) {
                 ast_delete(my template_->tag);
             }
             vec_expr_drop(&my template_->substitutions);
-            cstr_drop(&my template_->plain_string);
-            vec_cstr_drop(&my template_->texts);
+            ast_cstr_drop(&my template_->plain_string);
+            ast_cstrs_drop(&my template_->texts);
             ast_delete(my template_);
             break;
 
@@ -1804,12 +1804,11 @@ AccessSite* scope_access_site(Scope* names) {
     Symbol const* this_parameter = this_ref.kind == THIS_PARAMETER ? this_ref.symbol : nullptr;
     FunctionImpl const* this_function = this_ref.kind == THIS_ANY ? this_ref.function : nullptr;
     if (!enclosing_class && !this_parameter && !this_function) return nullptr;
-    AccessSite* site = malloc(sizeof(AccessSite));
-    *site = (AccessSite){
+    // (The AST's: a deferred body's goes with its materialization)
+    return ast_new(AccessSite, {
         .enclosing_class = enclosing_class, .containing_function = names->function, .this_parameter = this_parameter,
         .this_function = this_function, .initializer_context = names->flow ? names->flow->initializer_context : 0,
-    };
-    return site;
+    });
 }
 
 void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
@@ -1900,7 +1899,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             Expr* right = &my binary_op->right;
             if (my binary_op->jsdoc_type && !my binary_op->jsdoc_type_borrowed) type_lookup_names(my binary_op->jsdoc_type, names, errs);
             if (op == BINARY_OP_EQUAL && left->tag == EXPR_OBJECT) {
-                free(my binary_op->access_site);
+                ast_delete(my binary_op->access_site);
                 my binary_op->access_site = scope_access_site(names);
             }
             // `o.m = function () {}` (or `??=` & co.): `this` in there may be `o`
@@ -4999,7 +4998,7 @@ ObjectExprItemRare* object_item_rare_mut(ObjectExprItem* me) {
 }
 
 void object_expr_item_drop(ObjectExprItem* me) {
-    cstr_drop(&my name_string);
+    ast_cstr_drop(&my name_string);
     if (my computed_key) {
         expr_drop(my computed_key);
         ast_delete(my computed_key);

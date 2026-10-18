@@ -11,7 +11,7 @@ void value_drop_internal(Value* me) {
         case VALUE_NULL:
         case VALUE_BOOLEAN:
         case VALUE_NUMBER: break;
-        case VALUE_STRING: cstr_drop(&my string); break;
+        case VALUE_STRING: ast_cstr_drop(&my string); break; // (The AST's literals are: ast_cstr_seal())
         case VALUE_SYMBOL: arc_symbol_value_drop(&my symbol); break;
         case VALUE_BIGINT: break;
         case VALUE_OBJECT: arc_js_object_drop(&my object); break;

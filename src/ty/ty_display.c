@@ -1696,7 +1696,7 @@ static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* n
     // A value used as a type (TS2749) is tsgo's errorType, reused as written like an unresolved name
     if (!(identifier->target->flags & (SYMBOL_TYPE | SYMBOL_ALIAS))) return node_type(me, d, node)->flags & TYF_ERROR;
     Symbol const* first = identifier_type_namespace_count(identifier) ?
-        (vec_symbol_cptr_size(identifier_type_namespace_symbols(identifier)) ? *identifier->rare->namespace_symbols.data : nullptr) : identifier->symbol;
+        (ast_symbols_size(identifier_type_namespace_symbols(identifier)) ? *identifier->rare->namespace_symbols.data : nullptr) : identifier->symbol;
     // (A CommonJS export's alias has no import item)
     if (first && first->flags & SYMBOL_ALIAS && first->decl_count && first->decls[0].kind == SYMBOL_DECL_ALIAS &&
         first->decls[0].node && ((PortItem const*)first->decls[0].node)->jsdoc
@@ -1741,10 +1741,10 @@ static IdentifierReuse identifier_reuse(Checker* me, TyDisplay d, TypeNode const
     bool qualified = identifier_type_namespace_count(identifier) > 0;
     Symbol const* symbol = identifier->symbol;
     if (qualified) {
-        symbol = vec_symbol_cptr_size(identifier_type_namespace_symbols(identifier)) ?
-            *vec_symbol_cptr_at(identifier_type_namespace_symbols(identifier), 0) : nullptr;
+        symbol = ast_symbols_size(identifier_type_namespace_symbols(identifier)) ?
+            *ast_symbols_at(identifier_type_namespace_symbols(identifier), 0) : nullptr;
     }
-    Span first = qualified ? *vec_span_at(identifier_type_namespaces(identifier), 0) : identifier->name;
+    Span first = qualified ? *ast_spans_at(identifier_type_namespaces(identifier), 0) : identifier->name;
     // (A type parameter that the instantiation maps: tsgo's tryVisitTypeReference. A generic reference keeps its name,
     // its type arguments are visited, `State<T>` with T mapped is `State<{ foo: number; }>`)
     bool mapped = d.mapped_by && symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER) && !qualified &&
@@ -1931,7 +1931,7 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         }
         out_lit(d, ")");
         // (The qualifier: an entity name, each name mapped)
-        for_each (i, vec_span, identifier_type_namespaces(identifier)) {
+        for_each (i, ast_spans, identifier_type_namespaces(identifier)) {
             out_lit(d, ".");
             out_mapped(d, *i);
         }
@@ -1965,16 +1965,16 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
     }
     // (Declaration emit: what the name refers to here is tracked, painting the import it may be: tsc's
     // trackExistingEntityName)
-    Symbol const* first = qualified ? (vec_symbol_cptr_size(identifier_type_namespace_symbols(identifier)) ?
-        *vec_symbol_cptr_at(identifier_type_namespace_symbols(identifier), 0) : nullptr) : symbol;
+    Symbol const* first = qualified ? (ast_symbols_size(identifier_type_namespace_symbols(identifier)) ?
+        *ast_symbols_at(identifier_type_namespace_symbols(identifier), 0) : nullptr) : symbol;
     if (d.tracker && first && !(first->flags & SYMBOL_TYPE_PARAMETER) && !first->is_parameter && d.enclosing) {
-        Symbol const* found = scope_resolve(d.enclosing, span_sv(qualified ? *vec_span_at(identifier_type_namespaces(identifier), 0) :
+        Symbol const* found = scope_resolve(d.enclosing, span_sv(qualified ? *ast_spans_at(identifier_type_namespaces(identifier), 0) :
             identifier->name), qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE);
         if (found && (qualified || !identifier->jsdoc || ty_jsdoc_name_is_type(found, identifier))) {
             d.tracker->track_symbol(d.tracker, found, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE);
         }
     }
-    for_each (i, vec_span, identifier_type_namespaces(identifier)) {
+    for_each (i, ast_spans, identifier_type_namespaces(identifier)) {
         out_mapped(d, *i);
         out_lit(d, ".");
     }
@@ -2770,7 +2770,7 @@ static char const* template_part_end(char const* at, char const* end, bool last)
 
 // The `}` after a template literal type's type `i`, null if the source isn't like that
 static char const* template_part_close(TemplateType const* template, isize_t i, char const* end) {
-    Span type = *vec_span_at(&template->type_spans, i);
+    Span type = *ast_spans_at(&template->type_spans, i);
     if (!span_valid(type)) return nullptr;
     char const* close = decl_map_skip_trivia(span_end_ptr(type), end);
     return close < end && *close == '}' ? close : nullptr;
@@ -2796,7 +2796,7 @@ static void out_template_raw(TyDisplay d, csview sv) {
 // A template literal type as written (out_template_raw()), false if the source isn't where its spans say
 static bool display_template_source(Checker* me, TyDisplay d, TemplateType const* template) {
     isize_t types = vec_type_size(&template->types);
-    if (!span_valid(template->span) || template->span.buf[0] != '`' || vec_span_size(&template->type_spans) != types) {
+    if (!span_valid(template->span) || template->span.buf[0] != '`' || ast_spans_size(&template->type_spans) != types) {
         return false;
     }
     char const* end = span_end_ptr(template->span);
@@ -3189,7 +3189,7 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
             TemplateType const* template = node->template_;
             if (!node->synthesized && display_template_source(me, d, template)) break;
             out_lit(d, "`");
-            for (isize_t i = 0; i < vec_cstr_size(&template->texts); i++) {
+            for (isize_t i = 0; i < ast_cstrs_size(&template->texts); i++) {
                 if (i) {
                     out_lit(d, "${");
                     TypeNode const* type = vec_type_at(&template->types, i - 1);
@@ -3198,7 +3198,7 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
                     map_at(d, token_after(d, decl_map_type_end(type, D_MAP(d)), '}'));
                     out_lit(d, "}");
                 }
-                display_template_text(d, cstr_sv(vec_cstr_at(&template->texts, i)));
+                display_template_text(d, cstr_sv(ast_cstrs_at(&template->texts, i)));
             }
             out_lit(d, "`");
         }   break;

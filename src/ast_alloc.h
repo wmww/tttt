@@ -62,8 +62,32 @@ void* ast_calloc(isize count, isize size);
 void* ast_realloc(void* p, isize old_size, isize size);
 void ast_free(void* p, isize size);
 
+// The AST's long strings (those a cstr keeps out of line): ast_cstr_seal() moves one the parser made into the current
+// arena (nothing outside one), so it goes with the arena (a materialization's with its drop, plan 78). An AST string
+// is dropped with ast_cstr_drop() (a no-op for an arena's) and never appended to after it's sealed
+void ast_cstr_seal(cstr* s);
+static inline void ast_cstr_drop(cstr* s) {
+    if (!(cstr_is_long(s) && ast_owns(s->lon.data))) cstr_drop(s);
+}
+
+// An AST string taken out of the AST (a module specifier's literal): a malloc'd copy if it's sealed, else moved
+static inline cstr ast_cstr_take(cstr* s) {
+    if (!(cstr_is_long(s) && ast_owns(s->lon.data))) return cstr_move(s);
+    cstr ret = cstr_from_sv(cstr_sv(s));
+    *s = cstr_init();
+    return ret;
+}
+
 #define ast_new(T, ...) ((T*)c_safe_memcpy(ast_malloc(c_sizeof(T)), ((T[]){__VA_ARGS__}), c_sizeof(T)))
 #define ast_delete(p) ast_free((p), c_sizeof(*(p)))
 
 // TTTT_AST_STATS: the arenas' churn on stderr
 void ast_stats_print(void);
+
+// The AST's lists of strings (a template's cooked texts): sealed strings in an arena list
+#define g_key cstr, cstr
+#define g_keydrop ast_cstr_drop
+#define g_no_clone
+#define g_type AstCStrs, ast_cstrs
+#define g_allocator ast
+#include <cleat/generic/vec.h>

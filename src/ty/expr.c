@@ -6169,7 +6169,7 @@ static Ty const* check_template(Checker* me, Expr const* expr, ExprCtx ctx) {
     } else if (ctx.is_const || ctx.template_context || (ctx.contextual && is_template_contextual(me, ctx.contextual))) {
         Atom const** texts = malloc(sizeof(Atom const*) * (len + 1));
         panic_if(!texts, "out of memory");
-        for_each (i, vec_cstr, &template->texts) texts[i_index] = checker_atom(me, cstr_sv(i));
+        for_each (i, ast_cstrs, &template->texts) texts[i_index] = checker_atom(me, cstr_sv(i));
         ret = ty_template_literal(me, texts, types, len);
         free(texts);
     } else {

@@ -23,7 +23,7 @@ void class_item_drop(ClassItem* me) {
             break;
 
         case CLASS_ITEM_METHOD:
-            cstr_drop(&my method.name_string);
+            ast_cstr_drop(&my method.name_string);
             if (my method.computed_key) {
                 expr_drop(my method.computed_key);
                 ast_delete(my method.computed_key);
@@ -33,7 +33,7 @@ void class_item_drop(ClassItem* me) {
             break;
 
         case CLASS_ITEM_FIELD:
-            cstr_drop(&my field.name_string);
+            ast_cstr_drop(&my field.name_string);
             if (my field.computed_key) {
                 expr_drop(my field.computed_key);
                 ast_delete(my field.computed_key);
@@ -2182,13 +2182,13 @@ static void check_decorator_metadata_type(TypeNode const* node, ErrorCtx* errs) 
     if (!entity) return;
     IdentifierType const* identifier = entity->identifier;
     bool qualified = identifier_type_namespace_count(identifier) > 0;
-    Symbol const* root = qualified ? (vec_symbol_cptr_size(identifier_type_namespace_symbols(identifier)) ?
-        *vec_symbol_cptr_front(identifier_type_namespace_symbols(identifier)) : nullptr) : identifier->symbol;
+    Symbol const* root = qualified ? (ast_symbols_size(identifier_type_namespace_symbols(identifier)) ?
+        *ast_symbols_front(identifier_type_namespace_symbols(identifier)) : nullptr) : identifier->symbol;
     if (!root || !(root->flags & SYMBOL_ALIAS) || !root->alias || !root->alias->item) return;
     if (symbol_resolved_flags(root) & SYMBOL_VALUE) return;
     PortItem const* item = root->alias->item;
     if (item->type_only) return;
-    Span first = qualified ? *vec_span_front(identifier_type_namespaces(identifier)) : identifier->name;
+    Span first = qualified ? *ast_spans_front(identifier_type_namespaces(identifier)) : identifier->name;
     Span name = span_make_in(first, span_start_ptr(first), span_end_ptr(identifier->name));
     Error* error = error_ctx_error_d(errs, name, 1272, "A type referenced in a decorated signature must be imported with "
         "'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.");

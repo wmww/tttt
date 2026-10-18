@@ -10,8 +10,8 @@
 // What few type references have: qualified names, `import()` types, the error and JavaScript cases. Boxed out of
 // IdentifierType (owned by it), which is mostly a bare `Foo` or `Foo<T>`
 typedef struct IdentifierTypeRare {
-    VecSpan namespaces;
-    VecSymbolCPtr namespace_symbols; // What each of the namespaces resolved to (maybe an alias), shorter on failure
+    AstSpans namespaces;
+    AstSymbols namespace_symbols; // What each of the namespaces resolved to (maybe an alias), shorter on failure
     // A JavaScript `this` type outside a class: the function whose `this` it is, a constructor function or a method of
     // its prototype makes it the class's `this` (tsc's getThisType: isJSConstructor, getClassNameFromPrototypeMethod)
     struct FunctionImpl const* this_function;
@@ -80,15 +80,15 @@ static inline IdentifierTypeRare* identifier_type_rare(IdentifierType* me) {
     if (!my rare) my rare = ast_new(IdentifierTypeRare, { .import_prop_start = -1 });
     return my rare;
 }
-static inline VecSpan const* identifier_type_namespaces(IdentifierType const* me) {
-    static const VecSpan empty = {0};
+static inline AstSpans const* identifier_type_namespaces(IdentifierType const* me) {
+    static const AstSpans empty = {0};
     return my rare ? &my rare->namespaces : &empty;
 }
 static inline isize identifier_type_namespace_count(IdentifierType const* me) {
-    return my rare ? vec_span_size(&my rare->namespaces) : 0;
+    return my rare ? ast_spans_size(&my rare->namespaces) : 0;
 }
-static inline VecSymbolCPtr const* identifier_type_namespace_symbols(IdentifierType const* me) {
-    static const VecSymbolCPtr empty = {0};
+static inline AstSymbols const* identifier_type_namespace_symbols(IdentifierType const* me) {
+    static const AstSymbols empty = {0};
     return my rare ? &my rare->namespace_symbols : &empty;
 }
 static inline Span identifier_type_import_span(IdentifierType const* me) {
@@ -223,9 +223,9 @@ void keyof_type_typecheck(KeyofType const* me, ErrorCtx* errs);
 
 // `a${B}c`: the texts (cooked) around the substitutions, one more of them than of types
 typedef struct TemplateType {
-    VecCStr texts;
+    AstCStrs texts;
     VecTypeNode types;
-    VecSpan type_spans; // Where each type was written
+    AstSpans type_spans; // Where each type was written
     Span span; // From the opening backtick to the closing one
 } TemplateType;
 

@@ -1099,20 +1099,20 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 // A heritage clause's name is a property access to tsc's writer: `a.b.C` visits `a.b.C` (symbols only:
                 // the whole is part of the type) and `a.b` before `a`
                 isize_t count = identifier_type_namespace_count(my identifier);
-                isize_t known = vec_symbol_cptr_size(identifier_type_namespace_symbols(my identifier));
+                isize_t known = ast_symbols_size(identifier_type_namespace_symbols(my identifier));
                 Symbol const* named = shown_declaration(my identifier->symbol, my identifier->target);
                 if (count && span_valid(my identifier->name) && named && !named->is_placeholder) {
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = declaration_get_spans(named),
                         .allow_declaration_empty = true,
-                        .span = span_between(*vec_span_at(identifier_type_namespaces(my identifier), 0), my identifier->name),
+                        .span = span_between(*ast_spans_at(identifier_type_namespaces(my identifier), 0), my identifier->name),
                         .text = symbol_text(ctx, named),
                     });
                 }
                 // (Unresolved ones too: `any`)
                 for (isize_t k = count - 1; k >= 1; k--) {
-                    Symbol const* decl = k < known ? *vec_symbol_cptr_at(identifier_type_namespace_symbols(my identifier), k) : nullptr;
-                    Span prefix = span_between(*vec_span_at(identifier_type_namespaces(my identifier), 0), *vec_span_at(identifier_type_namespaces(my identifier), k));
+                    Symbol const* decl = k < known ? *ast_symbols_at(identifier_type_namespace_symbols(my identifier), k) : nullptr;
+                    Span prefix = span_between(*ast_spans_at(identifier_type_namespaces(my identifier), 0), *ast_spans_at(identifier_type_namespaces(my identifier), k));
                     if (decl && !decl->is_placeholder) {
                         baseline_test_case_add_symbol(ctx, (BaselineSym){
                             .declarations = declaration_get_spans(decl),
@@ -1129,10 +1129,10 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             }
             VecSpan so_far = vec_span_init();
             bool heritage_unresolved = false;
-            for_each (i, vec_span, identifier_type_namespaces(my identifier)) {
+            for_each (i, ast_spans, identifier_type_namespaces(my identifier)) {
                 intptr_t index = i_index;
-                Symbol const* decl = index < vec_symbol_cptr_size(identifier_type_namespace_symbols(my identifier)) ?
-                    *vec_symbol_cptr_at(identifier_type_namespace_symbols(my identifier), index) :
+                Symbol const* decl = index < ast_symbols_size(identifier_type_namespace_symbols(my identifier)) ?
+                    *ast_symbols_at(identifier_type_namespace_symbols(my identifier), index) :
                     nullptr;
                 ctx->any_keeps_rendering = true; // Part of a qualified name (any in a heritage clause too, see above)
                 baseline_test_case_add_type_node(ctx, *i, &type_any);
@@ -1207,7 +1207,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 }
             }
             if (!(heritage && !shown) && !unresolved_import) baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .namespaces = vec_span_clone(*identifier_type_namespaces(my identifier)),
+                .namespaces = vec_span_from_n(identifier_type_namespaces(my identifier)->data, identifier_type_namespaces(my identifier)->size),
                 .declarations = declaration_get_spans(shown),
                 .allow_declaration_empty = true,
                 .span = my identifier->name,

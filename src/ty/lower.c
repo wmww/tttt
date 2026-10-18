@@ -485,7 +485,7 @@ static Ty const* unresolved_reference(Checker* me, IdentifierType const* identif
     // (A missing name, `a.` at the end of a line: no node to reuse, errorType)
     if (identifier->keyword || !span_valid(identifier->name) || !identifier->name.size) return ty_intrinsic(me, TY_ERROR);
     cstr name = cstr_null;
-    for_each (i, vec_span, identifier_type_namespaces(identifier)) {
+    for_each (i, ast_spans, identifier_type_namespaces(identifier)) {
         cstr_append_sv(&name, span_sv(*i));
         cstr_append(&name, ".");
     }
@@ -643,7 +643,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             isize count = identifier_type_namespace_count(identifier) + 1;
             Prop const* previous = nullptr;
             for (isize i = identifier->rare->import_prop_start; i >= 0 && i < count; i++) {
-                Span name = i == count - 1 ? identifier->name : *vec_span_at(identifier_type_namespaces(identifier), i);
+                Span name = i == count - 1 ? identifier->name : *ast_spans_at(identifier_type_namespaces(identifier), i);
                 Prop const* prop = ty_get_prop(me, ret, checker_atom(me, span_sv(name)));
                 if (!prop) {
                     // A property of what `module.exports =` assigns or of a value, like the names before it (tsc's
@@ -660,7 +660,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
                         // reached through, `obj.a`)
                         container_name = cstr_from_sv(decl->name);
                         for (isize j = identifier->rare->import_prop_start; j < i; j++) {
-                            cstr_append_d(&container_name, DEFAULT_DISPLAY, ".", span_sv(*vec_span_at(identifier_type_namespaces(identifier), j)));
+                            cstr_append_d(&container_name, DEFAULT_DISPLAY, ".", span_sv(*ast_spans_at(identifier_type_namespaces(identifier), j)));
                         }
                     }
                     ty_error_at(me, name, 2694, cstr_d("Namespace '", container_name, "' has no exported member '", span_sv(name), "'."));
@@ -4268,7 +4268,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             for_each (i, vec_type, &template->types) {
                 types[i_index] = ty_from_node(me, i, ctx);
             }
-            for_each (i, vec_cstr, &template->texts) texts[i_index] = checker_atom(me, cstr_sv(i));
+            for_each (i, ast_cstrs, &template->texts) texts[i_index] = checker_atom(me, cstr_sv(i));
             Ty const* ret = ty_template_literal(me, texts, types, len);
             free(types);
             free(texts);

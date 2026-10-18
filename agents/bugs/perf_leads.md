@@ -308,9 +308,10 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   program whose warm state exceeds the budget now holds ~2x its warm state per checker instead of thrashing.
 - **The AST's allocation** (plan 63, closed 2026-10-16; its measurements are in measurements.md "Plan 63"): the AST is
   in per-file arenas (`ast_alloc.h`). What is left of it:
-  - **The drop is still a walk**: `block_drop()` frees the AST's malloc'd parts (cooked string literals and template
-    texts in `cstr`s, `Value` strings, what resolve attaches: `AccessSite`s, rare structs made after the parse,
-    ModuleRef rares written by module resolution) and is a no-op for the rest. An O(ranges) drop (-b frees 13
+  - **The drop is still a walk**: `block_drop()` frees the AST's malloc'd parts (the strings the parser doesn't seal,
+    `ast_cstr_seal()`: enum member names, computed key texts, JSDoc; rare structs made after the parse, ModuleRef
+    rares written by module resolution) and is a no-op for the rest (literals, templates, object keys, AccessSites and
+    the walk's lists are in the arena since 2026-10-18). An O(ranges) drop (-b frees 13
     programs in 119 ms on tsc-src, the test harness one per test) needs those in the arena too (`csview`s into it) or
     tracked per file; then `drop_source_files()` is `ast_arena_drop()` per file.
   - Lists are still grown by doubling and shrunk (`list_push`/`shrink_list`): the outgrown buffers are reused by

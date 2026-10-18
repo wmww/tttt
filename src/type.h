@@ -331,6 +331,12 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs);
 #define g_declared
 #include <cleat/generic/vec.h>
 
+// The AST's (a node's resolved names, which a materialization's walk makes in its arena)
+#define g_key SymbolCPtr, symbol_cptr
+#define g_type AstSymbols, ast_symbols
+#define g_allocator ast
+#include <cleat/generic/vec.h>
+
 typedef struct SpannedType {
     Span span;
     TypeNode type;

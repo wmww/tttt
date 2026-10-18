@@ -114,7 +114,7 @@ typedef struct FunctionImplRare {
     // written signature, which the parser moves into the function, is found by the parser
     Span jsdoc_signature_span;
     FlowNode* return_flow_; // Constructors: every way out (walk)
-    struct Expr const** yields_; // Generators: every `yield` of the body, in source order (malloc'd, owned; walk)
+    struct Expr const** yields_; // Generators: every `yield` of the body, in source order (the AST's, owned; walk)
     u32 yield_count_;
     // JavaScript: the `@param` tags that name no parameter (tsc's checkUnmatchedJSDocParameters): TS8024 for a name,
     // TS8032 for a qualified name without its object (`left` valid). Found by the parser, reported when checking

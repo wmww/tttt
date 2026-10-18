@@ -57,12 +57,11 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   - A new write outside the bodies from their walk must be undone at a drop (`deferred_bodies_undo()`) or a new way of
     keeping a materialization alive must allocate it lasting (`AstArena.lasting`; owner materializations carried cost
     vscode K1 +155 MB). Oracle: `TTTT_AST_POISON=1 --checker-memory 0` on the corpora, `kdiff.py -k 1 -m 0`.
-  - A dropped materialization leaks what its parse and walk malloc'd (~8 MB per round of vscode's bodies): cooked
-    strings, and the lists declared without `g_allocator ast` that AST nodes own (`VecSpan`/`VecSymbolCPtr` of a
-    qualified type name's IdentifierTypeRare, TemplateType's texts and spans, InterfaceIndexKey's spans, ...).
-    Correct: those in the AST arena. Under the counting allocator (the harness) `deferred_body_debug_drop()` walks the
-    body first, so the per-test leak check stays meaningful (it listed 157 tests). Re-materialization costs ~2% of
-    vscode's instructions (bugs/perf_leads.md).
+  - AST strings are in the arena only where the parser seals them (`ast_cstr_seal()`: literals, template texts, object
+    keys); a long string another AST site makes (an enum member's string name, a computed class key's text, JSDoc
+    names) is still malloc'd, and leaks when a materialization holding it is dropped (cleat's cstrs aren't counted by
+    the harness's leak check; valgrind on vscode K1 found none left, 2026-10-18). An AST string taken out of the AST
+    must go through `ast_cstr_take()`, dropped through `ast_cstr_drop()`: a plain `cstr_drop()` of a sealed one aborts.
   - Signature/body name collisions and body syntax errors rerun the whole program without deferral
     (`program_defer_failed()`). Correct for collisions: walk the signature again after the body's names. Oracle:
     `defer: restarts` on the sweeps (0 on the corpora, 0 on the source sweep since 2026-10-18; `defer: collided` names

@@ -3378,8 +3378,8 @@ static bool init_global_type_thisless(Program* me, Symbol const* symbol, u32 dep
             if (extends->type.tag != TYPE_IDENTIFIER) return false;
             IdentifierType const* identifier = extends->type.identifier;
             if (identifier_type_import_ref(identifier)) return false;
-            bool qualified = identifier->rare && vec_span_size(&identifier->rare->namespaces);
-            csview name = span_sv(qualified ? *vec_span_at(&identifier->rare->namespaces, 0) : identifier->name);
+            bool qualified = identifier->rare && ast_spans_size(&identifier->rare->namespaces);
+            csview name = span_sv(qualified ? *ast_spans_at(&identifier->rare->namespaces, 0) : identifier->name);
             for (Scope const* scope = decl->block; scope && scope->file; scope = scope->parent) {
                 Symbol const* local = symbol_table_get(scope->locals, name);
                 if (!local) continue;
@@ -3593,15 +3593,6 @@ bool program_has_deferred_bodies(Program const* me) {
     return false;
 }
 
-// A dropped materialization's body, walked to free what it owns outside the arena, only under the counting allocator
-// (DEBUG_ALLOCATOR_ACTIVE: the harness, debug builds): its per-test leak check would list every test that drops one.
-// (ast_free() of the arena's nodes does nothing: no thread is in that arena)
-static void deferred_body_debug_drop([[maybe_unused]] Block* body) {
-#ifdef DEBUG_ALLOCATOR_ACTIVE
-    block_drop(body);
-#endif
-}
-
 bool program_deferred_bodies_parse(Program* me) {
     CompilerOptions const* saved = compiler_options_private;
     bool ret = true;
@@ -3618,10 +3609,7 @@ bool program_deferred_bodies_parse(Program* me) {
             same = parse_deferred_body(file, body->function, &scratch);
         }
         ast_materialize_end();
-        for (DeferredBody* body = list->first; body; body = body->next) {
-            deferred_body_debug_drop(&body->block);
-            body->block = (Block){0};
-        }
+        for (DeferredBody* body = list->first; body; body = body->next) body->block = (Block){0};
         ast_arena_drop(&list->memory);
         error_ctx_drop(&scratch);
         if (!same) {
@@ -3948,10 +3936,8 @@ static void deferred_bodies_drop_locked(SourceFile* file) {
             if (node && !flow_is_unreachable(node)) node->flags = snapshot->flow_flags[n];
         }
         if (i->return_target && !flow_is_unreachable(i->return_target)) i->return_target->antecedents = snapshot->return_antecedents;
-        // (Not block_drop(): a walk of all of it, a tenth of materializing it. What the AST owns outside the arena, its
-        // strings and some lists the parser and the walk malloc'd, is lost: hacks.md. Not under the counting allocator,
-        // whose leak check would list every test that drops one)
-        deferred_body_debug_drop(&i->block);
+        // (Not block_drop(): what the bodies' AST owns is all in the arena, their strings too, ast_cstr_seal(). The
+        // harness's leak check holds a drop to that)
         i->block = (Block){0};
     }
     ast_arena_drop(&list->memory);

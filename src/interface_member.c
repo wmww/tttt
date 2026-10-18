@@ -13,7 +13,7 @@
 
 void interface_member_drop(InterfaceMember* me) {
     switch (my key.tag) {
-        case INTERFACE_KEY_NAME: cstr_drop(&my key.name_string); break;
+        case INTERFACE_KEY_NAME: ast_cstr_drop(&my key.name_string); break;
         case INTERFACE_KEY_INDEX:
             if (!my key.index) break;
             type_drop(&my key.index->type);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "prelude.h"
+#include "ast_alloc.h"
 #include <stdatomic.h>
 
 typedef struct SourceFile SourceFile;
@@ -145,6 +146,12 @@ static inline cstr cstr_from_span(Span me) {
 }
 
 #define g_key Span, span
+#include <cleat/generic/vec.h>
+
+// The AST's lists of spans: in the file's (or a materialization's) arena while it's parsed or walked
+#define g_key Span, span
+#define g_type AstSpans, ast_spans
+#define g_allocator ast
 #include <cleat/generic/vec.h>
 
 static inline VecSpan vec_span_single(Span span) {

@@ -180,8 +180,8 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
 
         case EXPR_TEMPLATE: {
             TemplateExpr const* template = expr->template_;
-            if (template->tag || !vec_cstr_size(&template->texts)) return enum_value_unknown;
-            cstr joined = cstr_clone(*vec_cstr_at(&template->texts, 0));
+            if (template->tag || !ast_cstrs_size(&template->texts)) return enum_value_unknown;
+            cstr joined = cstr_clone(*ast_cstrs_at(&template->texts, 0));
             for_each (i, vec_expr, &template->substitutions) {
                 EnumValue part = evaluate(me, i, depth);
                 if (!part.known) {
@@ -195,7 +195,7 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
                     cstr_append_value_js(&joined, &number);
                 }
                 cstr_drop(&part.string);
-                cstr_append_sv(&joined, cstr_sv(vec_cstr_at(&template->texts, i_index + 1)));
+                cstr_append_sv(&joined, cstr_sv(ast_cstrs_at(&template->texts, i_index + 1)));
             }
             return (EnumValue){ .known = true, .is_string = true, .string = joined, .syntactic_string = true };
         }

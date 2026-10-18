@@ -18,8 +18,8 @@ void identifier_type_drop(IdentifierType* me) {
     vec_spanned_type_drop(&my generic_params);
     IdentifierTypeRare* rare = my rare;
     if (!rare) return;
-    vec_span_drop(&rare->namespaces);
-    vec_symbol_cptr_drop(&rare->namespace_symbols);
+    ast_spans_drop(&rare->namespaces);
+    ast_symbols_drop(&rare->namespace_symbols);
     import_attributes_free(rare->import_attributes);
     if (rare->import_argument) {
         type_drop(rare->import_argument);
@@ -76,7 +76,7 @@ static bool note_value_missing(IdentifierTypeRare* rare, Scope* names, Symbol co
 
 static cstr identifier_type_make_name_str(IdentifierType const* me) {
     cstr ret = cstr_null;
-    for_each (i, vec_span, identifier_type_namespaces(me)) {
+    for_each (i, ast_spans, identifier_type_namespaces(me)) {
         cstr_append_span(&ret, *i);
         cstr_append_lit(&ret, ".");
     }
@@ -135,10 +135,10 @@ static bool import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
     if (rare->import_typeof) {
         // A value: exports as far as they go, properties from there on
         Symbol const* current = container;
-        isize count = vec_span_size(&rare->namespaces) + 1;
+        isize count = ast_spans_size(&rare->namespaces) + 1;
         for (isize i = 0; i < count; i++) {
             bool last = i == count - 1;
-            Span name = last ? my name : *vec_span_at(&rare->namespaces, i);
+            Span name = last ? my name : *ast_spans_at(&rare->namespaces, i);
             Symbol const* members = symbol_for_meaning(current, SYMBOL_NAMESPACE);
             if (members && members->is_placeholder) return true;
             Symbol const* member = members ? symbol_namespace_member(members, span_sv(name)) : nullptr;
@@ -158,7 +158,7 @@ static bool import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
                 break;
             }
             if (last) my symbol = member;
-            else vec_symbol_cptr_push(&rare->namespace_symbols, member);
+            else ast_symbols_push(&rare->namespace_symbols, member);
             current = value;
         }
         my target = symbol_for_meaning(current, SYMBOL_VALUE);
@@ -168,16 +168,16 @@ static bool import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
     if (container != module) {
         // A CommonJS module's other exports (its `@typedef`s) are found next to what `module.exports =` assigns
         // (tsgo's getExportsOfModuleWorker: the original module's type exports)
-        bool qualified = vec_span_size(&rare->namespaces);
+        bool qualified = ast_spans_size(&rare->namespaces);
         Symbol const* own = symbol_get_export(module, span_sv((qualified ? *rare->namespaces.data : my name)));
         if (own && symbol_for_meaning(own, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) container = module;
     }
     Symbol const* shown = nullptr;
-    for_each (i, vec_span, &rare->namespaces) {
+    for_each (i, ast_spans, &rare->namespaces) {
         Symbol const* found;
         container = get_symbol_from_namespace(container, shown, *i, SYMBOL_NAMESPACE, false, &found, errs);
         if (!container || container->is_placeholder) return true;
-        vec_symbol_cptr_push(&rare->namespace_symbols, found);
+        ast_symbols_push(&rare->namespace_symbols, found);
         shown = found;
     }
     my target = get_symbol_from_namespace(container, shown, my name, rare->import_typeof ? SYMBOL_VALUE : SYMBOL_TYPE, false,
@@ -314,7 +314,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
     if (identifier_type_namespace_count(me)) {
         IdentifierTypeRare* rare = my rare;
         Symbol const* namespace = nullptr;
-        for_each (i, vec_span, &rare->namespaces) {
+        for_each (i, ast_spans, &rare->namespaces) {
             Symbol const* decl;
             Symbol const* found;
             if (i == rare->namespaces.data /* First namespaces */) {
@@ -366,10 +366,10 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             if (!decl) {
                 break;
             }
-            vec_symbol_cptr_push(&rare->namespace_symbols, found);
+            ast_symbols_push(&rare->namespace_symbols, found);
         }
         if (namespace && !symbol_namespace_member(namespace, span_sv(my name)) &&
-            note_value_missing(rare, names, namespace, (u32)vec_span_size(&rare->namespaces))
+            note_value_missing(rare, names, namespace, (u32)ast_spans_size(&rare->namespaces))
         ) {
             namespace = nullptr;
         }
@@ -569,7 +569,7 @@ static bool declared_type_params(Symbol const* symbol, u32* min, MergedTypeParam
 
 Span identifier_type_span(IdentifierType const* me) {
     if (my keyword || identifier_type_import_ref(me) || !span_valid(my name) || !span_source(my name)) return my name;
-    char const* start = span_start_ptr(!identifier_type_namespace_count(me) ? my name : *vec_span_front(&my rare->namespaces));
+    char const* start = span_start_ptr(!identifier_type_namespace_count(me) ? my name : *ast_spans_front(&my rare->namespaces));
     char const* end = span_end_ptr(my name);
     u32 arg_count = (u32)vec_spanned_type_size(&my generic_params);
     if (arg_count) {
@@ -747,10 +747,10 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
         error_ctx_error_d(errs, my name, 2526, "A 'this' type is available only in a non-static member of a class or interface.");
     }
     identifier_type_check_arity(me, errs);
-    if (rare && rare->type_as_namespace && vec_span_size(&rare->namespaces)) {
+    if (rare && rare->type_as_namespace && ast_spans_size(&rare->namespaces)) {
         Checker* checker = current_checker;
         Span left = rare->namespaces.data[0];
-        Span right = vec_span_size(&rare->namespaces) > 1 ? rare->namespaces.data[1] : my name;
+        Span right = ast_spans_size(&rare->namespaces) > 1 ? rare->namespaces.data[1] : my name;
         Ty const* declared = ty_apparent_type(checker, ty_declared_type_of(checker, rare->type_as_namespace));
         Symbol const* as_namespace = rare->type_as_namespace;
         if (as_namespace->decl_count && as_namespace->decls[0].kind == SYMBOL_DECL_BUILTIN && is_primitive_type_name(span_sv(left))) {
@@ -767,7 +767,7 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
     }
     if (rare && (rare->value_member || rare->value_missing)) {
         Checker* checker = current_checker;
-        isize count = vec_span_size(&rare->namespaces);
+        isize count = ast_spans_size(&rare->namespaces);
         // (tsc's tryGetQualifiedNameAsValue: the names after the first are properties of the value)
         Ty const* value = rare->first_value && !rare->first_value->is_placeholder ? ty_type_of_symbol(checker, rare->first_value) : nullptr;
         for (isize k = 1; value && k <= count; k++) {
@@ -857,9 +857,9 @@ void keyof_type_typecheck(KeyofType const* me, ErrorCtx* errs) {
 // Template literal type
 
 void template_type_drop(TemplateType* me) {
-    vec_cstr_drop(&my texts);
+    ast_cstrs_drop(&my texts);
     vec_type_drop(&my types);
-    vec_span_drop(&my type_spans);
+    ast_spans_drop(&my type_spans);
 }
 
 // A placeholder made of primitives and literals (or any/never) fits without a relation
@@ -891,7 +891,7 @@ void template_type_typecheck(TemplateType const* me, ErrorCtx* errs) {
         }
         Ty const* type = ty_of_node(i);
         if (template_placeholder_trivially_fits(type)) continue;
-        ty_check_assignable(checker, type, allowed, *vec_span_at(&my type_spans, i_index), errs);
+        ty_check_assignable(checker, type, allowed, *ast_spans_at(&my type_spans, i_index), errs);
     }
 }
 

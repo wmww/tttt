@@ -2679,8 +2679,8 @@ static void check_type_members(Walk* me, VecInterfaceMember const* members, Symb
 static void check_type_reference(Walk* me, IdentifierType const* type) {
     if (identifier_type_import_ref(type) || type->keyword || type->this_kind) return;
     if (identifier_type_namespace_count(type)) {
-        if (!vec_symbol_cptr_size(identifier_type_namespace_symbols(type))) return;
-        check_entity_name(me, *vec_symbol_cptr_at(identifier_type_namespace_symbols(type), 0), *vec_span_at(identifier_type_namespaces(type), 0),
+        if (!ast_symbols_size(identifier_type_namespace_symbols(type))) return;
+        check_entity_name(me, *ast_symbols_at(identifier_type_namespace_symbols(type), 0), *ast_spans_at(identifier_type_namespaces(type), 0),
             SYMBOL_NAMESPACE);
         return;
     }

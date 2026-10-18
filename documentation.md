@@ -550,7 +550,10 @@ declared with `#define g_allocator ast`, node boxes are made with `ast_new()` an
 `ast_segment_map`, so `ast_owns()` is one load and frees and reallocs take either kind at any time: arena memory is
 never passed to free() (glibc aborts if it is), a later phase's realloc of an arena list copies it out to malloc, and
 the drop functions still walk the AST to free its malloc'd parts (cstrs, what resolve attached), the arena parts being
-no-ops. During the parse freed blocks are reused (exact size classes up to 1 KB, best fit with splitting above:
+no-ops. The parser seals the long strings it keeps (literals, template texts, object keys: `ast_cstr_seal()` copies a
+cstr's out-of-line text into the arena), the resolve walk's lists and boxes are the AST's too (`AstSpans`,
+`AstSymbols`, `AccessSite`, a generator's yields): a materialization of deferred bodies is then wholly in its arena.
+AST strings are dropped with `ast_cstr_drop()` (`value_drop()` too) and taken out of the AST with `ast_cstr_take()`. During the parse freed blocks are reused (exact size classes up to 1 KB, best fit with splitting above:
 speculation's dead nodes and outgrown lists); the blocks still free when the file ends are lost (~3% on vscode).
 Threads bump files end to end through 64 MB slabs, prefaulting 2 MB ahead (`MADV_POPULATE_WRITE`: a trap per page was
 a tenth of the parse; the checker and binder arenas prefault a MB ahead too), each 2 MB as a huge page while

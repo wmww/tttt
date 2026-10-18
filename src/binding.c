@@ -186,7 +186,7 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
             break;
 
         case BINDING_OBJECT:
-            free(my access_site);
+            ast_delete(my access_site);
             my access_site = scope_access_site(names);
             for_each (i, vec_object_binding_item, &my object) {
                 if (i->computed_key) {
@@ -784,7 +784,7 @@ void unique_symbol_decl_mark(UniqueSymbolDecl decl, TypeNode* annotation, Expr* 
     if (callee->tag == EXPR_PROPERTY && span_equals(property_key_inner_span(callee->property), "for")) callee = &callee->property->expr;
     if (callee->tag != EXPR_IDENTIFIER || !csview_equals(span_sv(callee->inner_span), "Symbol")) return;
     CallRare* rare = call_rare_mut(call);
-    if (!rare->unique_symbol) rare->unique_symbol = malloc(sizeof(UniqueSymbolDecl));
+    if (!rare->unique_symbol) rare->unique_symbol = ast_malloc(sizeof(UniqueSymbolDecl));
     *rare->unique_symbol = decl;
 }
 

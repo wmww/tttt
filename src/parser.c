@@ -458,7 +458,7 @@ static bool parse_function_args(
 static bool parse_numeric_value(Parser* parent, Value* ret);
 static bool parse_string(Parser* parent, cstr* ret);
 static const char* token_full_start(Parser* me);
-static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts);
+static bool parse_template(Parser* parent, VecExpr* ret, AstCStrs* texts);
 static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret);
 static void parse_computed_key_comma(Parser* p, Expr* key);
 static bool parse_decorators(Parser* parent, VecExpr* ret);
@@ -2996,7 +2996,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     VecSpannedType generic_params = {0};
 
     Span name;
-    VecSpan namespaces = vec_span_init();
+    AstSpans namespaces = ast_spans_init();
     if (!parse_identifier(&p, &name)) {
         // (A type reference takes the reserved words parse_identifier() refuses for expressions: `x: var` is TS2304)
         if (!starts_with_followed_by_word_break(&p, "var")) return parse_fail(&p);
@@ -3014,7 +3014,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
             }
             break;
         }
-        vec_span_push(&namespaces, name);
+        ast_spans_push(&namespaces, name);
         const char* after_dot = p.pos;
         hop_whitespace(&p);
         // After the dot any identifier name goes, keywords too (`AtRule.default`), but `a.` followed by two words on
@@ -3054,8 +3054,8 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
         .name = name,
         .generic_params = generic_params,
     };
-    if (vec_span_size(&namespaces)) identifier_type_rare(ret)->namespaces = namespaces;
-    else vec_span_drop(&namespaces);
+    if (ast_spans_size(&namespaces)) identifier_type_rare(ret)->namespaces = namespaces;
+    else ast_spans_drop(&namespaces);
     return parse_success(&p);
 }
 
@@ -3142,7 +3142,7 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
             // `import.defer(...)`: tsc's parseType makes an entity name with a missing first identifier of `.defer`
             // (its error at the same position as the missing `(`, dropped), which checkImportType says TS1141 about
             IdentifierType missing = { .name = span_make(p.shared->source, p.pos, p.pos) };
-            VecSpan namespaces = vec_span_init();
+            AstSpans namespaces = ast_spans_init();
             while (*p.pos == '.') {
                 Parser q = parser(&p);
                 hop_char(&q, '.');
@@ -3153,7 +3153,7 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
                     break;
                 }
                 parse_success(&q);
-                vec_span_push(&namespaces, missing.name);
+                ast_spans_push(&namespaces, missing.name);
                 missing.name = name;
             }
             identifier_type_rare(&missing)->namespaces = namespaces;
@@ -3210,7 +3210,7 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         if (!parse_identifier_or_keyword(&p, &name)) {
             expect_identifier(&p, &name);
         }
-        if (span_valid(identifier.name)) vec_span_push(&rare.namespaces, identifier.name);
+        if (span_valid(identifier.name)) ast_spans_push(&rare.namespaces, identifier.name);
         identifier.name = name;
         end = p.pos;
         hop_whitespace(&p);
@@ -7841,6 +7841,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         }
         vec_jsdoc_tag_drop(&tags);
     }
+    ast_cstr_seal(&item.name_string);
     *ret = item;
     return parse_success(&p);
 }
@@ -9820,6 +9821,7 @@ static bool parse_type_compat_literal(Parser* parent, Value* ret) {
     } else if (parse_numeric_value(&p, ret)) {
     } else if (parse_string(&p, &ret->string)) {
         ret->tag = VALUE_STRING;
+        ast_cstr_seal(&ret->string);
     } else {
         return parse_fail(&p);
     }
@@ -9838,7 +9840,7 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
     Anchor template_a = anchor(&p);
     p.pos++;
 
-    TemplateType template = { .texts = vec_cstr_init(), .types = vec_type_init(), .type_spans = vec_span_init() };
+    TemplateType template = { .texts = ast_cstrs_init(), .types = vec_type_init(), .type_spans = ast_spans_init() };
     cstr text = cstr_null;
     bool missing_tail = false; // As in parse_template()
     while ((*p.pos || nul_inside_file(&p)) && *p.pos != '`') {
@@ -9851,14 +9853,15 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
             if (!parse_string_escape(&p, &text, &errors, false)) report_escape_errors(&p, &errors);
         } else if (p.pos[0] == '$' && p.pos[1] == '{') {
             p.pos += 2;
-            vec_cstr_push(&template.texts, text);
+            ast_cstr_seal(&text);
+            ast_cstrs_push(&template.texts, text);
             text = cstr_null;
             hop_whitespace(&p);
             Anchor type_a = anchor(&p);
             TypeNode type;
             expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
             vec_type_push(&template.types, type);
-            vec_span_push(&template.type_spans, span_from(type_a));
+            ast_spans_push(&template.type_spans, span_from(type_a));
             hop_whitespace(&p);
             if (!expect_char(&p, '}')) {
                 missing_tail = true;
@@ -9874,7 +9877,8 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
             cstr_append_n(&text, run, p.pos - run);
         }
     }
-    vec_cstr_push(&template.texts, text);
+    ast_cstr_seal(&text);
+    ast_cstrs_push(&template.texts, text);
 
     if (vec_type_is_empty(&template.types)) {
         template_type_drop(&template);
@@ -10087,6 +10091,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         if (!parse_template(&p, &parsed.args, nullptr)) {
             parsed.args = vec_expr_init();
             parse_string_or_tagged(&p, &plain_string, false);
+            ast_cstr_seal(&plain_string);
         }
         // (tsc's checkGrammarTaggedTemplateChain: grammarErrorOnNode of the whole template)
         if (optional_template) {
@@ -10344,7 +10349,7 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
 
 // A template literal with substitutions, and if `texts` isn't null the cooked texts around them (one more than there
 // are substitutions). Fails if there are no substitutions, a plain template is a string literal (see parse_string())
-static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
+static bool parse_template(Parser* parent, VecExpr* ret, AstCStrs* texts) {
     Parser p = parser(parent);
 
     if (*p.pos != '`') {
@@ -10353,7 +10358,7 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
     p.pos++;
 
     VecExpr substitutions = vec_expr_init();
-    VecCStr cooked = vec_cstr_init();
+    AstCStrs cooked = ast_cstrs_init();
     cstr text = cstr_null;
     const char* segment = p.pos - 1; // Where the token of the text being read starts: the backtick or a `}`
     isize segment_errors = vec_error_size(&p.shared->errors);
@@ -10372,7 +10377,8 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
             if (p.pos[1] != '\n') cstr_append_lit(&text, "\n"); // (a lone \r is a line break too)
             p.pos++;
         } else if (p.pos[0] == '$' && p.pos[1] == '{') {
-            vec_cstr_push(&cooked, text);
+            ast_cstr_seal(&text);
+            ast_cstrs_push(&cooked, text);
             text = cstr_null;
             p.pos += 2;
             hop_whitespace(&p);
@@ -10393,14 +10399,15 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
             p.pos++;
         }
     }
-    vec_cstr_push(&cooked, text);
+    ast_cstr_seal(&text);
+    ast_cstrs_push(&cooked, text);
 
     if (vec_expr_is_empty(&substitutions)) {
         vec_expr_drop(&substitutions);
-        vec_cstr_drop(&cooked);
+        ast_cstrs_drop(&cooked);
         return parse_fail(&p);
     }
-    if (texts) *texts = cooked; else vec_cstr_drop(&cooked);
+    if (texts) *texts = cooked; else ast_cstrs_drop(&cooked);
 
     if (*p.pos == '`') {
         p.pos++;
@@ -10409,7 +10416,7 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
     }
 
     shrink_list(vec_expr, &substitutions);
-    if (texts) shrink_list(vec_cstr, texts);
+    if (texts) shrink_list(ast_cstrs, texts);
     *ret = substitutions;
     return parse_success(&p);
 }
@@ -11248,7 +11255,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     Tristate arrow_tristate;
 
     VecExpr substitutions;
-    VecCStr texts;
+    AstCStrs texts;
     // (Some branches below fill in ret's fields one by one: ret isn't zeroed)
     ret->assignment_pattern = false;
     ret->missing = false;
@@ -11913,7 +11920,7 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
             Value path;
             if (parse_literal(&require_p, &path)) {
                 if (path.tag == VALUE_STRING) {
-                    port_statement_rare_mut(statement)->target_path = cstr_move(&path.string);
+                    port_statement_rare_mut(statement)->target_path = ast_cstr_take(&path.string);
                     statement->target_path_span = span_from(path_anchor);
                 } else {
                     parse_error(&require_p, span_from(path_anchor), 1141, "String literal expected.");
@@ -12111,7 +12118,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
                 statement.main.tag = PORT_NOOP;
                 statement.side_effect_only = true;
                 statement.requires_target = true;
-                port_statement_rare_mut(&statement)->target_path = cstr_move(&path.string);
+                port_statement_rare_mut(&statement)->target_path = ast_cstr_take(&path.string);
                 statement.target_path_span = span_from(path_anchor);
                 statement.attributes = parse_import_attributes(&p, true);
                 statement.main.full_span = span_from(a);
@@ -12274,7 +12281,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         // (tsc's parseModuleSpecifier parses an expression: commas included, after a missing one too)
         if (!parsed) parse_comma_ops_right_side(&p, &path_expr);
         if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING) {
-            port_statement_rare_mut(&statement)->target_path = cstr_move(&path_expr.literal.string);
+            port_statement_rare_mut(&statement)->target_path = ast_cstr_take(&path_expr.literal.string);
             statement.target_path_span = path_expr.inner_span;
         } else if (path_expr.tag == EXPR_IMPLICIT_ANY) {
             port_statement_rare_mut(&statement)->missing_specifier = path_expr.inner_span;
@@ -13966,7 +13973,7 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
             if (is_string && is_module_keyword) {
                 ret->is_ambient_module = true;
                 ret->name = span_from(name_anchor);
-                ret->module_ref = add_module_ref(&p, cstr_move(&val.string), ret->name);
+                ret->module_ref = add_module_ref(&p, ast_cstr_take(&val.string), ret->name);
                 ret->module_ref->is_declaration = true;
                 ret->module_ref->nested_in_ambient_module = p.shared->ambient_module_depth > 0;
                 value_drop(&val);
