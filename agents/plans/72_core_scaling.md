@@ -74,8 +74,9 @@ keys, resolutions held until the loader takes them).
 150 ms on vscode (~8% of a 12-core run), 48 on webpack (~16%), < 15 on everything mid-size. The way to do it is
 unchanged (bugs/perf_leads.md: per-file tables merged in program order, merged type parameters made in declare). Redo
 it after stage 1, and only if the human's 12-core `--time` shows declare+link above 10% of the wall on vscode or
-webpack. Webpack's declare is high for its size (42 ms against a 130 ms walk), probably its big `types.d.ts` and
-`@types/node`. Look at that first: a serial fix there may be cheaper than parallelizing.
+webpack. Webpack's declare was high for its size (40 ms against a 52 ms walk): over half of it was the CommonJS
+export walk over every JavaScript file, now done right after parsing on the load pool's threads (2026-10-18:
+declare 40 -> 18 ms, link 7; the rest is spread over symbol hashing and `scope_init_declaration()`).
 
 ## Not a stage: load discovery (the lexical import pre-scan)
 At T4 the loader waited 1 ms on vscode and 26 on webpack: discovery isn't starving the pool. The loader's own work is

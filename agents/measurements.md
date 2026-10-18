@@ -12,6 +12,19 @@ elaboration text differs (`scripts/clidiff.py --corpora`). **The 12-core machine
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Perf session: serial declare, error merges, shared warm state (2026-10-18, todo entry 8)
+- webpack declare (`TTTT_RESOLVE_TIMES`, defaults): 40 -> 18 ms (the CommonJS export walk at parse time); link 7,
+  walk 52 unchanged.
+- Error merges (`error_ctx_merge()`, one pass): inbox-zero 1.29 -> 0.85 s (bun 0.86), its resolve step's shard merge
+  525 -> 36 ms; inbox-zero/apps/web 1.28 -> 0.86 s (bun 0.97). Both report ~22k errors (tsc too).
+- Shared warm state: perf_leads.md "Shared warm state at the defaults" (K1 / K4 / K2-off / K4-off / bun on dokploy,
+  monkeytype, karakeep; five policies prototyped, all reverted).
+- Bench: plan 67 "Where it stands" (tttt 3-5% above the 2026-10-17 table there, machine state: start and end commits
+  time the same interleaved). Instructions (callgrind) all within 2% of test/instrcount.txt (drizzle +1.34% as at
+  entry 7, vue +0.47, effect -0.36, vscode -0.07), not re-saved. Oracles at the window's starting point (suite 13826,
+  corpora 0/0 but vue 0/2, DT 8595, `$ExpectType` 68639, flagflip 18/8/3, source sweep sample 874/878, dts 1245/1274,
+  kdiff 1 (inbox-zero), recycle 4 / 3634).
+
 ## Refresh 2, declaration-emitting libraries and checkJs projects (2026-10-18, todo entry 7)
 25 repositories by a third rule (repos.txt's "Refresh 2" comment, candidates from `scripts/reposearch.py`): 16
 TypeScript libraries whose root tsconfig.json emits declarations, 9 JavaScript projects with checkJs (rarer: 19 topics

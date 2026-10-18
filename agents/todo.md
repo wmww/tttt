@@ -54,9 +54,12 @@ stay faster than bun on every corpus and the sweep's tail. Output byte-identical
    (binder), elaborated JSDoc `export default` (checker); left rocket's order-dependent TS7031
    (bugs/context_on_demand.md, architectural) and vest's dts items (bugs/dts_emit.md). Source sweep 3626 / 3634,
    dtsdiff 1245 / 1274, every other oracle at the starting point; suite 13826 / 13862.
-8. **Perf session**: webpack's serial declare (plan 72 "Declare + link"), the checker count for a large shared warm
-   state (perf_leads.md: dokploy, inbox-zero; must not lose a corpus against bun), instructions; `scripts/bench.sh
-   --runs 3 --bun` into plan 67 "Where it stands".
+8. Done (2026-10-18): perf session. webpack's serial declare 40 -> 18 ms (the CommonJS export walk moved to parse
+   time, `source_collect_commonjs_candidates()`); error merges in one pass (inbox-zero 1.29 -> 0.85 s, now level with
+   bun; apps/web 0.86 against bun's 0.97: ~22k errors merged quadratically, not warm state). The shared-warm-state
+   checker count: measured, five policies prototyped and reverted, none off plan 81's declined frontier
+   (perf_leads.md "Shared warm state at the defaults"). Every oracle at the starting point, instructions flat; bench
+   in plan 67 "Where it stands".
 9. **Triage.**
 10. **Insights.** report.md: did the debt plans delete their hacks, the refresh's two day-one numbers, whether the
     human's 12-core numbers arrived (vision.md item 22 waits on them).

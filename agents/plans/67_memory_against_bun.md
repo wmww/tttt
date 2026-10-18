@@ -128,35 +128,31 @@ tables 57, Scope **67** (747k kept of 1.43M made), ScopeRare 17.
 Byte-identical outputs (suite, oracles, threadcheck, checkerdiff), instructions flat (`scripts/instrcount.sh`, react
 and nest are the sensitive ones: plan 63 stage 1 cost them 0.6-0.8%), the K1/T4 table rerun.
 
-## Where it stands (2026-10-18, after the perf session of todo entry 8, `scripts/bench.sh --runs 3 --bun`)
+## Where it stands (2026-10-18, perf session of the twentieth window's todo entry 8, `scripts/bench.sh --runs 3 --bun`)
 The 4-vCPU box. Best wall s / peak MB; defaults = every core for both (tttt 4 checkers starting at 16 MB each, plan
-81 stage 1), single = `--singleThreaded` / `--threads=1` (tttt one checker at 256 MB). Plan 81 stage 1's table in
-brackets for tttt's defaults:
+81 stage 1), single = `--singleThreaded` / `--threads=1` (tttt one checker at 256 MB).
 | corpus | tttt | bun | tttt single | bun single |
 |---|---|---|---|---|
-| TypeScript6 compiler | 0.30 / 238 [0.30 / 229] | 0.45 / 214 | 0.55 / 215 | 0.83 / 213 |
-| type-fest | 0.48 / **415** [0.49 / 445] | 2.01 / 573 | 0.86 / **419** | 3.70 / 1012 |
-| valibot | 0.25 / 163 [0.26 / 161] | 0.47 / 153 | 0.47 / **250** | 1.01 / 278 |
-| react | 0.13 / **160** [0.14 / 158] | 0.35 / 299 | 0.18 / **141** | 0.38 / 178 |
-| nest | 0.10 / **148** [0.11 / 151] | 0.13 / 180 | 0.17 / **126** | 0.21 / 156 |
-| webpack | 0.61 / 424 [0.68 / 406] | 1.10 / 356 | 1.27 / 517 | 2.12 / 380 |
-| zod | 0.38 / **279** [0.43 / 274] | 0.68 / 319 | 0.67 / 388 | 1.35 / 381 |
-| xstate | 0.20 / 190 [0.23 / 198] | 0.29 / 164 | 0.34 / 189 | 0.59 / 174 |
-| drizzle | 0.59 / 365 [0.65 / 321] | 0.99 / 339 | 0.91 / 390 | 1.60 / 376 |
-| vue | 0.35 / **205** [0.42 / 220] | 0.56 / 221 | 0.72 / 301 | 1.18 / 286 |
-| effect | 0.60 / 330 [0.69 / 350] | 1.35 / 313 | 1.37 / 507 | 3.09 / 375 |
-| vscode | 6.16 / **1215** [6.46 / 1161] | 7.74 / 1556 | 13.17 / **1389** | 19.96 / 1417 |
-| excalidraw | 0.53 / **268** [0.58 / 265] | 0.81 / 279 | 0.90 / 360 | 1.47 / 358 |
-| tanstack-router | 0.31 / **255** [0.37 / 265] | 0.73 / 329 | 0.62 / **299** | 1.23 / 326 |
-tsgo (defaults / single): tttt uses less memory on all 14 at both (vscode 7831 / 6675 MB). **Against bun at the
-defaults**: faster on all 14, 1.3x (vscode, xstate, nest) to 4.2x (type-fest); at or below its peak on 8 of 14 (9 at
-stage 1: drizzle 321 -> 365 MB, its checkers recycling 19 times instead of 24 now that a file costs less, so fewer
-budget doublings settle higher; its wall 0.65 -> 0.59), within 1.2x on the rest (tsc 1.11x, valibot 1.07x, webpack
-1.19x, xstate 1.16x, drizzle 1.08x, effect 1.05x). Single-threaded at or below bun on 6 of 14 (zod 388 against 381:
-bun's own runs vary 376-387). The window's two memory stages cost +12% wall at the defaults; this session's
-instruction cuts (-3..-34%, measurements.md "Perf session paying for the budget") took the corpora's sum at the
-defaults from 11.43 to 11.02 s, the budget itself still +13% against no recycling (re-derivation, perf_leads.md "What
-the recycle budget costs at the defaults").
+| TypeScript6 compiler | 0.32 / 232 | 0.46 / 215 | 0.56 / 217 | 0.83 / 213 |
+| type-fest | 0.52 / **419** | 2.01 / 569 | 0.91 / **417** | 3.72 / 1012 |
+| valibot | 0.26 / 161 | 0.46 / 155 | 0.48 / **250** | 1.01 / 278 |
+| react | 0.13 / **152** | 0.35 / 296 | 0.18 / **138** | 0.38 / 177 |
+| nest | 0.10 / **145** | 0.13 / 178 | 0.19 / **129** | 0.22 / 156 |
+| webpack | 0.65 / 402 | 1.10 / 358 | 1.30 / 520 | 2.12 / 380 |
+| zod | 0.40 / **275** | 0.71 / 318 | 0.70 / **385** | 1.36 / 389 |
+| xstate | 0.21 / 186 | 0.28 / 161 | 0.35 / 191 | 0.59 / 174 |
+| drizzle | 0.63 / 368 | 0.99 / 334 | 0.96 / 389 | 1.60 / 376 |
+| vue | 0.36 / **196** | 0.55 / 220 | 0.74 / 299 | 1.19 / 286 |
+| effect | 0.64 / 327 | 1.37 / 312 | 1.44 / 504 | 3.13 / 375 |
+| vscode | 6.36 / **1168** | 7.73 / 1559 | 13.78 / **1361** | 20.14 / 1409 |
+| excalidraw | 0.57 / **269** | 0.82 / 277 | 1.00 / 362 | 1.48 / 360 |
+| tanstack-router | 0.33 / **266** | 0.73 / 334 | 0.66 / **298** | 1.23 / 325 |
+Against bun at the defaults: faster on all 14 (1.2x vscode and nest to 3.9x type-fest), at or below its peak on 8
+(within 1.16x on the rest: tsc 1.08, valibot 1.04, webpack 1.12, xstate 1.16, drizzle 1.10, effect 1.05).
+Single-threaded at or below bun on 7. tttt's times are 3-5% above the previous table's (2026-10-17) while bun's and
+the instruction counts are level; the session's start commit times the same as its end on effect K1 (1.44-1.47 s,
+interleaved), so that is the machine's state that day, not a regression. tsgo: tttt uses less memory on all 14 at
+both (vscode 8016 / 6628 MB).
 
 ## Not doing
 - Freeing ASTs or function bodies after their file is checked: other files' checks read declarations and infer
