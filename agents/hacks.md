@@ -317,6 +317,9 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   undefined and all are one type (react-select), not under exactOptionalPropertyTypes; a non-member part (`typeof f &
   { m?: X }`) drops PROP_OPTIONAL (required as a target). Always intersecting read types (tsc) is clean except a spurious
   TS2590 in tiptap/demos' NodeViewContent.tsx:19 (a part differing in identity). Correct: types that carry undefined (plan 82).
+  Tuple elements, partial spreads and union signatures already carry it, declared/mapped props and SigParams don't:
+  readers only work because the adds are idempotent. `widen_object_literal()` stores `never` under exact so readers
+  make it missing.
 - `conditional_source_related()` relates the distributive constraint without tsc's hasNonCircularBaseConstraint(source)
   gate: computing it inside an alias's resolution gives spurious TS2456 (type-fest's `_ConditionalPickDeep`, crawlee).
   Correct: lazier alias references, or the gate after the alias resolves. Its default-constraint step also pushes the

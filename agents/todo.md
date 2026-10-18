@@ -24,10 +24,12 @@ stay faster than bun on every corpus and the sweep's tail. Output byte-identical
    (vscode defaults 0.80 -> 0.16 s CPU re-materializing, 6.17 -> 6.10 s, peak 1253 -> 1221 MB). `--checker-memory 0`
    recycles after every file again (the -m 0 oracles weren't recycling small programs): recycle oracle 4 / 3566,
    pre-existing (measurements.md).
-2. **Plan 82 stage 1** (optional types carry their undefined): the investigation; it ends with stage 2 sized in the
-   plan.
-3. **Plan 82 stage 2**: the migration, if stage 1 sized it at one session. If not, do as much as fits with the
-   cross-check mode keeping the output unchanged, and put the remainder after the insights entry.
+2. Done (2026-10-18): plan 82 stage 1. ~140 sites inventoried; tttt already mixes both representations, safe only
+   because the adds are idempotent. A one-line flip loses 36 tests and adds 20 corpus diagnostics, all in predicted
+   classes. Cost: +0.1% types, effect +4% / ~+1% wall. Stage 2 sized at one session, stage 3 (tuples, parameters) at
+   one more.
+3. **Plan 82 stage 2** (properties): the flip, bare-reliant readers fixed, the `TTTT_CHECK_OPTIONALITY` cross-check,
+   reader adds deleted, the intersection hack gone.
 4. **Plan 83** (re-entrant member resolution): fix, or a sized plan.
 5. **Plan 84** (tsgo's two-phase load): the package-id HACK deleted.
 6. **Declaration emit tail by fan-out** (bugs/dts_emit.md): up to four Opus sub-agents in worktrees, one dtsdiff /
@@ -45,4 +47,4 @@ stay faster than bun on every corpus and the sweep's tail. Output byte-identical
     human's 12-core numbers arrived (vision.md item 22 waits on them).
 
 After the insights entry (for the next window): plan 58 + plan 66 stage 5 when 7.1.0 is out (expected after
-2026-11-24); plan 82's remainder if any; plan 76 only if the human reopens it.
+2026-11-24); plan 82 stage 3 (tuples and parameters, one session), plus stage 2's remainder if any; plan 76 only if the human reopens it.
