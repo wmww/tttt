@@ -1,0 +1,78 @@
+//// [test/cases/ttttAliasBodyTwinInstantiated.ts] ////
+
+=== routers.ts ===
+export type Action = Readonly<{ type: string }>;
+>Action : Symbol(Action, Decl(routers.ts, 0, 0))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>type : Symbol(type, Decl(routers.ts, 0, 31))
+
+export interface Plain { type: string }
+>Plain : Symbol(Plain, Decl(routers.ts, 0, 48))
+>type : Symbol(Plain.type, Decl(routers.ts, 1, 24))
+
+=== actions.ts ===
+export interface Box<P> { act(p: P): import("./routers").Action; plain(p: P): import("./routers").Plain }
+>Box : Symbol(Box, Decl(actions.ts, 0, 0))
+>P : Symbol(P, Decl(actions.ts, 0, 21))
+>act : Symbol(Box.act, Decl(actions.ts, 0, 25))
+>p : Symbol(p, Decl(actions.ts, 0, 30))
+>P : Symbol(P, Decl(actions.ts, 0, 21))
+>Action : Symbol(Action, Decl(routers.ts, 0, 0))
+>plain : Symbol(Box.plain, Decl(actions.ts, 0, 64))
+>p : Symbol(p, Decl(actions.ts, 0, 71))
+>P : Symbol(P, Decl(actions.ts, 0, 21))
+>Plain : Symbol(Plain, Decl(routers.ts, 0, 48))
+
+export declare const direct: { act(s: string): import("./routers").Action };
+>direct : Symbol(direct, Decl(actions.ts, 1, 20))
+>act : Symbol(act, Decl(actions.ts, 1, 30))
+>s : Symbol(s, Decl(actions.ts, 1, 35))
+>Action : Symbol(Action, Decl(routers.ts, 0, 0))
+
+declare const c: boolean;
+>c : Symbol(c, Decl(actions.ts, 2, 13))
+
+declare const b: Box<string>;
+>b : Symbol(b, Decl(actions.ts, 3, 13))
+>Box : Symbol(Box, Decl(actions.ts, 0, 0))
+
+export const mk0 = () => c ? 1 : b.act;
+>mk0 : Symbol(mk0, Decl(actions.ts, 4, 12))
+>c : Symbol(c, Decl(actions.ts, 2, 13))
+>b.act : Symbol(Box.act, Decl(actions.ts, 0, 25))
+>b : Symbol(b, Decl(actions.ts, 3, 13))
+>act : Symbol(Box.act, Decl(actions.ts, 0, 25))
+
+=== main.ts ===
+import { Box, direct } from "./actions";
+>Box : Symbol(Box, Decl(main.ts, 0, 8))
+>direct : Symbol(direct, Decl(main.ts, 0, 13))
+
+declare const c: boolean;
+>c : Symbol(c, Decl(main.ts, 1, 13))
+
+declare const b: Box<string>;
+>b : Symbol(b, Decl(main.ts, 2, 13))
+>Box : Symbol(Box, Decl(main.ts, 0, 8))
+
+export const mk = () => c ? 1 : b.act;
+>mk : Symbol(mk, Decl(main.ts, 3, 12))
+>c : Symbol(c, Decl(main.ts, 1, 13))
+>b.act : Symbol(Box.act, Decl(actions.ts, 0, 25))
+>b : Symbol(b, Decl(main.ts, 2, 13))
+>act : Symbol(Box.act, Decl(actions.ts, 0, 25))
+
+export const mk2 = () => c ? 1 : b.plain;
+>mk2 : Symbol(mk2, Decl(main.ts, 4, 12))
+>c : Symbol(c, Decl(main.ts, 1, 13))
+>b.plain : Symbol(Box.plain, Decl(actions.ts, 0, 64))
+>b : Symbol(b, Decl(main.ts, 2, 13))
+>plain : Symbol(Box.plain, Decl(actions.ts, 0, 64))
+
+export const mk3 = () => c ? 1 : direct.act;
+>mk3 : Symbol(mk3, Decl(main.ts, 5, 12))
+>c : Symbol(c, Decl(main.ts, 1, 13))
+>direct.act : Symbol(act, Decl(actions.ts, 1, 30))
+>direct : Symbol(direct, Decl(main.ts, 0, 13))
+>act : Symbol(act, Decl(actions.ts, 1, 30))
+

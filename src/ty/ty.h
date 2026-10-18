@@ -378,6 +378,9 @@ struct Ty {
             // about the type parameters of its signatures, which lose them
             bool applies_type_args : 1;
             bool realiased : 1; // the same type as `target` + `mapper` by another alias name, see ty_realias()
+            // An alias body's homomorphic mapped instance (ty_alias_body_mapped_instance()): any instantiation makes it the
+            // ordinary instance again, as tsc's couldContainTypeVariables lets any mapper through to it
+            bool alias_body_twin : 1;
             bool free_params_unknown : 1;
             // Uninstantiated only: the node mentions no type parameter, its free_params are the ones around the Block
             // it is in (tsc's isTypeParameterPossiblyReferenced): instantiated for identity's sake, its members the same
@@ -1671,10 +1674,15 @@ bool ty_param_has_default(Ty const* param); // Whether it declares a default (wi
 TyMapper const* ty_mapper_new(Checker* me, TyList sources, TyList targets);
 // (What ty_instantiate() doesn't decide inline: half of its calls have nothing to instantiate, drizzle 9M calls)
 Ty const* ty_instantiate_mapped(Checker* me, Ty const* ty, TyMapper const* mapper, bool tail);
+Ty const* ty_alias_body_twin_instance(Checker* me, Ty const* twin); // The ordinary instance it stands next to
 static inline Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper) {
     bool tail = my instantiating_tail;
     my instantiating_tail = false;
-    if (!mapper || !mapper->len || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return ty;
+    if (!mapper || !mapper->len) return ty;
+    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        if (ty->kind == TY_ANONYMOUS && ty->anonymous.alias_body_twin) return ty_alias_body_twin_instance(me, ty);
+        return ty;
+    }
     return ty_instantiate_mapped(me, ty, mapper, tail);
 }
 Ty const* ty_instantiate_tail(Checker* me, Ty const* ty, TyMapper const* mapper); // A conditional type's branch

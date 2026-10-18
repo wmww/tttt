@@ -791,10 +791,11 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
 // mapped type's own name (tsc's instantiateMappedType doesn't pass the new alias on to an object), but is its own type:
 // tsc's getObjectTypeInstantiation cached it under the new alias, so `N | Readonly<{ a: 1 }>` written elsewhere has two
 // members. Instantiated (when its arguments are generic) it is the ordinary instance again, through ty_realias().
-// HACK: tsc instantiates it whenever couldContainTypeVariables says its arguments could change, which a type literal
-// always can, and gets the ordinary instance then too (an instantiated signature returning N doesn't reuse its
-// annotation). tttt's TYF_COULD_CONTAIN_TYPE_VARIABLES is exact and doubles as "generic" in member resolution, so
-// that isn't emulated (hacks.md)
+// tsc instantiates it whenever couldContainTypeVariables says it could change, which a mapped type's instance always
+// can, and gets the ordinary instance then too (an instantiated signature returning N doesn't reuse its annotation):
+// ty_instantiate() turns it back with any mapper (alias_body_twin; TYF_COULD_CONTAIN_TYPE_VARIABLES is exact in tttt
+// and doubles as "generic" in member resolution, so it stays off). HACK: only where it is met directly; tsc gets
+// there through any type literal around it too, which tttt doesn't instantiate without free type parameters (hacks.md)
 Ty const* ty_alias_body_mapped_instance(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args) {
     if (ty->kind != TY_ANONYMOUS || !ty->anonymous.mapped || !ty->anonymous.target || ty->anonymous.realiased || !alias ||
         ty->alias == alias
@@ -815,6 +816,7 @@ Ty const* ty_alias_body_mapped_instance(Checker* me, Ty const* ty, Symbol const*
         fresh->anonymous = ty->anonymous;
         // (Instantiated, ty_realias() puts back the name it has, the mapped type's own: the ordinary instance)
         fresh->anonymous.realiased = true;
+        fresh->anonymous.alias_body_twin = true;
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
         fresh->alias = ty->alias;
         fresh->alias_args = ty->alias_args;
@@ -822,6 +824,10 @@ Ty const* ty_alias_body_mapped_instance(Checker* me, Ty const* ty, Symbol const*
         ret = fresh;
     }
     return ret;
+}
+
+Ty const* ty_alias_body_twin_instance(Checker* me, Ty const* twin) {
+    return ty_instantiate_mapped(me, twin->anonymous.target, twin->anonymous.mapper, false);
 }
 
 // `type Bar = Omit<Foo, "c">`: the instantiation of a generic alias written directly as the body of another alias goes

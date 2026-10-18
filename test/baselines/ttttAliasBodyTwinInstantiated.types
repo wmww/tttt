@@ -1,0 +1,79 @@
+//// [test/cases/ttttAliasBodyTwinInstantiated.ts] ////
+
+=== routers.ts ===
+export type Action = Readonly<{ type: string }>;
+>Action : Readonly<{ type: string; }>
+>type : string
+
+export interface Plain { type: string }
+>type : string
+
+=== actions.ts ===
+export interface Box<P> { act(p: P): import("./routers").Action; plain(p: P): import("./routers").Plain }
+>act : (p: P) => import("./routers").Action
+>p : P
+>plain : (p: P) => import("./routers").Plain
+>p : P
+
+export declare const direct: { act(s: string): import("./routers").Action };
+>direct : { act(s: string): import("./routers").Action; }
+>act : (s: string) => import("./routers").Action
+>s : string
+
+declare const c: boolean;
+>c : boolean
+
+declare const b: Box<string>;
+>b : Box<string>
+
+export const mk0 = () => c ? 1 : b.act;
+>mk0 : () => 1 | ((p: string) => Readonly<{ type: string; }>)
+>() => c ? 1 : b.act : () => 1 | ((p: string) => Readonly<{ type: string; }>)
+>c ? 1 : b.act : 1 | ((p: string) => Readonly<{ type: string; }>)
+>c : boolean
+>1 : 1
+>b.act : (p: string) => Readonly<{ type: string; }>
+>b : Box<string>
+>act : (p: string) => Readonly<{ type: string; }>
+
+=== main.ts ===
+import { Box, direct } from "./actions";
+>Box : any
+>direct : { act(s: string): import("./routers").Action; }
+
+declare const c: boolean;
+>c : boolean
+
+declare const b: Box<string>;
+>b : Box<string>
+
+export const mk = () => c ? 1 : b.act;
+>mk : () => 1 | ((p: string) => Readonly<{ type: string; }>)
+>() => c ? 1 : b.act : () => 1 | ((p: string) => Readonly<{ type: string; }>)
+>c ? 1 : b.act : 1 | ((p: string) => Readonly<{ type: string; }>)
+>c : boolean
+>1 : 1
+>b.act : (p: string) => Readonly<{ type: string; }>
+>b : Box<string>
+>act : (p: string) => Readonly<{ type: string; }>
+
+export const mk2 = () => c ? 1 : b.plain;
+>mk2 : () => 1 | ((p: string) => import("./routers").Plain)
+>() => c ? 1 : b.plain : () => 1 | ((p: string) => import("./routers").Plain)
+>c ? 1 : b.plain : 1 | ((p: string) => import("./routers").Plain)
+>c : boolean
+>1 : 1
+>b.plain : (p: string) => import("./routers").Plain
+>b : Box<string>
+>plain : (p: string) => import("./routers").Plain
+
+export const mk3 = () => c ? 1 : direct.act;
+>mk3 : () => 1 | ((s: string) => import("./routers").Action)
+>() => c ? 1 : direct.act : () => 1 | ((s: string) => import("./routers").Action)
+>c ? 1 : direct.act : 1 | ((s: string) => import("./routers").Action)
+>c : boolean
+>1 : 1
+>direct.act : (s: string) => import("./routers").Action
+>direct : { act(s: string): import("./routers").Action; }
+>act : (s: string) => import("./routers").Action
+

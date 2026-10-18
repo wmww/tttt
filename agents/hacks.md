@@ -374,14 +374,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   rule in `relation_line_said()` (vitest TS2344), `intersection_props_related`'s TS2741 member choice (a valibot probe).
 
 ## Type core (`src/ty/`)
-- **An alias body's homomorphic mapped instance isn't re-instantiated like tsc's** (`ty_alias_body_mapped_instance()`,
-  instantiate.c): `type N = Readonly<{...}>` is a twin of the ordinary instance (tsc caches it under N); tsc instantiates
-  it with any mapper once couldContainTypeVariables says a type argument could change (any type literal can), getting
-  the ordinary instance, so an instantiated signature returning N doesn't reuse its annotation (prints `Readonly<{...}>`
-  where tttt reuses `N`, or `import("...").N`). Emulating it needs tsc's syntactic couldContainTypeVariables on the
-  twin, but tttt's TYF_COULD_CONTAIN_TYPE_VARIABLES also means "generic" in member resolution (setting it on the twin
-  broke `Mutable<T>` property access over a constraint with one, excalidraw). Needs a separate "tsc would instantiate"
-  bit.
+- **An alias body's homomorphic mapped instance is re-instantiated only where met directly** (`ty_alias_body_mapped_instance()`,
+  `alias_body_twin` in `ty_instantiate()`): `type N = Readonly<{...}>` is a twin of the ordinary instance (tsc caches it
+  under N); tsc instantiates it with any mapper (couldContainTypeVariables is true for any mapped instance or type
+  literal), getting the ordinary instance, so an instantiated signature returning N prints `Readonly<{...}>`. tttt turns
+  the twin back when ty_instantiate() meets it with a mapper, but not inside a type literal without free type parameters
+  (`{ a: N }` in `Box<P>`'s members), which tttt doesn't instantiate and tsc does. TYF_COULD_CONTAIN_TYPE_VARIABLES
+  can't say it: it doubles as "generic" in member resolution (setting it on the twin broke excalidraw's `Mutable<T>`).
 - **An indexed access type node's missing key prints its object to a dropped string** (`lower()` TYPE_INDEXED,
   lower.c): tsc reports the key inside getIndexedAccessType, and the typeToString of its message resolves an
   anonymous object's member types while the alias resolves (`type A = { a: A }["x"]` is TS2456). tttt reproduces

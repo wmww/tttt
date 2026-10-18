@@ -36,7 +36,6 @@ gap to bun is per-checker re-derivation (bugs/perf_leads.md).
   `-c xstate -F sloppy` runs under load to see how often. Seen again 2026-10-18 (todo entry 6, agent D): flagflip 18 / 9 / 3, the extra spurious an xstate
   TS5115 whose count varied between runs on the same binary.
 - From human: fan out to parallel sub-agents in worktrees where possible, makes things go faster
-- types baseline: a reused node's `import("./routers")` printed `import("./routers.js")` in hover-style types output (`>mk : () => ... | ((s: string) => import("./routers").Action)`, tsgo keeps the node's specifier without .js for the reused return annotation of a function type in a union); found by agent C 2026-10-18 writing ttttAliasBodyMappedTypeIdentity
 - (2026-10-18, todo entry 6) **dtsdiff's tail is now mostly tsgo's checker split.** After the fan-out (1206+ / 1233),
   the biggest bucket left is member order (11 projects: the per-checker undefinedProperties cache, incl. vscode's
   `readonly id?: undefined`, the readonly copied from whichever declaration made the symbol), and three agents

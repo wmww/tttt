@@ -11,6 +11,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttAliasBodyTwinInstantiated': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAliasThroughImportNewIdentity': {
         errors: true,
         symbols: true,
