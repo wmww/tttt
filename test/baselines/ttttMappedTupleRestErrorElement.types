@@ -1,0 +1,46 @@
+//// [test/cases/ttttMappedTupleRestErrorElement.ts] ////
+
+=== ttttMappedTupleRestErrorElement.ts ===
+// A homomorphic mapped type over a tuple maps a rest element as an array (tsc's instantiateMappedTupleType), which an
+// error element makes the error type (instantiateMappedArrayType), whose element type is none: the element is unknown
+import type { Missing } from "nowhere";
+>Missing : any
+
+type Writeable<T> = { -readonly [P in keyof T]: T[P] };
+>Writeable : Writeable<T>
+
+type Partial2<T> = { [P in keyof T]?: T[P] };
+>Partial2 : Partial2<T>
+
+export declare function f<T extends readonly unknown[]>(x: T): Writeable<T>;
+>f : <T extends readonly unknown[]>(x: T) => Writeable<T>
+>x : T
+
+export declare function g<T extends readonly unknown[]>(x: T): Partial2<T>;
+>g : <T extends readonly unknown[]>(x: T) => Partial2<T>
+>x : T
+
+export const d = f([] as any as [Missing, ...Missing[]]);
+>d : [Missing, ...unknown[]]
+>f([] as any as [Missing, ...Missing[]]) : [Missing, ...unknown[]]
+>f : <T extends readonly unknown[]>(x: T) => Writeable<T>
+>[] as any as [Missing, ...Missing[]] : [Missing, ...Missing[]]
+>[] as any : any
+>[] : never[]
+
+export const e = f([] as any as [number, ...Missing[], string]);
+>e : [number, ...unknown[], string]
+>f([] as any as [number, ...Missing[], string]) : [number, ...unknown[], string]
+>f : <T extends readonly unknown[]>(x: T) => Writeable<T>
+>[] as any as [number, ...Missing[], string] : [number, ...Missing[], string]
+>[] as any : any
+>[] : never[]
+
+export const h = g([] as any as [Missing, ...Missing[]]);
+>h : any
+>g([] as any as [Missing, ...Missing[]]) : any
+>g : <T extends readonly unknown[]>(x: T) => Partial2<T>
+>[] as any as [Missing, ...Missing[]] : [Missing, ...Missing[]]
+>[] as any : any
+>[] : never[]
+

@@ -1,0 +1,57 @@
+//// [test/cases/ttttMappedTupleRestErrorElement.ts] ////
+
+=== ttttMappedTupleRestErrorElement.ts ===
+// A homomorphic mapped type over a tuple maps a rest element as an array (tsc's instantiateMappedTupleType), which an
+// error element makes the error type (instantiateMappedArrayType), whose element type is none: the element is unknown
+import type { Missing } from "nowhere";
+>Missing : Symbol(Missing, Decl(ttttMappedTupleRestErrorElement.ts, 2, 13))
+
+type Writeable<T> = { -readonly [P in keyof T]: T[P] };
+>Writeable : Symbol(Writeable, Decl(ttttMappedTupleRestErrorElement.ts, 2, 39))
+>T : Symbol(T, Decl(ttttMappedTupleRestErrorElement.ts, 3, 15))
+>P : Symbol(P, Decl(ttttMappedTupleRestErrorElement.ts, 3, 33))
+>T : Symbol(T, Decl(ttttMappedTupleRestErrorElement.ts, 3, 15))
+>T : Symbol(T, Decl(ttttMappedTupleRestErrorElement.ts, 3, 15))
+>P : Symbol(P, Decl(ttttMappedTupleRestErrorElement.ts, 3, 33))
+
+type Partial2<T> = { [P in keyof T]?: T[P] };
+>Partial2 : Symbol(Partial2, Decl(ttttMappedTupleRestErrorElement.ts, 3, 55))
+>T : Symbol(T, Decl(ttttMappedTupleRestErrorElement.ts, 4, 14))
+>P : Symbol(P, Decl(ttttMappedTupleRestErrorElement.ts, 4, 22))
+>T : Symbol(T, Decl(ttttMappedTupleRestErrorElement.ts, 4, 14))
+>T : Symbol(T, Decl(ttttMappedTupleRestErrorElement.ts, 4, 14))
+>P : Symbol(P, Decl(ttttMappedTupleRestErrorElement.ts, 4, 22))
+
+export declare function f<T extends readonly unknown[]>(x: T): Writeable<T>;
+>f : Symbol(f, Decl(ttttMappedTupleRestErrorElement.ts, 4, 45))
+>T : Symbol(T, Decl(ttttMappedTupleRestErrorElement.ts, 5, 26))
+>x : Symbol(x, Decl(ttttMappedTupleRestErrorElement.ts, 5, 56))
+>T : Symbol(T, Decl(ttttMappedTupleRestErrorElement.ts, 5, 26))
+>Writeable : Symbol(Writeable, Decl(ttttMappedTupleRestErrorElement.ts, 2, 39))
+>T : Symbol(T, Decl(ttttMappedTupleRestErrorElement.ts, 5, 26))
+
+export declare function g<T extends readonly unknown[]>(x: T): Partial2<T>;
+>g : Symbol(g, Decl(ttttMappedTupleRestErrorElement.ts, 5, 76))
+>T : Symbol(T, Decl(ttttMappedTupleRestErrorElement.ts, 6, 26))
+>x : Symbol(x, Decl(ttttMappedTupleRestErrorElement.ts, 6, 56))
+>T : Symbol(T, Decl(ttttMappedTupleRestErrorElement.ts, 6, 26))
+>Partial2 : Symbol(Partial2, Decl(ttttMappedTupleRestErrorElement.ts, 3, 55))
+>T : Symbol(T, Decl(ttttMappedTupleRestErrorElement.ts, 6, 26))
+
+export const d = f([] as any as [Missing, ...Missing[]]);
+>d : Symbol(d, Decl(ttttMappedTupleRestErrorElement.ts, 7, 12))
+>f : Symbol(f, Decl(ttttMappedTupleRestErrorElement.ts, 4, 45))
+>Missing : Symbol(Missing, Decl(ttttMappedTupleRestErrorElement.ts, 2, 13))
+>Missing : Symbol(Missing, Decl(ttttMappedTupleRestErrorElement.ts, 2, 13))
+
+export const e = f([] as any as [number, ...Missing[], string]);
+>e : Symbol(e, Decl(ttttMappedTupleRestErrorElement.ts, 8, 12))
+>f : Symbol(f, Decl(ttttMappedTupleRestErrorElement.ts, 4, 45))
+>Missing : Symbol(Missing, Decl(ttttMappedTupleRestErrorElement.ts, 2, 13))
+
+export const h = g([] as any as [Missing, ...Missing[]]);
+>h : Symbol(h, Decl(ttttMappedTupleRestErrorElement.ts, 9, 12))
+>g : Symbol(g, Decl(ttttMappedTupleRestErrorElement.ts, 5, 76))
+>Missing : Symbol(Missing, Decl(ttttMappedTupleRestErrorElement.ts, 2, 13))
+>Missing : Symbol(Missing, Decl(ttttMappedTupleRestErrorElement.ts, 2, 13))
+

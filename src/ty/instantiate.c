@@ -373,6 +373,9 @@ static Ty const* mapped_over_array_or_tuple(
             TyMapper const* element_mapper = ty_mapper_with(me, ty_mapper_with(me, mapper, variable, array),
                 mapped->type_param, ty_intrinsic(me, TY_NUMBER));
             Ty const* mapped_element = mapped_element_optionality(me, mapped, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), false);
+            // (tsc maps the array, which an error element makes the error type, whose element type is none: unknown,
+            // `Writeable<[X, ...X[]]>` of an unresolved X is `[X, ...unknown[]]`)
+            if (mapped_element->flags & TYF_ERROR) mapped_element = ty_intrinsic(me, TY_UNKNOWN_);
             mapped_elements[i] = rest ? ty_array(me, mapped_element, false) : mapped_element;
             // (The modifiers apply to a fixed element after the rest one too: `Partial<[...T, number]>` ends in
             // `(number | undefined)?`, tsc's newElementFlags)
