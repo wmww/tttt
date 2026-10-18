@@ -219,28 +219,17 @@ Same diagnostics by (file, line, column, code), other text. Full run 2026-10-18 
 3675 projects): 3612 match, **54 `text`**, 9 `diagnostics` (the sweeps' business), 0 order/exit code/crash. Each needs
 a cut-down repro first (`scripts/clidiff.py -f '^PROJECT$' -v`; `-k KIND --last` lists a bucket's diagnostics). By
 mechanism, roughly by projects:
-- **Truncation depth / alias vs structure** (gemini-cli `scripts/tests/eval-inventory.test.ts:21`: tsc expands
-  `location: { line: number; column: number; }`, tttt prints the alias `EvalSourceLocation`; graphql-yoga envelop
-  `SpreadTwo<{}, {}>` vs `...`; react-scan `types.ts:35` a member elided as `...` at another depth; apollo-client
-  integration-tests/vite `DeepPartial<TValue>` vs `DeepPartial<...>`, `(...)` vs `...`; es-toolkit `isEmpty.spec.ts:56`
-  `prototype: ...` vs `any`; babel-traverse `visitors.ts:168` the union's leading `{}` member missing and `... 755
-  more` vs `753`; quicktype/test TS2322 `Partial<RendererOptions<"csharp", OptionMap<...>>>` printed without its
-  defaulted type argument). Method that found rxjs's and mikro-orm's: a /tmp overlay build of tsgo's cmd/tsc with
-  nodebuilderimpl.go's typeToTypeNode logging `b.ctx.approximateLength` and the type's symbol on entry and exit
-  (env-gated; `go build -overlay` with ensure-typescript.sh --env), against the same log of `*d.approx` around
-  ty_display(); the first entry where the numbers part is the bug.
-- **Zod v4 TS5115 list order** (crawlee x4, unocss x2, knip fixture, webpack: `schemas.d.cts(804,5)`): tsc `'IsOptionalIn',
-  '$ZodTypeInternals', '$InferZodRecordInput'`, tttt starts at `$ZodTypeInternals`: where the instantiation stack is
-  cut, or its rotation (TS5115's checker dependence is tsgo's own: bugs/tsgo_divergences.md).
-- **Truncation of reprinted colliding names** (pinia/packages/nuxt and its playground, 1 TS2416 chain each: tsc
-  `NodeJS.WritableStream | WritableStream<...>`, tttt `WritableStream<any>`): tsc's mapToTypeNodes prints every list
-  member, then reprints the ones whose bare names collide fully qualified in the same context, so their
-  approximateLength counts twice and the reprint's type arguments pass the truncation length; tttt's name_collisions()
-  decides up front and prints them once. Fix: in display_union/display_list, count a colliding member's bare print
-  before its qualified one, in tsc's order (all members first, then the reprints).
-- **Suggestion pick** (TS2551: gemini-cli/packages/cli `maybeStartExtension` -> tsc `startExtension`, tttt
-  `restartExtension`; sequelize/packages/sqlite3 `createTableQuery` -> `truncateTableQuery` vs `_replaceTableQuery`;
-  ngx-formly TS7052 `Did you mean to call 'get...'`): getSpellingSuggestion's candidates and tie-breaking.
-- **Which duplicate is named** (hop-protocol TS2300 in next's `image-types/global.d.ts:7`: `'src'` vs `'content'`).
-- Corpora: webpack's only difference left is the zod TS5115 order above (its `HookMap<...>` types fixed by ece423b2,
-  drizzle's by b3c2fbfa); vue's two are a `diagnostics` verdict (known).
+- **Truncation depth** (apollo-client/integration-tests/vite: `DeepPartial<TValue>` vs `DeepPartial<...>`, `(...)` vs
+  `...`, and a TS2322 chain three lines shorter, `'undefined & TData' ... 'RegExp & CustomMaybeMaskedImplementation'`;
+  babel-traverse `visitors.ts:168`: tsc's union starts with a `{}` member tttt lacks, `... 753 more` vs `754`, maybe a
+  union member difference rather than printing; tiptap/demos `JSX/{React,Vue}/Paragraph.tsx(6,3)` and 22 more: tsc
+  elides `Record<...>` early inside the `this:` type and prints `{ HTMLAttributes }: { node: Node; ... }` later, tttt
+  the reverse, so tttt counts less before and more after; Extendable.test.ts's TS2349 prints a signature's type
+  parameter defaults `= any` where tttt has `= Options`, a different bug). Method that found rxjs's and mikro-orm's: a
+  /tmp overlay build of tsgo's cmd/tsc with nodebuilderimpl.go's typeToTypeNode logging `b.ctx.approximateLength` and
+  the type's symbol on entry and exit (env-gated; `go build -overlay` with ensure-typescript.sh --env), against the same
+  log of `*d.approx` around ty_display(); the first entry where the numbers part is the bug. The same logging at
+  mapToTypeNodes, and threshold probes (grow a property name before the type until a `...` appears, binary search,
+  both CLIs) narrowed graphql-yoga's to colliding list members.
+- Corpora: all match but vue's two `diagnostics` (known); webpack's zod TS5115 order was the missing-properties scan
+  typing the source (cfcd8174).
