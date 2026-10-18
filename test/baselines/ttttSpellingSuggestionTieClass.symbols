@@ -1,0 +1,39 @@
+//// [test/cases/ttttSpellingSuggestionTieClass.ts] ////
+
+=== ttttSpellingSuggestionTieClass.ts ===
+// A class's own members at the same distance: the first declared wins (tsgo's compareSymbols by declaration). The
+// instance type's members are instantiated for `this`: their declarations are their targets'
+class Manager {
+>Manager : Symbol(Manager, Decl(ttttSpellingSuggestionTieClass.ts, 0, 0))
+
+    startExtension = 1;
+>startExtension : Symbol(Manager.startExtension, Decl(ttttSpellingSuggestionTieClass.ts, 2, 15))
+
+    async restartExtension() {}
+>restartExtension : Symbol(Manager.restartExtension, Decl(ttttSpellingSuggestionTieClass.ts, 3, 23))
+
+    f() { this.maybeStartExtension; }
+>f : Symbol(Manager.f, Decl(ttttSpellingSuggestionTieClass.ts, 4, 31))
+>this : Symbol(Manager, Decl(ttttSpellingSuggestionTieClass.ts, 0, 0))
+}
+class Generic<T> {
+>Generic : Symbol(Generic, Decl(ttttSpellingSuggestionTieClass.ts, 6, 1))
+>T : Symbol(T, Decl(ttttSpellingSuggestionTieClass.ts, 7, 14))
+
+    truncateTableQuery(t: T) {}
+>truncateTableQuery : Symbol(Generic.truncateTableQuery, Decl(ttttSpellingSuggestionTieClass.ts, 7, 18))
+>t : Symbol(t, Decl(ttttSpellingSuggestionTieClass.ts, 8, 23))
+>T : Symbol(T, Decl(ttttSpellingSuggestionTieClass.ts, 7, 14))
+
+    _replaceTableQuery(t: T) {}
+>_replaceTableQuery : Symbol(Generic._replaceTableQuery, Decl(ttttSpellingSuggestionTieClass.ts, 8, 31))
+>t : Symbol(t, Decl(ttttSpellingSuggestionTieClass.ts, 9, 23))
+>T : Symbol(T, Decl(ttttSpellingSuggestionTieClass.ts, 7, 14))
+}
+declare const g: Generic<string>;
+>g : Symbol(g, Decl(ttttSpellingSuggestionTieClass.ts, 11, 13))
+>Generic : Symbol(Generic, Decl(ttttSpellingSuggestionTieClass.ts, 6, 1))
+
+g.createTableQuery;
+>g : Symbol(g, Decl(ttttSpellingSuggestionTieClass.ts, 11, 13))
+

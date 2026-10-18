@@ -1,0 +1,25 @@
+ttttSpellingSuggestionTieClass.ts(6,16): error TS2551: Property 'maybeStartExtension' does not exist on type 'Manager'. Did you mean 'startExtension'?
+ttttSpellingSuggestionTieClass.ts(13,3): error TS2551: Property 'createTableQuery' does not exist on type 'Generic<string>'. Did you mean 'truncateTableQuery'?
+
+
+==== ttttSpellingSuggestionTieClass.ts (2 errors) ====
+    // A class's own members at the same distance: the first declared wins (tsgo's compareSymbols by declaration). The
+    // instance type's members are instantiated for `this`: their declarations are their targets'
+    class Manager {
+        startExtension = 1;
+        async restartExtension() {}
+        f() { this.maybeStartExtension; }
+                   ~~~~~~~~~~~~~~~~~~~
+!!! error TS2551: Property 'maybeStartExtension' does not exist on type 'Manager'. Did you mean 'startExtension'?
+!!! related TS2728 ttttSpellingSuggestionTieClass.ts:4:5: 'startExtension' is declared here.
+    }
+    class Generic<T> {
+        truncateTableQuery(t: T) {}
+        _replaceTableQuery(t: T) {}
+    }
+    declare const g: Generic<string>;
+    g.createTableQuery;
+      ~~~~~~~~~~~~~~~~
+!!! error TS2551: Property 'createTableQuery' does not exist on type 'Generic<string>'. Did you mean 'truncateTableQuery'?
+!!! related TS2728 ttttSpellingSuggestionTieClass.ts:9:5: 'truncateTableQuery' is declared here.
+    

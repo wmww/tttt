@@ -1,0 +1,53 @@
+//// [test/cases/ttttIndexSignatureMethodSuggestion.ts] ////
+
+=== ttttIndexSignatureMethodSuggestion.ts ===
+// TS7052's suggestion names the object as tsc's tryGetPropertyAccessOrIdentifierToString does: bracket accesses with
+// a property name key (an identifier, a string, a number as JavaScript prints it) as dots, parentheses as nothing
+interface M { get(k: string): number; set(k: string, v: number): void }
+>M : Symbol(M, Decl(ttttIndexSignatureMethodSuggestion.ts, 0, 0))
+>get : Symbol(M.get, Decl(ttttIndexSignatureMethodSuggestion.ts, 2, 13))
+>k : Symbol(k, Decl(ttttIndexSignatureMethodSuggestion.ts, 2, 18))
+>set : Symbol(M.set, Decl(ttttIndexSignatureMethodSuggestion.ts, 2, 37))
+>k : Symbol(k, Decl(ttttIndexSignatureMethodSuggestion.ts, 2, 42))
+>v : Symbol(v, Decl(ttttIndexSignatureMethodSuggestion.ts, 2, 52))
+
+declare const field: { group: M[]; m: M };
+>field : Symbol(field, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 13))
+>group : Symbol(group, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 22))
+>M : Symbol(M, Decl(ttttIndexSignatureMethodSuggestion.ts, 0, 0))
+>m : Symbol(m, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 34))
+>M : Symbol(M, Decl(ttttIndexSignatureMethodSuggestion.ts, 0, 0))
+
+declare const k: string;
+>k : Symbol(k, Decl(ttttIndexSignatureMethodSuggestion.ts, 4, 13))
+
+field.group[0]["x"];
+>field.group : Symbol(group, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 22))
+>field : Symbol(field, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 13))
+>group : Symbol(group, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 22))
+
+field.group[0x10]["x"];
+>field.group : Symbol(group, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 22))
+>field : Symbol(field, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 13))
+>group : Symbol(group, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 22))
+
+field["m"]["x"];
+>field : Symbol(field, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 13))
+>"m" : Symbol(m, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 34))
+
+field.m[k];
+>field.m : Symbol(m, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 34))
+>field : Symbol(field, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 13))
+>m : Symbol(m, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 34))
+>k : Symbol(k, Decl(ttttIndexSignatureMethodSuggestion.ts, 4, 13))
+
+(field).m["x"];
+>(field).m : Symbol(m, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 34))
+>field : Symbol(field, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 13))
+>m : Symbol(m, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 34))
+
+field.group[1.50]["x"] = 1;
+>field.group : Symbol(group, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 22))
+>field : Symbol(field, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 13))
+>group : Symbol(group, Decl(ttttIndexSignatureMethodSuggestion.ts, 3, 22))
+

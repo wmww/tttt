@@ -1,0 +1,33 @@
+ttttIndexSignatureMethodSuggestion.ts(6,1): error TS7052: Element implicitly has an 'any' type because type 'M' has no index signature. Did you mean to call 'field.group.0.get'?
+ttttIndexSignatureMethodSuggestion.ts(7,1): error TS7052: Element implicitly has an 'any' type because type 'M' has no index signature. Did you mean to call 'field.group.16.get'?
+ttttIndexSignatureMethodSuggestion.ts(8,1): error TS7052: Element implicitly has an 'any' type because type 'M' has no index signature. Did you mean to call 'field.m.get'?
+ttttIndexSignatureMethodSuggestion.ts(9,1): error TS7052: Element implicitly has an 'any' type because type 'M' has no index signature. Did you mean to call 'field.m.get'?
+ttttIndexSignatureMethodSuggestion.ts(10,1): error TS7052: Element implicitly has an 'any' type because type 'M' has no index signature. Did you mean to call 'get'?
+ttttIndexSignatureMethodSuggestion.ts(11,1): error TS7052: Element implicitly has an 'any' type because type 'M' has no index signature. Did you mean to call 'field.group.1.5.set'?
+
+
+==== ttttIndexSignatureMethodSuggestion.ts (6 errors) ====
+    // TS7052's suggestion names the object as tsc's tryGetPropertyAccessOrIdentifierToString does: bracket accesses with
+    // a property name key (an identifier, a string, a number as JavaScript prints it) as dots, parentheses as nothing
+    interface M { get(k: string): number; set(k: string, v: number): void }
+    declare const field: { group: M[]; m: M };
+    declare const k: string;
+    field.group[0]["x"];
+    ~~~~~~~~~~~~~~~~~~~
+!!! error TS7052: Element implicitly has an 'any' type because type 'M' has no index signature. Did you mean to call 'field.group.0.get'?
+    field.group[0x10]["x"];
+    ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7052: Element implicitly has an 'any' type because type 'M' has no index signature. Did you mean to call 'field.group.16.get'?
+    field["m"]["x"];
+    ~~~~~~~~~~~~~~~
+!!! error TS7052: Element implicitly has an 'any' type because type 'M' has no index signature. Did you mean to call 'field.m.get'?
+    field.m[k];
+    ~~~~~~~~~~
+!!! error TS7052: Element implicitly has an 'any' type because type 'M' has no index signature. Did you mean to call 'field.m.get'?
+    (field).m["x"];
+    ~~~~~~~~~~~~~~
+!!! error TS7052: Element implicitly has an 'any' type because type 'M' has no index signature. Did you mean to call 'get'?
+    field.group[1.50]["x"] = 1;
+    ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7052: Element implicitly has an 'any' type because type 'M' has no index signature. Did you mean to call 'field.group.1.5.set'?
+    

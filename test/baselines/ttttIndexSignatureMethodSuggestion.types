@@ -1,0 +1,71 @@
+//// [test/cases/ttttIndexSignatureMethodSuggestion.ts] ////
+
+=== ttttIndexSignatureMethodSuggestion.ts ===
+// TS7052's suggestion names the object as tsc's tryGetPropertyAccessOrIdentifierToString does: bracket accesses with
+// a property name key (an identifier, a string, a number as JavaScript prints it) as dots, parentheses as nothing
+interface M { get(k: string): number; set(k: string, v: number): void }
+>get : (k: string) => number
+>k : string
+>set : (k: string, v: number) => void
+>k : string
+>v : number
+
+declare const field: { group: M[]; m: M };
+>field : { group: M[]; m: M; }
+>group : M[]
+>m : M
+
+declare const k: string;
+>k : string
+
+field.group[0]["x"];
+>field.group[0]["x"] : any
+>field.group[0] : M
+>field.group : M[]
+>field : { group: M[]; m: M; }
+>group : M[]
+>0 : 0
+>"x" : "x"
+
+field.group[0x10]["x"];
+>field.group[0x10]["x"] : any
+>field.group[0x10] : M
+>field.group : M[]
+>field : { group: M[]; m: M; }
+>group : M[]
+>0x10 : 16
+>"x" : "x"
+
+field["m"]["x"];
+>field["m"]["x"] : any
+>field["m"] : M
+>field : { group: M[]; m: M; }
+>"m" : "m"
+>"x" : "x"
+
+field.m[k];
+>field.m[k] : any
+>field.m : M
+>field : { group: M[]; m: M; }
+>m : M
+>k : string
+
+(field).m["x"];
+>(field).m["x"] : any
+>(field).m : M
+>(field) : { group: M[]; m: M; }
+>field : { group: M[]; m: M; }
+>m : M
+>"x" : "x"
+
+field.group[1.50]["x"] = 1;
+>field.group[1.50]["x"] = 1 : 1
+>field.group[1.50]["x"] : any
+>field.group[1.50] : M
+>field.group : M[]
+>field : { group: M[]; m: M; }
+>group : M[]
+>1.50 : 1.5
+>"x" : "x"
+>1 : 1
+

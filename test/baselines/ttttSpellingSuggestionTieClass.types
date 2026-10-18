@@ -1,0 +1,40 @@
+//// [test/cases/ttttSpellingSuggestionTieClass.ts] ////
+
+=== ttttSpellingSuggestionTieClass.ts ===
+// A class's own members at the same distance: the first declared wins (tsgo's compareSymbols by declaration). The
+// instance type's members are instantiated for `this`: their declarations are their targets'
+class Manager {
+>Manager : Manager
+
+    startExtension = 1;
+>startExtension : number
+>1 : 1
+
+    async restartExtension() {}
+>restartExtension : () => Promise<void>
+
+    f() { this.maybeStartExtension; }
+>f : () => void
+>this.maybeStartExtension : any
+>this : this
+>maybeStartExtension : any
+}
+class Generic<T> {
+>Generic : Generic<T>
+
+    truncateTableQuery(t: T) {}
+>truncateTableQuery : (t: T) => void
+>t : T
+
+    _replaceTableQuery(t: T) {}
+>_replaceTableQuery : (t: T) => void
+>t : T
+}
+declare const g: Generic<string>;
+>g : Generic<string>
+
+g.createTableQuery;
+>g.createTableQuery : any
+>g : Generic<string>
+>createTableQuery : any
+

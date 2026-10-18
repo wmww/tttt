@@ -1515,15 +1515,21 @@ static bool is_keyword(Expr const* expr, KeywordIdentifier keyword) {
 static ClassDecl const* class_decl_of(Symbol const* symbol);
 static bool is_within_class(ClassDecl const* enclosing, ClassDecl const* class_decl);
 
-// tsc's isValidPropertyAccessForCompletions: whether `access` may read prop (of `containing`). A #private member only
+// tsgo's compareSymbols of two suggested properties: by their first declaration, then by name
 static int compare_suggested_props(void* ctx, isize a, isize b) {
     Prop const* const* props = ctx;
-    PropDecl const* da = props[a]->decl;
-    PropDecl const* db = props[b]->decl;
+    // (An instantiation's declarations are its target's: a class instance type's members are instantiated for `this`)
+    Prop const* pa = props[a];
+    Prop const* pb = props[b];
+    while (!pa->decl->decl_span_count && pa->target) pa = pa->target;
+    while (!pb->decl->decl_span_count && pb->target) pb = pb->target;
+    PropDecl const* da = pa->decl;
+    PropDecl const* db = pb->decl;
     return ty_compare_declarations(da->decl_span_count ? da->decl_spans[0] : span_null, atom_sv(props[a]->name),
         db->decl_span_count ? db->decl_spans[0] : span_null, atom_sv(props[b]->name));
 }
 
+// tsc's isValidPropertyAccessForCompletions: whether `access` may read prop (of `containing`). A #private member only
 // inside its class, outside an optional chain (tsc's isPropertyAccessible)
 static bool suggestion_accessible(Checker* me, PropertyExpr const* access, Prop const* prop, Ty const* containing) {
     PropertyContext const* site = property_context(access);
@@ -2414,6 +2420,36 @@ void ty_check_destructuring_indexed_access(Checker* me, Ty const* object, Ty con
     ty_check_indexed_access_type(me, object, index, index_span, index_span, errs);
 }
 
+// tsc's tryGetPropertyAccessOrIdentifierToString: `a.b[0]["c"]` as `a.b.0.c` (a bracket access whose key is a property
+// name: an identifier key too, `a[k]` as `a.k`), appended to `out`; false (nothing appended) for anything else
+static bool access_or_identifier_string(Expr const* expr, cstr* out) {
+    if (expr_is_perenthisized(expr)) return false;
+    if (expr->tag == EXPR_IDENTIFIER) {
+        if (expr->identifier.keyword) return false;
+        cstr_append_sv(out, name_cooked(span_sv(identifier_expr_name(&expr->identifier))));
+        return true;
+    }
+    if (expr->tag != EXPR_PROPERTY) return false;
+    PropertyExpr const* property = expr->property;
+    if (property->form == PROPERTY_EXPR_DOT) {
+        if (!access_or_identifier_string(&property->expr, out)) return false;
+        cstr_append(out, ".");
+        cstr_append_sv(out, span_sv(property_name(property)));
+        return true;
+    }
+    Expr const* key = &property->index;
+    bool name = !expr_is_perenthisized(key) && ((key->tag == EXPR_IDENTIFIER && !key->identifier.keyword) ||
+        (key->tag == EXPR_LITERAL && (key->literal.tag == VALUE_STRING || key->literal.tag == VALUE_NUMBER)));
+    if (!name || !access_or_identifier_string(&property->expr, out)) return false;
+    cstr_append(out, ".");
+    if (key->tag == EXPR_IDENTIFIER) {
+        cstr_append_sv(out, name_cooked(span_sv(identifier_expr_name(&key->identifier))));
+    } else {
+        cstr_append_value_js(out, &key->literal);
+    }
+    return true;
+}
+
 // tsc's getSuggestionForNonexistentIndexSignature: `o[k]` on something with a `get(k)` (`set(k, v)` when written)
 // taking k, as `o.get` (the method's name alone unless o is an entity name)
 static bool suggested_index_method(Checker* me, PropertyExpr const* access, Ty const* object, Ty const* index, cstr* out) {
@@ -2427,10 +2463,7 @@ static bool suggested_index_method(Checker* me, PropertyExpr const* access, Ty c
         return false;
     }
     *out = cstr_null;
-    if (expr_is_entity_name(&access->expr)) {
-        cstr_append_sv(out, csview_trim(span_sv(access->expr.inner_span)));
-        cstr_append(out, ".");
-    }
+    if (access_or_identifier_string(&access->expr, out)) cstr_append(out, ".");
     cstr_append(out, method);
     return true;
 }
