@@ -64,6 +64,15 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **tsc-rs is a competitor worth tracking next to bun** in report.md: same pin, tsgo-exact output, the least CPU at
   its defaults. It is a port, so its single-threaded speed is tsgo's class (tttt 2x faster); its edge is efficiency
   at few checkers, which is exactly plan 85's question.
+- **Plan 85's answer (planning session 2026-10-18): no-go, closed.** The premise was wrong: the checkers don't
+  re-derive a declared world. Resolving declaration files' declarations is 2-6% of the extra CPU (vscode 15%) and
+  TY_DECLARED 1-5% of the types; what is rebuilt is instantiations of the project's own `.ts` code (dokploy's trpc
+  router, drizzle's sources), every hot function scaled alike (measurements.md "Plan 85's census"). Sharing that
+  would need a concurrently grown type graph, which none of tsgo, tsc-rs or bun has. On 4 vCPUs most of the
+  defaults' extra CPU is SMT inflation (the same instructions on sibling threads), then recycling, and little
+  duplication; at K12 duplication catches up. The levers left are the policy (how many checkers, how big their
+  budgets: tsgo keeps 4 checkers on any machine) and recycle cost (perf_leads.md "Shared warm state": a
+  memory-snapshot recycle, bounded by `--checker-memory off`, for the thrashers only).
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **The suite's last 12 are off the table** (2026-10-15): each is argued (bugs/tsgo_divergences.md) or a plan-sized
@@ -72,7 +81,7 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **Memory target** (2026-10-16, the human): less memory than every competitor (bun, tsgo) in most cases, as fast
   as possible, correctness unchanged; features (watch, incremental, cheap CLI modes) later. Met as far as the rules
   allow on 4 vCPUs (2026-10-18): defaults 8 / 14 at or below bun, K1 6 / 14, all within 1.2-1.4x, tsgo everywhere;
-  **not on 12 cores** (bun lowest on 10 / 14 at the defaults: plan 85 and the many-core policy entry). A memory
+  **not on 12 cores** (bun lowest on 10 / 14 at the defaults: the many-core policy; plan 85 closed). A memory
   change costs at most ~3% wall at K1; at the defaults the bound is faster than bun on every corpus and the sweep's
   tail (plan 81 stage 1's trade, confirmed 2026-10-18; reverting is `SHARED_CHECKER_MEMORY_MB` at 96). Measure as
   `/usr/bin/time` peak at K1 and at the defaults next to bun's, every corpus (`scripts/bench.sh --bun`); the 12-core
@@ -170,7 +179,7 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
   on many cores; tsc-rs (pingdotgg/ts-rust, a Rust port of tsgo at our pin, `scripts/bench.sh --tscrs`) spends the
   least CPU at its defaults and is tsgo-exact. tttt is fastest on wall everywhere (12-core: 0.26x tsgo's wall against
   bun's 0.41x) and single-threaded by 2x+; our margin is single-threaded efficiency, which the defaults currently
-  spend on re-derivation (plan 85).
+  spend on SMT inflation, recycling and (at many checkers) duplicated instantiations (plan 85's census).
 - **Determinism vs scaling**: the output must stay byte-identical at any checker and thread count, so across machines
   (`scripts/kdiff.py`, `scripts/checkerdiff.py`, `scripts/threadcheck.sh`; `scripts/oracles.py` runs kdiff).
 - Parser rewrites are tempting and expensive; plan 27 looked and found no case for one. Revisit only with a profile.
@@ -214,7 +223,8 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    deferred bodies' accessors, a hacks audit, checker balance by work stealing (72), a perf session~~ done.
 21. ~~Debt (the deferred-body leak, plans 82 stage 2, 83, 84), the declaration emit fan-out, a second refresh (emit
    and checkJs), a perf session, message text as an oracle (clidiff)~~ done.
-22. **Now**: the many-core defaults (a CPU column, the checker-count policy, plan 85's census and gate), plan 82
+22. **Now**: the many-core defaults (a CPU column, the checker-count policy, ~~plan 85's census and gate~~: no-go), plan 82
    stage 3, the clidiff and real-code tails by fan-out, a third refresh. Plan 58 (7.1.0 stable, then plan 66 stage
    5's fan-out) as soon as it's on npm.
-23. Then: plan 85's stages if its gate says go; plan 76 only if the human reopens it.
+23. Then: the checker-count and budget policy for many cores with the human's 12-core numbers; plan 76 only if the
+   human reopens it.

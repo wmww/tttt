@@ -12,6 +12,36 @@ text since 2026-10-18 but webpack's TS5115 name order, `scripts/clidiff.py --cor
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Plan 85's census: what the checkers re-derive (2026-10-18, todo entry 2, 6ae5f65a)
+**Work vs inflation** (CPU s, best of 2): `--threads 1` runs every checker on one thread, so its CPU is the work
+done; `--threads 4` K4 is this box's default (2 cores x 2 SMT). `off` is `--checker-memory off` (no recycling):
+| project | K1 | K4 | K4 off | K12 | K12 off | threads 4: K4 | K4 off |
+|---|---|---|---|---|---|---|---|
+| drizzle | 0.93 | 1.46 | 1.02 | 1.59 | 1.30 | 2.31 | 1.70 |
+| zod | 0.68 | 0.92 | 0.72 | 1.07 | 0.89 | 1.43 | 1.15 |
+| effect | 1.40 | 1.51 | 1.39 | 1.52 | 1.44 | 2.30 | 2.22 |
+| type-fest | 0.85 | 0.93 | 0.86 | 0.97 | 0.87 | 1.39 | 1.27 |
+| excalidraw | 0.91 | 1.30 | 1.04 | 1.38 | 1.21 | 2.03 | 1.63 |
+| monkeytype/frontend | 0.77 | 2.89 | 1.26 | 4.22 | 2.25 | 4.89 | 2.02 |
+| dokploy/apps/dokploy | 3.20 (off 2.08) | 5.89 | 3.30 | 12.06 | 6.30 | 11.19 | 5.22 |
+- At this box's default (real K4) the extra CPU over serial K1 is **mostly SMT/contention inflation** (the same work
+  on 4 threads: drizzle 0.85 of 1.38 s, effect 0.79 of 0.90, monkeytype 2.0 of 4.1), then **recycling** (K4 - K4 off:
+  drizzle 0.44, monkeytype 1.63, dokploy 2.59), and little **duplication** between checkers (K4 off - K1: 0.0-0.13 on
+  the corpora, monkeytype 0.49). At K12 duplication catches up with recycling (drizzle 0.37 vs 0.29, dokploy K12 off
+  3x K1 off).
+- **The declared world is not what is re-derived.** A census build timed the outermost resolutions of declaration
+  files' declarations (`ty_declared_type_of`, `ty_type_of_symbol`, `resolve_declared_members`, `signature_resolve`,
+  `signature_return_type` and `prop_type` of uninstantiated declarations whose first declaration is in a `.d.ts`,
+  lib included; reverted, method only) at `--threads 1`: K1 -> K12 typecheck ms, those frames' ms, their share of
+  the extra: drizzle 792 -> 1452, 7 -> 23 (2.4%); zod 616 -> 1019, 6 -> 28 (5.4%); monkeytype 619 -> 4142, 31 ->
+  219 (5.3%); dokploy 2691 -> 11773, 148 -> 680 (5.9%); vscode 11851 -> 14104, 145 -> 487 (15%, lib.dom); effect ~14%.
+  TY_DECLARED is 1-5% of the types made; what multiplies is instantiations (dokploy K1 -> K12: 996k -> 5.3M types,
+  anonymous 429k -> 2.3M, references 145k -> 860k, unions 133k -> 684k, conditionals 73k -> 439k). Callgrind of
+  monkeytype at `--threads 1`, K1 5.9 G vs K12 39.2 G instructions: every hot function x6.6 (union_with_origin,
+  ty_instantiate_mapped, intern_slot, recursive_related...), the same profile scaled. The rebuilt graph is the
+  project's own `.ts` code instantiating its libraries (dokploy's trpc router of zod schemas, drizzle's own sources),
+  which no up-front layer can hold. Plan 85 closed on this (vision.md).
+
 ## Checkers per physical core (2026-10-18, todo entry 1, 99676b23 + the policy)
 **Oversubscribed** (`--threads 24 --checkers K` on these 4 vCPUs): wall means nothing, CPU (user + sys) and peak are
 the many-core costs without the 12-core box's SMT and clock effects (which inflate its CPU further: drizzle K24 6.37

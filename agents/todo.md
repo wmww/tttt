@@ -25,25 +25,28 @@ and RSS** for every perf claim at the defaults.
    +1-75%); default checkers now capped at the physical cores but every thread up to 4 (no change on 4 vCPUs, K12 on
    the 12-core box, unconfirmed: the human's command is in that section); dtsdiff deterministic at K1 (the flicker
    wasn't tttt's timing), K>1 emit is tsgo's own split, one ui K1 history case in bugs/dts_emit.md.
-2. **Plan 85 planning** (re-derivation census, designs, prototype, gate). Uses entry 1's CPU numbers. Its outcome
-   decides entries 5-6.
+2. Done (2026-10-18): plan 85 **no-go, closed** (measurements.md "Plan 85's census"): declaration files'
+   declarations are 2-6% of the re-derived CPU (vscode 15%); what multiplies is instantiations of the project's own
+   code. On 4 vCPUs the defaults' extra CPU is mostly SMT inflation, then recycling. A snapshot-recycle lead for the
+   thrashers in perf_leads.md.
 3. **Plan 82 stage 3**: optional parameters and tuple elements carry their undefined; delete the readers' adds and
    the hacks.md entries. One session as sized; stage 2's remainder if any.
 4. **clidiff fan-out** (three worktree agents): the 54 text and 9 diagnostics mismatches (bugs/display.md buckets),
    disjoint buckets per agent, 0 lost at merge (source sweep match sets and flagflip against the session start).
    Target: half of them.
-5. **Plan 85 stage 1** if the gate said go; otherwise a perf session on per-body re-materialization (~20% of vscode's
-   recycle cost) and the source sweep's types-ratio tail (`scripts/perfsweep.py`).
-6. **Plan 85 stage 2** if go and sized so; otherwise a real-code tail fan-out: dtsdiff's real tail (bugs/dts_emit.md),
-   the source sweep's 8 (bugs/sourcesweep_checker.md, vue's 2 TS7006 included), bugs/expando_instantiation.md.
+5. **Perf session**: per-body re-materialization (~20% of vscode's recycle cost, perf_leads.md "What the recycle
+   budget costs") and the source sweep's types-ratio tail (`scripts/perfsweep.py`).
+6. **Real-code tail fan-out**: dtsdiff's real tail (bugs/dts_emit.md), the source sweep's 8
+   (bugs/sourcesweep_checker.md, vue's 2 TS7006 included), bugs/expando_instantiation.md.
 7. **Third fresh-repository refresh**, a new rule: monorepos type-checked with `tsc -b` solution configs (project
    references), and decorator-heavy code (Angular, NestJS, TypeORM, MobX). ~20-25 repositories, the recipe in
    vision.md "Refresh the breadth oracles"; report day one for the source sweep, clidiff and dtsdiff before fixing.
 8. **Refresh fixes + perf session**: the refresh's day-one mismatches by root cause, then `scripts/instrcount.sh`
    against the window's start and any flagged rise.
 9. **Triage.**
-10. **Insights.** report.md: plan 85's verdict and the defaults' CPU column (12-core: ask the human to rerun with
+10. **Insights.** report.md: plan 85's no-go (the census) and the defaults' CPU column (12-core: ask the human to rerun with
     entry 1's command), clidiff's number, the third refresh's day one. Whether the human answered on plan 76.
 
 After the insights entry (for the next window): plan 58 + plan 66 stage 5 when 7.1.0 is out (expected after
-2026-11-24); plan 85's remaining stages; plan 76 only if the human reopens it.
+2026-11-24); the many-core checker-count and budget policy from the human's 12-core numbers (tsgo keeps 4 checkers;
+at K12 duplication is as big as recycling); plan 76 only if the human reopens it.

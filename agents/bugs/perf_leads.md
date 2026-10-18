@@ -61,6 +61,17 @@ the segments (type-fest 61% vs karakeep 60%), node_modules declaration bytes per
 drizzle 2.8) all overlap. What's left is the insights' frontier call (a guard costing the corpora's memory against
 bun) or a re-derivation measure that isn't time or bytes (e.g. types a fresh checker makes that the previous
 incarnation also made, counted by declaration).
+**Plan 85's census answered that (2026-10-18, measurements.md "Plan 85's census")**: what a fresh incarnation
+rebuilds is instantiations of the project's own code, not declaration files' declarations (2-6% of the extra), so
+no up-front shared layer helps. One untried design for the recycle half, **a memory-snapshot recycle**: put all of a
+checker's memory (arena, intern and link tables, relation caches, LazySlots pages, its side arrays) in one
+memfd-backed region, snapshot it after the warm-up (the segment's first file) and recycle by remapping the region
+MAP_PRIVATE over the snapshot at the same addresses: the warm state comes back for page faults instead of 1.5-2 s of
+re-derivation (dokploy), pointers stay valid, and the output is that of a checker that checked the warm-up files
+(already allowed: plan 67). Bound: `--checker-memory off` at K4, real threads: monkeytype -59% CPU, dokploy -53%,
+the mid corpora -3 to -26% (so it can't pass a 30% bar there), with the snapshot's pages held for the run. Costs: every
+malloc a checker does goes to a region allocator, and what lives outside the checker but counts its holds
+(DeferredBodies refs, `held`) must be reconciled at each restore. Only worth a plan if the thrashers matter.
 
 ## What the recycle budget costs at the defaults (perf session 2026-10-17, todo entry 8)
 The corpora at the defaults against `--checker-memory off` (best of 2, 4 checkers): 11.43 s / 4573 MB against 9.99 s /
