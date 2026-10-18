@@ -1,0 +1,21 @@
+//// [test/cases/ttttTypeOnlyImportModeMismatchDetails.ts] ////
+
+=== /node_modules/esm/index.d.ts ===
+export interface T { x: number }
+>T : Symbol(T, Decl(index.d.ts, 0, 0))
+>x : Symbol(T.x, Decl(index.d.ts, 0, 20))
+
+=== /a.ts ===
+import type { T } from "esm";
+>T : Symbol(T, Decl(a.ts, 0, 13))
+
+type U = import("esm").T;
+>U : Symbol(U, Decl(a.ts, 0, 29))
+>T : Symbol(T, Decl(index.d.ts, 0, 0))
+
+export const t: T | U = { x: 1 };
+>t : Symbol(t, Decl(a.ts, 2, 12))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+>U : Symbol(U, Decl(a.ts, 0, 29))
+>x : Symbol(x, Decl(a.ts, 2, 25))
+

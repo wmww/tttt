@@ -1,0 +1,23 @@
+/a.ts(1,24): error TS1541: Type-only import of an ECMAScript module from a CommonJS module must have a 'resolution-mode' attribute.
+  To convert this file to an ECMAScript module, change its file extension to '.mts', or add the field `"type": "module"` to '/package.json'.
+/a.ts(2,17): error TS1542: Type import of an ECMAScript module from a CommonJS module must have a 'resolution-mode' attribute.
+  To convert this file to an ECMAScript module, change its file extension to '.mts', or add the field `"type": "module"` to '/package.json'.
+
+
+==== /node_modules/esm/package.json (0 errors) ====
+    { "name": "esm", "type": "module", "exports": "./index.js" }
+==== /node_modules/esm/index.d.ts (0 errors) ====
+    export interface T { x: number }
+==== /package.json (0 errors) ====
+    { "name": "app" }
+==== /a.ts (2 errors) ====
+    import type { T } from "esm";
+                           ~~~~~
+!!! error TS1541: Type-only import of an ECMAScript module from a CommonJS module must have a 'resolution-mode' attribute.
+!!! error TS1541:   To convert this file to an ECMAScript module, change its file extension to '.mts', or add the field `"type": "module"` to '/package.json'.
+    type U = import("esm").T;
+                    ~~~~~
+!!! error TS1542: Type import of an ECMAScript module from a CommonJS module must have a 'resolution-mode' attribute.
+!!! error TS1542:   To convert this file to an ECMAScript module, change its file extension to '.mts', or add the field `"type": "module"` to '/package.json'.
+    export const t: T | U = { x: 1 };
+    

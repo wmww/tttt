@@ -1578,6 +1578,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTypeOnlyImportModeMismatchDetails': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTypeParamDefaultOuterAutoVariable': {
         errors: true,
         symbols: true,

@@ -439,6 +439,26 @@ static csview declaration_extension(csview path) {
     return (csview){0};
 }
 
+// tsc's createModeMismatchDetails: what would make the importing file an ES module, when its extension leaves that open
+static void add_mode_mismatch_details(Error* error, SourceFile const* from) {
+    csview name = cstr_sv(&from->canonical_path);
+    // (tsc's tryGetExtensionFromPath(): a .d.ts is none of these)
+    bool ts = csview_ends_with(name, ".ts") && !csview_ends_with(name, ".d.ts");
+    bool js = csview_ends_with(name, ".js");
+    if (!error || !(ts || js || csview_ends_with(name, ".tsx") || csview_ends_with(name, ".jsx"))) return;
+    const char* rename = ts ? ".mts" : js ? ".mjs" : nullptr;
+    cstr hint = cstr_lit("To convert this file to an ECMAScript module, ");
+    bool add_field = cstr_size(&from->package_json) && !from->package_has_type;
+    // (Only the package.json message has a comma before its "or")
+    if (rename) cstr_append_d(&hint, DEFAULT_DISPLAY, "change its file extension to '", rename, add_field ? "', or " : "' or ");
+    if (add_field) {
+        cstr_append_d(&hint, DEFAULT_DISPLAY, "add the field `\"type\": \"module\"` to '", from->package_json, "'.");
+    } else {
+        cstr_append_lit(&hint, "create a local package.json file with `{ \"type\": \"module\" }`.");
+    }
+    error_sub_error_s(error, span_null, 1479, hint);
+}
+
 // node16 and node18 can't `require()` an ES module (nodenext can): TS1471/TS1479 at `at` (the specifier, or the
 // first JSX element of a file whose runtime module it is)
 void module_ref_report_require_of_esm(ModuleRef const* me, Span at, ErrorCtx* errs) {
@@ -457,33 +477,15 @@ void module_ref_report_require_of_esm(ModuleRef const* me, Span at, ErrorCtx* er
             error_ctx_error_d(errs, at, 1471,
                 "Module '", my path, "' cannot be imported using this construct. The specifier only resolves to an "
                 "ES module, which cannot be imported with 'require'. Use an ECMAScript import instead.");
-        } else if (my type_only_import || my import_type) {
-            error_ctx_error_d(errs, at, my type_only_import ? 1541 : 1542, my type_only_import ? "Type-only import" : "Type import",
-                " of an ECMAScript module from a CommonJS module must have a 'resolution-mode' attribute.");
         } else {
-            Error* error = error_ctx_error_d(errs, at, 1479,
-                "The current file is a CommonJS module whose imports will produce 'require' calls; however, the "
-                "referenced file is an ECMAScript module and cannot be imported with 'require'. Consider writing a "
-                "dynamic 'import(\"", my path, "\")' call instead.");
-            // What would make this file an ES module, when its extension leaves that open
-            csview name = cstr_sv(&from->canonical_path);
-            // (tsc's tryGetExtensionFromPath(): a .d.ts is none of these)
-            bool ts = csview_ends_with(name, ".ts") && !csview_ends_with(name, ".d.ts");
-            bool js = csview_ends_with(name, ".js");
-            if (error && (ts || js || csview_ends_with(name, ".tsx") || csview_ends_with(name, ".jsx"))) {
-                const char* rename = ts ? ".mts" : js ? ".mjs" : nullptr;
-                cstr hint = cstr_lit("To convert this file to an ECMAScript module, ");
-                bool add_field = cstr_size(&from->package_json) && !from->package_has_type;
-                // (Only the package.json message has a comma before its "or")
-                if (rename) cstr_append_d(&hint, DEFAULT_DISPLAY, "change its file extension to '", rename, add_field ? "', or " : "' or ");
-                if (add_field) {
-                    cstr_append_d(&hint, DEFAULT_DISPLAY,
-                        "add the field `\"type\": \"module\"` to '", from->package_json, "'.");
-                } else {
-                    cstr_append_lit(&hint, "create a local package.json file with `{ \"type\": \"module\" }`.");
-                }
-                error_sub_error_s(error, span_null, 1479, hint);
-            }
+            Error* error = my type_only_import || my import_type ?
+                error_ctx_error_d(errs, at, my type_only_import ? 1541 : 1542, my type_only_import ? "Type-only import" :
+                    "Type import", " of an ECMAScript module from a CommonJS module must have a 'resolution-mode' attribute.") :
+                error_ctx_error_d(errs, at, 1479,
+                    "The current file is a CommonJS module whose imports will produce 'require' calls; however, the "
+                    "referenced file is an ECMAScript module and cannot be imported with 'require'. Consider writing a "
+                    "dynamic 'import(\"", my path, "\")' call instead.");
+            add_mode_mismatch_details(error, from);
         }
     }
 }

@@ -1,0 +1,19 @@
+//// [test/cases/ttttTypeOnlyImportModeMismatchDetails.ts] ////
+
+=== /node_modules/esm/index.d.ts ===
+export interface T { x: number }
+>x : number
+
+=== /a.ts ===
+import type { T } from "esm";
+>T : T
+
+type U = import("esm").T;
+>U : T
+
+export const t: T | U = { x: 1 };
+>t : T
+>{ x: 1 } : { x: number; }
+>x : number
+>1 : 1
+
