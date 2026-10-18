@@ -4037,6 +4037,23 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         // it to the declaration's own), so the whole predicate is printed
         bool names_param = function && function->predicate && !function->predicate->is_this;
         TyDisplay predicate_d = reused_if(d, reusable && function->predicate && !(instantiated && !this_only && names_param));
+        if (predicate_d.reused && reuses_nodes(d) && (!predicate->type || function->predicate->has_type)) {
+            // (The written node reused: its keyword and parameter name are mapped, like the declaration transformer's)
+            TypePredicateNode const* written = function->predicate;
+            map_span(predicate_d, written->span, false);
+            if (written->asserts) {
+                out_token_mapped(predicate_d, D_MAP(predicate_d) ? written->span.buf : nullptr, c_sv("asserts"));
+                out_lit(predicate_d, " ");
+            }
+            out_mapped(predicate_d, written->name);
+            if (predicate->type) {
+                out_lit(predicate_d, " is ");
+                predicate_d.mapped_by = instantiated && !this_only ? sig : nullptr;
+                display_node(me, predicate_d, &written->type);
+            }
+            map_span(predicate_d, written->span, true);
+            return;
+        }
         if (predicate->asserts) out_lit(predicate_d, "asserts ");
         out(predicate_d, atom_sv(predicate->param_name));
         if (predicate->type) {

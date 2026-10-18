@@ -455,6 +455,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationMapReusedPredicate': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationMapSetterParamAndForeignUnion': {
         errors: true,
         symbols: true,
