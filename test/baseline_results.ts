@@ -1182,6 +1182,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttPackageRedirectDropsItsImports': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttParenthisizedIdentifierFollowedByExpr': {
         errors: true,
         symbols: true,

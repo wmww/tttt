@@ -58,8 +58,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   cheap levers stay in scope: per-body re-materialization (~20% of vscode's recycle cost), and a checker count from
   the shared state's size (dokploy).
 - **Debt is the window's theme.** The hacks audit left two representation debts as plans: optional types without
-  their undefined (plan 82: properties done 2026-10-18, tuples and parameters left), re-entrant member resolution (plan 83, done 2026-10-18). The
-  triage left plan 84 (tsgo's two-phase load replacing a package-id HACK). Deferred bodies still leak their
+  their undefined (plan 82: properties done 2026-10-18, tuples and parameters left), re-entrant member resolution (plan 83, done 2026-10-18). Plan 84
+  (tsgo's two-phase load, done 2026-10-18) deleted the package-id HACK. Deferred bodies still leak their
   materialization's malloc at every drop (~8 MB per round of vscode's bodies): a production leak, first in line.
 - **Declaration emit is the least saturated oracle** (dtsdiff 1193 / 1233 projects, clidiff `--emit` 369 / 396) and
   the second fresh-repository refresh should feed it: pick repositories that emit declarations and JavaScript

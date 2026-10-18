@@ -38,7 +38,12 @@ stay faster than bun on every corpus and the sweep's tail. Output byte-identical
    clause kind is tsc's relation alone (shape reading and the `keyof` text test deleted, hacks.md entry gone);
    `never_index_read` narrowed. Suite 13797 / 13834 (+1 tsc test, +2 own), every oracle at the starting point,
    instructions flat (documentation.md "Members asked for while they are resolved").
-5. **Plan 84** (tsgo's two-phase load): the package-id HACK deleted.
+5. Done (2026-10-18): plan 84. The loader records each file's first package id and what it reached in order;
+   `program_collect_files()` (tsgo's collectFiles) picks representatives depth-first, a redirect and what only it
+   reaches are excluded (not bound, not reported). HACK `sources_by_package_id` and `program_share_redirect_ref()`
+   gone; type references and JS/JSON resolutions give ids too. effect through a symlinked checkout byte-identical
+   to tsc (was ~25 diagnostics); base-ui's 10 extra files gone. Suite 13798 / 13835 (+1 own), every oracle at the
+   starting point (recycle 3 / 3566, was 4), instructions flat. Worktrees with symlinked corpora now match tsc.
 6. **Declaration emit tail by fan-out** (bugs/dts_emit.md): up to four Opus sub-agents in worktrees, one dtsdiff /
    clidiff `--emit` / dtsstats bucket each, disjoint, 0 lost at every merge (vision.md "Fan-out merge discipline").
    Goal: dtsdiff >= 1210 / 1233; the uninvestigated buckets written up either way.

@@ -227,7 +227,14 @@ Cleat's `Fs` abstraction allows tests to mock the filesystem, so the `Program` s
 
 Loading is sequential and depth-first (`program_add_source_idempotent()`: parse a file, then load what it imports, then
 append it to `source_files_ordered`), and that order decides everything downstream (file order, error order, the
-package-id dedup). With `--threads N > 1` (the CLI's default; the harness's is 1, `baseline_tests --threads N` to use
+package-id dedup). **Two phases, like tsgo's filesparser**: the loader loads everything reachable, recording each file's
+first package id (`SourceFile.package_id`: any resolution's, relative ones inside node_modules included) and what it
+reached from each file in order (`SourceFile.load_children`, `Program.load_roots`); when two files got the same id,
+`program_collect_files()` (at the end of `program_load_automatic_types()`) walks that graph depth-first like tsgo's
+collectFiles: the first file with an id stands for it, a later one becomes a redirect (`package_redirect`, imports of it
+mean the first, `ModuleRef.redirected_from` names it) and the walk skips its imports, so a redirect and what only it
+reaches are `excluded`: loaded and findable by path (a redirect as itself, the rest not at all), never bound or
+reported, not in `source_files_ordered`. With `--threads N > 1` (the CLI's default; the harness's is 1, `baseline_tests --threads N` to use
 it) a **load pool** (`src/load_pool.{h,c}`) runs beside it as a cache warmer: N workers read and parse queued paths
 (`program_make_source()`, the part of loading that only reads the program; errors into a per-file `ErrorCtx`) and
 queue what the loader will probably load from them (`program_load_ahead_from()`: resolved module refs, reference

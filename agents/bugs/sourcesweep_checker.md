@@ -32,10 +32,6 @@ was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlin
 Fixed that round: vencord (TS2589 at the template, intersection any-before-unions, never-reduction against generic
 references), svelte x2 (JS default type arguments, hoisted constraint against a union), react-window (peer
 dependencies in package ids, landed by agent D). Left:
-- base-ui test/performance lists 10 more files than tsc: a second vitest 5.0.2 pnpm copy whose package id (peers
-  included) equals the first's: tttt dedups the file but still loads the duplicate's own imports (tsgo's redirect
-  doesn't parse them). No diagnostic difference (its CheckboxRoot TS2322s were rest types' union order, fixed
-  2026-10-16).
 - (2026-10-16, agent A) arktype this.test.ts, redux-toolkit, monkeytype: see the 2026-10-16 section at the end.
 - Display: `(A | L1 | P1) & V` with `V extends A | L1 | L2` (L1 and L2 sharing a `type` discriminant) prints its
   origin, tsc `(A & V) | (L1 & V)`: tsc's getReducedType drops `P1 & V` through V's apparent type (the
