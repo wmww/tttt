@@ -3031,6 +3031,7 @@ static bool is_generic_reducible(Checker* me, Ty const* ty);
 Ty const* ty_keyof(Checker* me, Ty const* operand) {
     if (operand->kind == TY_UNION || operand->kind == TY_INTERSECTION) operand = ty_reduced(me, operand); // (tsc's getIndexType)
     if (ty_is_no_infer(operand)) return ty_no_infer(me, ty_keyof(me, operand->substitution.base));
+    if (operand == my intrinsics[TY_WILDCARD]) return operand; // (tsc's getIndexType)
     if (operand->flags & TYF_ANY) {
         Ty const* all[3] = { my intrinsics[TY_STRING], my intrinsics[TY_NUMBER], my intrinsics[TY_ES_SYMBOL] };
         return ty_union(me, all, 3, nullptr, (TyList){0});

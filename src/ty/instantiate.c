@@ -455,9 +455,11 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
         return ty_tuple_target(me, &new_shape);
     }
     if (list->kind != TY_UNION && !MAPS(list)) return list;
+    // (The wildcard stays itself, tsc's instantiateConstituent)
+    if (list == ty_intrinsic(me, TY_WILDCARD)) return list;
     // any for a T constrained to arrays or tuples maps to an array too: `{ [K in keyof T]: X }` with `T extends
-    // readonly unknown[]` is `X[]` for any (tsc's instantiateConstituent)
-    bool any_as_array = list->kind == TY_ANY && !mapped->name_type && mapped_variable_is_list(me, variable);
+    // readonly unknown[]` is `X[]` for any (tsc's instantiateConstituent; not unknown)
+    bool any_as_array = (list->flags & TYF_ANY) && !mapped->name_type && mapped_variable_is_list(me, variable);
     // (With an `as` clause, arrays and tuples map like any object)
     if (list->kind != TY_UNION && !any_as_array && ((list->kind != TY_REFERENCE && list->kind != TY_INTERSECTION) || mapped->name_type)) return nullptr;
     // (An intersection only maps when all its members are arrays or tuples: decided before composing the mappers,

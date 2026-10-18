@@ -1,0 +1,46 @@
+//// [test/cases/ttttPermissiveWildcardKeyofMapped.ts] ////
+
+=== ttttPermissiveWildcardKeyofMapped.ts ===
+// The permissive instantiation (type parameters as the wildcard) decides whether a conditional type is definitely
+// false: `keyof` the wildcard is the wildcard (tsc's getIndexType), and so is a homomorphic mapped type over it, even
+// one whose type variable is constrained to arrays (tsc's instantiateConstituent returns the wildcard before mapping
+// any to an array). Both stay deferred here; tttt resolved them to their false branch, and its eager ts-toolbelt
+// `__ListOf` then recursed into TS5114 (ramdaToolsNoInfinite2)
+type M<L extends any[]> = { [K in keyof L]?: L[K] };
+>M : M<L>
+
+declare function h1<T>(): { k: keyof T } extends { k: 'a' } ? 1 : 2;
+>h1 : <T>() => { k: keyof T; } extends { k: 'a'; } ? 1 : 2
+>k : keyof T
+>k : "a"
+
+export function w1<T>() { return h1<T>(); }
+>w1 : <T>() => { k: keyof T; } extends { k: 'a'; } ? 1 : 2
+>h1<T>() : { k: keyof T; } extends { k: 'a'; } ? 1 : 2
+>h1 : <T_1>() => { k: keyof T_1; } extends { k: 'a'; } ? 1 : 2
+
+declare function h2<L extends any[]>(): { k: M<L> } extends { k: number } ? 1 : 2;
+>h2 : <L extends any[]>() => { k: M<L>; } extends { k: number; } ? 1 : 2
+>k : M<L>
+>k : number
+
+export function w2<L extends any[]>() { return h2<L>(); }
+>w2 : <L extends any[]>() => { k: M<L>; } extends { k: number; } ? 1 : 2
+>h2<L>() : { k: M<L>; } extends { k: number; } ? 1 : 2
+>h2 : <L_1 extends any[]>() => { k: M<L_1>; } extends { k: number; } ? 1 : 2
+
+type Eq<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+>Eq : Eq<A, B>
+>true : true
+>false : false
+
+declare function h3<A extends object>(): Eq<Omit<A, 'a'>, {}> extends true ? void : { a: A };
+>h3 : <A extends object>() => Eq<Omit<A, 'a'>, {}> extends true ? void : { a: A; }
+>true : true
+>a : A
+
+export function w3<A extends object>() { return h3<A>(); }
+>w3 : <A extends object>() => Eq<Omit<A, "a">, {}> extends true ? void : { a: A; }
+>h3<A>() : Eq<Omit<A, "a">, {}> extends true ? void : { a: A; }
+>h3 : <A_1 extends object>() => Eq<Omit<A_1, 'a'>, {}> extends true ? void : { a: A_1; }
+

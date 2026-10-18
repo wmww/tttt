@@ -1,0 +1,69 @@
+//// [test/cases/ttttPermissiveWildcardKeyofMapped.ts] ////
+
+=== ttttPermissiveWildcardKeyofMapped.ts ===
+// The permissive instantiation (type parameters as the wildcard) decides whether a conditional type is definitely
+// false: `keyof` the wildcard is the wildcard (tsc's getIndexType), and so is a homomorphic mapped type over it, even
+// one whose type variable is constrained to arrays (tsc's instantiateConstituent returns the wildcard before mapping
+// any to an array). Both stay deferred here; tttt resolved them to their false branch, and its eager ts-toolbelt
+// `__ListOf` then recursed into TS5114 (ramdaToolsNoInfinite2)
+type M<L extends any[]> = { [K in keyof L]?: L[K] };
+>M : Symbol(M, Decl(ttttPermissiveWildcardKeyofMapped.ts, 0, 0))
+>L : Symbol(L, Decl(ttttPermissiveWildcardKeyofMapped.ts, 5, 7))
+>K : Symbol(K, Decl(ttttPermissiveWildcardKeyofMapped.ts, 5, 29))
+>L : Symbol(L, Decl(ttttPermissiveWildcardKeyofMapped.ts, 5, 7))
+>L : Symbol(L, Decl(ttttPermissiveWildcardKeyofMapped.ts, 5, 7))
+>K : Symbol(K, Decl(ttttPermissiveWildcardKeyofMapped.ts, 5, 29))
+
+declare function h1<T>(): { k: keyof T } extends { k: 'a' } ? 1 : 2;
+>h1 : Symbol(h1, Decl(ttttPermissiveWildcardKeyofMapped.ts, 5, 52))
+>T : Symbol(T, Decl(ttttPermissiveWildcardKeyofMapped.ts, 6, 20))
+>k : Symbol(k, Decl(ttttPermissiveWildcardKeyofMapped.ts, 6, 27))
+>T : Symbol(T, Decl(ttttPermissiveWildcardKeyofMapped.ts, 6, 20))
+>k : Symbol(k, Decl(ttttPermissiveWildcardKeyofMapped.ts, 6, 50))
+
+export function w1<T>() { return h1<T>(); }
+>w1 : Symbol(w1, Decl(ttttPermissiveWildcardKeyofMapped.ts, 6, 68))
+>T : Symbol(T, Decl(ttttPermissiveWildcardKeyofMapped.ts, 7, 19))
+>h1 : Symbol(h1, Decl(ttttPermissiveWildcardKeyofMapped.ts, 5, 52))
+>T : Symbol(T, Decl(ttttPermissiveWildcardKeyofMapped.ts, 7, 19))
+
+declare function h2<L extends any[]>(): { k: M<L> } extends { k: number } ? 1 : 2;
+>h2 : Symbol(h2, Decl(ttttPermissiveWildcardKeyofMapped.ts, 7, 43))
+>L : Symbol(L, Decl(ttttPermissiveWildcardKeyofMapped.ts, 8, 20))
+>k : Symbol(k, Decl(ttttPermissiveWildcardKeyofMapped.ts, 8, 41))
+>M : Symbol(M, Decl(ttttPermissiveWildcardKeyofMapped.ts, 0, 0))
+>L : Symbol(L, Decl(ttttPermissiveWildcardKeyofMapped.ts, 8, 20))
+>k : Symbol(k, Decl(ttttPermissiveWildcardKeyofMapped.ts, 8, 61))
+
+export function w2<L extends any[]>() { return h2<L>(); }
+>w2 : Symbol(w2, Decl(ttttPermissiveWildcardKeyofMapped.ts, 8, 82))
+>L : Symbol(L, Decl(ttttPermissiveWildcardKeyofMapped.ts, 9, 19))
+>h2 : Symbol(h2, Decl(ttttPermissiveWildcardKeyofMapped.ts, 7, 43))
+>L : Symbol(L, Decl(ttttPermissiveWildcardKeyofMapped.ts, 9, 19))
+
+type Eq<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+>Eq : Symbol(Eq, Decl(ttttPermissiveWildcardKeyofMapped.ts, 9, 57))
+>A : Symbol(A, Decl(ttttPermissiveWildcardKeyofMapped.ts, 10, 8))
+>B : Symbol(B, Decl(ttttPermissiveWildcardKeyofMapped.ts, 10, 10))
+>T : Symbol(T, Decl(ttttPermissiveWildcardKeyofMapped.ts, 10, 18))
+>T : Symbol(T, Decl(ttttPermissiveWildcardKeyofMapped.ts, 10, 18))
+>A : Symbol(A, Decl(ttttPermissiveWildcardKeyofMapped.ts, 10, 8))
+>T : Symbol(T, Decl(ttttPermissiveWildcardKeyofMapped.ts, 10, 57))
+>T : Symbol(T, Decl(ttttPermissiveWildcardKeyofMapped.ts, 10, 57))
+>B : Symbol(B, Decl(ttttPermissiveWildcardKeyofMapped.ts, 10, 10))
+
+declare function h3<A extends object>(): Eq<Omit<A, 'a'>, {}> extends true ? void : { a: A };
+>h3 : Symbol(h3, Decl(ttttPermissiveWildcardKeyofMapped.ts, 10, 101))
+>A : Symbol(A, Decl(ttttPermissiveWildcardKeyofMapped.ts, 11, 20))
+>Eq : Symbol(Eq, Decl(ttttPermissiveWildcardKeyofMapped.ts, 9, 57))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(ttttPermissiveWildcardKeyofMapped.ts, 11, 20))
+>a : Symbol(a, Decl(ttttPermissiveWildcardKeyofMapped.ts, 11, 85))
+>A : Symbol(A, Decl(ttttPermissiveWildcardKeyofMapped.ts, 11, 20))
+
+export function w3<A extends object>() { return h3<A>(); }
+>w3 : Symbol(w3, Decl(ttttPermissiveWildcardKeyofMapped.ts, 11, 93))
+>A : Symbol(A, Decl(ttttPermissiveWildcardKeyofMapped.ts, 12, 19))
+>h3 : Symbol(h3, Decl(ttttPermissiveWildcardKeyofMapped.ts, 10, 101))
+>A : Symbol(A, Decl(ttttPermissiveWildcardKeyofMapped.ts, 12, 19))
+
