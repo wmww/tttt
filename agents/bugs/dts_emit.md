@@ -186,3 +186,10 @@ size on real code, each with an example:
   DropFirst<Parameters<TRules[K]>>) => ...` instantiated per key: tttt writes the annotation's text
   (`DropFirst<Parameters<TRules[K]>>`, K and TRules out of scope), tsgo the instantiation (named, oddly,
   `arrayRules.isEmpty<Parameters<typeof arrayRules.equals>>`: a different symbol of the same module). Not reduced.
+
+## Refresh 2's checkJs projects (triage 2026-10-18, uninvestigated)
+JavaScript declaration emit on real code, day one: rocket 264 / 316 files, eslint-plugin-jsdoc 319 / 338,
+markdown-magic 124 / 131 and its packages/core 64 / 80, block-transformer 0 / 1. Buckets seen: `.d.ts.map` mappings
+missing at names and line ends, "type text", "comment", "member order", and markdown-magic's 10 extra files where
+tsgo reports a declaration diagnostic (and writes nothing). `scripts/dtsdiff.py -f '^(rocket|eslint-plugin-jsdoc|markdown-magic)'`
+then `--show`. A fan-out bucket once the TypeScript tail is thin.

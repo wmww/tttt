@@ -50,17 +50,23 @@ def main():
         project, cwd = job
         return project, run(project, cwd, 1, args.timeout), run(project, cwd, args.k, args.timeout, args.memory)
 
-    differ = 0
+    differ, timeouts = 0, []
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as ex:
         for project, a, b in ex.map(one, jobs):
             if a == b:
+                continue
+            if 'TIMEOUT' in (a[0], b[0]):
+                # (Not a difference: a fresh checker per file re-derives each file's dependencies, dokploy/apps/dokploy
+                # takes minutes at -m 0 against seconds at K1)
+                timeouts.append(project)
                 continue
             differ += 1
             la, lb = set(a[0].split('\n')), set(b[0].split('\n'))
             print(json.dumps({'project': project, 'exit': [a[1], b[1]], 'only1': sorted(la - lb)[:8],
                               f'only{args.k}': sorted(lb - la)[:8]}), flush=True)
     memory = f' (--checker-memory {args.memory})' if args.memory != 'off' else ''
-    print(f'{differ} / {len(jobs)} projects differ between 1 and {args.k} checkers{memory}')
+    print(f'{differ} / {len(jobs)} projects differ between 1 and {args.k} checkers{memory}' +
+          (f', {len(timeouts)} timed out: {", ".join(timeouts)}' if timeouts else ''))
     sys.exit(1 if differ else 0)
 
 

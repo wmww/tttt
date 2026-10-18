@@ -237,8 +237,8 @@ kaibanjs https://github.com/kaiban-ai/KaibanJS.git ef2edabbdd56c6fc7f05cf82b3e56
 haunted https://github.com/matthewp/haunted.git 35c7f75a2d219e896a07959f6c33608660a6ee17
 # use-query-params: dropped, its install fails
 #use-query-params https://github.com/pbeshai/use-query-params.git f887e72fad1e28532421bf8bf0e34fb8e4b9745c
-# algoliasearch-client-javascript: dropped, a yarn berry lockfile without a packageManager field (the installer runs yarn 1 flags against berry)
-#algoliasearch-client-javascript https://github.com/algolia/algoliasearch-client-javascript.git 642e71a8cc2cd1f45a622ea1f00b236a33040d3c
+# algoliasearch-client-javascript: a yarn berry lockfile without a packageManager field (the installer sniffs `__metadata`)
+algoliasearch-client-javascript https://github.com/algolia/algoliasearch-client-javascript.git 642e71a8cc2cd1f45a622ea1f00b236a33040d3c
 binance https://github.com/sieblyio/binance.git 6a4d8476e920899980ad479ab1e33a3c9821cf5b
 eslint-plugin-jsdoc https://github.com/gajus/eslint-plugin-jsdoc.git 6a4c8fe2b91f244e4583902f5885dd0e4a11b664
 otpauth https://github.com/hectorm/otpauth.git 5a0cb600fae0eb5be476db825f26fbf612a2dffd

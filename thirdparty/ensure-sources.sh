@@ -74,6 +74,9 @@ def install_command(d):
         return ['corepack', pm.split('+')[0], 'install', '--ignore-scripts',
                 f'--store-dir={CACHE}/pnpm-store', '--frozen-lockfile', '--config.engine-strict=false']
     if pm.startswith('yarn') or (not pm and has('yarn.lock')):
+        # A berry lockfile (its `__metadata` entry) without a packageManager field: yarn 1's flags would fail
+        if not pm and '__metadata:' in open(os.path.join(d, 'yarn.lock')).read(4096):
+            pm = 'yarn@4'
         if not pm or pm.startswith('yarn@1'):
             return ['corepack', pm.split('+')[0] if pm else 'yarn@1', 'install', '--ignore-scripts', '--ignore-engines',
                     '--frozen-lockfile', f'--cache-folder={CACHE}/yarn1']
