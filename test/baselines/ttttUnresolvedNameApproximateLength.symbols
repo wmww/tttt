@@ -1,0 +1,44 @@
+//// [test/cases/ttttUnresolvedNameApproximateLength.ts] ////
+
+=== ttttUnresolvedNameApproximateLength.ts ===
+// An unresolved type name doesn't count towards the printed type's approximate length (tsc's error type with the name as
+// its alias, printed by TypeAlias.ToTypeReferenceNode): the long name doesn't make the printer elide onCommit
+interface W {
+>W : Symbol(W, Decl(ttttUnresolvedNameApproximateLength.ts, 0, 0), Decl(ttttUnresolvedNameApproximateLength.ts, 12, 1))
+
+  p?: {
+>p : Symbol(W.p, Decl(ttttUnresolvedNameApproximateLength.ts, 2, 13), Decl(ttttUnresolvedNameApproximateLength.ts, 13, 13))
+
+      checkDCE: (fn: unknown) => void;
+>checkDCE : Symbol(checkDCE, Decl(ttttUnresolvedNameApproximateLength.ts, 3, 7))
+>fn : Symbol(fn, Decl(ttttUnresolvedNameApproximateLength.ts, 4, 17))
+
+      supportsFiber: boolean;
+>supportsFiber : Symbol(supportsFiber, Decl(ttttUnresolvedNameApproximateLength.ts, 4, 38))
+
+      supportsFlight: boolean;
+>supportsFlight : Symbol(supportsFlight, Decl(ttttUnresolvedNameApproximateLength.ts, 5, 29))
+
+      renderers: Map<number, RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR>;
+>renderers : Symbol(renderers, Decl(ttttUnresolvedNameApproximateLength.ts, 6, 30))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+>RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR : Symbol(RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR)
+
+      hasUnsupportedRendererAttached: boolean;
+>hasUnsupportedRendererAttached : Symbol(hasUnsupportedRendererAttached, Decl(ttttUnresolvedNameApproximateLength.ts, 7, 95))
+
+      onCommit: (
+>onCommit : Symbol(onCommit, Decl(ttttUnresolvedNameApproximateLength.ts, 8, 46))
+
+      ) => void;
+    };
+}
+interface W {
+>W : Symbol(W, Decl(ttttUnresolvedNameApproximateLength.ts, 0, 0), Decl(ttttUnresolvedNameApproximateLength.ts, 12, 1))
+
+  p?: {
+>p : Symbol(W.p, Decl(ttttUnresolvedNameApproximateLength.ts, 2, 13), Decl(ttttUnresolvedNameApproximateLength.ts, 13, 13))
+
+    };
+}
+

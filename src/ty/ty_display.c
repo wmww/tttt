@@ -6414,6 +6414,9 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
 static u32 intrinsic_length(Ty const* ty) {
     if (ty->flags & TYF_UNKNOWN) return 0;
     csview name = ty->intrinsic.name;
+    // (An unresolved name, ty_unresolved(), is tsc's error type with the name as its alias: printed by
+    // TypeAlias.ToTypeReferenceNode, which counts its type arguments only)
+    if ((ty->flags & TYF_ERROR) && !csview_equals(name, "any")) return 0;
     return name.size == 9 && name.buf[0] == 'i' ? 3 : (u32)name.size; // (`intrinsic` is any's three)
 }
 

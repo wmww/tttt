@@ -1,0 +1,38 @@
+//// [test/cases/ttttUnresolvedNameApproximateLength.ts] ////
+
+=== ttttUnresolvedNameApproximateLength.ts ===
+// An unresolved type name doesn't count towards the printed type's approximate length (tsc's error type with the name as
+// its alias, printed by TypeAlias.ToTypeReferenceNode): the long name doesn't make the printer elide onCommit
+interface W {
+  p?: {
+>p : { checkDCE: (fn: unknown) => void; supportsFiber: boolean; supportsFlight: boolean; renderers: Map<number, RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR>; hasUnsupportedRendererAttached: boolean; onCommit: () => void; } | undefined
+
+      checkDCE: (fn: unknown) => void;
+>checkDCE : (fn: unknown) => void
+>fn : unknown
+
+      supportsFiber: boolean;
+>supportsFiber : boolean
+
+      supportsFlight: boolean;
+>supportsFlight : boolean
+
+      renderers: Map<number, RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR>;
+>renderers : Map<number, RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR>
+
+      hasUnsupportedRendererAttached: boolean;
+>hasUnsupportedRendererAttached : boolean
+
+      onCommit: (
+>onCommit : () => void
+
+      ) => void;
+    };
+}
+interface W {
+  p?: {
+>p : { checkDCE: (fn: unknown) => void; supportsFiber: boolean; supportsFlight: boolean; renderers: Map<number, RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR>; hasUnsupportedRendererAttached: boolean; onCommit: () => void; } | undefined
+
+    };
+}
+
