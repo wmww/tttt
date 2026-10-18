@@ -38,8 +38,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   the output independent of the checker count, checker recycling, deferred function bodies, per-file AST arenas,
   declaration diagnostics, the declaration writer with comments and maps for TypeScript and JavaScript, project
   references / `-b`, 7.1's content mappers, tsc's laziness and deferred checks, 7.1's language. ~150k lines of C.
-- **Absent or approximated**: optional parameters and tuple elements without their undefined (plan 82 stage 3;
-  properties carry it since stage 2), pseudo-type builder gaps (plan 55's list), namespace-import clones
+- **Absent or approximated**: pseudo-type builder gaps (plan 55's list), namespace-import clones
   (cloneTypeAsModuleType), member identity (members aren't Symbols), the CLI modes above.
 
 ## Course correction (insights of 2026-10-18, end of the twenty-first window)
@@ -223,8 +222,8 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    deferred bodies' accessors, a hacks audit, checker balance by work stealing (72), a perf session~~ done.
 21. ~~Debt (the deferred-body leak, plans 82 stage 2, 83, 84), the declaration emit fan-out, a second refresh (emit
    and checkJs), a perf session, message text as an oracle (clidiff)~~ done.
-22. **Now**: the many-core defaults (a CPU column, the checker-count policy, ~~plan 85's census and gate~~: no-go), plan 82
-   stage 3, the clidiff and real-code tails by fan-out, a third refresh. Plan 58 (7.1.0 stable, then plan 66 stage
+22. **Now**: the many-core defaults (a CPU column, the checker-count policy, ~~plan 85's census and gate~~: no-go), ~~plan 82
+   stage 3~~ (done), the clidiff and real-code tails by fan-out, a third refresh. Plan 58 (7.1.0 stable, then plan 66 stage
    5's fan-out) as soon as it's on npm.
 23. Then: the checker-count and budget policy for many cores with the human's 12-core numbers; plan 76 only if the
    human reopens it.

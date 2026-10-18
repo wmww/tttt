@@ -210,6 +210,9 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   property (getFlowTypeInConstructor). Oracle: JS suite tests.
 - `ty_merged_value_type`: a second `Ty` beside the unmerged one (`ty_static_type_of`, what static `this` sees). Correct:
   one type per merged symbol (tsc's getTypeOfFuncClassEnumModule).
+- `ty_sig_param_declared_type()` / `ty_sig_param_symbol_type()` recover a parameter's declared type by taking undefined
+  back out of `SigParam.type` when `undefined_added` (tsc keeps the symbol's type and adds at getTypeOfParameter): for
+  an instantiation whose declared type became undefined (`p: T = x` with T = undefined) that prints `never`.
 - `ty_report_pattern_iterable()`: TS2318 'Iterable' gated on an array/object literal initializer because tttt computes
   the pattern's contextual type eagerly (tsc's createIterableType only when asked).
 

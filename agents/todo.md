@@ -29,8 +29,9 @@ and RSS** for every perf claim at the defaults.
    declarations are 2-6% of the re-derived CPU (vscode 15%); what multiplies is instantiations of the project's own
    code. On 4 vCPUs the defaults' extra CPU is mostly SMT inflation, then recycling. A snapshot-recycle lead for the
    thrashers in perf_leads.md.
-3. **Plan 82 stage 3**: optional parameters and tuple elements carry their undefined; delete the readers' adds and
-   the hacks.md entries. One session as sized; stage 2's remainder if any.
+3. Done (2026-10-18): plan 82 stage 3, the plan is complete and deleted (documentation.md "The missing type").
+   Optional parameters and tuple elements carry their undefined, `ty_sig_param_type()` and `KEY_OPTIONAL_PARAM` are
+   gone; every oracle unchanged (suite 13833, dtsdiff 1244, clidiff 3612, source sweep 3650 / 3658).
 4. **clidiff fan-out** (three worktree agents): the 54 text and 9 diagnostics mismatches (bugs/display.md buckets),
    disjoint buckets per agent, 0 lost at merge (source sweep match sets and flagflip against the session start).
    Target: half of them.
