@@ -1,0 +1,55 @@
+//// [test/cases/ttttCallbackParameterSettledEarly.ts] ////
+
+=== /a.js ===
+export class Build {
+>Build : Build
+
+  read() {
+>read : () => string | undefined
+
+    return this.out;
+>this.out : string | undefined
+>this : this
+>out : string | undefined
+  }
+  /** @param {string[]} xs */
+  setup(xs) {
+>setup : (xs: string[]) => void
+>xs : string[]
+
+    xs.forEach((x) => { this.out = x; });
+>xs.forEach((x) => { this.out = x; }) : void
+>xs.forEach : (callbackfn: (value: string, index: number, array: string[]) => void, thisArg?: any) => void
+>xs : string[]
+>forEach : (callbackfn: (value: string, index: number, array: string[]) => void, thisArg?: any) => void
+>(x) => { this.out = x; } : (x: string) => void
+>x : string
+>this.out = x : string
+>this.out : string | undefined
+>this : this
+>out : string | undefined
+>x : string
+
+    xs.forEach(({ length }) => { this.len = length; });
+>xs.forEach(({ length }) => { this.len = length; }) : void
+>xs.forEach : (callbackfn: (value: string, index: number, array: string[]) => void, thisArg?: any) => void
+>xs : string[]
+>forEach : (callbackfn: (value: string, index: number, array: string[]) => void, thisArg?: any) => void
+>({ length }) => { this.len = length; } : ({ length }: string) => void
+>length : number
+>this.len = length : number
+>this.len : number | undefined
+>this : this
+>len : number | undefined
+>length : number
+  }
+  read2() {
+>read2 : () => number | undefined
+
+    return this.len;
+>this.len : number | undefined
+>this : this
+>len : number | undefined
+  }
+}
+

@@ -95,6 +95,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttCallbackParameterSettledEarly': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttCircularAliasArity': {
         errors: true,
         symbols: true,

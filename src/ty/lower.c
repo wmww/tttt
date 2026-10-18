@@ -3596,6 +3596,21 @@ static Ty const* binding_element_of(Checker* me, Binding const* binding, Ty cons
     return ret;
 }
 
+
+// A parameter of a function argument of a statement's call, asked for before that statement is checked: checking it
+// first gives the parameter its contextual type (tsc's getContextuallyTypedParameterType resolves the call on demand;
+// tttt pushes contextual types down, so the statement is checked now, as its own check would, without a contextual
+// type). Not while the statement or the parameter is being evaluated
+static void settle_parameter_context(Checker* me, InitializedBinding const* parameter) {
+    Expr const* statement = initialized_binding_rare(parameter)->settled_by;
+    if (!statement || ty_contextual_parameter_type(me, parameter)) return;
+    LazyMemo* own = lazy_type_state_peek((LazyType*)&parameter->lazy_type);
+    if (own && own->evaluation_started) return;
+    LazyMemo* settling = lazy_type_state_peek((LazyType*)&statement->lazy_type);
+    if (settling && settling->evaluation_started) return;
+    (void)ty_expr_type(me, (Expr*)statement);
+}
+
 static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
     Binding const* parent = binding->parent;
     // A catch variable (the only root without a source) is any, or unknown under useUnknownInCatchVariables
@@ -3619,6 +3634,9 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
                 (void)lazy_type_get(binding->source); // (The initializer is still checked)
                 return ty_object_literal(me, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC | OBJECT_JS);
             }
+        }
+        if (binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING) {
+            settle_parameter_context(me, c_container_of(binding->source, InitializedBinding, lazy_type));
         }
         return lazy_type_get(binding->source);
     }

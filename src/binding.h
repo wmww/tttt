@@ -155,6 +155,11 @@ typedef struct InitializedBindingRare {
     // An unannotated `this` parameter: its function, whose contextual `this` type it has (tsc's
     // getTypeForVariableLikeDeclaration: getContextualThisParameterType)
     struct FunctionImpl const* this_of;
+    // An unannotated parameter of a function expression that is an argument of a call an expression statement makes
+    // (`xs.forEach(x => { this.y = x })`): that statement's expression, which settles the parameter's contextual type
+    // when something asks for the parameter's type before the statement is checked (tsc's getContextuallyTypedParameterType
+    // resolves the call then: a JavaScript `this.y` read in an earlier method)
+    struct Expr const* settled_by;
     // JavaScript: `const x = require("m")`, `const { a, b: c } = require("m")`, `const a = require("m").a` declare
     // aliases like imports (tsc's isVariableDeclarationInitializedToBareOrAccessedRequire), one per name (owned)
     struct PortItem* require_ports;

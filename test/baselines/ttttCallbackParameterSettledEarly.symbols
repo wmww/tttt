@@ -1,0 +1,49 @@
+//// [test/cases/ttttCallbackParameterSettledEarly.ts] ////
+
+=== /a.js ===
+export class Build {
+>Build : Symbol(Build, Decl(a.js, 0, 0))
+
+  read() {
+>read : Symbol(Build.read, Decl(a.js, 0, 20))
+
+    return this.out;
+>this.out : Symbol(Build.out, Decl(a.js, 6, 23))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>out : Symbol(Build.out, Decl(a.js, 6, 23))
+  }
+  /** @param {string[]} xs */
+  setup(xs) {
+>setup : Symbol(Build.setup, Decl(a.js, 3, 3))
+>xs : Symbol(xs, Decl(a.js, 5, 8))
+
+    xs.forEach((x) => { this.out = x; });
+>xs.forEach : Symbol(Array.forEach, Decl(lib.es5.d.ts, --, --))
+>xs : Symbol(xs, Decl(a.js, 5, 8))
+>forEach : Symbol(Array.forEach, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.js, 6, 16))
+>this.out : Symbol(Build.out, Decl(a.js, 6, 23))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>out : Symbol(Build.out, Decl(a.js, 6, 23))
+>x : Symbol(x, Decl(a.js, 6, 16))
+
+    xs.forEach(({ length }) => { this.len = length; });
+>xs.forEach : Symbol(Array.forEach, Decl(lib.es5.d.ts, --, --))
+>xs : Symbol(xs, Decl(a.js, 5, 8))
+>forEach : Symbol(Array.forEach, Decl(lib.es5.d.ts, --, --))
+>length : Symbol(length, Decl(a.js, 7, 17))
+>this.len : Symbol(Build.len, Decl(a.js, 7, 32))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>len : Symbol(Build.len, Decl(a.js, 7, 32))
+>length : Symbol(length, Decl(a.js, 7, 17))
+  }
+  read2() {
+>read2 : Symbol(Build.read2, Decl(a.js, 8, 3))
+
+    return this.len;
+>this.len : Symbol(Build.len, Decl(a.js, 7, 32))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>len : Symbol(Build.len, Decl(a.js, 7, 32))
+  }
+}
+
