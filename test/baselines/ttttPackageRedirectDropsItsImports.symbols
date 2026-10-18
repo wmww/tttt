@@ -1,0 +1,45 @@
+//// [test/cases/ttttPackageRedirectDropsItsImports.ts] ////
+
+=== /main.ts ===
+import * as a from "./a";
+>a : Symbol(a, Decl(main.ts, 0, 6))
+
+import * as b from "./b";
+>b : Symbol(b, Decl(main.ts, 1, 6))
+
+declare const c: a.C;
+>c : Symbol(c, Decl(main.ts, 2, 13))
+>a : Symbol(a, Decl(main.ts, 0, 6))
+>C : Symbol(a.C, Decl(index.ts, 0, 8))
+
+export const c2: b.C = c;
+>c2 : Symbol(c2, Decl(main.ts, 3, 12))
+>b : Symbol(b, Decl(main.ts, 1, 6))
+>C : Symbol(b.C, Decl(index.ts, 0, 8))
+>c : Symbol(c, Decl(main.ts, 2, 13))
+
+export const m: number = onlySecondCopyToo;
+>m : Symbol(m, Decl(main.ts, 4, 12))
+
+=== /a/node_modules/pkg/index.d.ts ===
+export declare class C { private p; }
+>C : Symbol(C, Decl(index.d.ts, 0, 0))
+>p : Symbol(C.p, Decl(index.d.ts, 0, 24))
+
+=== /a/index.ts ===
+export { C } from "pkg";
+>C : Symbol(C, Decl(index.ts, 0, 8))
+
+=== /b/node_modules/pkg/index.d.ts ===
+import "./globals";
+>C : Symbol(C, Decl(index.d.ts, 0, 0))
+>p : Symbol(C.p, Decl(index.d.ts, 0, 24))
+
+export declare class C { private p; }
+=== /b/index.ts ===
+export { C } from "pkg";
+>C : Symbol(C, Decl(index.ts, 0, 8))
+
+export const n: number = onlySecondCopy;
+>n : Symbol(n, Decl(index.ts, 1, 12))
+

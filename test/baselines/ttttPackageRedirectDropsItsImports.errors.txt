@@ -1,0 +1,34 @@
+/b/index.ts(2,26): error TS2304: Cannot find name 'onlySecondCopy'.
+/main.ts(5,26): error TS2304: Cannot find name 'onlySecondCopyToo'.
+
+
+==== /tsconfig.json (0 errors) ====
+    { "compilerOptions": { "module": "commonjs", "strict": true }, "files": ["main.ts"] }
+==== /main.ts (1 errors) ====
+    import * as a from "./a";
+    import * as b from "./b";
+    declare const c: a.C;
+    export const c2: b.C = c;
+    export const m: number = onlySecondCopyToo;
+                             ~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'onlySecondCopyToo'.
+    
+==== /a/node_modules/pkg/package.json (0 errors) ====
+    { "name": "pkg", "version": "1.0.0", "types": "index.d.ts" }
+==== /a/node_modules/pkg/index.d.ts (0 errors) ====
+    export declare class C { private p; }
+==== /a/index.ts (0 errors) ====
+    export { C } from "pkg";
+==== /b/node_modules/pkg/package.json (0 errors) ====
+    { "name": "pkg", "version": "1.0.0", "types": "index.d.ts" }
+==== /b/node_modules/pkg/index.d.ts (0 errors) ====
+    import "./globals";
+    export declare class C { private p; }
+==== /b/node_modules/pkg/globals.d.ts (0 errors) ====
+    declare var onlySecondCopy: number;
+    declare var onlySecondCopyToo: number;
+==== /b/index.ts (1 errors) ====
+    export { C } from "pkg";
+    export const n: number = onlySecondCopy;
+                             ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'onlySecondCopy'.

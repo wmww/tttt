@@ -1,0 +1,45 @@
+//// [test/cases/ttttPackageRedirectDropsItsImports.ts] ////
+
+=== /main.ts ===
+import * as a from "./a";
+>a : typeof a
+
+import * as b from "./b";
+>b : typeof b
+
+declare const c: a.C;
+>c : a.C
+>a : any
+
+export const c2: b.C = c;
+>c2 : a.C
+>b : any
+>c : a.C
+
+export const m: number = onlySecondCopyToo;
+>m : number
+>onlySecondCopyToo : any
+
+=== /a/node_modules/pkg/index.d.ts ===
+export declare class C { private p; }
+>C : C
+>p : any
+
+=== /a/index.ts ===
+export { C } from "pkg";
+>C : typeof import("pkg").C
+
+=== /b/node_modules/pkg/index.d.ts ===
+import "./globals";
+>C : C
+>p : any
+
+export declare class C { private p; }
+=== /b/index.ts ===
+export { C } from "pkg";
+>C : typeof import("pkg").C
+
+export const n: number = onlySecondCopy;
+>n : number
+>onlySecondCopy : any
+
