@@ -7039,6 +7039,16 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
                 count += find_prop_in(me, apparent_type(me, keyed), name, 0, true).found ||
                     ty_applicable_index_info(me, keyed, ty_prop_name_literal(me, name));
             }
+            // (The source's index signatures key the member's names they apply to: `{ [k: string]: X }` against
+            // `any[] | Promise<any[]>` overlaps the array's `length`, `pop`... more than the promise's `then`...)
+            if (index_keys) {
+                Ty const* apparent = apparent_type(me, keyed);
+                Members const* target_members = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_members(me, apparent) : nullptr;
+                for (u32 p = 0; target_members && p < target_members->prop_count; p++) {
+                    Atom const* name = target_members->props[p]->name;
+                    if (!ty_get_prop(me, source, name) && ty_applicable_index_info(me, source, ty_prop_name_literal(me, name))) count++;
+                }
+            }
             if (count && count >= best_count) {
                 best = t;
                 best_count = count;

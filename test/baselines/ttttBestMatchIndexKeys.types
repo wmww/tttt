@@ -1,0 +1,27 @@
+//// [test/cases/ttttBestMatchIndexKeys.ts] ////
+
+=== ttttBestMatchIndexKeys.ts ===
+// findMostOverlappyType counts the member names a source's index signature keys too (keyof G & keyof any[]): a string
+// index source elaborates against `any[]` in `any[] | Promise<any[]>` (docmost's slash menu)
+type G = { [category: string]: number[] };
+>G : G
+>category : string
+
+declare const f: () => G;
+>f : () => G
+
+const g: () => any[] | Promise<any[]> = f;
+>g : () => any[] | Promise<any[]>
+>f : () => G
+
+declare const h: G;
+>h : G
+
+const i: any[] | Promise<any[]> = h;
+>i : any[] | Promise<any[]>
+>h : G
+
+const j: string[] | Promise<string[]> = h;
+>j : string[] | Promise<string[]>
+>h : G
+

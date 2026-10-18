@@ -64,6 +64,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttBestMatchIndexKeys': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBigintMemberNames': {
         errors: true,
         symbols: true,

@@ -1,0 +1,29 @@
+ttttBestMatchIndexKeys.ts(5,7): error TS2322: Type '() => G' is not assignable to type '() => any[] | Promise<any[]>'.
+  Type 'G' is not assignable to type 'any[] | Promise<any[]>'.
+    Type 'G' is missing the following properties from type 'any[]': length, pop, push, concat, and 26 more.
+ttttBestMatchIndexKeys.ts(7,7): error TS2322: Type 'G' is not assignable to type 'any[] | Promise<any[]>'.
+  Type 'G' is missing the following properties from type 'any[]': length, pop, push, concat, and 26 more.
+ttttBestMatchIndexKeys.ts(8,7): error TS2322: Type 'G' is not assignable to type 'string[] | Promise<string[]>'.
+  Type 'G' is missing the following properties from type 'string[]': length, pop, push, concat, and 26 more.
+
+
+==== ttttBestMatchIndexKeys.ts (3 errors) ====
+    // findMostOverlappyType counts the member names a source's index signature keys too (keyof G & keyof any[]): a string
+    // index source elaborates against `any[]` in `any[] | Promise<any[]>` (docmost's slash menu)
+    type G = { [category: string]: number[] };
+    declare const f: () => G;
+    const g: () => any[] | Promise<any[]> = f;
+          ~
+!!! error TS2322: Type '() => G' is not assignable to type '() => any[] | Promise<any[]>'.
+!!! error TS2322:   Type 'G' is not assignable to type 'any[] | Promise<any[]>'.
+!!! error TS2322:     Type 'G' is missing the following properties from type 'any[]': length, pop, push, concat, and 26 more.
+    declare const h: G;
+    const i: any[] | Promise<any[]> = h;
+          ~
+!!! error TS2322: Type 'G' is not assignable to type 'any[] | Promise<any[]>'.
+!!! error TS2322:   Type 'G' is missing the following properties from type 'any[]': length, pop, push, concat, and 26 more.
+    const j: string[] | Promise<string[]> = h;
+          ~
+!!! error TS2322: Type 'G' is not assignable to type 'string[] | Promise<string[]>'.
+!!! error TS2322:   Type 'G' is missing the following properties from type 'string[]': length, pop, push, concat, and 26 more.
+    

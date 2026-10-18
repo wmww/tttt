@@ -1,0 +1,32 @@
+//// [test/cases/ttttBestMatchIndexKeys.ts] ////
+
+=== ttttBestMatchIndexKeys.ts ===
+// findMostOverlappyType counts the member names a source's index signature keys too (keyof G & keyof any[]): a string
+// index source elaborates against `any[]` in `any[] | Promise<any[]>` (docmost's slash menu)
+type G = { [category: string]: number[] };
+>G : Symbol(G, Decl(ttttBestMatchIndexKeys.ts, 0, 0))
+>category : Symbol(category, Decl(ttttBestMatchIndexKeys.ts, 2, 12))
+
+declare const f: () => G;
+>f : Symbol(f, Decl(ttttBestMatchIndexKeys.ts, 3, 13))
+>G : Symbol(G, Decl(ttttBestMatchIndexKeys.ts, 0, 0))
+
+const g: () => any[] | Promise<any[]> = f;
+>g : Symbol(g, Decl(ttttBestMatchIndexKeys.ts, 4, 5))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>f : Symbol(f, Decl(ttttBestMatchIndexKeys.ts, 3, 13))
+
+declare const h: G;
+>h : Symbol(h, Decl(ttttBestMatchIndexKeys.ts, 5, 13))
+>G : Symbol(G, Decl(ttttBestMatchIndexKeys.ts, 0, 0))
+
+const i: any[] | Promise<any[]> = h;
+>i : Symbol(i, Decl(ttttBestMatchIndexKeys.ts, 6, 5))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>h : Symbol(h, Decl(ttttBestMatchIndexKeys.ts, 5, 13))
+
+const j: string[] | Promise<string[]> = h;
+>j : Symbol(j, Decl(ttttBestMatchIndexKeys.ts, 7, 5))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>h : Symbol(h, Decl(ttttBestMatchIndexKeys.ts, 5, 13))
+
