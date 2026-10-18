@@ -1,0 +1,7 @@
+//// [test/cases/ttttExtendedIncludeReason.ts] ////
+
+=== src1/main.ts ===
+export const x = 1;
+>x : 1
+>1 : 1
+

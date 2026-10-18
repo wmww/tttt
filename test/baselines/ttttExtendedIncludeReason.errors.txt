@@ -1,0 +1,22 @@
+error TS6059: File 'src1/main.ts' is not under 'rootDir' 'src2'. 'rootDir' is expected to contain all source files.
+  The file is in the program because:
+    Matched by include pattern 'configs/../src1/*' in 'tsconfig.json'
+
+
+!!! error TS6059: File 'src1/main.ts' is not under 'rootDir' 'src2'. 'rootDir' is expected to contain all source files.
+!!! error TS6059:   The file is in the program because:
+!!! error TS6059:     Matched by include pattern 'configs/../src1/*' in 'tsconfig.json'
+==== tsconfig.json (0 errors) ====
+    {
+        "extends": "./configs/base.json",
+        "compilerOptions": {
+            "rootDir": "./src2"
+        }
+    }
+==== src1/main.ts (0 errors) ====
+    export const x = 1;
+    
+==== configs/base.json (0 errors) ====
+    {
+        "include": ["../src1/*"]
+    }

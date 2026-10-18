@@ -1089,8 +1089,9 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
     str_list_drop(&patterns.exclude);
 }
 
-// A spec as TS18003 shows it: one inherited from an extended config is rebased onto the config's directory (tsc's
-// parseConfig's updatePath: combinePaths of the relative directory and the spec, not normalized)
+// A spec as TS18003 and the include reasons show it: one inherited from an extended config is rebased onto the
+// config's directory (tsc's parseConfig's updatePath: combinePaths of the relative directory and the spec, not
+// normalized)
 static void push_shown_spec(ConfigLoad* me, StrList* list, csview dir, csview spec) {
     if (cstr_equals_sv(&my config_dir, dir) || (spec.size && spec.buf[0] == '/') || csview_starts_with(spec, "${configDir}")) {
         str_list_push(list, spec);
@@ -1166,7 +1167,8 @@ cstr tsconfig_root_file_reason(CompilerOptions const* options, csview path, csvi
         case CONFIG_SPEC_FILES: return cstr_lit("Part of 'files' list in tsconfig.json");
         case CONFIG_SPEC_DEFAULT_INCLUDE: return cstr_lit("Matched by default include pattern '**/*'");
         case CONFIG_SPEC_INCLUDE:
-            return cstr_d("Matched by include pattern '", options->config_include_specs.items[index], "' in '", config_name, "'");
+            // the spec as tsc's configFileSpecs hold it: an inherited one rebased onto this config's directory
+            return cstr_d("Matched by include pattern '", options->config_include_shown.items[index], "' in '", config_name, "'");
         case CONFIG_SPEC_NONE: break;
     }
     return cstr_lit("Root file specified for compilation");

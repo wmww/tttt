@@ -1,0 +1,6 @@
+//// [test/cases/ttttExtendedIncludeReason.ts] ////
+
+=== src1/main.ts ===
+export const x = 1;
+>x : Symbol(x, Decl(main.ts, 0, 12))
+
