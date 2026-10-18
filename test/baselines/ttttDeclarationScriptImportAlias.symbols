@@ -1,0 +1,33 @@
+//// [test/cases/ttttDeclarationScriptImportAlias.ts] ////
+
+=== ttttDeclarationScriptImportAlias.ts ===
+// A script's import aliases are global declarations, written like its others (tsc's isDeclarationVisible: an import
+// alias whose parent is a global source file); one in a namespace isn't, nor one with no module reference (recovery)
+declare namespace b { const c: number; }
+>b : Symbol(b, Decl(ttttDeclarationScriptImportAlias.ts, 0, 0))
+>c : Symbol(c, Decl(ttttDeclarationScriptImportAlias.ts, 2, 27))
+
+namespace N { import a = b; export const z = 1; }
+>N : Symbol(N, Decl(ttttDeclarationScriptImportAlias.ts, 2, 40))
+>a : Symbol(a, Decl(ttttDeclarationScriptImportAlias.ts, 3, 13))
+>b : Symbol(a, Decl(ttttDeclarationScriptImportAlias.ts, 0, 0))
+>z : Symbol(z, Decl(ttttDeclarationScriptImportAlias.ts, 3, 40))
+
+declare namespace M { import a = b; }
+>M : Symbol(M, Decl(ttttDeclarationScriptImportAlias.ts, 3, 49))
+>a : Symbol(a, Decl(ttttDeclarationScriptImportAlias.ts, 4, 21))
+>b : Symbol(a, Decl(ttttDeclarationScriptImportAlias.ts, 0, 0))
+
+/** doc */
+import d = b.c; // trailing
+>d : Symbol(d, Decl(ttttDeclarationScriptImportAlias.ts, 4, 37))
+>b : Symbol(b, Decl(ttttDeclarationScriptImportAlias.ts, 0, 0))
+>c : Symbol(d, Decl(ttttDeclarationScriptImportAlias.ts, 2, 27))
+
+import e = b;
+>e : Symbol(e, Decl(ttttDeclarationScriptImportAlias.ts, 6, 15))
+>b : Symbol(b, Decl(ttttDeclarationScriptImportAlias.ts, 0, 0))
+
+import from 'foo'
+>from : Symbol(from, Decl(ttttDeclarationScriptImportAlias.ts, 7, 13))
+

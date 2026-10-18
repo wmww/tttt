@@ -1,0 +1,35 @@
+//// [test/cases/ttttDeclarationScriptImportAlias.ts] ////
+
+=== ttttDeclarationScriptImportAlias.ts ===
+// A script's import aliases are global declarations, written like its others (tsc's isDeclarationVisible: an import
+// alias whose parent is a global source file); one in a namespace isn't, nor one with no module reference (recovery)
+declare namespace b { const c: number; }
+>b : typeof b
+>c : number
+
+namespace N { import a = b; export const z = 1; }
+>N : typeof N
+>a : typeof a
+>b : typeof a
+>z : 1
+>1 : 1
+
+declare namespace M { import a = b; }
+>a : typeof a
+>b : typeof a
+
+/** doc */
+import d = b.c; // trailing
+>d : number
+>b : typeof b
+>c : number
+
+import e = b;
+>e : typeof b
+>b : typeof b
+
+import from 'foo'
+>from : any
+> : any
+>'foo' : "foo"
+

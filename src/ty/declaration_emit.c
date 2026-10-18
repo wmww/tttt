@@ -5305,7 +5305,9 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
     }
     if (port->main.tag == PORT_IMPORT_ALIAS || port->is_import_require) {
         PortItem const* item = &port->main;
-        if (!item->export_import && !KEPT(item->symbol)) return;
+        // (A script's own import alias is global, visible like its other declarations: tsc's
+        // determineIfDeclarationIsVisible, isGlobalSourceFile of its parent; not in an ambient namespace)
+        if (!item->export_import && !container.global && !KEPT(item->symbol)) return;
         w_indent(me);
         m_span(me, statement->span, false);
         if (item->export_import) w_lit(me, "export ");
@@ -5330,6 +5332,11 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
                 if (i_index) w_lit(me, ".");
                 w_name(me, *i);
                 if (i_index) m_span(me, *i, true);
+            }
+            if (vec_span_size(path) == 1 && !vec_span_at(path, 0)->size) {
+                // (No reference, `import from 'foo'`: tsc's missing identifier ends where it starts, before the trivia
+                // its start skips)
+                m(me, decl_map_back_trivia(vec_span_at(path, 0)->buf, statement->span.buf));
             }
         }
         w_lit(me, ";");
