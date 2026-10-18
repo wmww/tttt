@@ -1,0 +1,38 @@
+//// [test/cases/ttttDeclarationIndexSignatureBrandedKey.ts] ////
+
+=== ttttDeclarationIndexSignatureBrandedKey.ts ===
+// A mapped type over an aliased branded key: tsc's getLowerBoundOfKeyType makes the intersection again without its
+// alias, so the index signature's key prints structurally; the emitter indents index signature parameters
+// (LFIndexSignatureParameters), a multi-line key's members one level deeper
+type CategorySlug = string & { readonly __brand: 'CategorySlug' };
+>CategorySlug : CategorySlug
+>__brand : "CategorySlug"
+
+export declare function g<K extends string>(x: K): { a: { [P in K]: 1 } };
+>g : <K extends string>(x: K) => { a: { [P in K]: 1; }; }
+>x : K
+>a : { [P in K]: 1; }
+
+export const z = g(null as any as CategorySlug);
+>z : { a: { [x: string & { readonly __brand: 'CategorySlug'; }]: 1; }; }
+>g(null as any as CategorySlug) : { a: { [x: string & { readonly __brand: 'CategorySlug'; }]: 1; }; }
+>g : <K extends string>(x: K) => { a: { [P in K]: 1; }; }
+>null as any as CategorySlug : CategorySlug
+>null as any : any
+
+export type Q = { [x: string & { readonly b: 1 }]: 1 };
+>Q : Q
+>x : string & { readonly b: 1; }
+>b : 1
+
+export const q = null as any as { [x: string & { readonly b: 1 }]: 1 };
+>q : { [x: string & { readonly b: 1; }]: 1; }
+>null as any as { [x: string & { readonly b: 1 }]: 1 } : { [x: string & { readonly b: 1; }]: 1; }
+>null as any : any
+>x : string & { readonly b: 1; }
+>b : 1
+
+export interface I { [x: string & { readonly b: 1 }]: 1 }
+>x : string & { readonly b: 1; }
+>b : 1
+

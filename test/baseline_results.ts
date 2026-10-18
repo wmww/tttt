@@ -323,6 +323,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationIndexSignatureBrandedKey': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationIndexedFallbackConstituentParens': {
         errors: true,
         symbols: true,

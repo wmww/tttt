@@ -2669,7 +2669,12 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 param_comments_begin_at(d, i->key.index->name);
                 out_mapped(d, i->key.index->name);
                 out_lit(d, ": ");
-                display_node(me, d, &i->key.index->type);
+                {
+                    // (Indented: tsc's LFIndexSignatureParameters)
+                    TyDisplay key_d = d;
+                    key_d.indent++;
+                    display_node(me, key_d, &i->key.index->type);
+                }
                 // (The parameter ends with its type)
                 map_at(d, decl_map_type_end(&i->key.index->type, D_MAP(d)));
                 out_lit(d, "]: ");
@@ -5363,7 +5368,11 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         out_lit(d, "[");
         out(d, info->param_name ? atom_sv(info->param_name) : c_sv("x"));
         out_lit(d, ": ");
-        ty_display(me, d, info->key);
+        // (tsc's emitter writes the parameter list indented, LFIndexSignatureParameters: a multi-line key type's
+        // members are one level deeper)
+        TyDisplay key_d = d;
+        key_d.indent++;
+        ty_display(me, key_d, info->key);
         out_lit(d, "]: ");
         // (A reverse mapped type's is the elided information placeholder, except in declaration emit: tsc's
         // createTypeNodesFromResolvedType with AllowAnonymousIdentifier)

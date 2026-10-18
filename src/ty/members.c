@@ -4037,13 +4037,26 @@ static Ty const* lower_bound_of_key_type(Checker* me, Ty const* ty, u32 depth) {
             changed |= part != types.data[i];
             ty_buf_push(&parts, part);
         }
-        // (A union without reductions, tsc's mapType with noReductions: `keyof T | "k"` with T's keys string keeps "k")
-        Ty const* ret = !changed ? ty : ty->kind == TY_UNION ? ty_union_unreduced(me, parts.data, parts.len) :
+        // (A union without reductions, tsc's mapType with noReductions: `keyof T | "k"` with T's keys string keeps "k".
+        // An intersection is made again even unchanged, without its alias: a mapped type over a branded key
+        // `string & {...}` named by an alias has an index signature keyed by the unaliased intersection)
+        Ty const* ret = !changed ? (ty->kind == TY_UNION ? ty : ty_intersection_unaliased(me, ty)) :
+            ty->kind == TY_UNION ? ty_union_unreduced(me, parts.data, parts.len) :
             ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
         ty_buf_drop(&parts);
         return ret;
     }
     return ty;
+}
+
+static bool has_aliased_intersection(Ty const* ty) {
+    if (ty->kind == TY_INTERSECTION) return ty->alias != nullptr;
+    if (ty->kind != TY_UNION) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        Ty const* part = ty->composite.types.data[i];
+        if (part->kind == TY_INTERSECTION && part->alias) return true;
+    }
+    return false;
 }
 
 Ty const* ty_lower_bound_of_key_type(Checker* me, Ty const* ty) {
@@ -4125,6 +4138,11 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 keyed = apparent;
             }
         }
+    }
+    // (tsc takes every constraint's lower bound, which makes an aliased intersection again without its alias: a
+    // branded key `string & {...}` named by an alias keys an index signature printed as the intersection)
+    if (!generic && !ty_is_generic_index(constraint) && has_aliased_intersection(constraint)) {
+        constraint = ty_lower_bound_of_key_type(me, constraint);
     }
     if (ty_is_generic_index(constraint) && !generic) {
         Ty const* lower = ty_lower_bound_of_key_type(me, constraint);

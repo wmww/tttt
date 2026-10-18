@@ -1,0 +1,39 @@
+//// [test/cases/ttttDeclarationIndexSignatureBrandedKey.ts] ////
+
+=== ttttDeclarationIndexSignatureBrandedKey.ts ===
+// A mapped type over an aliased branded key: tsc's getLowerBoundOfKeyType makes the intersection again without its
+// alias, so the index signature's key prints structurally; the emitter indents index signature parameters
+// (LFIndexSignatureParameters), a multi-line key's members one level deeper
+type CategorySlug = string & { readonly __brand: 'CategorySlug' };
+>CategorySlug : Symbol(CategorySlug, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 0, 0))
+>__brand : Symbol(__brand, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 3, 30))
+
+export declare function g<K extends string>(x: K): { a: { [P in K]: 1 } };
+>g : Symbol(g, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 3, 66))
+>K : Symbol(K, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 4, 26))
+>x : Symbol(x, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 4, 44))
+>K : Symbol(K, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 4, 26))
+>a : Symbol(a, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 4, 52))
+>P : Symbol(P, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 4, 59))
+>K : Symbol(K, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 4, 26))
+
+export const z = g(null as any as CategorySlug);
+>z : Symbol(z, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 5, 12))
+>g : Symbol(g, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 3, 66))
+>CategorySlug : Symbol(CategorySlug, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 0, 0))
+
+export type Q = { [x: string & { readonly b: 1 }]: 1 };
+>Q : Symbol(Q, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 5, 48))
+>x : Symbol(x, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 6, 19))
+>b : Symbol(b, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 6, 32))
+
+export const q = null as any as { [x: string & { readonly b: 1 }]: 1 };
+>q : Symbol(q, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 7, 12))
+>x : Symbol(x, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 7, 35))
+>b : Symbol(b, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 7, 48))
+
+export interface I { [x: string & { readonly b: 1 }]: 1 }
+>I : Symbol(I, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 7, 71))
+>x : Symbol(x, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 8, 22))
+>b : Symbol(b, Decl(ttttDeclarationIndexSignatureBrandedKey.ts, 8, 35))
+
