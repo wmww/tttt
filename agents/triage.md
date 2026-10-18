@@ -28,10 +28,10 @@ gap to bun is per-checker re-derivation (bugs/perf_leads.md).
 - (2026-10-18) tsc-rs 0.7.0 (pingdotgg/ts-rust, Rust port of tsgo at our very pin) is a new comparator: least CPU at
   4 checkers, byte-identical to tsgo on 13 / 14 corpora, but 3-5 GB on vscode/type-fest. `scripts/bench.sh --tscrs`.
   The next insights should decide whether report.md tracks it next to bun.
-- From human: please claude-stop after triage, before next insights
 - From human: continue working on correctness where applicable and perf/memory. If there's no reasonable way to make any progress on perf look at the final tests/more real-world code bases and make sure there's no remaining fixes that make sense
 - (2026-10-18, plan 83) One full `scripts/flagflip.py` run (under the oracles' load) had a third xstate/sloppy TS5115
   (test/order.test.ts:62, 'Values', 'StateId'); the cell alone and a second full run had the usual two. Timing-
   dependent output at one K (work stealing decides which checker sees which file first): TS5115's checker dependence
   is tsgo's own (bugs/tsgo_divergences.md), but tttt's K-fixed output shouldn't vary run to run. Worth a few
   `-c xstate -F sloppy` runs under load to see how often.
+- From human: fan out to parallel sub-agents in worktrees where possible, makes things go faster
