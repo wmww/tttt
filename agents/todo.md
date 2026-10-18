@@ -32,7 +32,12 @@ stay faster than bun on every corpus and the sweep's tail. Output byte-identical
    the intersection hacks deleted, `TTTT_CHECK_OPTIONALITY` silent before deletion. Suite 13795 / 13832 (+3 own
    repro tests, +1 tsc test), every oracle at the starting point except the source sweep 3558 / 3566: tiptap/demos'
    predicted TS2590, a pre-existing JSX tag type bug that matched tsc by luck before (bugs/sourcesweep_checker.md).
-4. **Plan 83** (re-entrant member resolution): fix, or a sized plan.
+4. Done (2026-10-18): plan 83. The re-entry came from asking a mapped type's genericity, keys and MappedInfo of its
+   expansion (which relates the `as` clause): those now come from the declaration (`ty_generic_mapped()`, an
+   instantiation expands from its declaration's info instantiated, not the generic target's expansion). The `as`
+   clause kind is tsc's relation alone (shape reading and the `keyof` text test deleted, hacks.md entry gone);
+   `never_index_read` narrowed. Suite 13797 / 13834 (+1 tsc test, +2 own), every oracle at the starting point,
+   instructions flat (documentation.md "Members asked for while they are resolved").
 5. **Plan 84** (tsgo's two-phase load): the package-id HACK deleted.
 6. **Declaration emit tail by fan-out** (bugs/dts_emit.md): up to four Opus sub-agents in worktrees, one dtsdiff /
    clidiff `--emit` / dtsstats bucket each, disjoint, 0 lost at every merge (vision.md "Fan-out merge discipline").
