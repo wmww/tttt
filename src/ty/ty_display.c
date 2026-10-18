@@ -2078,6 +2078,17 @@ static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) 
             out_symbol_name(me, reused_if(d, false), symbol, SYMBOL_VALUE);
             return;
         }
+        // (An import of an unresolved module: serializeTypeName resolves the name to unknownSymbol, which the file
+        // names by its first import that resolves to nothing too, painting it, as identifier_reuse() says of a type
+        // reference: better-auth's `typeof BASE_ERROR_CODES` printed `typeof BetterAuthClientOptions` elsewhere)
+        Symbol const* unknown = leftmost == node->typeof_->expr ? leftmost->identifier.symbol : nullptr;
+        Symbol const* alias = unknown && symbol_alias_of_unknown(unknown) && d.enclosing ? scope_unknown_alias(d.enclosing) : nullptr;
+        if (alias) {
+            if (d.tracker) d.tracker->track_symbol(d.tracker, alias, SYMBOL_VALUE);
+            out_lit(d, "typeof ");
+            out(reused_if(d, false), alias->name);
+            return;
+        }
         display_node_fallback(me, d, node);
         return;
     }

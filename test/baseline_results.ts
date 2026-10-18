@@ -605,6 +605,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationUnknownImportTypeof': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationUnusedImportOfReexportedModule': {
         errors: true,
         symbols: true,

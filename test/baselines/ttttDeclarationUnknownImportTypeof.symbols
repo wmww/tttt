@@ -1,0 +1,44 @@
+//// [test/cases/ttttDeclarationUnknownImportTypeof.ts] ////
+
+=== a.ts ===
+import type { Opts } from "missing-core";
+>Opts : Symbol(Opts, Decl(a.ts, 0, 13))
+
+import type { CODES } from "missing-core/error";
+>CODES : Symbol(CODES, Decl(a.ts, 1, 13))
+
+export function f<O extends Opts>() { return {} as { e: Partial<O> & typeof CODES } }
+>f : Symbol(f, Decl(a.ts, 1, 48))
+>O : Symbol(O, Decl(a.ts, 2, 18))
+>Opts : Symbol(Opts, Decl(a.ts, 0, 13))
+>e : Symbol(e, Decl(a.ts, 2, 52))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>O : Symbol(O, Decl(a.ts, 2, 18))
+>CODES : Symbol(CODES, Decl(a.ts, 1, 13))
+
+=== b.ts ===
+import type { Opts } from "missing-core";
+>Opts : Symbol(Opts, Decl(b.ts, 0, 13))
+
+import { f } from "./a";
+>f : Symbol(f, Decl(b.ts, 1, 8))
+
+export async function g<C extends Opts>() { const r = f<C>(); return { ...r }; }
+>g : Symbol(g, Decl(b.ts, 1, 24))
+>C : Symbol(C, Decl(b.ts, 2, 24))
+>Opts : Symbol(Opts, Decl(b.ts, 0, 13))
+>r : Symbol(r, Decl(b.ts, 2, 49))
+>f : Symbol(f, Decl(b.ts, 1, 8))
+>C : Symbol(C, Decl(b.ts, 2, 24))
+>r : Symbol(r, Decl(b.ts, 2, 49))
+
+=== c.ts ===
+import { f } from "./a";
+>f : Symbol(f, Decl(c.ts, 0, 8))
+
+export async function h() { const r = f(); return { ...r }; }
+>h : Symbol(h, Decl(c.ts, 0, 24))
+>r : Symbol(r, Decl(c.ts, 1, 33))
+>f : Symbol(f, Decl(c.ts, 0, 8))
+>r : Symbol(r, Decl(c.ts, 1, 33))
+

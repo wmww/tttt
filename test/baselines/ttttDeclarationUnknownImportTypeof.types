@@ -1,0 +1,43 @@
+//// [test/cases/ttttDeclarationUnknownImportTypeof.ts] ////
+
+=== a.ts ===
+import type { Opts } from "missing-core";
+>Opts : any
+
+import type { CODES } from "missing-core/error";
+>CODES : any
+
+export function f<O extends Opts>() { return {} as { e: Partial<O> & typeof CODES } }
+>f : <O extends Opts>() => { e: Partial<O> & typeof CODES; }
+>{} as { e: Partial<O> & typeof CODES } : { e: Partial<O> & typeof CODES; }
+>{} : {}
+>e : any
+>CODES : any
+
+=== b.ts ===
+import type { Opts } from "missing-core";
+>Opts : any
+
+import { f } from "./a";
+>f : <O extends Opts>() => { e: Partial<O> & typeof Opts; }
+
+export async function g<C extends Opts>() { const r = f<C>(); return { ...r }; }
+>g : <C extends Opts>() => Promise<{ e: Partial<O> & typeof Opts; }>
+>r : { e: Partial<O> & typeof Opts; }
+>f<C>() : { e: Partial<O> & typeof Opts; }
+>f : <O extends Opts>() => { e: Partial<O> & typeof Opts; }
+>{ ...r } : { e: Partial<O> & typeof Opts; }
+>r : { e: Partial<O> & typeof Opts; }
+
+=== c.ts ===
+import { f } from "./a";
+>f : <O extends Opts>() => { e: Partial<O> & any; }
+
+export async function h() { const r = f(); return { ...r }; }
+>h : () => Promise<{ e: Partial<O> & any; }>
+>r : { e: Partial<O> & any; }
+>f() : { e: Partial<O> & any; }
+>f : <O extends Opts>() => { e: Partial<O> & any; }
+>{ ...r } : { e: Partial<O> & any; }
+>r : { e: Partial<O> & any; }
+

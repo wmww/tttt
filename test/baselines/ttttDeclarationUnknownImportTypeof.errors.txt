@@ -1,0 +1,23 @@
+a.ts(1,27): error TS2307: Cannot find module 'missing-core' or its corresponding type declarations.
+a.ts(2,28): error TS2307: Cannot find module 'missing-core/error' or its corresponding type declarations.
+b.ts(1,27): error TS2307: Cannot find module 'missing-core' or its corresponding type declarations.
+
+
+==== a.ts (2 errors) ====
+    import type { Opts } from "missing-core";
+                              ~~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module 'missing-core' or its corresponding type declarations.
+    import type { CODES } from "missing-core/error";
+                               ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module 'missing-core/error' or its corresponding type declarations.
+    export function f<O extends Opts>() { return {} as { e: Partial<O> & typeof CODES } }
+==== b.ts (1 errors) ====
+    import type { Opts } from "missing-core";
+                              ~~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module 'missing-core' or its corresponding type declarations.
+    import { f } from "./a";
+    export async function g<C extends Opts>() { const r = f<C>(); return { ...r }; }
+==== c.ts (0 errors) ====
+    import { f } from "./a";
+    export async function h() { const r = f(); return { ...r }; }
+    
