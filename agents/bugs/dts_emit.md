@@ -48,9 +48,8 @@ size on real code, each with an example:
     type made first) and the other way in tttt (filetest repro; a declared `signal` matches). tttt's rest type
     (object_rest_type, rest_literal) gets a later id than the spread's object.
   - trpc next-prisma `context.d.ts`, ui `registry-health/directory.d.ts`: uninvestigated.
-- **Checker types, uninvestigated** (agent C's leftovers, 2026-10-15): corpus:effect `test/Effect/query-repro.test.d.ts`
-  (`Equals<Omit<A, ...>, {}> extends true ? void : {...}` resolved to its false branch by tttt, deferred by tsgo);
-  excalidraw `tests/helpers/api.d.ts` (tsgo keeps `declare
+- **Checker types, uninvestigated** (agent C's leftovers, 2026-10-15; effect's query-repro fixed 2026-10-18 by agent
+  D's permissive wildcard fixes): excalidraw `tests/helpers/api.d.ts` (tsgo keeps `declare
   const { h }: Window & typeof globalThis;`); feathers `next?: HookContext` (tsgo names the unresolved NextFunction
   through another unresolved import alias, the unknown-symbol quirk below).
 - **isTypeParameterPossiblyReferenced leftovers** (agent A 2026-10-18 did the Block rule and merged owners by node:
@@ -65,10 +64,6 @@ size on real code, each with an example:
   'polite' | 'assertive'` in single quotes, `style?: StyleProp<ViewStyle> | undefined`), tttt prints the types (the
   alias `AccessibilityActionInfo` lost, literal unions sorted, `style` without `| undefined`): the rest of a
   homomorphic mapped type over interface properties should keep their declarations for reuse.
-- **keyof the wildcard**: tsc's getIndexType returns the wildcard for the wildcard, which defers `Equals<Omit<A, K>,
-  {}>` (effect query-repro: tttt resolves it to false). The one-line fix in ty_keyof() makes ramdaToolsNoInfinite2
-  report a spurious TS5114: the permissive instantiation of ts-toolbelt's `__ListOf` then recurses 40 iterations, and
-  tttt's instantiation depth per level is higher than tsgo's. Needs tsgo's depth accounting first.
 - **`typeof this` in an object literal, types baseline** (agent C 2026-10-16 fixed the declaration side: headlessui's
   TS5088 matches). Printing a cyclic object literal whose methods mention `typeof this`, tsgo expands one level more
   than tttt: its `this` there is the fresh object literal type (getContextualThisParameterType without a contextual
@@ -107,9 +102,7 @@ size on real code, each with an example:
     matches, so it's in Angular's `HttpClient.post<T>` overloads or the unresolved services, not reduced. vueuse
     `.test/mount.d.ts`: `defineComponent({ components: Comp, ... })` where tsgo prints Comp's `DefineComponent<...>`
     expanded (its constructor type & ComponentOptionsBase...) and tttt keeps the alias: alias lost somewhere in Vue's
-    inference, not reduced. headlessui's use-controllable matched in 2026-10-18 runs (an order effect, may come back). excalidraw `LibraryUnit.d.ts` drops the comment in `LibraryItem["id"] | /** for pending item
-    */ null` of a reused node the node builder copies (the "comments of nodes the node builder copies" item below; the
-    transformer's own nodes keep theirs). effect's and excalidraw's others: see "Checker types, uninvestigated"
+    inference, not reduced. headlessui's use-controllable matched in 2026-10-18 runs (an order effect, may come back). effect's and excalidraw's others: see "Checker types, uninvestigated"
     (effect ExecutionPlan and fiberRuntime fixed 2026-10-16).
   - `export default undefined`: tsgo writes it as an identifier export, tttt as `declare const _default: undefined`.
 - **Painting gaps** (dtsdiff "import"; agent A 2026-10-15 fixed inferred predicates, late bound members, readonly enum
@@ -117,10 +110,9 @@ size on real code, each with an example:
   painted destructurings' types; agent C 2026-10-16 fixed unresolved-import names reused across files, export lists
   past 64 names, a namespace's export list, value-only `export =` property imports used as types, the first walk
   printing without type parameter names (discord.js's ActivityType), augmentation-kept imports (vue)). What's left in
-  the bucket is type text whose names differ (checker-side, the import line follows): yup `MergeObjectTypes` (an alias
-  of a distributive conditional expanded), gemini-cli `MessageBusType` (a generic signature `<T extends Message>(type:
-  T['type'], ...)` tsgo instantiates), effect `test/Effect/query*.test`
-  (`Context`), excalidraw `ExcalidrawFreeDrawElement`, slate-hyperscript.
+  the bucket is type text whose names differ (checker-side, the import line follows; agent D 2026-10-18 fixed yup's
+  imported distributive alias, gemini-cli's `f?: T` generic argument instantiation, effect's late-painted merged const):
+  excalidraw `ExcalidrawFreeDrawElement`, slate-hyperscript.
 - **Reused nodes' text, remaining** (agent B 2026-10-15 fixed escapes, comments around type nodes, extends-clause
   parentheses, `typeof f` in unions, empty multi-line tuples, synthesized literals): still open, each small:
   a parenthesized type's inner node's comments (`( /** c */ A)`: tttt keeps one `parenthesized` flag, no node);
@@ -150,9 +142,10 @@ size on real code, each with an example:
 ## 2026-10-16 worktree agent (wt-a): JS maps / missing files / small buckets, leftovers
 - **lit ssr-dom-shim `labels = [] as unknown as NodeListOf<...>`** in a class expression printed as a literal: tsgo
   maps the asserted type (pseudo type of the field initializer); tttt's class-literal members don't use pseudo_of_field.
+  It needs a path like the object literal's (ty_display's declared_item()/pseudo_of_object_member branch), but a class
+  field's PropDecl only has its `lazy` type, no way back to its ClassItem. Same text, only mappings differ.
 - **telegraf `as (tg.MessageEntity & { type: SelectedTypes; ... })[]`**: tsgo reuses the node with only the local alias
   reference replaced (partial reuse); tttt prints from the type (same text, no mappings).
-- **formatjs err.tsx** `import from 'foo'` recovery: tsgo writes `import from = ;`.
 - Suite JS dts quirks left as tsgo bugs: jsdocTemplateTagDefault (`= ` empty default), jsdocReadonlyDeclarations
   (`readonly constructor`), jsdocAccessibilityTagsDeclarations (`c;`).
 
@@ -170,4 +163,13 @@ size on real code, each with an example:
   instance types tsgo splits BaseParser's `declare` fields (`options` ... `comments` in one place, `locData` and the
   methods after it elsewhere); tttt places `comments` with `locData`. Same with `--singleThreaded`. Unexplained (the
   "Member order" item above: compareSymbols of each resolved level).
+
+## 2026-10-18 worktree agent D leftovers
+- **sequelize/packages/core `readonly models: any`** (tsgo) vs tttt's `ModelSetView<Dialect>`: tsgo itself prints
+  `ModelSetView<Dialect>` with `--checkers 1` and `any` with its default 4: a circularity that depends on which checker
+  checks what first (the TS7022 that differs by checker count in tsgo too, CLAUDE.md's kdiff note). Not worth
+  emulating without tsgo's file-to-checker assignment (the "Member order" item's plan).
+- A type literal the node builder reuses twice in one declaration (a parameter, then the return type `x`): a member's
+  trailing comment is written the first time only in tttt, both times in tsgo (probe: `memo((x: { a: number, /** b */
+  b: 1 }) => x)`).
 

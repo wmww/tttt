@@ -82,9 +82,10 @@ passing tests).
 - **Intersection reduction by constraint**: `T & P` for a type parameter T with a primitive constraint is reduced
   (`reduce_type_variable_intersection`, and `(T & "a") | (T & "b")` back to T), but not for indexed access type
   variables (see hacks.md) nor type parameters with a deferred declared constraint.
-- **Permissive instantiation** for conditional types is missing (`ty_conditional_resolve` defers where tsc picks the
-  false branch); a flat `TyMapper` can't say "every type parameter -> any". Needs a wildcard type + cached permissive
-  instantiation.
+- **Permissive instantiation** (conditional.c's definitely_unrelated) maps the type parameters a walk collects to the
+  wildcard, where tsc's permissiveMapper maps every one it meets; the wildcard has to stay the wildcard wherever tsc
+  special-cases it (getIndexType, instantiateMappedType's instantiateConstituent: both fixed 2026-10-18, a missed one
+  decides a conditional type definitely false too early, ramdaToolsNoInfinite2's TS5114).
 - **isTupleLikeType's length half**: an array-like context whose `length` is a number literal isn't tuple-like
   (only the "0" property rule is in `context_is_tuple_like`).
 - **Conditional true branch with `infer`s**: relating a deferred conditional through its true branch with `infer`s as
