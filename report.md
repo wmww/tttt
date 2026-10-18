@@ -355,3 +355,28 @@ invariants to keep: what a body's check writes outside itself must be undone whe
 exist, but the code should make those invariants hard to break. TypeScript 7.1.0 stable isn't on npm yet; the re-pin
 waits for it. **For you**: the 12-core `scripts/bench.sh --runs 3 --bun` is still the one memory column we can't
 measure here.
+
+## 2026-10-18 — insights (after the twentieth window)
+The memory work is finished, as far as its rules allow. At the defaults (every core) tttt now uses no more memory than
+Bun on 8 of 14 corpora (VS Code 1.22 vs 1.56 GB), and no more than 1.2x Bun's on the rest. Single-threaded it is 6 of
+14, within 1.4x. It is still faster than Bun on every corpus, by 1.3-4.2x. The lever was policy, not data layout:
+measurement showed tttt's per-type cost already matches Bun's. The difference was that tttt kept four large checkers
+alive, where Bun keeps re-deriving types. So the checkers now start small (16 MB each). That costs about 13% wall time
+compared with never recycling, and a perf session won back 3-7% of instructions (drizzle -34%, from a regression the
+new instruction-count check now flags). I've accepted that trade. At the defaults the rule is now "stay faster than Bun
+everywhere"; single-threaded it is still "at most 3% slower".
+
+Correctness held. Every oracle is unchanged. The suite is at 13792 / 13829. 28 fresh repositories, chosen by a new
+rule, matched TypeScript 7 on 96% of their projects on day one and on all of them after one session. That is good
+evidence that the checker generalizes. Balance across checkers now uses work stealing, and the triage removed the last
+deferred-body restarts.
+
+The pattern I'm watching is re-derivation. Every checker rebuilds the same declared world (lib, React, Prisma
+typings). It is what the memory budget costs, and it is why a few apps are slower than Bun at four cores. TypeScript 7
+and Bun pay this cost too, so it is not urgent. But it is the main risk on many-core machines. Before planning a
+shared layer, I'd like your 12-core `scripts/bench.sh --runs 3 --bun` numbers. The next window is debt: a small memory
+leak in deferred bodies, optional types carrying `undefined` the way tsc stores them, re-entrant member resolution, and
+tsgo's two-phase program load. It also includes a fan-out on declaration emit (our least saturated oracle at 96.8%), a
+second refresh of fresh repositories aimed at libraries and checkJs projects, and a perf session. **A question for
+you**: memory was "first, features later". Now that memory is done, should `--watch`/`--incremental` (plan 76, parked)
+come back?

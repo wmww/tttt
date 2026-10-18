@@ -46,6 +46,10 @@ these no longer pay the tail back; they only lower K1's arena. Instantiated Prop
 object literal PropDecl (vscode 184 MB, excalidraw 28), from the priced list in measurements.md. Each touches hundreds of readers, so plan each one as its own session, with an
 accessor migration first (`prop_parent()`, `prop_decl()`).
 
+## Decision (insights 2026-10-18): closed
+Stage 1's trade stands (the defaults' bound is faster than bun on every corpus and the tail); stage 2's warm-up guard
+is declined; stage 3 is not scheduled. Reopen only for K1 density or if the 12-core numbers say otherwise.
+
 ## Rules
 Output byte-identical at every K and budget (kdiff, checkerdiff, recycle). K1 wall: the old ~3% rule. Defaults:
 stage 1's gate.
