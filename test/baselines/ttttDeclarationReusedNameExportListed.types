@@ -1,0 +1,67 @@
+//// [test/cases/ttttDeclarationReusedNameExportListed.ts] ////
+
+=== node_modules/redux/index.d.ts ===
+type Action<T extends string = string> = { type: T };
+>Action : Action<T>
+>type : T
+
+interface UnknownAction extends Action { [k: string]: unknown }
+>k : string
+
+interface Dispatch<A extends Action = UnknownAction> { <T extends A>(action: T): T }
+>action : T
+
+export { Action, UnknownAction, Dispatch };
+>Action : any
+>UnknownAction : any
+>Dispatch : any
+
+=== wrap.ts ===
+import type { Dispatch } from 'redux'
+>Dispatch : Dispatch<A>
+
+export function wrapMapToPropsConstant(getConstant: (dispatch: Dispatch) => { dispatch?: Dispatch }) {
+>wrapMapToPropsConstant : (getConstant: (dispatch: Dispatch) => { dispatch?: Dispatch; }) => (dispatch: Dispatch) => { (): { dispatch?: Dispatch; }; dependsOnOwnProps: boolean; }
+>getConstant : (dispatch: Dispatch) => { dispatch?: Dispatch; }
+>dispatch : Dispatch<import("redux").UnknownAction>
+>dispatch : Dispatch<import("redux").UnknownAction> | undefined
+
+  return function initConstantSelector(dispatch: Dispatch) {
+>function initConstantSelector(dispatch: Dispatch) {    const constant = getConstant(dispatch)    function constantSelector() { return constant }    constantSelector.dependsOnOwnProps = false    return constantSelector  } : (dispatch: Dispatch) => { (): { dispatch?: Dispatch; }; dependsOnOwnProps: boolean; }
+>initConstantSelector : (dispatch: Dispatch) => { (): { dispatch?: Dispatch; }; dependsOnOwnProps: boolean; }
+>dispatch : Dispatch<import("redux").UnknownAction>
+
+    const constant = getConstant(dispatch)
+>constant : { dispatch?: Dispatch; }
+>getConstant(dispatch) : { dispatch?: Dispatch; }
+>getConstant : (dispatch: Dispatch) => { dispatch?: Dispatch; }
+>dispatch : Dispatch<import("redux").UnknownAction>
+
+    function constantSelector() { return constant }
+>constantSelector : { (): { dispatch?: Dispatch; }; dependsOnOwnProps: boolean; }
+>constant : { dispatch?: Dispatch; }
+
+    constantSelector.dependsOnOwnProps = false
+>constantSelector.dependsOnOwnProps = false : false
+>constantSelector.dependsOnOwnProps : boolean
+>constantSelector : { (): { dispatch?: Dispatch; }; dependsOnOwnProps: boolean; }
+>dependsOnOwnProps : boolean
+>false : false
+
+    return constantSelector
+>constantSelector : { (): { dispatch?: Dispatch; }; dependsOnOwnProps: boolean; }
+  }
+}
+
+=== probe.ts ===
+import { wrapMapToPropsConstant } from './wrap'
+>wrapMapToPropsConstant : (getConstant: (dispatch: import("redux").Dispatch) => { dispatch?: import("redux").Dispatch; }) => (dispatch: import("redux").Dispatch) => { (): { dispatch?: import("redux").Dispatch; }; dependsOnOwnProps: boolean; }
+
+export const a = wrapMapToPropsConstant(() => ({}))
+>a : (dispatch: import("redux").Dispatch) => { (): { dispatch?: import("redux").Dispatch; }; dependsOnOwnProps: boolean; }
+>wrapMapToPropsConstant(() => ({})) : (dispatch: import("redux").Dispatch) => { (): { dispatch?: import("redux").Dispatch; }; dependsOnOwnProps: boolean; }
+>wrapMapToPropsConstant : (getConstant: (dispatch: import("redux").Dispatch) => { dispatch?: import("redux").Dispatch; }) => (dispatch: import("redux").Dispatch) => { (): { dispatch?: import("redux").Dispatch; }; dependsOnOwnProps: boolean; }
+>() => ({}) : () => {}
+>({}) : {}
+>{} : {}
+

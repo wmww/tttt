@@ -569,6 +569,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationReusedNameExportListed': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationReusedNodeMappedUnderError': {
         errors: true,
         symbols: true,

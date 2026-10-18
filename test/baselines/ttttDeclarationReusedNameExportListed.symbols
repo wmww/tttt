@@ -1,0 +1,74 @@
+//// [test/cases/ttttDeclarationReusedNameExportListed.ts] ////
+
+=== node_modules/redux/index.d.ts ===
+type Action<T extends string = string> = { type: T };
+>Action : Symbol(Action, Decl(index.d.ts, 0, 0))
+>T : Symbol(T, Decl(index.d.ts, 0, 12))
+>type : Symbol(type, Decl(index.d.ts, 0, 42))
+>T : Symbol(T, Decl(index.d.ts, 0, 12))
+
+interface UnknownAction extends Action { [k: string]: unknown }
+>UnknownAction : Symbol(UnknownAction, Decl(index.d.ts, 0, 53))
+>Action : Symbol(Action, Decl(index.d.ts, 0, 0))
+>k : Symbol(k, Decl(index.d.ts, 1, 42))
+
+interface Dispatch<A extends Action = UnknownAction> { <T extends A>(action: T): T }
+>Dispatch : Symbol(Dispatch, Decl(index.d.ts, 1, 63))
+>A : Symbol(A, Decl(index.d.ts, 2, 19))
+>Action : Symbol(Action, Decl(index.d.ts, 0, 0))
+>UnknownAction : Symbol(UnknownAction, Decl(index.d.ts, 0, 53))
+>T : Symbol(T, Decl(index.d.ts, 2, 56))
+>A : Symbol(A, Decl(index.d.ts, 2, 19))
+>action : Symbol(action, Decl(index.d.ts, 2, 69))
+>T : Symbol(T, Decl(index.d.ts, 2, 56))
+>T : Symbol(T, Decl(index.d.ts, 2, 56))
+
+export { Action, UnknownAction, Dispatch };
+>Action : Symbol(Action, Decl(index.d.ts, 3, 8))
+>UnknownAction : Symbol(UnknownAction, Decl(index.d.ts, 3, 16))
+>Dispatch : Symbol(Dispatch, Decl(index.d.ts, 3, 31))
+
+=== wrap.ts ===
+import type { Dispatch } from 'redux'
+>Dispatch : Symbol(Dispatch, Decl(wrap.ts, 0, 13))
+
+export function wrapMapToPropsConstant(getConstant: (dispatch: Dispatch) => { dispatch?: Dispatch }) {
+>wrapMapToPropsConstant : Symbol(wrapMapToPropsConstant, Decl(wrap.ts, 0, 37))
+>getConstant : Symbol(getConstant, Decl(wrap.ts, 1, 39))
+>dispatch : Symbol(dispatch, Decl(wrap.ts, 1, 53))
+>Dispatch : Symbol(Dispatch, Decl(wrap.ts, 0, 13))
+>dispatch : Symbol(dispatch, Decl(wrap.ts, 1, 77))
+>Dispatch : Symbol(Dispatch, Decl(wrap.ts, 0, 13))
+
+  return function initConstantSelector(dispatch: Dispatch) {
+>initConstantSelector : Symbol(initConstantSelector, Decl(wrap.ts, 2, 8))
+>dispatch : Symbol(dispatch, Decl(wrap.ts, 2, 39))
+>Dispatch : Symbol(Dispatch, Decl(wrap.ts, 0, 13))
+
+    const constant = getConstant(dispatch)
+>constant : Symbol(constant, Decl(wrap.ts, 3, 9))
+>getConstant : Symbol(getConstant, Decl(wrap.ts, 1, 39))
+>dispatch : Symbol(dispatch, Decl(wrap.ts, 2, 39))
+
+    function constantSelector() { return constant }
+>constantSelector : Symbol(constantSelector, Decl(wrap.ts, 3, 42))
+>constant : Symbol(constant, Decl(wrap.ts, 3, 9))
+
+    constantSelector.dependsOnOwnProps = false
+>constantSelector.dependsOnOwnProps : Symbol(constantSelector.dependsOnOwnProps, Decl(wrap.ts, 4, 51))
+>constantSelector : Symbol(constantSelector, Decl(wrap.ts, 3, 42))
+>dependsOnOwnProps : Symbol(constantSelector.dependsOnOwnProps, Decl(wrap.ts, 4, 51))
+
+    return constantSelector
+>constantSelector : Symbol(constantSelector, Decl(wrap.ts, 3, 42))
+  }
+}
+
+=== probe.ts ===
+import { wrapMapToPropsConstant } from './wrap'
+>wrapMapToPropsConstant : Symbol(wrapMapToPropsConstant, Decl(probe.ts, 0, 8))
+
+export const a = wrapMapToPropsConstant(() => ({}))
+>a : Symbol(a, Decl(probe.ts, 1, 12))
+>wrapMapToPropsConstant : Symbol(wrapMapToPropsConstant, Decl(probe.ts, 0, 8))
+

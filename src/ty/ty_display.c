@@ -1755,7 +1755,7 @@ static IdentifierReuse identifier_reuse(Checker* me, TyDisplay d, TypeNode const
     // alias of it)
     if (symbol_alias_of_unknown(symbol)) return d.enclosing && scope_unknown_alias(d.enclosing) ? IDENTIFIER_RENAMED_UNKNOWN : IDENTIFIER_FAILS;
     Symbol const* target = identifier->target;
-    if (target && !target->is_local && !(target->flags & SYMBOL_TYPE_PARAMETER) &&
+    if (target && !(target->flags & SYMBOL_TYPE_PARAMETER) &&
         symbol_type_accessible_at(d.enclosing, target)
     ) {
         return IDENTIFIER_RENAMED;
