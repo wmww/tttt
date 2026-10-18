@@ -1,0 +1,57 @@
+//// [test/cases/ttttDeclarationTypeofNamespaceImportRenamed.ts] ////
+
+=== cc.ts ===
+export const a = 1;
+>a : 1
+>1 : 1
+
+export const b = 2;
+>b : 2
+>2 : 2
+
+export const c = 3;
+>c : 3
+>3 : 3
+
+=== a.ts ===
+import * as cc from "./cc";
+>cc : typeof cc
+
+export class A {
+>A : A
+
+    f(x: (typeof cc)[keyof typeof cc]): void {}
+>f : (x: (typeof cc)[keyof typeof cc]) => void
+>x : 1 | 2 | 3
+>cc : typeof cc
+>cc : typeof cc
+
+    g(y: keyof typeof cc, z: typeof cc, w: typeof cc.b): void {}
+>g : (y: keyof typeof cc, z: typeof cc, w: typeof cc.b) => void
+>y : "a" | "b" | "c"
+>cc : typeof cc
+>z : typeof cc
+>cc : typeof cc
+>w : 2
+>cc.b : 2
+>cc : typeof cc
+>b : 2
+}
+=== b.ts ===
+import { A } from "./a";
+>A : typeof A
+
+export const v = new A().f;
+>v : (x: (typeof import("./cc"))[keyof typeof import("./cc")]) => void
+>new A().f : (x: (typeof import("./cc"))[keyof typeof import("./cc")]) => void
+>new A() : A
+>A : typeof A
+>f : (x: (typeof import("./cc"))[keyof typeof import("./cc")]) => void
+
+export const w = new A().g;
+>w : (y: keyof typeof import("./cc"), z: typeof import("./cc"), w: typeof import("./cc").b) => void
+>new A().g : (y: keyof typeof import("./cc"), z: typeof import("./cc"), w: typeof import("./cc").b) => void
+>new A() : A
+>A : typeof A
+>g : (y: keyof typeof import("./cc"), z: typeof import("./cc"), w: typeof import("./cc").b) => void
+

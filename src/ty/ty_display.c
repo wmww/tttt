@@ -1765,6 +1765,7 @@ static IdentifierReuse identifier_reuse(Checker* me, TyDisplay d, TypeNode const
 
 // tsc's tryVisitSimpleTypeNode fails (the object of an indexed access, the operand of `keyof`): the whole indexed
 // access or `keyof` prints its type then
+static Symbol const* typeof_renamed_symbol(TyDisplay d, TypeNode const* node);
 static bool simple_node_fails(Checker* me, TyDisplay d, TypeNode const* node) {
     switch (node->tag) {
         case TYPE_IDENTIFIER: {
@@ -1777,7 +1778,8 @@ static bool simple_node_fails(Checker* me, TyDisplay d, TypeNode const* node) {
         case TYPE_TYPEOF: {
             Expr const* leftmost = entity_leftmost(node->typeof_->expr);
             return leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
-                !name_accessible(me, d, leftmost->identifier.symbol, span_sv(leftmost->inner_span), SYMBOL_VALUE);
+                !name_accessible(me, d, leftmost->identifier.symbol, span_sv(leftmost->inner_span), SYMBOL_VALUE) &&
+                !typeof_renamed_symbol(d, node);
         }
         case TYPE_INDEXED: return simple_node_fails(me, d, &node->indexed->interface);
         case TYPE_KEYOF: return simple_node_fails(me, d, &node->keyof->interface);
@@ -2032,6 +2034,37 @@ static bool object_literal_variable_visible(Expr const* literal) {
     return false;
 }
 
+// What tsc's serializeTypeName names a query whose name isn't accessible as written by (the name resolved, aliases
+// too), null where it fails: a module is accessible through an import type wherever printed (isAnySymbolAccessible's
+// hasNonGlobalAugmentationExternalModuleSymbol), `typeof import("m")` (babel-parser's `keyof typeof charCodes` of a
+// namespace import printed in another file)
+static Symbol const* entity_expr_symbol(Expr const* expr) {
+    Symbol const* symbol = nullptr;
+    if (expr->tag == EXPR_IDENTIFIER) {
+        if (expr->identifier.keyword) return nullptr;
+        symbol = expr->identifier.symbol;
+    } else if (expr->tag == EXPR_PROPERTY && expr->property->form == PROPERTY_EXPR_DOT) {
+        Symbol const* left = entity_expr_symbol(&expr->property->expr);
+        if (!left || (!(left->flags & SYMBOL_NAMESPACE) && !left->is_module)) return nullptr;
+        symbol = symbol_get_export(left, span_sv(property_name(expr->property)));
+    } else {
+        return nullptr;
+    }
+    if (symbol && symbol->flags & SYMBOL_ALIAS) symbol = symbol_resolve_alias((Symbol*)symbol);
+    // (`import * as ns`'s own namespace symbol is the module in tsc)
+    if (symbol && symbol_rare(symbol)->gather_module && symbol_rare(symbol)->gather_module->is_module) symbol = symbol_rare(symbol)->gather_module;
+    return symbol;
+}
+
+static Symbol const* typeof_renamed_symbol(TyDisplay d, TypeNode const* node) {
+    if (!node->typeof_->expr || !d.enclosing) return nullptr;
+    Symbol const* symbol = entity_expr_symbol(node->typeof_->expr);
+    if (!symbol || symbol->is_local || symbol->is_parameter || symbol->is_placeholder) return nullptr;
+    if (symbol->is_module && !symbol->is_augmentation && !symbol->is_global_this) return symbol;
+    if (!symbol->parent || !symbol_value_accessible_at(d.enclosing, symbol)) return nullptr;
+    return symbol;
+}
+
 static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) {
     Expr const* leftmost = entity_leftmost(node->typeof_->expr);
     // (In JavaScript a name through `exports` or `module.exports` is never reused: tsc's trackExistingEntityName)
@@ -2068,12 +2101,9 @@ static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) 
     ) {
         // tsc's tryVisitTypeQuery: a name that means something else here is named anew where its symbol is accessible
         // (serializeTypeName), in a node with the query's range: `typeof import("a").x` reuses `typeof import(` and
-        // `).`, `typeof a.x` (through a namespace import) only `typeof `. Only for a plain name
-        Symbol const* symbol = leftmost == node->typeof_->expr ? leftmost->identifier.symbol : nullptr;
-        if (symbol && symbol->flags & SYMBOL_ALIAS) symbol = symbol_resolve_alias((Symbol*)symbol);
-        if (symbol && !symbol->is_local && !symbol->is_parameter && !symbol->is_placeholder && symbol->parent &&
-            d.enclosing && d.types_baseline && symbol_value_accessible_at(d.enclosing, symbol)
-        ) {
+        // `).`, `typeof a.x` (through a namespace import) only `typeof `. The whole name resolved, see typeof_renamed_symbol()
+        Symbol const* symbol = typeof_renamed_symbol(d, node);
+        if (symbol) {
             out_lit(d, "typeof ");
             out_symbol_name(me, reused_if(d, false), symbol, SYMBOL_VALUE);
             return;

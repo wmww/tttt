@@ -1,0 +1,52 @@
+//// [test/cases/ttttDeclarationTypeofNamespaceImportRenamed.ts] ////
+
+=== cc.ts ===
+export const a = 1;
+>a : Symbol(a, Decl(cc.ts, 0, 12))
+
+export const b = 2;
+>b : Symbol(b, Decl(cc.ts, 1, 12))
+
+export const c = 3;
+>c : Symbol(c, Decl(cc.ts, 2, 12))
+
+=== a.ts ===
+import * as cc from "./cc";
+>cc : Symbol(cc, Decl(a.ts, 0, 6))
+
+export class A {
+>A : Symbol(A, Decl(a.ts, 0, 27))
+
+    f(x: (typeof cc)[keyof typeof cc]): void {}
+>f : Symbol(A.f, Decl(a.ts, 1, 16))
+>x : Symbol(x, Decl(a.ts, 2, 6))
+>cc : Symbol(cc, Decl(a.ts, 0, 6))
+>cc : Symbol(cc, Decl(a.ts, 0, 6))
+
+    g(y: keyof typeof cc, z: typeof cc, w: typeof cc.b): void {}
+>g : Symbol(A.g, Decl(a.ts, 2, 47))
+>y : Symbol(y, Decl(a.ts, 3, 6))
+>cc : Symbol(cc, Decl(a.ts, 0, 6))
+>z : Symbol(z, Decl(a.ts, 3, 25))
+>cc : Symbol(cc, Decl(a.ts, 0, 6))
+>w : Symbol(w, Decl(a.ts, 3, 39))
+>cc.b : Symbol(cc.b, Decl(cc.ts, 1, 12))
+>cc : Symbol(cc, Decl(a.ts, 0, 6))
+>b : Symbol(cc.b, Decl(cc.ts, 1, 12))
+}
+=== b.ts ===
+import { A } from "./a";
+>A : Symbol(A, Decl(b.ts, 0, 8))
+
+export const v = new A().f;
+>v : Symbol(v, Decl(b.ts, 1, 12))
+>new A().f : Symbol(A.f, Decl(a.ts, 1, 16))
+>A : Symbol(A, Decl(b.ts, 0, 8))
+>f : Symbol(A.f, Decl(a.ts, 1, 16))
+
+export const w = new A().g;
+>w : Symbol(w, Decl(b.ts, 2, 12))
+>new A().g : Symbol(A.g, Decl(a.ts, 2, 47))
+>A : Symbol(A, Decl(b.ts, 0, 8))
+>g : Symbol(A.g, Decl(a.ts, 2, 47))
+

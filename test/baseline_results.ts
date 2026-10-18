@@ -617,6 +617,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationTypeofNamespaceImportRenamed': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationUndefinedPropertyEmptyLiteral(strict=false)': {
         errors: true,
         symbols: true,
