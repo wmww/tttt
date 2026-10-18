@@ -4014,6 +4014,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             TypeNode const* body = alias && decl && symbol_is_generic_alias(decl) ? alias_body_node(canonical(me, decl)) : nullptr;
             bool renames = false;
             bool distributed = false; // (Renamed as a distribution's union)
+            bool homomorphic_object = false; // (Keeps its name, see ty_alias_body_mapped_instance())
             if (body && !is_intrinsic_body(body)) {
                 // An object type takes the new name when instantiated (tsc's getObjectTypeInstantiation), except a
                 // homomorphic mapped type; anything else keeps a name only if it still is what the alias names
@@ -4039,6 +4040,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                     ty_mapped_homomorphic_variable(me, declared_object) != nullptr : is_homomorphic_mapped_node(object_node);
                 renames = object ? !homomorphic || ret->kind == TY_UNION :
                     ret->alias == canonical(me, decl) || union_body;
+                homomorphic_object = object && homomorphic && ret->kind == TY_ANONYMOUS;
                 // An indexed access distributed over a union index is that union by the new name (getIndexedAccessType),
                 // and so is a conditional type distributed over a union (getConditionalTypeInstantiation's mapTypeWithAlias)
                 Ty const* declared = links->declared_state == LAZY_STATE_DONE ? links->declared_type : nullptr;
@@ -4062,7 +4064,8 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             }
             // A local alias doesn't rename an instantiation of a top-level one (tsc's getTypeFromTypeAliasReference: it
             // may end up in an inferred return type where it isn't accessible, TypeScript#43622)
-            if (renames && alias_is_local(alias) && !alias_is_local(canonical(me, decl))) renames = false;
+            if (alias_is_local(alias) && !alias_is_local(canonical(me, decl))) renames = homomorphic_object = false;
+            if (homomorphic_object) ret = ty_alias_body_mapped_instance(me, ret, alias, alias_args);
             if (renames && distributed && ret->kind == TY_UNION && (ret->flags & TYF_BOOLEAN) && ret->alias != alias) {
                 // (`true | false` made by the distribution too, which ty_realias() leaves alone for `type B<T> =
                 // boolean`: tsc's mapTypeWithAlias makes a union of its own by the alias, `type N3 = Not<boolean>`)

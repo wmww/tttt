@@ -35,3 +35,4 @@ gap to bun is per-checker re-derivation (bugs/perf_leads.md).
   is tsgo's own (bugs/tsgo_divergences.md), but tttt's K-fixed output shouldn't vary run to run. Worth a few
   `-c xstate -F sloppy` runs under load to see how often.
 - From human: fan out to parallel sub-agents in worktrees where possible, makes things go faster
+- types baseline: a reused node's `import("./routers")` printed `import("./routers.js")` in hover-style types output (`>mk : () => ... | ((s: string) => import("./routers").Action)`, tsgo keeps the node's specifier without .js for the reused return annotation of a function type in a union); found by agent C 2026-10-18 writing ttttAliasBodyMappedTypeIdentity

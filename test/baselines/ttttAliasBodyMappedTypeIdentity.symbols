@@ -1,0 +1,54 @@
+//// [test/cases/ttttAliasBodyMappedTypeIdentity.ts] ////
+
+=== ttttAliasBodyMappedTypeIdentity.ts ===
+// `type N = Readonly<X>`: the instance tsc makes for the alias is cached under N but keeps Readonly's name, so it is a
+// type of its own next to `Readonly<X>` written elsewhere (and next to N2's)
+interface Foo { a: string }
+>Foo : Symbol(Foo, Decl(ttttAliasBodyMappedTypeIdentity.ts, 0, 0))
+>a : Symbol(Foo.a, Decl(ttttAliasBodyMappedTypeIdentity.ts, 2, 15))
+
+type N = Readonly<Foo>;
+>N : Symbol(N, Decl(ttttAliasBodyMappedTypeIdentity.ts, 2, 27))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Foo : Symbol(Foo, Decl(ttttAliasBodyMappedTypeIdentity.ts, 0, 0))
+
+type N2 = Readonly<Foo>;
+>N2 : Symbol(N2, Decl(ttttAliasBodyMappedTypeIdentity.ts, 3, 23))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Foo : Symbol(Foo, Decl(ttttAliasBodyMappedTypeIdentity.ts, 0, 0))
+
+declare let n: N | Readonly<Foo> | N2;
+>n : Symbol(n, Decl(ttttAliasBodyMappedTypeIdentity.ts, 5, 11))
+>N : Symbol(N, Decl(ttttAliasBodyMappedTypeIdentity.ts, 2, 27))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Foo : Symbol(Foo, Decl(ttttAliasBodyMappedTypeIdentity.ts, 0, 0))
+>N2 : Symbol(N2, Decl(ttttAliasBodyMappedTypeIdentity.ts, 3, 23))
+
+export const u = n;
+>u : Symbol(u, Decl(ttttAliasBodyMappedTypeIdentity.ts, 6, 12))
+>n : Symbol(n, Decl(ttttAliasBodyMappedTypeIdentity.ts, 5, 11))
+
+export const v = [n, null as any as Readonly<Foo>] as const;
+>v : Symbol(v, Decl(ttttAliasBodyMappedTypeIdentity.ts, 7, 12))
+>n : Symbol(n, Decl(ttttAliasBodyMappedTypeIdentity.ts, 5, 11))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Foo : Symbol(Foo, Decl(ttttAliasBodyMappedTypeIdentity.ts, 0, 0))
+>const : Symbol(const)
+
+type G<T> = Readonly<{ a: T }>;
+>G : Symbol(G, Decl(ttttAliasBodyMappedTypeIdentity.ts, 7, 60))
+>T : Symbol(T, Decl(ttttAliasBodyMappedTypeIdentity.ts, 8, 7))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttAliasBodyMappedTypeIdentity.ts, 8, 22))
+>T : Symbol(T, Decl(ttttAliasBodyMappedTypeIdentity.ts, 8, 7))
+
+declare let g: G<number> | Readonly<{ a: number }>;
+>g : Symbol(g, Decl(ttttAliasBodyMappedTypeIdentity.ts, 9, 11))
+>G : Symbol(G, Decl(ttttAliasBodyMappedTypeIdentity.ts, 7, 60))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttAliasBodyMappedTypeIdentity.ts, 9, 37))
+
+export const w = g;
+>w : Symbol(w, Decl(ttttAliasBodyMappedTypeIdentity.ts, 10, 12))
+>g : Symbol(g, Decl(ttttAliasBodyMappedTypeIdentity.ts, 9, 11))
+

@@ -1,0 +1,41 @@
+//// [test/cases/ttttAliasBodyMappedTypeIdentity.ts] ////
+
+=== ttttAliasBodyMappedTypeIdentity.ts ===
+// `type N = Readonly<X>`: the instance tsc makes for the alias is cached under N but keeps Readonly's name, so it is a
+// type of its own next to `Readonly<X>` written elsewhere (and next to N2's)
+interface Foo { a: string }
+>a : string
+
+type N = Readonly<Foo>;
+>N : Readonly<Foo>
+
+type N2 = Readonly<Foo>;
+>N2 : Readonly<Foo>
+
+declare let n: N | Readonly<Foo> | N2;
+>n : Readonly<Foo> | Readonly<Foo> | Readonly<Foo>
+
+export const u = n;
+>u : Readonly<Foo> | Readonly<Foo> | Readonly<Foo>
+>n : Readonly<Foo> | Readonly<Foo> | Readonly<Foo>
+
+export const v = [n, null as any as Readonly<Foo>] as const;
+>v : readonly [Readonly<Foo> | Readonly<Foo> | Readonly<Foo>, Readonly<Foo>]
+>[n, null as any as Readonly<Foo>] as const : readonly [Readonly<Foo> | Readonly<Foo> | Readonly<Foo>, Readonly<Foo>]
+>[n, null as any as Readonly<Foo>] : readonly [Readonly<Foo> | Readonly<Foo> | Readonly<Foo>, Readonly<Foo>]
+>n : Readonly<Foo> | Readonly<Foo> | Readonly<Foo>
+>null as any as Readonly<Foo> : Readonly<Foo>
+>null as any : any
+
+type G<T> = Readonly<{ a: T }>;
+>G : Readonly<{ a: T; }>
+>a : T
+
+declare let g: G<number> | Readonly<{ a: number }>;
+>g : Readonly<{ a: number; }> | Readonly<{ a: number; }>
+>a : number
+
+export const w = g;
+>w : Readonly<{ a: number; }> | Readonly<{ a: number; }>
+>g : Readonly<{ a: number; }> | Readonly<{ a: number; }>
+

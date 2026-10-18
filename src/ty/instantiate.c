@@ -782,6 +782,43 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
     return ret;
 }
 
+// `type N = Readonly<{ a: 1 }>`: an instance of a homomorphic mapped type made for an alias's body, which keeps the
+// mapped type's own name (tsc's instantiateMappedType doesn't pass the new alias on to an object), but is its own type:
+// tsc's getObjectTypeInstantiation cached it under the new alias, so `N | Readonly<{ a: 1 }>` written elsewhere has two
+// members. Instantiated (when its arguments are generic) it is the ordinary instance again, through ty_realias().
+// HACK: tsc instantiates it whenever couldContainTypeVariables says its arguments could change, which a type literal
+// always can, and gets the ordinary instance then too (an instantiated signature returning N doesn't reuse its
+// annotation). tttt's TYF_COULD_CONTAIN_TYPE_VARIABLES is exact and doubles as "generic" in member resolution, so
+// that isn't emulated (hacks.md)
+Ty const* ty_alias_body_mapped_instance(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args) {
+    if (ty->kind != TY_ANONYMOUS || !ty->anonymous.mapped || !ty->anonymous.target || ty->anonymous.realiased || !alias ||
+        ty->alias == alias
+    ) {
+        return ty;
+    }
+    u64 stack_key[40];
+    u32 count = 4 + alias_args.len;
+    if (count > c_arraylen(stack_key)) return ty;
+    stack_key[0] = KEY_ANONYMOUS_INSTANCE;
+    stack_key[1] = ty->id;
+    stack_key[2] = UINT64_MAX - 2; // Not a type id: tells these apart from ordinary instantiations and ty_realias()'s
+    stack_key[3] = (u64)(uintptr_t)alias;
+    for (u32 i = 0; i < alias_args.len; i++) stack_key[4 + i] = alias_args.data[i]->id;
+    Ty const* ret = intern_get(&my types, stack_key, count);
+    if (!ret) {
+        Ty* fresh = ty_alloc(me, ty->kind, ty->flags);
+        fresh->anonymous = ty->anonymous;
+        // (Instantiated, ty_realias() puts back the name it has, the mapped type's own: the ordinary instance)
+        fresh->anonymous.realiased = true;
+        fresh->anonymous.state = arena_new(&my arena, TyObjectState);
+        fresh->alias = ty->alias;
+        fresh->alias_args = ty->alias_args;
+        *intern_slot(me, &my types, stack_key, count) = fresh;
+        ret = fresh;
+    }
+    return ret;
+}
+
 // `type Bar = Omit<Foo, "c">`: the instantiation of a generic alias written directly as the body of another alias goes
 // by the new name (tsc passes the new alias symbol to getTypeAliasInstantiation). Same members, its own identity
 Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args) {
