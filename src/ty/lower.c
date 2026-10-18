@@ -393,6 +393,18 @@ static TyList lower_type_args(
     return (TyList){ .data = args, .len = params.len };
 }
 
+// Whether alias body `declared`, a distributive conditional type, distributes over its check type parameter's
+// argument: a union once reduced (tsc's getConditionalTypeInstantiation, distributionType)
+static bool distributes_over_union(Checker* me, Ty const* declared, TyList params, TyList args) {
+    if (declared->kind != TY_CONDITIONAL || !declared->conditional.distributive) return false;
+    for (u32 i = 0; i < params.len && i < args.len; i++) {
+        if (params.data[i] != declared->conditional.check) continue;
+        Ty const* arg = args.data[i];
+        return arg->kind == TY_UNION && ty_reduced(me, arg)->kind == TY_UNION;
+    }
+    return false;
+}
+
 static Ty const* alias_instance(Checker* me, Symbol const* decl, Ty const* body, TyList params, TyList args) {
     u64 stack_key[32];
     u32 count = 2 + args.len;
@@ -766,7 +778,10 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
                 (declared->kind == TY_ANONYMOUS && !declared->alias && !declared->anonymous.mapped &&
                     ret->kind == TY_ANONYMOUS && !ret->alias) ||
                 (declared->kind == TY_REFERENCE && declared->reference.deferred && ret->kind == TY_REFERENCE)
-            ))
+            )) ||
+            // (And a distributive conditional type distributed over a union: tsc's getConditionalTypeInstantiation
+            // makes the union by the alias passed down, mapTypeWithAlias; yup's `_<MergeObjectTypes<A, B>>`)
+            (ret->kind == TY_UNION && distributes_over_union(me, declared, params, args))
         )) {
             // (With type arguments through an import, the alias is passed down: a deferred conditional type, which
             // instantiation names by its root's alias, `Exclude<X, null>` of `import { NonNullable as N }` with

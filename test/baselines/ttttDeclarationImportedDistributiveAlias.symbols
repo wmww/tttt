@@ -1,0 +1,93 @@
+//// [test/cases/ttttDeclarationImportedDistributiveAlias.ts] ////
+
+=== types.ts ===
+export type _<T> = T extends {} ? { [k in keyof T]: T[k] } : T;
+>_ : Symbol(_, Decl(types.ts, 0, 0))
+>T : Symbol(T, Decl(types.ts, 0, 14))
+>T : Symbol(T, Decl(types.ts, 0, 14))
+>k : Symbol(k, Decl(types.ts, 0, 37))
+>T : Symbol(T, Decl(types.ts, 0, 14))
+>T : Symbol(T, Decl(types.ts, 0, 14))
+>k : Symbol(k, Decl(types.ts, 0, 37))
+>T : Symbol(T, Decl(types.ts, 0, 14))
+
+export type Optionals<T> = Extract<T, null | undefined>;
+>Optionals : Symbol(Optionals, Decl(types.ts, 0, 63))
+>T : Symbol(T, Decl(types.ts, 1, 22))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(types.ts, 1, 22))
+
+export type Merge<T, U> = ({ [P in keyof T]: P extends keyof U ? U[P] : T[P] } & U) | Optionals<T>;
+>Merge : Symbol(Merge, Decl(types.ts, 1, 56))
+>T : Symbol(T, Decl(types.ts, 2, 18))
+>U : Symbol(U, Decl(types.ts, 2, 20))
+>P : Symbol(P, Decl(types.ts, 2, 30))
+>T : Symbol(T, Decl(types.ts, 2, 18))
+>P : Symbol(P, Decl(types.ts, 2, 30))
+>U : Symbol(U, Decl(types.ts, 2, 20))
+>U : Symbol(U, Decl(types.ts, 2, 20))
+>P : Symbol(P, Decl(types.ts, 2, 30))
+>T : Symbol(T, Decl(types.ts, 2, 18))
+>P : Symbol(P, Decl(types.ts, 2, 30))
+>U : Symbol(U, Decl(types.ts, 2, 20))
+>Optionals : Symbol(Optionals, Decl(types.ts, 0, 63))
+>T : Symbol(T, Decl(types.ts, 2, 18))
+
+type Local<T> = T extends {} ? { [k in keyof T]: T[k] } : T;
+>Local : Symbol(Local, Decl(types.ts, 2, 99))
+>T : Symbol(T, Decl(types.ts, 3, 11))
+>T : Symbol(T, Decl(types.ts, 3, 11))
+>k : Symbol(k, Decl(types.ts, 3, 34))
+>T : Symbol(T, Decl(types.ts, 3, 11))
+>T : Symbol(T, Decl(types.ts, 3, 11))
+>k : Symbol(k, Decl(types.ts, 3, 34))
+>T : Symbol(T, Decl(types.ts, 3, 11))
+
+export declare function set<A>(): A[];
+>set : Symbol(set, Decl(types.ts, 3, 60))
+>A : Symbol(A, Decl(types.ts, 4, 28))
+>A : Symbol(A, Decl(types.ts, 4, 28))
+
+export function local<TIn, U extends object>() {
+>local : Symbol(local, Decl(types.ts, 4, 38))
+>TIn : Symbol(TIn, Decl(types.ts, 5, 22))
+>U : Symbol(U, Decl(types.ts, 5, 26))
+
+    return set<Local<Merge<TIn, { u: U }>>>();
+>set : Symbol(set, Decl(types.ts, 3, 60))
+>Local : Symbol(Local, Decl(types.ts, 2, 99))
+>Merge : Symbol(Merge, Decl(types.ts, 1, 56))
+>TIn : Symbol(TIn, Decl(types.ts, 5, 22))
+>u : Symbol(u, Decl(types.ts, 6, 33))
+>U : Symbol(U, Decl(types.ts, 5, 26))
+}
+=== main.ts ===
+import { _, Merge, set } from './types';
+>_ : Symbol(_, Decl(main.ts, 0, 8))
+>Merge : Symbol(Merge, Decl(main.ts, 0, 11))
+>set : Symbol(set, Decl(main.ts, 0, 18))
+
+export function shape<TIn, U extends object>() {
+>shape : Symbol(shape, Decl(main.ts, 0, 40))
+>TIn : Symbol(TIn, Decl(main.ts, 1, 22))
+>U : Symbol(U, Decl(main.ts, 1, 26))
+
+    return set<_<Merge<TIn, { u: U }>>>();
+>set : Symbol(set, Decl(main.ts, 0, 18))
+>_ : Symbol(_, Decl(main.ts, 0, 8))
+>Merge : Symbol(Merge, Decl(main.ts, 0, 11))
+>TIn : Symbol(TIn, Decl(main.ts, 1, 22))
+>u : Symbol(u, Decl(main.ts, 2, 29))
+>U : Symbol(U, Decl(main.ts, 1, 26))
+}
+export function concrete() {
+>concrete : Symbol(concrete, Decl(main.ts, 3, 1))
+
+    return set<_<Merge<{ a: 1 } | null, { u: 2 }>>>();
+>set : Symbol(set, Decl(main.ts, 0, 18))
+>_ : Symbol(_, Decl(main.ts, 0, 8))
+>Merge : Symbol(Merge, Decl(main.ts, 0, 11))
+>a : Symbol(a, Decl(main.ts, 5, 24))
+>u : Symbol(u, Decl(main.ts, 5, 41))
+}
+

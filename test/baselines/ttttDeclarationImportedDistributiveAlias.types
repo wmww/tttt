@@ -1,0 +1,50 @@
+//// [test/cases/ttttDeclarationImportedDistributiveAlias.ts] ////
+
+=== types.ts ===
+export type _<T> = T extends {} ? { [k in keyof T]: T[k] } : T;
+>_ : _<T>
+
+export type Optionals<T> = Extract<T, null | undefined>;
+>Optionals : Optionals<T>
+
+export type Merge<T, U> = ({ [P in keyof T]: P extends keyof U ? U[P] : T[P] } & U) | Optionals<T>;
+>Merge : Merge<T, U>
+
+type Local<T> = T extends {} ? { [k in keyof T]: T[k] } : T;
+>Local : Local<T>
+
+export declare function set<A>(): A[];
+>set : <A>() => A[]
+
+export function local<TIn, U extends object>() {
+>local : <TIn, U extends object>() => (Local<Extract<TIn, null | undefined>> | Local<{ [P in keyof TIn]: P extends "u" ? { u: U; }[P] : TIn[P]; } & { u: U; }>)[]
+
+    return set<Local<Merge<TIn, { u: U }>>>();
+>set<Local<Merge<TIn, { u: U }>>>() : (Local<Extract<TIn, null | undefined>> | Local<{ [P in keyof TIn]: P extends "u" ? { u: U; }[P] : TIn[P]; } & { u: U; }>)[]
+>set : <A>() => A[]
+>u : U
+}
+=== main.ts ===
+import { _, Merge, set } from './types';
+>_ : any
+>Merge : any
+>set : <A>() => A[]
+
+export function shape<TIn, U extends object>() {
+>shape : <TIn, U extends object>() => _<Merge<TIn, { u: U; }>>[]
+
+    return set<_<Merge<TIn, { u: U }>>>();
+>set<_<Merge<TIn, { u: U }>>>() : _<Merge<TIn, { u: U; }>>[]
+>set : <A>() => A[]
+>u : U
+}
+export function concrete() {
+>concrete : () => _<Merge<{ a: 1; } | null, { u: 2; }>>[]
+
+    return set<_<Merge<{ a: 1 } | null, { u: 2 }>>>();
+>set<_<Merge<{ a: 1 } | null, { u: 2 }>>>() : _<Merge<{ a: 1; } | null, { u: 2; }>>[]
+>set : <A>() => A[]
+>a : 1
+>u : 2
+}
+
