@@ -2293,6 +2293,12 @@ static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_c
                 prev_was_export = true;
                 break;
 
+            case MODIFIER_EXPORT_DEFAULT:
+                // Before an expression nothing more is a modifier: `export default async x => 1` is an async arrow
+                // (tsc's nextTokenCanFollowDefaultKeyword: `async` only before `function` on the same line)
+                if (!can_follow_default_keyword(&p)) goto loop_end;
+                break;
+
             default:;
         }
     }

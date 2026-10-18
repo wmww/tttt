@@ -1,0 +1,74 @@
+//// [test/cases/ttttJsThisAssignedMethod.ts] ////
+
+=== a.js ===
+export class C {
+>C : Symbol(C, Decl(a.js, 0, 0))
+
+  m() {
+>m : Symbol(C.m, Decl(a.js, 0, 16))
+
+    this.f = this.f.bind(this);
+>this.f : Symbol(C.f, Decl(a.js, 3, 3))
+>this : Symbol(C, Decl(a.js, 0, 0))
+>f : Symbol(C.f, Decl(a.js, 3, 3))
+>this.f.bind : Symbol(CallableFunction.bind, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>this.f : Symbol(C.f, Decl(a.js, 3, 3))
+>this : Symbol(C, Decl(a.js, 0, 0))
+>f : Symbol(C.f, Decl(a.js, 3, 3))
+>bind : Symbol(CallableFunction.bind, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>this : Symbol(C, Decl(a.js, 0, 0))
+  }
+  f() {}
+>f : Symbol(C.f, Decl(a.js, 3, 3))
+}
+export class D {
+>D : Symbol(D, Decl(a.js, 5, 1))
+
+  m() {
+>m : Symbol(D.m, Decl(a.js, 6, 16))
+
+    this.f = this.f.bind(this);
+>this.f : Symbol(D.f, Decl(a.js, 9, 3))
+>this : Symbol(D, Decl(a.js, 5, 1))
+>f : Symbol(D.f, Decl(a.js, 9, 3))
+>this.f.bind : Symbol(CallableFunction.bind, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>this.f : Symbol(D.f, Decl(a.js, 9, 3))
+>this : Symbol(D, Decl(a.js, 5, 1))
+>f : Symbol(D.f, Decl(a.js, 9, 3))
+>bind : Symbol(CallableFunction.bind, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>this : Symbol(D, Decl(a.js, 5, 1))
+  }
+  /** @param {number} ev */
+  f(ev) {}
+>f : Symbol(D.f, Decl(a.js, 9, 3))
+>ev : Symbol(ev, Decl(a.js, 11, 4))
+}
+export class E {
+>E : Symbol(E, Decl(a.js, 12, 1))
+
+  constructor() { this.open = false; }
+>this.open : Symbol(E.open, Decl(a.js, 14, 17), Decl(a.js, 18, 7))
+>this : Symbol(E, Decl(a.js, 12, 1))
+>open : Symbol(E.open, Decl(a.js, 14, 17), Decl(a.js, 18, 7))
+
+  m() {
+>m : Symbol(E.m, Decl(a.js, 14, 38))
+
+    this.f = this.f.bind(this);
+>this.f : Symbol(E.f, Decl(a.js, 17, 3))
+>this : Symbol(E, Decl(a.js, 12, 1))
+>f : Symbol(E.f, Decl(a.js, 17, 3))
+>this.f.bind : Symbol(CallableFunction.bind, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>this.f : Symbol(E.f, Decl(a.js, 17, 3))
+>this : Symbol(E, Decl(a.js, 12, 1))
+>f : Symbol(E.f, Decl(a.js, 17, 3))
+>bind : Symbol(CallableFunction.bind, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>this : Symbol(E, Decl(a.js, 12, 1))
+  }
+  f() { this.open = true; }
+>f : Symbol(E.f, Decl(a.js, 17, 3))
+>this.open : Symbol(E.open, Decl(a.js, 14, 17), Decl(a.js, 18, 7))
+>this : Symbol(E, Decl(a.js, 12, 1))
+>open : Symbol(E.open, Decl(a.js, 14, 17), Decl(a.js, 18, 7))
+}
+

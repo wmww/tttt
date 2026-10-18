@@ -2851,12 +2851,13 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 break;
             }
             if (my expr_jsdoc_type) {
-                // (Checked with it as the contextual type, then related without elaborating: tsc's checkTypeAssignableTo)
+                // (Checked with it as the contextual type, then related with elaboration into the expression: tsgo's
+                // checkTypeAssignableToAndOptionallyElaborate)
                 type_typecheck(my expr_jsdoc_type, errs);
                 Ty const* declared = ty_of_node(my expr_jsdoc_type);
                 Ty const* type = ty_check_expr(current_checker, &my expr, declared);
                 expr_typecheck(&my expr, errs);
-                ty_check_assignable(current_checker, type, declared, expr_outer_span(&my expr), errs);
+                ty_check_assignable_expr(current_checker, type, declared, expr_outer_span(&my expr), &my expr, errs);
                 break;
             }
             if (my export_equals && compiler_options()->erasable_syntax_only && !ctx.ambient) { // (tsc's checkExportAssignment)

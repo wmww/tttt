@@ -1,0 +1,27 @@
+//// [test/cases/ttttExportDefaultAsyncArrow.ts] ////
+
+=== a.js ===
+/** @type {(r: string) => Promise<number>} */
+export default async request => {
+>async request => {  return request.length;} : (request: string) => Promise<number>
+>request : string
+
+  return request.length;
+>request.length : number
+>request : string
+>length : number
+
+};
+=== b.ts ===
+export default async request => 1;
+>async request => 1 : (request: any) => Promise<number>
+>request : any
+>1 : 1
+
+=== c.ts ===
+export default async
+>async : any
+
+function f() {}
+>f : () => void
+

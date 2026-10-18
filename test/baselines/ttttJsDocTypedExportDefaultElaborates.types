@@ -1,0 +1,56 @@
+//// [test/cases/ttttJsDocTypedExportDefaultElaborates.ts] ////
+
+=== t.d.ts ===
+export interface M { meta: { fixable?: "code" | undefined; type: string }; create(c: number): void }
+>meta : { fixable?: "code" | undefined; type: string; }
+>fixable : "code" | undefined
+>type : string
+>create : (c: number) => void
+>c : number
+
+=== a.js ===
+/** @type {import('./t').M} */
+export default {
+>{  meta: {    type: 'layout',    fixable: null,  },  create(c) {},} : { meta: { type: string; fixable: null; }; create(c: number): void; }
+
+  meta: {
+>meta : { type: string; fixable: null; }
+>{    type: 'layout',    fixable: null,  } : { type: string; fixable: null; }
+
+    type: 'layout',
+>type : string
+>'layout' : "layout"
+
+    fixable: null,
+>fixable : null
+
+  },
+  create(c) {},
+>create : (c: number) => void
+>c : number
+
+};
+=== b.js ===
+/** @type {import('./t').M} */
+const m = {
+>m : import("./t").M
+>{  meta: {    type: 'layout',    fixable: null,  },  create(c) {},} : { meta: { type: string; fixable: null; }; create(c: number): void; }
+
+  meta: {
+>meta : { type: string; fixable: null; }
+>{    type: 'layout',    fixable: null,  } : { type: string; fixable: null; }
+
+    type: 'layout',
+>type : string
+>'layout' : "layout"
+
+    fixable: null,
+>fixable : null
+
+  },
+  create(c) {},
+>create : (c: number) => void
+>c : number
+
+};
+

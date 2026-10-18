@@ -834,6 +834,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExportDefaultAsyncArrow': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExportDefaultJsDocParenthesized': {
         errors: true,
         symbols: true,
@@ -1072,6 +1077,16 @@ const baselines = {
         types: true,
     },
     'ttttJsDocNamespaceDeclarationOrder': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsDocTypedExportDefaultElaborates': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsThisAssignedMethod': {
         errors: true,
         symbols: true,
         types: true,

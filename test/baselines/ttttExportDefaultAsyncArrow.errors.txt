@@ -1,0 +1,19 @@
+b.ts(1,22): error TS7006: Parameter 'request' implicitly has an 'any' type.
+c.ts(1,16): error TS2304: Cannot find name 'async'.
+
+
+==== a.js (0 errors) ====
+    /** @type {(r: string) => Promise<number>} */
+    export default async request => {
+      return request.length;
+    };
+==== b.ts (1 errors) ====
+    export default async request => 1;
+                         ~~~~~~~
+!!! error TS7006: Parameter 'request' implicitly has an 'any' type.
+==== c.ts (1 errors) ====
+    export default async
+                   ~~~~~
+!!! error TS2304: Cannot find name 'async'.
+    function f() {}
+    

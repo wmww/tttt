@@ -1,0 +1,22 @@
+//// [test/cases/ttttExportDefaultAsyncArrow.ts] ////
+
+=== a.js ===
+/** @type {(r: string) => Promise<number>} */
+export default async request => {
+>request : Symbol(request, Decl(a.js, 1, 20))
+
+  return request.length;
+>request.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>request : Symbol(request, Decl(a.js, 1, 20))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+};
+=== b.ts ===
+export default async request => 1;
+>request : Symbol(request, Decl(b.ts, 0, 20))
+
+=== c.ts ===
+export default async
+function f() {}
+>f : Symbol(f, Decl(c.ts, 0, 20))
+

@@ -175,3 +175,14 @@ size on real code, each with an example:
   trailing comment is written the first time only in tttt, both times in tsgo (probe: `memo((x: { a: number, /** b */
   b: 1 }) => x)`).
 
+
+## Refresh 2 (2026-10-18, todo entry 7): vest
+- **`typeof ns.x` for a spread namespace's const export**: `export const allRules = { ...numberRules } as const` where
+  numberRules re-exports `export const isEven = (v: string | number): boolean => ...`: tsgo writes `readonly isEven:
+  typeof numberRules.isEven` (its pseudochecker path in serializeTypeForDeclaration, the property's declaration being
+  the variable), tttt the function type. Functions are `typeof` on both sides. Probe: three files, `rules/isEven.ts`,
+  `rules/numberRules.ts` re-exporting it, `all.ts` spreading `import * as numberRules`.
+- **An alias reused uninstantiated in a mapped member**: vest's lazy.d.ts, `[K in keyof TRules]: (...args:
+  DropFirst<Parameters<TRules[K]>>) => ...` instantiated per key: tttt writes the annotation's text
+  (`DropFirst<Parameters<TRules[K]>>`, K and TRules out of scope), tsgo the instantiation (named, oddly,
+  `arrayRules.isEmpty<Parameters<typeof arrayRules.equals>>`: a different symbol of the same module). Not reduced.

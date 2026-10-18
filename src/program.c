@@ -4490,12 +4490,21 @@ static void check_share(Program* me, u32 c, u32 count) {
 static void deal_files(Program* me) {
     enum { RUNS_PER_CHECKER = 2 };
     vec_source_file_ptr_clear(&my check_files);
-    // (Debugging order dependences: TTTT_CHECK_ONLY=substring checks only the files whose path has it, in a fresh
-    // checker, the rest of the program still there)
+    // (Debugging order dependences: TTTT_CHECK_ONLY=substring[,substring...] checks only the files whose path has one,
+    // in a fresh checker, in program order, the rest of the program still there)
     char const* only = getenv("TTTT_CHECK_ONLY");
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         if (!source_file_is_checked(*i)) continue;
-        if (only && !(*i)->is_stdlib && !strstr(cstr_str(&(*i)->canonical_path), only)) continue;
+        if (only && !(*i)->is_stdlib) {
+            bool found = false;
+            for (char const* part = only; *part && !found; ) {
+                char const* comma = strchr(part, ',');
+                size_t len = comma ? (size_t)(comma - part) : strlen(part);
+                found = len && csview_find_sv(cstr_sv(&(*i)->canonical_path), c_sv_2(part, (isize_t)len)) != c_NPOS;
+                part += len + (comma ? 1 : 0);
+            }
+            if (!found) continue;
+        }
         vec_source_file_ptr_push(&my check_files, *i);
     }
     u32 total = (u32)vec_source_file_ptr_size(&my check_files);

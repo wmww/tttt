@@ -1,0 +1,84 @@
+//// [test/cases/ttttJsThisAssignedMethod.ts] ////
+
+=== a.js ===
+export class C {
+>C : C
+
+  m() {
+>m : () => void
+
+    this.f = this.f.bind(this);
+>this.f = this.f.bind(this) : () => void
+>this.f : () => void
+>this : this
+>f : () => void
+>this.f.bind(this) : () => void
+>this.f.bind : { <T>(this: T, thisArg: ThisParameterType<T>): OmitThisParameter<T>; <T, A extends any[], B extends any[], R>(this: (this: T, ...args: [...A, ...B]) => R, thisArg: T, ...args: A): (...args: B) => R; }
+>this.f : () => void
+>this : this
+>f : () => void
+>bind : { <T>(this: T, thisArg: ThisParameterType<T>): OmitThisParameter<T>; <T, A extends any[], B extends any[], R>(this: (this: T, ...args: [...A, ...B]) => R, thisArg: T, ...args: A): (...args: B) => R; }
+>this : this
+  }
+  f() {}
+>f : () => void
+}
+export class D {
+>D : D
+
+  m() {
+>m : () => void
+
+    this.f = this.f.bind(this);
+>this.f = this.f.bind(this) : (ev: number) => void
+>this.f : (ev: number) => void
+>this : this
+>f : (ev: number) => void
+>this.f.bind(this) : (ev: number) => void
+>this.f.bind : { <T>(this: T, thisArg: ThisParameterType<T>): OmitThisParameter<T>; <T, A extends any[], B extends any[], R>(this: (this: T, ...args: [...A, ...B]) => R, thisArg: T, ...args: A): (...args: B) => R; }
+>this.f : (ev: number) => void
+>this : this
+>f : (ev: number) => void
+>bind : { <T>(this: T, thisArg: ThisParameterType<T>): OmitThisParameter<T>; <T, A extends any[], B extends any[], R>(this: (this: T, ...args: [...A, ...B]) => R, thisArg: T, ...args: A): (...args: B) => R; }
+>this : this
+  }
+  /** @param {number} ev */
+  f(ev) {}
+>f : (ev: number) => void
+>ev : number
+}
+export class E {
+>E : E
+
+  constructor() { this.open = false; }
+>this.open = false : false
+>this.open : any
+>this : this
+>open : any
+>false : false
+
+  m() {
+>m : () => void
+
+    this.f = this.f.bind(this);
+>this.f = this.f.bind(this) : () => void
+>this.f : () => void
+>this : this
+>f : () => void
+>this.f.bind(this) : () => void
+>this.f.bind : { <T>(this: T, thisArg: ThisParameterType<T>): OmitThisParameter<T>; <T, A extends any[], B extends any[], R>(this: (this: T, ...args: [...A, ...B]) => R, thisArg: T, ...args: A): (...args: B) => R; }
+>this.f : () => void
+>this : this
+>f : () => void
+>bind : { <T>(this: T, thisArg: ThisParameterType<T>): OmitThisParameter<T>; <T, A extends any[], B extends any[], R>(this: (this: T, ...args: [...A, ...B]) => R, thisArg: T, ...args: A): (...args: B) => R; }
+>this : this
+  }
+  f() { this.open = true; }
+>f : () => void
+>this.open = true : true
+>this.open : boolean
+>this : this
+>open : boolean
+>true : true
+}
+

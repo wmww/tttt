@@ -1,0 +1,50 @@
+//// [test/cases/ttttJsDocTypedExportDefaultElaborates.ts] ////
+
+=== t.d.ts ===
+export interface M { meta: { fixable?: "code" | undefined; type: string }; create(c: number): void }
+>M : Symbol(M, Decl(t.d.ts, 0, 0))
+>meta : Symbol(M.meta, Decl(t.d.ts, 0, 20))
+>fixable : Symbol(fixable, Decl(t.d.ts, 0, 28))
+>type : Symbol(type, Decl(t.d.ts, 0, 58))
+>create : Symbol(M.create, Decl(t.d.ts, 0, 74))
+>c : Symbol(c, Decl(t.d.ts, 0, 82))
+
+=== a.js ===
+/** @type {import('./t').M} */
+export default {
+  meta: {
+>meta : Symbol(meta, Decl(a.js, 1, 16))
+
+    type: 'layout',
+>type : Symbol(type, Decl(a.js, 2, 9))
+
+    fixable: null,
+>fixable : Symbol(fixable, Decl(a.js, 3, 19))
+
+  },
+  create(c) {},
+>create : Symbol(create, Decl(a.js, 5, 4))
+>c : Symbol(c, Decl(a.js, 6, 9))
+
+};
+=== b.js ===
+/** @type {import('./t').M} */
+const m = {
+>m : Symbol(m, Decl(b.js, 1, 5))
+
+  meta: {
+>meta : Symbol(meta, Decl(b.js, 1, 11))
+
+    type: 'layout',
+>type : Symbol(type, Decl(b.js, 2, 9))
+
+    fixable: null,
+>fixable : Symbol(fixable, Decl(b.js, 3, 19))
+
+  },
+  create(c) {},
+>create : Symbol(create, Decl(b.js, 5, 4))
+>c : Symbol(c, Decl(b.js, 6, 9))
+
+};
+
