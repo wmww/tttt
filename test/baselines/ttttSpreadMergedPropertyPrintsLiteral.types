@@ -1,0 +1,66 @@
+//// [test/cases/ttttSpreadMergedPropertyPrintsLiteral.ts] ////
+
+=== ttttSpreadMergedPropertyPrintsLiteral.ts ===
+// A property an optional spread property merged with prints as the object literal it was written as, when its
+// properties match by name: tsgo's serializeTypeForDeclaration reuses the first declaration's syntax, and
+// pseudoTypeEquivalentToType finds the type's properties by name (the merged type is the spread's `Loc`)
+interface Loc { line: number; column: number }
+>line : number
+>column : number
+
+interface Rec { name: string; flag: boolean; location: Loc }
+>name : string
+>flag : boolean
+>location : Loc
+
+function make(overrides: Partial<Rec> = {}): Rec {
+>make : (overrides?: Partial<Rec>) => Rec
+>overrides : Partial<Rec>
+>{} : {}
+
+    return {
+>{        name: "x",        location: { line: 1, column: 1 },        ...overrides,    } : { flag?: boolean | undefined; name: string; location: { line: number; column: number; }; }
+
+        name: "x",
+>name : string
+>"x" : "x"
+
+        location: { line: 1, column: 1 },
+>location : { line: number; column: number; }
+>{ line: 1, column: 1 } : { line: number; column: number; }
+>line : number
+>1 : 1
+>column : number
+>1 : 1
+
+        ...overrides,
+>overrides : Partial<Rec>
+
+    };
+}
+declare const overrides: Partial<Rec>;
+>overrides : Partial<Rec>
+
+const r = { name: "x", location: { line: 1, column: 1 }, ...overrides };
+>r : { flag?: boolean | undefined; name: string; location: { line: number; column: number; }; }
+>{ name: "x", location: { line: 1, column: 1 }, ...overrides } : { flag?: boolean | undefined; name: string; location: { line: number; column: number; }; }
+>name : string
+>"x" : "x"
+>location : { line: number; column: number; }
+>{ line: 1, column: 1 } : { line: number; column: number; }
+>line : number
+>1 : 1
+>column : number
+>1 : 1
+>overrides : Partial<Rec>
+
+const v: number = r.location;
+>v : number
+>r.location : Loc
+>r : { flag?: boolean | undefined; name: string; location: { line: number; column: number; }; }
+>location : Loc
+
+const w: number = r;
+>w : number
+>r : { flag?: boolean | undefined; name: string; location: { line: number; column: number; }; }
+

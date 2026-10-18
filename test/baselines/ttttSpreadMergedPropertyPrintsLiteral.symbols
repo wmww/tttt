@@ -1,0 +1,62 @@
+//// [test/cases/ttttSpreadMergedPropertyPrintsLiteral.ts] ////
+
+=== ttttSpreadMergedPropertyPrintsLiteral.ts ===
+// A property an optional spread property merged with prints as the object literal it was written as, when its
+// properties match by name: tsgo's serializeTypeForDeclaration reuses the first declaration's syntax, and
+// pseudoTypeEquivalentToType finds the type's properties by name (the merged type is the spread's `Loc`)
+interface Loc { line: number; column: number }
+>Loc : Symbol(Loc, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 0, 0))
+>line : Symbol(Loc.line, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 3, 15))
+>column : Symbol(Loc.column, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 3, 29))
+
+interface Rec { name: string; flag: boolean; location: Loc }
+>Rec : Symbol(Rec, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 3, 46))
+>name : Symbol(Rec.name, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 4, 15))
+>flag : Symbol(Rec.flag, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 4, 29))
+>location : Symbol(Rec.location, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 4, 44))
+>Loc : Symbol(Loc, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 0, 0))
+
+function make(overrides: Partial<Rec> = {}): Rec {
+>make : Symbol(make, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 4, 60))
+>overrides : Symbol(overrides, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 5, 14))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Rec : Symbol(Rec, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 3, 46))
+>Rec : Symbol(Rec, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 3, 46))
+
+    return {
+        name: "x",
+>name : Symbol(name, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 6, 12))
+
+        location: { line: 1, column: 1 },
+>location : Symbol(location, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 7, 18))
+>line : Symbol(line, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 8, 19))
+>column : Symbol(column, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 8, 28))
+
+        ...overrides,
+>overrides : Symbol(overrides, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 5, 14))
+
+    };
+}
+declare const overrides: Partial<Rec>;
+>overrides : Symbol(overrides, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 12, 13))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Rec : Symbol(Rec, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 3, 46))
+
+const r = { name: "x", location: { line: 1, column: 1 }, ...overrides };
+>r : Symbol(r, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 13, 5))
+>name : Symbol(name, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 13, 11))
+>location : Symbol(location, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 13, 22))
+>line : Symbol(line, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 13, 34))
+>column : Symbol(column, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 13, 43))
+>overrides : Symbol(overrides, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 12, 13))
+
+const v: number = r.location;
+>v : Symbol(v, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 14, 5))
+>r.location : Symbol(location, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 13, 22), Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 4, 44))
+>r : Symbol(r, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 13, 5))
+>location : Symbol(location, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 13, 22), Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 4, 44))
+
+const w: number = r;
+>w : Symbol(w, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 15, 5))
+>r : Symbol(r, Decl(ttttSpreadMergedPropertyPrintsLiteral.ts, 13, 5))
+

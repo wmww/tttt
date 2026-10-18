@@ -4732,9 +4732,19 @@ static bool prop_declared_at(Prop const* prop, ObjectExprItem const* item) {
     return false;
 }
 
-// The property of an object type that an object literal's member declares. `hint`: where it usually is (the members
-// are mostly in the literal's order: the scan alone is quadratic in a big literal)
+// The property of an object type that an object literal's member declares, by name first like tsgo's
+// pseudoTypeEquivalentToType (getPropertyOfType of the member's symbol's name: a type the literal didn't declare matches
+// by its properties' names, `location: { line: 1 }` where a spread made it `Loc`), then by declaration (a computed
+// name). `hint`: where it usually is (the members are mostly in the literal's order: the scan alone is quadratic in a
+// big literal)
 static Prop const* pseudo_member_prop(Members const* members, ObjectExprItem const* item, u32 hint) {
+    csview name = item->computed_key ? (csview){0} : cstr_sv(&item->name_string);
+    if (name.size) {
+        if (hint < members->prop_count && csview_equals_sv(atom_sv(members->props[hint]->name), name)) return members->props[hint];
+        for (u32 i = 0; i < members->prop_count; i++) {
+            if (csview_equals_sv(atom_sv(members->props[i]->name), name)) return members->props[i];
+        }
+    }
     if (hint < members->prop_count && prop_declared_at(members->props[hint], item)) return members->props[hint];
     for (u32 i = 0; i < members->prop_count; i++) {
         if (prop_declared_at(members->props[i], item)) return members->props[i];
@@ -5362,6 +5372,19 @@ static bool item_is_literal(ObjectExprItem const* item) {
     return value->tag == EXPR_ARRAY || value->tag == EXPR_OBJECT;
 }
 
+// A type that may be an array or object literal's own (item_is_literal()): not a named object type, which a spread's
+// optional property of the same name can make it, `{ location: { line: 1 }, ...overrides }` with `location?: Loc`
+// (tsc's subtype-reduced union of both has no ContainsObjectOrArrayLiteral)
+static bool literal_shaped(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_UNION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (literal_shaped(me, ty->composite.types.data[i])) return true;
+        }
+        return false;
+    }
+    return ty->kind == TY_ANONYMOUS || ty_is_tuple(ty) || ty_is_array(me, ty);
+}
+
 // Whether a span's text has the word `this` or `typeof` (a part of a signature walked by its text)
 static bool span_says_this(Span span) {
     if (!span_valid(span)) return true;
@@ -5764,7 +5787,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         ObjectExprItem const* item = placeholder || reverse_prop || d.reused || !reuses_nodes(d) ? nullptr : declared_item(me, prop, 0);
         bool item_accessor = item && (item->tag == OBJECT_ITEM_GETTER || item->tag == OBJECT_ITEM_SETTER) && item->value.tag == EXPR_FUNCTION;
         bool item_property = item && (item->tag == OBJECT_ITEM_PROPERTY || item->tag == OBJECT_ITEM_SHORTHAND);
-        if ((item_property && !requires_widening(type) && !(unwidened && item_is_literal(item))) || item_accessor) {
+        if ((item_property && !requires_widening(type) && !(unwidened && item_is_literal(item) && literal_shaped(me, type))) || item_accessor) {
             Pseudo const* pseudo = item_accessor ? pseudo_of_accessor(me, item->value.function) : pseudo_of_object_member(me, item);
             Ty const* item_type = type;
             PseudoReporter storage;

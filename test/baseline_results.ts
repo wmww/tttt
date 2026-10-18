@@ -1544,6 +1544,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSpreadMergedPropertyPrintsLiteral': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttSpreadNestedMappedAnnotation': {
         errors: true,
         symbols: true,
