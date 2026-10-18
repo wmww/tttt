@@ -44,9 +44,10 @@ stay faster than bun on every corpus and the sweep's tail. Output byte-identical
    gone; type references and JS/JSON resolutions give ids too. effect through a symlinked checkout byte-identical
    to tsc (was ~25 diagnostics); base-ui's 10 extra files gone. Suite 13798 / 13835 (+1 own), every oracle at the
    starting point (recycle 3 / 3566, was 4), instructions flat. Worktrees with symlinked corpora now match tsc.
-6. **Declaration emit tail by fan-out** (bugs/dts_emit.md): up to four Opus sub-agents in worktrees, one dtsdiff /
-   clidiff `--emit` / dtsstats bucket each, disjoint, 0 lost at every merge (vision.md "Fan-out merge discipline").
-   Goal: dtsdiff >= 1210 / 1233; the uninvestigated buckets written up either way.
+6. Done (2026-10-18): declaration emit fan-out, four agents. dtsdiff 1193 -> 1211 / 1233 (goal 1210), clidiff
+   `--emit` 403 / 410; suite 13823 / 13859 (dts 1864 / 1886; +24 own tests, +1 tsc test), every oracle at the starting point
+   (sourcesweep 3559 / 3566, redux-toolkit's text now tsc's). Tail is mostly tsgo's checker split (triage.md);
+   new bug: bugs/expando_instantiation.md (an expando function in a generic one is never instantiated).
 7. **Second fresh-repository refresh** (plan 77's recipe, vision.md "Refresh the breadth oracles"): ~25 repositories
    chosen by a new rule: libraries that emit declarations (`declaration`/`emitDeclarationOnly` configs, feeding
    dtsdiff) and JavaScript projects with `checkJs`. Report the day-one match rate on both the source sweep and dtsdiff

@@ -8,12 +8,14 @@ decides incremental). Validation met: suite dts in the headline (1834 / 1859, Ja
 entry: 351 / 352), dtsdiff >= 90% of projects (96.8%), clidiff `--emit`; `dtsdiff.py --kdiff 16` differs on 3 / 292
 of a quarter sample by tsgo's own per-checker undefinedProperties history (below, "Member order").
 
-State 2026-10-16: `scripts/dtsdiff.py` **1193 / 1233 projects, 96627 / 96726 files** byte-identical; 2026-10-18 agent C
-fixed 5 more projects (qwik, react-navigation core and standalone/static, react-redux, pi: **1198 / 1233** in the main
-tree; a worktree run shows 1196 with its known artifacts: effect/tsc map sources, excalidraw collab, react test-utils).
-What that taught: tsc keys object instantiations on the alias they're made for (an import's alias names an unaliased
-instance, `type N = Readonly<X>` is a type of its own), checks type-parameter references syntactically (an error-typed
-annotation is still instantiated), and makes a mapped tuple's error rest element unknown.
+State 2026-10-18 (todo entry 6, four agents): `scripts/dtsdiff.py` **1211 / 1233 projects, 96675 / 96726 files**
+byte-identical (was 1193 / 96627); clidiff `--emit` 403 / 410. What the pass taught: tsc keys object instantiations
+on the alias they're made for (an import's alias names an unaliased instance, `type N = Readonly<X>` is a type of its
+own), checks type-parameter references syntactically (the Block rule; merged class/interface owners by node), and
+makes a mapped tuple's error rest element unknown. **Most of what's left is tsgo's checker split** (its weighted
+FENNEL file-to-checker assignment, compiler/checkerpool.go): the member order bucket (undefinedProperties) and single
+files that match `tsgo --checkers 1` (babel-parser's predicate, sequelize's `models`, mcp-sdk's hono specifier);
+triage.md has the tooling question.
 `scripts/dtsdiff.py --last -k BUCKET` lists files, `--show PROJECT FILE` diffs one. Classes by
 size on real code, each with an example:
 
