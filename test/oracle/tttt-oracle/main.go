@@ -44,6 +44,7 @@ import (
 	"github.com/microsoft/TypeScript/tsc/internal/tspath"
 	"github.com/microsoft/TypeScript/tsc/internal/vfs"
 	"github.com/microsoft/TypeScript/tsc/internal/vfs/osvfs"
+	"github.com/microsoft/TypeScript/tsc/internal/vfs/wrapvfs"
 )
 
 type sys struct {
@@ -74,7 +75,36 @@ func newSys() *sys {
 	if err != nil {
 		panic(err)
 	}
-	return &sys{fs: bundled.WrapFS(osvfs.FS()), cwd: tspath.RootedDirectoryPathFromAbsolute(cwd), start: time.Now()}
+	return &sys{fs: withoutBuildInfo(bundled.WrapFS(osvfs.FS())), cwd: tspath.RootedDirectoryPathFromAbsolute(cwd), start: time.Now()}
+}
+
+// Build info is neither read nor written: tsc --noEmit reads an incremental project's .tsbuildinfo and skips checking
+// what it says is unchanged (its time then means nothing), and writes one into the checkout (webcmd's dist/). Every
+// run is a cold check, like perfsweep's. (A config's tsBuildInfoFile may be named anything with it: better-auth's
+// `.cache/ts/tsbuildinfo`, karakeep's `node_modules/.cache/tsbuildinfo.json`)
+func withoutBuildInfo(fs vfs.FS) vfs.FS {
+	buildInfo := func(p string) bool { return strings.Contains(tspath.GetBaseFileName(p), "tsbuildinfo") }
+	return wrapvfs.Wrap(fs, wrapvfs.Replacements{
+		FileExists: func(p tspath.RootedFilePath) bool { return !buildInfo(string(p)) && fs.FileExists(p) },
+		ReadFile: func(p tspath.RootedFilePath) (string, bool) {
+			if buildInfo(string(p)) {
+				return "", false
+			}
+			return fs.ReadFile(p)
+		},
+		WriteFile: func(p tspath.RootedFilePath, data string) error {
+			if buildInfo(string(p)) {
+				return nil
+			}
+			return fs.WriteFile(p, data)
+		},
+		Stat: func(p tspath.RootedPath) vfs.FileInfo {
+			if buildInfo(string(p)) {
+				return nil
+			}
+			return fs.Stat(p)
+		},
+	})
 }
 
 // The CLI's `--pretty false` format (diagnosticwriter.WriteFormatDiagnostic): `file(line,col): error TS1: message`,

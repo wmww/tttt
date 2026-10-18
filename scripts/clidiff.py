@@ -187,7 +187,7 @@ def main():
     # (tsc --noEmit still writes the build info of incremental projects)
     repos = sorted({os.path.join(SOURCES, j[2].split('/')[0]) for j in jobs if j[1] == SOURCES})
     if repos:
-        subprocess.run(['find', *repos, '-name', 'node_modules', '-prune', '-o', '-name', '*.tsbuildinfo', '-newer',
+        subprocess.run(['find', *repos, '-name', 'node_modules', '-prune', '-o', '-name', '*tsbuildinfo*', '-newer',
                         marker, '-exec', 'rm', '-f', '{}', '+'])
     os.unlink(marker)
     with_output = sum(1 for r in results if r[1] == 'match' and r[2])

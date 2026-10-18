@@ -57,11 +57,16 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   - A new write outside the bodies from their walk must be undone at a drop (`deferred_bodies_undo()`) or a new way of
     keeping a materialization alive must allocate it lasting (`AstArena.lasting`; owner materializations carried cost
     vscode K1 +155 MB). Oracle: `TTTT_AST_POISON=1 --checker-memory 0` on the corpora, `kdiff.py -k 1 -m 0`.
-  - A dropped materialization leaks its parser's malloc'd strings (~8 MB per round of vscode's bodies). Correct: those
-    strings in the AST arena. Re-materialization costs ~2% of vscode's instructions (bugs/perf_leads.md).
+  - A dropped materialization leaks what its parse and walk malloc'd (~8 MB per round of vscode's bodies): cooked
+    strings, and the lists declared without `g_allocator ast` that AST nodes own (`VecSpan`/`VecSymbolCPtr` of a
+    qualified type name's IdentifierTypeRare, TemplateType's texts and spans, InterfaceIndexKey's spans, ...).
+    Correct: those in the AST arena. Under the counting allocator (the harness) `deferred_body_debug_drop()` walks the
+    body first, so the per-test leak check stays meaningful (it listed 157 tests). Re-materialization costs ~2% of
+    vscode's instructions (bugs/perf_leads.md).
   - Signature/body name collisions and body syntax errors rerun the whole program without deferral
     (`program_defer_failed()`). Correct for collisions: walk the signature again after the body's names. Oracle:
-    `defer: restarts` on the sweeps (0 on the corpora).
+    `defer: restarts` on the sweeps (0 on the corpora, 0 on the source sweep since 2026-10-18; `defer: collided` names
+    the body).
 
 ## Parser
 - `unique symbol` placement (TS1335): checked while parsing through `ParserShared.unique_allowed_at`

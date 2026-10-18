@@ -49,8 +49,13 @@ and the defaults, output byte-identical at every K and budget.
    `this`; tuples now take a this-argument too). Defaults' corpora sum 11.43 -> 11.02 s; budget still +13% against no
    recycling (re-derivation; per-body re-materialization ~20% of vscode's share, not done). `instrcount.sh` now
    compares against `test/instrcount.txt` and flags >2%. Bench: plan 67 "Where it stands" (bun 8 / 14, faster on 14).
-9. **Triage.**
+9. Done (this commit): triage. Deferral restarts gone from the source sweep (18 projects: collisions now by lookup
+   position and meaning, `typeof` return types eager; inbox-zero apps/web 1.46 -> 1.22 s, -25% peak) and the
+   signature-suggestion bug they hid; package ids from exports maps, with a HACK for the representative's order (plan 84
+   written: tsgo's two-phase load); tttt-oracle cold (851 stray `.tsbuildinfo` deleted); TS5115's checker dependence is
+   tsgo's own; harness leak list empty. Suite 13792 / 13829, every oracle unchanged.
 10. **Insights.** report.md: plan 77's number, whether the defaults' memory gap to bun moved and why.
 
 After the insights entry (for the next window): plan 58 + plan 66 stage 5 when 7.1.0 is out (expected after
-2026-11-24), webpack's serial declare, plan 76 only if the human reopens it.
+2026-11-24), webpack's serial declare, plan 84 (two-phase load), the AST-owned malloc of materialized bodies (hacks.md
+"Deferred bodies": a production leak per drop), plan 76 only if the human reopens it.

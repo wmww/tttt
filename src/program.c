@@ -3593,6 +3593,15 @@ bool program_has_deferred_bodies(Program const* me) {
     return false;
 }
 
+// A dropped materialization's body, walked to free what it owns outside the arena, only under the counting allocator
+// (DEBUG_ALLOCATOR_ACTIVE: the harness, debug builds): its per-test leak check would list every test that drops one.
+// (ast_free() of the arena's nodes does nothing: no thread is in that arena)
+static void deferred_body_debug_drop([[maybe_unused]] Block* body) {
+#ifdef DEBUG_ALLOCATOR_ACTIVE
+    block_drop(body);
+#endif
+}
+
 bool program_deferred_bodies_parse(Program* me) {
     CompilerOptions const* saved = compiler_options_private;
     bool ret = true;
@@ -3609,7 +3618,10 @@ bool program_deferred_bodies_parse(Program* me) {
             same = parse_deferred_body(file, body->function, &scratch);
         }
         ast_materialize_end();
-        for (DeferredBody* body = list->first; body; body = body->next) body->block = (Block){0};
+        for (DeferredBody* body = list->first; body; body = body->next) {
+            deferred_body_debug_drop(&body->block);
+            body->block = (Block){0};
+        }
         ast_arena_drop(&list->memory);
         error_ctx_drop(&scratch);
         if (!same) {
@@ -3937,7 +3949,9 @@ static void deferred_bodies_drop_locked(SourceFile* file) {
         }
         if (i->return_target && !flow_is_unreachable(i->return_target)) i->return_target->antecedents = snapshot->return_antecedents;
         // (Not block_drop(): a walk of all of it, a tenth of materializing it. What the AST owns outside the arena, its
-        // strings the parser malloc'd, is lost: hacks.md)
+        // strings and some lists the parser and the walk malloc'd, is lost: hacks.md. Not under the counting allocator,
+        // whose leak check would list every test that drops one)
+        deferred_body_debug_drop(&i->block);
         i->block = (Block){0};
     }
     ast_arena_drop(&list->memory);

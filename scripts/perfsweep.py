@@ -296,7 +296,7 @@ def main():
             cache[r['project']] = r
         save_cache(cache)
         # (Whatever build info got past incremental() anyway)
-        stray = subprocess.run(['find', SOURCES + '/', '-name', 'node_modules', '-prune', '-o', '-name', '*.tsbuildinfo',
+        stray = subprocess.run(['find', SOURCES + '/', '-name', 'node_modules', '-prune', '-o', '-name', '*tsbuildinfo*',
                                 '-newer', marker, '-print', '-delete'], capture_output=True, text=True).stdout.split()
         os.unlink(marker)
         if stray:

@@ -22,6 +22,16 @@ materializing instructions by count, 0.23 s of 1.96 s by `TTTT_DEFER_STATS` time
 vscode**: a *re*-materialization needs the one demanded body only, and its cross-body writes were all made by the first
 materialization (if they live outside the dropped arena: check `deferred_bodies_undo()`'s log, which puts some back).
 
+## Slower than bun at the defaults: inbox-zero (triage 2026-10-18)
+After the triage's deferral fixes (apps/web no longer restarts without deferral: 1.46 -> 1.22 s, -25% peak), at 4
+checkers: inbox-zero 1.25 s against bun's 0.86, apps/web 1.23 against 0.97; webcmd 0.24 against 0.35 and solid 0.79
+against 0.79 are level or ahead now (bun numbers: `/tmp/perfsweep-tttt-bun.json` of 2026-10-17). inbox-zero isn't
+balance (four checkers at ~376 ms each) nor the budget (`--checker-memory 100000`: 1.24 s): K1 is 1.40 s, K4 1.26 s,
+user time 1.86 -> 2.49 s. Each checker re-derives the same declaration-file types (react, next, prisma .d.ts) for its
+share of ~4.9 MB of app source, plus ~200 ms serial load and names. Lead: what plan 72 calls shared warm state (a
+checker's declaration-level types seen by the others), or fewer checkers when the shares are small next to the shared
+declarations they need (dokploy's lead below is the same shape).
+
 ## What the recycle budget costs at the defaults (perf session 2026-10-17, todo entry 8)
 The corpora at the defaults against `--checker-memory off` (best of 2, 4 checkers): 11.43 s / 4573 MB against 9.99 s /
 10023 MB, +14% wall (drizzle +34%, excalidraw +27%, zod +22%, vscode +15%). Callgrind of excalidraw and zod at the

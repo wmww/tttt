@@ -73,3 +73,14 @@ argued here instead. Nothing a user sees differs in any of them.
   through its parent) and its type is errorType. Only the specifier's own symbol shows it: `knex.Knex` as a name or
   value reaches the merged clone in both. Reproduced by `SymbolRare.merge_detached` (b3ad2000, removed 2026-10-15),
   which marked such aliases in the binder and special-cased them in getTypeOfAlias and the symbol chain.
+
+# Outputs that depend on tsgo's own checker count (triage 2026-10-18)
+- **TS5115 / TS2589** (instantiation depth): each checker reports the first place it hits the limit, then caches the
+  error type (`instantiateTypeWithAlias`), so the count depends on how many checkers see the circular type. tsgo on
+  xstate's core with the `nosnc` flags: 1 at `--singleThreaded`, 3 at `--checkers 4` and 8. tttt does the same per
+  checker, and a recycled checker counts as a fresh one (flagflip's xstate sloppy/nosnc cells: 1 at K1, 2-3 at the
+  defaults, 5 at `--checker-memory 0`; since work stealing, which checker gets there first depends on timing, so the
+  flagflip spurious count flickers 8 / 9 between identical runs). The oracles run tsgo single-threaded and tttt's
+  kdiff/recycle oracles use default flags, which never hit the limit. Accepted: a program-wide "reported" set would
+  still depend on which checker gets there first. Read flagflip's TS5115/TS2589 deltas as noise.
+- sequelize/packages/core's TS7022 differs with the checker count in tsgo too (kdiff, plan 62).
