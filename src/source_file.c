@@ -192,6 +192,7 @@ void source_file_drop(SourceFile* me) {
     free(my expando_containers);
     free(my unused);
     free(my parse_error_starts);
+    free(my commonjs_candidates);
     if (my content_mapped) content_mapped_free(my content_mapped);
     if (my deferred_bodies) {
         // (After block_drop(): the bodies' AST is in it)

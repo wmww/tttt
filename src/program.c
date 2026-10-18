@@ -1586,6 +1586,7 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
         !source_file->is_declaration && !is_stdlib && !source_file->skip_typed_bodies && !source_file->unchecked &&
         !source_file->content_mapped && !source_file->from_reference;
     parse_file(source_file, errs);
+    source_collect_commonjs_candidates(source_file);
     cstr_drop(&virtual_path);
     return source_file;
 }

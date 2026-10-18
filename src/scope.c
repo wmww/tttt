@@ -2242,20 +2242,23 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level) {
 }
 
 typedef struct CommonJsWalk {
-    Scope* module;
     Expr const* top_level[64]; // The assignments of the current top-level expression statement (a chain's, a comma's)
     u32 top_level_count;
+    u32 statement;
+    CommonJsCandidate* candidates;
+    u32 count, cap;
 } CommonJsWalk;
 
-static AstWalk commonjs_export_visit(Expr const* expr, void* arg) {
+static AstWalk commonjs_candidate_visit(Expr const* expr, void* arg) {
     CommonJsWalk* walk = arg;
+    if (!(expr->tag == EXPR_BINARY_OP && expr->binary_op->op == BINARY_OP_EQUAL) && expr->tag != EXPR_CALL) return AST_WALK_CONTINUE;
     bool top_level = false;
     for (u32 i = 0; i < walk->top_level_count && !top_level; i++) top_level = walk->top_level[i] == expr;
-    if (expr->tag == EXPR_BINARY_OP && expr->binary_op->op == BINARY_OP_EQUAL) {
-        add_commonjs_export(walk->module, (Expr*)expr, top_level);
-    } else if (expr->tag == EXPR_CALL) {
-        add_define_property_export(walk->module, (Expr*)expr, top_level);
+    if (walk->count == walk->cap) {
+        walk->cap = walk->cap ? walk->cap * 2 : 16;
+        walk->candidates = realloc(walk->candidates, sizeof(CommonJsCandidate) * walk->cap);
     }
+    walk->candidates[walk->count++] = (CommonJsCandidate){ .expr = expr, .statement = walk->statement, .top_level = top_level };
     return AST_WALK_CONTINUE;
 }
 
@@ -2288,14 +2291,33 @@ static void declare_commonjs_variable(Scope* me, csview name, SymbolDeclKind kin
     });
 }
 
-void scope_add_commonjs_module(Scope* me) {
-    if (my kind != SCOPE_MODULE || !my file || !my file->is_commonjs || !my container || !my block) return;
-    CommonJsWalk walk = { .module = me };
-    VecStatement* statements = &((Block*)my block)->statements;
-    for_each (i, vec_statement, statements) {
+void source_collect_commonjs_candidates(SourceFile* file) {
+    if (!file->is_js || !file->has_commonjs) return;
+    CommonJsWalk walk = {0};
+    for_each (i, vec_statement, &file->ast.statements) {
         walk.top_level_count = 0;
         if (i->tag == STATEMENT_EXPR) note_top_level_assignments(&walk, &i->expr);
-        ast_walk_statement(i, commonjs_export_visit, &walk);
+        ast_walk_statement(i, commonjs_candidate_visit, &walk);
+        walk.statement++;
+    }
+    file->commonjs_candidates = walk.candidates;
+    file->commonjs_candidate_count = walk.count;
+}
+
+void scope_add_commonjs_module(Scope* me) {
+    if (my kind != SCOPE_MODULE || !my file || !my file->is_commonjs || !my container || !my block) return;
+    check(my block == &my file->ast);
+    VecStatement* statements = &((Block*)my block)->statements;
+    CommonJsCandidate const* candidate = my file->commonjs_candidates;
+    CommonJsCandidate const* end = candidate + my file->commonjs_candidate_count;
+    u32 index = 0;
+    for_each (i, vec_statement, statements) {
+        for (; candidate != end && candidate->statement == index; candidate++) {
+            Expr* expr = (Expr*)candidate->expr;
+            if (expr->tag == EXPR_BINARY_OP) add_commonjs_export(me, expr, candidate->top_level);
+            else add_define_property_export(me, expr, candidate->top_level);
+        }
+        index++;
         if (i->tag != STATEMENT_DECL_VARIABLE) continue;
         // `var m = module.exports = v`: the `export=` it declares first is named m (tsc's getNameOfSymbolAsWritten: a
         // declaration whose parent is a variable declaration)

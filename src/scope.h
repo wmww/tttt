@@ -880,6 +880,8 @@ bool scope_export_default_expr(Scope* me, Expr* expr, struct TypeNode const* jsd
 // declares x and `module.exports = v` the `export=`, wherever it is (tsc's getAssignmentDeclarationKind), then its
 // `module` and `exports` variables
 void scope_add_commonjs_module(Scope* me);
+// What scope_add_commonjs_module() declares from, right after the file is parsed (SourceFile.commonjs_candidates)
+void source_collect_commonjs_candidates(SourceFile* file);
 // The expandos of the statements of a block (declared in `me`): `f.x = v` where f is a function declared in the block
 // or its function (or file), or a variable initialized with a function (JavaScript: also a class or `{}`), declares x
 // in f's exports (tsc's bindSpecialPropertyAssignment)

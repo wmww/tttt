@@ -7,6 +7,13 @@
 #include "error.h"
 #include <pthread.h>
 
+// An assignment or call of a CommonJS file's statement (its index) that may declare an export (SourceFile)
+typedef struct CommonJsCandidate {
+    struct Expr const* expr;
+    u32 statement;
+    bool top_level; // The statement's own expression, or an assignment chain's or a comma's
+} CommonJsCandidate;
+
 typedef struct SourceFile SourceFile;
 
 // A module named by a string somewhere in a file: import/export declarations, `import x = require("m")`,
@@ -193,6 +200,11 @@ typedef struct SourceFile {
     // A JavaScript file that is a CommonJS module: `exports.x =` and `module.exports =` declare its exports, `module`,
     // `exports` and `require` mean something
     bool is_commonjs;
+    // A file with has_commonjs: the assignments and calls that may declare a CommonJS export, in walk order, collected
+    // right after parsing (by the load pool's thread: source_collect_commonjs_candidates()) so the serial declare step
+    // doesn't walk the whole tree (scope_add_commonjs_module())
+    CommonJsCandidate* commonjs_candidates;
+    u32 commonjs_candidate_count;
     // The JSX pragmas of the comments at the top of the file (tsc's `@jsx`, `@jsxFrag`, `@jsxRuntime` and
     // `@jsxImportSource` in `/* */` comments): their argument, empty if there is none. The first `@jsx`/`@jsxFrag`
     // counts, the last `@jsxRuntime`/`@jsxImportSource` (like tsc's uses of file.pragmas)
