@@ -118,12 +118,15 @@ typedef struct Program {
     // The program_order of the first file: the files of a parent program (the test harness's shared libraries, see
     // program_copy_globals_from()) come before this one's, like tsc's default library files
     u32 order_base;
-    HMapSourceFilePtr files_by_package_id; // ResolvedModule.package_id -> the first file found with it
-    // A source file outside node_modules loaded without a package id -> the id its package's own `exports` would give it
-    // (the first such file): see program_load_resolved()
-    HMapSourceFilePtr sources_by_package_id;
-    // The file being added is a package's second copy of this first one (program_load_resolved())
-    SourceFile* adding_package_redirect;
+    // SourceFile.package_id -> the first file loaded with it, and whether another file got it too: only then has
+    // program_collect_files() redirects to make
+    HMapSourceFilePtr files_by_package_id;
+    bool duplicate_packages;
+    // The loader's walk, for program_collect_files(): the file whose references are being loaded (SourceFile.load_children),
+    // the files loaded with none (roots, libraries, automatic types), in order, and whether the walk has been collected
+    SourceFile* loading_parent;
+    VecSourceFilePtr load_roots;
+    bool collected;
     // tsc's getPackagesMap: the package name of every module resolution that found a file of a package, whether one of
     // them was a declaration file
     HMapPackageFlag packages;
@@ -285,7 +288,7 @@ static void program_drop(Program* me) {
     drop_source_files(me);
     hmap_box_source_file_drop(&my source_files_map);
     hmap_source_file_ptr_drop(&my files_by_package_id);
-    hmap_source_file_ptr_drop(&my sources_by_package_id);
+    vec_source_file_ptr_drop(&my load_roots);
     hmap_source_file_ptr_drop(&my emit_blocked);
     hmap_package_flag_drop(&my packages);
     vec_source_file_ptr_drop(&my source_files_ordered);
@@ -898,6 +901,16 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     resolved_module_drop(&resolved);
 }
 
+// The same version of a package installed twice is one package (tsc's packageIdToSourceFile), unless
+// `deduplicatePackages: false`: a file gets the id of the first resolution that reached it with one (an import, a type
+// reference), program_collect_files() decides which copy is the program's once everything is loaded
+static void program_note_package_id(Program* me, SourceFile* file, ResolvedModule const* resolved) {
+    if (!file || !cstr_size(&resolved->package_id) || !my options.deduplicate_packages || cstr_size(&file->package_id)) return;
+    cstr_assign_sv(&file->package_id, cstr_sv(&resolved->package_id));
+    auto found = hmap_source_file_ptr_insert(&my files_by_package_id, cstr_clone(resolved->package_id), file);
+    if (!found.inserted) my duplicate_packages = true;
+}
+
 // (resolved stays the caller's)
 static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* ref, ResolvedModule* resolved_ptr) {
     ResolvedModule const resolved = *resolved_ptr;
@@ -911,41 +924,12 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                 ref->failure = MODULE_REF_ARBITRARY_EXTENSION;
                 cstr_take(&module_ref_rare_mut(ref)->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
             } else {
-                // The same version of a package installed twice is one package (tsc's packageIdToSourceFile): the
-                // second copy stays in the program, but imports mean the first, and its own imports are the first's
-                // (tsc's redirect source file shares the first's AST: see program_share_redirect_ref()). Unless
-                // `deduplicatePackages: false` (tsgo's filesparser)
-                bool dedup = cstr_size(&resolved.package_id) && my options.deduplicate_packages;
-                auto found = dedup ? hmap_source_file_ptr_get(&my files_by_package_id, cstr_sv(&resolved.package_id)) : nullptr;
-                SourceFile* first = found ? found->second : nullptr;
-                // A file loaded before without an id that a resolution with it will reach: tsc gives a file the id of
-                // any resolution that reached it, whichever came first, and keeps the first file in program order with
-                // it. A package's sources are reached through its exports by its own imports by name, and again
-                // through node_modules from the other packages, at their real path: through a symlinked directory
-                // that's another path (HACK: assumed reached, see SourceFile.package_redirect)
-                if (dedup && !found) {
-                    auto source = hmap_source_file_ptr_get(&my sources_by_package_id, cstr_sv(&resolved.package_id));
-                    if (source) first = source->second;
-                }
-                my adding_package_redirect = first;
                 ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
-                my adding_package_redirect = nullptr;
                 // (Only an extension the name itself has counts, not one a package.json or an export map wrote:
                 // tsc's candidateIsFromPackageJsonField, tryExtractTSExtension of the name)
                 ref->used_ts_extension = resolved.used_ts_extension &&
                     (resolved.ts_extension_from_star || name_has_ts_extension(cstr_sv(&ref->path)));
-                if (dedup && ref->file) {
-                    if (first) {
-                        if (first != ref->file) {
-                            module_ref_rare_mut(ref)->redirected_from = ref->file;
-                            ref->file->package_redirect = true;
-                            ref->file->package_redirect_target = first;
-                            ref->file->unchecked = true;
-                        }
-                        ref->file = first;
-                    }
-                    if (!found) hmap_source_file_ptr_insert(&my files_by_package_id, cstr_clone(resolved.package_id), ref->file);
-                }
+                program_note_package_id(me, ref->file, &resolved);
             }
             break;
         case RESOLVED_JS:
@@ -961,6 +945,7 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
             if (my options.allow_js && (!package_js || source->node_modules_js_depth < my options.max_node_module_js_depth)) {
                 bool is_new = !program_find_source(me, cstr_sv(&resolved.path));
                 ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
+                program_note_package_id(me, ref->file, &resolved);
                 // (tsc's maxNodeModuleJsDepth: a package's JavaScript, as deep as allowed, never checked)
                 if (ref->file && package_js && is_new) {
                     ref->file->node_modules_js_depth = source->node_modules_js_depth + 1;
@@ -978,6 +963,7 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
             break;
         case RESOLVED_JSON:
             ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
+            program_note_package_id(me, ref->file, &resolved);
             if (!ref->file) ref->failure = MODULE_REF_IS_JSON;
             break;
         case RESOLVED_NONE:
@@ -1065,6 +1051,7 @@ static SourceFile* program_load_type_reference(
     if (resolved.is_external_library) my node_modules_depth++;
     SourceFile* ret = resolved.kind == RESOLVED_NONE ? nullptr :
         program_add_source_idempotent(me, cstr_sv(&resolved.path));
+    program_note_package_id(me, ret, &resolved);
     if (resolved.is_external_library) my node_modules_depth--;
     resolved_module_drop(&resolved);
     return ret;
@@ -1728,26 +1715,20 @@ static void program_found_outside_node_modules(SourceFile* file) {
     }
 }
 
-// An import of a package's second copy (SourceFile.package_redirect) is what the same import of the first copy found,
-// which is loaded already: tsc's redirect source file has the first's AST, imports included, so nothing the second
-// copy's directory has is loaded (`import "globals"` of each copy). False if the first has no such import (the copies
-// differ), resolved as its own then
-static bool program_share_redirect_ref(SourceFile const* target, ModuleRef* ref) {
-    if (ref->is_declaration) return false;
-    for (u32 i = 0; i < target->module_ref_count; i++) {
-        ModuleRef const* own = target->module_refs[i];
-        if (own->is_declaration || own->syntax != ref->syntax || !cstr_eq(&own->path, &ref->path)) continue;
-        ref->file = own->file;
-        if (own->rare || ref->rare) module_ref_rare_mut(ref)->redirected_from = module_ref_rare(own)->redirected_from;
-        ref->failure = own->failure;
-        ref->used_ts_extension = own->used_ts_extension;
-        ref->external_library = own->external_library;
-        if (cstr_size(&module_ref_rare(own)->resolved_path) || ref->rare) {
-            cstr_take(&module_ref_rare_mut(ref)->resolved_path, cstr_clone(module_ref_rare(own)->resolved_path));
-        }
-        return true;
+// The loader reached file from the file whose references it is loading (a root without one): tsgo's parse subtasks,
+// in order, for program_collect_files()
+static void program_note_loaded(Program* me, SourceFile* file) {
+    SourceFile* parent = my loading_parent;
+    if (!parent) {
+        vec_source_file_ptr_push(&my load_roots, file);
+        return;
     }
-    return false;
+    if (parent->load_child_count == parent->load_child_cap) {
+        parent->load_child_cap = parent->load_child_cap ? parent->load_child_cap * 2 : 4;
+        parent->load_children = realloc(parent->load_children, sizeof(SourceFile*) * parent->load_child_cap);
+        panic_if(!parent->load_children, "out of memory");
+    }
+    parent->load_children[parent->load_child_count++] = file;
 }
 
 // Records why the file being added is (Program.include_kind, once)
@@ -1775,6 +1756,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         // A source file is already created for this path
         cstr_drop(&storage);
         SourceFile* found = cached_source->second.get;
+        program_note_loaded(me, found);
         if (found->found_searching_node_modules && !my node_modules_depth) program_found_outside_node_modules(found);
         return found;
     }
@@ -1806,14 +1788,9 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 // join the program, it after them
 static SourceFile* program_add_made_source(Program* me, cstr canonical_path, SourceFile* source_file) {
     if (source_file->is_json) source_file->is_module = true;
-    if (!my include_package_id.size && my options.deduplicate_packages && !source_file->is_json && !source_file->is_js) {
-        cstr id = module_resolver_source_package_id(program_resolver(me), cstr_sv(&canonical_path));
-        if (cstr_size(&id) && !hmap_source_file_ptr_contains(&my sources_by_package_id, cstr_sv(&id))) {
-            hmap_source_file_ptr_insert(&my sources_by_package_id, id, source_file);
-        } else {
-            cstr_drop(&id);
-        }
-    }
+    program_note_loaded(me, source_file);
+    SourceFile* parent = my loading_parent;
+    my loading_parent = source_file;
 
     hmap_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
     source_file->found_searching_node_modules = my node_modules_depth > 0;
@@ -1822,15 +1799,6 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
     if (span_valid(my include_site)) source_file->included_at = my include_site;
     my include_site = span_null;
 
-    // (A package's second copy, see program_load_resolved())
-    SourceFile* redirect_target = my adding_package_redirect;
-    my adding_package_redirect = nullptr;
-    // (Only once the first copy is loaded, its imports resolved: not while it is, an import cycle back to the package)
-    bool target_loaded = false;
-    for (isize i = vec_source_file_ptr_size(&my source_files_ordered); redirect_target && !target_loaded && i-- > 0;) {
-        target_loaded = *vec_source_file_ptr_at(&my source_files_ordered, i) == redirect_target;
-    }
-    if (!target_loaded) redirect_target = nullptr;
     // `/// <reference path>`s first, then the rest (`types`, `lib`): tsc's processReferencedFiles comes before
     // processTypeReferenceDirectives, and the order files load in is the program's
     for_each (i, vec_statement, &source_file->ast.statements) {
@@ -1904,7 +1872,6 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
         if (my options.no_resolve) continue; // program_resolve_names(), once every root is loaded
         // (tsgo resolves a name the file declares an ambient module for too, tsc 6's resolveToOwnAmbientModule is gone: the
         // file it finds is part of the program, and checked)
-        if (redirect_target && program_share_redirect_ref(redirect_target, ref)) continue;
         program_load_module_ref(me, source_file, ref);
     }
     // A content mapper's supplemental outputs, after what the file imports (tsgo's parse subtasks)
@@ -1921,6 +1888,7 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
     // Add here so imports come before importing file
     source_file->program_order = my order_base + (u32)vec_source_file_ptr_size(&my source_files_ordered);
     vec_source_file_ptr_push(&my source_files_ordered, source_file);
+    my loading_parent = parent;
 
     return source_file;
 }
@@ -2046,6 +2014,8 @@ SourceFile* program_find_source(Program const* me, csview path) {
     cstr storage = cstr_null;
     auto found = hmap_box_source_file_get(&my source_files_map, program_canonical_view(me, path, &storage));
     cstr_drop(&storage);
+    // (A redirect as itself: what refers to it says what it stands for)
+    if (found && found->second.get->excluded && !found->second.get->package_redirect) return nullptr;
     return found ? found->second.get : nullptr;
 }
 
@@ -2092,6 +2062,81 @@ void program_load_ahead(Program* me, csview const* libs, isize lib_count, csview
     str_list_drop(&names);
 }
 
+// program_collect_files()'s walk: tsgo's collectFiles, depth first from the roots in the order the loader reached
+// files. The first file with a package id stands for it, a later one with the same id is its redirect and the walk
+// doesn't follow what the redirect refers to
+static void collect_walk(Program* me, SourceFile* file, HMapSourceFilePtr* by_package_id, VecSourceFilePtr* out) {
+    if (file->collected) return;
+    file->collected = true;
+    if (cstr_size(&file->package_id)) {
+        auto found = hmap_source_file_ptr_insert(by_package_id, cstr_clone(file->package_id), file);
+        if (!found.inserted) {
+            file->package_redirect = true;
+            file->package_redirect_target = found.ref->second;
+            file->unchecked = true;
+            return;
+        }
+    }
+    for (u32 i = 0; i < file->load_child_count; i++) collect_walk(me, file->load_children[i], by_package_id, out);
+    vec_source_file_ptr_push(out, file);
+}
+
+// Why a file is in the program, from a file that isn't (a redirect, what only one reaches) doesn't count: tsgo's
+// collectFiles adds the include reasons of what it walks
+static bool from_excluded(Span at) {
+    return span_valid(at) && span_source(at)->excluded;
+}
+
+// The program's files, once everything reachable is loaded: when two files have the same package id (a package
+// installed twice, a workspace package seen through a symlinked directory and at its real path), the first in tsgo's
+// order stands for both, the other becomes a redirect (SourceFile.package_redirect) that isn't one of the program's
+// files, and what only the redirect refers to isn't either (SourceFile.excluded). Imports of a redirect mean the first
+static void program_collect_files(Program* me) {
+    if (my collected) return;
+    my collected = true;
+    if (my duplicate_packages) {
+        HMapSourceFilePtr by_package_id = {0};
+        VecSourceFilePtr files = {0};
+        for_each (i, vec_source_file_ptr, &my load_roots) collect_walk(me, *i, &by_package_id, &files);
+        hmap_source_file_ptr_drop(&by_package_id);
+        for_each (i, vec_source_file_ptr, &my source_files_ordered) (*i)->excluded = !(*i)->collected || (*i)->package_redirect;
+        check(vec_source_file_ptr_size(&files) <= vec_source_file_ptr_size(&my source_files_ordered));
+        vec_source_file_ptr_drop(&my source_files_ordered);
+        my source_files_ordered = files;
+        for (u32 k = 0; k < vec_source_file_ptr_size(&my source_files_ordered); k++) {
+            SourceFile* file = *vec_source_file_ptr_at(&my source_files_ordered, k);
+            file->program_order = my order_base + k;
+            for (u32 j = 0; j < file->module_ref_count; j++) {
+                ModuleRef* ref = file->module_refs[j];
+                if (!ref->file || !ref->file->excluded) continue;
+                if (ref->file->package_redirect) {
+                    module_ref_rare_mut(ref)->redirected_from = ref->file;
+                    ref->file = ref->file->package_redirect_target;
+                } else {
+                    ref->file = nullptr; // (An augmentation of what isn't in the program)
+                }
+            }
+            u32 kept = 0;
+            for (u32 j = 0; j < file->include_reason_count; j++) {
+                if (from_excluded(file->include_reasons[j].at)) cstr_drop(&file->include_reasons[j].package_id);
+                else file->include_reasons[kept++] = file->include_reasons[j];
+            }
+            file->include_reason_count = kept;
+            if (from_excluded(file->included_at)) {
+                file->included_at = span_null;
+                for (u32 j = 0; j < kept && !span_valid(file->included_at); j++) file->included_at = file->include_reasons[j].at;
+            }
+        }
+    }
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        free((*i)->load_children);
+        (*i)->load_children = nullptr;
+        (*i)->load_child_count = (*i)->load_child_cap = 0;
+    }
+    vec_source_file_ptr_drop(&my load_roots);
+    my load_roots = (VecSourceFilePtr){0};
+}
+
 void program_load_automatic_types(Program* me) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     set_compiler_options(&my options);
@@ -2109,8 +2154,9 @@ void program_load_automatic_types(Program* me) {
     }
     str_list_drop(&names);
     clear_compiler_options();
-    // (The parse errors of referenced projects' files, and the parser's grammar errors in unchecked files (tsc's
-    // checker's, a skipLibCheck declaration file's), before anyone reports them)
+    program_collect_files(me);
+    // (The parse errors of referenced projects' files and of what isn't in the program, and the parser's grammar errors
+    // in unchecked files (tsc's checker's, a skipLibCheck declaration file's), before anyone reports them)
     error_ctx_remove_unchecked(my errs);
 }
 
@@ -3414,6 +3460,7 @@ static void program_mark_init_resolved_imports(Program* me) {
 
 void program_resolve_names(Program* me) {
     program_report_content_mapper_options(me);
+    program_collect_files(me);
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
     // Loading is over: what the pool parsed for nothing goes
     if (!my pool && getenv("TTTT_LOAD_POOL_STATS")) eprintln("load: no pool, the loader read and parsed for ", my loader_parse_ms, " ms");
@@ -4679,10 +4726,6 @@ void program_typecheck(Program* me) {
     clear_compiler_options();
     my errs->phase = ERROR_PHASE_UNKOWN;
     CHANGE_PHASE(PROGRAM_PHASE_TYPECHECKING, PROGRAM_PHASE_TYPECHECKED);
-}
-
-intptr_t program_get_file_count(Program const* me) {
-    return hmap_box_source_file_size(&my source_files_map);
 }
 
 // tsc's importSyntaxAffectsModuleResolution

@@ -1547,29 +1547,6 @@ static cstr absolute_containing_dir(ModuleResolver* me, csview containing_file) 
     return ret;
 }
 
-// The package id a resolution through the package's own `exports` would give a file outside node_modules (tsc's
-// getPackageId of the nearest enclosing package.json with a name: a package importing itself by name). Empty if none
-cstr module_resolver_source_package_id(ModuleResolver* me, csview path) {
-    cstr absolute = absolute_path_fast(cstr_sv(&my cwd), path);
-    cstr ret = cstr_null;
-    if (csview_find_sv(cstr_sv(&absolute), c_sv("/node_modules/")) == c_NPOS) {
-        State state = state_make(me, RESOLUTION_MODE_COMMONJS);
-        for (csview dir = parent_of(cstr_sv(&absolute)), up; dir.size > 1; dir = up) {
-            PackageJson const* package = package_json_of(&state, dir);
-            if (package && json_get_string(&package->json, "name").size) {
-                cstr name = cstr_null;
-                ret = package_id_of(&state, cstr_sv(&absolute), dir, &name);
-                cstr_drop(&name);
-                break;
-            }
-            up = parent_of(dir);
-            if (up.size >= dir.size) break;
-        }
-    }
-    cstr_drop(&absolute);
-    return ret;
-}
-
 // module_resolver_resolve()'s cache key: the containing directory (absolute), a line break (no path has one), the mode
 // and the specifier. Built in place for the usual normalized containing file
 static cstr resolution_key(ModuleResolver* me, csview containing_file, ResolutionMode mode, csview specifier) {

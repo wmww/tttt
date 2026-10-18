@@ -192,4 +192,3 @@ struct Checker* program_checker_of(Program const* me, SourceFile const* file);
 struct Symbol const* program_get_global(Program const* me, csview name, u32 meaning);
 
 // Returns the number of source files loaded or imported
-intptr_t program_get_file_count(Program const* me);

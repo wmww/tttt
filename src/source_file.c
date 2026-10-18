@@ -160,6 +160,8 @@ void source_file_drop(SourceFile* me) {
     source_file_unregister(me);
     for (u32 i = 0; i < my include_reason_count; i++) cstr_drop(&my include_reasons[i].package_id);
     free(my include_reasons);
+    cstr_drop(&my package_id);
+    free(my load_children);
     cstr_drop(&my canonical_path);
     if (my text_mapping) source_text_unmap(my text_mapping);
     else cstr_drop(&my contents);

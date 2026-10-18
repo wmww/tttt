@@ -204,9 +204,21 @@ typedef struct SourceFile {
     // `// @ts-check`, any file with `// @ts-nocheck`
     bool unchecked;
     // A second copy of a package (same name and version) whose imports mean the first: tsc's redirect source file has
-    // the first copy's AST, so nothing in this one's text is reported (not even parse errors)
+    // the first copy's AST, so nothing in this one's text is reported (not even parse errors), nor bound
     bool package_redirect;
+    // Loaded, but not one of the program's files (program_collect_files()): a redirect, or a file only reached through
+    // a redirect's imports (tsgo's collectFiles never visits it). Still findable by path, a redirect as itself
+    bool excluded;
     struct SourceFile* package_redirect_target; // The first copy, what an augmentation of this one augments
+    // The package id of the first import (a TypeScript resolution) that reached the file, the id tsgo's parse task data
+    // gets; empty if none had one. What program_collect_files() deduplicates by
+    cstr package_id;
+    // Every file the loader reached from this one (imports, references, type references, libraries...), in the order
+    // it did, repeats included: tsgo's parse subtasks, which program_collect_files() walks. malloc'd, freed by it
+    struct SourceFile** load_children;
+    u32 load_child_count;
+    u32 load_child_cap;
+    bool collected; // program_collect_files()'s walk visited it
     // 1 + the index of the referenced project (project.h) the file is a root file of, 0 for the program's own files.
     // Unchecked, and none of its diagnostics are reported (not even parse errors): that project reports them
     u32 from_reference;

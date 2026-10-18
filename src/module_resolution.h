@@ -80,9 +80,6 @@ void module_resolver_set_redirects(ModuleResolver* me, ProjectRedirects const* r
 // never built, through a workspace link: its nearest existing directory is followed), with redirects. Empty if the
 // resolver has no realpath or nothing could be followed
 cstr module_resolver_real_path_lenient(ModuleResolver* me, csview path);
-// The package id a resolution through the package's own `exports` would give a file outside node_modules (tsc's
-// getPackageId of the nearest package.json with a name), empty if none
-cstr module_resolver_source_package_id(ModuleResolver* me, csview path);
 
 // What the reverse direction (module_specifiers.c) asks of the resolver's filesystem view and caches
 // The parsed package.json in directory (absolute), null if there is none. Cached; lives as long as the resolver

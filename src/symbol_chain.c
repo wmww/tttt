@@ -699,7 +699,7 @@ static void container_index_build(ChainCtx* me, Program const* program) {
     u32 key_cap = 0;
     for (u32 i = 0; i < files; i++) {
         SourceFile const* other = program_source_at((Program*)program, i);
-        if (!other->is_module || !other->scope || !other->scope->container || other->package_redirect) continue;
+        if (!other->is_module || !other->scope || !other->scope->container) continue;
         Symbol const* container = other->scope->container;
         u32 at = index->module_count++;
         index->modules[at] = container;

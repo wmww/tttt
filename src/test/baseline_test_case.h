@@ -44,7 +44,7 @@ typedef struct BaselineTestFile {
     // A `// @Filename:` the test repeats later: the later copy is the file, this one is only shown (raw_contents)
     bool superseded;
     // A second copy of a package (same name and version) that isn't in the program: the first copy, which stands in for
-    // it (ModuleRef.redirected_from), is what tsc's walk of it shows
+    // it (SourceFile.package_redirect_target), is what tsc's walk of it shows
     SourceFile const* redirect_to;
     SourceFile const* config_source; // The tsconfig the options come from (program_set_config_file()): its diagnostics
     VecLineNumberedStr symbols;

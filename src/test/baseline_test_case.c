@@ -1268,15 +1268,8 @@ static BaselineTestCase run_baseline_test_case_with(
         }
     }
     // The second copy of a package: walked as the first (BaselineTestFile.redirect_to)
-    for (u32 k = 0, count = program_source_count(program); k < count; k++) {
-        SourceFile const* file = program_source_at(program, k);
-        for (u32 r = 0; r < file->module_ref_count; r++) {
-            ModuleRef const* ref = file->module_refs[r];
-            if (!module_ref_rare(ref)->redirected_from || !ref->file) continue;
-            for_each (i, vec_baseline_test_file, &ret.files) {
-                if (i->source && i->source == module_ref_rare(ref)->redirected_from) i->redirect_to = ref->file;
-            }
-        }
+    for_each (i, vec_baseline_test_file, &ret.files) {
+        if (i->source && i->source->package_redirect) i->redirect_to = i->source->package_redirect_target;
     }
     // A file of the program the test doesn't write, outside the current directory (the other path of a symlink): tsc
     // names it by its absolute path, not relative to /.src
@@ -1329,7 +1322,8 @@ static BaselineTestCase run_baseline_test_case_with(
     // long: tsgo's declarationEmitOversizedCachedType has one of 3^13 properties)
     // (Recycled checkers took the expression types with them: --checker-memory compares diagnostics only)
     for_each (i, vec_baseline_test_file, &ret.files) {
-        if (!i->source || ret.no_types_and_symbols || baseline_test_checker_memory >= 0) continue;
+        // (A redirect isn't bound: shown as what it stands for, BaselineTestFile.redirect_to)
+        if (!i->source || i->source->excluded || ret.no_types_and_symbols || baseline_test_checker_memory >= 0) continue;
         // PERF: perhaps mark the file as "current" so we don't have to look it up
         ret.enclosing = i->source->scope;
         // (Types as the checker that checked the file knows them, whatever the checker count)
