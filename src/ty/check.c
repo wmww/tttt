@@ -290,8 +290,9 @@ static bool elaborate_element(
     // (A literal is checked again with that type as its context, tsc's checkExpressionForMutableLocationWithContext
     // ualType: what a forceTuple re-read made a tuple stays one, `options: [{...}, {...}]`. The literal's own type
     // re-read so, not source_prop, which past a spread of a union of tuples is `E | undefined`)
-    bool literal = item->inner && item->inner->tag == EXPR_OBJECT && !expr_is_perenthisized(item->inner);
-    Ty const* specific = !item->inner ? source_prop : literal ? ty_literal_forcing_tuples(me, item->inner, source_prop) :
+    bool literal = item->inner && (item->inner->tag == EXPR_OBJECT || item->inner->tag == EXPR_ARRAY) &&
+        !expr_is_perenthisized(item->inner);
+    Ty const* specific = !item->inner ? source_prop : literal ? ty_literal_rechecked(me, item->inner, source_prop) :
         ty_mutable_location_type(me, item->inner, source_prop);
     if (specific != source_prop && ((specific->flags & TYF_ANY) ||
         ty_is_related(me, specific, target_prop, TY_RELATION_ASSIGNABLE))

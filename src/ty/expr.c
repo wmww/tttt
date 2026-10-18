@@ -5116,15 +5116,18 @@ Ty const* ty_mutable_location_type(Checker* me, Expr const* expr, Ty const* cont
     return widen_literals(me, type);
 }
 
-// An element or spread operand checked with tsc's forceTuple check mode, which reaches nested array literals and the
-// array literals of a conditional's branches too: `[...(c ? r : [r])]` spreads `R | [r]` (checkConditionalExpression's
-// subtype-reduced union), `[["a", f]]` is `[[string, F]]`
-static Ty const* force_tuple_operand(Checker* me, Expr const* expr, Ty const* contextual, u32 depth);
+// An element or spread operand checked again for an elaboration: with tsc's forceTuple check mode (`force`), which
+// reaches nested array literals and the array literals of a conditional's branches too: `[...(c ? r : [r])]` spreads
+// `R | [r]` (checkConditionalExpression's subtype-reduced union), `[["a", f]]` is `[[string, F]]`; or with only a new
+// contextual type (tsc's CheckModeContextual), where an array literal is a tuple when its context is tuple-like
+static Ty const* recheck_operand(Checker* me, Expr const* expr, Ty const* contextual, bool force, u32 depth);
+static Ty const* array_literal_rechecked(Checker* me, Expr const* expr, Ty const* contextual, bool force, u32 depth);
 
-// An object literal checked with forceTuple: checkObjectLiteral passes the check mode on to its properties' values, so
-// their array literals are tuples (gemini-cli's `options: [{...}, {...}]` in a TS2741 elaboration). The literal's type
-// itself when nothing changes
-static Ty const* object_literal_as_tuples(Checker* me, Expr const* expr, Ty const* contextual, u32 depth) {
+// An object literal checked again: checkObjectLiteral passes the check mode on to its properties' values, so their
+// array literals are tuples with forceTuple (gemini-cli's `options: [{...}, {...}]` in a TS2741 elaboration), and every
+// value is checked for a mutable location against its new context (`value: true` where the context, the source's own
+// `value: boolean`, keeps it `true`). The literal's type itself when nothing changes
+static Ty const* object_literal_rechecked(Checker* me, Expr const* expr, Ty const* contextual, bool force, u32 depth) {
     Ty const* ty = ty_expr_type(me, expr);
     if (ty->kind != TY_ANONYMOUS || !ty->anonymous.object_literal || ty->anonymous.jsx_attributes || depth >= 8) return ty;
     Members const* members = ty_members(me, ty);
@@ -5136,9 +5139,10 @@ static Ty const* object_literal_as_tuples(Checker* me, Expr const* expr, Ty cons
         ObjectExprItem const* item = prop->decl->item;
         if (!item || item->tag != OBJECT_ITEM_PROPERTY || prop->decl->function || !prop->decl->literal_own) continue;
         Expr const* value = &item->value;
-        if (value->tag != EXPR_ARRAY && value->tag != EXPR_TERNARY && value->tag != EXPR_OBJECT) continue;
         Ty const* element_context = contextual ? contextual_named_prop_type(me, contextual, prop->name) : nullptr;
-        Ty const* forced = force_tuple_operand(me, value, element_context, depth + 1);
+        Ty const* forced = value->tag == EXPR_ARRAY || value->tag == EXPR_TERNARY || value->tag == EXPR_OBJECT ?
+            recheck_operand(me, value, element_context, force, depth + 1) :
+            element_context ? ty_mutable_location_type(me, value, element_context) : prop_type(me, prop);
         if (forced == ty_expr_type(me, value) || forced == prop_type(me, prop)) continue;
         changed = true;
         props[i] = (ObjectLiteralProp){
@@ -5169,12 +5173,12 @@ static Ty const* object_literal_as_tuples(Checker* me, Expr const* expr, Ty cons
     return ret;
 }
 
-static Ty const* force_tuple_operand(Checker* me, Expr const* expr, Ty const* contextual, u32 depth) {
-    if (expr->tag == EXPR_ARRAY) return ty_array_literal_as_tuple(me, expr, contextual);
-    if (expr->tag == EXPR_OBJECT) return object_literal_as_tuples(me, expr, contextual, depth);
+static Ty const* recheck_operand(Checker* me, Expr const* expr, Ty const* contextual, bool force, u32 depth) {
+    if (expr->tag == EXPR_ARRAY) return array_literal_rechecked(me, expr, contextual, force, depth);
+    if (expr->tag == EXPR_OBJECT) return object_literal_rechecked(me, expr, contextual, force, depth);
     if (expr->tag == EXPR_TERNARY && depth < 8) {
-        Ty const* yes = force_tuple_operand(me, &expr->ternary->yes, contextual, depth + 1);
-        Ty const* no = force_tuple_operand(me, &expr->ternary->no, contextual, depth + 1);
+        Ty const* yes = recheck_operand(me, &expr->ternary->yes, contextual, force, depth + 1);
+        Ty const* no = recheck_operand(me, &expr->ternary->no, contextual, force, depth + 1);
         if (yes != ty_expr_type(me, &expr->ternary->yes) || no != ty_expr_type(me, &expr->ternary->no)) {
             Ty const* both[2] = { yes, no };
             return ty_union_subtype_reduced(me, both, 2);
@@ -5183,11 +5187,12 @@ static Ty const* force_tuple_operand(Checker* me, Expr const* expr, Ty const* co
     return ty_expr_type(me, expr);
 }
 
-Ty const* ty_literal_forcing_tuples(Checker* me, Expr const* expr, Ty const* contextual) {
-    return force_tuple_operand(me, expr, contextual, 0);
+Ty const* ty_literal_rechecked(Checker* me, Expr const* expr, Ty const* contextual) {
+    return recheck_operand(me, expr, contextual, false, 0);
 }
 
-Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* contextual) {
+static Ty const* array_literal_rechecked(Checker* me, Expr const* expr, Ty const* contextual, bool force, u32 depth) {
+    bool as_tuple = force || context_is_tuple_like(me, contextual, 0);
     u32 len = (u32)vec_expr_size(&expr->array);
     Ty const** elements = malloc(sizeof(Ty const*) * (len ? len : 1));
     unsigned char* flags = calloc(len ? len : 1, 1);
@@ -5195,9 +5200,14 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
     ElementContextArg context_arg = array_element_context_arg(expr);
     for_each (i, vec_expr, &expr->array) {
         if (i->tag == EXPR_SPREAD) {
+            if (!as_tuple) {
+                // (Left as checked: the spread's element type, as check_array() reads it, unchanged)
+                ret = ty_expr_type(me, expr);
+                break;
+            }
             // As check_array() makes a spread element of a tuple. An array literal is a tuple too (tsc passes
             // forceTuple on to the spread expression)
-            Ty const* operand = force_tuple_operand(me, i->spread, nullptr, 0);
+            Ty const* operand = recheck_operand(me, i->spread, nullptr, force, depth + 1);
             flags[i_index] = TUPLE_ELEMENT_REST;
             elements[i_index] = ty_is_array(me, operand) || ty_is_tuple(operand) || is_generic_array_like(me, operand) ||
                 is_union_of_arrays(me, operand) ?
@@ -5207,13 +5217,30 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
         Ty const* element_context = contextual_array_element_type_at(me, contextual, context_arg, (u32)i_index);
         // (tsc's checkExpressionForMutableLocation(e, checkMode) passes forceTuple on)
         Ty const* forced = i->tag == EXPR_ARRAY || i->tag == EXPR_TERNARY || i->tag == EXPR_OBJECT ?
-            force_tuple_operand(me, i, element_context, 0) : nullptr;
+            recheck_operand(me, i, element_context, force, depth + 1) : nullptr;
         elements[i_index] = forced && forced != ty_expr_type(me, i) ? forced : ty_mutable_location_type(me, i, element_context);
     }
-    ret = tuple_of(me, elements, flags, len, false);
+    if (!ret && as_tuple) {
+        ret = tuple_of(me, elements, flags, len, false);
+    } else if (!ret && (depth >= 8 || !len)) {
+        ret = ty_expr_type(me, expr);
+    } else if (!ret) {
+        // (check_array()'s element type: subtype-reduced, without strictNullChecks null and undefined left out)
+        bool strict = compiler_options()->strict_null_checks;
+        u32 kept = 0;
+        for (u32 i = 0; i < len; i++) {
+            if (!strict && (elements[i]->flags & TYF_NULLABLE)) continue;
+            elements[kept++] = elements[i];
+        }
+        ret = kept ? ty_array(me, ty_union_subtype_reduced(me, elements, kept), false) : ty_expr_type(me, expr);
+    }
     free(elements);
     free(flags);
     return ret;
+}
+
+Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* contextual) {
+    return array_literal_rechecked(me, expr, contextual, true, 0);
 }
 
 // The rest

@@ -1,0 +1,97 @@
+//// [test/cases/ttttElaborationRecheckLiterals.ts] ////
+
+=== ttttElaborationRecheckLiterals.ts ===
+// An elaborated property's type is its literal checked again with the source's own type as its context (tsc's
+// checkExpressionForMutableLocationWithContextualType): `value: true` stays `true` where the source says `boolean`, and
+// an array literal is a tuple only where that context is one (inbox-zero's eval scenarios)
+type C = { path: string; value: unknown };
+>C : Symbol(C, Decl(ttttElaborationRecheckLiterals.ts, 0, 0))
+>path : Symbol(path, Decl(ttttElaborationRecheckLiterals.ts, 3, 10))
+>value : Symbol(value, Decl(ttttElaborationRecheckLiterals.ts, 3, 24))
+
+type E =
+>E : Symbol(E, Decl(ttttElaborationRecheckLiterals.ts, 3, 42))
+
+  | { kind: "a"; changes: C[]; forbidden: string[] }
+>kind : Symbol(kind, Decl(ttttElaborationRecheckLiterals.ts, 5, 5))
+>changes : Symbol(changes, Decl(ttttElaborationRecheckLiterals.ts, 5, 16))
+>C : Symbol(C, Decl(ttttElaborationRecheckLiterals.ts, 0, 0))
+>forbidden : Symbol(forbidden, Decl(ttttElaborationRecheckLiterals.ts, 5, 30))
+
+  | { kind: "b"; x: number };
+>kind : Symbol(kind, Decl(ttttElaborationRecheckLiterals.ts, 6, 5))
+>x : Symbol(x, Decl(ttttElaborationRecheckLiterals.ts, 6, 16))
+
+type S = { id: string; expectation: E };
+>S : Symbol(S, Decl(ttttElaborationRecheckLiterals.ts, 6, 29))
+>id : Symbol(id, Decl(ttttElaborationRecheckLiterals.ts, 7, 10))
+>expectation : Symbol(expectation, Decl(ttttElaborationRecheckLiterals.ts, 7, 22))
+>E : Symbol(E, Decl(ttttElaborationRecheckLiterals.ts, 3, 42))
+
+const e: E = { kind: "a", changes: [{ path: "p", value: true }] };
+>e : Symbol(e, Decl(ttttElaborationRecheckLiterals.ts, 8, 5))
+>E : Symbol(E, Decl(ttttElaborationRecheckLiterals.ts, 3, 42))
+>kind : Symbol(kind, Decl(ttttElaborationRecheckLiterals.ts, 8, 14))
+>changes : Symbol(changes, Decl(ttttElaborationRecheckLiterals.ts, 8, 25))
+>path : Symbol(path, Decl(ttttElaborationRecheckLiterals.ts, 8, 37))
+>value : Symbol(value, Decl(ttttElaborationRecheckLiterals.ts, 8, 48))
+
+const xs: S[] = [{ id: "x", expectation: { kind: "a", changes: [{ path: "p", value: true }] } }];
+>xs : Symbol(xs, Decl(ttttElaborationRecheckLiterals.ts, 9, 5))
+>S : Symbol(S, Decl(ttttElaborationRecheckLiterals.ts, 6, 29))
+>id : Symbol(id, Decl(ttttElaborationRecheckLiterals.ts, 9, 18))
+>expectation : Symbol(expectation, Decl(ttttElaborationRecheckLiterals.ts, 9, 27))
+>kind : Symbol(kind, Decl(ttttElaborationRecheckLiterals.ts, 9, 42))
+>changes : Symbol(changes, Decl(ttttElaborationRecheckLiterals.ts, 9, 53))
+>path : Symbol(path, Decl(ttttElaborationRecheckLiterals.ts, 9, 65))
+>value : Symbol(value, Decl(ttttElaborationRecheckLiterals.ts, 9, 76))
+
+const ys: S = { id: "x", expectation: { kind: "a", changes: [{ path: "p", value: true }] } };
+>ys : Symbol(ys, Decl(ttttElaborationRecheckLiterals.ts, 10, 5))
+>S : Symbol(S, Decl(ttttElaborationRecheckLiterals.ts, 6, 29))
+>id : Symbol(id, Decl(ttttElaborationRecheckLiterals.ts, 10, 15))
+>expectation : Symbol(expectation, Decl(ttttElaborationRecheckLiterals.ts, 10, 24))
+>kind : Symbol(kind, Decl(ttttElaborationRecheckLiterals.ts, 10, 39))
+>changes : Symbol(changes, Decl(ttttElaborationRecheckLiterals.ts, 10, 50))
+>path : Symbol(path, Decl(ttttElaborationRecheckLiterals.ts, 10, 62))
+>value : Symbol(value, Decl(ttttElaborationRecheckLiterals.ts, 10, 73))
+
+const zs: E[] = [{ kind: "a", changes: [{ path: "p", value: true }] }];
+>zs : Symbol(zs, Decl(ttttElaborationRecheckLiterals.ts, 11, 5))
+>E : Symbol(E, Decl(ttttElaborationRecheckLiterals.ts, 3, 42))
+>kind : Symbol(kind, Decl(ttttElaborationRecheckLiterals.ts, 11, 18))
+>changes : Symbol(changes, Decl(ttttElaborationRecheckLiterals.ts, 11, 29))
+>path : Symbol(path, Decl(ttttElaborationRecheckLiterals.ts, 11, 41))
+>value : Symbol(value, Decl(ttttElaborationRecheckLiterals.ts, 11, 52))
+
+type C2 = { path: string; value: string|number };
+>C2 : Symbol(C2, Decl(ttttElaborationRecheckLiterals.ts, 11, 71))
+>path : Symbol(path, Decl(ttttElaborationRecheckLiterals.ts, 12, 11))
+>value : Symbol(value, Decl(ttttElaborationRecheckLiterals.ts, 12, 25))
+
+const ws: { e: { kind: "a"; changes: C2[]; forbidden: string[] } }[] = [{ e: { kind: "a", changes: [{ path: "p", value: true }] } }];
+>ws : Symbol(ws, Decl(ttttElaborationRecheckLiterals.ts, 13, 5))
+>e : Symbol(e, Decl(ttttElaborationRecheckLiterals.ts, 13, 11))
+>kind : Symbol(kind, Decl(ttttElaborationRecheckLiterals.ts, 13, 16))
+>changes : Symbol(changes, Decl(ttttElaborationRecheckLiterals.ts, 13, 27))
+>C2 : Symbol(C2, Decl(ttttElaborationRecheckLiterals.ts, 11, 71))
+>forbidden : Symbol(forbidden, Decl(ttttElaborationRecheckLiterals.ts, 13, 42))
+>e : Symbol(e, Decl(ttttElaborationRecheckLiterals.ts, 13, 73))
+>kind : Symbol(kind, Decl(ttttElaborationRecheckLiterals.ts, 13, 78))
+>changes : Symbol(changes, Decl(ttttElaborationRecheckLiterals.ts, 13, 89))
+>path : Symbol(path, Decl(ttttElaborationRecheckLiterals.ts, 13, 101))
+>value : Symbol(value, Decl(ttttElaborationRecheckLiterals.ts, 13, 112))
+
+const vs: { e: { kind: "a"; changes: C[]; forbidden: string[] } }[] = [{ e: { kind: "a", changes: [{ path: "p", value: true }] } }];
+>vs : Symbol(vs, Decl(ttttElaborationRecheckLiterals.ts, 14, 5))
+>e : Symbol(e, Decl(ttttElaborationRecheckLiterals.ts, 14, 11))
+>kind : Symbol(kind, Decl(ttttElaborationRecheckLiterals.ts, 14, 16))
+>changes : Symbol(changes, Decl(ttttElaborationRecheckLiterals.ts, 14, 27))
+>C : Symbol(C, Decl(ttttElaborationRecheckLiterals.ts, 0, 0))
+>forbidden : Symbol(forbidden, Decl(ttttElaborationRecheckLiterals.ts, 14, 41))
+>e : Symbol(e, Decl(ttttElaborationRecheckLiterals.ts, 14, 72))
+>kind : Symbol(kind, Decl(ttttElaborationRecheckLiterals.ts, 14, 77))
+>changes : Symbol(changes, Decl(ttttElaborationRecheckLiterals.ts, 14, 88))
+>path : Symbol(path, Decl(ttttElaborationRecheckLiterals.ts, 14, 100))
+>value : Symbol(value, Decl(ttttElaborationRecheckLiterals.ts, 14, 111))
+

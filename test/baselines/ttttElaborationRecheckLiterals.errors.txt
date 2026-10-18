@@ -1,0 +1,54 @@
+ttttElaborationRecheckLiterals.ts(9,7): error TS2322: Type '{ kind: "a"; changes: { path: string; value: boolean; }[]; }' is not assignable to type 'E'.
+  Property 'forbidden' is missing in type '{ kind: "a"; changes: { path: string; value: boolean; }[]; }' but required in type '{ kind: "a"; changes: C[]; forbidden: string[]; }'.
+ttttElaborationRecheckLiterals.ts(10,29): error TS2322: Type '{ kind: "a"; changes: [{ path: string; value: true; }]; }' is not assignable to type 'E'.
+  Property 'forbidden' is missing in type '{ kind: "a"; changes: [{ path: string; value: true; }]; }' but required in type '{ kind: "a"; changes: C[]; forbidden: string[]; }'.
+ttttElaborationRecheckLiterals.ts(11,26): error TS2322: Type '{ kind: "a"; changes: { path: string; value: true; }[]; }' is not assignable to type 'E'.
+  Property 'forbidden' is missing in type '{ kind: "a"; changes: { path: string; value: true; }[]; }' but required in type '{ kind: "a"; changes: C[]; forbidden: string[]; }'.
+ttttElaborationRecheckLiterals.ts(12,18): error TS2322: Type '{ kind: "a"; changes: [{ path: string; value: true; }]; }' is not assignable to type 'E'.
+  Property 'forbidden' is missing in type '{ kind: "a"; changes: [{ path: string; value: true; }]; }' but required in type '{ kind: "a"; changes: C[]; forbidden: string[]; }'.
+ttttElaborationRecheckLiterals.ts(14,114): error TS2322: Type 'boolean' is not assignable to type 'string | number'.
+ttttElaborationRecheckLiterals.ts(15,74): error TS2741: Property 'forbidden' is missing in type '{ kind: "a"; changes: [{ path: string; value: true; }]; }' but required in type '{ kind: "a"; changes: C[]; forbidden: string[]; }'.
+
+
+==== ttttElaborationRecheckLiterals.ts (6 errors) ====
+    // An elaborated property's type is its literal checked again with the source's own type as its context (tsc's
+    // checkExpressionForMutableLocationWithContextualType): `value: true` stays `true` where the source says `boolean`, and
+    // an array literal is a tuple only where that context is one (inbox-zero's eval scenarios)
+    type C = { path: string; value: unknown };
+    type E =
+      | { kind: "a"; changes: C[]; forbidden: string[] }
+      | { kind: "b"; x: number };
+    type S = { id: string; expectation: E };
+    const e: E = { kind: "a", changes: [{ path: "p", value: true }] };
+          ~
+!!! error TS2322: Type '{ kind: "a"; changes: { path: string; value: boolean; }[]; }' is not assignable to type 'E'.
+!!! error TS2322:   Property 'forbidden' is missing in type '{ kind: "a"; changes: { path: string; value: boolean; }[]; }' but required in type '{ kind: "a"; changes: C[]; forbidden: string[]; }'.
+!!! related TS2728 ttttElaborationRecheckLiterals.ts:6:32: 'forbidden' is declared here.
+    const xs: S[] = [{ id: "x", expectation: { kind: "a", changes: [{ path: "p", value: true }] } }];
+                                ~~~~~~~~~~~
+!!! error TS2322: Type '{ kind: "a"; changes: [{ path: string; value: true; }]; }' is not assignable to type 'E'.
+!!! error TS2322:   Property 'forbidden' is missing in type '{ kind: "a"; changes: [{ path: string; value: true; }]; }' but required in type '{ kind: "a"; changes: C[]; forbidden: string[]; }'.
+!!! related TS2728 ttttElaborationRecheckLiterals.ts:6:32: 'forbidden' is declared here.
+!!! related TS6500 ttttElaborationRecheckLiterals.ts:8:24: The expected type comes from property 'expectation' which is declared here on type 'S'
+    const ys: S = { id: "x", expectation: { kind: "a", changes: [{ path: "p", value: true }] } };
+                             ~~~~~~~~~~~
+!!! error TS2322: Type '{ kind: "a"; changes: { path: string; value: true; }[]; }' is not assignable to type 'E'.
+!!! error TS2322:   Property 'forbidden' is missing in type '{ kind: "a"; changes: { path: string; value: true; }[]; }' but required in type '{ kind: "a"; changes: C[]; forbidden: string[]; }'.
+!!! related TS2728 ttttElaborationRecheckLiterals.ts:6:32: 'forbidden' is declared here.
+!!! related TS6500 ttttElaborationRecheckLiterals.ts:8:24: The expected type comes from property 'expectation' which is declared here on type 'S'
+    const zs: E[] = [{ kind: "a", changes: [{ path: "p", value: true }] }];
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ kind: "a"; changes: [{ path: string; value: true; }]; }' is not assignable to type 'E'.
+!!! error TS2322:   Property 'forbidden' is missing in type '{ kind: "a"; changes: [{ path: string; value: true; }]; }' but required in type '{ kind: "a"; changes: C[]; forbidden: string[]; }'.
+!!! related TS2728 ttttElaborationRecheckLiterals.ts:6:32: 'forbidden' is declared here.
+    type C2 = { path: string; value: string|number };
+    const ws: { e: { kind: "a"; changes: C2[]; forbidden: string[] } }[] = [{ e: { kind: "a", changes: [{ path: "p", value: true }] } }];
+                                                                                                                     ~~~~~
+!!! error TS2322: Type 'boolean' is not assignable to type 'string | number'.
+!!! related TS6500 ttttElaborationRecheckLiterals.ts:13:27: The expected type comes from property 'value' which is declared here on type 'C2'
+    const vs: { e: { kind: "a"; changes: C[]; forbidden: string[] } }[] = [{ e: { kind: "a", changes: [{ path: "p", value: true }] } }];
+                                                                             ~
+!!! error TS2741: Property 'forbidden' is missing in type '{ kind: "a"; changes: [{ path: string; value: true; }]; }' but required in type '{ kind: "a"; changes: C[]; forbidden: string[]; }'.
+!!! related TS2728 ttttElaborationRecheckLiterals.ts:15:43: 'forbidden' is declared here.
+!!! related TS6500 ttttElaborationRecheckLiterals.ts:15:13: The expected type comes from property 'e' which is declared here on type '{ e: { kind: "a"; changes: C[]; forbidden: string[]; }; }'
+    

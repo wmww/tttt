@@ -824,6 +824,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttElaborationRecheckLiterals': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttEmptyInstantiationExpression': {
         errors: true,
         symbols: true,

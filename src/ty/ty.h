@@ -1908,8 +1908,9 @@ Ty const* ty_contextual_signature_type_at(Checker* me, Signature const* sig, u32
 // An array literal re-read as a tuple of its elements (tsc's checkArrayLiteral with forceTuple), from the elements'
 // memos
 Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* contextual);
-// An object or array literal's type as tsc's forceTuple check mode reads it (nested array literals tuples)
-Ty const* ty_literal_forcing_tuples(Checker* me, Expr const* expr, Ty const* contextual);
+// An object or array literal's type checked again with a new contextual type (tsc's checkExpressionForMutableLocationWith
+// ContextualType): its literals kept where the context has them, its array literals tuples where the context is one
+Ty const* ty_literal_rechecked(Checker* me, Expr const* expr, Ty const* contextual);
 Ty const* ty_element_index_type(Checker* me, Expr const* index); // `index` of `x[index]`
 Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access); // What `x.y`/`x[y]` looks up (`#y`: the class's)
 Ty const* ty_compute_expr_without_context(Checker* me, Expr const* expr); // Only for the LazyType of an Expr

@@ -1,0 +1,135 @@
+//// [test/cases/ttttElaborationRecheckLiterals.ts] ////
+
+=== ttttElaborationRecheckLiterals.ts ===
+// An elaborated property's type is its literal checked again with the source's own type as its context (tsc's
+// checkExpressionForMutableLocationWithContextualType): `value: true` stays `true` where the source says `boolean`, and
+// an array literal is a tuple only where that context is one (inbox-zero's eval scenarios)
+type C = { path: string; value: unknown };
+>C : C
+>path : string
+>value : unknown
+
+type E =
+>E : E
+
+  | { kind: "a"; changes: C[]; forbidden: string[] }
+>kind : "a"
+>changes : C[]
+>forbidden : string[]
+
+  | { kind: "b"; x: number };
+>kind : "b"
+>x : number
+
+type S = { id: string; expectation: E };
+>S : S
+>id : string
+>expectation : E
+
+const e: E = { kind: "a", changes: [{ path: "p", value: true }] };
+>e : E
+>{ kind: "a", changes: [{ path: "p", value: true }] } : { kind: "a"; changes: { path: string; value: boolean; }[]; }
+>kind : "a"
+>"a" : "a"
+>changes : { path: string; value: boolean; }[]
+>[{ path: "p", value: true }] : { path: string; value: boolean; }[]
+>{ path: "p", value: true } : { path: string; value: boolean; }
+>path : string
+>"p" : "p"
+>value : boolean
+>true : true
+
+const xs: S[] = [{ id: "x", expectation: { kind: "a", changes: [{ path: "p", value: true }] } }];
+>xs : S[]
+>[{ id: "x", expectation: { kind: "a", changes: [{ path: "p", value: true }] } }] : { id: string; expectation: { kind: "a"; changes: { path: string; value: boolean; }[]; }; }[]
+>{ id: "x", expectation: { kind: "a", changes: [{ path: "p", value: true }] } } : { id: string; expectation: { kind: "a"; changes: { path: string; value: boolean; }[]; }; }
+>id : string
+>"x" : "x"
+>expectation : { kind: "a"; changes: { path: string; value: boolean; }[]; }
+>{ kind: "a", changes: [{ path: "p", value: true }] } : { kind: "a"; changes: { path: string; value: boolean; }[]; }
+>kind : "a"
+>"a" : "a"
+>changes : { path: string; value: boolean; }[]
+>[{ path: "p", value: true }] : { path: string; value: boolean; }[]
+>{ path: "p", value: true } : { path: string; value: boolean; }
+>path : string
+>"p" : "p"
+>value : boolean
+>true : true
+
+const ys: S = { id: "x", expectation: { kind: "a", changes: [{ path: "p", value: true }] } };
+>ys : S
+>{ id: "x", expectation: { kind: "a", changes: [{ path: "p", value: true }] } } : { id: string; expectation: { kind: "a"; changes: { path: string; value: boolean; }[]; }; }
+>id : string
+>"x" : "x"
+>expectation : { kind: "a"; changes: { path: string; value: boolean; }[]; }
+>{ kind: "a", changes: [{ path: "p", value: true }] } : { kind: "a"; changes: { path: string; value: boolean; }[]; }
+>kind : "a"
+>"a" : "a"
+>changes : { path: string; value: boolean; }[]
+>[{ path: "p", value: true }] : { path: string; value: boolean; }[]
+>{ path: "p", value: true } : { path: string; value: boolean; }
+>path : string
+>"p" : "p"
+>value : boolean
+>true : true
+
+const zs: E[] = [{ kind: "a", changes: [{ path: "p", value: true }] }];
+>zs : E[]
+>[{ kind: "a", changes: [{ path: "p", value: true }] }] : { kind: "a"; changes: { path: string; value: boolean; }[]; }[]
+>{ kind: "a", changes: [{ path: "p", value: true }] } : { kind: "a"; changes: { path: string; value: boolean; }[]; }
+>kind : "a"
+>"a" : "a"
+>changes : { path: string; value: boolean; }[]
+>[{ path: "p", value: true }] : { path: string; value: boolean; }[]
+>{ path: "p", value: true } : { path: string; value: boolean; }
+>path : string
+>"p" : "p"
+>value : boolean
+>true : true
+
+type C2 = { path: string; value: string|number };
+>C2 : C2
+>path : string
+>value : string | number
+
+const ws: { e: { kind: "a"; changes: C2[]; forbidden: string[] } }[] = [{ e: { kind: "a", changes: [{ path: "p", value: true }] } }];
+>ws : { e: { kind: "a"; changes: C2[]; forbidden: string[]; }; }[]
+>e : { kind: "a"; changes: C2[]; forbidden: string[]; }
+>kind : "a"
+>changes : C2[]
+>forbidden : string[]
+>[{ e: { kind: "a", changes: [{ path: "p", value: true }] } }] : { e: { kind: "a"; changes: { path: string; value: boolean; }[]; }; }[]
+>{ e: { kind: "a", changes: [{ path: "p", value: true }] } } : { e: { kind: "a"; changes: { path: string; value: boolean; }[]; }; }
+>e : { kind: "a"; changes: { path: string; value: boolean; }[]; }
+>{ kind: "a", changes: [{ path: "p", value: true }] } : { kind: "a"; changes: { path: string; value: boolean; }[]; }
+>kind : "a"
+>"a" : "a"
+>changes : { path: string; value: boolean; }[]
+>[{ path: "p", value: true }] : { path: string; value: boolean; }[]
+>{ path: "p", value: true } : { path: string; value: boolean; }
+>path : string
+>"p" : "p"
+>value : boolean
+>true : true
+
+const vs: { e: { kind: "a"; changes: C[]; forbidden: string[] } }[] = [{ e: { kind: "a", changes: [{ path: "p", value: true }] } }];
+>vs : { e: { kind: "a"; changes: C[]; forbidden: string[]; }; }[]
+>e : { kind: "a"; changes: C[]; forbidden: string[]; }
+>kind : "a"
+>changes : C[]
+>forbidden : string[]
+>[{ e: { kind: "a", changes: [{ path: "p", value: true }] } }] : { e: { kind: "a"; changes: { path: string; value: boolean; }[]; }; }[]
+>{ e: { kind: "a", changes: [{ path: "p", value: true }] } } : { e: { kind: "a"; changes: { path: string; value: boolean; }[]; }; }
+>e : { kind: "a"; changes: { path: string; value: boolean; }[]; }
+>{ kind: "a", changes: [{ path: "p", value: true }] } : { kind: "a"; changes: { path: string; value: boolean; }[]; }
+>kind : "a"
+>"a" : "a"
+>changes : { path: string; value: boolean; }[]
+>[{ path: "p", value: true }] : { path: string; value: boolean; }[]
+>{ path: "p", value: true } : { path: string; value: boolean; }
+>path : string
+>"p" : "p"
+>value : boolean
+>true : true
+
