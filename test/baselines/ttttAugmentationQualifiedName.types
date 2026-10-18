@@ -1,0 +1,64 @@
+//// [test/cases/ttttAugmentationQualifiedName.ts] ////
+
+=== /node_modules/react/index.d.ts ===
+export = React;
+>React : any
+
+export as namespace React;
+>React : any
+
+declare namespace React {
+    interface Props { children?: React.Node; }
+>children : any
+>React : any
+
+    type Node = string;
+>Node : string
+}
+=== /a.ts ===
+export interface A { x: number }
+>x : number
+
+=== /b.ts ===
+import type * as React from "react";
+>React : any
+
+import { A } from "./a";
+>A : any
+
+declare module "react" {
+>"react" : any
+
+    namespace React {
+        interface Extra { a: string }
+>a : string
+    }
+}
+declare module "./a" {
+>"./a" : typeof import("./a")
+
+    namespace N { interface I {} }
+}
+declare global {
+>global : any
+
+    namespace G { interface I {} }
+}
+export type T1 = import("./a").N.Missing;
+>T1 : any
+>N : any
+
+export type T2 = G.Missing;
+>T2 : G.Missing
+>G : any
+
+declare namespace Local { }
+export type T3 = Local.Missing;
+>T3 : Local.Missing
+>Local : any
+
+export const x: React.Props = {};
+>x : React.Props
+>React : any
+>{} : {}
+

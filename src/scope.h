@@ -296,6 +296,10 @@ typedef struct SymbolRare {
     struct Symbol* export_equals_clone;
     struct Symbol* clone_of_import;
     struct Symbol* clone_source;
+    // A name only a module augmentation (or `declare global`) declares: its own container's name (`"./a"`, `global`),
+    // which tsc's getFullyQualifiedName prints (symbol.parent stays the augmentation's symbol, mergeSymbolTable only
+    // reparents what it merged). Its parent here is the module it was merged into
+    csview augmentation_name;
 } SymbolRare;
 
 // PERF: ~80k of them on nest/webpack: keep it small (what few symbols have goes to SymbolRare)

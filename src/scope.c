@@ -1506,6 +1506,10 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     } else if (!merged) {
         // Like in tsc only exports have a parent: a local of a namespace is just `x`, not `N.x`
         if (scope->container && table == scope->container->exports) symbol->parent = scope->container;
+        // (A global only `declare global` declares: its parent is the augmentation's symbol `global` in tsc)
+        if (scope->kind == SCOPE_GLOBAL_AUGMENTATION && table == &scope->binder->globals) {
+            symbol_rare_mut(symbol)->augmentation_name = c_sv("global");
+        }
         symbol->name_span = props.name;
         symbol->exported = props.exported;
         // (Not a conflict's symbol of its own, which isn't in the locals: tsc's unused check never sees it)
@@ -3057,6 +3061,8 @@ cstr symbol_fully_qualified_name(Symbol const* me) {
     // (`import * as ns`'s own namespace symbol, see make_gather_target(), is the module in tsc)
     Symbol const* gathered = symbol_rare(me)->gather_module;
     if (gathered && gathered->is_module && gathered->module) return module_name_for_error(gathered, nullptr, false);
+    csview augmentation = symbol_rare(me)->augmentation_name;
+    if (augmentation.size) return cstr_d(augmentation, ".", my name);
     if (!my parent || (my parent->is_module && !my parent->module)) return cstr_from_sv(my name);
     // (A module's local isn't a member of it: tsc's symbol.parent is only set for exports)
     if (my parent->is_module && my parent->exports && !my is_default_export && !csview_equals(my name, "export=") &&
@@ -3983,6 +3989,7 @@ static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbo
         if (owner->is_module && owner->module->resolved_exports_state == ALIAS_DONE) {
             symbol_table_insert(owner->module->resolved_exports, binder_arena(binder), name, hash, source);
         }
+        if (source->parent && source->parent->is_augmentation) symbol_rare_mut(source)->augmentation_name = source->parent->name;
         source->parent = owner;
         return;
     }

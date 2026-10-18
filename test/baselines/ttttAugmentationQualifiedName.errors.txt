@@ -1,0 +1,43 @@
+/b.ts(14,34): error TS2694: Namespace '"./a".N' has no exported member 'Missing'.
+/b.ts(15,20): error TS2694: Namespace 'global.G' has no exported member 'Missing'.
+/b.ts(17,24): error TS2694: Namespace 'Local' has no exported member 'Missing'.
+/node_modules/react/index.d.ts(4,40): error TS2694: Namespace '"react".React' has no exported member 'Node'.
+
+
+==== /node_modules/react/index.d.ts (1 errors) ====
+    export = React;
+    export as namespace React;
+    declare namespace React {
+        interface Props { children?: React.Node; }
+                                           ~~~~
+!!! error TS2694: Namespace '"react".React' has no exported member 'Node'.
+        type Node = string;
+    }
+==== /a.ts (0 errors) ====
+    export interface A { x: number }
+==== /b.ts (3 errors) ====
+    import type * as React from "react";
+    import { A } from "./a";
+    declare module "react" {
+        namespace React {
+            interface Extra { a: string }
+        }
+    }
+    declare module "./a" {
+        namespace N { interface I {} }
+    }
+    declare global {
+        namespace G { interface I {} }
+    }
+    export type T1 = import("./a").N.Missing;
+                                     ~~~~~~~
+!!! error TS2694: Namespace '"./a".N' has no exported member 'Missing'.
+    export type T2 = G.Missing;
+                       ~~~~~~~
+!!! error TS2694: Namespace 'global.G' has no exported member 'Missing'.
+    declare namespace Local { }
+    export type T3 = Local.Missing;
+                           ~~~~~~~
+!!! error TS2694: Namespace 'Local' has no exported member 'Missing'.
+    export const x: React.Props = {};
+    

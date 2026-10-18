@@ -44,6 +44,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttAugmentationQualifiedName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAutoAccessorModifiers': {
         errors: true,
         symbols: true,
