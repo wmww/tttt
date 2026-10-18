@@ -1,0 +1,82 @@
+//// [test/cases/ttttDeclarationBuilderListComments.ts] ////
+
+=== a.ts ===
+type M<T> = { t: T };
+>M : M<T>
+>t : T
+
+export type N = { n: 1 };
+>N : N
+>n : 1
+
+class P {}
+>P : P
+
+export default (S: typeof P) => class X extends S {
+>(S: typeof P) => class X extends S {    a<T extends string>(e: T): /*?A<T>*/ M<T> | undefined { return undefined; }    b<T extends string>(e: T): /*B<T>*/ M<T> { return null!; }    c(e: /*P1*/ M<string> | /*P2*/ undefined, f: /*I1*/ N & /*I2*/ { x: 1 }): void {}    d(e: M<string> /*T1*/ | undefined /*T2*/): /*R*/ Array</*E*/ string | /*U*/ number> { return []; }    f: /*C*/ string | number = 1;} : (S: typeof P) => typeof X
+>S : typeof P
+>P : typeof P
+>class X extends S {    a<T extends string>(e: T): /*?A<T>*/ M<T> | undefined { return undefined; }    b<T extends string>(e: T): /*B<T>*/ M<T> { return null!; }    c(e: /*P1*/ M<string> | /*P2*/ undefined, f: /*I1*/ N & /*I2*/ { x: 1 }): void {}    d(e: M<string> /*T1*/ | undefined /*T2*/): /*R*/ Array</*E*/ string | /*U*/ number> { return []; }    f: /*C*/ string | number = 1;} : typeof X
+>X : typeof X
+>S : P
+
+    a<T extends string>(e: T): /*?A<T>*/ M<T> | undefined { return undefined; }
+>a : <T extends string>(e: T) => M<T> | undefined
+>e : T
+>undefined : undefined
+
+    b<T extends string>(e: T): /*B<T>*/ M<T> { return null!; }
+>b : <T extends string>(e: T) => M<T>
+>e : T
+>null! : never
+
+    c(e: /*P1*/ M<string> | /*P2*/ undefined, f: /*I1*/ N & /*I2*/ { x: 1 }): void {}
+>c : (e: M<string> | undefined, f: N & { x: 1; }) => void
+>e : M<string> | undefined
+>f : N & { x: 1; }
+>x : 1
+
+    d(e: M<string> /*T1*/ | undefined /*T2*/): /*R*/ Array</*E*/ string | /*U*/ number> { return []; }
+>d : (e: M<string> | undefined) => Array<string | number>
+>e : M<string> | undefined
+>[] : never[]
+
+    f: /*C*/ string | number = 1;
+>f : string | number
+>1 : 1
+
+};
+export class Y {
+>Y : Y
+
+    a(e: /*P1*/ M<string> | /*P2*/ undefined): /*R*/ Array</*E*/ string | /*U*/ number> { return []; }
+>a : (e: M<string> | undefined) => Array<string | number>
+>e : M<string> | undefined
+>[] : never[]
+}
+=== b.ts ===
+import { Q } from "./c";
+>Q : typeof Q
+
+export const q = new Q().a;
+>q : (e: import("./c").N | undefined, f: string | undefined) => import("./c").N | undefined
+>new Q().a : (e: import("./c").N | undefined, f: string | undefined) => import("./c").N | undefined
+>new Q() : Q
+>Q : typeof Q
+>a : (e: import("./c").N | undefined, f: string | undefined) => import("./c").N | undefined
+
+=== c.ts ===
+export type N = { n: 1 };
+>N : N
+>n : 1
+
+export class Q {
+>Q : Q
+
+    a(e: /*P1*/ N | /*P2*/ undefined, f: /*S*/ string | /*U*/ undefined): /*R*/ N | undefined { return undefined; }
+>a : (e: N | undefined, f: string | undefined) => N | undefined
+>e : N | undefined
+>f : string | undefined
+>undefined : undefined
+}
+

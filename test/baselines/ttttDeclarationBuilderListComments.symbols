@@ -1,0 +1,93 @@
+//// [test/cases/ttttDeclarationBuilderListComments.ts] ////
+
+=== a.ts ===
+type M<T> = { t: T };
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>t : Symbol(t, Decl(a.ts, 0, 13))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+
+export type N = { n: 1 };
+>N : Symbol(N, Decl(a.ts, 0, 21))
+>n : Symbol(n, Decl(a.ts, 1, 17))
+
+class P {}
+>P : Symbol(P, Decl(a.ts, 1, 25))
+
+export default (S: typeof P) => class X extends S {
+>S : Symbol(S, Decl(a.ts, 3, 16))
+>P : Symbol(P, Decl(a.ts, 1, 25))
+>X : Symbol(X, Decl(a.ts, 3, 31))
+>S : Symbol(S, Decl(a.ts, 3, 16))
+
+    a<T extends string>(e: T): /*?A<T>*/ M<T> | undefined { return undefined; }
+>a : Symbol(X.a, Decl(a.ts, 3, 51))
+>T : Symbol(T, Decl(a.ts, 4, 6))
+>e : Symbol(e, Decl(a.ts, 4, 24))
+>T : Symbol(T, Decl(a.ts, 4, 6))
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 4, 6))
+>undefined : Symbol(undefined)
+
+    b<T extends string>(e: T): /*B<T>*/ M<T> { return null!; }
+>b : Symbol(X.b, Decl(a.ts, 4, 79))
+>T : Symbol(T, Decl(a.ts, 5, 6))
+>e : Symbol(e, Decl(a.ts, 5, 24))
+>T : Symbol(T, Decl(a.ts, 5, 6))
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 5, 6))
+
+    c(e: /*P1*/ M<string> | /*P2*/ undefined, f: /*I1*/ N & /*I2*/ { x: 1 }): void {}
+>c : Symbol(X.c, Decl(a.ts, 5, 62))
+>e : Symbol(e, Decl(a.ts, 6, 6))
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>f : Symbol(f, Decl(a.ts, 6, 45))
+>N : Symbol(N, Decl(a.ts, 0, 21))
+>x : Symbol(x, Decl(a.ts, 6, 68))
+
+    d(e: M<string> /*T1*/ | undefined /*T2*/): /*R*/ Array</*E*/ string | /*U*/ number> { return []; }
+>d : Symbol(X.d, Decl(a.ts, 6, 85))
+>e : Symbol(e, Decl(a.ts, 7, 6))
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+
+    f: /*C*/ string | number = 1;
+>f : Symbol(X.f, Decl(a.ts, 7, 102))
+
+};
+export class Y {
+>Y : Symbol(Y, Decl(a.ts, 9, 2))
+
+    a(e: /*P1*/ M<string> | /*P2*/ undefined): /*R*/ Array</*E*/ string | /*U*/ number> { return []; }
+>a : Symbol(Y.a, Decl(a.ts, 10, 16))
+>e : Symbol(e, Decl(a.ts, 11, 6))
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+}
+=== b.ts ===
+import { Q } from "./c";
+>Q : Symbol(Q, Decl(b.ts, 0, 8))
+
+export const q = new Q().a;
+>q : Symbol(q, Decl(b.ts, 1, 12))
+>new Q().a : Symbol(Q.a, Decl(c.ts, 1, 16))
+>Q : Symbol(Q, Decl(b.ts, 0, 8))
+>a : Symbol(Q.a, Decl(c.ts, 1, 16))
+
+=== c.ts ===
+export type N = { n: 1 };
+>N : Symbol(N, Decl(c.ts, 0, 0))
+>n : Symbol(n, Decl(c.ts, 0, 17))
+
+export class Q {
+>Q : Symbol(Q, Decl(c.ts, 0, 25))
+
+    a(e: /*P1*/ N | /*P2*/ undefined, f: /*S*/ string | /*U*/ undefined): /*R*/ N | undefined { return undefined; }
+>a : Symbol(Q.a, Decl(c.ts, 1, 16))
+>e : Symbol(e, Decl(c.ts, 2, 6))
+>N : Symbol(N, Decl(c.ts, 0, 0))
+>f : Symbol(f, Decl(c.ts, 2, 37))
+>N : Symbol(N, Decl(c.ts, 0, 0))
+>undefined : Symbol(undefined)
+}
+

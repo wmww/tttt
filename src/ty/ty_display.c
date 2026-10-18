@@ -2762,6 +2762,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
     }
     brace_close(outer);
 }
+static bool node_in_mapped_file(TypeNode const* node, SourceFile const* file);
 
 // Declaration emit: the comments before a reused list element starting at `start`, on the line of the delimiter before
 // it (or of the list's start), unfiltered (the printer's emitListItems' intervening ones)
@@ -2771,15 +2772,25 @@ static void out_intervening_comments(TyDisplay d, char const* start) {
     if (decl_map_last_char(cstr_sv(d.target)) == '\n') out_indent(d);
 }
 
+// (A list the node builder reuses has them too where it's in the file being emitted: tsgo's visitor keeps the members'
+// ranges (setTextRange) and the printer's emitListItems writes the comments at their positions, babel-parser's
+// `/*?N.Placeholder<T>*/ MaybePlaceholder<T> | undefined` of a mixin's class expression)
 static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list, char const* separator) {
     bool first = true;
     TypeNode const* previous = nullptr;
+    bool comments = d.multiline && d.comments && !d.comments->off;
+    if (comments && !d.transformer_node) {
+        // (Only from the file being written: the comments are looked up at the nodes' offsets in its text)
+        for_each (i, vec_type, list) {
+            if (!i->placeholder && !node_in_mapped_file(i, d.comments->file)) comments = false;
+        }
+    }
     for_each (i, vec_type, list) {
         if (i->placeholder) continue;
         if (!first) {
             // (Declaration emit: the comments on the lines between the previous element and the delimiter, unless it
             // ends the list's node: emitListItems' emitLeadingComments(previousSibling.End()))
-            if (d.transformer_node && d.multiline && d.comments && !d.comments->off && previous && !previous->synthesized) {
+            if (comments && previous && !previous->synthesized) {
                 char const* end = decl_map_type_end(previous, d.comments->file);
                 if (end && end != d.comments_container_end) {
                     isize_t before = cstr_size(d.target);
@@ -2791,7 +2802,11 @@ static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list,
         }
         first = false;
         previous = i;
-        if (!i->synthesized && i->pos) out_intervening_comments(d, decl_map_type_start(i, d.comments ? d.comments->file : nullptr));
+        if (comments && !i->synthesized && i->pos) {
+            TyDisplay comments_d = d;
+            comments_d.transformer_node = true;
+            out_intervening_comments(comments_d, decl_map_type_start(i, d.comments->file));
+        }
         // A member that needs parentheses without having them written: JSDoc's `?T`, `T=` of a union or function
         // type, and a union or intersection in a union or intersection (tsc's visitor recreates the list node, and the
         // factory's parenthesizeConstituentTypeOfUnionType/IntersectionType wraps them)

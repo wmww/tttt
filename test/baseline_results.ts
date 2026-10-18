@@ -185,6 +185,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationBuilderListComments': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationCommentsOnce': {
         errors: true,
         symbols: true,
