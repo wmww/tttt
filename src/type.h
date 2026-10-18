@@ -85,13 +85,25 @@ typedef struct UniqueSymbolDecl {
 // The true branches of conditional types a type node is in, innermost first, as tsc's getConditionalFlowTypeOfType
 // walks up to them from the node (up to the enclosing statement), and the templates of mapped types without `as`.
 // Set by the resolve walk (type_lookup_names()), so a node lowers to the same type whoever lowers it: see
-// conditional_flow_type() (lower.c)
+// conditional_flow_type() (lower.c). The outermost may be a Block's (`block`): the node is inside a function body (or a
+// nested block), past which tsc's isTypeParameterPossiblyReferenced takes every type parameter declared outside to be
+// referenced (`block_generics`, the type parameter lists around the body; never null)
+typedef struct Arena Arena;
 typedef struct TypeFlow {
-    struct TernaryType const* ternary; // Null for a mapped type's template
-    struct InterfaceMember const* mapped;
+    struct TernaryType const* ternary; // Null for a mapped type's template and a Block
+    union {
+        struct InterfaceMember const* mapped;
+        struct OuterGenerics const* block_generics;
+    };
     bool covariant; // An even number of parameter positions lie between the true branch and the node
+    bool block;
     struct TypeFlow const* outer;
 } TypeFlow;
+
+// The true branches and mapped type templates around the node (not just a Block's flow)
+static inline bool type_flow_in_branch(TypeFlow const* flow) {
+    return flow && !flow->block;
+}
 
 typedef struct TypeNode {
     enum : uint8_t {
@@ -314,8 +326,9 @@ extern thread_local bool type_lookup_lazy_silent;
 // Parameter positions flip the variance of the true branches around them (TypeNode.flow): call around the walk of a
 // parameter's type, then restore with the result
 TypeFlow const* type_flow_enter_parameter(void);
-// Statements (a function body) end the walk up: none of the true branches around apply inside
-TypeFlow const* type_flow_enter_statements(void);
+// Statements (a function body) end the walk up: none of the true branches around apply inside. `generics`: the type
+// parameter lists around a block body (TypeFlow.block), null for an arrow function's expression body (no Block)
+TypeFlow const* type_flow_enter_statements(struct OuterGenerics const* generics, bool block, Arena* arena);
 TypeFlow const* type_flow_enter_mapped_template(struct InterfaceMember* mapped);
 void type_flow_restore(TypeFlow const* saved);
 // A type literal with index signatures whose members type_typecheck() checks against them (TS2411/TS2413)

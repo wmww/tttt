@@ -1,0 +1,78 @@
+//// [test/cases/ttttBlockTypeParamPossiblyReferenced.ts] ////
+
+=== ttttBlockTypeParamPossiblyReferenced.ts ===
+// tsc's isTypeParameterPossiblyReferenced: walking up from a type node to a type parameter's declaration, a Block on
+// the way makes the parameter possibly referenced, so a type literal in a generic function's block body is instantiated
+// (a new type, its optional properties printed with `| undefined`) even though it mentions no type parameter. An
+// expression body keeps the literal itself (better-auth test-utils' suites)
+const create = <T>(fn: () => T) => { return (h: { g?: () => any }) => 1; };
+>create : Symbol(create, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 4, 5))
+>T : Symbol(T, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 4, 16))
+>fn : Symbol(fn, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 4, 19))
+>T : Symbol(T, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 4, 16))
+>h : Symbol(h, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 4, 45))
+>g : Symbol(g, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 4, 49))
+
+export const x = create(() => 1);
+>x : Symbol(x, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 5, 12))
+>create : Symbol(create, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 4, 5))
+
+const create2 = <T>(fn: () => T) => (h: { g?: () => any }) => 1;
+>create2 : Symbol(create2, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 6, 5))
+>T : Symbol(T, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 6, 17))
+>fn : Symbol(fn, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 6, 20))
+>T : Symbol(T, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 6, 17))
+>h : Symbol(h, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 6, 37))
+>g : Symbol(g, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 6, 41))
+
+export const y = create2(() => 1);
+>y : Symbol(y, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 7, 12))
+>create2 : Symbol(create2, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 6, 5))
+
+function create3<T>(fn: () => T) {
+>create3 : Symbol(create3, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 7, 34))
+>T : Symbol(T, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 8, 17))
+>fn : Symbol(fn, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 8, 20))
+>T : Symbol(T, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 8, 17))
+
+    if (Math.random()) {
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.float16.d.ts, --, --) ... and 1 more)
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+
+        const inner = <U>(u: U) => (h: { g?: () => U; k?: () => void }) => 1;
+>inner : Symbol(inner, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 10, 13))
+>U : Symbol(U, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 10, 23))
+>u : Symbol(u, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 10, 26))
+>U : Symbol(U, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 10, 23))
+>h : Symbol(h, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 10, 36))
+>g : Symbol(g, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 10, 40))
+>U : Symbol(U, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 10, 23))
+>k : Symbol(k, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 10, 53))
+
+        return inner;
+>inner : Symbol(inner, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 10, 13))
+    }
+    return null!;
+}
+export const z = create3(() => "")(1);
+>z : Symbol(z, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 15, 12))
+>create3 : Symbol(create3, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 7, 34))
+
+// Never-reduced all the same: the literals mention nothing
+function reduced<T>() {
+>reduced : Symbol(reduced, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 15, 38))
+>T : Symbol(T, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 17, 17))
+
+    const v: { x: "a" } & { x: "b" } = null!;
+>v : Symbol(v, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 18, 9))
+>x : Symbol(x, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 18, 14))
+>x : Symbol(x, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 18, 27))
+
+    return v;
+>v : Symbol(v, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 18, 9))
+}
+export const w = reduced<number>();
+>w : Symbol(w, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 21, 12))
+>reduced : Symbol(reduced, Decl(ttttBlockTypeParamPossiblyReferenced.ts, 15, 38))
+

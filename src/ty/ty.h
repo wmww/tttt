@@ -384,6 +384,9 @@ struct Ty {
             bool applies_type_args : 1;
             bool realiased : 1; // the same type as `target` + `mapper` by another alias name, see ty_realias()
             bool free_params_unknown : 1;
+            // Uninstantiated only: the node mentions no type parameter, its free_params are the ones around the Block
+            // it is in (tsc's isTypeParameterPossiblyReferenced): instantiated for identity's sake, its members the same
+            bool block_params_only : 1;
             bool object_literal : 1; // Made by an object literal expression (ty_object_literal())
             // OBJECT_LITERAL_REGULAR: TYF_FRESH_OBJECT means it still widens, but it isn't fresh (ty_is_fresh_object())
             bool regular : 1;

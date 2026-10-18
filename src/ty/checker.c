@@ -1438,6 +1438,7 @@ static bool is_known_object_for_reduction(Checker* me, Ty const* ty) {
     // (An instantiation of one, by a mapper whose types have no type variables: the literal instantiated inside a
     // generic signature)
     Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
+    if (root->kind == TY_ANONYMOUS && !root->anonymous.target && root->anonymous.block_params_only) return true;
     if (root->kind != TY_ANONYMOUS || root->anonymous.target || !root->anonymous.free_params_unknown || root->anonymous.free_params.len) return false;
     TyMapper const* mapper = ty->anonymous.target ? ty->anonymous.mapper : nullptr;
     for (u32 i = 0; mapper && i < mapper->len; i++) {

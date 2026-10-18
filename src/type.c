@@ -293,7 +293,7 @@ bool type_literal_has_index_constraints(TypeNode const* me) {
 static thread_local TypeFlow const* current_flow;
 
 static TypeFlow const* flow_flipped(TypeFlow const* flow) {
-    if (!flow) return nullptr;
+    if (!flow || flow->block) return flow;
     return flow->ternary ? &flow->ternary->true_flow[flow->covariant] : &flow->mapped->key.mapped->template_flow[flow->covariant];
 }
 
@@ -311,9 +311,19 @@ TypeFlow const* type_flow_enter_parameter(void) {
     return saved;
 }
 
-TypeFlow const* type_flow_enter_statements(void) {
+TypeFlow const* type_flow_enter_statements(OuterGenerics const* generics, bool block, Arena* arena) {
     TypeFlow const* saved = current_flow;
-    current_flow = nullptr;
+    // (Only a Block's flow can be around a function: functions aren't in types)
+    TypeFlow const* outer_block = current_flow && current_flow->block ? current_flow : nullptr;
+    if (!block || !generics) {
+        current_flow = outer_block;
+    } else if (outer_block && outer_block->block_generics == generics) {
+        current_flow = outer_block;
+    } else {
+        TypeFlow* flow = arena_new(arena, TypeFlow);
+        *flow = (TypeFlow){ .block = true, .block_generics = generics, .covariant = true };
+        current_flow = flow;
+    }
     return saved;
 }
 

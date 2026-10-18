@@ -478,7 +478,8 @@ static DeferredBodies* deferred_bodies_of(SourceFile* file) {
 static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow, FlowBuilder* outer, Scope* function_scope,
     bool is_iife, bool js_constructor_candidate, bool skip_body, ErrorCtx* errs
 ) {
-    TypeFlow const* saved_flow = type_flow_enter_statements();
+    TypeFlow const* saved_flow = type_flow_enter_statements(function_scope->generics, !my expression_body,
+        binder_arena(function_scope->binder));
     if (!skip_body) block_lookup_names_as(function_impl_body(me), function_scope, errs);
     type_flow_restore(saved_flow);
 

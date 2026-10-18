@@ -857,6 +857,9 @@ typedef struct FreeParams {
     // the outer true branches, so a single "last chain" memo would thrash between them)
     struct TernaryType const* flow_done[32];
     u32 flow_done_len;
+    // The type parameter lists around the Block the nodes are in (TypeFlow.block), which tsc's
+    // isTypeParameterPossiblyReferenced takes to be referenced whatever the nodes mention: free_params_add_block()
+    struct OuterGenerics const* block;
 } FreeParams;
 
 static void free_params_bind(FreeParams* out, Ty const* param) {
@@ -881,6 +884,15 @@ static void free_params_add(FreeParams* out, Ty const* param) {
     } else {
         out->params[out->len++] = param;
     }
+}
+
+// The type parameters declared around the Block the walked nodes are in (FreeParams.block): free too, whatever the
+// nodes mention (tsc's isTypeParameterPossiblyReferenced walks up from the node and gives up at a Block). After the
+// walk: none of them is bound in the nodes
+static void free_params_add_block(Checker* me, FreeParams* out) {
+    if (!out->block || out->unknown) return;
+    TyList around = ty_outer_type_params(me, out->block);
+    for (u32 i = 0; i < around.len; i++) free_params_add(out, around.data[i]);
 }
 
 static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* out);
@@ -924,6 +936,10 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
         u32 saved_extends = out->in_extends;
         out->in_extends = 0;
         for (TypeFlow const* flow = node->flow; flow; flow = flow->outer) {
+            if (flow->block) {
+                out->block = flow->block_generics;
+                continue;
+            }
             if (!flow->ternary) continue;
             bool done = false;
             for (u32 i = 0; i < out->flow_done_len && !done; i++) done = out->flow_done[i] == flow->ternary;
@@ -1154,6 +1170,7 @@ bool ty_function_free_params(Checker* me, FunctionImpl const* function, TyList* 
         if (eligible) {
             FreeParams found = {0};
             collect_free_params_of_function(me, function, &found);
+            free_params_add_block(me, &found);
             if (!found.unknown) {
                 u32 kept = 0;
                 for (u32 i = 0; i < found.len; i++) {
@@ -1199,6 +1216,9 @@ static void anonymous_set_free_params(Checker* me, Ty* ty, FreeParams found, Spa
         if (!bound) found.params[kept++] = found.params[i];
     }
     found.len = kept;
+    bool mentions = kept > 0;
+    free_params_add_block(me, &found);
+    ty->anonymous.block_params_only = !found.unknown && !mentions && found.len;
     ty->anonymous.free_params_unknown = found.unknown;
     if (!found.unknown) ty->anonymous.free_params = ty_list_copy(me, found.params, found.len);
     if (found.unknown || found.len) ty->flags |= TYF_COULD_CONTAIN_TYPE_VARIABLES;
@@ -1207,6 +1227,7 @@ static void anonymous_set_free_params(Checker* me, Ty* ty, FreeParams found, Spa
 static TyConditionalOuter* collect_outer_params(Checker* me, TypeNode const* node) {
     FreeParams found = {0};
     collect_free_params(me, node, &found);
+    free_params_add_block(me, &found);
     u32 kept = 0;
     for (u32 i = 0; i < found.len; i++) {
         bool bound = false;
@@ -3899,7 +3920,7 @@ static Ty const* conditional_flow_type(Checker* me, TypeNode const* node, Ty con
     Ty const* actual = nullptr;
     TyBuf constraints = {0};
     bool type_variable = ty->kind == TY_TYPE_PARAM || ty->kind == TY_INDEXED;
-    for (TypeFlow const* flow = node->flow; flow; flow = flow->outer) {
+    for (TypeFlow const* flow = node->flow; flow && !flow->block; flow = flow->outer) {
         if (flow->mapped) {
             Ty const* implied = mapped_key_flow_constraint(me, flow->mapped, ty, &actual);
             if (implied) ty_buf_push(&constraints, implied);
@@ -3936,7 +3957,7 @@ static inline __attribute__((always_inline)) Ty const* lower(
     // A union node or a generic reference outside an alias body is lowered once (a cache, tsc's links.resolvedType)
     bool memo_node = node->tag == TYPE_UNION ||
         (node->tag == TYPE_IDENTIFIER && vec_spanned_type_size(&node->identifier->generic_params));
-    if (memo_node && !alias && !ctx.in_alias && !ctx.method && !node->flow) {
+    if (memo_node && !alias && !ctx.in_alias && !ctx.method && !type_flow_in_branch(node->flow)) {
         u64 key[2] = { KEY_UNION_NODE | (u64)ctx.generic << 32, (u64)(uintptr_t)node };
         Ty const* memo = intern_get(&my links, key, 2);
         if (memo) return memo;
@@ -3951,10 +3972,10 @@ static inline __attribute__((always_inline)) Ty const* lower(
         if (intern_get(&my links, key, 2)) return ty_intrinsic(me, TY_ERROR);
         Ty const* ret = lower_node(me, node, ctx, alias, alias_args);
         if (ret == ty_intrinsic(me, TY_ERROR)) *intern_slot(me, &my links, key, 2) = ret;
-        return node->flow ? conditional_flow_type(me, node, ret) : ret;
+        return type_flow_in_branch(node->flow) ? conditional_flow_type(me, node, ret) : ret;
     }
     Ty const* ret = lower_node(me, node, ctx, alias, alias_args);
-    return node->flow ? conditional_flow_type(me, node, ret) : ret;
+    return type_flow_in_branch(node->flow) ? conditional_flow_type(me, node, ret) : ret;
 }
 
 static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Symbol const* alias, TyList alias_args) {

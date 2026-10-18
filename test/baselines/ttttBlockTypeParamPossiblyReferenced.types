@@ -1,0 +1,92 @@
+//// [test/cases/ttttBlockTypeParamPossiblyReferenced.ts] ////
+
+=== ttttBlockTypeParamPossiblyReferenced.ts ===
+// tsc's isTypeParameterPossiblyReferenced: walking up from a type node to a type parameter's declaration, a Block on
+// the way makes the parameter possibly referenced, so a type literal in a generic function's block body is instantiated
+// (a new type, its optional properties printed with `| undefined`) even though it mentions no type parameter. An
+// expression body keeps the literal itself (better-auth test-utils' suites)
+const create = <T>(fn: () => T) => { return (h: { g?: () => any }) => 1; };
+>create : <T>(fn: () => T) => (h: { g?: () => any; }) => number
+><T>(fn: () => T) => { return (h: { g?: () => any }) => 1; } : <T>(fn: () => T) => (h: { g?: () => any; }) => number
+>fn : () => T
+>(h: { g?: () => any }) => 1 : (h: { g?: () => any; }) => number
+>h : { g?: () => any; }
+>g : (() => any) | undefined
+>1 : 1
+
+export const x = create(() => 1);
+>x : (h: { g?: (() => any) | undefined; }) => number
+>create(() => 1) : (h: { g?: (() => any) | undefined; }) => number
+>create : <T>(fn: () => T) => (h: { g?: () => any; }) => number
+>() => 1 : () => number
+>1 : 1
+
+const create2 = <T>(fn: () => T) => (h: { g?: () => any }) => 1;
+>create2 : <T>(fn: () => T) => (h: { g?: () => any; }) => number
+><T>(fn: () => T) => (h: { g?: () => any }) => 1 : <T>(fn: () => T) => (h: { g?: () => any; }) => number
+>fn : () => T
+>(h: { g?: () => any }) => 1 : (h: { g?: () => any; }) => number
+>h : { g?: () => any; }
+>g : (() => any) | undefined
+>1 : 1
+
+export const y = create2(() => 1);
+>y : (h: { g?: () => any; }) => number
+>create2(() => 1) : (h: { g?: () => any; }) => number
+>create2 : <T>(fn: () => T) => (h: { g?: () => any; }) => number
+>() => 1 : () => number
+>1 : 1
+
+function create3<T>(fn: () => T) {
+>create3 : <T>(fn: () => T) => <U>(u: U) => (h: { g?: () => U; k?: () => void; }) => number
+>fn : () => T
+
+    if (Math.random()) {
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+
+        const inner = <U>(u: U) => (h: { g?: () => U; k?: () => void }) => 1;
+>inner : <U>(u: U) => (h: { g?: () => U; k?: () => void; }) => number
+><U>(u: U) => (h: { g?: () => U; k?: () => void }) => 1 : <U>(u: U) => (h: { g?: () => U; k?: () => void; }) => number
+>u : U
+>(h: { g?: () => U; k?: () => void }) => 1 : (h: { g?: () => U; k?: () => void; }) => number
+>h : { g?: () => U; k?: () => void; }
+>g : (() => U) | undefined
+>k : (() => void) | undefined
+>1 : 1
+
+        return inner;
+>inner : <U>(u: U) => (h: { g?: () => U; k?: () => void; }) => number
+    }
+    return null!;
+>null! : never
+}
+export const z = create3(() => "")(1);
+>z : (h: { g?: (() => number) | undefined; k?: (() => void) | undefined; }) => number
+>create3(() => "")(1) : (h: { g?: (() => number) | undefined; k?: (() => void) | undefined; }) => number
+>create3(() => "") : <U>(u: U) => (h: { g?: (() => U) | undefined; k?: (() => void) | undefined; }) => number
+>create3 : <T>(fn: () => T) => <U>(u: U) => (h: { g?: () => U; k?: () => void; }) => number
+>() => "" : () => string
+>"" : ""
+>1 : 1
+
+// Never-reduced all the same: the literals mention nothing
+function reduced<T>() {
+>reduced : <T>() => never
+
+    const v: { x: "a" } & { x: "b" } = null!;
+>v : never
+>x : "a"
+>x : "b"
+>null! : never
+
+    return v;
+>v : never
+}
+export const w = reduced<number>();
+>w : never
+>reduced<number>() : never
+>reduced : <T>() => never
+
