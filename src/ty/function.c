@@ -295,8 +295,19 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
                 for (u32 i = 0; i < returned.len; i++) returned.data[i] = ty_unwrap_awaited(me, ty_awaited_no_alias(me, returned.data[i]));
                 contextual = contextual ? promised_context(me, contextual) : nullptr;
             }
+            // (Each type once, like tsc's AppendIfUnique: a type returned twice is that type, the union of its two copies
+            // being the error type when it's an unresolved name's, babel-parser's `N.EnumBody` of a missing module)
+            u32 unique = 0;
+            for (u32 i = 0; i < returned.len; i++) {
+                bool seen = false;
+                for (u32 j = 0; j < unique && !seen; j++) seen = returned.data[j] == returned.data[i];
+                if (!seen) returned.data[unique++] = returned.data[i];
+            }
+            returned.len = unique;
             if (compiler_options()->strict_null_checks && returns_nothing_somewhere) {
-                ty_buf_push(&returned, ty_intrinsic(me, TY_UNDEFINED));
+                bool seen = false;
+                for (u32 j = 0; j < returned.len && !seen; j++) seen = returned.data[j] == ty_intrinsic(me, TY_UNDEFINED);
+                if (!seen) ty_buf_push(&returned, ty_intrinsic(me, TY_UNDEFINED));
             }
             ret = ty_union_subtype_reduced(me, returned.data, returned.len);
             if (!compiler_options()->strict_null_checks && (ret->xflags & TYX_CONTAINS_WIDENING)) {

@@ -1322,6 +1322,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttReturnTypeUniqueUnresolved': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttScriptConflictExpandoHost': {
         errors: true,
         symbols: true,

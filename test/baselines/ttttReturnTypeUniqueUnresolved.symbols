@@ -1,0 +1,57 @@
+//// [test/cases/ttttReturnTypeUniqueUnresolved.ts] ////
+
+=== a.ts ===
+import type * as N from "./missing";
+>N : Symbol(N, Decl(a.ts, 0, 11))
+
+export type Undone<T> = Omit<T, "type">;
+>Undone : Symbol(Undone, Decl(a.ts, 0, 36))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+
+declare function finish<T>(node: Undone<T>, type: string): T;
+>finish : Symbol(finish, Decl(a.ts, 1, 40))
+>T : Symbol(T, Decl(a.ts, 2, 24))
+>node : Symbol(node, Decl(a.ts, 2, 27))
+>Undone : Symbol(Undone, Decl(a.ts, 0, 36))
+>T : Symbol(T, Decl(a.ts, 2, 24))
+>type : Symbol(type, Decl(a.ts, 2, 43))
+>T : Symbol(T, Decl(a.ts, 2, 24))
+
+export function body(node: Undone<N.EnumBody>, b: boolean) {
+>body : Symbol(body, Decl(a.ts, 2, 61))
+>node : Symbol(node, Decl(a.ts, 3, 21))
+>Undone : Symbol(Undone, Decl(a.ts, 0, 36))
+>N : Symbol(N, Decl(a.ts, 0, 11))
+>EnumBody : Symbol(N.EnumBody)
+>b : Symbol(b, Decl(a.ts, 3, 46))
+
+    if (b) return finish(node, "x");
+>b : Symbol(b, Decl(a.ts, 3, 46))
+>finish : Symbol(finish, Decl(a.ts, 1, 40))
+>node : Symbol(node, Decl(a.ts, 3, 21))
+
+    return finish(node, "y");
+>finish : Symbol(finish, Decl(a.ts, 1, 40))
+>node : Symbol(node, Decl(a.ts, 3, 21))
+}
+export const arrow = async (node: Undone<N.EnumBody>, b: boolean) => {
+>arrow : Symbol(arrow, Decl(a.ts, 7, 12))
+>node : Symbol(node, Decl(a.ts, 7, 28))
+>Undone : Symbol(Undone, Decl(a.ts, 0, 36))
+>N : Symbol(N, Decl(a.ts, 0, 11))
+>EnumBody : Symbol(N.EnumBody)
+>b : Symbol(b, Decl(a.ts, 7, 53))
+
+    if (b) return finish(node, "x");
+>b : Symbol(b, Decl(a.ts, 7, 53))
+>finish : Symbol(finish, Decl(a.ts, 1, 40))
+>node : Symbol(node, Decl(a.ts, 7, 28))
+
+    return finish(node, "y");
+>finish : Symbol(finish, Decl(a.ts, 1, 40))
+>node : Symbol(node, Decl(a.ts, 7, 28))
+
+};
+

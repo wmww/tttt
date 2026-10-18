@@ -1,0 +1,55 @@
+//// [test/cases/ttttReturnTypeUniqueUnresolved.ts] ////
+
+=== a.ts ===
+import type * as N from "./missing";
+>N : any
+
+export type Undone<T> = Omit<T, "type">;
+>Undone : Undone<T>
+
+declare function finish<T>(node: Undone<T>, type: string): T;
+>finish : <T>(node: Undone<T>, type: string) => T
+>node : Undone<T>
+>type : string
+
+export function body(node: Undone<N.EnumBody>, b: boolean) {
+>body : (node: Undone<N.EnumBody>, b: boolean) => N.EnumBody
+>node : Undone<N.EnumBody>
+>N : any
+>b : boolean
+
+    if (b) return finish(node, "x");
+>b : boolean
+>finish(node, "x") : N.EnumBody
+>finish : <T>(node: Undone<T>, type: string) => T
+>node : Undone<N.EnumBody>
+>"x" : "x"
+
+    return finish(node, "y");
+>finish(node, "y") : N.EnumBody
+>finish : <T>(node: Undone<T>, type: string) => T
+>node : Undone<N.EnumBody>
+>"y" : "y"
+}
+export const arrow = async (node: Undone<N.EnumBody>, b: boolean) => {
+>arrow : (node: Undone<N.EnumBody>, b: boolean) => Promise<N.EnumBody>
+>async (node: Undone<N.EnumBody>, b: boolean) => {    if (b) return finish(node, "x");    return finish(node, "y");} : (node: Undone<N.EnumBody>, b: boolean) => Promise<N.EnumBody>
+>node : Undone<N.EnumBody>
+>N : any
+>b : boolean
+
+    if (b) return finish(node, "x");
+>b : boolean
+>finish(node, "x") : N.EnumBody
+>finish : <T>(node: Undone<T>, type: string) => T
+>node : Undone<N.EnumBody>
+>"x" : "x"
+
+    return finish(node, "y");
+>finish(node, "y") : N.EnumBody
+>finish : <T>(node: Undone<T>, type: string) => T
+>node : Undone<N.EnumBody>
+>"y" : "y"
+
+};
+
