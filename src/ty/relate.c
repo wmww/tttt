@@ -7393,6 +7393,14 @@ Ty const* ty_normalized_generic_tuple(Checker* me, Ty const* ty, bool writing) {
 
 // The source as the head of a relation error names it: tsc's reportErrorResults uses getNormalizedType's (simplified
 // indexed accesses and conditional types, read) unless it has an alias
+// A class or interface that adds nothing to its one base as that base, repeatedly (tsc's getNormalizedType)
+static Ty const* non_augmenting_normalized(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_DECLARED && ty->kind != TY_REFERENCE) return ty;
+    Ty const* base;
+    for (u32 i = 0; i < 16 && (base = ty_non_augmenting_base(me, ty)) && base != ty; i++) ty = ty_regular(me, base);
+    return ty;
+}
+
 Ty const* ty_report_source(Checker* me, Ty const* source) {
     if (source->alias) return source;
     for (u32 i = 0; i < 16 && (source->kind == TY_INDEXED || source->kind == TY_CONDITIONAL || source->kind == TY_SUBSTITUTION); i++) {
@@ -7425,6 +7433,7 @@ Ty const* ty_report_target(Checker* me, Ty const* source, Ty const* target) {
             if (next == stripped) break;
             stripped = next;
         }
+        stripped = non_augmenting_normalized(me, stripped);
     }
     return stripped;
 }
@@ -7546,6 +7555,9 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         if (next == stripped) break;
         stripped = next;
     }
+    // (A class or interface that adds nothing to its one base is that base there too: `L | undefined` with L extending
+    // `Omit<S, "k">` is reported as `Omit<S, "k">`)
+    if (stripped != target) stripped = non_augmenting_normalized(me, stripped);
     target = stripped;
     if (source == target) return TERNARY_TRUE;
     // (Errors name an alias as it was: tsc's reportErrorResults)

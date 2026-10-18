@@ -1,0 +1,55 @@
+//// [test/cases/ttttStrippedTargetNonAugmentingBase.ts] ////
+
+=== ttttStrippedTargetNonAugmentingBase.ts ===
+// A target union of null/undefined and one type is that type normalized: an interface that adds nothing to its one base
+// is that base (tsc's isRelatedTo: getNormalizedType(candidate)), so errors name `Omit<S, "element">`, not L (vitest)
+interface S { element?: Element; path?: string; save?: boolean }
+>element : Element | undefined
+>path : string | undefined
+>save : boolean | undefined
+
+interface L extends Omit<S, 'element'> {}
+declare function shot2(options?: L): Promise<string>;
+>shot2 : (options?: L) => Promise<string>
+>options : L | undefined
+
+shot2({ save: true, path: "p", maskColor: 1 });
+>shot2({ save: true, path: "p", maskColor: 1 }) : Promise<string>
+>shot2 : (options?: L) => Promise<string>
+>{ save: true, path: "p", maskColor: 1 } : { save: true; path: string; maskColor: number; }
+>save : true
+>true : true
+>path : string
+>"p" : "p"
+>maskColor : number
+>1 : 1
+
+shot2(5);
+>shot2(5) : Promise<string>
+>shot2 : (options?: L) => Promise<string>
+>5 : 5
+
+shot2({ save: 1 });
+>shot2({ save: 1 }) : Promise<string>
+>shot2 : (options?: L) => Promise<string>
+>{ save: 1 } : { save: number; }
+>save : number
+>1 : 1
+
+declare const x: { save: number };
+>x : { save: number; }
+>save : number
+
+shot2(x);
+>shot2(x) : Promise<string>
+>shot2 : (options?: L) => Promise<string>
+>x : { save: number; }
+
+let y: L | undefined = x;
+>y : L | undefined
+>x : { save: number; }
+
+let z: L = x;
+>z : L
+>x : { save: number; }
+

@@ -171,6 +171,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttConversionHeadQualified': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttCrossFileAliasMerge': {
         errors: true,
         symbols: true,
@@ -1565,6 +1570,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttStrippedTargetNonAugmentingBase': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttSubtypeReducedUnionNamedOrigin': {
         errors: true,
