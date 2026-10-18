@@ -234,25 +234,19 @@ mechanism, roughly by projects:
 - **Zod v4 TS5115 list order** (crawlee x4, unocss x2, knip fixture, webpack: `schemas.d.cts(804,5)`): tsc `'IsOptionalIn',
   '$ZodTypeInternals', '$InferZodRecordInput'`, tttt starts at `$ZodTypeInternals`: where the instantiation stack is
   cut, or its rotation (TS5115's checker dependence is tsgo's own: bugs/tsgo_divergences.md).
-- **`Matched by include pattern` paths** (2038 diags in vest x7 and unovis/packages/react/autogen, TS6307/TS6059
-  explanations): tsc prints the pattern relative to the config as written (`../.././packages/*/src/**/*.ts`,
-  `../src/**/*.ts`), tttt normalized (`./packages/...`, `src/**/*.ts`). kysely/scripts: tttt adds a `File is ECMAScript
-  module because ... "type": "module"` line to TS6059's explanation that tsc doesn't print there.
-- **Namespace / module naming** (apollo-client/docs 238 diags: TS2694 `Namespace '"react".React'` printed
-  `'React.React'`; openapi-typescript `'global.WebAssembly'` vs `'WebAssembly'`; trpc/examples/nuxt TS2430 lib.dom's
-  `WebSocket` vs `import("...@types/ws/index").WebSocket` printed `WebSocket.WebSocket`).
-- **import() qualification of same-named types** (lucide 36: tsc `React.JSX.Element` vs `import(".../solid-js/types/
-  index").JSX.Element`, tttt qualifies the React side `import("lucide/node_modules/...index.d.ts")` (relative, with
-  `.d.ts`) and names solid's `types/jsx`; lexical-website the same with the two sides swapped; dexie-cloud-todo-app:
-  tsc qualifies `import(".../@types/react/index").ReactNode` where tttt prints `'React.ReactNode' ... Two different
-  types with this name exist`; pinia nuxt `WritableStream<...>` vs `import("node:stream/web").WritableStream<any>`).
+- **Truncation of reprinted colliding names** (pinia/packages/nuxt and its playground, 1 TS2416 chain each: tsc
+  `NodeJS.WritableStream | WritableStream<...>`, tttt `WritableStream<any>`): tsc's mapToTypeNodes prints every list
+  member, then reprints the ones whose bare names collide fully qualified in the same context, so their
+  approximateLength counts twice and the reprint's type arguments pass the truncation length; tttt's name_collisions()
+  decides up front and prints them once. Fix: in display_union/display_list, count a colliding member's bare print
+  before its qualified one, in tsc's order (all members first, then the reprints).
 - **Elaboration path picks** (react-router `__tests__/setup.ts:35`, quill, vscode-project-manager: tsc's `prototype[
   Symbol.iterator]()` / `[Symbol.iterator]().next(...)` vs tttt's `entries()...`: which member the return-type
   elaboration names first; sequelize x2 `No constituent of type 'Function | undefined' is callable` vs `Type 'undefined'
   has no call signatures`; vitest/test/browser TS2769 the last overload's excess-property target `Omit<ScreenshotOptions,
   "element">` vs `LocatorScreenshotOptions`; rxjs `zip-all.spec.ts:24` missing-properties list order `[create], [tak..`
   vs `subscribe, [cr..`; docmost TS2322 chain stops before tsc's `... is missing the following properties from type
-  'any[]'`; angular-cli/scripts TS1541 lacks tsc's `To convert this file to an ECMAScript module...` line).
+  'any[]'`).
 - **Property list order** (trpc `ws.ts:587` TS2739 `close, [Symbol.dispose], _onTimeout` vs `close, _onTimeout,
   [Symbol.dispose]`: symbol-keyed members' place).
 - **Union member order** (vitest/docs `resolveConfig.ts:796`: the reporter tuple union in another order).
