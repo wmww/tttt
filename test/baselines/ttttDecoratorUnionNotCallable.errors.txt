@@ -1,0 +1,45 @@
+ttttDecoratorUnionNotCallable.ts(7,4): error TS1241: Unable to resolve signature of method decorator when called as an expression.
+  This expression is not callable.
+    No constituent of type 'Function | undefined' is callable.
+ttttDecoratorUnionNotCallable.ts(8,4): error TS1241: Unable to resolve signature of method decorator when called as an expression.
+  This expression is not callable.
+    Not all constituents of type '(() => void) | undefined' are callable.
+      Type 'undefined' has no call signatures.
+ttttDecoratorUnionNotCallable.ts(9,4): error TS1241: Unable to resolve signature of method decorator when called as an expression.
+  This expression is not callable.
+    No constituent of type 'string | undefined' is callable.
+ttttDecoratorUnionNotCallable.ts(11,1): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+ttttDecoratorUnionNotCallable.ts(12,1): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+
+
+==== ttttDecoratorUnionNotCallable.ts (5 errors) ====
+    // A decorator whose type is a union without common call signatures is not callable as a whole (tsc's resolveDecorator:
+    // invocationErrorDetails), not resolved member by member (sequelize's `Function | undefined` decorators)
+    declare const d: Function | undefined;
+    declare const e: (() => void) | undefined;
+    declare const f: string | undefined;
+    class C {
+      @d static m() {}
+       ~
+!!! error TS1241: Unable to resolve signature of method decorator when called as an expression.
+!!! error TS1241:   This expression is not callable.
+!!! error TS1241:     No constituent of type 'Function | undefined' is callable.
+      @e static n() {}
+       ~
+!!! error TS1241: Unable to resolve signature of method decorator when called as an expression.
+!!! error TS1241:   This expression is not callable.
+!!! error TS1241:     Not all constituents of type '(() => void) | undefined' are callable.
+!!! error TS1241:       Type 'undefined' has no call signatures.
+      @f static o() {}
+       ~
+!!! error TS1241: Unable to resolve signature of method decorator when called as an expression.
+!!! error TS1241:   This expression is not callable.
+!!! error TS1241:     No constituent of type 'string | undefined' is callable.
+    }
+    d();
+    ~
+!!! error TS2722: Cannot invoke an object which is possibly 'undefined'.
+    e();
+    ~
+!!! error TS2722: Cannot invoke an object which is possibly 'undefined'.
+    

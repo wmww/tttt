@@ -1,0 +1,36 @@
+//// [test/cases/ttttDecoratorUnionNotCallable.ts] ////
+
+=== ttttDecoratorUnionNotCallable.ts ===
+// A decorator whose type is a union without common call signatures is not callable as a whole (tsc's resolveDecorator:
+// invocationErrorDetails), not resolved member by member (sequelize's `Function | undefined` decorators)
+declare const d: Function | undefined;
+>d : Symbol(d, Decl(ttttDecoratorUnionNotCallable.ts, 2, 13))
+>Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.esnext.decorators.d.ts, --, --))
+
+declare const e: (() => void) | undefined;
+>e : Symbol(e, Decl(ttttDecoratorUnionNotCallable.ts, 3, 13))
+
+declare const f: string | undefined;
+>f : Symbol(f, Decl(ttttDecoratorUnionNotCallable.ts, 4, 13))
+
+class C {
+>C : Symbol(C, Decl(ttttDecoratorUnionNotCallable.ts, 4, 36))
+
+  @d static m() {}
+>d : Symbol(d, Decl(ttttDecoratorUnionNotCallable.ts, 2, 13))
+>m : Symbol(C.m, Decl(ttttDecoratorUnionNotCallable.ts, 5, 9))
+
+  @e static n() {}
+>e : Symbol(e, Decl(ttttDecoratorUnionNotCallable.ts, 3, 13))
+>n : Symbol(C.n, Decl(ttttDecoratorUnionNotCallable.ts, 6, 18))
+
+  @f static o() {}
+>f : Symbol(f, Decl(ttttDecoratorUnionNotCallable.ts, 4, 13))
+>o : Symbol(C.o, Decl(ttttDecoratorUnionNotCallable.ts, 7, 18))
+}
+d();
+>d : Symbol(d, Decl(ttttDecoratorUnionNotCallable.ts, 2, 13))
+
+e();
+>e : Symbol(e, Decl(ttttDecoratorUnionNotCallable.ts, 3, 13))
+

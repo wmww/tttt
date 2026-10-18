@@ -1,0 +1,37 @@
+//// [test/cases/ttttDecoratorUnionNotCallable.ts] ////
+
+=== ttttDecoratorUnionNotCallable.ts ===
+// A decorator whose type is a union without common call signatures is not callable as a whole (tsc's resolveDecorator:
+// invocationErrorDetails), not resolved member by member (sequelize's `Function | undefined` decorators)
+declare const d: Function | undefined;
+>d : Function | undefined
+
+declare const e: (() => void) | undefined;
+>e : (() => void) | undefined
+
+declare const f: string | undefined;
+>f : string | undefined
+
+class C {
+>C : C
+
+  @d static m() {}
+>d : Function | undefined
+>m : () => void
+
+  @e static n() {}
+>e : (() => void) | undefined
+>n : () => void
+
+  @f static o() {}
+>f : string | undefined
+>o : () => void
+}
+d();
+>d() : any
+>d : Function | undefined
+
+e();
+>e() : void
+>e : (() => void) | undefined
+

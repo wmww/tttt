@@ -739,6 +739,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDecoratorUnionNotCallable': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeepNestingObjectLiteralSource': {
         errors: true,
         symbols: true,

@@ -2852,8 +2852,8 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             return ty_intrinsic(me, TY_ERROR);
         }
         // Some member has none: the union isn't callable, and the first such member is named (tsc's
-        // invocationErrorDetails). Not for `super(...)`, `new` of something callable, or tagged templates and decorators,
-        // which the member by member resolution below still covers
+        // invocationErrorDetails, resolveDecorator's too). Not for `super(...)`, `new` of something callable, or JSX, which
+        // the member by member resolution below still covers
         bool some_have = false;
         Ty const* lacking = nullptr;
         for (u32 i = 0; i < apparent->composite.types.len; i++) {
@@ -2889,7 +2889,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
                 return ty_intrinsic(me, TY_ERROR);
             }
         }
-        if (lacking && !super_call && !info->decorator && !info->jsx) { // (A tagged template too: resolveTaggedTemplateExpression's invocationError)
+        if (lacking && !super_call && !info->jsx) { // (A tagged template too: resolveTaggedTemplateExpression's invocationError)
             if (errs) {
                 cstr rendered = ty_to_cstr(me, apparent);
                 Error* e = error_ctx_error_d(errs, invocation_error_span(info), construct ? 2351 : 2349,
