@@ -833,6 +833,14 @@ Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alia
     // arguments too)
     // (A union of the same alias with other arguments too: `G` through an import, alias arguments `[]`, next to
     // `G<string, number>`)
+    // (One an intersection distributed into is that intersection made again by the new name, the same distribution
+    // with the intersection as its origin: tsc's instantiateTypeWorker passes the alias to getIntersectionType, so
+    // `type S = Rec<string>` of `Rec<I> = Base<I> & (A | B)` prints `Base & (A | B)` where S isn't accessible)
+    Ty const* origin = ty->kind == TY_UNION ? ty->composite.origin : nullptr;
+    if (origin && origin->kind == TY_INTERSECTION) {
+        Ty const* ret = ty_intersection(me, origin->composite.types.data, origin->composite.types.len, alias, alias_args);
+        if (ret->kind == TY_UNION && ret->alias == alias) return ret;
+    }
     if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
         return ty_union(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);
     }

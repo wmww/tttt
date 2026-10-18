@@ -1,0 +1,37 @@
+//// [test/cases/ttttDeclarationRealiasedDistributedIntersection.ts] ////
+
+=== t.ts ===
+type Base<I> = { readonly id: I };
+>Base : Base<I>
+>id : I
+
+export type Rec<I> = Base<I> & ({ readonly a: 1; s: I } | { readonly b: 2 });
+>Rec : Rec<I>
+>a : 1
+>s : I
+>b : 2
+
+type Stored = Rec<string>;
+>Stored : Stored
+
+export declare function get(): Stored;
+>get : () => Stored
+
+export declare function get2(): Rec<string>;
+>get2 : () => Rec<string>
+
+=== a.ts ===
+import { get, get2 } from './t';
+>get : () => { readonly id: string; } & ({ readonly a: 1; s: string; } | { readonly b: 2; })
+>get2 : () => import("./t").Rec<string>
+
+export const x = get();
+>x : { readonly id: string; } & ({ readonly a: 1; s: string; } | { readonly b: 2; })
+>get() : { readonly id: string; } & ({ readonly a: 1; s: string; } | { readonly b: 2; })
+>get : () => { readonly id: string; } & ({ readonly a: 1; s: string; } | { readonly b: 2; })
+
+export const y = get2();
+>y : import("./t").Rec<string>
+>get2() : import("./t").Rec<string>
+>get2 : () => import("./t").Rec<string>
+

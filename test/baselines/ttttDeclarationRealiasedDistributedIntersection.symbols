@@ -1,0 +1,44 @@
+//// [test/cases/ttttDeclarationRealiasedDistributedIntersection.ts] ////
+
+=== t.ts ===
+type Base<I> = { readonly id: I };
+>Base : Symbol(Base, Decl(t.ts, 0, 0))
+>I : Symbol(I, Decl(t.ts, 0, 10))
+>id : Symbol(id, Decl(t.ts, 0, 16))
+>I : Symbol(I, Decl(t.ts, 0, 10))
+
+export type Rec<I> = Base<I> & ({ readonly a: 1; s: I } | { readonly b: 2 });
+>Rec : Symbol(Rec, Decl(t.ts, 0, 34))
+>I : Symbol(I, Decl(t.ts, 1, 16))
+>Base : Symbol(Base, Decl(t.ts, 0, 0))
+>I : Symbol(I, Decl(t.ts, 1, 16))
+>a : Symbol(a, Decl(t.ts, 1, 33))
+>s : Symbol(s, Decl(t.ts, 1, 48))
+>I : Symbol(I, Decl(t.ts, 1, 16))
+>b : Symbol(b, Decl(t.ts, 1, 59))
+
+type Stored = Rec<string>;
+>Stored : Symbol(Stored, Decl(t.ts, 1, 77))
+>Rec : Symbol(Rec, Decl(t.ts, 0, 34))
+
+export declare function get(): Stored;
+>get : Symbol(get, Decl(t.ts, 2, 26))
+>Stored : Symbol(Stored, Decl(t.ts, 1, 77))
+
+export declare function get2(): Rec<string>;
+>get2 : Symbol(get2, Decl(t.ts, 3, 38))
+>Rec : Symbol(Rec, Decl(t.ts, 0, 34))
+
+=== a.ts ===
+import { get, get2 } from './t';
+>get : Symbol(get, Decl(a.ts, 0, 8))
+>get2 : Symbol(get2, Decl(a.ts, 0, 13))
+
+export const x = get();
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>get : Symbol(get, Decl(a.ts, 0, 8))
+
+export const y = get2();
+>y : Symbol(y, Decl(a.ts, 2, 12))
+>get2 : Symbol(get2, Decl(a.ts, 0, 13))
+

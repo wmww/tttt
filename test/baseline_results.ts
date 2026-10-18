@@ -563,6 +563,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationRealiasedDistributedIntersection': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationReexportModeMismatch': {
         errors: true,
         symbols: true,
