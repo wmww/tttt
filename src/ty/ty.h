@@ -1401,6 +1401,7 @@ Atom const* ty_rest_element_label(Checker* me, SigParam const* rest, u32 index, 
 Ty const* ty_keyof(Checker* me, Ty const* operand);
 // A mapped type's declaration (key, constraint, modifiers type) without expanding its members
 struct MappedInfo const* ty_mapped_info_unexpanded(Checker* me, Ty const* ty);
+struct MappedInfo const* ty_generic_mapped(Checker* me, Ty const* ty);
 Ty const* ty_keyof_without_index_signatures(Checker* me, Ty const* operand);
 // template.c: template literal types and string mappings (tsc's getTemplateLiteralType, getStringMappingType)
 Ty const* ty_template_literal(Checker* me, Atom const* const* texts, Ty const* const* types, u32 len);

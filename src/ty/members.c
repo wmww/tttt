@@ -4070,96 +4070,16 @@ static bool intersection_has_generic_part(Checker* me, Ty const* intersection) {
     return false;
 }
 
-// A conditional type's branch without lowering or instantiating it (that can reach the mapped type whose members are
-// being resolved): one still to be lowered is unknown (null), one still to be instantiated is known if it's a type
-// parameter (Exclude's `T`) or never
-static Ty const* peek_cond_branch(TyCondBranch const* branch) {
-    if ((!branch->node && !branch->source) || branch->state == LAZY_STATE_DONE) return branch->type;
-    if (branch->node || branch->state != LAZY_STATE_NOT_STARTED) return nullptr;
-    Ty const* source = branch->source;
-    if (source->flags & TYF_NEVER) return source;
-    if (source->kind != TY_TYPE_PARAM) return nullptr;
-    for (u32 i = 0; branch->mapper && i < branch->mapper->len; i++) {
-        if (branch->mapper->sources[i] == source) return branch->mapper->targets[i];
-    }
-    return source;
-}
-
-// Whether an `as` clause only filters the keys (tsc's getMappedTypeNameTypeKind: Filtering when the clause is assignable
-// to the key parameter), told by its shape: each union member and conditional branch is the key, never, or an
-// intersection with the key (or its distributed twin). (Relating it as tsc does can reach the members of the mapped type being resolved:
-// `as `${K}.${keyof Self<T[K]>}``)
-static bool name_type_filters(Checker* me, Ty const* name, Ty const* key, u32 depth) {
-    // (A distributive conditional's branches have the key's distributed twin, constrained to the key: assignable)
-    if (name == key || ty_non_distributed(name) == key || (name->flags & TYF_NEVER)) return true;
-    if (depth > 8) return false;
-    switch ((TyKind)name->kind) {
-        case TY_UNION:
-            for (u32 i = 0; i < name->composite.types.len; i++) {
-                if (!name_type_filters(me, name->composite.types.data[i], key, depth + 1)) return false;
-            }
-            return true;
-        case TY_INTERSECTION:
-            for (u32 i = 0; i < name->composite.types.len; i++) {
-                if (name_type_filters(me, name->composite.types.data[i], key, depth + 1)) return true;
-            }
-            return false;
-        case TY_CONDITIONAL: {
-            for (u32 which = 0; which < 2; which++) {
-                TyCondBranch const* cond = &name->conditional.branches[which];
-                Ty const* branch = peek_cond_branch(cond);
-                // (One still to be lowered, by its syntax: `never`, or the key's own name)
-                if (!branch && cond->node && cond->state == LAZY_STATE_NOT_STARTED) {
-                    TypeNode const* node = cond->node;
-                    if (node->tag == TYPE_NEVER) continue;
-                    if (node->tag == TYPE_IDENTIFIER && key->kind == TY_TYPE_PARAM && key->param.name &&
-                        !identifier_type_namespace_count(node->identifier) &&
-                        !vec_spanned_type_size(&node->identifier->generic_params) &&
-                        csview_equals_sv(span_sv(node->identifier->name), atom_sv(key->param.name))
-                    ) {
-                        continue;
-                    }
-                }
-                if (!branch || !name_type_filters(me, branch, key, depth + 1)) return false;
-            }
-            return true;
-        }
-        case TY_SUBSTITUTION:
-            return name_type_filters(me, name->substitution.base, key, depth + 1);
-        default:
-            return false;
-    }
-}
-
-// Whether an identifier token `keyof` appears in a span of source text
-static bool span_mentions_keyof(Span span) {
-    if (!span_valid(span)) return true;
-    csview text = span_sv(span);
-    for (isize_t i = 0; i + 5 <= text.size; i++) {
-        if (memcmp(text.buf + i, "keyof", 5)) continue;
-        bool before = i > 0 && (isalnum((unsigned char)text.buf[i - 1]) || text.buf[i - 1] == '_' || text.buf[i - 1] == '$');
-        bool after = i + 5 < text.size && (isalnum((unsigned char)text.buf[i + 5]) || text.buf[i + 5] == '_' || text.buf[i + 5] == '$');
-        if (!before && !after) return true;
-    }
-    return false;
-}
-
-// tsc's getMappedTypeNameTypeKind of a declared mapped type: Filtering when its `as` clause is assignable to its key.
-// name_type_filters() answers by shape; what it can't tell (arktype's `as nonOptionalKeyFromEntry<k, def[k], ...>`,
-// a conditional whose branches reach the key through `infer`) is related as tsc does, once per declared mapped type.
-// HACK: not when the clause mentions `keyof` (hacks.md): relating `${K}.${keyof Self<T[K]>}` from here resolves
-// members of mapped types being resolved, which tttt then keeps incomplete (mappedTypeAsClauseRecursiveNoCrash1)
+// tsc's getMappedTypeNameTypeKind of a declared mapped type: Filtering when its `as` clause is assignable to its key
+// parameter (remembered per declared mapped type)
 static bool mapped_name_type_filters(Checker* me, MappedInfo const* declared) {
-    if (name_type_filters(me, declared->name_type, declared->type_param, 0)) return true;
-    Symbol const* symbol = declared->type_param->kind == TY_TYPE_PARAM ? declared->type_param->param.symbol : nullptr;
-    InterfaceMember const* member = symbol ? symbol_find_node(symbol, SYMBOL_DECL_MAPPED_KEY) : nullptr;
-    if (!member || !member->key.mapped->has_as_type || span_mentions_keyof(member->key.mapped->as_type_span)) return false;
-    void const** slot = intern_slot(me, &my links, (u64[]){ KEY_MAPPED_FILTERING, (u64)(uintptr_t)declared->type_param }, 2);
-    if (!*slot) {
-        bool filters = ty_is_related(me, declared->name_type, declared->type_param, TY_RELATION_ASSIGNABLE);
-        *slot = (void const*)(uintptr_t)(filters ? 2 : 1);
+    u64 key[2] = { KEY_MAPPED_FILTERING, (u64)(uintptr_t)declared->type_param };
+    void const* kind = intern_get(&my links, key, 2);
+    if (!kind) {
+        kind = (void const*)(uintptr_t)(ty_is_related(me, declared->name_type, declared->type_param, TY_RELATION_ASSIGNABLE) ? 2 : 1);
+        *intern_slot(me, &my links, key, 2) = kind; // (Looked up again: relating may have grown the table)
     }
-    return *slot == (void const*)(uintptr_t)2;
+    return kind == (void const*)(uintptr_t)2;
 }
 
 // A mapped type whose key type is known has ordinary members: a property per literal key (or per literal the `as`
@@ -4817,6 +4737,7 @@ static Members const* resolve_members(Checker* me, Ty const* ty) {
     TyObjectState* state = object_state(ty);
     Members const* members = state && state->unexpanded ? state->unexpanded : resolve_members_inner(me, ty);
     if (!members->mapped) return members;
+    if (state) state->unexpanded = members; // (What instantiations go by, see declared_mapped_members())
     // (A mapped type's keys: tsc mostly finds them first through its key parameter's constraint, under that one's
     // pushTypeResolution, see RESOLVING_MAPPED_CONSTRAINT)
     ty_resolving_push(me, RESOLVING_MAPPED_CONSTRAINT, members->mapped);
@@ -4839,6 +4760,29 @@ MappedInfo const* ty_mapped_info_unexpanded(Checker* me, Ty const* ty) {
         state->members_state = LAZY_STATE_NOT_STARTED;
     }
     return state->unexpanded->mapped;
+}
+
+// A mapped type node's members before expansion (its declaration's MappedInfo), what an instantiation of it is
+// instantiated from (tsc's instantiateMappedType keeps the declaration, resolveMappedTypeMembers reads it with the
+// mapper): never the generic target's expansion, whose `as` clause kind relates types that may reach this very
+// instantiation's keys (`${K}.${keyof Self<T[K]>}`, plan 83). Null if it isn't a mapped type node
+static Members const* declared_mapped_members(Checker* me, Ty const* target) {
+    if (target->kind != TY_ANONYMOUS || !target->anonymous.mapped || target->anonymous.target) return nullptr;
+    TyObjectState* state = object_state(target);
+    if (!state) return nullptr;
+    if (!state->unexpanded) ty_mapped_info_unexpanded(me, target);
+    return state->unexpanded && state->unexpanded->mapped ? state->unexpanded : nullptr;
+}
+
+// tsc's isGenericMappedType: the mapped type's info if it stays generic (its members then are those its keys' lower
+// bound has). A constraint that is a generic index answers from the declaration, as tsc's does: expanding the type to
+// find out relates its `as` clause, which may reach this very type (`${K}.${keyof Self<T[K]>}`, plan 83)
+MappedInfo const* ty_generic_mapped(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_ANONYMOUS && ty->anonymous.mapped && !ty_members_done(ty)) {
+        MappedInfo const* mapped = ty_mapped_info_unexpanded(me, ty);
+        if (mapped && ty_is_generic_index(mapped->constraint)) return mapped;
+    }
+    return ty_members(me, ty)->mapped;
 }
 
 static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
@@ -4867,6 +4811,8 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
         case TY_ANONYMOUS: {
             if (ty->anonymous.is_reverse) return resolve_reverse_mapped_members(me, ty);
             if (ty->anonymous.target) {
+                Members const* declared = ty->anonymous.applies_type_args ? nullptr : declared_mapped_members(me, ty->anonymous.target);
+                if (declared) return instantiate_members(me, declared, ty->anonymous.mapper, false, false);
                 return resolve_instantiated_members(me, ty->anonymous.target, ty->anonymous.mapper, ty->anonymous.applies_type_args);
             }
             MembersBuilder builder = {0};

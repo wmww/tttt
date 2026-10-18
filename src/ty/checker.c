@@ -3090,7 +3090,12 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
             if (node && node->tag == TYPE_INTERFACE && vec_interface_member_size(&node->interface.members) == 1 &&
                 vec_interface_member_at(&node->interface.members, 0)->key.tag == INTERFACE_KEY_MAPPED) {
                 MappedInfo const* mapped = ty_mapped_info_unexpanded(me, operand);
-                if (mapped && !mapped->name_type && ty_is_generic_index(mapped->constraint)) return mapped->constraint;
+                if (mapped && ty_is_generic_index(mapped->constraint)) {
+                    // (With an `as` clause it stays `keyof` it, tsc 6.0's shouldDeferIndexType, see ty_simplified():
+                    // expanding it to find that out relates its `as` clause, which may reach this very `keyof`)
+                    if (!mapped->name_type) return mapped->constraint;
+                    goto deferred;
+                }
             }
         }
         Members const* members = ty_members(me, operand);
@@ -3188,6 +3193,7 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
             return ty_union(me, keys->composite.types.data, keys->composite.types.len, nullptr, (TyList){0});
         }
     }
+deferred:;
     u64 key[2] = { KEY_KEYOF, operand->id };
     Ty* fresh;
     Ty const* ret = intern_deferred(me, key, 2, TY_KEYOF, operand->flags, &fresh);

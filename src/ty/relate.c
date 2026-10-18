@@ -6009,7 +6009,7 @@ static Ternary structured_related_members(
             Ty const* operand = source->keyof.operand;
             // keyof a generic mapped type: also its keys, the `as` type (or the constraint) (tsc's isDeferredMappedIndex)
             MappedInfo const* mapped = operand->kind == TY_ANONYMOUS && (operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) ?
-                ty_members(me, operand)->mapped : nullptr;
+                ty_generic_mapped(me, operand) : nullptr;
             if (!mapped) return is_related_to(me, st, ty_union(me, all, 3, nullptr, (TyList){0}), target, report);
             Ternary related = is_related_to(me, st, ty_union(me, all, 3, nullptr, (TyList){0}), target, false);
             if (related) return related;
