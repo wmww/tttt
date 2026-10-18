@@ -214,3 +214,39 @@ changed-files https://github.com/tj-actions/changed-files.git 1254cca6ac8b9c3047
 vscode-jest https://github.com/jest-community/vscode-jest.git b71edf0b1b80aa22a16222775fbd37dabab3aea0
 sqlite3-editor https://github.com/yy0931/sqlite3-editor.git e53fba4febe14231a4884193184f6dc9cc06c613
 vscode-project-manager https://github.com/alefragnani/vscode-project-manager.git aefcf11b422e2a260faeb63a7dfdd6adbf3b1e03
+# Refresh 2 (2026-10-18, todo entry 7), a third selection rule: GitHub search, stars 300..3000, pushed after 2025-06-01,
+# size < 200 MB, sorted by stars, a root package.json and lockfile; libraries that emit declarations (language
+# TypeScript, topics library, typescript-library, sdk, validation, parser, state-management, react-hooks, api-client,
+# the first 2 per topic whose root tsconfig.json, extends followed, sets declaration/composite/emitDeclarationOnly)
+# and JavaScript projects with checkJs (language JavaScript, topics jsdoc, nodejs, cli, web-components, eslint-plugin,
+# javascript-library, framework, npm-package, game, vite-plugin, rollup-plugin, postcss, markdown,
+# static-site-generator, testing, node, svelte, lit, prettier-plugin: the first 2 per topic whose root tsconfig.json
+# sets checkJs; 9 found). Checked out at their default branch's HEAD that day.
+vue-i18n https://github.com/intlify/vue-i18n.git 34f22909abfc60ea7f443a523452ee2b6ed13657
+ifvisible.js https://github.com/serkanyersen/ifvisible.js.git e7b8e2743becb691a01bff6b8e55dec0e11c338a
+github-automated-repos https://github.com/digoarthur/github-automated-repos.git bebf97773a38d216037caf541e2d2a3693139ba3
+cron-parser https://github.com/harrisiirak/cron-parser.git a70b68e6bb97171a19d7efbd33c06f301e6f2804
+stock-sdk https://github.com/chengzuopeng/stock-sdk.git c6c9a790870c5c607379e542e214a02ea05979c4
+contentful.js https://github.com/contentful/contentful.js.git 1e3fa5f7406b89dceb8670107aa4a948e803ad68
+runtypes https://github.com/runtypes/runtypes.git 5cabab81fc9266dfeffd3d236677fdf2cd80eaac
+vest https://github.com/ealush/vest.git e67265c15da0a2316a133ff55f846675453243f6
+kordoc https://github.com/chrisryugj/kordoc.git 9bf8d2f37cf5c3f85fc873358b96dc9b4c781bdf
+colord https://github.com/omgovich/colord.git 1404cfe80cf8fe6df1a876ea3b12aa8eccc7feff
+mutative https://github.com/unadlib/mutative.git d08e08dfa8aaf52a682d7df00bd7c0fbace3e10b
+kaibanjs https://github.com/kaiban-ai/KaibanJS.git ef2edabbdd56c6fc7f05cf82b3e568ce469ffbb4
+haunted https://github.com/matthewp/haunted.git 35c7f75a2d219e896a07959f6c33608660a6ee17
+# use-query-params: dropped, its install fails
+#use-query-params https://github.com/pbeshai/use-query-params.git f887e72fad1e28532421bf8bf0e34fb8e4b9745c
+# algoliasearch-client-javascript: dropped, a yarn berry lockfile without a packageManager field (the installer runs yarn 1 flags against berry)
+#algoliasearch-client-javascript https://github.com/algolia/algoliasearch-client-javascript.git 642e71a8cc2cd1f45a622ea1f00b236a33040d3c
+binance https://github.com/sieblyio/binance.git 6a4d8476e920899980ad479ab1e33a3c9821cf5b
+eslint-plugin-jsdoc https://github.com/gajus/eslint-plugin-jsdoc.git 6a4c8fe2b91f244e4583902f5885dd0e4a11b664
+otpauth https://github.com/hectorm/otpauth.git 5a0cb600fae0eb5be476db825f26fbf612a2dffd
+# lion: dropped, npm ci fails (package.json and its lockfile out of sync)
+#lion https://github.com/ing-bank/lion.git bc7530702f41df90a4ca3059cfb9edb08e27f742
+rocket https://github.com/modernweb-dev/rocket.git c4a9515064513883f08b1f05ac4624d37b8af639
+eslint-plugin-security https://github.com/eslint-community/eslint-plugin-security.git affbfc0d7b83434434551f128335d04400e554bb
+eslint-plugin-check-file https://github.com/dukeluo/eslint-plugin-check-file.git e2fe87dbc1cde50fd1528fdef40c5fe22bc5bc6f
+markdown-magic https://github.com/DavidWells/markdown-magic.git f6cd8c042c835176a893decfe42f33223c91704b
+streaming-markdown https://github.com/thetarnav/streaming-markdown.git 6beb92d991ed5a16f62cdfefac739b6eee45555f
+parse-xml https://github.com/rgrove/parse-xml.git 24e617c56c10c49b4e3c7c8d3918648f7cb3c526
