@@ -755,7 +755,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             !(body_of && !(alias_is_local(body_of) && !alias_is_local(decl)));
         TyList written = { .data = args.data, .len = (u32)vec_spanned_type_size(&identifier->generic_params) };
         if (written.len > args.len) written.len = args.len;
-        if (through_import && ret->alias == decl && written.len < args.len) {
+        if (through_import && ret->alias == decl && written.len < args.len && !ty_mapped_names_itself(me, ret)) {
             ret = ty_realias(me, ret, decl, written);
         } else if (through_import && ret->alias != decl && (
             (ret->kind == TY_CONDITIONAL && declared->kind == TY_CONDITIONAL && ret->conditional.root == declared->conditional.root) ||

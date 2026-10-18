@@ -1,0 +1,132 @@
+//// [test/cases/ttttImportedMappedAliasDefaults.ts] ////
+
+=== lib.ts ===
+export interface TL { names: readonly string[]; getOptions(): object }
+>TL : Symbol(TL, Decl(lib.ts, 0, 0))
+>names : Symbol(TL.names, Decl(lib.ts, 0, 21))
+>getOptions : Symbol(TL.getOptions, Decl(lib.ts, 0, 47))
+
+export declare const all: readonly [{ names: readonly ["a", "aa"]; getOptions(): { x: { v: 1 } } }, { names: readonly ["b"]; getOptions(): { y: { v: 2 } } }];
+>all : Symbol(all, Decl(lib.ts, 1, 20))
+>names : Symbol(names, Decl(lib.ts, 1, 37))
+>getOptions : Symbol(getOptions, Decl(lib.ts, 1, 66))
+>x : Symbol(x, Decl(lib.ts, 1, 82))
+>v : Symbol(v, Decl(lib.ts, 1, 87))
+>names : Symbol(names, Decl(lib.ts, 1, 101))
+>getOptions : Symbol(getOptions, Decl(lib.ts, 1, 124))
+>y : Symbol(y, Decl(lib.ts, 1, 140))
+>v : Symbol(v, Decl(lib.ts, 1, 145))
+
+export type AllLanguages = (typeof all)[number];
+>AllLanguages : Symbol(AllLanguages, Decl(lib.ts, 1, 158))
+>all : Symbol(all, Decl(lib.ts, 1, 20))
+
+export type LanguageName<Language extends TL = AllLanguages> = Language["names"][number];
+>LanguageName : Symbol(LanguageName, Decl(lib.ts, 2, 48))
+>Language : Symbol(Language, Decl(lib.ts, 3, 25))
+>TL : Symbol(TL, Decl(lib.ts, 0, 0))
+>AllLanguages : Symbol(AllLanguages, Decl(lib.ts, 1, 158))
+>Language : Symbol(Language, Decl(lib.ts, 3, 25))
+
+export type NameMap = { [Language in AllLanguages as LanguageName<Language>]: Language };
+>NameMap : Symbol(NameMap, Decl(lib.ts, 3, 89))
+>Language : Symbol(Language, Decl(lib.ts, 4, 25))
+>AllLanguages : Symbol(AllLanguages, Decl(lib.ts, 1, 158))
+>LanguageName : Symbol(LanguageName, Decl(lib.ts, 2, 48))
+>Language : Symbol(Language, Decl(lib.ts, 4, 25))
+>Language : Symbol(Language, Decl(lib.ts, 4, 25))
+
+export type OptionMap<T> = { [K in keyof T]: T[K] extends { v: infer V } ? V : never };
+>OptionMap : Symbol(OptionMap, Decl(lib.ts, 4, 89))
+>T : Symbol(T, Decl(lib.ts, 5, 22))
+>K : Symbol(K, Decl(lib.ts, 5, 30))
+>T : Symbol(T, Decl(lib.ts, 5, 22))
+>T : Symbol(T, Decl(lib.ts, 5, 22))
+>K : Symbol(K, Decl(lib.ts, 5, 30))
+>v : Symbol(v, Decl(lib.ts, 5, 59))
+>V : Symbol(V, Decl(lib.ts, 5, 68))
+>V : Symbol(V, Decl(lib.ts, 5, 68))
+
+export type RawMap = Readonly<{ [Lang in keyof NameMap]: ReturnType<NameMap[Lang]["getOptions"]> }>;
+>RawMap : Symbol(RawMap, Decl(lib.ts, 5, 87))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Lang : Symbol(Lang, Decl(lib.ts, 6, 33))
+>NameMap : Symbol(NameMap, Decl(lib.ts, 3, 89))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>NameMap : Symbol(NameMap, Decl(lib.ts, 3, 89))
+>Lang : Symbol(Lang, Decl(lib.ts, 6, 33))
+
+export type OptMap = Readonly<{ [Lang in keyof RawMap]: OptionMap<RawMap[Lang]> }>;
+>OptMap : Symbol(OptMap, Decl(lib.ts, 6, 100))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Lang : Symbol(Lang, Decl(lib.ts, 7, 33))
+>RawMap : Symbol(RawMap, Decl(lib.ts, 5, 87))
+>OptionMap : Symbol(OptionMap, Decl(lib.ts, 4, 89))
+>RawMap : Symbol(RawMap, Decl(lib.ts, 5, 87))
+>Lang : Symbol(Lang, Decl(lib.ts, 7, 33))
+
+export type RO<L extends LanguageName = LanguageName, O = OptMap[L]> = { -readonly [K in keyof O]: O[K] };
+>RO : Symbol(RO, Decl(lib.ts, 7, 83))
+>L : Symbol(L, Decl(lib.ts, 8, 15))
+>LanguageName : Symbol(LanguageName, Decl(lib.ts, 2, 48))
+>LanguageName : Symbol(LanguageName, Decl(lib.ts, 2, 48))
+>O : Symbol(O, Decl(lib.ts, 8, 53))
+>OptMap : Symbol(OptMap, Decl(lib.ts, 6, 100))
+>L : Symbol(L, Decl(lib.ts, 8, 15))
+>K : Symbol(K, Decl(lib.ts, 8, 84))
+>O : Symbol(O, Decl(lib.ts, 8, 53))
+>O : Symbol(O, Decl(lib.ts, 8, 53))
+>K : Symbol(K, Decl(lib.ts, 8, 84))
+
+=== run.ts ===
+import type { RO, LanguageName } from "./lib.js";
+>RO : Symbol(RO, Decl(run.ts, 0, 13))
+>LanguageName : Symbol(LanguageName, Decl(run.ts, 0, 17))
+
+export interface NI<Lang extends LanguageName> { lang: Lang; ro: Partial<RO<Lang>> }
+>NI : Symbol(NI, Decl(run.ts, 0, 49))
+>Lang : Symbol(Lang, Decl(run.ts, 1, 20))
+>LanguageName : Symbol(LanguageName, Decl(run.ts, 0, 17))
+>lang : Symbol(NI.lang, Decl(run.ts, 1, 48))
+>Lang : Symbol(Lang, Decl(run.ts, 1, 20))
+>ro : Symbol(NI.ro, Decl(run.ts, 1, 60))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>RO : Symbol(RO, Decl(run.ts, 0, 13))
+>Lang : Symbol(Lang, Decl(run.ts, 1, 20))
+
+export type Options<Lang extends LanguageName = LanguageName> = NI<Lang> & { f: boolean };
+>Options : Symbol(Options, Decl(run.ts, 1, 84))
+>Lang : Symbol(Lang, Decl(run.ts, 2, 20))
+>LanguageName : Symbol(LanguageName, Decl(run.ts, 0, 17))
+>LanguageName : Symbol(LanguageName, Decl(run.ts, 0, 17))
+>NI : Symbol(NI, Decl(run.ts, 0, 49))
+>Lang : Symbol(Lang, Decl(run.ts, 2, 20))
+>f : Symbol(f, Decl(run.ts, 2, 76))
+
+export declare function q<Lang extends LanguageName = LanguageName>(o: Partial<Options<Lang>>): void;
+>q : Symbol(q, Decl(run.ts, 2, 90))
+>Lang : Symbol(Lang, Decl(run.ts, 3, 26))
+>LanguageName : Symbol(LanguageName, Decl(run.ts, 0, 17))
+>LanguageName : Symbol(LanguageName, Decl(run.ts, 0, 17))
+>o : Symbol(o, Decl(run.ts, 3, 68))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Options : Symbol(Options, Decl(run.ts, 1, 84))
+>Lang : Symbol(Lang, Decl(run.ts, 3, 26))
+
+=== t.ts ===
+import type { RO } from "./lib.js";
+>RO : Symbol(RO, Decl(t.ts, 0, 13))
+
+import { q } from "./run.js";
+>q : Symbol(q, Decl(t.ts, 1, 8))
+
+declare const bad: RO;
+>bad : Symbol(bad, Decl(t.ts, 2, 13))
+>RO : Symbol(RO, Decl(t.ts, 0, 13))
+
+q({ lang: "a", ro: bad });
+>q : Symbol(q, Decl(t.ts, 1, 8))
+>lang : Symbol(lang, Decl(t.ts, 3, 3))
+>ro : Symbol(ro, Decl(t.ts, 3, 14))
+>bad : Symbol(bad, Decl(t.ts, 2, 13))
+

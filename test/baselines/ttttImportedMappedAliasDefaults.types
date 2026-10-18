@@ -1,0 +1,77 @@
+//// [test/cases/ttttImportedMappedAliasDefaults.ts] ////
+
+=== lib.ts ===
+export interface TL { names: readonly string[]; getOptions(): object }
+>names : readonly string[]
+>getOptions : () => object
+
+export declare const all: readonly [{ names: readonly ["a", "aa"]; getOptions(): { x: { v: 1 } } }, { names: readonly ["b"]; getOptions(): { y: { v: 2 } } }];
+>all : readonly [{ names: readonly ["a", "aa"]; getOptions(): { x: { v: 1; }; }; }, { names: readonly ["b"]; getOptions(): { y: { v: 2; }; }; }]
+>names : readonly ["a", "aa"]
+>getOptions : () => { x: { v: 1; }; }
+>x : { v: 1; }
+>v : 1
+>names : readonly ["b"]
+>getOptions : () => { y: { v: 2; }; }
+>y : { v: 2; }
+>v : 2
+
+export type AllLanguages = (typeof all)[number];
+>AllLanguages : { names: readonly ["a", "aa"]; getOptions(): { x: { v: 1; }; }; } | { names: readonly ["b"]; getOptions(): { y: { v: 2; }; }; }
+>all : readonly [{ names: readonly ["a", "aa"]; getOptions(): { x: { v: 1; }; }; }, { names: readonly ["b"]; getOptions(): { y: { v: 2; }; }; }]
+
+export type LanguageName<Language extends TL = AllLanguages> = Language["names"][number];
+>LanguageName : LanguageName<Language>
+
+export type NameMap = { [Language in AllLanguages as LanguageName<Language>]: Language };
+>NameMap : NameMap
+
+export type OptionMap<T> = { [K in keyof T]: T[K] extends { v: infer V } ? V : never };
+>OptionMap : OptionMap<T>
+>v : V
+
+export type RawMap = Readonly<{ [Lang in keyof NameMap]: ReturnType<NameMap[Lang]["getOptions"]> }>;
+>RawMap : Readonly<{ a: { x: { v: 1; }; }; aa: { x: { v: 1; }; }; b: { y: { v: 2; }; }; }>
+
+export type OptMap = Readonly<{ [Lang in keyof RawMap]: OptionMap<RawMap[Lang]> }>;
+>OptMap : Readonly<{ readonly a: OptionMap<{ x: { v: 1; }; }>; readonly aa: OptionMap<{ x: { v: 1; }; }>; readonly b: OptionMap<{ y: { v: 2; }; }>; }>
+
+export type RO<L extends LanguageName = LanguageName, O = OptMap[L]> = { -readonly [K in keyof O]: O[K] };
+>RO : RO<L, O>
+
+=== run.ts ===
+import type { RO, LanguageName } from "./lib.js";
+>RO : RO<L, O>
+>LanguageName : LanguageName<Language>
+
+export interface NI<Lang extends LanguageName> { lang: Lang; ro: Partial<RO<Lang>> }
+>lang : Lang
+>ro : Partial<RO<Lang, Readonly<{ readonly a: import("./lib.js").OptionMap<{ x: { v: 1; }; }>; readonly aa: import("./lib.js").OptionMap<{ x: { v: 1; }; }>; readonly b: import("./lib.js").OptionMap<{ y: { v: 2; }; }>; }>[Lang]>>
+
+export type Options<Lang extends LanguageName = LanguageName> = NI<Lang> & { f: boolean };
+>Options : Options<Lang>
+>f : boolean
+
+export declare function q<Lang extends LanguageName = LanguageName>(o: Partial<Options<Lang>>): void;
+>q : <Lang extends LanguageName = "a" | "aa" | "b">(o: Partial<Options<Lang>>) => void
+>o : Partial<Options<Lang>>
+
+=== t.ts ===
+import type { RO } from "./lib.js";
+>RO : RO<L, O>
+
+import { q } from "./run.js";
+>q : <Lang extends import("./lib.js").LanguageName = "a" | "aa" | "b">(o: Partial<import("./run.js").Options<Lang>>) => void
+
+declare const bad: RO;
+>bad : RO
+
+q({ lang: "a", ro: bad });
+>q({ lang: "a", ro: bad }) : void
+>q : <Lang extends import("./lib.js").LanguageName = "a" | "aa" | "b">(o: Partial<import("./run.js").Options<Lang>>) => void
+>{ lang: "a", ro: bad } : { lang: "a"; ro: RO; }
+>lang : "a"
+>"a" : "a"
+>ro : RO
+>bad : RO
+

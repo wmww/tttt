@@ -799,6 +799,21 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
 // ty_instantiate() turns it back with any mapper (alias_body_twin; TYF_COULD_CONTAIN_TYPE_VARIABLES is exact in tttt
 // and doubles as "generic" in member resolution, so it stays off). HACK: only where it is met directly; tsc gets
 // there through any type literal around it too, which tttt doesn't instantiate without free type parameters (hacks.md)
+// An instance of a homomorphic mapped type whose type variable became something other than itself or a union: tsc's
+// instantiateMappedType makes it with instantiateAnonymousType and no alias, which names it by the declaration's alias,
+// its arguments instantiated, whatever alias it was asked for (`RendererOptions<"cs", OptionMap<...>>` of
+// `RendererOptions<Lang>` through an import, its default filled in): not one to realias
+bool ty_mapped_names_itself(Checker* me, Ty const* instance) {
+    if (instance->kind != TY_ANONYMOUS || !instance->anonymous.mapped || !instance->anonymous.target || !instance->anonymous.mapper) {
+        return false;
+    }
+    MappedInfo const* mapped = nullptr;
+    Ty const* variable = homomorphic_variable(me, instance, &mapped);
+    if (!variable) return false;
+    Ty const* became = ty_instantiate(me, variable, instance->anonymous.mapper);
+    return became != variable && became->kind != TY_UNION;
+}
+
 Ty const* ty_alias_body_mapped_instance(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args) {
     if (ty->kind != TY_ANONYMOUS || !ty->anonymous.mapped || !ty->anonymous.target || ty->anonymous.realiased || !alias ||
         ty->alias == alias

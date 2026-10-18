@@ -1454,6 +1454,7 @@ Ty const* ty_conditional(
 );
 Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args);
 // An alias body's homomorphic mapped instance, its own type by the same name (instantiate.c)
+bool ty_mapped_names_itself(Checker* me, Ty const* instance); // See instantiate.c
 Ty const* ty_alias_body_mapped_instance(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args);
 TyList ty_conditional_own_infers(Checker* me, Ty const* root); // The `infer` type parameters its extends type declares
 Ty const* ty_non_nullable(Checker* me, Ty const* ty);
