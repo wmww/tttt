@@ -1,0 +1,56 @@
+//// [test/cases/ttttJsxTagIntersectionMemberNoSignatures.tsx] ////
+
+=== ttttJsxTagIntersectionMemberNoSignatures.tsx ===
+// A JSX tag typed as a union with an intersection member (`NoInfer<T> & string`, T a key of IntrinsicElements): tsc's
+// getApparentType of the intersection is no union, so it has no signatures and the union of the members' has none
+// either (TS2604), not one of every intrinsic element
+declare namespace JSX {
+>JSX : Symbol(JSX, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 0, 0))
+
+    interface IntrinsicElements { a: { href?: string }; b: { title?: string } }
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 3, 23))
+>a : Symbol(IntrinsicElements.a, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 4, 33))
+>href : Symbol(href, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 4, 38))
+>b : Symbol(IntrinsicElements.b, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 4, 55))
+>title : Symbol(title, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 4, 60))
+
+    interface Element { }
+>Element : Symbol(Element, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 4, 79))
+}
+export function C<T extends keyof JSX.IntrinsicElements>(Tag: NoInfer<T> | (NoInfer<T> & string)) {
+>C : Symbol(C, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 6, 1))
+>T : Symbol(T, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 7, 18))
+>JSX : Symbol(JSX, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 0, 0))
+>IntrinsicElements : Symbol(JSX.IntrinsicElements, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 3, 23))
+>Tag : Symbol(Tag, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 7, 57))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 7, 18))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 7, 18))
+
+    return <Tag />;
+>Tag : Symbol(Tag, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 7, 57))
+}
+export function D<T extends keyof JSX.IntrinsicElements>(Tag: T) {
+>D : Symbol(D, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 9, 1))
+>T : Symbol(T, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 10, 18))
+>JSX : Symbol(JSX, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 0, 0))
+>IntrinsicElements : Symbol(JSX.IntrinsicElements, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 3, 23))
+>Tag : Symbol(Tag, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 10, 57))
+>T : Symbol(T, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 10, 18))
+
+    return <Tag />;
+>Tag : Symbol(Tag, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 10, 57))
+}
+export function E<T extends keyof JSX.IntrinsicElements>(Tag: T & string) {
+>E : Symbol(E, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 12, 1))
+>T : Symbol(T, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 13, 18))
+>JSX : Symbol(JSX, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 0, 0))
+>IntrinsicElements : Symbol(JSX.IntrinsicElements, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 3, 23))
+>Tag : Symbol(Tag, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 13, 57))
+>T : Symbol(T, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 13, 18))
+
+    return <Tag />;
+>Tag : Symbol(Tag, Decl(ttttJsxTagIntersectionMemberNoSignatures.tsx, 13, 57))
+}
+

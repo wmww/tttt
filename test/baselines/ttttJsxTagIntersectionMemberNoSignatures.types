@@ -1,0 +1,43 @@
+//// [test/cases/ttttJsxTagIntersectionMemberNoSignatures.tsx] ////
+
+=== ttttJsxTagIntersectionMemberNoSignatures.tsx ===
+// A JSX tag typed as a union with an intersection member (`NoInfer<T> & string`, T a key of IntrinsicElements): tsc's
+// getApparentType of the intersection is no union, so it has no signatures and the union of the members' has none
+// either (TS2604), not one of every intrinsic element
+declare namespace JSX {
+    interface IntrinsicElements { a: { href?: string }; b: { title?: string } }
+>a : { href?: string; }
+>href : string | undefined
+>b : { title?: string; }
+>title : string | undefined
+
+    interface Element { }
+}
+export function C<T extends keyof JSX.IntrinsicElements>(Tag: NoInfer<T> | (NoInfer<T> & string)) {
+>C : <T extends keyof JSX.IntrinsicElements>(Tag: NoInfer<T> | (NoInfer<T> & string)) => any
+>JSX : any
+>Tag : NoInfer<T> | (NoInfer<T> & string)
+
+    return <Tag />;
+><Tag /> : any
+>Tag : NoInfer<T> | (NoInfer<T> & string)
+}
+export function D<T extends keyof JSX.IntrinsicElements>(Tag: T) {
+>D : <T extends keyof JSX.IntrinsicElements>(Tag: T) => any
+>JSX : any
+>Tag : T
+
+    return <Tag />;
+><Tag /> : any
+>Tag : T
+}
+export function E<T extends keyof JSX.IntrinsicElements>(Tag: T & string) {
+>E : <T extends keyof JSX.IntrinsicElements>(Tag: T & string) => any
+>JSX : any
+>Tag : T
+
+    return <Tag />;
+><Tag /> : any
+>Tag : T
+}
+

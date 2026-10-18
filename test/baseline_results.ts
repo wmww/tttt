@@ -1231,6 +1231,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsxTagIntersectionMemberNoSignatures': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttKeyofConstraintChainNotDeeplyNested': {
         errors: true,
         symbols: true,

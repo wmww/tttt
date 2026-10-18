@@ -3166,7 +3166,11 @@ static Signature* const* jsx_signatures_of(Checker* me, JsxElement const* elemen
     if (apparent->kind == TY_UNION) {
         Signature* const* ret = ty_union_signatures(me, apparent->composite.types, true, count_out);
         if (!*count_out) ret = ty_union_signatures(me, apparent->composite.types, false, count_out);
-        if (!*count_out && depth < 8) ret = jsx_union_signatures(me, element, apparent->composite.types, depth, count_out);
+        // (Not an intersection's: tsc's getApparentType of one is no union, `NoInfer<T> & string` with T a key of
+        // IntrinsicElements has no signatures at all rather than each intrinsic element's)
+        if (!*count_out && depth < 8 && type->kind != TY_INTERSECTION) {
+            ret = jsx_union_signatures(me, element, apparent->composite.types, depth, count_out);
+        }
         return ret;
     }
     Members const* members = ty_members(me, apparent);
