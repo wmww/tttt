@@ -225,11 +225,10 @@ mechanism, roughly by projects:
   integration-tests/vite `DeepPartial<TValue>` vs `DeepPartial<...>`, `(...)` vs `...`; es-toolkit `isEmpty.spec.ts:56`
   `prototype: ...` vs `any`; babel-traverse `visitors.ts:168` the union's leading `{}` member missing and `... 755
   more` vs `753`; quicktype/test TS2322 `Partial<RendererOptions<"csharp", OptionMap<...>>>` printed without its
-  defaulted type argument; rxjs `combine-latest-all.spec.ts`/`zip-all.spec.ts` x11: the groupBy overloads printed for
-  `(string | number)[]` elide `KeyedGroupObservable<...>` where tsc still prints `<true, K>` (the same print for
-  `string[]` matches: the approximate length runs ahead somewhere in the three `(string | number)[]`s before it);
-  mikro-orm `decorator.transactional.test.ts:84` TS1270 `FindOneOptions<Entity, Hint, Fields, Excludes>` vs
-  `FindOneOptions<...>` in a parameter of a generic signature in a union).
+  defaulted type argument). Method that found rxjs's and mikro-orm's: a /tmp overlay build of tsgo's cmd/tsc with
+  nodebuilderimpl.go's typeToTypeNode logging `b.ctx.approximateLength` and the type's symbol on entry and exit
+  (env-gated; `go build -overlay` with ensure-typescript.sh --env), against the same log of `*d.approx` around
+  ty_display(); the first entry where the numbers part is the bug.
 - **Zod v4 TS5115 list order** (crawlee x4, unocss x2, knip fixture, webpack: `schemas.d.cts(804,5)`): tsc `'IsOptionalIn',
   '$ZodTypeInternals', '$InferZodRecordInput'`, tttt starts at `$ZodTypeInternals`: where the instantiation stack is
   cut, or its rotation (TS5115's checker dependence is tsgo's own: bugs/tsgo_divergences.md).
