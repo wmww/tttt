@@ -20,7 +20,7 @@ says where each file goes) and rebuilds both tools whenever a file here is newer
 - **tttt-oracle** (`scripts/sweep.py`'s `run_tsc`, used by sweep, sourcesweep, expecttypes, expectprobe): project
   directories on stdin, a JSON line each. Diagnostics are tsgo's command line run in-process (`-p DIR --noEmit
   --pretty false --singleThreaded`, extra arguments passed on) and parsed back: what `tsc -p DIR --noEmit` reports,
-  the drop-in definition (option errors stop it; emit-only option errors never appear). Build info is hidden and
+  the drop-in definition (option errors stop it; emit-only option errors never appear). `--text` adds the whole output (`text`: scripts/clidiff.py's expectation, kept in the source sweep's cache). Build info is hidden and
   never written (`withoutBuildInfo()`): every project is checked cold, and nothing lands in the shared checkouts (a
   `.tsbuildinfo` there makes a later `tsc -p --noEmit` skip checking: 851 had piled up in thirdparty/sources by
   2026-10-18). `--expect`: DefinitelyTyped's

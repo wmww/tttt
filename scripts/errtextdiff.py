@@ -22,14 +22,6 @@ lines, the squiggles above it) is paired in order with tsc's, and the first part
 import argparse, collections, csv, os, random, re
 from displaykinds import type_kinds
 
-ap = argparse.ArgumentParser()
-ap.add_argument('-n', type=int, default=4)
-ap.add_argument('-k')
-ap.add_argument('-f')
-ap.add_argument('--names', action='store_true')
-ap.add_argument('--coarse', action='store_true')
-args = ap.parse_args()
-from suite import ref
 DUMP = 'build/failstats/dump/'
 SQUIGGLE = re.compile(r'^\s*~+[\s~]*$')
 ERROR = re.compile(r'^!!! error (TS\d+): (.*)$')
@@ -114,58 +106,70 @@ def diag_kind(t, o):
     return None
 
 
-def coarse(k):
-    return k.split(':')[0] if args.coarse else k
-
-
-rows = list(csv.DictReader(open('build/failstats/tests.tsv'), delimiter='\t'))
-diags_of, tests_of = collections.Counter(), collections.defaultdict(set)
-single, single_names, examples = collections.Counter(), collections.defaultdict(list), collections.defaultdict(list)
-total = 0
-for r in rows:
-    name = r['name']
-    if r['errors'] == '1' or r['missing'] or r['spurious'] or (args.f and not re.fullmatch(args.f, name)): continue
-    exp, got = ref(name, '.errors.txt'), DUMP + name + '.errors.txt'
-    if not (os.path.exists(exp) and os.path.exists(got)): continue
-    total += 1
-    T, O = diagnostics(exp), diagnostics(got)
-    kinds = set()
-    pairs = [(t, o, diag_kind(t, o)) for t, o in zip(T, O)]
-    if len(T) != len(O):
-        kinds.add('count')
-    elif any(k for _, _, k in pairs) and sorted(map(repr, T)) == sorted(map(repr, O)):
-        kinds.add('order')
-    else:
-        for t, o, k in pairs:
-            if not k: continue
-            k = coarse(k)
-            kinds.add(k); diags_of[k] += 1; tests_of[k].add(name)
-            examples[k].append((name, t, o))
-    if not kinds: kinds.add('outside diagnostics')
-    if len(kinds) == 1:
-        k = next(iter(kinds)); single[k] += 1; single_names[k].append(name)
-
-def show(d):
+def show_diag(d):
     s = d['code'] + ': ' + d['header'][:150]
     for c in d['chain'][:4]: s += '\n        ' + c[:150]
     for rel in d['related'][:2]: s += '\n        related ' + ' '.join(rel)[:150]
     for q in d['squiggles'][:3]: s += '\n        ' + q[:150]
     return s
 
-selected = lambda k: not args.k or k.startswith(args.k)
-print(f'{total} tests with the same codes at the same positions and a different errors.txt')
-print('differing diagnostics by kind (diagnostics, tests):')
-for k, v in diags_of.most_common():
-    if selected(k): print(f'  {v:5} {len(tests_of[k]):5}  {k}')
-print('tests fixed by one kind:')
-for k, v in single.most_common():
-    if selected(k): print(f'  {v:5}  {k}')
-if args.names and args.k:
-    print('\n' + ' '.join(sorted(n for k in single_names if selected(k) for n in single_names[k])))
-    raise SystemExit
-random.seed(1)
-for k in sorted(examples, key=lambda k: -diags_of[k]):
-    if not args.n or not selected(k) or (not args.k and diags_of[k] < 3): continue
-    print(f'\n{k}:')
-    for name, t, o in random.sample(examples[k], min(args.n, len(examples[k]))):
-        print(f'  {name}\n    tsc: {show(t)}\n    us : {show(o)}')
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('-n', type=int, default=4)
+    ap.add_argument('-k')
+    ap.add_argument('-f')
+    ap.add_argument('--names', action='store_true')
+    ap.add_argument('--coarse', action='store_true')
+    args = ap.parse_args()
+    from suite import ref
+    coarse = lambda k: k.split(':')[0] if args.coarse else k
+    show = show_diag
+    rows = list(csv.DictReader(open('build/failstats/tests.tsv'), delimiter='\t'))
+    diags_of, tests_of = collections.Counter(), collections.defaultdict(set)
+    single, single_names, examples = collections.Counter(), collections.defaultdict(list), collections.defaultdict(list)
+    total = 0
+    for r in rows:
+        name = r['name']
+        if r['errors'] == '1' or r['missing'] or r['spurious'] or (args.f and not re.fullmatch(args.f, name)): continue
+        exp, got = ref(name, '.errors.txt'), DUMP + name + '.errors.txt'
+        if not (os.path.exists(exp) and os.path.exists(got)): continue
+        total += 1
+        T, O = diagnostics(exp), diagnostics(got)
+        kinds = set()
+        pairs = [(t, o, diag_kind(t, o)) for t, o in zip(T, O)]
+        if len(T) != len(O):
+            kinds.add('count')
+        elif any(k for _, _, k in pairs) and sorted(map(repr, T)) == sorted(map(repr, O)):
+            kinds.add('order')
+        else:
+            for t, o, k in pairs:
+                if not k: continue
+                k = coarse(k)
+                kinds.add(k); diags_of[k] += 1; tests_of[k].add(name)
+                examples[k].append((name, t, o))
+        if not kinds: kinds.add('outside diagnostics')
+        if len(kinds) == 1:
+            k = next(iter(kinds)); single[k] += 1; single_names[k].append(name)
+
+    selected = lambda k: not args.k or k.startswith(args.k)
+    print(f'{total} tests with the same codes at the same positions and a different errors.txt')
+    print('differing diagnostics by kind (diagnostics, tests):')
+    for k, v in diags_of.most_common():
+        if selected(k): print(f'  {v:5} {len(tests_of[k]):5}  {k}')
+    print('tests fixed by one kind:')
+    for k, v in single.most_common():
+        if selected(k): print(f'  {v:5}  {k}')
+    if args.names and args.k:
+        print('\n' + ' '.join(sorted(n for k in single_names if selected(k) for n in single_names[k])))
+        raise SystemExit
+    random.seed(1)
+    for k in sorted(examples, key=lambda k: -diags_of[k]):
+        if not args.n or not selected(k) or (not args.k and diags_of[k] < 3): continue
+        print(f'\n{k}:')
+        for name, t, o in random.sample(examples[k], min(args.n, len(examples[k]))):
+            print(f'  {name}\n    tsc: {show(t)}\n    us : {show(o)}')
+
+
+if __name__ == '__main__':
+    main()

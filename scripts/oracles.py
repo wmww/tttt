@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Every oracle in one go, one summary line each, for comparing a change against HEAD (plan 51's deletion census):
 the suite (saves test/baseline_results.ts like scripts/fasttest.sh -s, then the components lost/gained against git HEAD's),
-every pinned corpus, the DefinitelyTyped sweep, `$ExpectType`, flagflip, the source sweep, perf at breadth
+every pinned corpus, the CLI's whole output with message text (scripts/clidiff.py, from tsc's cached output; --quick:
+the corpora's), the DefinitelyTyped sweep, `$ExpectType`, flagflip, the source sweep, perf at breadth
 (scripts/perfsweep.py: check time and type count ratios against tsgo), declaration emit (scripts/dtsdiff.py), and the output's independence of the checker count
 (scripts/kdiff.py, the suite's --dump at 1 and 16 checkers) and of the checker's history (a fresh checker per file,
 --checker-memory 0, plan 67; the suite's too with deferred bodies, whose materializations are then dropped and made
 again, plan 78).
 
   scripts/oracles.py                  # everything (~15 min)
-  scripts/oracles.py --quick          # suite and corpora only (~1 min)
+  scripts/oracles.py --quick          # suite, corpora and their clidiff only (~2 min)
   scripts/oracles.py --only sweep,expect
 The per-oracle scripts keep their --last caches per tree name in /tmp, so worktrees can run this side by side.
 """
@@ -98,7 +99,18 @@ def dts():
     # (Plan 64: tsgo's .d.ts files on the corpora and the declaration-emitting source sweep projects, byte for byte)
     out = run(['scripts/dtsdiff.py', '--no-build', '-n', '5'])
     m = re.search(r'dts: projects (\d+ / \d+) fully match, files (\d+ / \d+) match', out)
-    print(f'dts: projects {m.group(1)}, files {m.group(2)}' if m else 'dts: ?', flush=True)
+    single = re.search(r'(\d+) more projects match tsgo --singleThreaded, (\d+) files', out)
+    print(f'dts: projects {m.group(1)}, files {m.group(2)}' if m else 'dts: ?', flush=True, end='')
+    print(f' (+{single.group(1)} projects, {single.group(2)} files as tsgo --singleThreaded)' if single else '', flush=True)
+
+def clidiff(corpora_only=False):
+    # (The CLI's whole output, message text included, against tsc's cached output: every corpus and source sweep
+    # project, ~5 min; --quick: the corpora, ~1 min)
+    out = run(['scripts/clidiff.py', '--no-build', '-n', '5', *(['--corpora'] if corpora_only else [])])
+    m = re.search(r'clidiff: (.*)', out)
+    c = re.search(r'^corpora: (.*)', out, re.M)
+    print(f'clidiff{" (corpora)" if corpora_only else ""}: ' + (m.group(1) if m else '?') +
+          (f'; corpora: {c.group(1)}' if c else ''), flush=True)
 
 def kdiff():
     # (Plan 62: tsgo's output doesn't depend on its checker count, tttt's mustn't either. The suite dumped at 1 and 16
@@ -129,15 +141,16 @@ def recycle():
           (': ' + ', '.join(projects[:12]) if projects else ''), flush=True)
 
 ORACLES = {'suite': suite, 'corpora': corpora, 'sweep': sweep, 'expect': expect, 'flagflip': flagflip, 'sources': sources,
-           'perf': perf, 'dts': dts, 'kdiff': kdiff,
+           'perf': perf, 'dts': dts, 'clidiff': clidiff, 'clidiff-corpora': lambda: clidiff(True), 'kdiff': kdiff,
            'recycle': recycle}
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--quick', action='store_true', help='suite and corpora only')
+    ap.add_argument('--quick', action='store_true', help='suite, corpora and their clidiff only')
     ap.add_argument('--only', help='comma-separated: ' + ','.join(ORACLES))
     args = ap.parse_args()
-    which = args.only.split(',') if args.only else ['suite', 'corpora'] if args.quick else list(ORACLES)
+    which = args.only.split(',') if args.only else ['suite', 'corpora', 'clidiff-corpora'] if args.quick else \
+        [o for o in ORACLES if o != 'clidiff-corpora']
     # (The suite builds; the others are run with --no-build after it)
     if 'suite' not in which: run(['ninja', '-C', 'release'])
     for w in which:

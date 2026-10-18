@@ -96,7 +96,35 @@ def run_tsc(corpus, cwd, options):
             if os.path.getmtime(d) > marker and not os.listdir(d) and os.path.realpath(d) != os.path.realpath(checkout):
                 os.rmdir(d)
     diags = [[f, l, col, c] for f, l, col, c, _ in tscformat.parse(out)]
-    return {'corpus': corpus, 'pin': pin(corpus), 'status': status, 'diags': diags}
+    # (text: the whole output, scripts/clidiff.py's expectation)
+    return {'corpus': corpus, 'pin': pin(corpus), 'status': status, 'diags': diags, 'text': out}
+
+
+def invocation(corpus):
+    """(cwd, options) tttt and tsc check the corpus with: `-p` or `-b` and its path relative to cwd. Through its real
+    path: in a worktree thirdparty/corpora is a symlink, and a project reached through one loads its own files twice
+    (webpack's node_modules/webpack -> .. realpaths to the other copy; tsc too). Run from the tree the link leads
+    into, so paths print short (thirdparty/corpora/...) rather than as ../../home/..."""
+    cwd = ROOT
+    flag = '-b ' if corpus in BUILD_CORPORA else '-p '
+    real = os.path.realpath(os.path.join(ROOT, CORPORA[corpus]))
+    parts = CORPORA[corpus].split('/')
+    for i in range(1, len(parts) + 1):
+        prefix = '/'.join(parts[:i])
+        if os.path.islink(os.path.join(ROOT, prefix)):
+            target = os.path.realpath(os.path.join(ROOT, prefix))
+            if target.endswith('/' + prefix):
+                cwd = target[:-len(prefix) - 1]
+            break
+    return cwd, flag + os.path.relpath(real, cwd)
+
+
+def tttt_command(options):
+    """tttt's command line checking like tsc: `-b` must come first (TS6369) and writes nothing (tsc's -b emits, its
+    outputs deleted after); -p is tsc --noEmit's oracle"""
+    opts = options.split()
+    return [os.path.join(ROOT, 'release/tttt'), *(opts + ['--pretty', 'false', '--no-write'] if opts[:1] == ['-b']
+                                                   else ['--pretty', 'false', '--noEmit'] + opts)]
 
 
 def load_tsc_cache():
@@ -139,20 +167,7 @@ def main():
 
     cwd = ROOT
     if args.options is None:
-        # Through its real path: in a worktree thirdparty/corpora is a symlink, and a project reached through one
-        # loads its own files twice (webpack's node_modules/webpack -> .. realpaths to the other copy; tsc too). Run
-        # from the tree the link leads into, so paths print short (thirdparty/corpora/...) rather than as ../../home/...
-        flag = '-b ' if args.corpus in BUILD_CORPORA else '-p '
-        real = os.path.realpath(os.path.join(ROOT, CORPORA[args.corpus]))
-        parts = CORPORA[args.corpus].split('/')
-        for i in range(1, len(parts) + 1):
-            prefix = '/'.join(parts[:i])
-            if os.path.islink(os.path.join(ROOT, prefix)):
-                target = os.path.realpath(os.path.join(ROOT, prefix))
-                if target.endswith('/' + prefix):
-                    cwd = target[:-len(prefix) - 1]
-                break
-        args.options = flag + os.path.relpath(real, cwd)
+        cwd, args.options = invocation(args.corpus)
         subprocess.run(['thirdparty/ensure-corpora.sh', CORPORA[args.corpus].split('/')[2]], check=True)
     if args.tsc:
         cache = load_tsc_cache()
@@ -167,10 +182,7 @@ def main():
     limit = args.mem_gb << 30
     start = time.time()
     try:
-        opts = args.options.split()
-        # (`-b` must be the first argument, like tsc's TS6369)
-        # (-b emits, tsc's too: tttt writes nothing into the checkout. -p is tsc --noEmit's oracle)
-        cmd = [os.path.join(ROOT, 'release/tttt'), *(opts + ['--pretty', 'false', '--no-write'] if opts[:1] == ['-b'] else ['--pretty', 'false', '--noEmit'] + opts), *args.entry]
+        cmd = tttt_command(args.options) + args.entry
         proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               timeout=args.timeout, cwd=cwd,
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))

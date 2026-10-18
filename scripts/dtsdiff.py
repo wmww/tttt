@@ -32,6 +32,13 @@ Mismatching files are bucketed by their first differing line (missing file, extr
   scripts/dtsdiff.py --sample 4           # a fixed quarter of the projects (scripts/sourcesweep.py's hash)
   scripts/dtsdiff.py --last ...           # reuse the last run's results
   scripts/dtsdiff.py --tsc [-f ...]       # rediscover the projects and regenerate tsgo's manifests (all, or -f's)
+  scripts/dtsdiff.py --tsc-single         # tsgo --singleThreaded's hashes for the last run's mismatching projects
+
+tsgo's default 4 checkers emit some types otherwise than one checker does (union order: type ids depend on which
+files a checker checked first), and tttt's output is that of one checker: a file tttt writes as `tsgo
+--singleThreaded` does is bucketed `matches tsgo --singleThreaded`, a project whose every mismatch is such is
+counted apart from the fully matching and the mismatching ones (`--names split`). Those hashes are cached for the
+mismatching projects only (--tsc-single after a run; kept by --tsc while the pins and tsgo's files stay the same).
 """
 import argparse, collections, concurrent.futures, difflib, gzip, hashlib, json, os, re, resource, shutil, signal
 import subprocess, sys, tempfile, time, zlib
@@ -52,6 +59,10 @@ SKIP_CORPORA = ('zod-root', 'webpack')
 SANDBOX = ['bwrap', '--ro-bind', '/', '/', '--bind', '/tmp', '/tmp', '--dev', '/dev', '--proc', '/proc', '--']
 HASH_LEN = 16  # (hex digits of sha256 kept: equality only)
 # Codes of the declaration diagnostics: tsgo doesn't write a file it reports one of them in
+# The bucket of a file tttt writes as `tsgo --singleThreaded` does (tsgo's default 4 checkers write another text: its
+# own checker split, e.g. union order by type ids that depend on which files a checker saw; --tsc-single caches those
+# hashes for the mismatching projects, `single` in the manifest)
+SINGLE = 'matches tsgo --singleThreaded'
 DECLARATION_CODES = lambda c: 4000 <= c < 5000 or 9000 <= c < 10000 or c in (2742, 2883, 2527, 2526)
 
 
@@ -125,15 +136,16 @@ def tsgo_store(name):
     return d, os.path.join(d, hashlib.sha1(name.encode()).hexdigest()[:16] + '.json.gz')
 
 
-def run_tsgo(name, timeout=900, mem_gb=16):
-    """tsgo's declaration emit of the project: (manifest record, {relative path: text}). Its texts go to the store"""
+def run_tsgo(name, timeout=900, mem_gb=16, extra=()):
+    """tsgo's declaration emit of the project: (manifest record, {relative path: text}). Its texts go to the store
+    (not with extra flags)"""
     cwd, p = project_spec(name)
     tmp = tempfile.mkdtemp(prefix='dtsdiff-tsgo-run-')
     out, flags = overrides(os.path.join(tmp, 'out'), os.path.join(tmp, 'tsbuildinfo'))
     limit = mem_gb << 30
     start = time.time()
     try:
-        proc = subprocess.run([*SANDBOX, TSGO, '-p', p, '--pretty', 'false', *flags], cwd=cwd, capture_output=True, text=True,
+        proc = subprocess.run([*SANDBOX, TSGO, '-p', p, '--pretty', 'false', *flags, *extra], cwd=cwd, capture_output=True, text=True,
                               timeout=timeout, preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         status, stdout = proc.returncode, proc.stdout
     except subprocess.TimeoutExpired:
@@ -155,7 +167,7 @@ def run_tsgo(name, timeout=900, mem_gb=16):
         record['skip'] = f'tsgo exit {status}: {stdout[-300:]}'
     elif not texts:
         record['skip'] = 'no outputs'
-    if texts:
+    if texts and not extra:
         save_texts(name, texts)
     return record, texts
 
@@ -300,7 +312,17 @@ def compare(name, record, tttt_texts, tsgo_texts_fn):
     for rel in sorted(set(tttt_texts) - set(files)):
         stem = os.path.basename(re.sub(r'\.d\.[cm]?ts$', '', rel))
         rows.append((rel, 'extra file (tsgo: declaration diagnostic)' if stem in blocked else 'extra file', 0, '', ''))
-    return rows
+    # (tttt's hash of each: what single_threaded() compares)
+    return [(*row, tttt_hashes.get(row[0])) for row in rows]
+
+
+def single_threaded(record, row):
+    """The row's bucket, SINGLE when tsgo --singleThreaded writes what tttt does there"""
+    rel, bucket, *_ = row
+    single = record.get('single')
+    if not bucket or single is None or len(row) < 6:
+        return bucket
+    return SINGLE if single.get(rel) == row[5] else bucket
 
 
 def load_manifest():
@@ -321,12 +343,16 @@ def regenerate(args):
     start = time.time()
     projects = discover(args.filter, args.jobs)
     print(f'{len(projects)} candidate projects ({time.time() - start:.0f}s to discover)', flush=True)
-    records = load_manifest() if args.filter else {}
+    old = load_manifest()
+    records = dict(old) if args.filter else {}
     done = 0
     # (The corpora first: the big ones shouldn't end up alone at the end)
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
         for future in concurrent.futures.as_completed([pool.submit(run_tsgo, p) for p in projects]):
             record, _ = future.result()
+            prev = old.get(record['project'])
+            if prev and 'single' in prev and prev['pin'] == record['pin'] and prev['files'] == record['files']:
+                record['single'] = prev['single']  # (Same pins: still valid)
             records[record['project']] = record
             done += 1
             if done % 100 == 0:
@@ -336,6 +362,24 @@ def regenerate(args):
     skipped = collections.Counter(r['skip'].split(':')[0] for r in records.values() if 'skip' in r)
     print(f'tsgo on {len(projects)} projects in {time.time() - start:.0f}s: {len(kept)} emit '
           f'{sum(len(r["files"]) for r in kept)} files; skipped: {dict(skipped)}; written to {MANIFEST}')
+
+
+def regenerate_single(args, records):
+    """tsgo --singleThreaded's hashes for the projects the last run found mismatching (not every file: SINGLE),
+    those without them or pinned otherwise"""
+    last = json.load(open(LAST))
+    projects = sorted(r['project'] for r in last if r['status'] == 'ok' and any(row[1] for row in r['rows']) and
+                      r['project'] in records and (not args.filter or re.search(args.filter, r['project'])))
+    todo = [p for p in projects if 'single' not in records[p]]
+    print(f'tsgo --singleThreaded on {len(todo)} of the {len(projects)} mismatching projects', flush=True)
+    start = time.time()
+    with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
+        for p, (record, _) in zip(todo, pool.map(lambda p: run_tsgo(p, extra=('--singleThreaded',)), todo)):
+            records[p]['single'] = record['files']
+            same = record['files'] == records[p]['files']
+            print(f'  {p}: {"same as" if same else "differs from"} the default checkers', flush=True)
+    write_manifest(records)
+    print(f'{time.time() - start:.0f}s, written to {MANIFEST}; rerun (or --last) to see the verdicts')
 
 
 def show_map(name, rel, exp, got, dts):
@@ -414,6 +458,8 @@ def main():
     ap.add_argument('--show', nargs='+', metavar=('PROJECT', 'FILE'), help="diff one project's files")
     ap.add_argument('--last', action='store_true', help="reuse the last run's results")
     ap.add_argument('--tsc', action='store_true', help="rediscover the projects and regenerate tsgo's manifests")
+    ap.add_argument('--tsc-single', action='store_true', help="cache tsgo --singleThreaded's hashes for the last "
+                    "run's mismatching projects")
     ap.add_argument('--sample', type=int, help='only the projects whose name hashes to 0 modulo this')
     ap.add_argument('--timeout', type=int, default=300)
     ap.add_argument('--mem-gb', type=int, default=16)
@@ -430,6 +476,8 @@ def main():
     records = load_manifest()
     if not records:
         sys.exit(f'no manifest at {MANIFEST}: run --tsc')
+    if args.tsc_single:
+        return regenerate_single(args, records)
     if not args.no_build and not args.last:
         subprocess.run(['ninja', '-C', os.path.join(ROOT, 'release'), 'tttt'], check=True, stdout=subprocess.DEVNULL)
     if args.show:
@@ -474,9 +522,10 @@ def main():
             verdicts['crash'].append(p)
             files_total += len(records[p]['files'])
             continue
+        r['rows'] = [(row[0], single_threaded(records[p], row), *row[2:]) for row in r['rows']]
         bad = [row for row in r['rows'] if row[1]]
-        verdicts['mismatch' if bad else 'match'].append(p)
-        for rel, bucket, line, x, y in r['rows']:
+        verdicts['split' if bad and all(row[1] == SINGLE for row in bad) else 'mismatch' if bad else 'match'].append(p)
+        for rel, bucket, line, x, y, *_ in r['rows']:
             if not bucket or not bucket.startswith('extra file'):
                 files_total += 1
             if not bucket:
@@ -501,7 +550,11 @@ def main():
 
     print(f'dts: projects {len(verdicts["match"])} / {len(results)} fully match, files {files_match} / {files_total} '
           f'match; {missing} tsgo writes and tttt not, {extra} tttt writes and tsgo not, {len(verdicts["crash"])} '
-          f'crash/timeout ({len(skipped)} discovered projects skipped: tsgo failed or emitted nothing)')
+          f'crash/timeout ({len(skipped)} discovered projects skipped: tsgo failed or emitted nothing); '
+          f'{len(verdicts["split"])} more projects match tsgo --singleThreaded, '
+          f'{sum(b["files"] for k, b in buckets.items() if k == SINGLE)} files ('
+          f'{sum(1 for p in verdicts["mismatch"] if "single" not in records[p])} mismatching projects without its '
+          f'hashes: --tsc-single)')
     if elapsed is not None:
         print(f'tttt {sum(r["wall"] for r in results):.0f}s single-threaded in total ({elapsed:.0f}s wall); '
               f'{sweep.load_note()}')
@@ -513,10 +566,10 @@ def main():
     for k, b in sorted(buckets.items(), key=lambda kb: (-len(kb[1]['projects']), -kb[1]['files']))[:args.n]:
         print(f'  {len(b["projects"]):5} {b["files"]:6}  {k}\n{"":16}{b["example"][:130]}')
     worst = sorted((r for r in results if r['status'] == 'ok'),
-                   key=lambda r: (-sum(1 for row in r['rows'] if row[1]), r['project']))
+                   key=lambda r: (-sum(1 for row in r['rows'] if row[1] not in (None, SINGLE)), r['project']))
     print('\nprojects by mismatching files:')
     for r in worst[:args.n]:
-        bad = sum(1 for row in r['rows'] if row[1])
+        bad = sum(1 for row in r['rows'] if row[1] not in (None, SINGLE))
         if bad:
             print(f'  {r["project"]:60} {len(r["rows"]) - bad:5} / {len(r["rows"]):5} match')
     print(f'\nresults saved for --last in {LAST}')

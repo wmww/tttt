@@ -4,6 +4,7 @@
 // project when it's done with it:
 //
 //	tttt-oracle [--flag...]           {"project", "ms", "status", "diags": [[file, line, col, code], ...]}
+//	tttt-oracle --text [--flag...]    the same and "text": the CLI's whole output (scripts/clidiff.py's cache)
 //	tttt-oracle --expect [--flag...]  {"project", "ms", "asserts": [[file, line, col, endLine, endCol, kind, actual, expected], ...]}
 //	tttt-oracle --type-at PROJECT FILE LINE|* NAME   (no stdin: `line name : type` per identifier, scripts/tsctypeat.sh)
 //
@@ -114,7 +115,7 @@ var (
 	withoutFile = regexp.MustCompile(`^error TS(\d+): `)
 )
 
-func diagnose(dir string, flags []string) map[string]any {
+func diagnose(dir string, flags []string, text bool) map[string]any {
 	start := time.Now()
 	s := newSys()
 	args := append([]string{"-p", dir, "--noEmit", "--pretty", "false", "--singleThreaded"}, flags...)
@@ -132,7 +133,11 @@ func diagnose(dir string, flags []string) map[string]any {
 			diags = append(diags, []any{"", 0, 0, code})
 		}
 	}
-	return map[string]any{"project": dir, "ms": time.Since(start).Milliseconds(), "status": int(result.Status), "diags": diags}
+	r := map[string]any{"project": dir, "ms": time.Since(start).Milliseconds(), "status": int(result.Status), "diags": diags}
+	if text {
+		r["text"] = s.out.String()
+	}
+	return r
 }
 
 // The program `tsc -p DIR` would check (tscCompilation's steps without the reporting), or nil if the command line or
@@ -300,11 +305,13 @@ func main() {
 		typeAt(os.Args[2], os.Args[3], os.Args[4], os.Args[5])
 		return
 	}
-	expect := false
+	expect, text := false, false
 	var flags []string
 	for _, a := range os.Args[1:] {
 		if a == "--expect" {
 			expect = true
+		} else if a == "--text" {
+			text = true
 		} else {
 			flags = append(flags, a)
 		}
@@ -327,7 +334,7 @@ func main() {
 			if expect {
 				result = expectTypes(dir, flags)
 			} else {
-				result = diagnose(dir, flags)
+				result = diagnose(dir, flags, text)
 			}
 		}()
 		if err := out.Encode(result); err != nil {

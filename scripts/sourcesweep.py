@@ -19,7 +19,7 @@ shape (quoted parts elided), and for a diagnostic in node_modules the dependency
 """
 import argparse, collections, concurrent.futures, gzip, json, os, re, signal, subprocess, sys, threading, time, zlib
 
-import sweep
+import sweep, tscformat
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SOURCES = os.path.join(ROOT, 'thirdparty/sources')
@@ -51,9 +51,41 @@ def list_projects(filter=None):
     return projects
 
 
+def text_diags(text):
+    """The diagnostics of tsc's output, as tttt-oracle lists them"""
+    return [[f, l, c, code] for f, l, c, code, _ in tscformat.parse(text)]
+
+
+def load_oracle():
+    """tsc's cached verdicts, {project: record}. A record's `diags` aren't stored when its `text` says the same"""
+    oracle = {}
+    for r in map(json.loads, gzip.open(ORACLE, 'rt')):
+        if 'diags' not in r:
+            r['diags'] = text_diags(r['text'])
+        oracle[r['project']] = r
+    return oracle
+
+
+def save_oracle(oracle):
+    with gzip.open(ORACLE, 'wt') as f:
+        for p in sorted(oracle):
+            r = oracle[p]
+            if r.get('text') and text_diags(r['text']) == r['diags']:
+                r = {k: v for k, v in r.items() if k != 'diags'}  # (Half the file's size)
+            f.write(json.dumps(r, separators=(',', ':')) + '\n')
+
+
 def run_tsc(projects, jobs):
-    """tsc on the projects (sweep.run_tsc: tsgo's tttt-oracle), grouped by repository"""
-    return sweep.run_tsc(sorted(projects, key=lambda p: p.split('/')[0]), jobs, cwd=SOURCES, progress=True)
+    """tsc on the projects (sweep.run_tsc: tsgo's tttt-oracle), grouped by repository. With the CLI's whole output
+    (`text`, empty when clean): scripts/clidiff.py's expectation"""
+    results = sweep.run_tsc(sorted(projects, key=lambda p: p.split('/')[0]), jobs, extra=('--text',), cwd=SOURCES,
+                            progress=True)
+    if any('text' not in r and 'crash' not in r for r in results.values()):
+        sys.exit('tttt-oracle has no --text: an older build (thirdparty/ensure-typescript.sh rebuilds it)')
+    for r in results.values():
+        if r.get('text') == '':
+            del r['text']  # (Implied by a clean verdict: not stored)
+    return results
 
 
 def root_cause(project, diag, spurious):
@@ -93,18 +125,16 @@ def main():
     if args.tsc or args.tsc_new:
         oracle = {}
         if os.path.exists(ORACLE) and (args.filter or args.tsc_new):
-            oracle = {r['project']: r for r in map(json.loads, gzip.open(ORACLE, 'rt'))}
+            oracle = load_oracle()
         if args.tsc_new:
             projects = [p for p in projects if p not in oracle]
         start = time.time()
         oracle.update(run_tsc(projects, args.jobs))
-        with gzip.open(ORACLE, 'wt') as f:
-            for p in sorted(oracle):
-                f.write(json.dumps(oracle[p], separators=(',', ':')) + '\n')
+        save_oracle(oracle)
         print(f'tsc on {len(projects)} projects in {time.time() - start:.0f}s, written to {ORACLE}')
         return
 
-    oracle = {r['project']: r for r in map(json.loads, gzip.open(ORACLE, 'rt'))}
+    oracle = load_oracle()
     missing_oracle = [p for p in projects if p not in oracle]
     if missing_oracle:
         print(f'{len(missing_oracle)} projects have no tsc verdict (run --tsc): {" ".join(missing_oracle[:5])}...',

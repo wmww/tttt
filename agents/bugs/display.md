@@ -214,20 +214,52 @@ relations and widening already approximate with flags): investigate how far tttt
 for object literals before choosing; ~1 session.
 
 
-## CLI text mismatches (clidiff `text` verdicts, 2026-10-18 `--sample 4`: 17, 3 fixed since)
-Same diagnostics, other text; each needs a cut-down repro first (`scripts/clidiff.py -f '^PROJECT$' -v`):
-- TS5115's list order (zod v4 `schemas.d.cts(804,5)`: crawlee x2, unocss): tsc `'IsOptionalIn', '$ZodTypeInternals',
-  '$InferZodRecordInput'`, tttt starts at `$ZodTypeInternals`: where the instantiation stack is cut, or its rotation.
-- `include pattern` paths in TS6307-style "Matched by include pattern" lines (unovis/packages/react/autogen, vest/
-  packages/vast): tsc prints the pattern relative to the config as written (`../src/**/*.ts`), tttt normalized.
-- TS2551 suggestion pick (gemini-cli/packages/cli: `maybeStartExtension`, tsc `startExtension`, tttt
-  `restartExtension`): getSpellingSuggestion's tie-breaking.
-- Elaboration path picks: react-router `__tests__` (`prototype[Symbol.iterator]()` vs `prototype.entries()`: property
-  order with symbol keys), sequelize/packages/core/test (`No constituent of type 'Function | undefined' is callable`
-  vs `Type 'undefined' has no call signatures`), vitepress (`T[Extract<keyof T, string>] & null` vs
-  `Partial<T>[...] & null`: the simplified indexed access), apollo-client integration-tests/vite (`DeepPartial<...>`
-  truncated at another depth), pinia nuxt playground (a union member printed `WritableStream<...>` by tsc and
-  `import("node:stream/web").WritableStream<any>` by tttt in a truncated union), inbox-zero/apps/web, hop-protocol,
-  react-scan (not looked at).
-- webpack (`--corpora`): fixed 2026-10-18 (inference's visited set keyed on the mode, ece423b2); what's left there is
-  TS5115's name order, like zod's above.
+## CLI text mismatches (clidiff `text` verdicts)
+Same diagnostics by (file, line, column, code), other text. Full run 2026-10-18 (`scripts/clidiff.py`, from the caches,
+3675 projects): 3612 match, **54 `text`**, 9 `diagnostics` (the sweeps' business), 0 order/exit code/crash. Each needs
+a cut-down repro first (`scripts/clidiff.py -f '^PROJECT$' -v`; `-k KIND --last` lists a bucket's diagnostics). By
+mechanism, roughly by projects:
+- **Literal/tuple widening in a printed source type** (inbox-zero x2: 30 diags `value: true` printed `value: boolean`,
+  `[{...}]` vs `{...}[]`; react-router `__tests__/utils/framework.ts:49` `matches: never[]` printed `[]`; jotai `(true |
+  ...)[]` printed `(boolean | ...)[]`; mikro-orm 121 TS1240 chains `ClassFieldDecoratorContext<Dup2, Dup1 | undefined>`
+  printed without `| undefined`): the type tsc reports for an expression checked against a contextual type keeps
+  literals / arrays / optionality where tttt's doesn't (or the reverse). The biggest bucket by diagnostics.
+- **Truncation depth / alias vs structure** (gemini-cli `scripts/tests/eval-inventory.test.ts:21`: tsc expands
+  `location: { line: number; column: number; }`, tttt prints the alias `EvalSourceLocation`; graphql-yoga envelop
+  `SpreadTwo<{}, {}>` vs `...`; react-scan `types.ts:35` a member elided as `...` at another depth; apollo-client
+  integration-tests/vite `DeepPartial<TValue>` vs `DeepPartial<...>`, `(...)` vs `...`; es-toolkit `isEmpty.spec.ts:56`
+  `prototype: ...` vs `any`; babel-traverse `visitors.ts:168` the union's leading `{}` member missing and `... 755
+  more` vs `753`; quicktype/test TS2322 `Partial<RendererOptions<"csharp", OptionMap<...>>>` printed without its
+  defaulted type argument; mikro-orm TS7053 `Loaded<User, never, never, never>` vs its expansion).
+- **Zod v4 TS5115 list order** (crawlee x4, unocss x2, knip fixture, webpack: `schemas.d.cts(804,5)`): tsc `'IsOptionalIn',
+  '$ZodTypeInternals', '$InferZodRecordInput'`, tttt starts at `$ZodTypeInternals`: where the instantiation stack is
+  cut, or its rotation (TS5115's checker dependence is tsgo's own: bugs/tsgo_divergences.md).
+- **`Matched by include pattern` paths** (2038 diags in vest x7 and unovis/packages/react/autogen, TS6307/TS6059
+  explanations): tsc prints the pattern relative to the config as written (`../.././packages/*/src/**/*.ts`,
+  `../src/**/*.ts`), tttt normalized (`./packages/...`, `src/**/*.ts`). kysely/scripts: tttt adds a `File is ECMAScript
+  module because ... "type": "module"` line to TS6059's explanation that tsc doesn't print there.
+- **Namespace / module naming** (apollo-client/docs 238 diags: TS2694 `Namespace '"react".React'` printed
+  `'React.React'`; openapi-typescript `'global.WebAssembly'` vs `'WebAssembly'`; trpc/examples/nuxt TS2430 lib.dom's
+  `WebSocket` vs `import("...@types/ws/index").WebSocket` printed `WebSocket.WebSocket`).
+- **import() qualification of same-named types** (lucide 36: tsc `React.JSX.Element` vs `import(".../solid-js/types/
+  index").JSX.Element`, tttt qualifies the React side `import("lucide/node_modules/...index.d.ts")` (relative, with
+  `.d.ts`) and names solid's `types/jsx`; lexical-website the same with the two sides swapped; dexie-cloud-todo-app:
+  tsc qualifies `import(".../@types/react/index").ReactNode` where tttt prints `'React.ReactNode' ... Two different
+  types with this name exist`; pinia nuxt `WritableStream<...>` vs `import("node:stream/web").WritableStream<any>`).
+- **Elaboration path picks** (react-router `__tests__/setup.ts:35`, quill, vscode-project-manager: tsc's `prototype[
+  Symbol.iterator]()` / `[Symbol.iterator]().next(...)` vs tttt's `entries()...`: which member the return-type
+  elaboration names first; sequelize x2 `No constituent of type 'Function | undefined' is callable` vs `Type 'undefined'
+  has no call signatures`; vitest/test/browser TS2769 the last overload's excess-property target `Omit<ScreenshotOptions,
+  "element">` vs `LocatorScreenshotOptions`; rxjs `zip-all.spec.ts:24` missing-properties list order `[create], [tak..`
+  vs `subscribe, [cr..`; docmost TS2322 chain stops before tsc's `... is missing the following properties from type
+  'any[]'`; angular-cli/scripts TS1541 lacks tsc's `To convert this file to an ECMAScript module...` line).
+- **Property list order** (trpc `ws.ts:587` TS2739 `close, [Symbol.dispose], _onTimeout` vs `close, _onTimeout,
+  [Symbol.dispose]`: symbol-keyed members' place).
+- **Union member order** (vitest/docs `resolveConfig.ts:796`: the reporter tuple union in another order).
+- **Simplified indexed access** (vitepress x2: `T[Extract<keyof T, string>] & null` vs `Partial<T>[...] & null`).
+- **Suggestion pick** (TS2551: gemini-cli/packages/cli `maybeStartExtension` -> tsc `startExtension`, tttt
+  `restartExtension`; sequelize/packages/sqlite3 `createTableQuery` -> `truncateTableQuery` vs `_replaceTableQuery`;
+  ngx-formly TS7052 `Did you mean to call 'get...'`): getSpellingSuggestion's candidates and tie-breaking.
+- **Which duplicate is named** (hop-protocol TS2300 in next's `image-types/global.d.ts:7`: `'src'` vs `'content'`).
+- Corpora: webpack's only difference left is the zod TS5115 order above (its `HookMap<...>` types fixed by ece423b2,
+  drizzle's by b3c2fbfa); vue's two are a `diagnostics` verdict (known).
