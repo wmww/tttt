@@ -1,0 +1,64 @@
+//// [test/cases/ttttDeclarationImportedAliasOfIndexedMethod.ts] ////
+
+=== t.ts ===
+export interface DevJSX { fileName: string }
+>fileName : string
+
+export type JSXOutput = string | null;
+>JSXOutput : JSXOutput
+
+export type FunctionComponent<P = unknown> = {
+>FunctionComponent : (props: P, key: string | null, flags: number, dev?: DevJSX) => JSXOutput
+
+  renderFn(props: P, key: string | null, flags: number, dev?: DevJSX): JSXOutput;
+>renderFn : (props: P, key: string | null, flags: number, dev?: DevJSX) => JSXOutput
+>props : P
+>key : string | null
+>flags : number
+>dev : DevJSX | undefined
+
+}['renderFn'];
+export declare function rs<T>(key: string, factory: () => T): T;
+>rs : <T>(key: string, factory: () => T) => T
+>key : string
+>factory : () => T
+
+export const local = rs<FunctionComponent<{ data: string }>>('l', () => () => null);
+>local : (props: { data: string; }, key: string | null, flags: number, dev?: DevJSX) => JSXOutput
+>rs<FunctionComponent<{ data: string }>>('l', () => () => null) : (props: { data: string; }, key: string | null, flags: number, dev?: DevJSX) => JSXOutput
+>rs : <T>(key: string, factory: () => T) => T
+>data : string
+>'l' : "l"
+>() => () => null : () => () => null
+>() => null : () => null
+
+=== a.ts ===
+import type { FunctionComponent } from './t';
+>FunctionComponent : (props: P, key: string | null, flags: number, dev?: import("./t").DevJSX) => import("./t").JSXOutput
+
+import { rs } from './t';
+>rs : <T>(key: string, factory: () => T) => T
+
+export const SSR2 = rs<FunctionComponent<{ data: string }>>('SSRRaw', () => () => null);
+>SSR2 : FunctionComponent<{ data: string; }>
+>rs<FunctionComponent<{ data: string }>>('SSRRaw', () => () => null) : FunctionComponent<{ data: string; }>
+>rs : <T>(key: string, factory: () => T) => T
+>data : string
+>'SSRRaw' : "SSRRaw"
+>() => () => null : () => () => null
+>() => null : () => null
+
+declare const fc: FunctionComponent<{ data: string }>;
+>fc : FunctionComponent<{ data: string; }>
+>data : string
+
+export const SSR3 = fc;
+>SSR3 : FunctionComponent<{ data: string; }>
+>fc : FunctionComponent<{ data: string; }>
+
+export const both = [SSR2, fc];
+>both : FunctionComponent<{ data: string; }>[]
+>[SSR2, fc] : FunctionComponent<{ data: string; }>[]
+>SSR2 : FunctionComponent<{ data: string; }>
+>fc : FunctionComponent<{ data: string; }>
+

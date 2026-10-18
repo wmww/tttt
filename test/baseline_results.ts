@@ -329,6 +329,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationImportedAliasOfIndexedMethod': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationIndexSignatureBrandedKey': {
         errors: true,
         symbols: true,

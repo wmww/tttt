@@ -443,8 +443,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `ty_realias`: a renamed object type is a second `Ty` (members resolved twice); renamed deferred types are copies; no
   "local alias" exception; whether an alias instance keeps its name (`renames` in `lower`) is syntactic.
 - `lower_identifier()` `through_import`: a generic alias instance takes the import's alias only for union/intersection,
-  deferred conditional, indexed access or deferred reference bodies, not instantiated anonymous/mapped ones (tsgo keys
-  those on the alias too); doing it made arktype's `finalizeTree` run away into 3 spurious TS5114 (uninvestigated).
+  deferred conditional, indexed access or deferred reference bodies, and anonymous ones without a name of their own
+  (an indexed access body resolved to a method's type, qwik's FunctionComponent), not instantiated anonymous/mapped
+  ones that have one (tsgo keys those on the alias too); doing it made arktype's `finalizeTree` run away into 3
+  spurious TS5114 (uninvestigated).
 - Conditional types (`conditional.c`): deferred conditionals don't keep inferences (`inferred_true_branch()`
   recomputes); `ty_implied_infer_constraint` lacks the mapped-extends rule. Permissive/restrictive instantiations
   replace only what `mentions_type_variables` finds (8192 types / 48 deep, else "unsure": defer), resolving signatures

@@ -1,0 +1,66 @@
+//// [test/cases/ttttDeclarationImportedAliasOfIndexedMethod.ts] ////
+
+=== t.ts ===
+export interface DevJSX { fileName: string }
+>DevJSX : Symbol(DevJSX, Decl(t.ts, 0, 0))
+>fileName : Symbol(DevJSX.fileName, Decl(t.ts, 0, 25))
+
+export type JSXOutput = string | null;
+>JSXOutput : Symbol(JSXOutput, Decl(t.ts, 0, 44))
+
+export type FunctionComponent<P = unknown> = {
+>FunctionComponent : Symbol(FunctionComponent, Decl(t.ts, 1, 38))
+>P : Symbol(P, Decl(t.ts, 2, 30))
+
+  renderFn(props: P, key: string | null, flags: number, dev?: DevJSX): JSXOutput;
+>renderFn : Symbol(renderFn, Decl(t.ts, 2, 46))
+>props : Symbol(props, Decl(t.ts, 3, 11))
+>P : Symbol(P, Decl(t.ts, 2, 30))
+>key : Symbol(key, Decl(t.ts, 3, 20))
+>flags : Symbol(flags, Decl(t.ts, 3, 40))
+>dev : Symbol(dev, Decl(t.ts, 3, 55))
+>DevJSX : Symbol(DevJSX, Decl(t.ts, 0, 0))
+>JSXOutput : Symbol(JSXOutput, Decl(t.ts, 0, 44))
+
+}['renderFn'];
+export declare function rs<T>(key: string, factory: () => T): T;
+>rs : Symbol(rs, Decl(t.ts, 4, 14))
+>T : Symbol(T, Decl(t.ts, 5, 27))
+>key : Symbol(key, Decl(t.ts, 5, 30))
+>factory : Symbol(factory, Decl(t.ts, 5, 42))
+>T : Symbol(T, Decl(t.ts, 5, 27))
+>T : Symbol(T, Decl(t.ts, 5, 27))
+
+export const local = rs<FunctionComponent<{ data: string }>>('l', () => () => null);
+>local : Symbol(local, Decl(t.ts, 6, 12))
+>rs : Symbol(rs, Decl(t.ts, 4, 14))
+>FunctionComponent : Symbol(FunctionComponent, Decl(t.ts, 1, 38))
+>data : Symbol(data, Decl(t.ts, 6, 43))
+
+=== a.ts ===
+import type { FunctionComponent } from './t';
+>FunctionComponent : Symbol(FunctionComponent, Decl(a.ts, 0, 13))
+
+import { rs } from './t';
+>rs : Symbol(rs, Decl(a.ts, 1, 8))
+
+export const SSR2 = rs<FunctionComponent<{ data: string }>>('SSRRaw', () => () => null);
+>SSR2 : Symbol(SSR2, Decl(a.ts, 2, 12))
+>rs : Symbol(rs, Decl(a.ts, 1, 8))
+>FunctionComponent : Symbol(FunctionComponent, Decl(a.ts, 0, 13))
+>data : Symbol(data, Decl(a.ts, 2, 42))
+
+declare const fc: FunctionComponent<{ data: string }>;
+>fc : Symbol(fc, Decl(a.ts, 3, 13))
+>FunctionComponent : Symbol(FunctionComponent, Decl(a.ts, 0, 13))
+>data : Symbol(data, Decl(a.ts, 3, 37))
+
+export const SSR3 = fc;
+>SSR3 : Symbol(SSR3, Decl(a.ts, 4, 12))
+>fc : Symbol(fc, Decl(a.ts, 3, 13))
+
+export const both = [SSR2, fc];
+>both : Symbol(both, Decl(a.ts, 5, 12))
+>SSR2 : Symbol(SSR2, Decl(a.ts, 2, 12))
+>fc : Symbol(fc, Decl(a.ts, 3, 13))
+

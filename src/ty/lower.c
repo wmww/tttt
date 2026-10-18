@@ -760,6 +760,11 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             // finalizeTree instantiations ran away into TS5114, see hacks.md)
             ((declared->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && (
                 ((declared->kind == TY_UNION || declared->kind == TY_INTERSECTION) && (ret->kind == TY_UNION || ret->kind == TY_INTERSECTION)) ||
+                // (An anonymous one without a name of its own, a function type an indexed access body resolved to:
+                // qwik's `FunctionComponent<P> = { renderFn(props: P, ...): JSXOutput }['renderFn']` imported is
+                // FunctionComponent<X>, local it prints its signature)
+                (declared->kind == TY_ANONYMOUS && !declared->alias && !declared->anonymous.mapped &&
+                    ret->kind == TY_ANONYMOUS && !ret->alias) ||
                 (declared->kind == TY_REFERENCE && declared->reference.deferred && ret->kind == TY_REFERENCE)
             ))
         )) {
