@@ -43,8 +43,12 @@ and the defaults, output byte-identical at every K and budget.
    the running share with the most left, its first taken file in a fresh checker. Defaults: corpora -5..-15% wall but
    tsc +7% (SMT), the sweep's 285 biggest -5.2% wall, +0.4% peak; every oracle unchanged. inbox-zero's gap to bun is a
    deferral restart, not balance (triage).
-8. **Perf session**: pays back what entries 3-4 cost; perf_leads.md "Deferred bodies" (re-materialization, ~2% of
-   vscode) first. Ends with `scripts/bench.sh --runs 3 --bun` and plan 67's "Where it stands" table refreshed.
+8. Done (this commit): perf session. Instructions -3..-7% everywhere (inline fast paths of arena_alloc, ty_instantiate,
+   ty_members; node_links for hot caches; instantiated members' by-name order) and drizzle -34%: 966d0334 (entry 6)
+   had made it +50%, recorded but not flagged (an intersection target's properties without the intersection as
+   `this`; tuples now take a this-argument too). Defaults' corpora sum 11.43 -> 11.02 s; budget still +13% against no
+   recycling (re-derivation; per-body re-materialization ~20% of vscode's share, not done). `instrcount.sh` now
+   compares against `test/instrcount.txt` and flags >2%. Bench: plan 67 "Where it stands" (bun 8 / 14, faster on 14).
 9. **Triage.**
 10. **Insights.** report.md: plan 77's number, whether the defaults' memory gap to bun moved and why.
 

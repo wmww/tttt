@@ -128,32 +128,35 @@ tables 57, Scope **67** (747k kept of 1.43M made), ScopeRare 17.
 Byte-identical outputs (suite, oracles, threadcheck, checkerdiff), instructions flat (`scripts/instrcount.sh`, react
 and nest are the sensitive ones: plan 63 stage 1 cost them 0.6-0.8%), the K1/T4 table rerun.
 
-## Where it stands (2026-10-17, plan 81 stage 1, `scripts/bench.sh --runs 3 --bun`)
+## Where it stands (2026-10-18, after the perf session of todo entry 8, `scripts/bench.sh --runs 3 --bun`)
 The 4-vCPU box. Best wall s / peak MB; defaults = every core for both (tttt 4 checkers starting at 16 MB each, plan
-81 stage 1), single = `--singleThreaded` / `--threads=1` (tttt one checker at 256 MB). The eighteenth window's end
-(the 96 MB floor) in brackets for tttt's defaults:
+81 stage 1), single = `--singleThreaded` / `--threads=1` (tttt one checker at 256 MB). Plan 81 stage 1's table in
+brackets for tttt's defaults:
 | corpus | tttt | bun | tttt single | bun single |
 |---|---|---|---|---|
-| TypeScript6 compiler | 0.30 / 229 [274] | 0.47 / 214 | 0.56 / 215 | 0.82 / 213 |
-| type-fest | 0.49 / **445** [501] | 2.02 / 568 | 0.88 / **424** | 3.70 / 1010 |
-| valibot | 0.26 / 161 [314] | 0.47 / 155 | 0.47 / **255** | 1.02 / 278 |
-| react | 0.14 / **158** [179] | 0.35 / 298 | 0.18 / **142** | 0.38 / 178 |
-| nest | 0.11 / **151** [150] | 0.13 / 180 | 0.19 / **128** | 0.22 / 156 |
-| webpack | 0.68 / 406 [621] | 1.09 / 357 | 1.29 / 521 | 2.13 / 380 |
-| zod | 0.43 / **274** [492] | 0.68 / 322 | 0.70 / **375** | 1.36 / 387 |
-| xstate | 0.23 / 198 [274] | 0.28 / 166 | 0.35 / 208 | 0.59 / 174 |
-| drizzle | 0.65 / **321** [511] | 1.00 / 335 | 0.90 / 388 | 1.60 / 376 |
-| vue | 0.42 / **220** [392] | 0.55 / 224 | 0.74 / 330 | 1.18 / 285 |
-| effect | 0.69 / 350 [605] | 1.40 / 315 | 1.42 / 496 | 3.10 / 371 |
-| vscode | 6.46 / **1161** [1560] | 7.75 / 1560 | 13.73 / **1386** | 20.00 / 1417 |
-| excalidraw | 0.58 / **265** [469] | 0.81 / 278 | 0.92 / 371 | 1.47 / 358 |
-| tanstack-router | 0.37 / **265** [390] | 0.73 / 331 | 0.64 / **321** | 1.22 / 325 |
-tsgo (defaults / single): tttt uses less memory on all 14 at both (vscode 7854 / 6580 MB). **Against bun at the
-defaults**: at or below it on 9 of 14 (was 3), within 1.2x on the rest (tsc 1.07x, valibot 1.04x, effect 1.11x,
-webpack 1.14x, xstate 1.19x); faster everywhere, 1.2x (vscode, xstate) to 4x (type-fest), the price +5-25% wall
-against the 96 MB floor on the mid-size corpora (vscode 5.78 -> 6.46 s). Single-threaded unchanged: at or below bun
-on 7 of 14. The source sweep's tail pays +14% wall (measurements.md "Plan 81 stage 1"); plan 81 stage 2 is what
-makes a recycle cheaper. Whether the trade stands is the next insights' call (vision.md "Memory target").
+| TypeScript6 compiler | 0.30 / 238 [0.30 / 229] | 0.45 / 214 | 0.55 / 215 | 0.83 / 213 |
+| type-fest | 0.48 / **415** [0.49 / 445] | 2.01 / 573 | 0.86 / **419** | 3.70 / 1012 |
+| valibot | 0.25 / 163 [0.26 / 161] | 0.47 / 153 | 0.47 / **250** | 1.01 / 278 |
+| react | 0.13 / **160** [0.14 / 158] | 0.35 / 299 | 0.18 / **141** | 0.38 / 178 |
+| nest | 0.10 / **148** [0.11 / 151] | 0.13 / 180 | 0.17 / **126** | 0.21 / 156 |
+| webpack | 0.61 / 424 [0.68 / 406] | 1.10 / 356 | 1.27 / 517 | 2.12 / 380 |
+| zod | 0.38 / **279** [0.43 / 274] | 0.68 / 319 | 0.67 / 388 | 1.35 / 381 |
+| xstate | 0.20 / 190 [0.23 / 198] | 0.29 / 164 | 0.34 / 189 | 0.59 / 174 |
+| drizzle | 0.59 / 365 [0.65 / 321] | 0.99 / 339 | 0.91 / 390 | 1.60 / 376 |
+| vue | 0.35 / **205** [0.42 / 220] | 0.56 / 221 | 0.72 / 301 | 1.18 / 286 |
+| effect | 0.60 / 330 [0.69 / 350] | 1.35 / 313 | 1.37 / 507 | 3.09 / 375 |
+| vscode | 6.16 / **1215** [6.46 / 1161] | 7.74 / 1556 | 13.17 / **1389** | 19.96 / 1417 |
+| excalidraw | 0.53 / **268** [0.58 / 265] | 0.81 / 279 | 0.90 / 360 | 1.47 / 358 |
+| tanstack-router | 0.31 / **255** [0.37 / 265] | 0.73 / 329 | 0.62 / **299** | 1.23 / 326 |
+tsgo (defaults / single): tttt uses less memory on all 14 at both (vscode 7831 / 6675 MB). **Against bun at the
+defaults**: faster on all 14, 1.3x (vscode, xstate, nest) to 4.2x (type-fest); at or below its peak on 8 of 14 (9 at
+stage 1: drizzle 321 -> 365 MB, its checkers recycling 19 times instead of 24 now that a file costs less, so fewer
+budget doublings settle higher; its wall 0.65 -> 0.59), within 1.2x on the rest (tsc 1.11x, valibot 1.07x, webpack
+1.19x, xstate 1.16x, drizzle 1.08x, effect 1.05x). Single-threaded at or below bun on 6 of 14 (zod 388 against 381:
+bun's own runs vary 376-387). The window's two memory stages cost +12% wall at the defaults; this session's
+instruction cuts (-3..-34%, measurements.md "Perf session paying for the budget") took the corpora's sum at the
+defaults from 11.43 to 11.02 s, the budget itself still +13% against no recycling (re-derivation, perf_leads.md "What
+the recycle budget costs at the defaults").
 
 ## Not doing
 - Freeing ASTs or function bodies after their file is checked: other files' checks read declarations and infer

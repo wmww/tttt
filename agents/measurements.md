@@ -11,6 +11,25 @@ vscode (exit 2): the same diagnostics on both (realworld.py), so equal work. **T
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Perf session paying for the budget (2026-10-17, todo entry 8)
+The 4-vCPU box. **Instructions** (`scripts/instrcount.sh`, callgrind, K1 T1; now saved in `test/instrcount.txt`, which
+the script compares against and flags changes over 2%) b4129d18 -> now: tsc 4.609 -> **4.479**, type-fest 10.992 ->
+**10.483**, valibot 3.469 -> **3.276**, react 1.407 -> **1.356**, nest 1.079 -> **1.056**, webpack 9.578 -> **9.231**,
+zod 5.172 -> **4.851**, xstate 2.681 -> **2.530**, drizzle 9.773 -> **6.418 (-34%)**, vue 6.521 -> **6.216**, effect
+9.803 -> **9.330**, vscode 93.606 -> **89.707 (-4.2%)**, excalidraw 7.683 -> **7.344**, tanstack-router 5.273 ->
+**4.978 G**. From: arena_alloc()'s bump, ty_instantiate()'s early exit and ty_members()' resolved case inline (they
+paid a full frame per call: 6M, 9M, 17M calls on zod/drizzle), instantiated members reusing their source's by-name
+order, eight hot (kind, pointer) caches moved from `links` to `node_links`, a two-operation intern hash. **drizzle's
++50%** (6.48 G at entry 4, 9.77 at entry 6) was 966d0334: an intersection target's combined properties didn't see the
+intersection as `this`, so a variance measurement related ever longer intersections (PgColumnBuilder 14.4k
+comparisons, tsgo 1.2k, now 1.5k); fixing it needed tuples to take a this-argument too (a spurious TS2352 on vueuse
+otherwise). drizzle single-threaded 1.24 -> 0.91 s, its relation cache 413k -> 218k pairs.
+**The budget's cost at the defaults**: corpora sum 11.43 s at the session's start against 9.99 with
+`--checker-memory off` (+14%: re-derivation, perf_leads.md "What the recycle budget costs"); now 11.02 s / 4604 MB against 9.74 / 9887 (+13%). drizzle at the defaults 0.75 -> 0.59 s, peak 343 -> 361 MB (19 recycles instead of 24: each budget now lasts more files, so fewer doublings settle a little higher).
+Oracles unchanged (suite 13791 / 13828 with two new tttt tests, corpora, DT 8595, `$ExpectType` 68639, flagflip
+18 / 8 / 3, source sweep 3559 / 3566, kdiff and recycle 1 / 3566, dts 1193 / 1233); the perfsweep's worst types ratio
+2.31 (better-auth's drizzle-adapter, the same bug) is 1.62 again. Bench: plan 67 "Where it stands".
+
 ## Checker work stealing (2026-10-17, todo entry 7)
 Plan 72 "Checker balance: work stealing". Defaults on this box (4 checkers, best of 3, wall s, without -> with):
 webpack 0.68 -> 0.62, zod 0.43 -> 0.38, vue 0.42 -> 0.36, effect 0.67 -> 0.61, tanstack-router 0.36 -> 0.32, drizzle
