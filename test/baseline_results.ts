@@ -799,6 +799,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDeferredTupleKeywordOrder': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeprecatedSuggestion': {
         errors: true,
         symbols: true,

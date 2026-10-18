@@ -571,6 +571,9 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
                     }
                     c = cmp_mappers(a->reference.deferred->mapper, b->reference.deferred->mapper);
                     if (c) return c;
+                } else {
+                    // (One deferred: tsc's compareNodes puts the one without a node last)
+                    return a->reference.deferred ? -1 : 1;
                 }
             } else if (ia) {
                 return -1;

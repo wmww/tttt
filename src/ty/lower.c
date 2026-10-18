@@ -2497,6 +2497,8 @@ static bool may_resolve_type_alias(Checker* me, TypeNode const* node) {
     switch (node->tag) {
         case TYPE_IDENTIFIER: {
             Symbol const* decl = canonical(me, node->identifier->target);
+            // (A built-in type, `object`, `number`, is a keyword node in tsc, no reference)
+            if (decl && decl->decl_count && decl->decls[0].kind == SYMBOL_DECL_BUILTIN) return false;
             return decl && (decl->flags & SYMBOL_TYPE_ALIAS);
         }
         case TYPE_TYPEOF: return true;
