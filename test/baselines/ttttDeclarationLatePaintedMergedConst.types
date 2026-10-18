@@ -1,0 +1,31 @@
+//// [test/cases/ttttDeclarationLatePaintedMergedConst.ts] ////
+
+=== context.ts ===
+export interface Tag<Id, Service> { readonly id: Id; readonly s: Service }
+>id : Id
+>s : Service
+
+export declare const GenericTag: <Identifier, Service = Identifier>(key: string) => Tag<Identifier, Service>;
+>GenericTag : <Identifier, Service = Identifier>(key: string) => Tag<Identifier, Service>
+>key : string
+
+=== main.ts ===
+import * as Context from "./context"
+>Context : typeof Context
+
+interface Counter {
+  readonly _: unique symbol
+>_ : unique symbol
+}
+const Counter = Context.GenericTag<Counter, { count: number }>("counter")
+>Counter : Context.Tag<Counter, { count: number; }>
+>Context.GenericTag<Counter, { count: number }>("counter") : Context.Tag<Counter, { count: number; }>
+>Context.GenericTag : <Identifier, Service = Identifier>(key: string) => Context.Tag<Identifier, Service>
+>Context : typeof Context
+>GenericTag : <Identifier, Service = Identifier>(key: string) => Context.Tag<Identifier, Service>
+>count : number
+>"counter" : "counter"
+
+export declare const x: Counter;
+>x : Counter
+

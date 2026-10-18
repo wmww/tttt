@@ -2899,10 +2899,16 @@ static void check_statement(Walk* me, Statement const* statement, Container cont
         if (visible) return;
         my late_pass = false;
         for_each (i, vec_initialized_binding, &statement->decl.variable.initializers) {
-            bool painted = i->binding.tag == BINDING_IDENTIFIER ? !is_exported_local(me, i->binding.symbol) &&
-                take_painted(me, i->binding.symbol) : take_painted_pattern(me, &i->binding);
+            // (A name this pass took already, from another declaration of it: `interface Counter` painted with the
+            // `const Counter` it merges with, whose type then paints what it names)
+            bool again = false;
+            for (u32 j = 0; i->binding.tag == BINDING_IDENTIFIER && j < my late_taken_count && !again; j++) {
+                again = my late_taken[j] == i->binding.symbol;
+            }
+            bool painted = again || (i->binding.tag == BINDING_IDENTIFIER ? !is_exported_local(me, i->binding.symbol) &&
+                take_painted(me, i->binding.symbol) : take_painted_pattern(me, &i->binding));
             if (!painted) continue;
-            if (i->binding.tag == BINDING_IDENTIFIER) late_taken_push(me, i->binding.symbol);
+            if (i->binding.tag == BINDING_IDENTIFIER && !again) late_taken_push(me, i->binding.symbol);
             check_variable(me, i, variable_statement_is_const(&statement->decl.variable));
         }
         my late_pass = true;
