@@ -1176,10 +1176,10 @@ static bool exact_optional_unassignable_in(Checker* me, Ty const* source, Ty con
             // (A union's or an intersection's property is the combined one)
             FoundProp common = ty_find_prop(me, target, target_prop->name);
             if (!common.found || !(common.flags & PROP_OPTIONAL)) continue;
-            target_type = ty_optional_prop_read(me, common.type, "exact mismatch");
+            target_type = common.type;
         } else {
             if (!(target_prop->flags & PROP_OPTIONAL)) continue;
-            target_type = ty_optional_prop_read(me, prop_type(me, target_prop), "exact mismatch");
+            target_type = prop_type(me, target_prop);
         }
         FoundProp source_prop = ty_find_prop(me, source, target_prop->name);
         if (!source_prop.found) {
@@ -1192,8 +1192,7 @@ static bool exact_optional_unassignable_in(Checker* me, Ty const* source, Ty con
             }
             continue;
         }
-        Ty const* source_type = source_prop.flags & PROP_OPTIONAL ? ty_optional_prop_read(me, source_prop.type, "exact mismatch") :
-            source_prop.type;
+        Ty const* source_type = source_prop.type;
         if (ty_exact_optional_mismatch(me, source_type, target_type)) return true;
     }
     return false;
@@ -6848,10 +6847,6 @@ static Ty const* prop_or_index_type(Checker* me, Ty const* ty, Atom const* name)
     if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) return ty_access(me, ty, ty_prop_name_literal(me, name));
     if (!(ty->flags & TYF_OBJECT)) return nullptr;
     Prop const* prop = ty_get_prop(me, ty, name);
-    if (prop && (prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
-        Ty const* parts[2] = { prop_type(me, prop), ty_undefined_or_missing(me) };
-        return ty_union(me, parts, 2, nullptr, (TyList){0});
-    }
     if (prop) return prop_type(me, prop);
     // (Any index signature that applies to the name: template literal and `string & {}` keys too, tsc's
     // getApplicableIndexInfoForName)
@@ -6898,7 +6893,6 @@ static Ty const* discriminated_union_target(
         Ty const* prop_ty = props ? props[p].type : prop_type(me, prop);
         // (An optional one's type includes undefined, which matches a member's `x?: undefined`: tsc's
         // TypeDiscriminator.matches takes getTypeOfSymbol. `{ ...v1Event, rawPath }` against `V1 | V2` keeps V2)
-        if (!props && (prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) prop_ty = ty_optional_prop_type(me, prop_ty);
         TyList parts = prop_ty->kind == TY_UNION ? prop_ty->composite.types : (TyList){ .data = &prop_ty, .len = 1 };
         bool matched = false;
         for (u32 i = 0; i < types.len; i++) {

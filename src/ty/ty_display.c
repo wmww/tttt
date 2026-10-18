@@ -4608,7 +4608,8 @@ static bool pseudo_member_equivalent(Checker* me, TyDisplay d, PseudoMember cons
             }
             return false;
         case PSEUDO_MEMBER_METHOD: {
-            Signature const* sig = ty_single_signature(me, type, false, false);
+            // (An optional method's signature is its type's without undefined)
+            Signature const* sig = ty_single_signature(me, member->optional ? ty_without_undefined(me, type) : type, false, false);
             if (!sig) return true; // (Not a single call signature: nothing to compare with)
             signature_resolve(me, sig);
             TyDisplay sig_d = pseudo_enter_signature(me, d, sig);
@@ -5127,7 +5128,8 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                 name_d.approx = nullptr;
                 switch (member->kind) {
                     case PSEUDO_MEMBER_METHOD: {
-                        Signature const* sig = type ? ty_single_signature(me, type, false, false) : nullptr;
+                        Signature const* sig = !type ? nullptr :
+                            ty_single_signature(me, member->optional ? ty_without_undefined(me, type) : type, false, false);
                         if (prop && csview_equals(atom_sv(prop->name), "new")) out_lit(name_d, "\"new\"");
                         else if (prop) display_pseudo_member_name(me, name_d, prop, member->item);
                         if (is_const) out_lit(member_d, ": ");
@@ -5506,11 +5508,6 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         if ((item_property && !requires_widening(type) && !(unwidened && item_is_literal(item))) || item_accessor) {
             Pseudo const* pseudo = item_accessor ? pseudo_of_accessor(me, item->value.function) : pseudo_of_object_member(me, item);
             Ty const* item_type = type;
-            if ((prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_PATTERN_OPTIONAL) && compiler_options()->strict_null_checks &&
-                !compiler_options()->exact_optional_property_types && ty_without_undefined(me, type) == type
-            ) {
-                item_type = ty_optional_prop_read(me, type, "display item");
-            }
             PseudoReporter storage;
             if (pseudo_equivalent(me, d, pseudo, item_type, false, display_reporter(d, &storage))) {
                 member_begin_node(d, prop_comment_span(d, prop, 0));
@@ -5603,13 +5600,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         if (origin != prop && mentions(me, type, d.fresh_params)) annotation = nullptr;
         // (Printed, not reused: tsc doesn't reuse the `unique symbol` annotation that declares the symbol)
         // An optional property's type has undefined under strictNullChecks, unless exactOptionalPropertyTypes (tsc's
-        // addOptionality in getTypeOfSymbol); a reused annotation doesn't say it
+        // addOptionality in getTypeOfSymbol, the missing type taken out above); a reused annotation doesn't say it
         Ty const* shown = type;
-        if ((prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_PATTERN_OPTIONAL) && compiler_options()->strict_null_checks &&
-            !compiler_options()->exact_optional_property_types && ty_without_undefined(me, type) == type
-        ) {
-            shown = ty_optional_prop_read(me, type, "display");
-        }
         bool optional = (prop->flags & PROP_OPTIONAL) != 0;
         // (A mapped property whose template added `| undefined` to what the annotation says: the annotation in a new
         // union, like a parameter's, see annotation_plus_undefined())

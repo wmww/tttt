@@ -4481,6 +4481,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         ) {
             ty_add_intra_expression_site(me, type, member_context);
         }
+        // (An optional method's symbol has undefined in its type: tsc's getTypeOfFuncClassEnumModule, addOptionality)
+        if (i->tag == OBJECT_ITEM_METHOD && i->optional_method) type = ty_optional_prop_type(me, type);
 
         // (A private name in a class body is a property of its text, `{ #a: 1 }` is `{ #a: number; }`; outside of one
         // tsc's binder has no class to name it in, and the literal lacks it)
@@ -4807,8 +4809,6 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
         own = span_eq(prop->decl->decl_spans[i], item->span);
     }
     if (prop && own) {
-        // (An optional method's symbol has undefined in its type, tsc's getTypeOfFuncClassEnumModule)
-        if ((prop->flags & PROP_OPTIONAL) && (prop->flags & PROP_METHOD)) return ty_optional_prop_read(me, prop_type(me, prop), "literal method");
         return prop_type(me, prop);
     }
     // A computed key that made no property: its part of an index signature, as the literal checked it (tsc's

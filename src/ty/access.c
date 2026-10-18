@@ -550,7 +550,7 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
                 if (element) found[len++] = element;
             } else if (name) {
                 FoundProp prop = ty_find_prop(me, part, name);
-                if (prop.found) found[len++] = prop.flags & PROP_OPTIONAL ? ty_optional_prop_read(me, prop.type, "access") : prop.type;
+                if (prop.found) found[len++] = prop.type;
             }
         }
         Ty const* ret = some_tuple && len ? ty_intersection(me, found, len, nullptr, (TyList){0}) : nullptr;
@@ -559,7 +559,7 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
     }
     if (name) {
         FoundProp prop = ty_find_prop(me, object, name);
-        if (prop.found) return prop.flags & PROP_OPTIONAL ? ty_optional_prop_read(me, prop.type, "access") : prop.type;
+        if (prop.found) return prop.type;
     }
     Ty const* value = access_index_infos(me, object, index);
     // A symbol reads the string index signature when none applies (tsc's getPropertyTypeForIndexType), an
@@ -596,7 +596,7 @@ Ty const* ty_access_own_named_prop(Checker* me, Ty const* object, Atom const* na
     if (ty_tuple_shape(object) || ty_is_array(me, object)) return nullptr;
     FoundProp prop = ty_find_prop(me, object, name);
     if (!prop.found) return nullptr;
-    return prop.flags & PROP_OPTIONAL ? ty_optional_prop_read(me, prop.type, "access") : prop.type;
+    return prop.type;
 }
 
 Ty const* ty_access_without_node_include_undefined(Checker* me, Ty const* object, Ty const* index, bool include_undefined) {

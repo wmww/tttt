@@ -934,7 +934,7 @@ static void builder_add_interface(
             bool included = k == 0 ? !symbol_name : k == 1 ? ty_is_numeric_name(name) : symbol_name;
             if (included) {
                 Ty const* type = prop_type(me, builder->props[j]);
-                ty_buf_push(&types, builder->props[j]->flags & PROP_OPTIONAL ? ty_optional_prop_read(me, type, "computed index") : type);
+                ty_buf_push(&types, type);
             }
         }
         IndexInfo info = {
@@ -1756,7 +1756,7 @@ static void builder_add_computed_index_infos(Checker* me, MembersBuilder* builde
             // instance type")
             if (included) {
                 Ty const* type = prop_type(me, builder->props[j]);
-                ty_buf_push(&types, builder->props[j]->flags & PROP_OPTIONAL ? ty_optional_prop_read(me, type, "computed index") : type);
+                ty_buf_push(&types, type);
             }
         }
         IndexInfo info = {
@@ -4764,9 +4764,6 @@ static Members const* resolve_reverse_mapped_members(Checker* me, Ty const* ty) 
         if (mapped->readonly > 0) flags &= ~(u32)PROP_READONLY;
         // (The source property's type as tsc's getTypeOfSymbol has it: an optional one's with undefined)
         Ty const* source_type = props[i].type;
-        if ((props[i].flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
-            source_type = ty_union(me, (Ty const*[]){ source_type, ty_undefined_or_missing(me) }, 2, nullptr, (TyList){0});
-        }
         Prop* prop = prop_new_declared(me);
         prop->name = props[i].name;
         prop->flags = flags;
@@ -6012,11 +6009,8 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
         bool has = false;
         for (u32 j = 0; j < members->prop_count && !has; j++) has = members->props[j]->name == prop->name;
         if (has) continue;
-        // (tsc's getUndefinedProperty.) Under exactOptionalPropertyTypes tsc's type is missingType rather than
-        // undefined: an absent value, which the property's declared-type view (getNonMissingTypeOfSymbol, what tttt
-        // stores for an optional property) drops, so `x?: never` (also how tsc prints it). Index signatures and
-        // optional targets accept it; reading it still gives undefined
-        bool exact = compiler_options()->exact_optional_property_types && compiler_options()->strict_null_checks;
+        // (tsc's getUndefinedProperty: undefinedOrMissingType, missing under exactOptionalPropertyTypes, an absent
+        // value which getNonMissingTypeOfSymbol drops, so `x?: never` is how it prints)
         // (One symbol per name for the whole program, made of the first property it was needed for: tsc's
         // undefinedProperties cache. Only its declarations show, in the symbols baseline)
         void const** cached = intern_slot(me, &my links, (u64[]){ KEY_UNDEFINED_PROPERTY, (u64)(uintptr_t)prop->name }, 2);
@@ -6026,7 +6020,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .name = prop->name,
             // (Readonly like that first property: tsc's createSymbolWithType keeps CheckFlags.Readonly)
             .flags = PROP_OPTIONAL | (first->flags & PROP_READONLY),
-            .type = ty_intrinsic(me, exact ? TY_NEVER : TY_UNDEFINED),
+            .type = ty_undefined_or_missing(me),
             .name_span = prop->decl->name_span,
             .name_form = ty_prop_name_form_of(prop),
             .name_type = prop_decl_rare(prop->decl)->name_type,

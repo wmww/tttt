@@ -1386,7 +1386,7 @@ static Ty const* type_of_dotted_name_resolving(Checker* me, Expr const* expr, Re
     Prop const* prop = object->kind == TY_INTERSECTION ? ty_property_of_type(me, object, name) : ty_get_prop(me, object, name);
     if (!prop || !prop_has_explicit_type(prop)) return nullptr;
     // (An optional one has undefined in its type, an optional method's too: tsc's getTypeOfSymbol. Not callable then)
-    return prop->flags & PROP_OPTIONAL ? ty_optional_prop_read(me, prop_type(me, prop), "flow") : prop_type(me, prop);
+    return prop_type(me, prop);
 }
 
 // tsc's isDottedName: `a`, `this`, `super`, `a.b.c`

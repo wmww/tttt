@@ -1484,7 +1484,6 @@ bool ty_signature_has_this(Checker* me, Signature const* sig);
 bool ty_exact_optional_mismatch(Checker* me, Ty const* source, Ty const* target);
 bool ty_has_exact_optional_unassignable(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_optional_prop_type(Checker* me, Ty const* ty); // tsc's getOptionalType(type, isProperty=true)
-Ty const* ty_optional_prop_read(Checker* me, Ty const* ty, char const* site); // (plan 82 migration)
 Ty const* ty_remove_optional_marker(Checker* me, Ty const* ty); // tsc's removeOptionalTypeMarker: without TY_OPTIONAL
 // tsc's getOptionalExpressionType: `object`, the type of an expression, as the access, call or `!` it is the object
 // (callee, operand) of sees it: after a `?.` (`is_root`) without null and undefined, else without TY_OPTIONAL (which

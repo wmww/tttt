@@ -914,15 +914,6 @@ void ty_check_type_assertion(Checker* me, Ty const* expr_type, Ty const* target,
     c_drop(cstr, &source_str, &target_str);
 }
 
-static Ty const* heritage_prop_type(Checker* me, Prop const* prop) {
-    Ty const* type = prop_type(me, prop);
-    if ((prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
-        Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
-        type = ty_union(me, parts, 2, nullptr, (TyList){0});
-    }
-    return type;
-}
-
 bool ty_check_heritage(
     Checker* me, Ty const* derived, Ty const* base, HeritageMember const* members, u32 count, unsigned ts_code,
     char const* what, char const* relation, Span span, ErrorCtx* errs
@@ -959,19 +950,14 @@ bool ty_check_heritage(
         Prop const* prop = ty_get_prop(me, derived_apparent, members[i].name);
         Prop const* base_prop = ty_property_of_type(me, base_apparent, members[i].name); // (an intersection's too)
         if (!prop || !base_prop) continue;
-        Ty const* source = heritage_prop_type(me, prop);
-        Ty const* target = heritage_prop_type(me, base_prop);
+        // (tsc's getTypeOfSymbol of both, an optional one's undefined or missing included)
+        Ty const* source = prop_type(me, prop);
+        Ty const* target = prop_type(me, base_prop);
         if (base_apparent->kind == TY_INTERSECTION) {
             // (The intersection's property, of the intersection of its members' types: tsc's getTypeOfSymbol of the
             // synthetic property, `string & number` for a getter and a setter of other types)
             FoundProp found = ty_find_prop(me, base_apparent, members[i].name);
-            if (found.found) {
-                target = found.type;
-                if ((found.flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
-                    Ty const* parts[2] = { target, ty_intrinsic(me, TY_UNDEFINED) };
-                    target = ty_union(me, parts, 2, nullptr, (TyList){0});
-                }
-            }
+            if (found.found) target = found.type;
         }
         VecTyReportLine member_lines = {0};
         if (relate_explaining(me, TY_RELATION_ASSIGNABLE, source, target, 2416, &member_lines, errs)) continue;
@@ -1183,7 +1169,7 @@ bool ty_check_assignable_to_access(
         FoundProp prop = name ? ty_find_prop(me, ty_apparent_type(me, ty_expr_type(me, &left->property->expr)), name) :
             (FoundProp){0};
         if (prop.found && (prop.flags & PROP_OPTIONAL) &&
-            ty_exact_optional_mismatch(me, source, ty_optional_prop_read(me, prop.type, "exact assignment"))
+            ty_exact_optional_mismatch(me, source, prop.type)
         ) {
             head = HEAD_EXACT_PROP;
         }
