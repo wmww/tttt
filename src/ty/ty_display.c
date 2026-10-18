@@ -3659,6 +3659,7 @@ static bool mentions_at(Checker* me, Ty const* ty, TyList params, u32 depth) {
 static bool mentions(Checker* me, Ty const* ty, TyList params) { return mentions_at(me, ty, params, 0); }
 
 // `mapped_by`: the instantiated signature they belong to, whose mapper their declared constraints are reused with
+static u32 reused_node_length(Span span);
 static void display_type_params(Checker* me, TyDisplay d, TyList params, bool reusable, Signature const* mapped_by) {
     if (!params.len) return;
     out_lit(d, "<");
@@ -3687,12 +3688,21 @@ static void display_type_params(Checker* me, TyDisplay d, TyList params, bool re
             mapped_d.mapped_by = mapped_by;
             if (d.reused) {
                 ty_display(me, d, constraint);
-            } else if (mapped_by && reusable && item && item->extends_explicit && reuses_nodes(d) &&
+            } else if (mapped_by && item && item->extends_explicit && ((reusable && reuses_nodes(d)) || (!d.types_baseline && !d.tracker)) &&
                 node_type(me, mapped_d, &item->extends) == constraint
             ) {
                 // (An instantiated signature's: the declared constraint with the instantiation's mapper, tsgo's
-                // typeToTypeNodeHelperWithPossibleReusableTypeNode under enterNewScope's mapper)
+                // typeToTypeNodeHelperWithPossibleReusableTypeNode under enterNewScope's mapper. In messages too)
+                u32 before = d.approx ? *d.approx : 0;
                 display_node(me, mapped_d, &item->extends);
+                // (Counted as the node's range with the whitespace before it, whatever printing it counted:
+                // tryReuseExistingNodeHelper's recovery boundary, rxjs's `<K extends T>` printed `<K extends (string |
+                // number)[]>` is 2. Known for a type name; other nodes count as printed, see display_node_mapped_inner)
+                if (d.approx && item->extends.tag == TYPE_IDENTIFIER && !item->extends.parenthesized &&
+                    span_valid(identifier_type_span(item->extends.identifier))
+                ) {
+                    *d.approx = before + reused_node_length(identifier_type_span(item->extends.identifier));
+                }
             } else if (!d.types_baseline && item && item->extends_explicit && annotation_is(me, &item->extends, constraint, false)) {
                 // (tsc's typeParameterToDeclaration reuses the constraint as written in messages too:
                 // typeToTypeNodeHelperWithPossibleReusableTypeNode)

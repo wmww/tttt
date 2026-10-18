@@ -1,0 +1,45 @@
+ttttTruncationReusedConstraint.ts(20,7): error TS2322: Type 'Obs<string[]>' is not assignable to type 'Obs<(string | number)[]>'.
+  The types returned by 'grp(...).grp' are incompatible between these types.
+    Type '{ <K extends KeyedGroupObservable<any, string[]>>(keySelector: (value: KeyedGroupObservable<any, string[]>) => value is K): Obs<KeyedGroupObservable<false, Exclude<KeyedGroupObservable<any, string[]>, K>> | KeyedGroupObservable<...>>; <K>(keySelector: ...): Obs<...>; <K>(keySelector: ..., options: GroupByOptions<......' is not assignable to type '{ <K extends KeyedGroupObservable<any, (string | number)[]>>(keySelector: (value: KeyedGroupObservable<any, (string | number)[]>) => value is K): Obs<KeyedGroupObservable<false, Exclude<KeyedGroupObservable<any, (string | number)[]>, K>> | KeyedGroupObservable<...>>; <K>(keySelector: ...): Obs<...>; <K>(keySelector:...'.
+      Types of parameters 'keySelector' and 'keySelector' are incompatible.
+        Type '(value: KeyedGroupObservable<any, (string | number)[]>) => value is any' is not assignable to type '(value: KeyedGroupObservable<any, string[]>) => value is any'.
+          Types of parameters 'value' and 'value' are incompatible.
+            Type 'KeyedGroupObservable<any, string[]>' is not assignable to type 'KeyedGroupObservable<any, (string | number)[]>'.
+              Type '(string | number)[]' is not assignable to type 'string[]'.
+                Type 'string | number' is not assignable to type 'string'.
+                  Type 'number' is not assignable to type 'string'.
+
+
+==== ttttTruncationReusedConstraint.ts (1 errors) ====
+    // A signature's constraint reused from its declaration with the instantiation's mapper counts as the node's range
+    // (`<K extends T>`: 2), whatever its instantiation prints (tsc's tryReuseExistingNodeHelper; rxjs's groupBy overloads)
+    interface Subj<T> { next(v: T): void }
+    interface Obs<T> { sub(): void;
+      grp: {
+        <K extends T>(keySelector: (value: T) => value is K): Obs<KeyedGroupObservable<true, K> | KeyedGroupObservable<false, Exclude<T, K>>>;
+        <K>(keySelector: (value: T) => K): Obs<KeyedGroupObservable<K, T>>;
+        <K>(keySelector: (value: T) => K, options: GroupByOptions<K, T, T>): Obs<KeyedGroupObservable<K, T>>;
+        <K, E>(keySelector: (value: T) => K, options: GroupByOptions<K, T, E> & { element: (value: T) => E }): Obs<KeyedGroupObservable<K, E>>;
+        <K, E>(keySelector: (value: T) => K, element: (value: T) => E, duration?: (group: KeyedGroupObservable<K, E>) => unknown, connector?: () => Subj<E>): Obs<KeyedGroupObservable<K, E>>;
+      };
+    }
+    interface KeyedGroupObservable<K, T> extends Obs<T> { readonly key: K; }
+    interface GroupByOptions<K, T, E = T> {
+      element?: (value: T) => E;
+      duration?: (group: KeyedGroupObservable<K, E>) => unknown;
+      connector?: () => Subj<E>;
+    }
+    declare const a: Obs<string[]>;
+    const b: Obs<(string | number)[]> = a;
+          ~
+!!! error TS2322: Type 'Obs<string[]>' is not assignable to type 'Obs<(string | number)[]>'.
+!!! error TS2322:   The types returned by 'grp(...).grp' are incompatible between these types.
+!!! error TS2322:     Type '{ <K extends KeyedGroupObservable<any, string[]>>(keySelector: (value: KeyedGroupObservable<any, string[]>) => value is K): Obs<KeyedGroupObservable<false, Exclude<KeyedGroupObservable<any, string[]>, K>> | KeyedGroupObservable<...>>; <K>(keySelector: ...): Obs<...>; <K>(keySelector: ..., options: GroupByOptions<......' is not assignable to type '{ <K extends KeyedGroupObservable<any, (string | number)[]>>(keySelector: (value: KeyedGroupObservable<any, (string | number)[]>) => value is K): Obs<KeyedGroupObservable<false, Exclude<KeyedGroupObservable<any, (string | number)[]>, K>> | KeyedGroupObservable<...>>; <K>(keySelector: ...): Obs<...>; <K>(keySelector:...'.
+!!! error TS2322:       Types of parameters 'keySelector' and 'keySelector' are incompatible.
+!!! error TS2322:         Type '(value: KeyedGroupObservable<any, (string | number)[]>) => value is any' is not assignable to type '(value: KeyedGroupObservable<any, string[]>) => value is any'.
+!!! error TS2322:           Types of parameters 'value' and 'value' are incompatible.
+!!! error TS2322:             Type 'KeyedGroupObservable<any, string[]>' is not assignable to type 'KeyedGroupObservable<any, (string | number)[]>'.
+!!! error TS2322:               Type '(string | number)[]' is not assignable to type 'string[]'.
+!!! error TS2322:                 Type 'string | number' is not assignable to type 'string'.
+!!! error TS2322:                   Type 'number' is not assignable to type 'string'.
+    

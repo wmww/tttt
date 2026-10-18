@@ -1,0 +1,153 @@
+//// [test/cases/ttttTruncationReusedConstraint.ts] ////
+
+=== ttttTruncationReusedConstraint.ts ===
+// A signature's constraint reused from its declaration with the instantiation's mapper counts as the node's range
+// (`<K extends T>`: 2), whatever its instantiation prints (tsc's tryReuseExistingNodeHelper; rxjs's groupBy overloads)
+interface Subj<T> { next(v: T): void }
+>Subj : Symbol(Subj, Decl(ttttTruncationReusedConstraint.ts, 0, 0))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 2, 15))
+>next : Symbol(Subj.next, Decl(ttttTruncationReusedConstraint.ts, 2, 19))
+>v : Symbol(v, Decl(ttttTruncationReusedConstraint.ts, 2, 25))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 2, 15))
+
+interface Obs<T> { sub(): void;
+>Obs : Symbol(Obs, Decl(ttttTruncationReusedConstraint.ts, 2, 38))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+>sub : Symbol(Obs.sub, Decl(ttttTruncationReusedConstraint.ts, 3, 18))
+
+  grp: {
+>grp : Symbol(Obs.grp, Decl(ttttTruncationReusedConstraint.ts, 3, 31))
+
+    <K extends T>(keySelector: (value: T) => value is K): Obs<KeyedGroupObservable<true, K> | KeyedGroupObservable<false, Exclude<T, K>>>;
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 5, 5))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+>keySelector : Symbol(keySelector, Decl(ttttTruncationReusedConstraint.ts, 5, 18))
+>value : Symbol(value, Decl(ttttTruncationReusedConstraint.ts, 5, 32))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+>value : Symbol(value, Decl(ttttTruncationReusedConstraint.ts, 5, 32))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 5, 5))
+>Obs : Symbol(Obs, Decl(ttttTruncationReusedConstraint.ts, 2, 38))
+>KeyedGroupObservable : Symbol(KeyedGroupObservable, Decl(ttttTruncationReusedConstraint.ts, 11, 1))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 5, 5))
+>KeyedGroupObservable : Symbol(KeyedGroupObservable, Decl(ttttTruncationReusedConstraint.ts, 11, 1))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 5, 5))
+
+    <K>(keySelector: (value: T) => K): Obs<KeyedGroupObservable<K, T>>;
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 6, 5))
+>keySelector : Symbol(keySelector, Decl(ttttTruncationReusedConstraint.ts, 6, 8))
+>value : Symbol(value, Decl(ttttTruncationReusedConstraint.ts, 6, 22))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 6, 5))
+>Obs : Symbol(Obs, Decl(ttttTruncationReusedConstraint.ts, 2, 38))
+>KeyedGroupObservable : Symbol(KeyedGroupObservable, Decl(ttttTruncationReusedConstraint.ts, 11, 1))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 6, 5))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+
+    <K>(keySelector: (value: T) => K, options: GroupByOptions<K, T, T>): Obs<KeyedGroupObservable<K, T>>;
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 7, 5))
+>keySelector : Symbol(keySelector, Decl(ttttTruncationReusedConstraint.ts, 7, 8))
+>value : Symbol(value, Decl(ttttTruncationReusedConstraint.ts, 7, 22))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 7, 5))
+>options : Symbol(options, Decl(ttttTruncationReusedConstraint.ts, 7, 37))
+>GroupByOptions : Symbol(GroupByOptions, Decl(ttttTruncationReusedConstraint.ts, 12, 72))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 7, 5))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+>Obs : Symbol(Obs, Decl(ttttTruncationReusedConstraint.ts, 2, 38))
+>KeyedGroupObservable : Symbol(KeyedGroupObservable, Decl(ttttTruncationReusedConstraint.ts, 11, 1))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 7, 5))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+
+    <K, E>(keySelector: (value: T) => K, options: GroupByOptions<K, T, E> & { element: (value: T) => E }): Obs<KeyedGroupObservable<K, E>>;
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 8, 5))
+>E : Symbol(E, Decl(ttttTruncationReusedConstraint.ts, 8, 7))
+>keySelector : Symbol(keySelector, Decl(ttttTruncationReusedConstraint.ts, 8, 11))
+>value : Symbol(value, Decl(ttttTruncationReusedConstraint.ts, 8, 25))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 8, 5))
+>options : Symbol(options, Decl(ttttTruncationReusedConstraint.ts, 8, 40))
+>GroupByOptions : Symbol(GroupByOptions, Decl(ttttTruncationReusedConstraint.ts, 12, 72))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 8, 5))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+>E : Symbol(E, Decl(ttttTruncationReusedConstraint.ts, 8, 7))
+>element : Symbol(element, Decl(ttttTruncationReusedConstraint.ts, 8, 77))
+>value : Symbol(value, Decl(ttttTruncationReusedConstraint.ts, 8, 88))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+>E : Symbol(E, Decl(ttttTruncationReusedConstraint.ts, 8, 7))
+>Obs : Symbol(Obs, Decl(ttttTruncationReusedConstraint.ts, 2, 38))
+>KeyedGroupObservable : Symbol(KeyedGroupObservable, Decl(ttttTruncationReusedConstraint.ts, 11, 1))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 8, 5))
+>E : Symbol(E, Decl(ttttTruncationReusedConstraint.ts, 8, 7))
+
+    <K, E>(keySelector: (value: T) => K, element: (value: T) => E, duration?: (group: KeyedGroupObservable<K, E>) => unknown, connector?: () => Subj<E>): Obs<KeyedGroupObservable<K, E>>;
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 9, 5))
+>E : Symbol(E, Decl(ttttTruncationReusedConstraint.ts, 9, 7))
+>keySelector : Symbol(keySelector, Decl(ttttTruncationReusedConstraint.ts, 9, 11))
+>value : Symbol(value, Decl(ttttTruncationReusedConstraint.ts, 9, 25))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 9, 5))
+>element : Symbol(element, Decl(ttttTruncationReusedConstraint.ts, 9, 40))
+>value : Symbol(value, Decl(ttttTruncationReusedConstraint.ts, 9, 51))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 3, 14))
+>E : Symbol(E, Decl(ttttTruncationReusedConstraint.ts, 9, 7))
+>duration : Symbol(duration, Decl(ttttTruncationReusedConstraint.ts, 9, 66))
+>group : Symbol(group, Decl(ttttTruncationReusedConstraint.ts, 9, 79))
+>KeyedGroupObservable : Symbol(KeyedGroupObservable, Decl(ttttTruncationReusedConstraint.ts, 11, 1))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 9, 5))
+>E : Symbol(E, Decl(ttttTruncationReusedConstraint.ts, 9, 7))
+>connector : Symbol(connector, Decl(ttttTruncationReusedConstraint.ts, 9, 125))
+>Subj : Symbol(Subj, Decl(ttttTruncationReusedConstraint.ts, 0, 0))
+>E : Symbol(E, Decl(ttttTruncationReusedConstraint.ts, 9, 7))
+>Obs : Symbol(Obs, Decl(ttttTruncationReusedConstraint.ts, 2, 38))
+>KeyedGroupObservable : Symbol(KeyedGroupObservable, Decl(ttttTruncationReusedConstraint.ts, 11, 1))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 9, 5))
+>E : Symbol(E, Decl(ttttTruncationReusedConstraint.ts, 9, 7))
+
+  };
+}
+interface KeyedGroupObservable<K, T> extends Obs<T> { readonly key: K; }
+>KeyedGroupObservable : Symbol(KeyedGroupObservable, Decl(ttttTruncationReusedConstraint.ts, 11, 1))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 12, 31))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 12, 33))
+>Obs : Symbol(Obs, Decl(ttttTruncationReusedConstraint.ts, 2, 38))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 12, 33))
+>key : Symbol(KeyedGroupObservable.key, Decl(ttttTruncationReusedConstraint.ts, 12, 53))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 12, 31))
+
+interface GroupByOptions<K, T, E = T> {
+>GroupByOptions : Symbol(GroupByOptions, Decl(ttttTruncationReusedConstraint.ts, 12, 72))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 13, 25))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 13, 27))
+>E : Symbol(E, Decl(ttttTruncationReusedConstraint.ts, 13, 30))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 13, 27))
+
+  element?: (value: T) => E;
+>element : Symbol(GroupByOptions.element, Decl(ttttTruncationReusedConstraint.ts, 13, 39))
+>value : Symbol(value, Decl(ttttTruncationReusedConstraint.ts, 14, 13))
+>T : Symbol(T, Decl(ttttTruncationReusedConstraint.ts, 13, 27))
+>E : Symbol(E, Decl(ttttTruncationReusedConstraint.ts, 13, 30))
+
+  duration?: (group: KeyedGroupObservable<K, E>) => unknown;
+>duration : Symbol(GroupByOptions.duration, Decl(ttttTruncationReusedConstraint.ts, 14, 28))
+>group : Symbol(group, Decl(ttttTruncationReusedConstraint.ts, 15, 14))
+>KeyedGroupObservable : Symbol(KeyedGroupObservable, Decl(ttttTruncationReusedConstraint.ts, 11, 1))
+>K : Symbol(K, Decl(ttttTruncationReusedConstraint.ts, 13, 25))
+>E : Symbol(E, Decl(ttttTruncationReusedConstraint.ts, 13, 30))
+
+  connector?: () => Subj<E>;
+>connector : Symbol(GroupByOptions.connector, Decl(ttttTruncationReusedConstraint.ts, 15, 60))
+>Subj : Symbol(Subj, Decl(ttttTruncationReusedConstraint.ts, 0, 0))
+>E : Symbol(E, Decl(ttttTruncationReusedConstraint.ts, 13, 30))
+}
+declare const a: Obs<string[]>;
+>a : Symbol(a, Decl(ttttTruncationReusedConstraint.ts, 18, 13))
+>Obs : Symbol(Obs, Decl(ttttTruncationReusedConstraint.ts, 2, 38))
+
+const b: Obs<(string | number)[]> = a;
+>b : Symbol(b, Decl(ttttTruncationReusedConstraint.ts, 19, 5))
+>Obs : Symbol(Obs, Decl(ttttTruncationReusedConstraint.ts, 2, 38))
+>a : Symbol(a, Decl(ttttTruncationReusedConstraint.ts, 18, 13))
+

@@ -1673,7 +1673,17 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTruncationNoInfer': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTruncationReadonlyReused': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTruncationReusedConstraint': {
         errors: true,
         symbols: true,
         types: true,
