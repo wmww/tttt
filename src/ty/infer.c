@@ -1817,6 +1817,15 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         if (source->kind == TY_INDEXED) {
             infer_from(me, inf, source->indexed.object, target->indexed.object);
             infer_from(me, inf, source->indexed.index, target->indexed.index);
+        } else if (source->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
+            // An object infers to its properties and signatures, which are those of its apparent type (tsc's
+            // inferFromTypes falls through to inferFromObjectTypes): `{ [P in keyof M]: (x: M[P]) => P }[T]` is
+            // `(x: M[T]) => T` there, so a function returning "A" infers T = "A". (Only an object type that isn't a
+            // reference or mapped type: tsc's own reference and mapped cases don't apply to an indexed access)
+            Ty const* apparent = ty_apparent_type(me, target);
+            if (apparent != target && apparent->kind == TY_ANONYMOUS && !ty_members(me, apparent)->mapped) {
+                infer_from(me, inf, source, apparent);
+            }
         }
     } else if (source->kind == TY_STRING_MAPPING && target->kind == TY_STRING_MAPPING) {
         if (source->string_mapping.mapping == target->string_mapping.mapping) {

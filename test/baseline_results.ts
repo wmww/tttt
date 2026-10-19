@@ -1096,6 +1096,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttInferToIndexedMappedTemplate': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInferUnresolvedThroughIntersectionTarget': {
         errors: true,
         symbols: true,
@@ -1451,6 +1456,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttMappedGenericUnionOfIntersections': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttMappedIntersectionMemberOrder': {
         errors: true,

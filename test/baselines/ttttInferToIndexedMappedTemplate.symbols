@@ -1,0 +1,77 @@
+//// [test/cases/ttttInferToIndexedMappedTemplate.ts] ////
+
+=== ttttInferToIndexedMappedTemplate.ts ===
+// An object source infers to an indexed access through its apparent type (tsc's inferFromTypes falls through to
+// inferFromObjectTypes): `FnMap<H>[T]`, FnMap mapped over a non-generic key, is `(item: DataMap<H>[T], orig: H) => T`
+// there, so a contextual return type infers T and H (lightweight-charts' getSeriesPlotRowCreator)
+interface DataMap<H = number> { A: { a: H }; B: { b: H } }
+>DataMap : Symbol(DataMap, Decl(ttttInferToIndexedMappedTemplate.ts, 0, 0))
+>H : Symbol(H, Decl(ttttInferToIndexedMappedTemplate.ts, 3, 18))
+>A : Symbol(DataMap.A, Decl(ttttInferToIndexedMappedTemplate.ts, 3, 31))
+>a : Symbol(a, Decl(ttttInferToIndexedMappedTemplate.ts, 3, 36))
+>H : Symbol(H, Decl(ttttInferToIndexedMappedTemplate.ts, 3, 18))
+>B : Symbol(DataMap.B, Decl(ttttInferToIndexedMappedTemplate.ts, 3, 44))
+>b : Symbol(b, Decl(ttttInferToIndexedMappedTemplate.ts, 3, 49))
+>H : Symbol(H, Decl(ttttInferToIndexedMappedTemplate.ts, 3, 18))
+
+type FnMap<H> = { [T in keyof DataMap]: (item: DataMap<H>[T], orig: H) => T };
+>FnMap : Symbol(FnMap, Decl(ttttInferToIndexedMappedTemplate.ts, 3, 58))
+>H : Symbol(H, Decl(ttttInferToIndexedMappedTemplate.ts, 4, 11))
+>T : Symbol(T, Decl(ttttInferToIndexedMappedTemplate.ts, 4, 19))
+>DataMap : Symbol(DataMap, Decl(ttttInferToIndexedMappedTemplate.ts, 0, 0))
+>item : Symbol(item, Decl(ttttInferToIndexedMappedTemplate.ts, 4, 41))
+>DataMap : Symbol(DataMap, Decl(ttttInferToIndexedMappedTemplate.ts, 0, 0))
+>H : Symbol(H, Decl(ttttInferToIndexedMappedTemplate.ts, 4, 11))
+>T : Symbol(T, Decl(ttttInferToIndexedMappedTemplate.ts, 4, 19))
+>orig : Symbol(orig, Decl(ttttInferToIndexedMappedTemplate.ts, 4, 61))
+>H : Symbol(H, Decl(ttttInferToIndexedMappedTemplate.ts, 4, 11))
+>T : Symbol(T, Decl(ttttInferToIndexedMappedTemplate.ts, 4, 19))
+
+declare function wrap<T extends keyof DataMap, H>(fn: unknown): FnMap<H>[T];
+>wrap : Symbol(wrap, Decl(ttttInferToIndexedMappedTemplate.ts, 4, 78))
+>T : Symbol(T, Decl(ttttInferToIndexedMappedTemplate.ts, 5, 22))
+>DataMap : Symbol(DataMap, Decl(ttttInferToIndexedMappedTemplate.ts, 0, 0))
+>H : Symbol(H, Decl(ttttInferToIndexedMappedTemplate.ts, 5, 46))
+>fn : Symbol(fn, Decl(ttttInferToIndexedMappedTemplate.ts, 5, 50))
+>FnMap : Symbol(FnMap, Decl(ttttInferToIndexedMappedTemplate.ts, 3, 58))
+>H : Symbol(H, Decl(ttttInferToIndexedMappedTemplate.ts, 5, 46))
+>T : Symbol(T, Decl(ttttInferToIndexedMappedTemplate.ts, 5, 22))
+
+export function make<H>() {
+>make : Symbol(make, Decl(ttttInferToIndexedMappedTemplate.ts, 5, 76))
+>H : Symbol(H, Decl(ttttInferToIndexedMappedTemplate.ts, 7, 21))
+
+    const m: FnMap<H> = { A: wrap(1), B: wrap(2) };
+>m : Symbol(m, Decl(ttttInferToIndexedMappedTemplate.ts, 8, 9))
+>FnMap : Symbol(FnMap, Decl(ttttInferToIndexedMappedTemplate.ts, 3, 58))
+>H : Symbol(H, Decl(ttttInferToIndexedMappedTemplate.ts, 7, 21))
+>A : Symbol(A, Decl(ttttInferToIndexedMappedTemplate.ts, 8, 25))
+>wrap : Symbol(wrap, Decl(ttttInferToIndexedMappedTemplate.ts, 4, 78))
+>B : Symbol(B, Decl(ttttInferToIndexedMappedTemplate.ts, 8, 37))
+>wrap : Symbol(wrap, Decl(ttttInferToIndexedMappedTemplate.ts, 4, 78))
+
+    return m;
+>m : Symbol(m, Decl(ttttInferToIndexedMappedTemplate.ts, 8, 9))
+}
+
+type Plain = { A: (item: { a: number }) => "A"; B: (item: { b: number }) => "B" };
+>Plain : Symbol(Plain, Decl(ttttInferToIndexedMappedTemplate.ts, 10, 1))
+>A : Symbol(A, Decl(ttttInferToIndexedMappedTemplate.ts, 12, 14))
+>item : Symbol(item, Decl(ttttInferToIndexedMappedTemplate.ts, 12, 19))
+>a : Symbol(a, Decl(ttttInferToIndexedMappedTemplate.ts, 12, 26))
+>B : Symbol(B, Decl(ttttInferToIndexedMappedTemplate.ts, 12, 47))
+>item : Symbol(item, Decl(ttttInferToIndexedMappedTemplate.ts, 12, 52))
+>b : Symbol(b, Decl(ttttInferToIndexedMappedTemplate.ts, 12, 59))
+
+declare function wrap2<T extends keyof Plain>(): Plain[T];
+>wrap2 : Symbol(wrap2, Decl(ttttInferToIndexedMappedTemplate.ts, 12, 82))
+>T : Symbol(T, Decl(ttttInferToIndexedMappedTemplate.ts, 13, 23))
+>Plain : Symbol(Plain, Decl(ttttInferToIndexedMappedTemplate.ts, 10, 1))
+>Plain : Symbol(Plain, Decl(ttttInferToIndexedMappedTemplate.ts, 10, 1))
+>T : Symbol(T, Decl(ttttInferToIndexedMappedTemplate.ts, 13, 23))
+
+const y: Plain["A"] = wrap2();
+>y : Symbol(y, Decl(ttttInferToIndexedMappedTemplate.ts, 14, 5))
+>Plain : Symbol(Plain, Decl(ttttInferToIndexedMappedTemplate.ts, 10, 1))
+>wrap2 : Symbol(wrap2, Decl(ttttInferToIndexedMappedTemplate.ts, 12, 82))
+

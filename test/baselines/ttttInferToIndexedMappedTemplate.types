@@ -1,0 +1,57 @@
+//// [test/cases/ttttInferToIndexedMappedTemplate.ts] ////
+
+=== ttttInferToIndexedMappedTemplate.ts ===
+// An object source infers to an indexed access through its apparent type (tsc's inferFromTypes falls through to
+// inferFromObjectTypes): `FnMap<H>[T]`, FnMap mapped over a non-generic key, is `(item: DataMap<H>[T], orig: H) => T`
+// there, so a contextual return type infers T and H (lightweight-charts' getSeriesPlotRowCreator)
+interface DataMap<H = number> { A: { a: H }; B: { b: H } }
+>A : { a: H; }
+>a : H
+>B : { b: H; }
+>b : H
+
+type FnMap<H> = { [T in keyof DataMap]: (item: DataMap<H>[T], orig: H) => T };
+>FnMap : FnMap<H>
+>item : DataMap<H>[T]
+>orig : H
+
+declare function wrap<T extends keyof DataMap, H>(fn: unknown): FnMap<H>[T];
+>wrap : <T extends keyof DataMap, H>(fn: unknown) => FnMap<H>[T]
+>fn : unknown
+
+export function make<H>() {
+>make : <H>() => FnMap<H>
+
+    const m: FnMap<H> = { A: wrap(1), B: wrap(2) };
+>m : FnMap<H>
+>{ A: wrap(1), B: wrap(2) } : { A: (item: { a: H; }, orig: H) => "A"; B: (item: { b: H; }, orig: H) => "B"; }
+>A : (item: { a: H; }, orig: H) => "A"
+>wrap(1) : (item: { a: H; }, orig: H) => "A"
+>wrap : <T extends keyof DataMap, H_1>(fn: unknown) => FnMap<H_1>[T]
+>1 : 1
+>B : (item: { b: H; }, orig: H) => "B"
+>wrap(2) : (item: { b: H; }, orig: H) => "B"
+>wrap : <T extends keyof DataMap, H_1>(fn: unknown) => FnMap<H_1>[T]
+>2 : 2
+
+    return m;
+>m : FnMap<H>
+}
+
+type Plain = { A: (item: { a: number }) => "A"; B: (item: { b: number }) => "B" };
+>Plain : Plain
+>A : (item: { a: number; }) => "A"
+>item : { a: number; }
+>a : number
+>B : (item: { b: number; }) => "B"
+>item : { b: number; }
+>b : number
+
+declare function wrap2<T extends keyof Plain>(): Plain[T];
+>wrap2 : <T extends keyof Plain>() => Plain[T]
+
+const y: Plain["A"] = wrap2();
+>y : (item: { a: number; }) => "A"
+>wrap2() : ((item: { a: number; }) => "A") | ((item: { b: number; }) => "B")
+>wrap2 : <T extends keyof Plain>() => Plain[T]
+
