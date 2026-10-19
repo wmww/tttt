@@ -413,6 +413,7 @@ typedef struct FoundProp {
     Prop const* prop; // The property found (of an intersection: of its first member that has one)
 } FoundProp;
 FoundProp ty_find_prop(Checker* me, Ty const* ty, Atom const* name);
+bool ty_prop_reference_private(Checker* me, Prop const* prop); // members.c
 FoundProp ty_find_own_prop(Checker* me, Ty const* ty, Atom const* name);
 // tsc's isGenericReducibleType (checker.c), part of its isGenericObjectType
 bool ty_is_generic_reducible(Checker* me, Ty const* ty);

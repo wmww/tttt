@@ -14989,7 +14989,17 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
     } while (0)
 
 // SourceFile.strip_internal: what tsc -b's `.d.ts` of the file leaves out (tsgo's shouldStripInternal): declarations,
-// class and interface members and enum members whose leading comments say `@internal`
+// class and interface members (type literals' too, nested) and enum members whose leading comments say `@internal`
+static void strip_internal_type(SourceFile const* source, TypeNode* type) {
+    if (type->tag == TYPE_INTERFACE) {
+        STRIP_VEC(&type->interface.members, InterfaceMember,
+            !span_valid(item->declaration) || !source_text_internal_before(source, item->declaration.buf));
+        for_each (i, vec_interface_member, &type->interface.members) strip_internal_type(source, &i->type);
+    } else if (type->tag == TYPE_UNION || type->tag == TYPE_INTERSECTION) {
+        for_each (i, vec_type, &type->composite) strip_internal_type(source, i);
+    }
+}
+
 static void strip_internal_statements(SourceFile const* source, VecStatement* statements) {
     for_each (i, vec_statement, statements) {
         Statement* s = i;
@@ -15003,10 +15013,10 @@ static void strip_internal_statements(SourceFile const* source, VecStatement* st
                 STRIP_VEC(&s->decl.class->items, ClassItem, !span_valid(item->span) || !source_text_internal_before(source, item->span.buf));
                 break;
             case STATEMENT_DECL_INTERFACE:
-                if (s->decl.interface->type.tag == TYPE_INTERFACE) {
-                    STRIP_VEC(&s->decl.interface->type.interface.members, InterfaceMember,
-                        !span_valid(item->declaration) || !source_text_internal_before(source, item->declaration.buf));
-                }
+                strip_internal_type(source, &s->decl.interface->type);
+                break;
+            case STATEMENT_DECL_TYPE:
+                strip_internal_type(source, &s->decl.type->type);
                 break;
             case STATEMENT_DECL_ENUM:
                 STRIP_VEC(&s->decl.enum_->cases, EnumCase,

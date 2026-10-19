@@ -1546,6 +1546,7 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
         }
         cstr_drop(&absolute);
         if (source_file->from_reference) {
+            if (!source_files_from_reference) source_files_from_reference = true;
             // (A built project's file may turn out to be the program's own: parsed whole, nothing stripped)
             source_file->from_built = project_redirects_built(my redirects, source_file->from_reference - 1);
             source_file->built_unchecked = source_file->unchecked;

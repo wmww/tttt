@@ -526,6 +526,9 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_e
 // tsgo's isInternalDeclaration: a leading comment of the declaration starting at `at` says `@internal` (block comments
 // and whole-line `//` comments right before it)
 bool source_text_internal_before(struct SourceFile const* me, char const* at);
+// Some program of the process has a referenced (or built) project's source file (SourceFile.from_reference): what
+// only such files need is skipped otherwise (expr.c's reference_private_access())
+extern _Atomic bool source_files_from_reference;
 void module_ref_report_resolved_import_type(ModuleRef const* me, struct ErrorCtx* errs);
 // TS1471/TS1479: a CommonJS use of an ES module under node16/node18, reported at `at`
 void module_ref_report_require_of_esm(ModuleRef const* me, Span at, struct ErrorCtx* errs);

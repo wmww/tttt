@@ -2797,6 +2797,9 @@ static Ternary props_related_impl(
         Ternary related = TERNARY_TRUE;
         bool skip = (target_type->flags & (st->relation == TY_RELATION_STRICT_SUBTYPE ? TYF_ANY : TYF_ANY | TYF_UNKNOWN)) &&
             source_prop.prop && (source_prop.prop->flags & PROP_GETTER);
+        // (A reference source's private member, the one declaration modifiers_related() saw both are: untyped in the
+        // `.d.ts` tsc -b relates, see ty_prop_reference_private())
+        skip |= (target_prop->flags & PROP_PRIVATE || target_prop->name->str[0] == '#') && ty_prop_reference_private(me, target_prop);
         if (!skip) {
             Ty const* source_type = source_prop.type ? source_prop.type : prop_type(me, source_prop.prop);
             // (tsc's getNonMissingTypeOfSymbol of both)

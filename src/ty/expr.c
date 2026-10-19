@@ -5935,11 +5935,30 @@ static void contextually_type_static_fields(Checker* me, ClassDecl const* class_
 
 static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx);
 
+// `x['p']` written outside a referenced project's source, of a private member of a class in one: any, as from the
+// `.d.ts` tsc -b reads (ty_prop_reference_private()): astro's `telemetry['config'] = config`
+static Ty const* reference_private_access(Checker* me, Expr const* expr, Ty const* type) {
+    if (!type || (type->flags & TYF_ANY)) return type;
+    SourceFile const* file = span_source(expr->inner_span);
+    if (!file || file->from_reference) return type;
+    Ty const* object = ty_apparent_type(me, ty_expr_type(me, &expr->property->expr));
+    if (!(object->flags & TYF_OBJECT)) return type;
+    Atom const* name = checker_atom(me, cstr_sv(&expr->property->index.literal.string));
+    FoundProp found = ty_find_prop(me, object, name);
+    return found.found && found.prop && (found.flags & PROP_PRIVATE) && ty_prop_reference_private(me, found.prop) ?
+        ty_intrinsic(me, TY_ANY) : type;
+}
+
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
     // tsc's checkExpression: the current node, and the instantiation limit is per expression, not per program
     CurrentNode saved = ty_enter_expr(me, expr);
     Ty const* ret = compute_inner(me, expr, ctx);
     ty_leave_node(me, saved);
+    if (source_files_from_reference && expr->tag == EXPR_PROPERTY && expr->property->form == PROPERTY_EXPR_BRACKET &&
+        expr->property->index.tag == EXPR_LITERAL && expr->property->index.literal.tag == VALUE_STRING
+    ) {
+        ret = reference_private_access(me, expr, ret);
+    }
     return ret;
 }
 
