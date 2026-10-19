@@ -89,12 +89,16 @@ static inline void ty_buf_push(TyBuf* me, Ty const* ty) {
         my cap = c_arraylen(my inline_data);
     }
     if (my len == my cap) {
-        my cap *= 2;
         if (my data == my inline_data) {
-            my data = malloc(sizeof(Ty const*) * my cap);
-            panic_if(!my data, "out of memory");
-            memcpy(my data, my inline_data, sizeof(my inline_data));
+            // (Full inline: sized from the inline array, not from cap, which is its length here but which GCC's LTO
+            // with PGO loses track of in a loop and warns about a malloc(0), -Wstringop-overflow)
+            Ty const** heap = malloc(sizeof(my inline_data) * 2);
+            panic_if(!heap, "out of memory");
+            memcpy(heap, my inline_data, sizeof(my inline_data));
+            my data = heap;
+            my cap = 2 * c_arraylen(my inline_data);
         } else {
+            my cap *= 2;
             my data = realloc(my data, sizeof(Ty const*) * my cap);
             panic_if(!my data, "out of memory");
         }
