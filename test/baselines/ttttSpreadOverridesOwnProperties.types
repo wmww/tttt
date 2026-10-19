@@ -1,0 +1,56 @@
+//// [test/cases/ttttSpreadOverridesOwnProperties.ts] ////
+
+=== ttttSpreadOverridesOwnProperties.ts ===
+// A spread overwrites what its type has as properties, not what every object has from Object (tsc's
+// checkSpreadPropOverrides goes by getPropertiesOfType): `{ toString, ...ctx }` keeps its `toString` (hono's css test)
+interface Ctx { css: string; style(): void }
+>css : string
+>style : () => void
+
+interface Named { toString(): string; css: string }
+>toString : () => string
+>css : string
+
+declare const ctx: Ctx;
+>ctx : Ctx
+
+declare const named: Named;
+>named : Named
+
+declare const fn: () => void;
+>fn : () => void
+
+const toString = () => "";
+>toString : () => string
+>() => "" : () => string
+>"" : ""
+
+const call = 1;
+>call : 1
+>1 : 1
+
+export const a = { toString, ...ctx };
+>a : { css: string; style(): void; toString: () => string; }
+>{ toString, ...ctx } : { css: string; style(): void; toString: () => string; }
+>toString : () => string
+>ctx : Ctx
+
+export const b = { toString, ...named };
+>b : { toString(): string; css: string; }
+>{ toString, ...named } : { toString(): string; css: string; }
+>toString : () => string
+>named : Named
+
+export const c = { call, ...fn };
+>c : { call: number; }
+>{ call, ...fn } : { call: number; }
+>call : number
+>fn : () => void
+
+export const d = { css: "", ...ctx };
+>d : { css: string; style(): void; }
+>{ css: "", ...ctx } : { css: string; style(): void; }
+>css : string
+>"" : ""
+>ctx : Ctx
+

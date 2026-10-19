@@ -1,0 +1,52 @@
+//// [test/cases/ttttSpreadOverridesOwnProperties.ts] ////
+
+=== ttttSpreadOverridesOwnProperties.ts ===
+// A spread overwrites what its type has as properties, not what every object has from Object (tsc's
+// checkSpreadPropOverrides goes by getPropertiesOfType): `{ toString, ...ctx }` keeps its `toString` (hono's css test)
+interface Ctx { css: string; style(): void }
+>Ctx : Symbol(Ctx, Decl(ttttSpreadOverridesOwnProperties.ts, 0, 0))
+>css : Symbol(Ctx.css, Decl(ttttSpreadOverridesOwnProperties.ts, 2, 15))
+>style : Symbol(Ctx.style, Decl(ttttSpreadOverridesOwnProperties.ts, 2, 28))
+
+interface Named { toString(): string; css: string }
+>Named : Symbol(Named, Decl(ttttSpreadOverridesOwnProperties.ts, 2, 44))
+>toString : Symbol(Named.toString, Decl(ttttSpreadOverridesOwnProperties.ts, 3, 17))
+>css : Symbol(Named.css, Decl(ttttSpreadOverridesOwnProperties.ts, 3, 37))
+
+declare const ctx: Ctx;
+>ctx : Symbol(ctx, Decl(ttttSpreadOverridesOwnProperties.ts, 4, 13))
+>Ctx : Symbol(Ctx, Decl(ttttSpreadOverridesOwnProperties.ts, 0, 0))
+
+declare const named: Named;
+>named : Symbol(named, Decl(ttttSpreadOverridesOwnProperties.ts, 5, 13))
+>Named : Symbol(Named, Decl(ttttSpreadOverridesOwnProperties.ts, 2, 44))
+
+declare const fn: () => void;
+>fn : Symbol(fn, Decl(ttttSpreadOverridesOwnProperties.ts, 6, 13))
+
+const toString = () => "";
+>toString : Symbol(toString, Decl(ttttSpreadOverridesOwnProperties.ts, 7, 5))
+
+const call = 1;
+>call : Symbol(call, Decl(ttttSpreadOverridesOwnProperties.ts, 8, 5))
+
+export const a = { toString, ...ctx };
+>a : Symbol(a, Decl(ttttSpreadOverridesOwnProperties.ts, 10, 12))
+>toString : Symbol(toString, Decl(ttttSpreadOverridesOwnProperties.ts, 10, 18))
+>ctx : Symbol(ctx, Decl(ttttSpreadOverridesOwnProperties.ts, 4, 13))
+
+export const b = { toString, ...named };
+>b : Symbol(b, Decl(ttttSpreadOverridesOwnProperties.ts, 11, 12))
+>toString : Symbol(toString, Decl(ttttSpreadOverridesOwnProperties.ts, 11, 18))
+>named : Symbol(named, Decl(ttttSpreadOverridesOwnProperties.ts, 5, 13))
+
+export const c = { call, ...fn };
+>c : Symbol(c, Decl(ttttSpreadOverridesOwnProperties.ts, 12, 12))
+>call : Symbol(call, Decl(ttttSpreadOverridesOwnProperties.ts, 12, 18))
+>fn : Symbol(fn, Decl(ttttSpreadOverridesOwnProperties.ts, 6, 13))
+
+export const d = { css: "", ...ctx };
+>d : Symbol(d, Decl(ttttSpreadOverridesOwnProperties.ts, 13, 12))
+>css : Symbol(css, Decl(ttttSpreadOverridesOwnProperties.ts, 13, 18))
+>ctx : Symbol(ctx, Decl(ttttSpreadOverridesOwnProperties.ts, 4, 13))
+

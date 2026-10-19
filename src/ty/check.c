@@ -1456,7 +1456,8 @@ void ty_check_spread_overrides(Checker* me, Ty const* type, TyWrittenProp const*
         if (later) continue;
         bool always = true;
         for (u32 i = 0; i < members.len && always; i++) {
-            FoundProp found = ty_find_prop(me, ty_apparent_type(me, members.data[i]), written[w].name);
+            // (Its properties, not Object's: tsc's getPropertiesOfType, `{ toString, ...ctx }` keeps the first)
+            FoundProp found = ty_find_own_prop(me, ty_apparent_type(me, members.data[i]), written[w].name);
             always = found.found && !(found.flags & PROP_OPTIONAL);
         }
         if (!always) continue;

@@ -413,6 +413,7 @@ typedef struct FoundProp {
     Prop const* prop; // The property found (of an intersection: of its first member that has one)
 } FoundProp;
 FoundProp ty_find_prop(Checker* me, Ty const* ty, Atom const* name);
+FoundProp ty_find_own_prop(Checker* me, Ty const* ty, Atom const* name);
 // tsc's isGenericReducibleType (checker.c), part of its isGenericObjectType
 bool ty_is_generic_reducible(Checker* me, Ty const* ty);
 // The annotation a property was declared with, which the types baseline reuses for a copy of it where it still says

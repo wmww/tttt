@@ -1,0 +1,26 @@
+ttttSpreadOverridesOwnProperties.ts(12,20): error TS2783: 'toString' is specified more than once, so this usage will be overwritten.
+ttttSpreadOverridesOwnProperties.ts(14,20): error TS2783: 'css' is specified more than once, so this usage will be overwritten.
+
+
+==== ttttSpreadOverridesOwnProperties.ts (2 errors) ====
+    // A spread overwrites what its type has as properties, not what every object has from Object (tsc's
+    // checkSpreadPropOverrides goes by getPropertiesOfType): `{ toString, ...ctx }` keeps its `toString` (hono's css test)
+    interface Ctx { css: string; style(): void }
+    interface Named { toString(): string; css: string }
+    declare const ctx: Ctx;
+    declare const named: Named;
+    declare const fn: () => void;
+    const toString = () => "";
+    const call = 1;
+    
+    export const a = { toString, ...ctx };
+    export const b = { toString, ...named };
+                       ~~~~~~~~
+!!! error TS2783: 'toString' is specified more than once, so this usage will be overwritten.
+!!! related TS2785 ttttSpreadOverridesOwnProperties.ts:12:30: This spread always overwrites this property.
+    export const c = { call, ...fn };
+    export const d = { css: "", ...ctx };
+                       ~~~~~~~
+!!! error TS2783: 'css' is specified more than once, so this usage will be overwritten.
+!!! related TS2785 ttttSpreadOverridesOwnProperties.ts:14:29: This spread always overwrites this property.
+    

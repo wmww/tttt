@@ -1760,6 +1760,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttSpreadOverridesOwnProperties': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttSpreadReadonlyMemberSymbol': {
         errors: true,
         symbols: true,

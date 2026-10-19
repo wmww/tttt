@@ -1637,6 +1637,9 @@ static bool source_has_prop(Checker* me, Ty const* ty, Atom const* name, u32 dep
 }
 
 FoundProp ty_find_prop(Checker* me, Ty const* ty, Atom const* name) { return find_prop(me, ty, name, 0); }
+
+// Without Object's and Function's members (tsc's getPropertiesOfType rather than getPropertyOfType)
+FoundProp ty_find_own_prop(Checker* me, Ty const* ty, Atom const* name) { return find_prop_in(me, ty, name, 0, true); }
 Prop const* ty_property_of_type(Checker* me, Ty const* ty, Atom const* name) { return find_prop(me, ty, name, 0).prop; }
 Ty const* ty_tuple_as_array(Checker* me, Ty const* tuple) { return tuple_as_array(me, tuple); }
 Ty const* ty_apparent_type(Checker* me, Ty const* ty) { return apparent_type(me, ty); }
