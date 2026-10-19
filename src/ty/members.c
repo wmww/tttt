@@ -3841,86 +3841,94 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
         } else {
             whole = nullptr;
         }
-        if (!(part->flags & TYF_OBJECT)) continue;
-        Members const* source = ty_members(me, part);
-        for (u32 i = 0; i < source->prop_count; i++) {
-            Prop const* from = source->props[i];
-            if (!ty_prop_is_key(me, from) || builder_find_prop(&builder, from->name)) continue;
-            // Optional only if every part that has it has it optional, readonly if any has it readonly
-            u32 flags = from->flags & (PROP_OPTIONAL | PROP_READONLY);
-            if (whole && !modifiers_prop(me, whole, from->name, &flags)) continue;
-            for (u32 q = p + 1; q < parts.len; q++) {
-                Ty const* other = parts.data[q];
-                if (!(other->flags & TYF_OBJECT)) other = ty_apparent_type(me, other);
-                u32 also_flags = 0;
-                Prop const* also = (other->flags & TYF_OBJECT) || other->kind == TY_UNION ?
-                    modifiers_prop(me, other, from->name, &also_flags) : nullptr;
-                if (!also) continue;
-                if (!(also_flags & PROP_OPTIONAL)) flags &= ~(u32)PROP_OPTIONAL;
-                flags |= also_flags & PROP_READONLY;
+        // (A union whose first member is an intersection, `(A & C) | (B & C)`, lists the properties of the intersection's
+        // members: tsc's getPropertiesOfType of the union goes by its first member's, `Readonly<M[T]>` has C's)
+        Ty const* single[1] = { part };
+        TyList sources = whole && part->kind == TY_INTERSECTION ? part->composite.types : (TyList){ .data = single, .len = 1 };
+        for (u32 s = 0; s < sources.len; s++) {
+            Ty const* source_type = sources.data[s];
+            if (!(source_type->flags & TYF_OBJECT)) source_type = ty_apparent_type(me, source_type);
+            if (!(source_type->flags & TYF_OBJECT)) continue;
+            Members const* source = ty_members(me, source_type);
+            for (u32 i = 0; i < source->prop_count; i++) {
+                Prop const* from = source->props[i];
+                if (!ty_prop_is_key(me, from) || builder_find_prop(&builder, from->name)) continue;
+                // Optional only if every part that has it has it optional, readonly if any has it readonly
+                u32 flags = from->flags & (PROP_OPTIONAL | PROP_READONLY);
+                if (whole && !modifiers_prop(me, whole, from->name, &flags)) continue;
+                for (u32 q = p + 1; q < parts.len; q++) {
+                    Ty const* other = parts.data[q];
+                    if (!(other->flags & TYF_OBJECT)) other = ty_apparent_type(me, other);
+                    u32 also_flags = 0;
+                    Prop const* also = (other->flags & TYF_OBJECT) || other->kind == TY_UNION ?
+                        modifiers_prop(me, other, from->name, &also_flags) : nullptr;
+                    if (!also) continue;
+                    if (!(also_flags & PROP_OPTIONAL)) flags &= ~(u32)PROP_OPTIONAL;
+                    flags |= also_flags & PROP_READONLY;
+                }
+                if (mapped->optional > 0) flags |= PROP_OPTIONAL;
+                if (mapped->optional < 0 && (flags & PROP_OPTIONAL)) {
+                    flags &= ~(u32)PROP_OPTIONAL;
+                    if (compiler_options()->strict_null_checks) flags |= PROP_STRIP_UNDEFINED;
+                }
+                if (mapped->readonly > 0) flags |= PROP_READONLY;
+                if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
+                if (!template) {
+                    template = prop_new(me);
+                    template->type = ty_mapped_template(me, mapped);
+                    template->type_state = LAZY_STATE_DONE;
+                    template->is_template = true;
+                }
+                Ty const* key = ty_prop_key_literal(me, from);
+                TyMapper const* mapper = ty_mapper_new(
+                    me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 }
+                );
+                Prop* prop = arena_new(&my arena, Prop);
+                // (A mapped symbol: declarations but no valueDeclaration in tsc)
+                *prop = (Prop){ .name = from->name, .flags = flags | PROP_NO_VALUE_DECLARATION, .target = template, .mapper = mapper,
+                    .decl = prop_decl_none() };
+                Prop const* declared = from;
+                while (declared && declared->target && !declared->decl->decl_span_count) declared = declared->target;
+                if (declared) {
+                    prop->decl = arena_new(&my arena, PropDecl);
+                    prop->decl->name_span = declared->decl->name_span;
+                    prop->decl->name_form = ty_prop_name_form_of(declared);
+                    prop->decl->decl_spans = declared->decl->decl_spans;
+                    prop->decl->decl_span_count = declared->decl->decl_span_count;
+                    prop->decl->name_is_value = declared->decl->name_is_value;
+                    // (A union's property is declared by every member's: tsc's createUnionOrIntersectionProperty)
+                    if (whole) add_member_decl_spans(me, prop, whole, from->name, 0);
+                }
+                builder_push(&builder, props, prop);
             }
-            if (mapped->optional > 0) flags |= PROP_OPTIONAL;
-            if (mapped->optional < 0 && (flags & PROP_OPTIONAL)) {
-                flags &= ~(u32)PROP_OPTIONAL;
-                if (compiler_options()->strict_null_checks) flags |= PROP_STRIP_UNDEFINED;
+            // A generic homomorphic mapped part's index signatures too, the template at their keys (tsc's
+            // resolveMappedTypeMembers, forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType of the modifiers type):
+            // `Nullable<Vals<K>>` with `Vals<K>` mapped over `keyof K`, K's constraint `Record<string, X>`, has a string
+            // index signature of `Vals<K>[string] | null`. (Only those: the other parts' would be tsc's too, but inferring
+            // from them changes localTypeParameterInferencePriority's candidates, unexplained)
+            bool homomorphic_part = source->mapped && source->mapped->keyof_constraint && !source->mapped->name_type;
+            incomplete |= (source->index_count && (whole || !homomorphic_part)) || members_rare(source)->index_signatures_incomplete;
+            for (u32 j = 0; !whole && homomorphic_part && j < source->index_count; j++) {
+                IndexInfo const* from = &source->index[j];
+                bool seen = false;
+                for (u32 k = 0; k < builder.index_count && !seen; k++) seen = builder.index[k].key == from->key;
+                if (seen) continue;
+                TyMapper const* mapper = ty_mapper_new(
+                    me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &from->key, .len = 1 }
+                );
+                Ty const* value = ty_mapped_template_instantiated(me, mapped, mapper);
+                if (mapped->optional > 0 && compiler_options()->strict_null_checks) {
+                    Ty const* both[2] = { value, ty_intrinsic(me, TY_UNDEFINED) };
+                    value = ty_union(me, both, 2, nullptr, (TyList){0});
+                }
+                IndexInfo info = {
+                    .key = from->key,
+                    .value = value,
+                    .param_name = checker_atom(me, c_sv("x")),
+                    .readonly = mapped->readonly > 0 || (!mapped->readonly && from->readonly),
+                };
+                builder_push(&builder, index, info);
             }
-            if (mapped->readonly > 0) flags |= PROP_READONLY;
-            if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
-            if (!template) {
-                template = prop_new(me);
-                template->type = ty_mapped_template(me, mapped);
-                template->type_state = LAZY_STATE_DONE;
-                template->is_template = true;
-            }
-            Ty const* key = ty_prop_key_literal(me, from);
-            TyMapper const* mapper = ty_mapper_new(
-                me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 }
-            );
-            Prop* prop = arena_new(&my arena, Prop);
-            // (A mapped symbol: declarations but no valueDeclaration in tsc)
-            *prop = (Prop){ .name = from->name, .flags = flags | PROP_NO_VALUE_DECLARATION, .target = template, .mapper = mapper,
-                .decl = prop_decl_none() };
-            Prop const* declared = from;
-            while (declared && declared->target && !declared->decl->decl_span_count) declared = declared->target;
-            if (declared) {
-                prop->decl = arena_new(&my arena, PropDecl);
-                prop->decl->name_span = declared->decl->name_span;
-                prop->decl->name_form = ty_prop_name_form_of(declared);
-                prop->decl->decl_spans = declared->decl->decl_spans;
-                prop->decl->decl_span_count = declared->decl->decl_span_count;
-                prop->decl->name_is_value = declared->decl->name_is_value;
-                // (A union's property is declared by every member's: tsc's createUnionOrIntersectionProperty)
-                if (whole) add_member_decl_spans(me, prop, whole, from->name, 0);
-            }
-            builder_push(&builder, props, prop);
-        }
-        // A generic homomorphic mapped part's index signatures too, the template at their keys (tsc's
-        // resolveMappedTypeMembers, forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType of the modifiers type):
-        // `Nullable<Vals<K>>` with `Vals<K>` mapped over `keyof K`, K's constraint `Record<string, X>`, has a string
-        // index signature of `Vals<K>[string] | null`. (Only those: the other parts' would be tsc's too, but inferring
-        // from them changes localTypeParameterInferencePriority's candidates, unexplained)
-        bool homomorphic_part = source->mapped && source->mapped->keyof_constraint && !source->mapped->name_type;
-        incomplete |= (source->index_count && (whole || !homomorphic_part)) || members_rare(source)->index_signatures_incomplete;
-        for (u32 j = 0; !whole && homomorphic_part && j < source->index_count; j++) {
-            IndexInfo const* from = &source->index[j];
-            bool seen = false;
-            for (u32 k = 0; k < builder.index_count && !seen; k++) seen = builder.index[k].key == from->key;
-            if (seen) continue;
-            TyMapper const* mapper = ty_mapper_new(
-                me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &from->key, .len = 1 }
-            );
-            Ty const* value = ty_mapped_template_instantiated(me, mapped, mapper);
-            if (mapped->optional > 0 && compiler_options()->strict_null_checks) {
-                Ty const* both[2] = { value, ty_intrinsic(me, TY_UNDEFINED) };
-                value = ty_union(me, both, 2, nullptr, (TyList){0});
-            }
-            IndexInfo info = {
-                .key = from->key,
-                .value = value,
-                .param_name = checker_atom(me, c_sv("x")),
-                .readonly = mapped->readonly > 0 || (!mapped->readonly && from->readonly),
-            };
-            builder_push(&builder, index, info);
         }
     }
     if (!builder.props_count && !builder.index_count && !incomplete) return members;

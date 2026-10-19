@@ -1,0 +1,62 @@
+//// [test/cases/ttttMappedGenericUnionOfIntersections.ts] ////
+
+=== ttttMappedGenericUnionOfIntersections.ts ===
+// A homomorphic mapped type over a generic modifiers type whose constraint is a union of intersections has the
+// properties every member has, listed from the first member's parts (tsc's getPropertiesOfType of the union):
+// `Readonly<OMap[T]>` with `OMap[T]` a union of `X & Common` (lightweight-charts' series options)
+interface Common { hitTestTolerance: number; lineWidth?: number }
+>hitTestTolerance : number
+>lineWidth : number | undefined
+
+type SeriesOptions<T> = T & Common;
+>SeriesOptions : SeriesOptions<T>
+
+interface BarStyle { up: string; shared: string }
+>up : string
+>shared : string
+
+interface CandleStyle { wick: string; shared: string }
+>wick : string
+>shared : string
+
+interface OMap { Bar: SeriesOptions<BarStyle>; Candlestick: SeriesOptions<CandleStyle> }
+>Bar : SeriesOptions<BarStyle>
+>Candlestick : SeriesOptions<CandleStyle>
+
+function f<T extends "Bar" | "Candlestick">(r: Readonly<OMap[T]>, p: Partial<OMap[T]>) {
+>f : <T extends "Bar" | "Candlestick">(r: Readonly<OMap[T]>, p: Partial<OMap[T]>) => any[]
+>r : Readonly<OMap[T]>
+>p : Partial<OMap[T]>
+
+    const a = r.hitTestTolerance;
+>a : OMap[T]["hitTestTolerance"]
+>r.hitTestTolerance : OMap[T]["hitTestTolerance"]
+>r : Readonly<OMap[T]>
+>hitTestTolerance : OMap[T]["hitTestTolerance"]
+
+    const b = r.shared;
+>b : OMap[T]["shared"]
+>r.shared : OMap[T]["shared"]
+>r : Readonly<OMap[T]>
+>shared : OMap[T]["shared"]
+
+    const c = p.lineWidth;
+>c : OMap[T]["lineWidth"] | undefined
+>p.lineWidth : OMap[T]["lineWidth"] | undefined
+>p : Partial<OMap[T]>
+>lineWidth : OMap[T]["lineWidth"] | undefined
+
+    const d = r.up;
+>d : any
+>r.up : any
+>r : Readonly<OMap[T]>
+>up : any
+
+    return [a, b, c, d];
+>[a, b, c, d] : any[]
+>a : OMap[T]["hitTestTolerance"]
+>b : OMap[T]["shared"]
+>c : OMap[T]["lineWidth"] | undefined
+>d : any
+}
+

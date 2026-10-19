@@ -1,0 +1,77 @@
+//// [test/cases/ttttMappedGenericUnionOfIntersections.ts] ////
+
+=== ttttMappedGenericUnionOfIntersections.ts ===
+// A homomorphic mapped type over a generic modifiers type whose constraint is a union of intersections has the
+// properties every member has, listed from the first member's parts (tsc's getPropertiesOfType of the union):
+// `Readonly<OMap[T]>` with `OMap[T]` a union of `X & Common` (lightweight-charts' series options)
+interface Common { hitTestTolerance: number; lineWidth?: number }
+>Common : Symbol(Common, Decl(ttttMappedGenericUnionOfIntersections.ts, 0, 0))
+>hitTestTolerance : Symbol(Common.hitTestTolerance, Decl(ttttMappedGenericUnionOfIntersections.ts, 3, 18))
+>lineWidth : Symbol(Common.lineWidth, Decl(ttttMappedGenericUnionOfIntersections.ts, 3, 44))
+
+type SeriesOptions<T> = T & Common;
+>SeriesOptions : Symbol(SeriesOptions, Decl(ttttMappedGenericUnionOfIntersections.ts, 3, 65))
+>T : Symbol(T, Decl(ttttMappedGenericUnionOfIntersections.ts, 4, 19))
+>T : Symbol(T, Decl(ttttMappedGenericUnionOfIntersections.ts, 4, 19))
+>Common : Symbol(Common, Decl(ttttMappedGenericUnionOfIntersections.ts, 0, 0))
+
+interface BarStyle { up: string; shared: string }
+>BarStyle : Symbol(BarStyle, Decl(ttttMappedGenericUnionOfIntersections.ts, 4, 35))
+>up : Symbol(BarStyle.up, Decl(ttttMappedGenericUnionOfIntersections.ts, 5, 20))
+>shared : Symbol(BarStyle.shared, Decl(ttttMappedGenericUnionOfIntersections.ts, 5, 32))
+
+interface CandleStyle { wick: string; shared: string }
+>CandleStyle : Symbol(CandleStyle, Decl(ttttMappedGenericUnionOfIntersections.ts, 5, 49))
+>wick : Symbol(CandleStyle.wick, Decl(ttttMappedGenericUnionOfIntersections.ts, 6, 23))
+>shared : Symbol(CandleStyle.shared, Decl(ttttMappedGenericUnionOfIntersections.ts, 6, 37))
+
+interface OMap { Bar: SeriesOptions<BarStyle>; Candlestick: SeriesOptions<CandleStyle> }
+>OMap : Symbol(OMap, Decl(ttttMappedGenericUnionOfIntersections.ts, 6, 54))
+>Bar : Symbol(OMap.Bar, Decl(ttttMappedGenericUnionOfIntersections.ts, 7, 16))
+>SeriesOptions : Symbol(SeriesOptions, Decl(ttttMappedGenericUnionOfIntersections.ts, 3, 65))
+>BarStyle : Symbol(BarStyle, Decl(ttttMappedGenericUnionOfIntersections.ts, 4, 35))
+>Candlestick : Symbol(OMap.Candlestick, Decl(ttttMappedGenericUnionOfIntersections.ts, 7, 46))
+>SeriesOptions : Symbol(SeriesOptions, Decl(ttttMappedGenericUnionOfIntersections.ts, 3, 65))
+>CandleStyle : Symbol(CandleStyle, Decl(ttttMappedGenericUnionOfIntersections.ts, 5, 49))
+
+function f<T extends "Bar" | "Candlestick">(r: Readonly<OMap[T]>, p: Partial<OMap[T]>) {
+>f : Symbol(f, Decl(ttttMappedGenericUnionOfIntersections.ts, 7, 88))
+>T : Symbol(T, Decl(ttttMappedGenericUnionOfIntersections.ts, 9, 11))
+>r : Symbol(r, Decl(ttttMappedGenericUnionOfIntersections.ts, 9, 44))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>OMap : Symbol(OMap, Decl(ttttMappedGenericUnionOfIntersections.ts, 6, 54))
+>T : Symbol(T, Decl(ttttMappedGenericUnionOfIntersections.ts, 9, 11))
+>p : Symbol(p, Decl(ttttMappedGenericUnionOfIntersections.ts, 9, 65))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>OMap : Symbol(OMap, Decl(ttttMappedGenericUnionOfIntersections.ts, 6, 54))
+>T : Symbol(T, Decl(ttttMappedGenericUnionOfIntersections.ts, 9, 11))
+
+    const a = r.hitTestTolerance;
+>a : Symbol(a, Decl(ttttMappedGenericUnionOfIntersections.ts, 10, 9))
+>r.hitTestTolerance : Symbol(hitTestTolerance, Decl(ttttMappedGenericUnionOfIntersections.ts, 3, 18))
+>r : Symbol(r, Decl(ttttMappedGenericUnionOfIntersections.ts, 9, 44))
+>hitTestTolerance : Symbol(hitTestTolerance, Decl(ttttMappedGenericUnionOfIntersections.ts, 3, 18))
+
+    const b = r.shared;
+>b : Symbol(b, Decl(ttttMappedGenericUnionOfIntersections.ts, 11, 9))
+>r.shared : Symbol(shared, Decl(ttttMappedGenericUnionOfIntersections.ts, 5, 32), Decl(ttttMappedGenericUnionOfIntersections.ts, 6, 37))
+>r : Symbol(r, Decl(ttttMappedGenericUnionOfIntersections.ts, 9, 44))
+>shared : Symbol(shared, Decl(ttttMappedGenericUnionOfIntersections.ts, 5, 32), Decl(ttttMappedGenericUnionOfIntersections.ts, 6, 37))
+
+    const c = p.lineWidth;
+>c : Symbol(c, Decl(ttttMappedGenericUnionOfIntersections.ts, 12, 9))
+>p.lineWidth : Symbol(lineWidth, Decl(ttttMappedGenericUnionOfIntersections.ts, 3, 44))
+>p : Symbol(p, Decl(ttttMappedGenericUnionOfIntersections.ts, 9, 65))
+>lineWidth : Symbol(lineWidth, Decl(ttttMappedGenericUnionOfIntersections.ts, 3, 44))
+
+    const d = r.up;
+>d : Symbol(d, Decl(ttttMappedGenericUnionOfIntersections.ts, 13, 9))
+>r : Symbol(r, Decl(ttttMappedGenericUnionOfIntersections.ts, 9, 44))
+
+    return [a, b, c, d];
+>a : Symbol(a, Decl(ttttMappedGenericUnionOfIntersections.ts, 10, 9))
+>b : Symbol(b, Decl(ttttMappedGenericUnionOfIntersections.ts, 11, 9))
+>c : Symbol(c, Decl(ttttMappedGenericUnionOfIntersections.ts, 12, 9))
+>d : Symbol(d, Decl(ttttMappedGenericUnionOfIntersections.ts, 13, 9))
+}
+
