@@ -466,7 +466,11 @@ annotations like the types baseline does, prints class expressions and classes i
 (WriteClassExpressionAsTypeLiteral) and aliases only when accessible. They go into an ErrorCtx of their own, merged
 after comment directives (tsc's getDeclarationDiagnostics is apart from the checker's), and the CLI drops them with
 noEmit/noEmitOnError when anything else was reported, like tsc's emitFilesAndReportErrors
-(`TTTT_DECLARATION_DIAGNOSTICS=1` keeps them, to audit a corpus with other errors).
+(`TTTT_DECLARATION_DIAGNOSTICS=1` keeps them, to audit a corpus with other errors). A program whose semantic
+diagnostics are gated (options diagnostics) but that emits declarations is not checked at all
+(`program_set_declarations_only()`: every file gets only the declaration walk, like a `noCheck` file), as tsgo's emit
+resolver types only what the declarations print; `TTTT_DECLARATIONS_ONLY=1` forces that on any program (CLI and
+harness): the written declarations and the declaration diagnostics must not change, the walk doesn't depend on a check.
 
 Where the printer roots a name at `import("...")` of a file (`DeclTracker.track_module_file`), the walk asks how a
 `.d.ts` of its file would name that module: `program_module_specifier()` (an import of the file that resolves to it,

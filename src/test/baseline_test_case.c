@@ -1293,6 +1293,9 @@ static BaselineTestCase run_baseline_test_case_with(
     program_resolve_names(program);
     // (tsgo's harness emits unless noEmit: the `.js` baseline's declaration files, the dts component)
     program_set_emit_declarations(program, !program_options(program)->no_emit);
+    // (TTTT_DECLARATIONS_ONLY=1: nothing checked, only the declarations walked, as the CLI does for a gated program:
+    // the dts component must not change, the declaration walk mustn't depend on a prior check)
+    if (getenv("TTTT_DECLARATIONS_ONLY")) program_set_declarations_only(program, true);
     if (!program_options(program)->new_line) program_options(program)->new_line = 1; // (the harness's default)
     program_typecheck(program);
     if (program_defer_failed(program)) {

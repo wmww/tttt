@@ -30,5 +30,6 @@ Day one, by project (+ spurious, - missing, counts):
 - zigbee2mqtt/test: -TS2304 129, -TS2503 77, -TS2833 1 in `dist/*.d.ts` (tsc reads the outputs it just emitted, with
   the test config's options), -TS7006 10
 
-Perf: jest's `__tests__` builds, tttt 10 s against tsc's 0.5 s: triage.md "a gated emitting program is fully
-type-checked". atproto 47 s / 30 s, astro 30 s / 20 s (single-threaded tttt against tsgo's default -b).
+Perf: jest's `__tests__` builds (every package gated by TS5108) were fully checked for their declarations (1.5M types,
+~10 s); now declaration-walked only (`program_set_declarations_only()`, 10K types, ~0.75 s against tsc's 0.5 s: the
+rest is parsing and binding 25 programs). atproto 47 s / 30 s, astro 30 s / 20 s (single-threaded tttt against tsgo's default -b).

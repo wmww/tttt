@@ -154,6 +154,7 @@ typedef struct Program {
     // program_declaration_diagnostics_cli(): earlier phases reported something
     bool declaration_diagnostics_cli, declaration_diagnostics_earlier;
     bool emit_declarations; // program_set_emit_declarations()
+    bool declarations_only; // program_set_declarations_only()
     bool defer_bodies; // program_set_defer_bodies()
     _Atomic bool defer_failed; // program_defer_failed()
     atomic_uint ahead_next; // Materialize-ahead (plan 78, program_typecheck()): the next file of check_files a helper takes
@@ -3631,6 +3632,8 @@ void program_set_checker_memory_shared(Program* me, u64 bytes) {
 
 void program_set_emit_declarations(Program* me, bool emit) { my emit_declarations = emit; }
 
+void program_set_declarations_only(Program* me, bool only) { my declarations_only = only; }
+
 void program_declaration_diagnostics_cli(Program* me, bool earlier_errors) {
     my declaration_diagnostics_cli = true;
     my declaration_diagnostics_earlier = earlier_errors;
@@ -4497,8 +4500,11 @@ static void check_share(Program* me, u32 c, u32 count) {
     u32 index = 0;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
-        // (A JavaScript file's only when it is emitted: its declaration diagnostics aren't reported, plan 64 stage 6)
-        if (source->is_stdlib || source_file_is_checked(source) || source->from_reference || (source->is_js && !my emit_declarations)) continue;
+        // (A JavaScript file's only when it is emitted: its declaration diagnostics aren't reported, plan 64 stage 6.
+        // Declarations only, every file's walk is here, a checked JavaScript file's as after its check)
+        bool checked = source_file_is_checked(source);
+        if (source->is_stdlib || (checked && !my declarations_only) || source->from_reference ||
+            (source->is_js && !checked && !my emit_declarations)) continue;
         if (index++ % count != c) continue;
         if (my declaration_errs && !declaration_walk_moot(me)) {
             declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
@@ -4525,7 +4531,7 @@ static void deal_files(Program* me) {
     // in a fresh checker, in program order, the rest of the program still there)
     char const* only = getenv("TTTT_CHECK_ONLY");
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-        if (!source_file_is_checked(*i)) continue;
+        if (!source_file_is_checked(*i) || my declarations_only) continue;
         if (only && !(*i)->is_stdlib) {
             bool found = false;
             for (char const* part = only; *part && !found; ) {

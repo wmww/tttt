@@ -763,10 +763,14 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         }
         program_declaration_diagnostics_cli(program, parse_errors || !error_ctx_empty(&names) || !error_ctx_empty(errs));
         if (opts->dts_dump || (options->emit_declaration_only && emit_declarations)) program_set_emit_declarations(program, true);
+        // (Gated, only the declarations are walked: tsc's emit resolver types only what they print. Same output, a
+        // fraction of the work: jest's packages, each gated by TS5108)
+        bool declarations_only = (gated || getenv("TTTT_DECLARATIONS_ONLY")) && typecheck && !opts->expect_types;
+        if (declarations_only) program_set_declarations_only(program, true);
         if (typecheck) program_typecheck(program);
         // (Checked, every body was materialized: program_typecheck() says if one parsed otherwise)
         if (defer && (program_defer_failed(program) ||
-            (gated && !typecheck && !bodies_parsed && program_has_deferred_bodies(program) && !program_deferred_bodies_parse(program)))
+            (gated && (!typecheck || declarations_only) && !bodies_parsed && program_has_deferred_bodies(program) && !program_deferred_bodies_parse(program)))
         ) {
             error_ctx_drop(&names);
             vec_error_drop(&shown);

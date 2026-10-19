@@ -131,6 +131,9 @@ void program_declaration_diagnostics_cli(Program* me, bool earlier_errors);
 // Declaration emit (plan 64): program_typecheck() also writes each emitted file's `.d.ts` text into its
 // SourceFile.declaration_output, on the checker that checked it. Call it before program_typecheck()
 void program_set_emit_declarations(Program* me, bool emit);
+// Checks nothing but walks every file's declarations, for their diagnostics and emit: tsc's emit of a program whose
+// semantic diagnostics are gated (options diagnostics) asks its emit resolver only what the declarations print
+void program_set_declarations_only(Program* me, bool only);
 // Whether tsc would emit the file at all (sourceFileMayBeEmitted: not a declaration file, a library's, a referenced
 // project's)
 bool program_source_may_be_emitted(Program const* me, SourceFile const* source);
