@@ -1,0 +1,36 @@
+//// [test/cases/ttttUnionSuggestionObjectMembers.ts] ////
+
+=== ttttUnionSuggestionObjectMembers.ts ===
+// A union's spelling suggestions are the properties every member has, Object's members included (tsc's union property
+// looks each member up with getPropertyOfType): `value` on `string | Ref<string>` suggests `valueOf` (vue-i18n's
+// lazy-loading example, `i18n.global.locale.value` with legacy and composition modes)
+interface Ref<T> { value: T }
+>value : T
+
+declare const a: string | Ref<string>;
+>a : string | Ref<string>
+
+declare const b: number | { valueX: number };
+>b : number | { valueX: number; }
+>valueX : number
+
+declare const c: string | { z: 1 };
+>c : string | { z: 1; }
+>z : 1
+
+export const r = [a.value, b.valueY, c.valu, c.toStrin];
+>r : any[]
+>[a.value, b.valueY, c.valu, c.toStrin] : any[]
+>a.value : any
+>a : string | Ref<string>
+>value : any
+>b.valueY : any
+>b : number | { valueX: number; }
+>valueY : any
+>c.valu : any
+>c : string | { z: 1; }
+>valu : any
+>c.toStrin : any
+>c : string | { z: 1; }
+>toStrin : any
+

@@ -1591,7 +1591,9 @@ Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name) {
             // (An object literal without it has it as undefined: createUnionOrIntersectionProperty's WritePartial
             // makes it a property of the union all the same)
             if (ty_is_object_literal_without_spread(me, parts.data[j])) continue;
-            everywhere = ty_prop_type_of(me, ty_apparent_type(me, parts.data[j]), prop->name) != nullptr;
+            // (Object's members count: tsc's union property looks each member up with getPropertyOfType, `valueOf` of
+            // `string | Ref<string>`)
+            everywhere = ty_find_prop(me, ty_apparent_type(me, parts.data[j]), prop->name).found;
         }
         if (everywhere && me->suggestion_access) everywhere = suggestion_accessible(me, me->suggestion_access, prop, first);
         names[i] = everywhere ? candidate : (csview){0};

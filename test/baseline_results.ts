@@ -1963,6 +1963,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttUnionSuggestionObjectMembers': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttUnresolvedImportMergedExport': {
         errors: true,
         symbols: true,

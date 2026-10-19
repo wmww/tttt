@@ -1,0 +1,31 @@
+//// [test/cases/ttttUnionSuggestionObjectMembers.ts] ////
+
+=== ttttUnionSuggestionObjectMembers.ts ===
+// A union's spelling suggestions are the properties every member has, Object's members included (tsc's union property
+// looks each member up with getPropertyOfType): `value` on `string | Ref<string>` suggests `valueOf` (vue-i18n's
+// lazy-loading example, `i18n.global.locale.value` with legacy and composition modes)
+interface Ref<T> { value: T }
+>Ref : Symbol(Ref, Decl(ttttUnionSuggestionObjectMembers.ts, 0, 0))
+>T : Symbol(T, Decl(ttttUnionSuggestionObjectMembers.ts, 3, 14))
+>value : Symbol(Ref.value, Decl(ttttUnionSuggestionObjectMembers.ts, 3, 18))
+>T : Symbol(T, Decl(ttttUnionSuggestionObjectMembers.ts, 3, 14))
+
+declare const a: string | Ref<string>;
+>a : Symbol(a, Decl(ttttUnionSuggestionObjectMembers.ts, 4, 13))
+>Ref : Symbol(Ref, Decl(ttttUnionSuggestionObjectMembers.ts, 0, 0))
+
+declare const b: number | { valueX: number };
+>b : Symbol(b, Decl(ttttUnionSuggestionObjectMembers.ts, 5, 13))
+>valueX : Symbol(valueX, Decl(ttttUnionSuggestionObjectMembers.ts, 5, 27))
+
+declare const c: string | { z: 1 };
+>c : Symbol(c, Decl(ttttUnionSuggestionObjectMembers.ts, 6, 13))
+>z : Symbol(z, Decl(ttttUnionSuggestionObjectMembers.ts, 6, 27))
+
+export const r = [a.value, b.valueY, c.valu, c.toStrin];
+>r : Symbol(r, Decl(ttttUnionSuggestionObjectMembers.ts, 7, 12))
+>a : Symbol(a, Decl(ttttUnionSuggestionObjectMembers.ts, 4, 13))
+>b : Symbol(b, Decl(ttttUnionSuggestionObjectMembers.ts, 5, 13))
+>c : Symbol(c, Decl(ttttUnionSuggestionObjectMembers.ts, 6, 13))
+>c : Symbol(c, Decl(ttttUnionSuggestionObjectMembers.ts, 6, 13))
+
