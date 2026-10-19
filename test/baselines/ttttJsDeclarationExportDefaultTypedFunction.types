@@ -1,0 +1,39 @@
+//// [test/cases/ttttJsDeclarationExportDefaultTypedFunction.ts] ////
+
+=== t.ts ===
+export type JsPage = (r: Request, c: { pageData: string }) => Promise<string> | string;
+>JsPage : JsPage
+>r : Request
+>c : { pageData: string; }
+>pageData : string
+
+=== a.js ===
+/** @type {import('./t.js').JsPage} */
+export default async (_request, { pageData }) => {
+>async (_request, { pageData }) => {  return pageData;} : (_request: Request, { pageData }: { pageData: string; }) => Promise<string>
+>_request : Request
+>pageData : string
+
+  return pageData;
+>pageData : string
+
+};
+
+=== c.js ===
+/** @type {(a: number) => number} */
+export default (a) => a;
+>(a) => a : (a: number) => number
+>a : number
+>a : number
+
+=== f.js ===
+/** @type {import('./t.js').JsPage} */
+export function f(_request, { pageData }) {
+>f : (r: Request, c: { pageData: string; }) => Promise<string> | string
+>_request : Request
+>pageData : string
+
+  return pageData;
+>pageData : string
+}
+

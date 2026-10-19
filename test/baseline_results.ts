@@ -1162,6 +1162,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttJsDeclarationExportDefaultTypedFunction': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttJsDeclarationMapsContinuationLine': {
         errors: true,
         symbols: true,

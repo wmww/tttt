@@ -14633,6 +14633,13 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 }
             }
             FunctionImpl* function = jsdoc_function_of(&statement->expr);
+            if (function && statement->tag == STATEMENT_EXPORT_DEFAULT_EXPR && !statement->export_equals) {
+                // `/** @type {T} */ export default () => {}`: T is the export assignment's type (tsgo's reparseHosted
+                // sets it before getFunctionLikeHost could make it the function's full signature), which the
+                // function is contextually typed by and declaration emit writes as `const _default: T`
+                JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
+                if (tag) statement->expr_jsdoc_type = ast_new(TypeNode, jsdoc_take_type(tag, nullptr));
+            }
             if (function) {
                 jsdoc_apply_function(p, &tags, function);
             } else if (statement->tag == STATEMENT_EXPORT_DEFAULT_EXPR && !statement->export_equals) {

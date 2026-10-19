@@ -1678,6 +1678,13 @@ static Ty const* parameter_type(Walk* me, FunctionImpl const* fn, FunctionArg co
         Symbol const* symbol = arg->initializer.binding.symbol;
         return symbol ? ty_type_of_symbol(my checker, symbol) : nullptr;
     }
+    // (A JavaScript function's JSDoc `@type {F}` types a pattern like a contextual signature: tsc's getTypeOfSymbol of the
+    // parameter, its own signature's is the pattern's)
+    if (function_impl_rare(fn)->jsdoc_signature_type && !arg->initializer.binding.has_explicit_type) {
+        ty_function_apply_jsdoc_type(my checker, fn, nullptr);
+        Ty const* contextual = ty_contextual_parameter_type(my checker, &arg->initializer);
+        if (contextual) return contextual;
+    }
     // (a binding pattern's: its signature parameter's)
     // (Resolved: a function with a written return type may not have needed its parameters yet)
     Signature const* sig = ty_function_signature(my checker, fn);
@@ -5552,9 +5559,9 @@ static void emit_export_assignment_of(
     my type_out = outer;
     cstr name = expr->tag == EXPR_IDENTIFIER ? export_default_name_or(me, expr->inner_span, fallback) :
         export_default_name_or(me, span_null, fallback);
-    // (`module.exports = (x) => {}` with a JSDoc `@type`: tsgo's transformFunctionLikeToDeclaration of the full signature,
+    // (`module.exports = (x) => {}` or `export default (x) => {}` with a JSDoc `@type`: tsgo's transformFunctionLikeToDeclaration of the full signature,
     // the export assignment first like a function's)
-    bool export_first = annotation && export_equals && expr->tag == EXPR_FUNCTION && !expr->function->is_constructor;
+    bool export_first = annotation && expr->tag == EXPR_FUNCTION && !expr->function->is_constructor;
     if (export_first) {
         w_indent(me);
         m_span(me, span, false);
@@ -5578,7 +5585,7 @@ static void emit_export_assignment_of(
         w_lit(me, ": ");
         // (`export default`'s is printed as its type, `module.exports =`' reused: tsgo's reparser makes the former a
         // cast of the expression)
-        if (export_equals) w_node(me, annotation);
+        if (export_equals || export_first) w_node(me, annotation);
         else w_type(me, ty_of_node(annotation));
     } else {
         w_lit(me, ": ");
