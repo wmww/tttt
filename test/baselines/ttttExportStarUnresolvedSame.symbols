@@ -1,0 +1,27 @@
+//// [test/cases/ttttExportStarUnresolvedSame.ts] ////
+
+=== a.ts ===
+import type { X } from 'nope'
+>X : Symbol(X, Decl(a.ts, 0, 13))
+
+export type { X }
+>X : Symbol(X, Decl(a.ts, 1, 13))
+
+export const Y = 1
+>Y : Symbol(Y, Decl(a.ts, 2, 12))
+
+=== b.ts ===
+import { type X } from 'nope2'
+>X : Symbol(X, Decl(b.ts, 0, 8))
+
+export { type X }
+>X : Symbol(X, Decl(b.ts, 1, 8))
+
+export const Y = 2
+>Y : Symbol(Y, Decl(b.ts, 2, 12))
+
+=== index.ts ===
+
+export * from './a'
+export * from './b'
+

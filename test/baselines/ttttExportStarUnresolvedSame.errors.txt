@@ -1,0 +1,23 @@
+a.ts(1,24): error TS2307: Cannot find module 'nope' or its corresponding type declarations.
+b.ts(1,24): error TS2307: Cannot find module 'nope2' or its corresponding type declarations.
+index.ts(2,1): error TS2308: Module './a' has already exported a member named 'Y'. Consider explicitly re-exporting to resolve the ambiguity.
+
+
+==== a.ts (1 errors) ====
+    import type { X } from 'nope'
+                           ~~~~~~
+!!! error TS2307: Cannot find module 'nope' or its corresponding type declarations.
+    export type { X }
+    export const Y = 1
+==== b.ts (1 errors) ====
+    import { type X } from 'nope2'
+                           ~~~~~~~
+!!! error TS2307: Cannot find module 'nope2' or its corresponding type declarations.
+    export { type X }
+    export const Y = 2
+==== index.ts (1 errors) ====
+    export * from './a'
+    export * from './b'
+    ~~~~~~~~~~~~~~~~~~~
+!!! error TS2308: Module './a' has already exported a member named 'Y'. Consider explicitly re-exporting to resolve the ambiguity.
+    

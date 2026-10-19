@@ -2738,8 +2738,12 @@ static i32 symbol_table_own_index(SymbolTable const* me, csview name, u64 hash) 
 }
 
 static Symbol const* resolve_for_comparison(Symbol* symbol) {
-    Symbol* ret = symbol && symbol->flags & SYMBOL_ALIAS ? symbol_resolve_alias(symbol) : symbol;
-    return ret ? ret : symbol;
+    if (!symbol || !(symbol->flags & SYMBOL_ALIAS)) return symbol;
+    // (Every alias that resolves to nothing is tsc's one unknownSymbol: two re-exports of an import from a missing
+    // module export the same thing, atproto's lex-client before its references are built)
+    static char const unresolved;
+    Symbol const* ret = symbol_resolve_alias(symbol);
+    return ret && !ret->is_unresolved ? ret : (Symbol const*)&unresolved;
 }
 
 typedef struct ExportStarWalk {

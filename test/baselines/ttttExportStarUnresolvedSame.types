@@ -1,0 +1,29 @@
+//// [test/cases/ttttExportStarUnresolvedSame.ts] ////
+
+=== a.ts ===
+import type { X } from 'nope'
+>X : any
+
+export type { X }
+>X : any
+
+export const Y = 1
+>Y : 1
+>1 : 1
+
+=== b.ts ===
+import { type X } from 'nope2'
+>X : any
+
+export { type X }
+>X : any
+
+export const Y = 2
+>Y : 2
+>2 : 2
+
+=== index.ts ===
+
+export * from './a'
+export * from './b'
+
