@@ -5004,6 +5004,7 @@ static Members const* resolve_intersection_members(Checker* me, Ty const* ty) {
                 existing->value = ty_intersection(me, both, 2, nullptr, (TyList){0});
                 existing->readonly = existing->readonly && info.readonly;
                 existing->decl_span = span_null;
+                existing->param_name = nullptr; // (tsc's newIndexInfo without a declaration: printed `x`)
                 existing->components = nullptr;
                 existing->component_count = 0;
                 merged = true;

@@ -3381,7 +3381,6 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
                     existing->parent = nullptr;
                 }
             }
-            for (u32 j = 0; j < part.index_count && all.index_count < c_arraylen(all.index); j++) all.index[all.index_count++] = part.index[j];
             for (u32 j = 0; j < part.skipped_count; j++) literal_builder_skip(out, part.skipped[j]);
             literal_builder_drop(&part);
         }
@@ -3416,7 +3415,13 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
             }
             literal_builder_add(out, all.props[j]);
         }
-        for (u32 j = 0; j < all.index_count && out->index_count < c_arraylen(out->index); j++) out->index[out->index_count++] = all.index[j];
+        // (The intersection's index signatures: one per key type, of the intersection of the members' value types, tsc's
+        // getIndexInfosOfType with resolveIntersectionTypeMembers' appendIndexInfo)
+        Members const* whole = ty_members(me, object);
+        for (u32 j = 0; j < whole->index_count && out->index_count < c_arraylen(out->index); j++) {
+            out->index[out->index_count] = whole->index[j];
+            out->index[out->index_count++].readonly = readonly;
+        }
         literal_builder_drop(&all);
         return;
     }

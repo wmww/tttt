@@ -1,0 +1,55 @@
+//// [test/cases/ttttSpreadIntersectionIndexSignatures.ts] ////
+
+=== ttttSpreadIntersectionIndexSignatures.ts ===
+// Spreading an intersection takes its index signatures as the intersection has them: one per key type, of the
+// intersection of the members' value types, printed `x` (tsgo's resolveIntersectionTypeMembers appendIndexInfo).
+// supabase studio's Logs.utils.otel.ts had two `[x: string]` and a spurious TS2322
+interface Metadata { a: number }
+>a : number
+
+interface CustomLogData {
+  query?: string | undefined
+>query : string | undefined
+
+  [other: string]: unknown
+>other : string
+}
+interface PreviewLogData extends CustomLogData {
+  id: string
+>id : string
+
+  timestamp: number
+>timestamp : number
+
+  metadata?: Metadata
+>metadata : Metadata | undefined
+
+  [key: string]: string | number | Metadata | undefined
+>key : string
+}
+type LogData = CustomLogData & PreviewLogData
+>LogData : LogData
+
+declare const base: LogData;
+>base : LogData
+
+declare const attrs: Record<string, string>;
+>attrs : Record<string, string>
+
+export const r: LogData = { ...base, ...attrs };
+>r : LogData
+>{ ...base, ...attrs } : { [x: string]: string | number | Metadata | undefined; query?: string | undefined; id: string; timestamp: number; metadata?: Metadata; }
+>base : LogData
+>attrs : Record<string, string>
+
+export const s = { ...base, ...attrs };
+>s : { [x: string]: string | number | Metadata | undefined; query?: string | undefined; id: string; timestamp: number; metadata?: Metadata; }
+>{ ...base, ...attrs } : { [x: string]: string | number | Metadata | undefined; query?: string | undefined; id: string; timestamp: number; metadata?: Metadata; }
+>base : LogData
+>attrs : Record<string, string>
+
+export const t = { ...base };
+>t : { [x: string]: string | number | Metadata | undefined; query?: string | undefined; id: string; timestamp: number; metadata?: Metadata; }
+>{ ...base } : { [x: string]: string | number | Metadata | undefined; query?: string | undefined; id: string; timestamp: number; metadata?: Metadata; }
+>base : LogData
+

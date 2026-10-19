@@ -1824,6 +1824,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSpreadIntersectionIndexSignatures': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttSpreadMappedPropertyOrder': {
         errors: true,
         symbols: true,

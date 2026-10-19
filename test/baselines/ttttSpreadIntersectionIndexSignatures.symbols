@@ -1,0 +1,65 @@
+//// [test/cases/ttttSpreadIntersectionIndexSignatures.ts] ////
+
+=== ttttSpreadIntersectionIndexSignatures.ts ===
+// Spreading an intersection takes its index signatures as the intersection has them: one per key type, of the
+// intersection of the members' value types, printed `x` (tsgo's resolveIntersectionTypeMembers appendIndexInfo).
+// supabase studio's Logs.utils.otel.ts had two `[x: string]` and a spurious TS2322
+interface Metadata { a: number }
+>Metadata : Symbol(Metadata, Decl(ttttSpreadIntersectionIndexSignatures.ts, 0, 0))
+>a : Symbol(Metadata.a, Decl(ttttSpreadIntersectionIndexSignatures.ts, 3, 20))
+
+interface CustomLogData {
+>CustomLogData : Symbol(CustomLogData, Decl(ttttSpreadIntersectionIndexSignatures.ts, 3, 32))
+
+  query?: string | undefined
+>query : Symbol(CustomLogData.query, Decl(ttttSpreadIntersectionIndexSignatures.ts, 4, 25))
+
+  [other: string]: unknown
+>other : Symbol(other, Decl(ttttSpreadIntersectionIndexSignatures.ts, 6, 3))
+}
+interface PreviewLogData extends CustomLogData {
+>PreviewLogData : Symbol(PreviewLogData, Decl(ttttSpreadIntersectionIndexSignatures.ts, 7, 1))
+>CustomLogData : Symbol(CustomLogData, Decl(ttttSpreadIntersectionIndexSignatures.ts, 3, 32))
+
+  id: string
+>id : Symbol(PreviewLogData.id, Decl(ttttSpreadIntersectionIndexSignatures.ts, 8, 48))
+
+  timestamp: number
+>timestamp : Symbol(PreviewLogData.timestamp, Decl(ttttSpreadIntersectionIndexSignatures.ts, 9, 12))
+
+  metadata?: Metadata
+>metadata : Symbol(PreviewLogData.metadata, Decl(ttttSpreadIntersectionIndexSignatures.ts, 10, 19))
+>Metadata : Symbol(Metadata, Decl(ttttSpreadIntersectionIndexSignatures.ts, 0, 0))
+
+  [key: string]: string | number | Metadata | undefined
+>key : Symbol(key, Decl(ttttSpreadIntersectionIndexSignatures.ts, 12, 3))
+>Metadata : Symbol(Metadata, Decl(ttttSpreadIntersectionIndexSignatures.ts, 0, 0))
+}
+type LogData = CustomLogData & PreviewLogData
+>LogData : Symbol(LogData, Decl(ttttSpreadIntersectionIndexSignatures.ts, 13, 1))
+>CustomLogData : Symbol(CustomLogData, Decl(ttttSpreadIntersectionIndexSignatures.ts, 3, 32))
+>PreviewLogData : Symbol(PreviewLogData, Decl(ttttSpreadIntersectionIndexSignatures.ts, 7, 1))
+
+declare const base: LogData;
+>base : Symbol(base, Decl(ttttSpreadIntersectionIndexSignatures.ts, 15, 13))
+>LogData : Symbol(LogData, Decl(ttttSpreadIntersectionIndexSignatures.ts, 13, 1))
+
+declare const attrs: Record<string, string>;
+>attrs : Symbol(attrs, Decl(ttttSpreadIntersectionIndexSignatures.ts, 16, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+export const r: LogData = { ...base, ...attrs };
+>r : Symbol(r, Decl(ttttSpreadIntersectionIndexSignatures.ts, 17, 12))
+>LogData : Symbol(LogData, Decl(ttttSpreadIntersectionIndexSignatures.ts, 13, 1))
+>base : Symbol(base, Decl(ttttSpreadIntersectionIndexSignatures.ts, 15, 13))
+>attrs : Symbol(attrs, Decl(ttttSpreadIntersectionIndexSignatures.ts, 16, 13))
+
+export const s = { ...base, ...attrs };
+>s : Symbol(s, Decl(ttttSpreadIntersectionIndexSignatures.ts, 18, 12))
+>base : Symbol(base, Decl(ttttSpreadIntersectionIndexSignatures.ts, 15, 13))
+>attrs : Symbol(attrs, Decl(ttttSpreadIntersectionIndexSignatures.ts, 16, 13))
+
+export const t = { ...base };
+>t : Symbol(t, Decl(ttttSpreadIntersectionIndexSignatures.ts, 19, 12))
+>base : Symbol(base, Decl(ttttSpreadIntersectionIndexSignatures.ts, 15, 13))
+
