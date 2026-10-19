@@ -8,8 +8,9 @@ decides incremental). Validation met: suite dts in the headline (1834 / 1859, Ja
 entry: 351 / 352), dtsdiff >= 90% of projects (96.8%), clidiff `--emit`; `dtsdiff.py --kdiff 16` differs on 3 / 292
 of a quarter sample by tsgo's own per-checker undefinedProperties history (below, "Member order").
 
-State 2026-10-18 (todo entry 6, four agents): `scripts/dtsdiff.py` **1211 / 1233 projects, 96675 / 96726 files**
-byte-identical (was 1193 / 96627); clidiff `--emit` 403 / 410. What the pass taught: tsc keys object instantiations
+State 2026-10-19 (agent A, after refresh 2's projects): `scripts/dtsdiff.py` **1246 / 1274 projects, 99736 / 100826
+files** in a worktree (1028 of the misses are corpus:effect's and corpus:tsc's `.d.ts.map` sources, a worktree
+artifact; was 1242 / 99652 that morning). 2026-10-18 (todo entry 6, four agents): 1211 / 1233, 96675 / 96726; clidiff `--emit` 403 / 410. What the pass taught: tsc keys object instantiations
 on the alias they're made for (an import's alias names an unaliased instance, `type N = Readonly<X>` is a type of its
 own), checks type-parameter references syntactically (the Block rule; merged class/interface owners by node), and
 makes a mapped tuple's error rest element unknown. **Most of what's left is tsgo's checker split** (its weighted
@@ -31,8 +32,8 @@ size on real code, each with an example:
   their realpath, program-wide dependency links by package directory, exports conditions by the target's format;
   `TTTT_DEBUG_CONTAINERS=1` shows the candidates). Left (~4 projects): mcp-sdk/examples
   `import("node_modules/hono/dist/types/hono")` vs tttt's `.../dist/types`: matches at `--checkers 1` (agent C
-  2026-10-18), so it's the per-checker KEY_EXTENDED_CONTAINERS memo below with tttt's file distribution; babel's `eslint.config.d.ts` (`@eslint/config-helpers` vs `eslint/config`) and react-three-fiber
-  (`three` vs `three/src/Three.Core.js`), uninvestigated. corpus:react's `@testing-library/react` vs `/dom` is a worktree
+  2026-10-18), so it's the per-checker KEY_EXTENDED_CONTAINERS memo below with tttt's file distribution; babel's `eslint.config.d.ts` and react-three-fiber's `three`
+  specifiers matched in 2026-10-19 runs. corpus:react's `@testing-library/react` vs `/dom` is a worktree
   artifact (the right one from the real path). tsgo's checker-wide memo of a successful import lookup
   (KEY_EXTENDED_CONTAINERS, filled from inside an import declaration) makes names depend on what a checker printed
   first, as in tsgo; tttt's checkers don't split files like tsgo's.
@@ -152,10 +153,6 @@ size on real code, each with an example:
   tsgo has (probe: an object literal with `use: () => p, withArg: (x: number) => p` of an inline conditional).
 
 ## 2026-10-16 worktree agent (wt-a): JS maps / missing files / small buckets, leftovers
-- **lit ssr-dom-shim `labels = [] as unknown as NodeListOf<...>`** in a class expression printed as a literal: tsgo
-  maps the asserted type (pseudo type of the field initializer); tttt's class-literal members don't use pseudo_of_field.
-  It needs a path like the object literal's (ty_display's declared_item()/pseudo_of_object_member branch), but a class
-  field's PropDecl only has its `lazy` type, no way back to its ClassItem. Same text, only mappings differ.
 - **telegraf `as (tg.MessageEntity & { type: SelectedTypes; ... })[]`**: tsgo reuses the node with only the local alias
   reference replaced (partial reuse); tttt prints from the type (same text, no mappings).
 - Suite JS dts quirks left as tsgo bugs: jsdocTemplateTagDefault (`= ` empty default), jsdocReadonlyDeclarations
@@ -186,20 +183,24 @@ size on real code, each with an example:
   b: 1 }) => x)`).
 
 
-## Refresh 2 (2026-10-18, todo entry 7): vest
-- **`typeof ns.x` for a spread namespace's const export**: `export const allRules = { ...numberRules } as const` where
-  numberRules re-exports `export const isEven = (v: string | number): boolean => ...`: tsgo writes `readonly isEven:
-  typeof numberRules.isEven` (its pseudochecker path in serializeTypeForDeclaration, the property's declaration being
-  the variable), tttt the function type. Functions are `typeof` on both sides. Probe: three files, `rules/isEven.ts`,
-  `rules/numberRules.ts` re-exporting it, `all.ts` spreading `import * as numberRules`.
-- **An alias reused uninstantiated in a mapped member**: vest's lazy.d.ts, `[K in keyof TRules]: (...args:
-  DropFirst<Parameters<TRules[K]>>) => ...` instantiated per key: tttt writes the annotation's text
-  (`DropFirst<Parameters<TRules[K]>>`, K and TRules out of scope), tsgo the instantiation (named, oddly,
-  `arrayRules.isEmpty<Parameters<typeof arrayRules.equals>>`: a different symbol of the same module). Not reduced.
-
-## Refresh 2's checkJs projects (triage 2026-10-18, uninvestigated)
-JavaScript declaration emit on real code, day one: rocket 264 / 316 files, eslint-plugin-jsdoc 319 / 338,
-markdown-magic 124 / 131 and its packages/core 64 / 80, block-transformer 0 / 1. Buckets seen: `.d.ts.map` mappings
-missing at names and line ends, "type text", "comment", "member order", and markdown-magic's 10 extra files where
-tsgo reports a declaration diagnostic (and writes nothing). `scripts/dtsdiff.py -f '^(rocket|eslint-plugin-jsdoc|markdown-magic)'`
-then `--show`. A fan-out bucket once the TypeScript tail is thin.
+## Refresh 2 leftovers (agent A, 2026-10-19, todo entry 6 of the window)
+Fixed: vest's `typeof ns.x` (a spread namespace's alias export is the alias: spread_alias), the checkJs projects'
+maps and types (rocket 315 / 316, eslint-plugin-jsdoc 336 / 338, markdown-magic and its packages all match), lit's
+class literal fields (pseudo types), babel and react-three-fiber specifiers (match now, not by a fix of this pass).
+Left:
+- **vest lazy.d.ts, a tsgo bug**: `[K in keyof TRules]: (...args: DropFirst<Parameters<TRules[K]>>) => ...` instantiated
+  per key; tsgo names the instantiated alias by a wrong symbol (`arrayRules.isEmpty<Parameters<typeof
+  arrayRules.equals>>`, `isEmpty` being another export of the module), tttt writes the annotation's text with K and
+  TRules out of scope. tttt's is wrong too: it should print the instantiation (`DropFirst<Parameters<typeof
+  arrayRules.equals>>`), which still won't match tsgo. Not worth emulating tsgo's symbol mix-up.
+- **rocket SocialPreviewPlayground**: `@property {string=} title` printed `title?: string | undefined;` misses tsgo's
+  mapping of the `;` at the JSDoc optional type's end (after the `=`): the union jsdoc_union() makes has no position.
+- **eslint-plugin-jsdoc** `iterateJsdoc.d.ts.map` (`.` of a qualified type) and `tsBanTsComment.d.ts.map` (`'ts`
+  literal), single mappings, uninvestigated; 5 files match `tsgo --singleThreaded` (checker split).
+- **markdown-magic/packages/core process-contents**: `module.exports = { processContents: blockTransformer }` (an
+  imported function of a JS workspace package): tttt maps the property name, tsgo doesn't (other `module.exports =
+  {...}` maps fine after this pass's CommonJS rule: names mapped, the node builder's types not).
+- **`/** @type {{a: number}} */ export default { a: 1 }`**: tsgo maps the member to the literal's property when the tag's
+  type and the literal's agree (with an extra optional member it maps the tag, like tttt).
+- **telegraf** partial reuse (below, unchanged), **vueuse `.test/mount.d.ts`** mismatches when run alone (also at this
+  pass's base commit) but matched in a full run: an order effect.
