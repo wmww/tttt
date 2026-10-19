@@ -37,7 +37,44 @@ best wall s / CPU s / peak MB; drizzle's defaults above its K1 is the 4-core box
 | excalidraw | 0.520 / 1.86 / 273 | 0.860 / 0.85 / 361 | 2.970 / 10.78 / 1975 | 2.770 / 3.80 / 899 |
 | tanstack-router | 0.300 / 1.09 / 282 | 0.610 / 0.64 / 302 | 2.040 / 6.91 / 977 | 2.590 / 3.52 / 673 |
 | `-b` TypeScript6/src | 1.040 / 3.49 / 325 | - | 2.050 / 6.41 / 742 | 3.000 / 3.95 / 512 |
-The 12-core table (the human's box) is owed a rerun with this build.
+
+## The 12-core box with PGO + LTO (2026-10-19, run by an agent on the human's laptop)
+AMD Ryzen AI 9 HX 370 (12 cores / 24 threads), 62 GB, GCC 16.2, idle (load ~1). `scripts/bench.sh --runs 3
+--checkers 24 --bun bun-1.4.3 --tscrs tsc-rs-0.7.0` with pgo/tttt; best wall s / CPU s (user + sys, median run) /
+peak MB. tttt's default is now K12 (`default_checker_cap()`), K24 the old default; tsc-rs at its defaults is 4
+checkers:
+| corpus | tttt K12 | tttt K24 | tttt K1 | bun | bun single | tsc-rs | tsc-rs --fast | tsc-rs single | tsgo | tsgo single |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TypeScript6 | 0.20 / 1.02 / 419 | 0.22 / 1.45 / 518 | 0.45 / 0.45 / 225 | 0.37 / 2.15 / 350 | 1.06 / 1.08 / 213 | 0.45 / 1.22 / 334 | 0.46 / 1.24 / 328 | 0.74 / 0.74 / 280 | 0.58 / 2.77 / 498 | 1.21 / 1.84 / 426 |
+| type-fest | 0.23 / 1.41 / 697 | 0.24 / 1.94 / 924 | 0.67 / 0.69 / 429 | 1.12 / 5.99 / 757 | 3.43 / 4.74 / 1011 | 2.49 / 5.35 / 3138 | 1.56 / 5.63 / 3285 | 3.18 / 3.52 / 2302 | 3.93 / 19.33 / 5529 | 5.91 / 13.85 / 4399 |
+| valibot | 0.14 / 1.28 / 368 | 0.14 / 1.88 / 465 | 0.40 / 0.39 / 254 | 0.22 / 2.90 / 280 | 1.56 / 1.71 / 277 | 0.39 / 1.48 / 487 | 0.21 / 2.14 / 646 | 1.07 / 1.06 / 402 | 0.67 / 4.44 / 822 | 1.60 / 3.16 / 633 |
+| bulletproof-react | 0.13 / 0.43 / 272 | 0.11 / 1.11 / 493 | 0.19 / 0.19 / 142 | 0.28 / 1.45 / 376 | 0.42 / 0.50 / 179 | 0.21 / 0.66 / 311 | 0.24 / 0.67 / 304 | 0.37 / 0.38 / 235 | 0.40 / 2.42 / 448 | 0.59 / 1.30 / 288 |
+| nestjs-boilerplate | 0.09 / 0.52 / 275 | 0.10 / 0.75 / 364 | 0.20 / 0.19 / 132 | 0.10 / 0.62 / 233 | 0.27 / 0.30 / 154 | 0.10 / 0.46 / 225 | 0.10 / 0.46 / 238 | 0.24 / 0.24 / 188 | 0.13 / 1.30 / 260 | 0.31 / 0.65 / 209 |
+| webpack | 0.27 / 2.68 / 592 | 0.29 / 4.08 / 726 | 1.00 / 1.01 / 529 | 0.59 / 5.74 / 518 | 2.56 / 2.82 / 377 | 0.82 / 2.95 / 841 | 0.43 / 4.84 / 1205 | 1.79 / 1.83 / 716 | 1.14 / 6.86 / 1177 | 2.54 / 4.19 / 961 |
+| zod | 0.23 / 2.14 / 579 | 0.23 / 3.18 / 807 | 0.56 / 0.55 / 392 | 0.37 / 4.29 / 506 | 1.56 / 1.74 / 389 | 0.66 / 2.26 / 791 | 0.30 / 2.40 / 866 | 1.39 / 1.40 / 587 | 1.02 / 6.80 / 1362 | 2.08 / 4.20 / 957 |
+| xstate | 0.14 / 1.05 / 406 | 0.17 / 2.24 / 598 | 0.30 / 0.37 / 196 | 0.19 / 1.45 / 245 | 0.66 / 1.07 / 175 | 0.29 / 1.15 / 322 | 0.24 / 0.98 / 322 | 0.55 / 0.59 / 261 | 0.41 / 2.76 / 468 | 0.81 / 1.57 / 362 |
+| drizzle | 0.34 / 3.31 / 691 | 0.37 / 6.57 / 986 | 0.75 / 0.75 / 398 | 0.49 / 6.43 / 600 | 2.07 / 2.07 / 377 | 0.66 / 2.78 / 1002 | 0.54 / 6.61 / 1681 | 1.30 / 1.59 / 595 | 1.44 / 9.76 / 1612 | 2.05 / 3.60 / 925 |
+| vue | 0.16 / 1.49 / 461 | 0.18 / 2.77 / 533 | 0.59 / 0.59 / 305 | 0.26 / 2.84 / 355 | 1.11 / 1.15 / 288 | 0.47 / 1.67 / 497 | 0.34 / 3.11 / 675 | 1.26 / 1.53 / 417 | 0.87 / 5.09 / 738 | 1.80 / 2.83 / 665 |
+| effect | 0.30 / 3.04 / 639 | 0.29 / 4.58 / 760 | 1.13 / 1.12 / 516 | 0.54 / 9.87 / 503 | 3.24 / 4.03 / 373 | 1.22 / 5.09 / 1261 | 0.82 / 8.68 / 1578 | 3.32 / 4.39 / 1049 | 1.43 / 10.60 / 1510 | 3.15 / 5.15 / 1297 |
+| vscode | 2.59 / 27.34 / 1581 | 2.42 / 40.52 / 1909 | 10.41 / 10.37 / 1369 | 2.77 / 54.39 / 2138 | 18.30 / 19.73 / 1419 | 5.01 / 22.51 / 5494 | 3.40 / 35.75 / 6378 | 13.99 / 13.95 / 4925 | 7.88 / 60.84 / 7940 | 19.41 / 32.76 / 6533 |
+| excalidraw | 0.26 / 2.49 / 557 | 0.27 / 3.81 / 708 | 0.72 / 0.73 / 365 | 0.38 / 5.55 / 419 | 1.90 / 1.91 / 358 | 0.79 / 3.40 / 612 | 0.78 / 10.80 / 946 | 1.92 / 1.90 / 474 | 1.43 / 11.66 / 1799 | 2.13 / 4.33 / 917 |
+| tanstack-router | 0.17 / 1.39 / 428 | 0.19 / 2.44 / 603 | 0.53 / 0.52 / 308 | 0.44 / 4.06 / 490 | 1.15 / 1.80 / 324 | 0.50 / 1.77 / 538 | 0.44 / 2.15 / 531 | 1.44 / 1.44 / 420 | 1.18 / 6.74 / 980 | 2.11 / 3.76 / 692 |
+| `-b` TypeScript6/src | 0.51 / 3.90 / 634 | - | - | - | - | - | - | - | 1.31 / 6.96 / 558 | 2.54 / 4.27 / 524 |
+- **tttt has the best wall time on all 14 corpora at the defaults.** The closest is vscode at 2.59 s against bun's 2.77
+  (the earlier release build tied there at 2.69-2.81). Everywhere else the lead over bun is 1.1x (nest) to 4.9x
+  (type-fest), and over tsc-rs `--fast` 1.1x to 6.8x. Single-threaded, vscode takes 10.4 s against tsc-rs's 14.0 and
+  bun's 18.3, and tttt is fastest everywhere.
+- **CPU at the defaults: tttt uses 0.30-0.84x bun's** (vscode 27.3 against 54.4, drizzle 3.31 against 6.43; the old
+  K24 default spent 6.4 s there). tsc-rs at 4 checkers uses less CPU on 3 / 14: nest 0.46 against 0.52, drizzle 2.78
+  against 3.31, vscode 22.5 against 27.3. tttt's K12 still costs 2.3-4.4x its own K1 CPU (vscode 2.6x, drizzle 4.4x).
+- **K12 rather than K24 (the physical-core policy) is confirmed.** K24 is 7% faster on vscode (2.42 against 2.59) and
+  15% on bulletproof (0.11 against 0.13). On the other corpora it is the same or slower, while CPU rises 40-160% and
+  peak memory 15-80%. Keep the cap.
+- **Memory is still the weak axis.** Bun's peak is below tttt's at the defaults on 10 / 14 (tttt is lower on
+  type-fest, bulletproof, vscode 1581 against 2138, and tanstack-router), the same as before PGO. xstate is 406
+  against 245, excalidraw 557 against 419, effect 639 against 503. Single-threaded, tttt's peak is at or below bun's
+  on 6 / 14. tsc-rs's peak at its defaults is 0.8-4.5x tttt's (below it on TypeScript6 and nest; type-fest 3138,
+  vscode 5494).
 
 ## supabase studio and bun on the 12-core box (2026-10-19, a conversation with the human)
 supabase `apps/studio` (b3757692, 12.7k files / 2.0M lines with dependencies, its own tsconfig; `pnpm install

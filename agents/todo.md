@@ -23,7 +23,9 @@ re-saved baseline only.
 
 1. Done (c564922b): PGO + LTO ships as `scripts/pgobuild.sh` (`pgo/tttt`). Callgrind is -11.5% to -16.9% on every
    corpus, -15.2% on the untrained vscode. instrcount and bench were re-saved (measurements.md "PGO + LTO shipped").
-   The human's 12-core rerun was asked for in report.md.
+   The 12-core rerun ran on the human's laptop the same day (measurements.md "The 12-core box with PGO + LTO"):
+   tttt has the best wall time on every corpus at K12, K24 is not worth its cost (the cap is confirmed), and bun's
+   peak is still lower on 10 / 14.
 2. **Plan 86 stage 4's gate** (one session, measurement only): how often `ty_compare_tie()` falls back to type ids
    on every corpus and the sweep's biggest projects. Write the number and the go/stop into plan 86. It decides
    whether a shared concurrent type graph is compatible with byte-identical output, so it comes before stage 2's
