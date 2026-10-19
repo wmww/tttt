@@ -16,8 +16,9 @@ shape (quoted parts elided), and for a diagnostic in node_modules the dependency
   scripts/sourcesweep.py --sample 4       # a fixed quarter of the projects (by a hash of the name: scripts/oracles.py's)
   scripts/sourcesweep.py --tsc [-f ...]   # regenerate tsc's cached verdicts (all projects, or -f's)
   scripts/sourcesweep.py --tsc-new        # tsc on the projects without a cached verdict (repos added to the manifest)
+  scripts/sourcesweep.py --build [...]    # the solutions instead: `tsc -b` against `tttt -b` (list_build_projects)
 """
-import argparse, collections, concurrent.futures, gzip, json, os, re, signal, subprocess, sys, threading, time, zlib
+import argparse, collections, concurrent.futures, gzip, json, os, re, resource, signal, subprocess, sys, tempfile, threading, time, zlib
 
 import sweep, tscformat
 
@@ -26,6 +27,9 @@ SOURCES = os.path.join(ROOT, 'thirdparty/sources')
 MANIFEST = os.path.join(ROOT, 'test/sourcesweep/repos.txt')
 ORACLE = os.path.join(ROOT, 'test/sourcesweep/tsc.jsonl.gz')
 LAST = f'/tmp/sourcesweep-{os.path.basename(ROOT)}.json'
+BUILD_ORACLE = os.path.join(ROOT, 'test/sourcesweep/tsc-build.jsonl.gz')
+TSC = [os.path.join(ROOT, 'thirdparty/typescript/built/tsc')]
+SANDBOX = ['bwrap', '--ro-bind', '/', '/', '--bind', '/tmp', '/tmp', '--dev', '/dev', '--proc', '/proc']  # (clidiff's)
 # Directories that hold no project of the repo's own: outputs, dependencies, tooling state
 SKIP_DIRS = {'node_modules', 'dist', 'build'}
 
@@ -51,23 +55,119 @@ def list_projects(filter=None):
     return projects
 
 
+def jsonc(path):
+    """A tsconfig's JSON with comments and trailing commas (None when unreadable)"""
+    try:
+        t = open(path, encoding='utf-8', errors='replace').read()
+    except OSError:
+        return None
+    t = re.sub(r'("(?:[^"\\\n]|\\.)*")|//[^\n]*|/\*.*?\*/', lambda m: m.group(1) or '', t, flags=re.S)
+    t = re.sub(r',(\s*[}\]])', r'\1', t)
+    try:
+        return json.loads(t)
+    except ValueError:
+        return None
+
+
+def config_path(base, path):
+    """A reference's or `tsc -b` argument's config file: a directory means its tsconfig.json"""
+    p = os.path.normpath(os.path.join(base, path))
+    return os.path.join(p, 'tsconfig.json') if os.path.isdir(p) else p
+
+
+def list_build_projects(filter=None):
+    """The solutions `tsc -b` checks, as REPO/path/to/config.json: every tsconfig*.json with `references` that no
+    other config of its repo references (a solution's root: Vite's template, a monorepo's root, jest's per-package
+    __tests__ configs). Roots sharing a subtree each build it"""
+    projects = []
+    for repo in list_repos():
+        base = os.path.join(SOURCES, repo)
+        if not os.path.exists(os.path.join(base, '.tttt-installed')):
+            continue
+        refs, referenced = {}, set()
+        for root, dirs, files in os.walk(base):
+            dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS and not d.startswith('.'))
+            for f in files:
+                path = os.path.join(root, f)
+                if re.fullmatch(r'tsconfig.*\.json', f):
+                    c = jsonc(path)
+                    r = c.get('references') if isinstance(c, dict) else None
+                    if isinstance(r, list) and r:
+                        refs[path] = [config_path(root, x['path']) for x in r if isinstance(x, dict) and isinstance(x.get('path'), str)]
+                        referenced.update(refs[path])
+        for path in sorted(refs):
+            if path not in referenced:
+                projects.append(os.path.relpath(path, SOURCES))
+    if filter:
+        projects = [p for p in projects if re.search(filter, p)]
+    return projects
+
+
+def run_tsc_build(project, timeout):
+    """tsgo's `tsc -b --force` on a solution in a sandbox (bwrap: the checkout overlaid, what the build writes
+    discarded), from SOURCES like tttt"""
+    checkout = os.path.realpath(os.path.join(SOURCES, project.split('/')[0]))
+    tmp = tempfile.mkdtemp(prefix='buildsweep-')
+    up, work = os.path.join(tmp, 'up'), os.path.join(tmp, 'work')
+    os.makedirs(up), os.makedirs(work)
+    start = time.time()
+    try:
+        p = subprocess.run([*SANDBOX, '--overlay-src', checkout, '--overlay', up, work, checkout, '--', *TSC, '-b',
+                            '--force', project, '--pretty', 'false'], cwd=SOURCES, stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT, timeout=timeout)
+        out, status = p.stdout.decode(errors='replace'), p.returncode
+    except subprocess.TimeoutExpired:
+        return {'project': project, 'ms': 0, 'crash': 'timeout', 'diags': []}
+    finally:
+        subprocess.run(['rm', '-rf', tmp])
+    ms = int((time.time() - start) * 1000)
+    if status not in (0, 1, 2):
+        return {'project': project, 'ms': ms, 'crash': f'exit {status}: {out[-300:]}', 'diags': []}
+    r = {'project': project, 'ms': ms, 'diags': text_diags(out)}
+    if out:
+        r['text'] = out
+    return r
+
+
+def run_tttt_build(project, timeout, mem_gb):
+    """sweep.run_tttt's record for `tttt -b PROJECT` (writing nothing)"""
+    limit = mem_gb << 30
+    start = time.time()
+    try:
+        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '-b', project, '--pretty', 'false', '--no-write',
+                               '--threads', '1'], cwd=SOURCES, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                              timeout=timeout, preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
+        out, code = proc.stdout, proc.returncode
+        status = 'ok' if code in (0, 1, 2) else f'exit {code}' if code > 0 else f'signal {-code}'
+    except subprocess.TimeoutExpired as e:
+        out, status = e.stdout or b'', 'timeout'
+    text = out.decode(errors='replace')
+    if status == 'ok' and re.search(r'\.c:\d+: (error|panic):', text):
+        status = 'log_error'
+    tail = '\n'.join(l for l in text.split('\n') if l.strip())[-600:] if status != 'ok' else ''
+    return {'package': project, 'status': status, 'wall': time.time() - start,
+            'diags': [[f, l, c, m] for f, l, _, c, m in tscformat.parse(text)], 'tail': tail}
+
+
 def text_diags(text):
     """The diagnostics of tsc's output, as tttt-oracle lists them"""
     return [[f, l, c, code] for f, l, c, code, _ in tscformat.parse(text)]
 
 
-def load_oracle():
+def load_oracle(path=ORACLE):
     """tsc's cached verdicts, {project: record}. A record's `diags` aren't stored when its `text` says the same"""
     oracle = {}
-    for r in map(json.loads, gzip.open(ORACLE, 'rt')):
+    if not os.path.exists(path):
+        return oracle
+    for r in map(json.loads, gzip.open(path, 'rt')):
         if 'diags' not in r:
             r['diags'] = text_diags(r['text'])
         oracle[r['project']] = r
     return oracle
 
 
-def save_oracle(oracle):
-    with gzip.open(ORACLE, 'wt') as f:
+def save_oracle(oracle, path=ORACLE):
+    with gzip.open(path, 'wt') as f:
         for p in sorted(oracle):
             r = oracle[p]
             if r.get('text') and text_diags(r['text']) == r['diags']:
@@ -115,26 +215,35 @@ def main():
     ap.add_argument('--mem-gb', type=int, default=8)
     ap.add_argument('--no-build', action='store_true')
     ap.add_argument('--sample', type=int, help='only the projects whose name hashes to 0 modulo this')
+    ap.add_argument('--build', action='store_true', help='the solutions, `-b` (list_build_projects), not every `-p`')
     args = ap.parse_args()
 
-    projects = list_projects(args.filter)
-    global LAST
+    global LAST, ORACLE
+    projects = (list_build_projects if args.build else list_projects)(args.filter)
+    if args.build:
+        ORACLE = BUILD_ORACLE
+        LAST = LAST.replace('.json', '-build.json')
+        args.timeout = max(args.timeout, 600)
     if args.sample:
         projects = [p for p in projects if zlib.crc32(p.encode()) % args.sample == 0]
         LAST = LAST.replace('.json', f'-sample{args.sample}.json')  # (Not the full run's)
     if args.tsc or args.tsc_new:
         oracle = {}
-        if os.path.exists(ORACLE) and (args.filter or args.tsc_new):
-            oracle = load_oracle()
+        if args.filter or args.tsc_new:
+            oracle = load_oracle(ORACLE)
         if args.tsc_new:
             projects = [p for p in projects if p not in oracle]
         start = time.time()
-        oracle.update(run_tsc(projects, args.jobs))
-        save_oracle(oracle)
+        if args.build:
+            with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
+                oracle.update((r['project'], r) for r in pool.map(lambda p: run_tsc_build(p, args.timeout), projects))
+        else:
+            oracle.update(run_tsc(projects, args.jobs))
+        save_oracle(oracle, ORACLE)
         print(f'tsc on {len(projects)} projects in {time.time() - start:.0f}s, written to {ORACLE}')
         return
 
-    oracle = load_oracle()
+    oracle = load_oracle(ORACLE)
     missing_oracle = [p for p in projects if p not in oracle]
     if missing_oracle:
         print(f'{len(missing_oracle)} projects have no tsc verdict (run --tsc): {" ".join(missing_oracle[:5])}...',
@@ -155,7 +264,8 @@ def main():
         # The slowest projects first, so they don't end up alone at the end
         order = sorted(projects, key=lambda p: -oracle[p]['ms'])
         with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
-            results = list(pool.map(lambda p: sweep.run_tttt(p, args.timeout, args.mem_gb, cwd=SOURCES), order))
+            run = run_tttt_build if args.build else lambda p, t, m: sweep.run_tttt(p, t, m, cwd=SOURCES)
+            results = list(pool.map(lambda p: run(p, args.timeout, args.mem_gb), order))
         results.sort(key=lambda r: r['package'])
         elapsed = time.time() - start
         with open(LAST, 'w') as f:

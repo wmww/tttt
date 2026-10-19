@@ -6,6 +6,8 @@ root package.json, a root lockfile and a root tsconfig.json (local `extends` fol
 
   scripts/reposearch.py dts TOPIC,TOPIC... PER       # language TypeScript, declaration/composite/emitDeclarationOnly
   scripts/reposearch.py checkjs TOPIC,TOPIC... PER   # language JavaScript, checkJs
+  scripts/reposearch.py build TOPIC,TOPIC... PER     # language TypeScript, a solution: `references` (tsc -b)
+  scripts/reposearch.py decorators TOPIC,TOPIC... PER  # language TypeScript, experimentalDecorators
 
 Prints `topic owner/name stars default-branch`; pin each with `git ls-remote URL HEAD` and append it to repos.txt
 under a comment saying the rule (refresh 2, 2026-10-18, is the example). Files are read from raw.githubusercontent.com.
@@ -42,12 +44,12 @@ def config_text(full, path, depth=0):
         if not p.endswith('.json'): p += '.json'
         t += '\n' + config_text(full, p, depth + 1)
     return t
-mode = sys.argv[1]  # dts | checkjs
+mode = sys.argv[1]  # dts | checkjs | build | decorators
 topics = sys.argv[2].split(',')
 per = int(sys.argv[3])
 picked = []
 for topic in topics:
-    lang = 'TypeScript' if mode == 'dts' else 'JavaScript'
+    lang = 'JavaScript' if mode == 'checkjs' else 'TypeScript'
     q = f'topic:{topic}+language:{lang}+stars:300..3000+pushed:>2025-06-01+size:<200000'
     res = get(f'https://api.github.com/search/repositories?q={q}&sort=stars&order=desc&per_page=100')
     time.sleep(7)
@@ -61,6 +63,10 @@ for topic in topics:
         if not c: continue
         if mode == 'dts':
             ok = re.search(r'"(declaration|composite|emitDeclarationOnly)"\s*:\s*true', c)
+        elif mode == 'build':
+            ok = re.search(r'"references"\s*:\s*\[\s*\{', c)
+        elif mode == 'decorators':
+            ok = re.search(r'"experimentalDecorators"\s*:\s*true', c)
         else:
             ok = re.search(r'"checkJs"\s*:\s*true', c)
         if not ok: continue
