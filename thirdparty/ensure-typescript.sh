@@ -78,9 +78,11 @@ OVERLAY=(
     tttt-test-mapper/stdio.go internal/testutil/contentmappertest/tttt_stdio.go
 )
 ORACLE_DIR="$HERE/../test/oracle"
-if test -n "$(find "$ORACLE_DIR" -name "*.go" -newer typescript/built/tttt-oracle 2>/dev/null)" -o ! -e typescript/built/tttt-oracle \
-        -o -n "$(find "$ORACLE_DIR" -name "*.go" -newer typescript/built/tttt-probe.test 2>/dev/null)" -o ! -e typescript/built/tttt-probe.test \
-        -o ! -e typescript/built/tttt-test-mapper; then
+# Rebuilt when the overlay's content changes (not its mtime: every new worktree's checkout is newer than the tools,
+# and a rebuild from a worktree would point overlay.json at it)
+ORACLE_HASH="$(cd "$ORACLE_DIR" && find . -name "*.go" | sort | xargs cat | sha256sum | cut -d' ' -f1)"
+if test "$(cat typescript/built/tttt-oracle.hash 2>/dev/null)" != "$ORACLE_HASH" -o ! -e typescript/built/tttt-oracle \
+        -o ! -e typescript/built/tttt-probe.test -o ! -e typescript/built/tttt-test-mapper; then
     printf "${BLUE}Building tttt's tsgo oracle tools (test/oracle)...$EOL"
     # (Go matches overlay paths against real paths: in a worktree, typescript/ is a symlink to the main tree's)
     {
@@ -93,5 +95,6 @@ if test -n "$(find "$ORACLE_DIR" -name "*.go" -newer typescript/built/tttt-oracl
     } > typescript/built/overlay.json
     (cd "$(realpath typescript/tsc)" && go build -overlay ../built/overlay.json -o ../built/tttt-oracle ./cmd/tttt-oracle &&
         go test -overlay ../built/overlay.json -c -o ../built/tttt-probe.test ./internal/testrunner &&
-        go build -overlay ../built/overlay.json -o ../built/tttt-test-mapper ./cmd/tttt-test-mapper)
+        go build -overlay ../built/overlay.json -o ../built/tttt-test-mapper ./cmd/tttt-test-mapper) &&
+        echo "$ORACLE_HASH" > typescript/built/tttt-oracle.hash
 fi
