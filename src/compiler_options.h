@@ -216,9 +216,10 @@ typedef struct CompilerOptions {
     StrList config_files, config_include_specs, config_include_patterns;
     bool config_default_include;
     // The `include` and `exclude` specs as TS18003 shows them: an extended config's rebased onto the config's directory
-    // (tsc's `../e2e` for an `e2e` one directory up); config_exclude_given: there is an `exclude`
+    // (tsc's `../e2e` for an `e2e` one directory up); config_exclude_given: there is an `exclude`, config_files_given:
+    // a `files` (an extended config's too: tsc's raw has it, so no TS18003)
     StrList config_include_shown, config_exclude_shown;
-    bool config_exclude_given;
+    bool config_exclude_given, config_files_given;
     bool base_url_set, paths_set, type_roots_set, types_set;
     // The config's `contentMappers` (content_mapper.h), only with runExternalCode and when valid. Owned
     struct ContentMapper* content_mappers;

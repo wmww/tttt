@@ -426,7 +426,7 @@ bool program_report_no_inputs(Program* me) {
                 cstr_d("The 'files' list in config file '", config, "' is empty."));
             reported = true;
         }
-    } else if (!references) {
+    } else if (!references && !my options.config_files_given) {
         // (An extended config's specs as tsconfig_load() rebased them, else the config's own)
         cstr include = my options.config_include_shown.count ? shown_spec_list(&my options.config_include_shown) :
             config_string_list(json_get(&my config_json, "include"), "[\"**/*\"]");

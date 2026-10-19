@@ -1169,6 +1169,7 @@ static void record_config_specs(ConfigLoad* me) {
         push_shown_spec(me, &o->config_exclude_shown, cstr_sv(&my exclude_dir), cstr_sv(&my exclude->items[i].string));
     }
     o->config_exclude_given = my exclude != nullptr;
+    o->config_files_given = my files != nullptr;
 }
 
 ConfigSpecMatch tsconfig_match_root_file(CompilerOptions const* options, csview path, isize* index) {

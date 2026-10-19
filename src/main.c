@@ -629,7 +629,8 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         destroy_program(program, errs, last);
         // (tsgo: diagnostics and no file to emit is ExitStatus.DiagnosticsPresent_OutputsGenerated, 2)
         if (build_solution) return ok(config_errors ? 1 : 0);
-        if (solution || no_inputs) return ok(config_errors ? (skipped ? 1 : 2) : 0);
+        // (A config without inputs that isn't a mistake, `files` inherited through `extends`, is an empty program)
+        if (solution || no_inputs || built) return ok(config_errors ? (skipped ? 1 : 2) : 0);
         return err_d("No input files: none on the command line and none from a tsconfig.json");
     }
     double last_time = now_ms();

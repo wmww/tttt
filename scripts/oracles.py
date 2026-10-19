@@ -89,6 +89,10 @@ def sources():
     out = run(['scripts/sourcesweep.py', '--no-build', '-n', '5', '--sample', '4'])
     m = re.search(r'\d+ / \d+ projects match.*', out)
     print('sourcesweep (sample 4): ' + (m.group(0) if m else '?'), flush=True)
+    # (The solutions, tsc -b against tttt -b: ~3 min)
+    out = run(['scripts/sourcesweep.py', '--no-build', '-n', '5', '--build'])
+    m = re.search(r'\d+ / \d+ projects match.*', out)
+    print('sourcesweep -b: ' + (m.group(0) if m else '?'), flush=True)
 
 def perf():
     # (tttt only, tsgo's side is cached; -j 4 inflates the times of both sides alike, types are exact)

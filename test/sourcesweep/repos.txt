@@ -250,3 +250,37 @@ eslint-plugin-check-file https://github.com/dukeluo/eslint-plugin-check-file.git
 markdown-magic https://github.com/DavidWells/markdown-magic.git f6cd8c042c835176a893decfe42f33223c91704b
 streaming-markdown https://github.com/thetarnav/streaming-markdown.git 6beb92d991ed5a16f62cdfefac739b6eee45555f
 parse-xml https://github.com/rgrove/parse-xml.git 24e617c56c10c49b4e3c7c8d3918648f7cb3c526
+# Refresh 3 (2026-10-19, todo entry 7), a fourth selection rule: GitHub search, stars 300..3000, pushed after
+# 2025-06-01, size < 200 MB, sorted by stars, language TypeScript, a root package.json and lockfile; solutions
+# checked with tsc -b (topics monorepo, typescript, framework, graphql, developer-tools, sdk: the first 2 per topic
+# whose root tsconfig.json, extends followed, has `references`) and decorator-heavy code (topics angular, nestjs,
+# typeorm, mobx, dependency-injection, orm, decorators: the first 2 per topic with experimentalDecorators;
+# scripts/reposearch.py build/decorators). Checked out at their default branch's HEAD that day.
+# snaps: its yarn plugin runs `yarn` after the install (ensure-sources.sh's corepack shim)
+snaps https://github.com/MetaMask/snaps.git 4e03da3ae2e899d43ea72959bd25446505d812d8
+itch https://github.com/itchio/itch.git f5a18100ba2b577ea2f169974f82c042c826b11c
+grimoire https://github.com/goniszewski/grimoire.git b68b69aa52924c9015d89e9580432cb94f2aff80
+sunmao-ui https://github.com/smartxworks/sunmao-ui.git ee322e6d7bc9938463ec4fcc51e837219f63b5f4
+b4run https://github.com/cacheplane/b4run.git 4ea075bf0f2f2004960750aed1dcf9315fda6a33
+graphile-starter https://github.com/graphile/starter.git 5f377879c06cf26b36946d23a31d885abc82dfc6
+graphql-inspector https://github.com/graphql-hive/graphql-inspector.git bc733682dc1e56df7cc8585e72f87790a4e2c145
+claude-code-history-viewer https://github.com/jhlee0409/claude-code-history-viewer.git 7f48907081d93ad209b30e10ff640ea0b8ed0e24
+nodeterm https://github.com/eneskirca/nodeterm.git 762a636e090a02dd184b77cc437d6d9096d19b43
+# chattyplay-agent: dropped, its yarn.lock is out of date (`--frozen-lockfile` fails)
+#chattyplay-agent https://github.com/P1kaj1uu/ChattyPlay-Agent.git 5ced57e6c7243de1a8753e54afb823daf78102dd
+safe-core-sdk https://github.com/safe-global/safe-core-sdk.git 7fa0f0a3d4b644cb40e81fea35df441876ce1561
+angular-calendar https://github.com/mattlewis92/angular-calendar.git 9ae06cf4e5bdb5ee538c0ff2e57a4ec4f7facc68
+dev-manager-desktop https://github.com/webosbrew/dev-manager-desktop.git ea027c8d7b057657d93563bc616eaabcc2dddf6b
+# laudspeaker: dropped, npm ci fails (package.json and its lockfile out of sync)
+#laudspeaker https://github.com/laudspeaker/laudspeaker.git 26d2699e0a04c7a89dbf8312231c8c7a757c55af
+ts-proto https://github.com/stephenh/ts-proto.git 1b195c06af8cd399b0fe21a453780ddee2cec37b
+nest-admin https://github.com/buqiyuan/nest-admin.git 2eeccc4cb699d1aedbe04b4437a9d095cde02c74
+nestjs-typeorm https://github.com/nestjs/typeorm.git 1626c49ba409140803510306fdb4ee1aa8194858
+restic-browser https://github.com/emuell/restic-browser.git 0b7c8dd195025031f39a2c6e6eec4c211d0bbf5c
+satcheljs https://github.com/microsoft/satcheljs.git 031f09cea7251988579a4769dea036bd44011422
+injection-js https://github.com/mgechev/injection-js.git 9a22e2d8fcfb9497314bda77cda7854ea5a08940
+graphql-modules https://github.com/graphql-hive/graphql-modules.git e6b0e2b4b29bc5bd4c6c3fbfbd2bbf294753f7be
+typeorm-fixtures https://github.com/RobinCK/typeorm-fixtures.git 9a26e30b8a803a7e69174b874ab4423779e8445d
+typedorm https://github.com/typedorm/typedorm.git cddbfa1fad7c664b9aa2612ccb18b85595fa840d
+discordx https://github.com/discordx-ts/discordx.git 017c6e8c34908e6ca359bed9986fff43c0ce41cc
+typescript-rest https://github.com/thiagobustamante/typescript-rest.git 43231cad663196888bc2ac1378dee7f323812527

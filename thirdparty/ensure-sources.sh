@@ -91,7 +91,14 @@ def install(name, d):
     cmd = install_command(d)
     if cmd is None:
         return name, 'no lockfile', 0, ''
-    env = {**os.environ, 'PATH': NODE_BIN + ':' + os.environ['PATH'], 'COREPACK_ENABLE_DOWNLOAD_PROMPT': '0',
+    # (A `yarn` on PATH for berry plugins that run it after the install, snaps' lifecycle plugin: corepack's)
+    shims = os.path.join(CACHE, 'shims')
+    if not os.path.exists(os.path.join(shims, 'yarn')):
+        os.makedirs(shims, exist_ok=True)
+        with open(os.path.join(shims, 'yarn'), 'w') as f:
+            f.write('#!/bin/sh\nexec corepack yarn "$@"\n')
+        os.chmod(os.path.join(shims, 'yarn'), 0o755)
+    env = {**os.environ, 'PATH': NODE_BIN + ':' + shims + ':' + os.environ['PATH'], 'COREPACK_ENABLE_DOWNLOAD_PROMPT': '0',
            'COREPACK_ENABLE_STRICT': '0', 'COREPACK_HOME': f'{CACHE}/corepack', 'CI': '1',
            'YARN_NODE_LINKER': 'node-modules', 'YARN_ENABLE_SCRIPTS': 'false', 'YARN_ENABLE_IMMUTABLE_INSTALLS': 'true',
            'YARN_ENABLE_GLOBAL_CACHE': 'true', 'YARN_GLOBAL_FOLDER': f'{CACHE}/berry', 'YARN_ENABLE_TELEMETRY': '0',
