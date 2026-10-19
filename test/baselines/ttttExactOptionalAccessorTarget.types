@@ -1,0 +1,97 @@
+//// [test/cases/ttttExactOptionalAccessorTarget.ts] ////
+
+=== ttttExactOptionalAccessorTarget.ts ===
+// An assignment to a property whose type holds the missing type is TS2412 whether or not the property is optional (tsc's
+// checkAssignmentOperator asks isExactOptionalPropertyMismatch of the property's type): an accessor whose getter returns
+// an optional property's read
+interface D { kind: "s"; a?: boolean }
+>kind : "s"
+>a : boolean | undefined
+
+class Inv {
+>Inv : Inv
+
+  private _d?: D;
+>_d : D | undefined
+
+  get d() { return this._d }
+>d : D | undefined
+>this._d : D | undefined
+>this : this
+>_d : D | undefined
+
+  set d(v: typeof this._d) { this._d = v }
+>d : D | undefined
+>v : D | undefined
+>this._d : D | undefined
+>this : this
+>_d : D | undefined
+>this._d = v : D | undefined
+>this._d : D
+>this : this
+>_d : D
+>v : D | undefined
+}
+declare const inv: Inv;
+>inv : Inv
+
+declare const src: { kind: "s"; a: boolean | undefined } | undefined;
+>src : { kind: "s"; a: boolean | undefined; } | undefined
+>kind : "s"
+>a : boolean | undefined
+
+inv.d = src;
+>inv.d = src : { kind: "s"; a: boolean | undefined; } | undefined
+>inv.d : D | undefined
+>inv : Inv
+>d : D | undefined
+>src : { kind: "s"; a: boolean | undefined; } | undefined
+
+class Inv2 {
+>Inv2 : Inv2
+
+  private _d?: D;
+>_d : D | undefined
+
+  get d() { return this._d }
+>d : D | undefined
+>this._d : D | undefined
+>this : this
+>_d : D | undefined
+
+  set d(v) { this._d = v }
+>d : D | undefined
+>v : D | undefined
+>this._d = v : D | undefined
+>this._d : D
+>this : this
+>_d : D
+>v : D | undefined
+}
+declare const inv2: Inv2;
+>inv2 : Inv2
+
+inv2.d = src;
+>inv2.d = src : { kind: "s"; a: boolean | undefined; } | undefined
+>inv2.d : D | undefined
+>inv2 : Inv2
+>d : D | undefined
+>src : { kind: "s"; a: boolean | undefined; } | undefined
+
+declare const o: { x?: D };
+>o : { x?: D; }
+>x : D | undefined
+
+const r = o.x;
+>r : D | undefined
+>o.x : D | undefined
+>o : { x?: D; }
+>x : D | undefined
+
+let q: typeof o.x = src;
+>q : D | undefined
+>o.x : D | undefined
+>o : { x?: D; }
+>x : D | undefined
+>src : { kind: "s"; a: boolean | undefined; } | undefined
+

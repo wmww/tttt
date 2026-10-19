@@ -242,12 +242,6 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
     tttt too; not reduced.
   - xstate/sloppy spurious TS5115 (type_core.md), webpack/nuia UmdLibraryPlugin.js (triage.md), the -TS7006 in vue's
     pluginScoped.ts (above).
-  - vscode/eopt stateToProgressAdapter.ts:453 TS2412->TS2322: `invocation.toolSpecificData = ...` where the property
-    is an accessor pair whose getter returns `this._toolSpecificData` (an optional property): tsgo's getter type keeps
-    the missing type of the read, so isExactOptionalPropertyMismatch is true (TS2412); tttt only says TS2412 for a
-    property declared optional (ty_check_assignable_to_access). Reduced: `class Inv { private _d?: D; get d() { return
-    this._d } set d(v: typeof this._d) {...} }` and `inv.d = src` with src `{ kind: "s"; a: boolean | undefined } |
-    undefined` against `D { kind: "s"; a?: boolean }`. Needs the missing type to survive reads (deep).
 
 ## TS 7.1 window leftovers (triage 2026-10-09)
 - **Suggestion diagnostics** (harness only, `@captureSuggestions`): TS6807 overshifts and TS6385 'x' is deprecated for

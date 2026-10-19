@@ -1,0 +1,99 @@
+//// [test/cases/ttttExactOptionalAccessorTarget.ts] ////
+
+=== ttttExactOptionalAccessorTarget.ts ===
+// An assignment to a property whose type holds the missing type is TS2412 whether or not the property is optional (tsc's
+// checkAssignmentOperator asks isExactOptionalPropertyMismatch of the property's type): an accessor whose getter returns
+// an optional property's read
+interface D { kind: "s"; a?: boolean }
+>D : Symbol(D, Decl(ttttExactOptionalAccessorTarget.ts, 0, 0))
+>kind : Symbol(D.kind, Decl(ttttExactOptionalAccessorTarget.ts, 3, 13))
+>a : Symbol(D.a, Decl(ttttExactOptionalAccessorTarget.ts, 3, 24))
+
+class Inv {
+>Inv : Symbol(Inv, Decl(ttttExactOptionalAccessorTarget.ts, 3, 38))
+
+  private _d?: D;
+>_d : Symbol(Inv._d, Decl(ttttExactOptionalAccessorTarget.ts, 4, 11))
+>D : Symbol(D, Decl(ttttExactOptionalAccessorTarget.ts, 0, 0))
+
+  get d() { return this._d }
+>d : Symbol(Inv.d, Decl(ttttExactOptionalAccessorTarget.ts, 5, 17), Decl(ttttExactOptionalAccessorTarget.ts, 6, 28))
+>this._d : Symbol(Inv._d, Decl(ttttExactOptionalAccessorTarget.ts, 4, 11))
+>this : Symbol(Inv, Decl(ttttExactOptionalAccessorTarget.ts, 3, 38))
+>_d : Symbol(Inv._d, Decl(ttttExactOptionalAccessorTarget.ts, 4, 11))
+
+  set d(v: typeof this._d) { this._d = v }
+>d : Symbol(Inv.d, Decl(ttttExactOptionalAccessorTarget.ts, 5, 17), Decl(ttttExactOptionalAccessorTarget.ts, 6, 28))
+>v : Symbol(v, Decl(ttttExactOptionalAccessorTarget.ts, 7, 8))
+>this._d : Symbol(Inv._d, Decl(ttttExactOptionalAccessorTarget.ts, 4, 11))
+>this : Symbol(Inv, Decl(ttttExactOptionalAccessorTarget.ts, 3, 38))
+>_d : Symbol(Inv._d, Decl(ttttExactOptionalAccessorTarget.ts, 4, 11))
+>this._d : Symbol(Inv._d, Decl(ttttExactOptionalAccessorTarget.ts, 4, 11))
+>this : Symbol(Inv, Decl(ttttExactOptionalAccessorTarget.ts, 3, 38))
+>_d : Symbol(Inv._d, Decl(ttttExactOptionalAccessorTarget.ts, 4, 11))
+>v : Symbol(v, Decl(ttttExactOptionalAccessorTarget.ts, 7, 8))
+}
+declare const inv: Inv;
+>inv : Symbol(inv, Decl(ttttExactOptionalAccessorTarget.ts, 9, 13))
+>Inv : Symbol(Inv, Decl(ttttExactOptionalAccessorTarget.ts, 3, 38))
+
+declare const src: { kind: "s"; a: boolean | undefined } | undefined;
+>src : Symbol(src, Decl(ttttExactOptionalAccessorTarget.ts, 10, 13))
+>kind : Symbol(kind, Decl(ttttExactOptionalAccessorTarget.ts, 10, 20))
+>a : Symbol(a, Decl(ttttExactOptionalAccessorTarget.ts, 10, 31))
+
+inv.d = src;
+>inv.d : Symbol(Inv.d, Decl(ttttExactOptionalAccessorTarget.ts, 5, 17), Decl(ttttExactOptionalAccessorTarget.ts, 6, 28))
+>inv : Symbol(inv, Decl(ttttExactOptionalAccessorTarget.ts, 9, 13))
+>d : Symbol(Inv.d, Decl(ttttExactOptionalAccessorTarget.ts, 5, 17), Decl(ttttExactOptionalAccessorTarget.ts, 6, 28))
+>src : Symbol(src, Decl(ttttExactOptionalAccessorTarget.ts, 10, 13))
+
+class Inv2 {
+>Inv2 : Symbol(Inv2, Decl(ttttExactOptionalAccessorTarget.ts, 11, 12))
+
+  private _d?: D;
+>_d : Symbol(Inv2._d, Decl(ttttExactOptionalAccessorTarget.ts, 12, 12))
+>D : Symbol(D, Decl(ttttExactOptionalAccessorTarget.ts, 0, 0))
+
+  get d() { return this._d }
+>d : Symbol(Inv2.d, Decl(ttttExactOptionalAccessorTarget.ts, 13, 17), Decl(ttttExactOptionalAccessorTarget.ts, 14, 28))
+>this._d : Symbol(Inv2._d, Decl(ttttExactOptionalAccessorTarget.ts, 12, 12))
+>this : Symbol(Inv2, Decl(ttttExactOptionalAccessorTarget.ts, 11, 12))
+>_d : Symbol(Inv2._d, Decl(ttttExactOptionalAccessorTarget.ts, 12, 12))
+
+  set d(v) { this._d = v }
+>d : Symbol(Inv2.d, Decl(ttttExactOptionalAccessorTarget.ts, 13, 17), Decl(ttttExactOptionalAccessorTarget.ts, 14, 28))
+>v : Symbol(v, Decl(ttttExactOptionalAccessorTarget.ts, 15, 8))
+>this._d : Symbol(Inv2._d, Decl(ttttExactOptionalAccessorTarget.ts, 12, 12))
+>this : Symbol(Inv2, Decl(ttttExactOptionalAccessorTarget.ts, 11, 12))
+>_d : Symbol(Inv2._d, Decl(ttttExactOptionalAccessorTarget.ts, 12, 12))
+>v : Symbol(v, Decl(ttttExactOptionalAccessorTarget.ts, 15, 8))
+}
+declare const inv2: Inv2;
+>inv2 : Symbol(inv2, Decl(ttttExactOptionalAccessorTarget.ts, 17, 13))
+>Inv2 : Symbol(Inv2, Decl(ttttExactOptionalAccessorTarget.ts, 11, 12))
+
+inv2.d = src;
+>inv2.d : Symbol(Inv2.d, Decl(ttttExactOptionalAccessorTarget.ts, 13, 17), Decl(ttttExactOptionalAccessorTarget.ts, 14, 28))
+>inv2 : Symbol(inv2, Decl(ttttExactOptionalAccessorTarget.ts, 17, 13))
+>d : Symbol(Inv2.d, Decl(ttttExactOptionalAccessorTarget.ts, 13, 17), Decl(ttttExactOptionalAccessorTarget.ts, 14, 28))
+>src : Symbol(src, Decl(ttttExactOptionalAccessorTarget.ts, 10, 13))
+
+declare const o: { x?: D };
+>o : Symbol(o, Decl(ttttExactOptionalAccessorTarget.ts, 19, 13))
+>x : Symbol(x, Decl(ttttExactOptionalAccessorTarget.ts, 19, 18))
+>D : Symbol(D, Decl(ttttExactOptionalAccessorTarget.ts, 0, 0))
+
+const r = o.x;
+>r : Symbol(r, Decl(ttttExactOptionalAccessorTarget.ts, 20, 5))
+>o.x : Symbol(x, Decl(ttttExactOptionalAccessorTarget.ts, 19, 18))
+>o : Symbol(o, Decl(ttttExactOptionalAccessorTarget.ts, 19, 13))
+>x : Symbol(x, Decl(ttttExactOptionalAccessorTarget.ts, 19, 18))
+
+let q: typeof o.x = src;
+>q : Symbol(q, Decl(ttttExactOptionalAccessorTarget.ts, 21, 3))
+>o.x : Symbol(x, Decl(ttttExactOptionalAccessorTarget.ts, 19, 18))
+>o : Symbol(o, Decl(ttttExactOptionalAccessorTarget.ts, 19, 13))
+>x : Symbol(x, Decl(ttttExactOptionalAccessorTarget.ts, 19, 18))
+>src : Symbol(src, Decl(ttttExactOptionalAccessorTarget.ts, 10, 13))
+

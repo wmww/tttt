@@ -905,6 +905,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExactOptionalAccessorTarget': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExpandoAssignmentsUnion': {
         errors: true,
         symbols: true,

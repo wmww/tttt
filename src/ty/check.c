@@ -1174,9 +1174,7 @@ bool ty_check_assignable_to_access(
         // (Of the object's apparent type, a type parameter's constraint or a class's `this`: tsc's getTypeOfPropertyOfType)
         FoundProp prop = name ? ty_find_prop(me, ty_apparent_type(me, ty_expr_type(me, &left->property->expr)), name) :
             (FoundProp){0};
-        if (prop.found && (prop.flags & PROP_OPTIONAL) &&
-            ty_exact_optional_mismatch(me, source, prop.type)
-        ) {
+        if (prop.found && ty_exact_optional_mismatch(me, source, prop.type)) {
             head = HEAD_EXACT_PROP;
         }
     }

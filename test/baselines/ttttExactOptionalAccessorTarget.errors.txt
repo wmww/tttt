@@ -1,0 +1,69 @@
+ttttExactOptionalAccessorTarget.ts(8,30): error TS2412: Type 'D | undefined' is not assignable to type 'D' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.
+  Type 'undefined' is not assignable to type 'D'.
+ttttExactOptionalAccessorTarget.ts(12,1): error TS2412: Type '{ kind: "s"; a: boolean | undefined; } | undefined' is not assignable to type 'D | undefined' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.
+  Type '{ kind: "s"; a: boolean | undefined; }' is not assignable to type 'D' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Types of property 'a' are incompatible.
+      Type 'boolean | undefined' is not assignable to type 'boolean'.
+        Type 'undefined' is not assignable to type 'boolean'.
+ttttExactOptionalAccessorTarget.ts(16,14): error TS2412: Type 'D | undefined' is not assignable to type 'D' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.
+  Type 'undefined' is not assignable to type 'D'.
+ttttExactOptionalAccessorTarget.ts(19,1): error TS2412: Type '{ kind: "s"; a: boolean | undefined; } | undefined' is not assignable to type 'D | undefined' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.
+  Type '{ kind: "s"; a: boolean | undefined; }' is not assignable to type 'D' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Types of property 'a' are incompatible.
+      Type 'boolean | undefined' is not assignable to type 'boolean'.
+        Type 'undefined' is not assignable to type 'boolean'.
+ttttExactOptionalAccessorTarget.ts(22,5): error TS2322: Type '{ kind: "s"; a: boolean | undefined; } | undefined' is not assignable to type 'D | undefined'.
+  Type '{ kind: "s"; a: boolean | undefined; }' is not assignable to type 'D' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Types of property 'a' are incompatible.
+      Type 'boolean | undefined' is not assignable to type 'boolean'.
+        Type 'undefined' is not assignable to type 'boolean'.
+
+
+==== ttttExactOptionalAccessorTarget.ts (5 errors) ====
+    // An assignment to a property whose type holds the missing type is TS2412 whether or not the property is optional (tsc's
+    // checkAssignmentOperator asks isExactOptionalPropertyMismatch of the property's type): an accessor whose getter returns
+    // an optional property's read
+    interface D { kind: "s"; a?: boolean }
+    class Inv {
+      private _d?: D;
+      get d() { return this._d }
+      set d(v: typeof this._d) { this._d = v }
+                                 ~~~~~~~
+!!! error TS2412: Type 'D | undefined' is not assignable to type 'D' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.
+!!! error TS2412:   Type 'undefined' is not assignable to type 'D'.
+    }
+    declare const inv: Inv;
+    declare const src: { kind: "s"; a: boolean | undefined } | undefined;
+    inv.d = src;
+    ~~~~~
+!!! error TS2412: Type '{ kind: "s"; a: boolean | undefined; } | undefined' is not assignable to type 'D | undefined' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.
+!!! error TS2412:   Type '{ kind: "s"; a: boolean | undefined; }' is not assignable to type 'D' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2412:     Types of property 'a' are incompatible.
+!!! error TS2412:       Type 'boolean | undefined' is not assignable to type 'boolean'.
+!!! error TS2412:         Type 'undefined' is not assignable to type 'boolean'.
+    class Inv2 {
+      private _d?: D;
+      get d() { return this._d }
+      set d(v) { this._d = v }
+                 ~~~~~~~
+!!! error TS2412: Type 'D | undefined' is not assignable to type 'D' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.
+!!! error TS2412:   Type 'undefined' is not assignable to type 'D'.
+    }
+    declare const inv2: Inv2;
+    inv2.d = src;
+    ~~~~~~
+!!! error TS2412: Type '{ kind: "s"; a: boolean | undefined; } | undefined' is not assignable to type 'D | undefined' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.
+!!! error TS2412:   Type '{ kind: "s"; a: boolean | undefined; }' is not assignable to type 'D' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2412:     Types of property 'a' are incompatible.
+!!! error TS2412:       Type 'boolean | undefined' is not assignable to type 'boolean'.
+!!! error TS2412:         Type 'undefined' is not assignable to type 'boolean'.
+    declare const o: { x?: D };
+    const r = o.x;
+    let q: typeof o.x = src;
+        ~
+!!! error TS2322: Type '{ kind: "s"; a: boolean | undefined; } | undefined' is not assignable to type 'D | undefined'.
+!!! error TS2322:   Type '{ kind: "s"; a: boolean | undefined; }' is not assignable to type 'D' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2322:     Types of property 'a' are incompatible.
+!!! error TS2322:       Type 'boolean | undefined' is not assignable to type 'boolean'.
+!!! error TS2322:         Type 'undefined' is not assignable to type 'boolean'.
+    
