@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The source sweep (plan 52): tttt on ~150 real TypeScript repositories (test/sourcesweep/repos.txt, fetched and
-installed by thirdparty/ensure-sources.sh), every tsconfig.json in each checked with `-p`, compared with what tsc
-reports for it. tsc's verdicts are cached in test/sourcesweep/tsc.jsonl.gz (regenerate with --tsc, ~12 minutes on 4
+installed by thirdparty/ensure-sources.sh), every tsconfig.json in each checked with `-p` (REPO/path/to/dir), and every
+other tsconfig*.json no config extends (REPO/path/tsconfig.build.json), compared with what tsc reports for it. tsc's verdicts are cached in test/sourcesweep/tsc.jsonl.gz (regenerate with --tsc, ~12 minutes on 4
 cores, after changing the manifest or the oracle's pin). Most projects aren't clean under tsc (test configs without the runner's types,
 unbuilt references, fixtures): the oracle is tsc's output, not cleanliness. A crash, hang or memory runaway is listed
 first, then the diagnostics tttt gets wrong ranked by root cause across *repositories*, then projects: code and message
@@ -38,18 +38,37 @@ def list_repos():
     return [line.split()[0] for line in open(MANIFEST) if line.strip() and not line.startswith('#')]
 
 
-def list_projects(filter=None):
+def list_projects(filter=None, every_config=False):
     """Every directory with a tsconfig.json in every installed repo, as REPO/path (outside node_modules, outputs and
-    dot-directories)"""
+    dot-directories). every_config (the -p sweep's): also every other `tsconfig*.json` and `*.tsconfig.json` there, as
+    REPO/path/tsconfig.build.json, except the bases another config of the repo extends (`tsconfig.base.json`: nobody
+    checks one by itself, and without `include` it would take its whole directory). tsconfig.json keeps its directory
+    name, so the cached verdicts stay valid"""
     projects = []
     for repo in list_repos():
         base = os.path.join(SOURCES, repo)
         if not os.path.exists(os.path.join(base, '.tttt-installed')):
             continue
+        others, extended = [], set()
         for root, dirs, files in os.walk(base):
             dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS and not d.startswith('.'))
             if 'tsconfig.json' in files:
                 projects.append(os.path.relpath(root, SOURCES))
+            if not every_config:
+                continue
+            for f in sorted(files):
+                if not (re.fullmatch(r'tsconfig.*\.json', f) or f.endswith('.tsconfig.json')):
+                    continue
+                path = os.path.join(root, f)
+                if f != 'tsconfig.json':
+                    others.append(path)
+                c = jsonc(path)
+                ext = c.get('extends') if isinstance(c, dict) else None
+                for e in ext if isinstance(ext, list) else [ext]:
+                    if isinstance(e, str) and e.startswith('.'):
+                        target = os.path.normpath(os.path.join(root, e))
+                        extended.update({target, target + '.json', os.path.join(target, 'tsconfig.json')})
+        projects += [os.path.relpath(p, SOURCES) for p in others if p not in extended]
     if filter:
         projects = [p for p in projects if re.search(filter, p)]
     return projects
@@ -219,7 +238,7 @@ def main():
     args = ap.parse_args()
 
     global LAST, ORACLE
-    projects = (list_build_projects if args.build else list_projects)(args.filter)
+    projects = list_build_projects(args.filter) if args.build else list_projects(args.filter, every_config=True)
     if args.build:
         ORACLE = BUILD_ORACLE
         LAST = LAST.replace('.json', '-build.json')
