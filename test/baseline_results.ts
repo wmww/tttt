@@ -1644,6 +1644,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSignatureDefaultInstantiated': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttSignatureMessageTruncation': {
         errors: true,
         symbols: true,

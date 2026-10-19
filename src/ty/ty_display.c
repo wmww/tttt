@@ -3899,6 +3899,9 @@ static bool mentions_mapped(Checker* me, Signature const* sig, Signature const* 
     for (u32 i = 0; i < root->type_params.len; i++) {
         Ty const* constraint = ty_param_constraint(me, root->type_params.data[i]);
         if (constraint && mentions(me, constraint, mapped)) return true;
+        // (A default too, `ext<E = Options>()`: printed `<E = string>` for Ext<string>)
+        Ty const* fallback = ty_param_default(me, root->type_params.data[i]);
+        if (fallback && mentions(me, fallback, mapped)) return true;
     }
     TyPredicate const* predicate = signature_predicate(me, root);
     if (predicate && predicate->type && mentions(me, predicate->type, mapped)) return true;

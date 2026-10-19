@@ -1,0 +1,47 @@
+ttttSignatureDefaultInstantiated.ts(10,7): error TS2322: Type '<EO = string, ES = number>(c?: EO | undefined) => Ext<EO, ES>' is not assignable to type 'number'.
+ttttSignatureDefaultInstantiated.ts(12,7): error TS2322: Type '(<EO = any, ES = any>(c?: EO | undefined) => Ext<EO, ES>) | (<EO = any, ES = any>(c?: ES | undefined) => Mk<EO, ES>)' is not assignable to type 'number'.
+  Type '<EO = any, ES = any>(c?: EO | undefined) => Ext<EO, ES>' is not assignable to type 'number'.
+ttttSignatureDefaultInstantiated.ts(13,1): error TS2349: This expression is not callable.
+  No constituent of type 'Ext<any, any> | Mk<any, any>' is callable.
+ttttSignatureDefaultInstantiated.ts(14,7): error TS2322: Type 'Ext<string, number>' is not assignable to type 'number'.
+ttttSignatureDefaultInstantiated.ts(20,7): error TS2322: Type '<EO extends string, ES = number>(c?: EO | undefined) => Ext2<EO, ES>' is not assignable to type 'number'.
+ttttSignatureDefaultInstantiated.ts(21,7): error TS2322: Type '<EO = string>(c?: EO | undefined) => Ext2<EO, any>' is not assignable to type 'number'.
+
+
+==== ttttSignatureDefaultInstantiated.ts (6 errors) ====
+    // An instantiated method whose class type parameters only its type parameters' defaults mention prints the defaults
+    // instantiated (tsc's isTypeParameterPossiblyReferenced sees them, the signature is instantiated)
+    declare class Ext<Options = any, Storage = any> {
+      extend<EO = Options, ES = Storage>(c?: EO): Ext<EO, ES>;
+    }
+    declare class Mk<Options = any, Storage = any> {
+      extend<EO = Options, ES = Storage>(c?: ES): Mk<EO, ES>;
+    }
+    declare const e: Ext<string, number>;
+    const n1: number = e.extend;
+          ~~
+!!! error TS2322: Type '<EO = string, ES = number>(c?: EO | undefined) => Ext<EO, ES>' is not assignable to type 'number'.
+    declare const u: Ext | Mk;
+    const n2: number = u.extend;
+          ~~
+!!! error TS2322: Type '(<EO = any, ES = any>(c?: EO | undefined) => Ext<EO, ES>) | (<EO = any, ES = any>(c?: ES | undefined) => Mk<EO, ES>)' is not assignable to type 'number'.
+!!! error TS2322:   Type '<EO = any, ES = any>(c?: EO | undefined) => Ext<EO, ES>' is not assignable to type 'number'.
+    u.extend(1)(2);
+    ~~~~~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   No constituent of type 'Ext<any, any> | Mk<any, any>' is callable.
+    const n3: number = e.extend();
+          ~~
+!!! error TS2322: Type 'Ext<string, number>' is not assignable to type 'number'.
+    declare class Ext2<Options = any, Storage = any> {
+      extend<EO extends Options, ES = Storage>(c?: EO): Ext2<EO, ES>;
+      ext2<EO = Options>(c?: EO): Ext2<EO>;
+    }
+    declare const e2: Ext2<string, number>;
+    const m1: number = e2.extend;
+          ~~
+!!! error TS2322: Type '<EO extends string, ES = number>(c?: EO | undefined) => Ext2<EO, ES>' is not assignable to type 'number'.
+    const m2: number = e2.ext2;
+          ~~
+!!! error TS2322: Type '<EO = string>(c?: EO | undefined) => Ext2<EO, any>' is not assignable to type 'number'.
+    

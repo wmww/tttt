@@ -1,0 +1,79 @@
+//// [test/cases/ttttSignatureDefaultInstantiated.ts] ////
+
+=== ttttSignatureDefaultInstantiated.ts ===
+// An instantiated method whose class type parameters only its type parameters' defaults mention prints the defaults
+// instantiated (tsc's isTypeParameterPossiblyReferenced sees them, the signature is instantiated)
+declare class Ext<Options = any, Storage = any> {
+>Ext : Ext<Options, Storage>
+
+  extend<EO = Options, ES = Storage>(c?: EO): Ext<EO, ES>;
+>extend : <EO = Options, ES = Storage>(c?: EO) => Ext<EO, ES>
+>c : EO | undefined
+}
+declare class Mk<Options = any, Storage = any> {
+>Mk : Mk<Options, Storage>
+
+  extend<EO = Options, ES = Storage>(c?: ES): Mk<EO, ES>;
+>extend : <EO = Options, ES = Storage>(c?: ES) => Mk<EO, ES>
+>c : ES | undefined
+}
+declare const e: Ext<string, number>;
+>e : Ext<string, number>
+
+const n1: number = e.extend;
+>n1 : number
+>e.extend : <EO = string, ES = number>(c?: EO | undefined) => Ext<EO, ES>
+>e : Ext<string, number>
+>extend : <EO = string, ES = number>(c?: EO | undefined) => Ext<EO, ES>
+
+declare const u: Ext | Mk;
+>u : Ext<any, any> | Mk<any, any>
+
+const n2: number = u.extend;
+>n2 : number
+>u.extend : (<EO = any, ES = any>(c?: EO | undefined) => Ext<EO, ES>) | (<EO = any, ES = any>(c?: ES | undefined) => Mk<EO, ES>)
+>u : Ext<any, any> | Mk<any, any>
+>extend : (<EO = any, ES = any>(c?: EO | undefined) => Ext<EO, ES>) | (<EO = any, ES = any>(c?: ES | undefined) => Mk<EO, ES>)
+
+u.extend(1)(2);
+>u.extend(1)(2) : any
+>u.extend(1) : Ext<any, any> | Mk<any, any>
+>u.extend : (<EO = any, ES = any>(c?: EO | undefined) => Ext<EO, ES>) | (<EO = any, ES = any>(c?: ES | undefined) => Mk<EO, ES>)
+>u : Ext<any, any> | Mk<any, any>
+>extend : (<EO = any, ES = any>(c?: EO | undefined) => Ext<EO, ES>) | (<EO = any, ES = any>(c?: ES | undefined) => Mk<EO, ES>)
+>1 : 1
+>2 : 2
+
+const n3: number = e.extend();
+>n3 : number
+>e.extend() : Ext<string, number>
+>e.extend : <EO = string, ES = number>(c?: EO | undefined) => Ext<EO, ES>
+>e : Ext<string, number>
+>extend : <EO = string, ES = number>(c?: EO | undefined) => Ext<EO, ES>
+
+declare class Ext2<Options = any, Storage = any> {
+>Ext2 : Ext2<Options, Storage>
+
+  extend<EO extends Options, ES = Storage>(c?: EO): Ext2<EO, ES>;
+>extend : <EO extends Options, ES = Storage>(c?: EO) => Ext2<EO, ES>
+>c : EO | undefined
+
+  ext2<EO = Options>(c?: EO): Ext2<EO>;
+>ext2 : <EO = Options>(c?: EO) => Ext2<EO>
+>c : EO | undefined
+}
+declare const e2: Ext2<string, number>;
+>e2 : Ext2<string, number>
+
+const m1: number = e2.extend;
+>m1 : number
+>e2.extend : <EO extends string, ES = number>(c?: EO | undefined) => Ext2<EO, ES>
+>e2 : Ext2<string, number>
+>extend : <EO extends string, ES = number>(c?: EO | undefined) => Ext2<EO, ES>
+
+const m2: number = e2.ext2;
+>m2 : number
+>e2.ext2 : <EO = string>(c?: EO | undefined) => Ext2<EO, any>
+>e2 : Ext2<string, number>
+>ext2 : <EO = string>(c?: EO | undefined) => Ext2<EO, any>
+

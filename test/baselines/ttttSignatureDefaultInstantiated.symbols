@@ -1,0 +1,113 @@
+//// [test/cases/ttttSignatureDefaultInstantiated.ts] ////
+
+=== ttttSignatureDefaultInstantiated.ts ===
+// An instantiated method whose class type parameters only its type parameters' defaults mention prints the defaults
+// instantiated (tsc's isTypeParameterPossiblyReferenced sees them, the signature is instantiated)
+declare class Ext<Options = any, Storage = any> {
+>Ext : Symbol(Ext, Decl(ttttSignatureDefaultInstantiated.ts, 0, 0))
+>Options : Symbol(Options, Decl(ttttSignatureDefaultInstantiated.ts, 2, 18))
+>Storage : Symbol(Storage, Decl(ttttSignatureDefaultInstantiated.ts, 2, 32))
+
+  extend<EO = Options, ES = Storage>(c?: EO): Ext<EO, ES>;
+>extend : Symbol(Ext.extend, Decl(ttttSignatureDefaultInstantiated.ts, 2, 49))
+>EO : Symbol(EO, Decl(ttttSignatureDefaultInstantiated.ts, 3, 9))
+>Options : Symbol(Options, Decl(ttttSignatureDefaultInstantiated.ts, 2, 18))
+>ES : Symbol(ES, Decl(ttttSignatureDefaultInstantiated.ts, 3, 22))
+>Storage : Symbol(Storage, Decl(ttttSignatureDefaultInstantiated.ts, 2, 32))
+>c : Symbol(c, Decl(ttttSignatureDefaultInstantiated.ts, 3, 37))
+>EO : Symbol(EO, Decl(ttttSignatureDefaultInstantiated.ts, 3, 9))
+>Ext : Symbol(Ext, Decl(ttttSignatureDefaultInstantiated.ts, 0, 0))
+>EO : Symbol(EO, Decl(ttttSignatureDefaultInstantiated.ts, 3, 9))
+>ES : Symbol(ES, Decl(ttttSignatureDefaultInstantiated.ts, 3, 22))
+}
+declare class Mk<Options = any, Storage = any> {
+>Mk : Symbol(Mk, Decl(ttttSignatureDefaultInstantiated.ts, 4, 1))
+>Options : Symbol(Options, Decl(ttttSignatureDefaultInstantiated.ts, 5, 17))
+>Storage : Symbol(Storage, Decl(ttttSignatureDefaultInstantiated.ts, 5, 31))
+
+  extend<EO = Options, ES = Storage>(c?: ES): Mk<EO, ES>;
+>extend : Symbol(Mk.extend, Decl(ttttSignatureDefaultInstantiated.ts, 5, 48))
+>EO : Symbol(EO, Decl(ttttSignatureDefaultInstantiated.ts, 6, 9))
+>Options : Symbol(Options, Decl(ttttSignatureDefaultInstantiated.ts, 5, 17))
+>ES : Symbol(ES, Decl(ttttSignatureDefaultInstantiated.ts, 6, 22))
+>Storage : Symbol(Storage, Decl(ttttSignatureDefaultInstantiated.ts, 5, 31))
+>c : Symbol(c, Decl(ttttSignatureDefaultInstantiated.ts, 6, 37))
+>ES : Symbol(ES, Decl(ttttSignatureDefaultInstantiated.ts, 6, 22))
+>Mk : Symbol(Mk, Decl(ttttSignatureDefaultInstantiated.ts, 4, 1))
+>EO : Symbol(EO, Decl(ttttSignatureDefaultInstantiated.ts, 6, 9))
+>ES : Symbol(ES, Decl(ttttSignatureDefaultInstantiated.ts, 6, 22))
+}
+declare const e: Ext<string, number>;
+>e : Symbol(e, Decl(ttttSignatureDefaultInstantiated.ts, 8, 13))
+>Ext : Symbol(Ext, Decl(ttttSignatureDefaultInstantiated.ts, 0, 0))
+
+const n1: number = e.extend;
+>n1 : Symbol(n1, Decl(ttttSignatureDefaultInstantiated.ts, 9, 5))
+>e.extend : Symbol(Ext.extend, Decl(ttttSignatureDefaultInstantiated.ts, 2, 49))
+>e : Symbol(e, Decl(ttttSignatureDefaultInstantiated.ts, 8, 13))
+>extend : Symbol(Ext.extend, Decl(ttttSignatureDefaultInstantiated.ts, 2, 49))
+
+declare const u: Ext | Mk;
+>u : Symbol(u, Decl(ttttSignatureDefaultInstantiated.ts, 10, 13))
+>Ext : Symbol(Ext, Decl(ttttSignatureDefaultInstantiated.ts, 0, 0))
+>Mk : Symbol(Mk, Decl(ttttSignatureDefaultInstantiated.ts, 4, 1))
+
+const n2: number = u.extend;
+>n2 : Symbol(n2, Decl(ttttSignatureDefaultInstantiated.ts, 11, 5))
+>u.extend : Symbol(extend, Decl(ttttSignatureDefaultInstantiated.ts, 2, 49), Decl(ttttSignatureDefaultInstantiated.ts, 5, 48))
+>u : Symbol(u, Decl(ttttSignatureDefaultInstantiated.ts, 10, 13))
+>extend : Symbol(extend, Decl(ttttSignatureDefaultInstantiated.ts, 2, 49), Decl(ttttSignatureDefaultInstantiated.ts, 5, 48))
+
+u.extend(1)(2);
+>u.extend : Symbol(extend, Decl(ttttSignatureDefaultInstantiated.ts, 2, 49), Decl(ttttSignatureDefaultInstantiated.ts, 5, 48))
+>u : Symbol(u, Decl(ttttSignatureDefaultInstantiated.ts, 10, 13))
+>extend : Symbol(extend, Decl(ttttSignatureDefaultInstantiated.ts, 2, 49), Decl(ttttSignatureDefaultInstantiated.ts, 5, 48))
+
+const n3: number = e.extend();
+>n3 : Symbol(n3, Decl(ttttSignatureDefaultInstantiated.ts, 13, 5))
+>e.extend : Symbol(Ext.extend, Decl(ttttSignatureDefaultInstantiated.ts, 2, 49))
+>e : Symbol(e, Decl(ttttSignatureDefaultInstantiated.ts, 8, 13))
+>extend : Symbol(Ext.extend, Decl(ttttSignatureDefaultInstantiated.ts, 2, 49))
+
+declare class Ext2<Options = any, Storage = any> {
+>Ext2 : Symbol(Ext2, Decl(ttttSignatureDefaultInstantiated.ts, 13, 30))
+>Options : Symbol(Options, Decl(ttttSignatureDefaultInstantiated.ts, 14, 19))
+>Storage : Symbol(Storage, Decl(ttttSignatureDefaultInstantiated.ts, 14, 33))
+
+  extend<EO extends Options, ES = Storage>(c?: EO): Ext2<EO, ES>;
+>extend : Symbol(Ext2.extend, Decl(ttttSignatureDefaultInstantiated.ts, 14, 50))
+>EO : Symbol(EO, Decl(ttttSignatureDefaultInstantiated.ts, 15, 9))
+>Options : Symbol(Options, Decl(ttttSignatureDefaultInstantiated.ts, 14, 19))
+>ES : Symbol(ES, Decl(ttttSignatureDefaultInstantiated.ts, 15, 28))
+>Storage : Symbol(Storage, Decl(ttttSignatureDefaultInstantiated.ts, 14, 33))
+>c : Symbol(c, Decl(ttttSignatureDefaultInstantiated.ts, 15, 43))
+>EO : Symbol(EO, Decl(ttttSignatureDefaultInstantiated.ts, 15, 9))
+>Ext2 : Symbol(Ext2, Decl(ttttSignatureDefaultInstantiated.ts, 13, 30))
+>EO : Symbol(EO, Decl(ttttSignatureDefaultInstantiated.ts, 15, 9))
+>ES : Symbol(ES, Decl(ttttSignatureDefaultInstantiated.ts, 15, 28))
+
+  ext2<EO = Options>(c?: EO): Ext2<EO>;
+>ext2 : Symbol(Ext2.ext2, Decl(ttttSignatureDefaultInstantiated.ts, 15, 65))
+>EO : Symbol(EO, Decl(ttttSignatureDefaultInstantiated.ts, 16, 7))
+>Options : Symbol(Options, Decl(ttttSignatureDefaultInstantiated.ts, 14, 19))
+>c : Symbol(c, Decl(ttttSignatureDefaultInstantiated.ts, 16, 21))
+>EO : Symbol(EO, Decl(ttttSignatureDefaultInstantiated.ts, 16, 7))
+>Ext2 : Symbol(Ext2, Decl(ttttSignatureDefaultInstantiated.ts, 13, 30))
+>EO : Symbol(EO, Decl(ttttSignatureDefaultInstantiated.ts, 16, 7))
+}
+declare const e2: Ext2<string, number>;
+>e2 : Symbol(e2, Decl(ttttSignatureDefaultInstantiated.ts, 18, 13))
+>Ext2 : Symbol(Ext2, Decl(ttttSignatureDefaultInstantiated.ts, 13, 30))
+
+const m1: number = e2.extend;
+>m1 : Symbol(m1, Decl(ttttSignatureDefaultInstantiated.ts, 19, 5))
+>e2.extend : Symbol(Ext2.extend, Decl(ttttSignatureDefaultInstantiated.ts, 14, 50))
+>e2 : Symbol(e2, Decl(ttttSignatureDefaultInstantiated.ts, 18, 13))
+>extend : Symbol(Ext2.extend, Decl(ttttSignatureDefaultInstantiated.ts, 14, 50))
+
+const m2: number = e2.ext2;
+>m2 : Symbol(m2, Decl(ttttSignatureDefaultInstantiated.ts, 20, 5))
+>e2.ext2 : Symbol(Ext2.ext2, Decl(ttttSignatureDefaultInstantiated.ts, 15, 65))
+>e2 : Symbol(e2, Decl(ttttSignatureDefaultInstantiated.ts, 18, 13))
+>ext2 : Symbol(Ext2.ext2, Decl(ttttSignatureDefaultInstantiated.ts, 15, 65))
+

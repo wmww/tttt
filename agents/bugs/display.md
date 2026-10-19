@@ -223,8 +223,7 @@ diagnostics). Left:
   `...`, and a TS2322 chain three lines shorter, `'undefined & TData' ... 'RegExp & CustomMaybeMaskedImplementation'`;
   tiptap/demos `JSX/{React,Vue}/Paragraph.tsx(6,3)` and 22 more: tsc
   elides `Record<...>` early inside the `this:` type and prints `{ HTMLAttributes }: { node: Node; ... }` later, tttt
-  the reverse, so tttt counts less before and more after; Extendable.test.ts's TS2349 prints a signature's type
-  parameter defaults `= any` where tttt has `= Options`, a different bug). Method that found rxjs's and mikro-orm's: a
+  the reverse, so tttt counts less before and more after; also MarkdownManager.test.ts:979). Method that found rxjs's and mikro-orm's: a
   /tmp overlay build of tsgo's cmd/tsc with nodebuilderimpl.go's typeToTypeNode logging `b.ctx.approximateLength` and
   the type's symbol on entry and exit (env-gated; `go build -overlay` with ensure-typescript.sh --env), against the same
   log of `*d.approx` around ty_display(); the first entry where the numbers part is the bug. The same logging at
