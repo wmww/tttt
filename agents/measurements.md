@@ -38,6 +38,38 @@ best wall s / CPU s / peak MB; drizzle's defaults above its K1 is the 4-core box
 | tanstack-router | 0.300 / 1.09 / 282 | 0.610 / 0.64 / 302 | 2.040 / 6.91 / 977 | 2.590 / 3.52 / 673 |
 | `-b` TypeScript6/src | 1.040 / 3.49 / 325 | - | 2.050 / 6.41 / 742 | 3.000 / 3.95 / 512 |
 
+## bun canary with oven-sh/bun#45800 (2026-10-19, the human's laptop)
+The bun developer claimed a 1.5-2x speedup in `bun check` over 1.4.3. It is oven-sh/bun PR #45800 ("`bun check`: 1.4x
+to 7.8x faster on large projects"), merged 2026-10-19 00:42 UTC, and it is in `@oven/bun-linux-x64@1.4.3-canary.20261019.1`
+(`--revision` 1.4.4-canary.1+6bb5dc195). The PR's ideas: one heavy-first file queue with no step barriers and results
+shared in small commits; union order from type contents rather than ids (our plan 86 stage 4 question); per-member
+union property position sets; memoized inference and cached conditional/mapped parts; 20-byte expressions; labelled
+tuples sharing members; a parallel loader. Same box as the section below, best of 3, wall s / CPU s / peak MB:
+| corpus | tttt K12 | bun 1.4.3 | bun canary | 1.4.3 / canary wall | tttt K1 | bun 1.4.3 single | bun canary single | 1.4.3 / canary single |
+|---|---|---|---|---|---|---|---|---|
+| TypeScript6 | 0.25 / 1.20 / 439 | 0.36 / 2.07 / 350 | 0.27 / 1.54 / 280 | 1.33 | 0.45 / 0.44 / 225 | 1.08 / 1.07 / 214 | 0.99 / 0.98 / 162 | 1.09 |
+| type-fest | 0.21 / 1.25 / 635 | 0.96 / 5.80 / 824 | 0.95 / 5.60 / 1020 | 1.01 | 0.65 / 0.64 / 428 | 3.74 / 3.73 / 1010 | 3.06 / 3.05 / 784 | 1.22 |
+| valibot | 0.13 / 1.13 / 399 | 0.23 / 2.90 / 277 | 0.14 / 2.26 / 268 | 1.64 | 0.39 / 0.39 / 255 | 1.10 / 1.09 / 277 | 1.18 / 1.18 / 158 | 0.93 |
+| bulletproof-react | 0.13 / 0.42 / 278 | 0.28 / 1.48 / 367 | 0.18 / 0.92 / 239 | 1.56 | 0.19 / 0.18 / 143 | 0.53 / 0.52 / 175 | 0.43 / 0.42 / 155 | 1.23 |
+| nestjs-boilerplate | 0.09 / 0.52 / 274 | 0.11 / 0.68 / 235 | 0.06 / 0.61 / 196 | 1.83 | 0.19 / 0.19 / 135 | 0.39 / 0.38 / 154 | 0.21 / 0.21 / 119 | 1.86 |
+| webpack | 0.31 / 2.83 / 606 | 0.57 / 5.60 / 526 | 0.40 / 4.35 / 515 | 1.42 | 1.00 / 0.99 / 527 | 1.96 / 1.95 / 374 | 1.71 / 1.70 / 335 | 1.15 |
+| zod | 0.21 / 1.94 / 598 | 0.36 / 3.79 / 508 | 0.21 / 2.85 / 391 | 1.71 | 0.56 / 0.55 / 393 | 1.74 / 1.74 / 389 | 1.05 / 1.04 / 212 | 1.66 |
+| xstate | 0.14 / 1.07 / 383 | 0.19 / 1.31 / 245 | 0.15 / 1.51 / 241 | 1.27 | 0.36 / 0.34 / 194 | 1.02 / 1.00 / 175 | 0.71 / 0.71 / 111 | 1.44 |
+| drizzle | 0.30 / 2.94 / 703 | 0.46 / 5.50 / 613 | 0.26 / 4.21 / 444 | 1.77 | 0.74 / 0.73 / 398 | 1.46 / 1.45 / 376 | 1.61 / 1.60 / 274 | 0.91 |
+| vue | 0.17 / 1.57 / 458 | 0.26 / 3.12 / 352 | 0.24 / 2.63 / 312 | 1.08 | 0.57 / 0.56 / 306 | 1.69 / 1.68 / 280 | 1.37 / 1.35 / 179 | 1.23 |
+| effect | 0.24 / 2.53 / 616 | 0.49 / 8.01 / 503 | 0.53 / 6.41 / 520 | 0.92 | 1.12 / 1.11 / 518 | 3.13 / 3.12 / 375 | 3.28 / 3.27 / 329 | 0.95 |
+| vscode | 2.44 / 25.09 / 1590 | 2.66 / 51.52 / 2128 | 2.00 / 42.95 / 2246 | 1.33 | 10.61 / 10.53 / 1369 | 19.27 / 19.21 / 1412 | 14.11 / 14.08 / 1654 | 1.37 |
+| excalidraw | 0.25 / 2.47 / 558 | 0.36 / 4.75 / 413 | 0.22 / 2.90 / 380 | 1.64 | 0.72 / 0.71 / 365 | 1.56 / 1.55 / 357 | 1.69 / 1.68 / 254 | 0.92 |
+| tanstack-router | 0.18 / 1.36 / 439 | 0.44 / 3.97 / 477 | 0.23 / 2.62 / 377 | 1.91 | 0.54 / 0.53 / 305 | 1.59 / 1.57 / 325 | 1.10 / 1.09 / 189 | 1.45 |
+- **The claim holds at the defaults, partly.** The median speedup is 1.5x (0.92 on effect, 1.01 on type-fest, 1.33
+  on vscode, up to 1.9 on tanstack and nest). Single-threaded it is 0.9-1.9x, with a median of 1.2.
+- **The canary beats tttt's wall at the defaults on 4 / 14**: vscode 2.00 against 2.44, drizzle 0.26 against 0.30,
+  excalidraw 0.22 against 0.25 and nest 0.06 against 0.09, with zod tied. tttt still uses less CPU everywhere (vscode
+  25 against 43 s) and is 1.1-2.9x faster single-threaded (vscode 10.6 against 14.1 s). The canary's peak is below
+  tttt's on 12 / 14 at the defaults; only type-fest and vscode are not.
+- **bun's output isn't tsc's.** It printed 21 errors on drizzle against tsc's 41 (1.4.3: 18), 0 on vscode against 10,
+  and 3 on effect against 5. bun targets 7.0.2. The difference has not been investigated.
+
 ## The 12-core box with PGO + LTO (2026-10-19, run by an agent on the human's laptop)
 AMD Ryzen AI 9 HX 370 (12 cores / 24 threads), 62 GB, GCC 16.2, idle (load ~1). `scripts/bench.sh --runs 3
 --checkers 24 --bun bun-1.4.3 --tscrs tsc-rs-0.7.0` with pgo/tttt; best wall s / CPU s (user + sys, median run) /

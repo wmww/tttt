@@ -52,6 +52,10 @@ re-saved baseline only.
 10. **Insights.** report.md: PGO + LTO shipped and what it bought (the human's 12-core rerun if it came), plan 86's
     gate number, plan 87's go/no-go, the fan-out's numbers. Whether 7.1.0 stable is out (plan 58). Whether the
     human answered on the many-core checker policy (their 12-core numbers with the CPU column).
+    **And bun canary** (oven-sh/bun#45800, measurements.md "bun canary with oven-sh/bun#45800") beats tttt's wall at
+    the defaults on vscode, drizzle, excalidraw and nest, which breaks the window's "faster than bun on every corpus"
+    rule. Re-weigh plan 86 against it: the PR shipped a heavy-first queue without barriers and shared results (stage 4's
+    territory). Its single-threaded speed and its CPU are still well behind tttt's.
 
 After the insights entry (for the next window): plan 86 stage 2 continues in perf slots, stage 3 (front end) after
 it; plan 86 stage 4's design session if the gate said go; plan 87 stages if go; a fourth refresh chosen by a new rule
