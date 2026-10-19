@@ -1,0 +1,19 @@
+//// [test/cases/ttttSideEffectImportTsExtension.ts] ////
+
+=== /init-env.mts ===
+
+export {};
+=== /other.mts ===
+export const x = 1;
+>x : 1
+>1 : 1
+
+=== /a.mts ===
+import './init-env.mts';
+import { x } from './other.mts';
+>x : 1
+
+export const y = x;
+>y : 1
+>x : 1
+

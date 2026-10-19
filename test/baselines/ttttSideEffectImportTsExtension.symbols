@@ -1,0 +1,18 @@
+//// [test/cases/ttttSideEffectImportTsExtension.ts] ////
+
+=== /init-env.mts ===
+
+export {};
+=== /other.mts ===
+export const x = 1;
+>x : Symbol(x, Decl(other.mts, 0, 12))
+
+=== /a.mts ===
+import './init-env.mts';
+import { x } from './other.mts';
+>x : Symbol(x, Decl(a.mts, 1, 8))
+
+export const y = x;
+>y : Symbol(y, Decl(a.mts, 2, 12))
+>x : Symbol(x, Decl(a.mts, 1, 8))
+

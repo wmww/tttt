@@ -553,7 +553,8 @@ void module_ref_report_resolved_import_type(ModuleRef const* me, ErrorCtx* errs)
     }
 }
 
-// side_effect: an import without a clause, `import "./a.ts"` (TS5097, but no TS2846: tsc's importOrExport is missing)
+// side_effect: an import without a clause, `import "./a.ts"`: neither TS5097 nor TS2846 (tsgo's resolveExternalModule
+// reports both only inside an IsEmittableImport, which an import declaration is only with a clause)
 void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_effect, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     report_types_package(me, errs);
@@ -581,7 +582,7 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_e
         (span_source(my span) && span_source(my span)->is_declaration);
     module_ref_report_require_of_esm(me, my span, errs);
     // (Not for a type-only import or export, or an import type: tsc's resolveExternalModule)
-    if (my used_ts_extension && !allowed && !type_only && my file && !dts.size) {
+    if (my used_ts_extension && !allowed && !type_only && !side_effect && my file && !dts.size) {
         isize dot = cstr_size(&my path);
         while (dot > 0 && cstr_str(&my path)[dot - 1] != '.') dot--;
         csview extension = csview_slice(cstr_sv(&my path), dot > 0 ? dot - 1 : 0, cstr_size(&my path));
