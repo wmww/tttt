@@ -1,0 +1,95 @@
+//// [test/cases/ttttNullishOperandContextualSignature.ts] ////
+
+=== ttttNullishOperandContextualSignature.ts ===
+// The operands of || and ?? are checked with the context a contextual signature sees and skipped by the first inference
+// pass when context sensitive, like a conditional's branches: the function gets the signature of the branch the call's
+// inference picks, `Resolver<Bd>`, not `Resolver<object>`. supabase studio's CreateCustomOidcDialog.test.tsx
+// `response ?? (async ({ request }) => HttpResponse.json(...))`
+declare class Box<T> { t: T; static of<T extends object | null>(body?: NoInfer<T>): Box<T> }
+>Box : Box<T>
+>t : T
+>of : <T extends object | null>(body?: NoInfer<T>) => Box<T>
+>body : NoInfer<T> | undefined
+
+type Resolver<R> = (info: { request: string }) => Box<R> | undefined;
+>Resolver : Resolver<R>
+>info : { request: string; }
+>request : string
+
+type Bd = { id: string };
+>Bd : Bd
+>id : string
+
+type Paths = { a: Bd };
+>Paths : Paths
+>a : Bd
+
+declare function add<P extends keyof Paths>(a: Paths[P] extends never ? { path: P; response?: Resolver<object> } : { path: P; response: Resolver<Paths[P]> }): void;
+>add : <P extends keyof Paths>(a: Paths[P] extends never ? { path: P; response?: Resolver<object>; } : { path: P; response: Resolver<Paths[P]>; }) => void
+>a : Paths[P] extends never ? { path: P; response?: Resolver<object>; } : { path: P; response: Resolver<Paths[P]>; }
+>path : P
+>response : Resolver<object> | undefined
+>path : P
+>response : Resolver<Paths[P]>
+
+declare const response: (() => undefined) | undefined;
+>response : (() => undefined) | undefined
+
+add({ path: 'a', response: response ?? (({ request }) => Box.of({ id: "0" })) });
+>add({ path: 'a', response: response ?? (({ request }) => Box.of({ id: "0" })) }) : void
+>add : <P extends keyof Paths>(a: Paths[P] extends never ? { path: P; response?: Resolver<object>; } : { path: P; response: Resolver<Paths[P]>; }) => void
+>{ path: 'a', response: response ?? (({ request }) => Box.of({ id: "0" })) } : { path: "a"; response: (() => undefined) | (({ request }: { request: string; }) => Box<Bd>); }
+>path : "a"
+>'a' : "a"
+>response : (() => undefined) | (({ request }: { request: string; }) => Box<Bd>)
+>response ?? (({ request }) => Box.of({ id: "0" })) : (() => undefined) | (({ request }: { request: string; }) => Box<Bd>)
+>response : (() => undefined) | undefined
+>(({ request }) => Box.of({ id: "0" })) : ({ request }: { request: string; }) => Box<Bd>
+>({ request }) => Box.of({ id: "0" }) : ({ request }: { request: string; }) => Box<Bd>
+>request : string
+>Box.of({ id: "0" }) : Box<Bd>
+>Box.of : <T extends object | null>(body?: NoInfer<T>) => Box<T>
+>Box : typeof Box
+>of : <T extends object | null>(body?: NoInfer<T>) => Box<T>
+>{ id: "0" } : { id: string; }
+>id : string
+>"0" : "0"
+
+add({ path: 'a', response: (({ request }) => Box.of({ id: "0" })) });
+>add({ path: 'a', response: (({ request }) => Box.of({ id: "0" })) }) : void
+>add : <P extends keyof Paths>(a: Paths[P] extends never ? { path: P; response?: Resolver<object>; } : { path: P; response: Resolver<Paths[P]>; }) => void
+>{ path: 'a', response: (({ request }) => Box.of({ id: "0" })) } : { path: "a"; response: ({ request }: { request: string; }) => Box<Bd>; }
+>path : "a"
+>'a' : "a"
+>response : ({ request }: { request: string; }) => Box<Bd>
+>(({ request }) => Box.of({ id: "0" })) : ({ request }: { request: string; }) => Box<Bd>
+>({ request }) => Box.of({ id: "0" }) : ({ request }: { request: string; }) => Box<Bd>
+>request : string
+>Box.of({ id: "0" }) : Box<Bd>
+>Box.of : <T extends object | null>(body?: NoInfer<T>) => Box<T>
+>Box : typeof Box
+>of : <T extends object | null>(body?: NoInfer<T>) => Box<T>
+>{ id: "0" } : { id: string; }
+>id : string
+>"0" : "0"
+
+add({ path: 'a', response: response || (({ request }) => Box.of({ id: "0" })) });
+>add({ path: 'a', response: response || (({ request }) => Box.of({ id: "0" })) }) : void
+>add : <P extends keyof Paths>(a: Paths[P] extends never ? { path: P; response?: Resolver<object>; } : { path: P; response: Resolver<Paths[P]>; }) => void
+>{ path: 'a', response: response || (({ request }) => Box.of({ id: "0" })) } : { path: "a"; response: (() => undefined) | (({ request }: { request: string; }) => Box<Bd>); }
+>path : "a"
+>'a' : "a"
+>response : (() => undefined) | (({ request }: { request: string; }) => Box<Bd>)
+>response || (({ request }) => Box.of({ id: "0" })) : (() => undefined) | (({ request }: { request: string; }) => Box<Bd>)
+>response : (() => undefined) | undefined
+>(({ request }) => Box.of({ id: "0" })) : ({ request }: { request: string; }) => Box<Bd>
+>({ request }) => Box.of({ id: "0" }) : ({ request }: { request: string; }) => Box<Bd>
+>request : string
+>Box.of({ id: "0" }) : Box<Bd>
+>Box.of : <T extends object | null>(body?: NoInfer<T>) => Box<T>
+>Box : typeof Box
+>of : <T extends object | null>(body?: NoInfer<T>) => Box<T>
+>{ id: "0" } : { id: string; }
+>id : string
+>"0" : "0"
+

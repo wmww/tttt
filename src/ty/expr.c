@@ -3122,12 +3122,21 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
         case BINARY_OP_OR_OR:
         case BINARY_OP_EH_EH: {
             // (The operands' contextual type is the expression's as written, see passed_on_context())
-            Ty const* passed = passed_on_context(ctx).contextual;
-            left = ty_check_expr(me, &binary->left, passed);
+            // (A context-sensitive function in either is left out of a first inference pass like anywhere else: tsc's
+            // check mode reaches both operands, so `response ?? (async ({ request }) => ...)` gets its contextual
+            // signature once the call inferred what it mentions)
+            // (And the view a contextual signature sees, like a conditional's branches: the second inference pass gives
+            // a function there the signature what the call inferred makes, not the one the first pass saw)
+            ExprCtx passed = passed_on_context(ctx);
+            passed.is_const = false;
+            passed.generic_mode = nullptr;
+            passed.template_context = false;
+            left = check_with(me, &binary->left, passed);
             // (The left operand's type when there is no contextual type, or when it is a binding pattern's: tsc's
             // getContextualTypeForBinaryOperand, `let { a, b } = opts ?? { a: new Set(), b: new Set() }`)
             bool from_pattern = ctx.contextual && (ctx.contextual->flags & TYF_BINDING_PATTERN);
-            right = ty_check_expr(me, &binary->right, ctx.contextual && !from_pattern ? passed : left);
+            right = check_with(me, &binary->right, ctx.contextual && !from_pattern ? passed :
+                (ExprCtx){ .contextual = left, .skip_sensitive = ctx.skip_sensitive });
             break;
         }
         case BINARY_OP_AND_AND:

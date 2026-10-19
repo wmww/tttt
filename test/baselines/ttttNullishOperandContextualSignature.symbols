@@ -1,0 +1,90 @@
+//// [test/cases/ttttNullishOperandContextualSignature.ts] ////
+
+=== ttttNullishOperandContextualSignature.ts ===
+// The operands of || and ?? are checked with the context a contextual signature sees and skipped by the first inference
+// pass when context sensitive, like a conditional's branches: the function gets the signature of the branch the call's
+// inference picks, `Resolver<Bd>`, not `Resolver<object>`. supabase studio's CreateCustomOidcDialog.test.tsx
+// `response ?? (async ({ request }) => HttpResponse.json(...))`
+declare class Box<T> { t: T; static of<T extends object | null>(body?: NoInfer<T>): Box<T> }
+>Box : Symbol(Box, Decl(ttttNullishOperandContextualSignature.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNullishOperandContextualSignature.ts, 4, 18))
+>t : Symbol(Box.t, Decl(ttttNullishOperandContextualSignature.ts, 4, 22))
+>T : Symbol(T, Decl(ttttNullishOperandContextualSignature.ts, 4, 18))
+>of : Symbol(Box.of, Decl(ttttNullishOperandContextualSignature.ts, 4, 28))
+>T : Symbol(T, Decl(ttttNullishOperandContextualSignature.ts, 4, 39))
+>body : Symbol(body, Decl(ttttNullishOperandContextualSignature.ts, 4, 64))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttNullishOperandContextualSignature.ts, 4, 39))
+>Box : Symbol(Box, Decl(ttttNullishOperandContextualSignature.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNullishOperandContextualSignature.ts, 4, 39))
+
+type Resolver<R> = (info: { request: string }) => Box<R> | undefined;
+>Resolver : Symbol(Resolver, Decl(ttttNullishOperandContextualSignature.ts, 4, 92))
+>R : Symbol(R, Decl(ttttNullishOperandContextualSignature.ts, 5, 14))
+>info : Symbol(info, Decl(ttttNullishOperandContextualSignature.ts, 5, 20))
+>request : Symbol(request, Decl(ttttNullishOperandContextualSignature.ts, 5, 27))
+>Box : Symbol(Box, Decl(ttttNullishOperandContextualSignature.ts, 0, 0))
+>R : Symbol(R, Decl(ttttNullishOperandContextualSignature.ts, 5, 14))
+
+type Bd = { id: string };
+>Bd : Symbol(Bd, Decl(ttttNullishOperandContextualSignature.ts, 5, 69))
+>id : Symbol(id, Decl(ttttNullishOperandContextualSignature.ts, 6, 11))
+
+type Paths = { a: Bd };
+>Paths : Symbol(Paths, Decl(ttttNullishOperandContextualSignature.ts, 6, 25))
+>a : Symbol(a, Decl(ttttNullishOperandContextualSignature.ts, 7, 14))
+>Bd : Symbol(Bd, Decl(ttttNullishOperandContextualSignature.ts, 5, 69))
+
+declare function add<P extends keyof Paths>(a: Paths[P] extends never ? { path: P; response?: Resolver<object> } : { path: P; response: Resolver<Paths[P]> }): void;
+>add : Symbol(add, Decl(ttttNullishOperandContextualSignature.ts, 7, 23))
+>P : Symbol(P, Decl(ttttNullishOperandContextualSignature.ts, 8, 21))
+>Paths : Symbol(Paths, Decl(ttttNullishOperandContextualSignature.ts, 6, 25))
+>a : Symbol(a, Decl(ttttNullishOperandContextualSignature.ts, 8, 44))
+>Paths : Symbol(Paths, Decl(ttttNullishOperandContextualSignature.ts, 6, 25))
+>P : Symbol(P, Decl(ttttNullishOperandContextualSignature.ts, 8, 21))
+>path : Symbol(path, Decl(ttttNullishOperandContextualSignature.ts, 8, 73))
+>P : Symbol(P, Decl(ttttNullishOperandContextualSignature.ts, 8, 21))
+>response : Symbol(response, Decl(ttttNullishOperandContextualSignature.ts, 8, 82))
+>Resolver : Symbol(Resolver, Decl(ttttNullishOperandContextualSignature.ts, 4, 92))
+>path : Symbol(path, Decl(ttttNullishOperandContextualSignature.ts, 8, 116))
+>P : Symbol(P, Decl(ttttNullishOperandContextualSignature.ts, 8, 21))
+>response : Symbol(response, Decl(ttttNullishOperandContextualSignature.ts, 8, 125))
+>Resolver : Symbol(Resolver, Decl(ttttNullishOperandContextualSignature.ts, 4, 92))
+>Paths : Symbol(Paths, Decl(ttttNullishOperandContextualSignature.ts, 6, 25))
+>P : Symbol(P, Decl(ttttNullishOperandContextualSignature.ts, 8, 21))
+
+declare const response: (() => undefined) | undefined;
+>response : Symbol(response, Decl(ttttNullishOperandContextualSignature.ts, 9, 13))
+
+add({ path: 'a', response: response ?? (({ request }) => Box.of({ id: "0" })) });
+>add : Symbol(add, Decl(ttttNullishOperandContextualSignature.ts, 7, 23))
+>path : Symbol(path, Decl(ttttNullishOperandContextualSignature.ts, 10, 5))
+>response : Symbol(response, Decl(ttttNullishOperandContextualSignature.ts, 10, 16))
+>response : Symbol(response, Decl(ttttNullishOperandContextualSignature.ts, 9, 13))
+>request : Symbol(request, Decl(ttttNullishOperandContextualSignature.ts, 10, 42))
+>Box.of : Symbol(Box.of, Decl(ttttNullishOperandContextualSignature.ts, 4, 28))
+>Box : Symbol(Box, Decl(ttttNullishOperandContextualSignature.ts, 0, 0))
+>of : Symbol(Box.of, Decl(ttttNullishOperandContextualSignature.ts, 4, 28))
+>id : Symbol(id, Decl(ttttNullishOperandContextualSignature.ts, 10, 65))
+
+add({ path: 'a', response: (({ request }) => Box.of({ id: "0" })) });
+>add : Symbol(add, Decl(ttttNullishOperandContextualSignature.ts, 7, 23))
+>path : Symbol(path, Decl(ttttNullishOperandContextualSignature.ts, 11, 5))
+>response : Symbol(response, Decl(ttttNullishOperandContextualSignature.ts, 11, 16))
+>request : Symbol(request, Decl(ttttNullishOperandContextualSignature.ts, 11, 30))
+>Box.of : Symbol(Box.of, Decl(ttttNullishOperandContextualSignature.ts, 4, 28))
+>Box : Symbol(Box, Decl(ttttNullishOperandContextualSignature.ts, 0, 0))
+>of : Symbol(Box.of, Decl(ttttNullishOperandContextualSignature.ts, 4, 28))
+>id : Symbol(id, Decl(ttttNullishOperandContextualSignature.ts, 11, 53))
+
+add({ path: 'a', response: response || (({ request }) => Box.of({ id: "0" })) });
+>add : Symbol(add, Decl(ttttNullishOperandContextualSignature.ts, 7, 23))
+>path : Symbol(path, Decl(ttttNullishOperandContextualSignature.ts, 12, 5))
+>response : Symbol(response, Decl(ttttNullishOperandContextualSignature.ts, 12, 16))
+>response : Symbol(response, Decl(ttttNullishOperandContextualSignature.ts, 9, 13))
+>request : Symbol(request, Decl(ttttNullishOperandContextualSignature.ts, 12, 42))
+>Box.of : Symbol(Box.of, Decl(ttttNullishOperandContextualSignature.ts, 4, 28))
+>Box : Symbol(Box, Decl(ttttNullishOperandContextualSignature.ts, 0, 0))
+>of : Symbol(Box.of, Decl(ttttNullishOperandContextualSignature.ts, 4, 28))
+>id : Symbol(id, Decl(ttttNullishOperandContextualSignature.ts, 12, 65))
+

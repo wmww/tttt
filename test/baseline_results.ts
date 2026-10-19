@@ -1648,9 +1648,9 @@ const baselines = {
         types: true,
     },
     'ttttNullishOperandContextualSignature': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttObjectToGenericMappedRecord': {
         errors: true,
