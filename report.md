@@ -406,3 +406,27 @@ defaults, which is precisely our weak spot.
 
 **Still open for you**: whether `--watch`/`--incremental` (plan 76) should come back. Once entry 1 lands, a 12-core
 rerun of the bench with the new CPU column would also help.
+
+## 2026-10-19 — insights (after the twenty-second window)
+On correctness, this window went into the long tail, and it worked. clidiff (tttt's whole CLI output compared byte
+for byte with tsc's) went from 3612 to 3823 / 3831 projects, and the text-only mismatches went from 54 to 1.
+Declaration emit is at 1325 / 1350. A third batch of fresh repositories (`tsc -b` solutions and decorators) matched on
+98.1% of projects on day one. The three refreshes so far scored 96.1%, 97.1% and 98.1%, so the checker generalizes. The
+source sweep now checks every `tsconfig*.json`, not just `tsconfig.json`: 5225 / 5242 projects match. There is also a
+new `-b` oracle at 400 / 416 solutions. The suite is at 13928 / 13963.
+
+On perf, the shared declared layer (plan 85) is a no-go. Rebuilding declaration files is only 2-6% of the extra CPU at
+the defaults. What really gets duplicated is instantiations of each project's own code. The default checker count is
+now capped at the physical cores, and the bench reports CPU. Your many-core question has become plan 86, and the next
+window is mostly that plan. It ships PGO + LTO first (-8-9% measured), then measures whether a shared type graph could
+keep the output byte-identical. Only after that does it start the single-threaded memory-system work, which is where
+the multiples come from.
+
+One design decision: `tttt -b` types referenced projects from their sources, while tsc reads their emitted `.d.ts`.
+This window approximated the `.d.ts` view three times, and the remaining divergences can't be approximated at all. A
+planning session will prototype reading tttt's own emitted declarations instead (plan 87), and it has a go/no-go gate.
+A small robustness concern: a file truncated mid-run can crash tttt (mmapped sources). That is queued for triage.
+
+**For you**: with PGO + LTO in, a 12-core rerun of `scripts/bench.sh --runs 3 --bun PATH --tscrs PATH` would check the
+gain and the checkers-per-physical-core default. Plan 76 (`--watch`/`--incremental`) stays parked unless you say
+otherwise.

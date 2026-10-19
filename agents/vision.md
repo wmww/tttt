@@ -5,23 +5,23 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal; real projects that are clean under tsc are the second oracle.
 
-## State (2026-10-18, insights after the twenty-first window)
+## State (2026-10-19, insights after the twenty-second window)
 - **Target: TypeScript 7.1** (`main` at the 7.1 nightly fed0bf24, `thirdparty/typescript`; re-pin to 7.1.0 stable
-  once it is on npm, expected after 2026-11-24: plan 58; on 2026-10-18 npm's `latest` was 7.0.2, `next`
-  7.1.0-dev.20261018.1). Its native suite: 13556 / 13568 (99.9%), the last 12 off the table (argued or one-test
-  mechanisms, bugs/tsgo_divergences.md); with own tests and the dts component **13833 / 13869** (dts 1864 / 1886).
+  once it is on npm, expected after 2026-11-24: plan 58; on 2026-10-19 npm's `latest` was 7.0.2, `next`
+  7.1.0-dev.20261019.1). Its native suite: 13556 / 13568 (99.9%), the last 12 off the table (argued or one-test
+  mechanisms, bugs/tsgo_divergences.md); with own tests and the dts component **13928 / 13963** (dts 1880 / 1902).
   Every oracle cache is tsgo 7.1's, every probe runs tsgo (`test/oracle`: a Go overlay, so a patched tsgo is one
   `go build` away).
 - **Drop-in `tsc --noEmit`, and drop-in `tsc` where the config only emits declarations**, TypeScript and JavaScript
-  sources alike (plans 53, 64). **Message text is an oracle now** (`scripts/clidiff.py`, cached `--pretty false`
-  text of every corpus and source sweep project): **3612 / 3675 projects byte-identical**, 54 differ in text only, 9
-  in diagnostics (bugs/display.md). dtsdiff **1244 / 1274** projects (the count flickers by 1-2: triage.md), of the
-  30 mismatching 6 match tsgo `--singleThreaded` (tsgo's own checker split). JS emit is out of scope (the human,
-  2026-10-12). **Refused**: `--watch`, `--incremental`'s `.tsbuildinfo`, `--showConfig`, `--explainFiles`, `--init`
-  (plan 76, parked by the human 2026-10-16; the insights asked 2026-10-18 whether to reopen it, no answer yet).
-- **Real code**: corpora 0 / 0 everywhere but vue (0 / 2), **DT sweep 8595 / 8595**, `$ExpectType` 68639 / 68640,
-  flagflip 18 / 8 / 3, scenarios 210 / 0 failed, **source sweep 3626 / 3634** (two refreshes, 97.1% and 96.1% on day
-  one), kdiff 2, recycle 5 / 3675 (rxjs is tsgo's own K dependence, matched), mutation 7 / 2909 per seed.
+  sources alike (plans 53, 64). **clidiff** (the whole `--pretty false` output, byte for byte, every corpus and
+  source sweep project): **3823 / 3831**. dtsdiff **1325 / 1350** projects (part of the rest is tsgo's own checker
+  split). JS emit is out of scope (the human, 2026-10-12). **Refused**: `--watch`, `--incremental`'s
+  `.tsbuildinfo`, `--showConfig`, `--explainFiles`, `--init` (plan 76, parked by the human 2026-10-16; asked twice
+  whether to reopen it, no answer: stays parked).
+- **Real code**: corpora 0 / 0 everywhere but vue (0 / 2, plan-sized: tsc's in-flight-free member resolution), **DT
+  sweep 8595 / 8595**, `$ExpectType` 68640 / 68640, flagflip 18 / 7 / 2, scenarios 210 / 0 failed, **source sweep
+  5225 / 5242 projects** (every `tsconfig*.json` since 2026-10-19; three refreshes, 96.1%, 97.1%, 98.1% on day one),
+  **`-b` sweep 400 / 416 solutions** (`sourcesweep.py --build`, new 2026-10-19), kdiff 2, recycle 4.
 - **Perf and memory**: the 12-core numbers (measurements.md "The 12-core machine: tttt, tsgo, bun, tsc-rs") against
   tsgo at its defaults, geometric means wall / CPU / RSS: **tttt 0.26 / 0.41 / 0.56**, bun 0.41 / 0.60 / 0.41, tsc-rs
   (a Rust port of tsgo at our pin, byte-identical on 13 / 14) 0.59 / 0.31 / 0.64. tttt is the fastest tool on all 14
@@ -41,7 +41,29 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **Absent or approximated**: pseudo-type builder gaps (plan 55's list), namespace-import clones
   (cloneTypeAsModuleType), member identity (members aren't Symbols), the CLI modes above.
 
-## Course correction (insights of 2026-10-18, end of the twenty-first window)
+## Course correction (insights of 2026-10-19, end of the twenty-second window)
+- **The window did what it said, and the correctness side is in its long tail.** Plan 82 finished, clidiff 3612 ->
+  3823 / 3831 (text mismatches 54 -> 1), dtsdiff 1244 -> 1325 / 1350, a third refresh at 98.1% on day one, the `-p`
+  sweep widened to every `tsconfig*.json` (3814 -> 5242 projects, 99.7%) and a new `-b` oracle (400 / 416). Each
+  refresh's day-one rate has risen (96.1, 97.1, 98.1): the checker generalizes. Correctness work now comes from
+  refreshes and new oracle axes, not from the existing oracles' tails; fan-outs on a 99.7% sweep are getting smaller.
+- **Perf is where the multiples are, and the order is set (plan 86, the human's ask).** Plan 85 closed no-go
+  (declared-world duplication is 2-6% of the extra CPU); the many-core accounting says clocks 1.62x, duplication
+  ~1.2x, recycling 5-8%. The next window is perf-heavy: PGO + LTO shipped, the stage 4 gate measured early (it
+  decides whether a shared type graph is even possible under our determinism rule), and stage 2's memory-system
+  sessions. CPU at the defaults is reported but still not a bound.
+- **`-b` reads sources where tsc reads emitted declarations: decided, plan it (plan 87).** The window approximated
+  the `.d.ts` view three times on top of sources (the builder window heuristic, untyped private members of reference
+  sources, stripped `@internal` type literal members), and what's left (errors inside emitted `.d.ts`, imports only a
+  body uses, tsgo's emit leaking downstream) can't be approximated at all. That is an approximation family growing
+  per divergence. tttt's emit is byte-identical on 99.95% of dtsdiff's files, so reading its own emitted declarations
+  is within reach and likely makes downstream checks cheaper. A planning session prototypes it with a gate; no more
+  source-side approximations of `.d.ts` in the meantime (record new ones in bugs/sourcesweep_build.md).
+- **Robustness of a drop-in**: mmapped sources SIGBUS if a file is truncated mid-run (an agent's oracle run hit it
+  once, hacks.md `source_text_map()`). A drop-in tsc must not crash when a formatter rewrites a file; triage decides
+  between a SIGBUS fallback and reading into memory for files that can change.
+
+## Course correction (insights of 2026-10-18, still in force)
 - **The debt window did what it said.** Plans 82 stage 2, 83 and 84 each deleted the hacks they were written for
   (the optional-property reader adds and intersection rules, the `keyof` text test in mapped `as` clauses,
   `sources_by_package_id`), the deferred-body leak is gone, and every oracle held. Keep scheduling debt windows after
@@ -229,10 +251,10 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    deferred bodies' accessors, a hacks audit, checker balance by work stealing (72), a perf session~~ done.
 21. ~~Debt (the deferred-body leak, plans 82 stage 2, 83, 84), the declaration emit fan-out, a second refresh (emit
    and checkJs), a perf session, message text as an oracle (clidiff)~~ done.
-22. **Now**: the many-core defaults (a CPU column, the checker-count policy, ~~plan 85's census and gate~~: no-go), ~~plan 82
-   stage 3~~ (done), the clidiff and real-code tails by fan-out, a third refresh. Plan 58 (7.1.0 stable, then plan 66 stage
-   5's fan-out) as soon as it's on npm.
-23. Then: **plan 86** (multiples on many-core cold runs, the human's ask of 2026-10-19: PGO + LTO, the single-threaded
+22. ~~The many-core defaults (a CPU column, the checker-count policy, plan 85: no-go), plan 82 stage 3, the clidiff and
+   real-code tails by fan-out, a third refresh (`-b` oracle, every tsconfig)~~ done.
+23. **Now: plan 86** (multiples on many-core cold runs, the human's ask of 2026-10-19: PGO + LTO, the single-threaded
    memory-system program, the front end's parallel floor, then a gated shared concurrent type graph; measurements.md
    "Many-core accounting on the 12-core box" is its budget: clocks cost 1.62x, the checker-side ceiling alone is
-   1.5x); the checker-count and budget policy for many cores; plan 76 only if the human reopens it.
+   1.5x); the checker-count and budget policy for many cores; plan 87's planning (`-b` reading emitted declarations); plan 76 only if the human reopens it. Plan 58 (7.1.0
+   stable, then plan 66 stage 5's fan-out) as soon as it's on npm, ahead of everything.

@@ -11,3 +11,9 @@ union), ty_buf_push()'s PGO+LTO warning (GCC's, reshaped), dtsdiff's 0/N flake n
 widened-literal member order item went to bugs/dts_emit.md "Member order"; PGO+LTO and the many-core framing were
 already plan 86's. Plan 19 condensed into agents/corpora.md.
 
+
+- (insights 2026-10-19) mmapped sources SIGBUS when a file is truncated mid-run (an oracles.py run lost
+  typescript-eslint once, entry 9's commit; hacks.md `source_text_map()`). A drop-in tsc shouldn't crash when a
+  formatter rewrites a file during a check: decide between a SIGBUS handler that falls back to a read() copy (and
+  re-reads/reports like tsc would) and reading files into memory where mapping isn't worth it. Measure the memory
+  cost of either on vscode (mmapped text was plan 80's win).
