@@ -582,6 +582,10 @@ typedef struct PropDeclRare {
     // The spread made a fresh symbol (tsc's getSpreadSymbol of a readonly or set-only one, a partial spread's): not
     // spread_variable's, no parent, a bare name in the symbols baseline
     bool spread_fresh;
+    // spread_variable is reached through an alias export (`export { v }` of an import): the property is the alias symbol,
+    // which has no value declaration, so declaration emit neither reuses the variable's declaration nor writes a
+    // function as a method (tsgo's serializeTypeForDeclaration of the export specifier: its type, `typeof ns.v`)
+    bool spread_alias;
     // A type member getter with a body (TS1183) and no return annotation: its type is the body's return type
     FunctionImpl const* getter_body;
     // A class accessor's get and set declarations: declaration emit prints the property as them in an object type (tsc's
@@ -2060,6 +2064,7 @@ typedef struct ObjectLiteralProp {
     Symbol const* spread_variable; // See PropDeclRare.spread_variable
     Symbol const* spread_namespace;
     bool spread_fresh; // See PropDeclRare.spread_fresh
+    bool spread_alias; // See PropDeclRare.spread_alias
 } ObjectLiteralProp;
 typedef enum ObjectLiteralKind {
     OBJECT_SYNTHETIC, // Made up by the checker

@@ -5794,7 +5794,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // Function or Method as methods)
         Prop const* declared = prop;
         while (declared->target) declared = declared->target;
-        Symbol const* member_symbol = declared->decl->symbol ? declared->decl->symbol : prop_decl_rare(declared->decl)->spread_variable;
+        Symbol const* member_symbol = declared->decl->symbol ? declared->decl->symbol :
+            prop_decl_rare(declared->decl)->spread_alias ? nullptr : prop_decl_rare(declared->decl)->spread_variable;
         // (An optional one's signatures are those of its type without undefined)
         Ty const* method_type = (prop->flags & PROP_OPTIONAL) ? ty_without_undefined(me, type) : type;
         bool function_symbol = member_symbol && (member_symbol->flags & SYMBOL_FUNCTION) && member_symbol->parent &&
@@ -6001,7 +6002,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // A module's variable (a namespace's member, spread or not): its declaration's annotation, or a `const`'s
         // literal initializer (tsc's serializeTypeOfDeclaration through the property's declarations)
         Pseudo const* variable_pseudo = nullptr;
-        Symbol const* variable = origin->decl->symbol ? origin->decl->symbol : prop_decl_rare(origin->decl)->spread_variable;
+        Symbol const* variable = origin->decl->symbol ? origin->decl->symbol :
+            prop_decl_rare(origin->decl)->spread_alias ? nullptr : prop_decl_rare(origin->decl)->spread_variable;
         if (!annotation && !placeholder && variable && reuses_nodes(d)) {
             Binding const* binding = variable->decl_count == 1 && variable->decls[0].kind == SYMBOL_DECL_VARIABLE ?
                 variable->decls[0].node : nullptr;

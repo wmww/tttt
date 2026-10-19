@@ -3455,6 +3455,8 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
                 prop_decl_rare(origin->decl)->spread_namespace,
             .spread_fresh = partial || setonly || readonly != !!(prop->flags & PROP_READONLY) ||
                 (!origin->decl->symbol && prop_decl_rare(origin->decl)->spread_fresh),
+            .spread_alias = origin->decl->symbol ? (origin->flags & PROP_NO_VALUE_DECLARATION) != 0 :
+                prop_decl_rare(origin->decl)->spread_alias,
         });
     }
     // (Not readonly outside a const context, like the properties: tsc's getIndexInfoWithReadonly in getSpreadType)

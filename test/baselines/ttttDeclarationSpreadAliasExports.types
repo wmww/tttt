@@ -1,0 +1,72 @@
+//// [test/cases/ttttDeclarationSpreadAliasExports.ts] ////
+
+=== rules/isEven.ts ===
+export const isEven = (value: string | number): boolean => typeof value === 'number';
+>isEven : (value: string | number) => boolean
+>(value: string | number): boolean => typeof value === 'number' : (value: string | number) => boolean
+>value : string | number
+>typeof value === 'number' : boolean
+>typeof value : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>value : string | number
+>'number' : "number"
+
+export function isOdd(v: number): boolean { return v % 2 === 1; }
+>isOdd : (v: number) => boolean
+>v : number
+>v % 2 === 1 : boolean
+>v % 2 : number
+>v : number
+>2 : 2
+>1 : 1
+
+export const plain = 1;
+>plain : 1
+>1 : 1
+
+=== rules/numberRules.ts ===
+import { isEven, isOdd, plain } from './isEven';
+>isEven : (value: string | number) => boolean
+>isOdd : (v: number) => boolean
+>plain : 1
+
+export { isEven, isOdd, plain };
+>isEven : (value: string | number) => boolean
+>isOdd : (v: number) => boolean
+>plain : 1
+
+=== all.ts ===
+import * as numberRules from './rules/numberRules';
+>numberRules : typeof numberRules
+
+import * as direct from './rules/isEven';
+>direct : typeof direct
+
+export const a1 = { ...numberRules } as const;
+>a1 : { readonly isEven: (value: string | number) => boolean; readonly isOdd: (v: number) => boolean; readonly plain: 1; }
+>{ ...numberRules } as const : { readonly isEven: (value: string | number) => boolean; readonly isOdd: (v: number) => boolean; readonly plain: 1; }
+>{ ...numberRules } : { readonly isEven: (value: string | number) => boolean; readonly isOdd: (v: number) => boolean; readonly plain: 1; }
+>numberRules : typeof numberRules
+
+export const a2 = { ...numberRules };
+>a2 : { isEven: (value: string | number) => boolean; isOdd: (v: number) => boolean; plain: 1; }
+>{ ...numberRules } : { isEven: (value: string | number) => boolean; isOdd: (v: number) => boolean; plain: 1; }
+>numberRules : typeof numberRules
+
+export const a3 = { ...direct } as const;
+>a3 : { readonly isEven: (value: string | number) => boolean; readonly isOdd: (v: number) => boolean; readonly plain: 1; }
+>{ ...direct } as const : { readonly isEven: (value: string | number) => boolean; readonly isOdd: (v: number) => boolean; readonly plain: 1; }
+>{ ...direct } : { readonly isEven: (value: string | number) => boolean; readonly isOdd: (v: number) => boolean; readonly plain: 1; }
+>direct : typeof direct
+
+export const a4 = { ...direct };
+>a4 : { isEven: (value: string | number) => boolean; isOdd(v: number): boolean; plain: 1; }
+>{ ...direct } : { isEven: (value: string | number) => boolean; isOdd(v: number): boolean; plain: 1; }
+>direct : typeof direct
+
+export const a5 = { ...a2, x: 1 };
+>a5 : { isEven: (value: string | number) => boolean; isOdd: (v: number) => boolean; plain: 1; x: number; }
+>{ ...a2, x: 1 } : { isEven: (value: string | number) => boolean; isOdd: (v: number) => boolean; plain: 1; x: number; }
+>a2 : { isEven: (value: string | number) => boolean; isOdd: (v: number) => boolean; plain: 1; }
+>x : number
+>1 : 1
+

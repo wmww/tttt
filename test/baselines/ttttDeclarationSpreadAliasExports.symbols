@@ -1,0 +1,57 @@
+//// [test/cases/ttttDeclarationSpreadAliasExports.ts] ////
+
+=== rules/isEven.ts ===
+export const isEven = (value: string | number): boolean => typeof value === 'number';
+>isEven : Symbol(isEven, Decl(isEven.ts, 0, 12))
+>value : Symbol(value, Decl(isEven.ts, 0, 23))
+>value : Symbol(value, Decl(isEven.ts, 0, 23))
+
+export function isOdd(v: number): boolean { return v % 2 === 1; }
+>isOdd : Symbol(isOdd, Decl(isEven.ts, 0, 85))
+>v : Symbol(v, Decl(isEven.ts, 1, 22))
+>v : Symbol(v, Decl(isEven.ts, 1, 22))
+
+export const plain = 1;
+>plain : Symbol(plain, Decl(isEven.ts, 2, 12))
+
+=== rules/numberRules.ts ===
+import { isEven, isOdd, plain } from './isEven';
+>isEven : Symbol(isEven, Decl(numberRules.ts, 0, 8))
+>isOdd : Symbol(isOdd, Decl(numberRules.ts, 0, 16))
+>plain : Symbol(plain, Decl(numberRules.ts, 0, 23))
+
+export { isEven, isOdd, plain };
+>isEven : Symbol(isEven, Decl(numberRules.ts, 1, 8))
+>isOdd : Symbol(isOdd, Decl(numberRules.ts, 1, 16))
+>plain : Symbol(plain, Decl(numberRules.ts, 1, 23))
+
+=== all.ts ===
+import * as numberRules from './rules/numberRules';
+>numberRules : Symbol(numberRules, Decl(all.ts, 0, 6))
+
+import * as direct from './rules/isEven';
+>direct : Symbol(direct, Decl(all.ts, 1, 6))
+
+export const a1 = { ...numberRules } as const;
+>a1 : Symbol(a1, Decl(all.ts, 2, 12))
+>numberRules : Symbol(numberRules, Decl(all.ts, 0, 6))
+>const : Symbol(const)
+
+export const a2 = { ...numberRules };
+>a2 : Symbol(a2, Decl(all.ts, 3, 12))
+>numberRules : Symbol(numberRules, Decl(all.ts, 0, 6))
+
+export const a3 = { ...direct } as const;
+>a3 : Symbol(a3, Decl(all.ts, 4, 12))
+>direct : Symbol(direct, Decl(all.ts, 1, 6))
+>const : Symbol(const)
+
+export const a4 = { ...direct };
+>a4 : Symbol(a4, Decl(all.ts, 5, 12))
+>direct : Symbol(direct, Decl(all.ts, 1, 6))
+
+export const a5 = { ...a2, x: 1 };
+>a5 : Symbol(a5, Decl(all.ts, 6, 12))
+>a2 : Symbol(a2, Decl(all.ts, 3, 12))
+>x : Symbol(x, Decl(all.ts, 6, 26))
+

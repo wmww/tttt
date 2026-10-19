@@ -697,6 +697,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationSpreadAliasExports': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationSynthesizedLiterals': {
         errors: true,
         symbols: true,
