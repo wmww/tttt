@@ -47,9 +47,6 @@ dtsdiff numbers went to bugs/dts_emit.md. The human's two directives and tsc-rs 
   interface JI extends _JI { output: unknown }
   interface J extends _J { _z: JI }
   ```
-- 2026-10-18 (clidiff fan-out): one oracles.py run reported dtsdiff tanstack-table/packages/table-core at 0 / 198
-  files; three reruns of `dtsdiff.py -f` matched 198 / 198 at the same commit. Load (clidiff/perfsweep running
-  alongside) or a sandbox flake; if it recurs, look at what dtsdiff records for that project (timeout? empty tree?).
 - (2026-10-19, triage C) Member order of widened object literal union members (`b?: undefined` before or after the
   member's own props): tsgo orders a widened literal's members by symbol id, and getUndefinedProperty's symbol is made
   once per name for the program, so it comes first when an earlier widening made it. tttt follows that mostly, but

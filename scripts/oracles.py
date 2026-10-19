@@ -106,7 +106,10 @@ def dts():
     out = run(['scripts/dtsdiff.py', '--no-build', '-n', '5'])
     m = re.search(r'dts: projects (\d+ / \d+) fully match, files (\d+ / \d+) match', out)
     single = re.search(r'(\d+) more projects match tsgo --singleThreaded, (\d+) files', out)
+    crash = re.search(r'(\d+) crash/timeout/no output', out)
     print(f'dts: projects {m.group(1)}, files {m.group(2)}' if m else 'dts: ?', flush=True, end='')
+    if crash and crash.group(1) != '0':
+        print(f' ({crash.group(1)} crash/timeout/no output: see scripts/dtsdiff.py --last)', flush=True, end='')
     print(f' (+{single.group(1)} projects, {single.group(2)} files as tsgo --singleThreaded)' if single else '', flush=True)
 
 def clidiff(corpora_only=False):

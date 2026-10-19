@@ -217,6 +217,10 @@ def run_tttt(name, timeout, mem_gb, checkers=None):
             path = os.path.join(d, f)
             texts[os.path.relpath(path, out_dir)] = open(path, 'rb').read().decode('utf-8', errors='surrogateescape')
     shutil.rmtree(tmp)
+    # (Nothing written where tsgo writes: a sandbox or /tmp failure, or tttt stopping before emit. Its own status with
+    # the output kept, not N missing files: a 2026-10-18 run once had tanstack-table at 0 / 198 that reruns matched)
+    if status == 'ok' and not texts:
+        status = 'no output'
     tail = '' if status == 'ok' else '\n'.join(l for l in out.decode(errors='replace').split('\n') if l.strip())[-600:]
     return texts, status, wall, tail
 
@@ -550,7 +554,7 @@ def main():
 
     print(f'dts: projects {len(verdicts["match"])} / {len(results)} fully match, files {files_match} / {files_total} '
           f'match; {missing} tsgo writes and tttt not, {extra} tttt writes and tsgo not, {len(verdicts["crash"])} '
-          f'crash/timeout ({len(skipped)} discovered projects skipped: tsgo failed or emitted nothing); '
+          f'crash/timeout/no output ({len(skipped)} discovered projects skipped: tsgo failed or emitted nothing); '
           f'{len(verdicts["split"])} more projects match tsgo --singleThreaded, '
           f'{sum(b["files"] for k, b in buckets.items() if k == SINGLE)} files ('
           f'{sum(1 for p in verdicts["mismatch"] if "single" not in records[p])} mismatching projects without its '
