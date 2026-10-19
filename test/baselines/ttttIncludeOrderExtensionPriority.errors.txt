@@ -1,0 +1,21 @@
+b/styles.js(2,3): error TS2339: Property 'foo' does not exist on type '1'.
+
+
+==== tsconfig.json (0 errors) ====
+    {
+        "compilerOptions": { "allowJs": true, "checkJs": true, "noEmit": true },
+        "include": ["a/**/*.js", "a/**/*.ts", "b/**/*.ts", "b/**/*.js"]
+    }
+==== a/styles.d.ts (0 errors) ====
+    export declare const n: number;
+==== b/styles.js (1 errors) ====
+    const m = 1;
+    m.foo;
+      ~~~
+!!! error TS2339: Property 'foo' does not exist on type '1'.
+==== b/styles.d.ts (0 errors) ====
+    export declare const m: number;
+    
+==== a/styles.js (0 errors) ====
+    const n = 1;
+    n.foo;

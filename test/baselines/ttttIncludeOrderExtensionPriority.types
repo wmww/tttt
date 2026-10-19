@@ -1,0 +1,20 @@
+//// [test/cases/ttttIncludeOrderExtensionPriority.ts] ////
+
+=== a/styles.d.ts ===
+export declare const n: number;
+>n : number
+
+=== b/styles.js ===
+const m = 1;
+>m : 1
+>1 : 1
+
+m.foo;
+>m.foo : any
+>m : 1
+>foo : any
+
+=== b/styles.d.ts ===
+export declare const m: number;
+>m : number
+

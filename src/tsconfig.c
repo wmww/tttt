@@ -9,7 +9,7 @@
 #include "content_mapper.h"
 #include "json.h"
 
-typedef uint8_t PathKind; // PathSet: 1 a literal (`files`) root, 2 one include patterns found
+typedef uint32_t PathKind; // PathSet: 1 a literal (`files`) root, 2 + its index in the found order one include patterns found
 #define g_pro_key SvStr, svstr
 #define g_val PathKind, path_kind
 #include <cleat/generic/hmap.h>
@@ -967,6 +967,28 @@ static char const* const extension_groups[3][5] = {
 };
 
 
+// tsc's removeWildcardFilesWithLowerPriorityExtension: the files include patterns found before `path` with an extension
+// after its own in its group are left out (`a.js` found before `a.d.ts`)
+static void remove_lower_priority_siblings(HMapPathKind* files, csview path) {
+    for (isize g = 0; g < (isize)c_arraylen(extension_groups); g++) {
+        isize own = -1, count = 0;
+        for (isize e = 0; e < 5 && extension_groups[g][e]; e++, count++) {
+            char const* extension = extension_groups[g][e];
+            if (!csview_ends_with(path, extension)) continue;
+            if (own < 0 || strlen(extension) > strlen(extension_groups[g][own])) own = e;
+        }
+        if (own < 0) continue;
+        csview stem = csview_slice(path, 0, path.size - (isize)strlen(extension_groups[g][own]));
+        for (isize e = count - 1; e > own; e--) {
+            cstr sibling = cstr_d(stem, extension_groups[g][e]);
+            hmap_path_kind_value const* entry = hmap_path_kind_get(files, cstr_sv(&sibling));
+            if (entry && entry->second >= 2) hmap_path_kind_erase(files, cstr_sv(&sibling));
+            cstr_drop(&sibling);
+        }
+        return;
+    }
+}
+
 // tsc's hasFileWithHigherPriorityExtension: a file include patterns found is left out when the same name with an
 // extension before its own in its group is there too (literal or found): `a.d.ts` (an output) next to `a.ts`, `a.js`
 // next to `a.ts` with allowJs. Not a `.js` for a `.d.ts` (tsc's legacy behaviour)
@@ -1066,14 +1088,26 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
         str_list_drop(&buckets[i]);
     }
     free(buckets);
+    // (In the order the patterns found them, like tsc's wildcardFileMap: a file is skipped for a higher priority sibling
+    // found before it, and removes the lower priority ones found before it, so `["**/*.js", "**/*.ts"]` keeps `a.d.ts`
+    // and not `a.js`, the other order both)
     HMapPathKind files = {0};
     for (isize i = 0; i < out->count; i++) hmap_path_kind_insert(&files, cstr_clone(out->items[i]), 1);
-    for (isize i = 0; i < found.count; i++) hmap_path_kind_insert(&files, cstr_clone(found.items[i]), 2);
+    StrList order = {0};
     for (isize i = 0; i < found.count; i++) {
         csview path = cstr_sv(&found.items[i]);
-        if (hmap_path_kind_get(&files, path)->second == 1 || has_higher_priority_sibling(me, &files, path)) continue;
-        str_list_push(out, path);
+        if (has_higher_priority_sibling(me, &files, path)) continue;
+        remove_lower_priority_siblings(&files, path);
+        if (hmap_path_kind_get(&files, path)) continue;
+        hmap_path_kind_insert(&files, cstr_from_sv(path), (PathKind)(2 + order.count));
+        str_list_push(&order, path);
     }
+    for (isize i = 0; i < order.count; i++) {
+        csview path = cstr_sv(&order.items[i]);
+        hmap_path_kind_value const* entry = hmap_path_kind_get(&files, path);
+        if (entry && entry->second == (PathKind)(2 + i)) str_list_push(out, path);
+    }
+    str_list_drop(&order);
     // (tsc's wildCardJsonFileMap comes last)
     for (isize i = 0; i < patterns.json.count; i++) {
         csview path = cstr_sv(&patterns.json.items[i]);

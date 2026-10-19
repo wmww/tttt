@@ -1,0 +1,17 @@
+//// [test/cases/ttttIncludeOrderExtensionPriority.ts] ////
+
+=== a/styles.d.ts ===
+export declare const n: number;
+>n : Symbol(n, Decl(styles.d.ts, 0, 20))
+
+=== b/styles.js ===
+const m = 1;
+>m : Symbol(m, Decl(styles.js, 0, 5))
+
+m.foo;
+>m : Symbol(m, Decl(styles.js, 0, 5))
+
+=== b/styles.d.ts ===
+export declare const m: number;
+>m : Symbol(m, Decl(styles.d.ts, 0, 20))
+

@@ -1021,6 +1021,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttIncludeOrderExtensionPriority': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttIndexSignatureMethodSuggestion': {
         errors: true,
         symbols: true,
