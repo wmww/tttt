@@ -50,10 +50,14 @@ dtsdiff numbers went to bugs/dts_emit.md. The human's two directives and tsc-rs 
 - 2026-10-18 (clidiff fan-out): one oracles.py run reported dtsdiff tanstack-table/packages/table-core at 0 / 198
   files; three reruns of `dtsdiff.py -f` matched 198 / 198 at the same commit. Load (clidiff/perfsweep running
   alongside) or a sandbox flake; if it recurs, look at what dtsdiff records for that project (timeout? empty tree?).
-- 2026-10-19 (graphql-inspector, `tttt -b tsconfig.build.json --no-write --dts-dump`): `packages/core/src/diff/changes/directive.d.ts`
-  has an extra `reason?: undefined;` at line 145 against tsc's emit (`tsc -p ... --emitDeclarationOnly` in a bwrap
-  overlay). Every other file of the project is byte-identical. Undiagnosed (an optional-property of a union of object
-  literals, likely: tsc's normalized literal union member lists).
+- (2026-10-19, triage C) Member order of widened object literal union members (`b?: undefined` before or after the
+  member's own props): tsgo orders a widened literal's members by symbol id, and getUndefinedProperty's symbol is made
+  once per name for the program, so it comes first when an earlier widening made it. tttt follows that mostly, but
+  `test/cases/ttttPseudoInferredUnionOfLiterals.ts` with `e: [safe ? { a: 1 } : { b: '' }]` added to `m` prints
+  `{ a: number; b?: undefined; }` where tsgo has `{ b?: undefined; a: number; }` (dropping almost any other function
+  of the file makes tttt agree: a structurally interned widened literal reused from an earlier widening, with that
+  one's order?). dtsdiff's biggest bucket is "member order" next to `?: undefined` (slate test, postiz, eslint-plugin-
+  jsdoc, feathers, ui, excalidraw...), partly tsgo's own checker split (`--tsc-single`); look whether this is the rest.
 - (2026-10-19, agent A) A script file declaring `interface Map { ... }` (no type parameters): tsc reports TS2428 "All
   declarations of 'Map' must have identical type parameters" at the lib declarations too (lib.es2015.collection.d.ts,
   .iterable, .symbol.wellknown, es2026.collection), tttt only in the user's file.

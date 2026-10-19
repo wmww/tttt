@@ -4828,9 +4828,12 @@ static Ty const* pseudo_type(Checker* me, TyDisplay d, Pseudo const* pseudo) {
             {
                 // (getWidenedType of getRegularTypeOfExpression, which checks the expression again: an object literal in
                 // it is a new type each time, never the declaration's)
+                // A union is still compared by identity, structurally (`c: cond ? { a: 1, b: "" } : { a: 2 }`, whose
+                // widened union has `b?: undefined` in the second member, is equivalent to the widened literal's `c`)
                 Ty const* type = ty_expr_type(me, pseudo->expr);
-                if (type->flags & TYF_FRESH_OBJECT) return nullptr;
-                return ty_widened_nullable(me, ty_widened_objects(me, ty_regular(me, type)));
+                Ty const* widened = ty_widened_nullable(me, ty_widened_objects(me, ty_regular(me, type)));
+                if ((type->flags & TYF_FRESH_OBJECT) && !(type->kind == TY_UNION && widened->kind == TY_UNION)) return nullptr;
+                return widened;
             }
         case PSEUDO_NO_RESULT: return nullptr;
         case PSEUDO_MAYBE_CONST: return pseudo_type(me, d, pseudo->in_const ? pseudo->const_type : pseudo->regular_type);

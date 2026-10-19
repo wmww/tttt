@@ -1,0 +1,151 @@
+//// [test/cases/ttttPseudoInferredUnionOfLiterals.ts] ////
+
+=== ttttPseudoInferredUnionOfLiterals.ts ===
+// A property whose initializer the pseudochecker can't type (a conditional) prints the literal's own property type
+// when the widened union is identical to what widening the expression gives: no `reason?: undefined` (graphql-inspector)
+export enum Level { A = 'A', B = 'B' }
+>Level : Level
+>A : Level.A
+>'A' : "A"
+>B : Level.B
+>'B' : "B"
+
+declare const safe: boolean;
+>safe : boolean
+
+export function f() {
+>f : () => { readonly c: { level: Level; reason: string; } | { level: Level; }; readonly type: 'X'; }
+
+    return { c: safe ? { level: Level.A, reason: 'x' } : { level: Level.B }, type: 'X' } as const;
+>{ c: safe ? { level: Level.A, reason: 'x' } : { level: Level.B }, type: 'X' } as const : { readonly c: { level: Level; reason: string; } | { level: Level; }; readonly type: 'X'; }
+>{ c: safe ? { level: Level.A, reason: 'x' } : { level: Level.B }, type: 'X' } : { readonly c: { level: Level; reason: string; } | { level: Level; }; readonly type: 'X'; }
+>c : { level: Level; reason: string; } | { level: Level; }
+>safe ? { level: Level.A, reason: 'x' } : { level: Level.B } : { level: Level; reason: string; } | { level: Level; }
+>safe : boolean
+>{ level: Level.A, reason: 'x' } : { level: Level; reason: string; }
+>level : Level
+>Level.A : Level.A
+>Level : typeof Level
+>A : Level.A
+>reason : string
+>'x' : "x"
+>{ level: Level.B } : { level: Level; }
+>level : Level
+>Level.B : Level.B
+>Level : typeof Level
+>B : Level.B
+>type : "X"
+>'X' : "X"
+}
+export function g() { return { c: safe ? { level: 1, reason: 'x' } : { level: 2 } }; }
+>g : () => { c: { level: number; reason: string; } | { level: number; }; }
+>{ c: safe ? { level: 1, reason: 'x' } : { level: 2 } } : { c: { level: number; reason: string; } | { level: number; }; }
+>c : { level: number; reason: string; } | { level: number; }
+>safe ? { level: 1, reason: 'x' } : { level: 2 } : { level: number; reason: string; } | { level: number; }
+>safe : boolean
+>{ level: 1, reason: 'x' } : { level: number; reason: string; }
+>level : number
+>1 : 1
+>reason : string
+>'x' : "x"
+>{ level: 2 } : { level: number; }
+>level : number
+>2 : 2
+
+export const h = () => ({ c: safe ? { level: 1, reason: 'x' } : { level: 2 }, d: safe ? { a: 1 } : { b: 2 } });
+>h : () => { c: { level: number; reason: string; } | { level: number; }; d: { a: number; } | { b: number; }; }
+>() => ({ c: safe ? { level: 1, reason: 'x' } : { level: 2 }, d: safe ? { a: 1 } : { b: 2 } }) : () => { c: { level: number; reason: string; } | { level: number; }; d: { a: number; } | { b: number; }; }
+>({ c: safe ? { level: 1, reason: 'x' } : { level: 2 }, d: safe ? { a: 1 } : { b: 2 } }) : { c: { level: number; reason: string; } | { level: number; }; d: { a: number; } | { b: number; }; }
+>{ c: safe ? { level: 1, reason: 'x' } : { level: 2 }, d: safe ? { a: 1 } : { b: 2 } } : { c: { level: number; reason: string; } | { level: number; }; d: { a: number; } | { b: number; }; }
+>c : { level: number; reason: string; } | { level: number; }
+>safe ? { level: 1, reason: 'x' } : { level: 2 } : { level: number; reason: string; } | { level: number; }
+>safe : boolean
+>{ level: 1, reason: 'x' } : { level: number; reason: string; }
+>level : number
+>1 : 1
+>reason : string
+>'x' : "x"
+>{ level: 2 } : { level: number; }
+>level : number
+>2 : 2
+>d : { a: number; } | { b: number; }
+>safe ? { a: 1 } : { b: 2 } : { a: number; } | { b: number; }
+>safe : boolean
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>{ b: 2 } : { b: number; }
+>b : number
+>2 : 2
+
+// Widened from a variable: normalized
+export function k() { const r = { c: safe ? { level: 1, reason: 'x' } : { level: 2 } }; return r; }
+>k : () => { c: { level: number; reason: string; } | { reason?: undefined; level: number; }; }
+>r : { c: { level: number; reason: string; } | { reason?: undefined; level: number; }; }
+>{ c: safe ? { level: 1, reason: 'x' } : { level: 2 } } : { c: { level: number; reason: string; } | { level: number; }; }
+>c : { level: number; reason: string; } | { level: number; }
+>safe ? { level: 1, reason: 'x' } : { level: 2 } : { level: number; reason: string; } | { level: number; }
+>safe : boolean
+>{ level: 1, reason: 'x' } : { level: number; reason: string; }
+>level : number
+>1 : 1
+>reason : string
+>'x' : "x"
+>{ level: 2 } : { level: number; }
+>level : number
+>2 : 2
+>r : { c: { level: number; reason: string; } | { reason?: undefined; level: number; }; }
+
+export let x = { c: safe ? { level: 1, reason: 'x' } : { level: 2 } };
+>x : { c: { level: number; reason: string; } | { reason?: undefined; level: number; }; }
+>{ c: safe ? { level: 1, reason: 'x' } : { level: 2 } } : { c: { level: number; reason: string; } | { level: number; }; }
+>c : { level: number; reason: string; } | { level: number; }
+>safe ? { level: 1, reason: 'x' } : { level: 2 } : { level: number; reason: string; } | { level: number; }
+>safe : boolean
+>{ level: 1, reason: 'x' } : { level: number; reason: string; }
+>level : number
+>1 : 1
+>reason : string
+>'x' : "x"
+>{ level: 2 } : { level: number; }
+>level : number
+>2 : 2
+
+// Not a union once widened, or no object literal in it
+export function m() { return { c: safe ? {} : 'x', d: safe ? [{ a: 1 }] : [{ b: 2 }] }; }
+>m : () => { c: {}; d: { a: number; }[] | { b: number; }[]; }
+>{ c: safe ? {} : 'x', d: safe ? [{ a: 1 }] : [{ b: 2 }] } : { c: string | {}; d: { a: number; }[] | { b: number; }[]; }
+>c : string | {}
+>safe ? {} : 'x' : "x" | {}
+>safe : boolean
+>{} : {}
+>'x' : "x"
+>d : { a: number; }[] | { b: number; }[]
+>safe ? [{ a: 1 }] : [{ b: 2 }] : { a: number; }[] | { b: number; }[]
+>safe : boolean
+>[{ a: 1 }] : { a: number; }[]
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>[{ b: 2 }] : { b: number; }[]
+>{ b: 2 } : { b: number; }
+>b : number
+>2 : 2
+
+export function n() { return { c: safe ? { a: { p: 1 } } : { a: { q: 1 } } }; }
+>n : () => { c: { a: { p: number; }; } | { a: { q: number; }; }; }
+>{ c: safe ? { a: { p: 1 } } : { a: { q: 1 } } } : { c: { a: { p: number; }; } | { a: { q: number; }; }; }
+>c : { a: { p: number; }; } | { a: { q: number; }; }
+>safe ? { a: { p: 1 } } : { a: { q: 1 } } : { a: { p: number; }; } | { a: { q: number; }; }
+>safe : boolean
+>{ a: { p: 1 } } : { a: { p: number; }; }
+>a : { p: number; }
+>{ p: 1 } : { p: number; }
+>p : number
+>1 : 1
+>{ a: { q: 1 } } : { a: { q: number; }; }
+>a : { q: number; }
+>{ q: 1 } : { q: number; }
+>q : number
+>1 : 1
+

@@ -1718,6 +1718,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttPseudoInferredUnionOfLiterals': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttQualifiedNameValueThroughShadowingNamespace': {
         errors: true,
         symbols: true,

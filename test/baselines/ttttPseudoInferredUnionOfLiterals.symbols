@@ -1,0 +1,89 @@
+//// [test/cases/ttttPseudoInferredUnionOfLiterals.ts] ////
+
+=== ttttPseudoInferredUnionOfLiterals.ts ===
+// A property whose initializer the pseudochecker can't type (a conditional) prints the literal's own property type
+// when the widened union is identical to what widening the expression gives: no `reason?: undefined` (graphql-inspector)
+export enum Level { A = 'A', B = 'B' }
+>Level : Symbol(Level, Decl(ttttPseudoInferredUnionOfLiterals.ts, 0, 0))
+>A : Symbol(Level.A, Decl(ttttPseudoInferredUnionOfLiterals.ts, 2, 19))
+>B : Symbol(Level.B, Decl(ttttPseudoInferredUnionOfLiterals.ts, 2, 28))
+
+declare const safe: boolean;
+>safe : Symbol(safe, Decl(ttttPseudoInferredUnionOfLiterals.ts, 3, 13))
+
+export function f() {
+>f : Symbol(f, Decl(ttttPseudoInferredUnionOfLiterals.ts, 3, 28))
+
+    return { c: safe ? { level: Level.A, reason: 'x' } : { level: Level.B }, type: 'X' } as const;
+>c : Symbol(c, Decl(ttttPseudoInferredUnionOfLiterals.ts, 5, 12))
+>safe : Symbol(safe, Decl(ttttPseudoInferredUnionOfLiterals.ts, 3, 13))
+>level : Symbol(level, Decl(ttttPseudoInferredUnionOfLiterals.ts, 5, 24))
+>Level.A : Symbol(Level.A, Decl(ttttPseudoInferredUnionOfLiterals.ts, 2, 19))
+>Level : Symbol(Level, Decl(ttttPseudoInferredUnionOfLiterals.ts, 0, 0))
+>A : Symbol(Level.A, Decl(ttttPseudoInferredUnionOfLiterals.ts, 2, 19))
+>reason : Symbol(reason, Decl(ttttPseudoInferredUnionOfLiterals.ts, 5, 40))
+>level : Symbol(level, Decl(ttttPseudoInferredUnionOfLiterals.ts, 5, 58))
+>Level.B : Symbol(Level.B, Decl(ttttPseudoInferredUnionOfLiterals.ts, 2, 28))
+>Level : Symbol(Level, Decl(ttttPseudoInferredUnionOfLiterals.ts, 0, 0))
+>B : Symbol(Level.B, Decl(ttttPseudoInferredUnionOfLiterals.ts, 2, 28))
+>type : Symbol(type, Decl(ttttPseudoInferredUnionOfLiterals.ts, 5, 76))
+>const : Symbol(const)
+}
+export function g() { return { c: safe ? { level: 1, reason: 'x' } : { level: 2 } }; }
+>g : Symbol(g, Decl(ttttPseudoInferredUnionOfLiterals.ts, 6, 1))
+>c : Symbol(c, Decl(ttttPseudoInferredUnionOfLiterals.ts, 7, 30))
+>safe : Symbol(safe, Decl(ttttPseudoInferredUnionOfLiterals.ts, 3, 13))
+>level : Symbol(level, Decl(ttttPseudoInferredUnionOfLiterals.ts, 7, 42))
+>reason : Symbol(reason, Decl(ttttPseudoInferredUnionOfLiterals.ts, 7, 52))
+>level : Symbol(level, Decl(ttttPseudoInferredUnionOfLiterals.ts, 7, 70))
+
+export const h = () => ({ c: safe ? { level: 1, reason: 'x' } : { level: 2 }, d: safe ? { a: 1 } : { b: 2 } });
+>h : Symbol(h, Decl(ttttPseudoInferredUnionOfLiterals.ts, 8, 12))
+>c : Symbol(c, Decl(ttttPseudoInferredUnionOfLiterals.ts, 8, 25))
+>safe : Symbol(safe, Decl(ttttPseudoInferredUnionOfLiterals.ts, 3, 13))
+>level : Symbol(level, Decl(ttttPseudoInferredUnionOfLiterals.ts, 8, 37))
+>reason : Symbol(reason, Decl(ttttPseudoInferredUnionOfLiterals.ts, 8, 47))
+>level : Symbol(level, Decl(ttttPseudoInferredUnionOfLiterals.ts, 8, 65))
+>d : Symbol(d, Decl(ttttPseudoInferredUnionOfLiterals.ts, 8, 77))
+>safe : Symbol(safe, Decl(ttttPseudoInferredUnionOfLiterals.ts, 3, 13))
+>a : Symbol(a, Decl(ttttPseudoInferredUnionOfLiterals.ts, 8, 89))
+>b : Symbol(b, Decl(ttttPseudoInferredUnionOfLiterals.ts, 8, 100))
+
+// Widened from a variable: normalized
+export function k() { const r = { c: safe ? { level: 1, reason: 'x' } : { level: 2 } }; return r; }
+>k : Symbol(k, Decl(ttttPseudoInferredUnionOfLiterals.ts, 8, 111))
+>r : Symbol(r, Decl(ttttPseudoInferredUnionOfLiterals.ts, 10, 27))
+>c : Symbol(c, Decl(ttttPseudoInferredUnionOfLiterals.ts, 10, 33))
+>safe : Symbol(safe, Decl(ttttPseudoInferredUnionOfLiterals.ts, 3, 13))
+>level : Symbol(level, Decl(ttttPseudoInferredUnionOfLiterals.ts, 10, 45))
+>reason : Symbol(reason, Decl(ttttPseudoInferredUnionOfLiterals.ts, 10, 55))
+>level : Symbol(level, Decl(ttttPseudoInferredUnionOfLiterals.ts, 10, 73))
+>r : Symbol(r, Decl(ttttPseudoInferredUnionOfLiterals.ts, 10, 27))
+
+export let x = { c: safe ? { level: 1, reason: 'x' } : { level: 2 } };
+>x : Symbol(x, Decl(ttttPseudoInferredUnionOfLiterals.ts, 11, 10))
+>c : Symbol(c, Decl(ttttPseudoInferredUnionOfLiterals.ts, 11, 16))
+>safe : Symbol(safe, Decl(ttttPseudoInferredUnionOfLiterals.ts, 3, 13))
+>level : Symbol(level, Decl(ttttPseudoInferredUnionOfLiterals.ts, 11, 28))
+>reason : Symbol(reason, Decl(ttttPseudoInferredUnionOfLiterals.ts, 11, 38))
+>level : Symbol(level, Decl(ttttPseudoInferredUnionOfLiterals.ts, 11, 56))
+
+// Not a union once widened, or no object literal in it
+export function m() { return { c: safe ? {} : 'x', d: safe ? [{ a: 1 }] : [{ b: 2 }] }; }
+>m : Symbol(m, Decl(ttttPseudoInferredUnionOfLiterals.ts, 11, 70))
+>c : Symbol(c, Decl(ttttPseudoInferredUnionOfLiterals.ts, 13, 30))
+>safe : Symbol(safe, Decl(ttttPseudoInferredUnionOfLiterals.ts, 3, 13))
+>d : Symbol(d, Decl(ttttPseudoInferredUnionOfLiterals.ts, 13, 50))
+>safe : Symbol(safe, Decl(ttttPseudoInferredUnionOfLiterals.ts, 3, 13))
+>a : Symbol(a, Decl(ttttPseudoInferredUnionOfLiterals.ts, 13, 63))
+>b : Symbol(b, Decl(ttttPseudoInferredUnionOfLiterals.ts, 13, 76))
+
+export function n() { return { c: safe ? { a: { p: 1 } } : { a: { q: 1 } } }; }
+>n : Symbol(n, Decl(ttttPseudoInferredUnionOfLiterals.ts, 13, 89))
+>c : Symbol(c, Decl(ttttPseudoInferredUnionOfLiterals.ts, 14, 30))
+>safe : Symbol(safe, Decl(ttttPseudoInferredUnionOfLiterals.ts, 3, 13))
+>a : Symbol(a, Decl(ttttPseudoInferredUnionOfLiterals.ts, 14, 42))
+>p : Symbol(p, Decl(ttttPseudoInferredUnionOfLiterals.ts, 14, 47))
+>a : Symbol(a, Decl(ttttPseudoInferredUnionOfLiterals.ts, 14, 60))
+>q : Symbol(q, Decl(ttttPseudoInferredUnionOfLiterals.ts, 14, 65))
+
