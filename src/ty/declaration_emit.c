@@ -142,6 +142,9 @@ typedef struct Emitting {
     // `name` is only the message's name, not a node of the declaration (tsgo's errorDeclarationNameWithFallback of a
     // JavaScript `exports.x = e`, whose BinaryExpression has no Name()): the tracker's diagnostics go to `at`
     bool name_not_node;
+    // Without a name: the message's is '(Missing)' even for EMIT_DEFAULT_EXPORT (a JavaScript `module.exports = e`,
+    // whose BinaryExpression is the tracker's fallback node)
+    bool missing_name;
     TyPrintedTypes* printed; // Its serializedTypes cache: the walk's printed_types or class_printed_types
 } Emitting;
 
@@ -661,7 +664,7 @@ static Span error_name_node(Walk* me, csview* name) {
         *name = span_sv(e->name);
         return e->name;
     }
-    *name = e->kind == EMIT_DEFAULT_EXPORT ? c_sv("default") : c_sv("(Missing)");
+    *name = e->kind == EMIT_DEFAULT_EXPORT && !e->missing_name ? c_sv("default") : c_sv("(Missing)");
     return span_valid(e->fallback) ? e->fallback : e->at;
 }
 
@@ -6021,6 +6024,21 @@ static void js_declaration_diagnostics_check(SourceFile const* file, ErrorCtx* e
 // (a variable "n" of e's type). What those types name and nothing can (TS4023...). The rest of JavaScript declaration
 // emit (functions, classes, `exports.x = e`, JSDoc types) isn't walked: plan 64 stage 6
 static void check_js_commonjs_exports(Walk* me) {
+    // `module.exports = e` of a value that isn't a name, a function or a class: `declare const _exports: T`, its
+    // diagnostics at the assignment (tsgo's transformExportAssignment through visitCJSExportAssignments)
+    if (my cjs_export_equals && !my cjs_export_equals->binary_op->jsdoc_type) {
+        Expr const* value = cjs_assigned_value(my cjs_export_equals);
+        if (value->tag != EXPR_IDENTIFIER && value->tag != EXPR_FUNCTION && value->tag != EXPR_CLASS_DECL) {
+            Span at = expr_outer_span(my cjs_export_equals);
+            Emitting saved = emit_enter(me, EMIT_DEFAULT_EXPORT, SIG_FUNCTION, span_null, at);
+            my emitting.fallback = at;
+            my emitting.missing_name = true;
+            Ty const* type = lazy_type_get((LazyType*)&value->lazy_type);
+            type = ty_regular(my checker, ty_widened_literal(my checker, ty_widened_nullable(my checker, ty_widened_objects(my checker, type))));
+            serialize_declaration(me, pseudo_of_expression(my checker, value, (PseudoPlace){0}), type, false, false);
+            emit_leave(me, saved);
+        }
+    }
     for_each (i, vec_statement, &my file->ast.statements) {
         if (i->tag != STATEMENT_EXPR) continue;
         Expr const* expr = &i->expr;

@@ -1,0 +1,49 @@
+//// [test/cases/ttttJsDeclarationModuleExportsUnsafeImport.ts] ////
+
+=== /packages/core/src/a.js ===
+const { dxParse } = require('@x/args')
+>dxParse : Symbol(dxParse, Decl(a.js, 0, 7))
+>require : Symbol(require)
+>'@x/args' : Symbol("@x/args", Decl(index.js, 0, 0))
+
+module.exports = {
+>module.exports : Symbol(exports, Decl(a.js, 0, 0))
+>module : Symbol(module, Decl(a.js, 0, 0))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+
+  dxParse,
+>dxParse : Symbol(dxParse, Decl(a.js, 1, 18))
+}
+
+=== /packages/args/src/index.js ===
+const { dxParse } = require('./p')
+>dxParse : Symbol(dxParse, Decl(index.js, 0, 7))
+>require : Symbol(require)
+>'./p' : Symbol("./p", Decl(p.js, 0, 0))
+
+module.exports = { dxParse }
+>module.exports : Symbol(exports, Decl(index.js, 0, 0))
+>module : Symbol(module, Decl(index.js, 0, 0))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+>dxParse : Symbol(dxParse, Decl(index.js, 1, 18))
+
+=== /packages/args/src/p.js ===
+/**
+ * @typedef {Object} ParseOptions
+ * @property {boolean} [x]
+ */
+/**
+ * @param {string[]} a
+ * @param {ParseOptions} [o]
+ */
+function dxParse(a, o) { return 1 }
+>dxParse : Symbol(dxParse, Decl(p.js, 0, 0))
+>a : Symbol(a, Decl(p.js, 8, 17))
+>o : Symbol(o, Decl(p.js, 8, 19))
+
+module.exports = { dxParse }
+>module.exports : Symbol(exports, Decl(p.js, 0, 0))
+>module : Symbol(module, Decl(p.js, 0, 0))
+>exports : Symbol(exports, Decl(p.js, 0, 0))
+>dxParse : Symbol(dxParse, Decl(p.js, 9, 18))
+

@@ -1,0 +1,58 @@
+//// [test/cases/ttttJsDeclarationModuleExportsUnsafeImport.ts] ////
+
+=== /packages/core/src/a.js ===
+const { dxParse } = require('@x/args')
+>dxParse : (a: string[], o?: import("../node_modules/@x/args/src/p").ParseOptions) => number
+>require('@x/args') : { dxParse: (a: string[], o?: import("../node_modules/@x/args/src/p").ParseOptions) => number; }
+>require : any
+>'@x/args' : "@x/args"
+
+module.exports = {
+>module.exports = {  dxParse,} : { dxParse: (a: string[], o?: import("../node_modules/@x/args/src/p").ParseOptions) => number; }
+>module.exports : { dxParse: (a: string[], o?: import("../node_modules/@x/args/src/p").ParseOptions) => number; }
+>module : { exports: { dxParse: (a: string[], o?: import("../node_modules/@x/args/src/p").ParseOptions) => number; }; }
+>exports : { dxParse: (a: string[], o?: import("../node_modules/@x/args/src/p").ParseOptions) => number; }
+>{  dxParse,} : { dxParse: (a: string[], o?: import("../node_modules/@x/args/src/p").ParseOptions) => number; }
+
+  dxParse,
+>dxParse : (a: string[], o?: import("../node_modules/@x/args/src/p").ParseOptions) => number
+}
+
+=== /packages/args/src/index.js ===
+const { dxParse } = require('./p')
+>dxParse : (a: string[], o?: import("./p").ParseOptions) => number
+>require('./p') : { dxParse: (a: string[], o?: import("./p").ParseOptions) => number; }
+>require : any
+>'./p' : "./p"
+
+module.exports = { dxParse }
+>module.exports = { dxParse } : { dxParse: (a: string[], o?: import("./p").ParseOptions) => number; }
+>module.exports : { dxParse: (a: string[], o?: import("./p").ParseOptions) => number; }
+>module : { exports: { dxParse: (a: string[], o?: import("./p").ParseOptions) => number; }; }
+>exports : { dxParse: (a: string[], o?: import("./p").ParseOptions) => number; }
+>{ dxParse } : { dxParse: (a: string[], o?: import("./p").ParseOptions) => number; }
+>dxParse : (a: string[], o?: import("./p").ParseOptions) => number
+
+=== /packages/args/src/p.js ===
+/**
+ * @typedef {Object} ParseOptions
+ * @property {boolean} [x]
+ */
+/**
+ * @param {string[]} a
+ * @param {ParseOptions} [o]
+ */
+function dxParse(a, o) { return 1 }
+>dxParse : (a: string[], o?: ParseOptions) => number
+>a : string[]
+>o : ParseOptions | undefined
+>1 : 1
+
+module.exports = { dxParse }
+>module.exports = { dxParse } : { dxParse: (a: string[], o?: ParseOptions) => number; }
+>module.exports : { dxParse: (a: string[], o?: ParseOptions) => number; }
+>module : { exports: { dxParse: (a: string[], o?: ParseOptions) => number; }; }
+>exports : { dxParse: (a: string[], o?: ParseOptions) => number; }
+>{ dxParse } : { dxParse: (a: string[], o?: ParseOptions) => number; }
+>dxParse : (a: string[], o?: ParseOptions) => number
+

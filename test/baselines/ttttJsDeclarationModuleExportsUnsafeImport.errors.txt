@@ -1,0 +1,32 @@
+/packages/core/src/a.js(2,1): error TS2883: The inferred type of '(Missing)' cannot be named without a reference to 'ParseOptions' from '../node_modules/@x/args/src/p'. This is likely not portable. A type annotation is necessary.
+
+
+==== /packages/core/src/a.js (1 errors) ====
+    const { dxParse } = require('@x/args')
+    module.exports = {
+    ~~~~~~~~~~~~~~~~~~
+      dxParse,
+    ~~~~~~~~~~
+    }
+    ~
+!!! error TS2883: The inferred type of '(Missing)' cannot be named without a reference to 'ParseOptions' from '../node_modules/@x/args/src/p'. This is likely not portable. A type annotation is necessary.
+    
+==== /packages/args/package.json (0 errors) ====
+    { "name": "@x/args", "types": "types/index.d.ts", "exports": { ".": { "types": "./types/index.d.ts", "require": "./src/index.js", "default": "./src/index.js" } } }
+    
+==== /packages/args/src/index.js (0 errors) ====
+    const { dxParse } = require('./p')
+    module.exports = { dxParse }
+    
+==== /packages/args/src/p.js (0 errors) ====
+    /**
+     * @typedef {Object} ParseOptions
+     * @property {boolean} [x]
+     */
+    /**
+     * @param {string[]} a
+     * @param {ParseOptions} [o]
+     */
+    function dxParse(a, o) { return 1 }
+    module.exports = { dxParse }
+    

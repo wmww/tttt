@@ -451,6 +451,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationLineCommentTrailingBlanks': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationLiteralText': {
         errors: true,
         symbols: true,
@@ -1181,6 +1187,17 @@ const baselines = {
         dts: true,
     },
     'ttttJsDeclarationMapsThisMembersAndJsDocTrivia': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttJsDeclarationModuleExportsUnsafeImport': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsDeclarationPropertyDefaultBrackets': {
         errors: true,
         symbols: true,
         types: true,
