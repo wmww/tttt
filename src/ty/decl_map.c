@@ -386,7 +386,15 @@ char const* decl_map_type_inner_end(TypeNode const* node, SourceFile const* file
         case TYPE_UNION: case TYPE_INTERSECTION: {
             for (isize_t i = vec_type_size(&node->composite); i-- > 0;) {
                 TypeNode const* member = vec_type_at(&node->composite, i);
-                if (!member->placeholder) return decl_map_type_end(member, file);
+                if (member->placeholder) continue;
+                char const* end = decl_map_type_end(member, file);
+                // (JSDoc's `T=`: past the `=`)
+                if (node->jsdoc_optional && member->synthesized && i > 0) {
+                    end = decl_map_type_end(vec_type_at(&node->composite, i - 1), file);
+                    char const* c = end ? decl_map_skip_trivia(end, file_end(file)) : nullptr;
+                    return c && c < file_end(file) && *c == '=' ? c + 1 : end;
+                }
+                return end;
             }
             return nullptr;
         }

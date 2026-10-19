@@ -1,0 +1,26 @@
+//// [test/cases/ttttJsDeclarationMapsContinuationLiterals.ts] ////
+
+=== a.js ===
+/**
+ * @typedef {{
+ *   n?: number,
+ *   'ts-check'?: string,
+ * }} OptionsShape
+ */
+/**
+ * @typedef {(
+ *   tag: string,
+ *   ...tokens: number[]
+ * ) => void} ChangeTag
+ */
+/**
+ * @typedef {object} P
+ * @property {string} path
+ * @property {string=} title
+ */
+/** @param {P} p @param {number=} n */
+export function f(p, n) {}
+>f : Symbol(f, Decl(a.js, 0, 0))
+>p : Symbol(p, Decl(a.js, 18, 18))
+>n : Symbol(n, Decl(a.js, 18, 20))
+

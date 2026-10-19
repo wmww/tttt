@@ -193,14 +193,10 @@ Left:
   arrayRules.equals>>`, `isEmpty` being another export of the module), tttt writes the annotation's text with K and
   TRules out of scope. tttt's is wrong too: it should print the instantiation (`DropFirst<Parameters<typeof
   arrayRules.equals>>`), which still won't match tsgo. Not worth emulating tsgo's symbol mix-up.
-- **rocket SocialPreviewPlayground**: `@property {string=} title` printed `title?: string | undefined;` misses tsgo's
-  mapping of the `;` at the JSDoc optional type's end (after the `=`): the union jsdoc_union() makes has no position.
-- **eslint-plugin-jsdoc** `iterateJsdoc.d.ts.map` (`.` of a qualified type) and `tsBanTsComment.d.ts.map` (`'ts`
-  literal), single mappings, uninvestigated; 5 files match `tsgo --singleThreaded` (checker split).
-- **markdown-magic/packages/core process-contents**: `module.exports = { processContents: blockTransformer }` (an
-  imported function of a JS workspace package): tttt maps the property name, tsgo doesn't (other `module.exports =
-  {...}` maps fine after this pass's CommonJS rule: names mapped, the node builder's types not).
+- **eslint-plugin-jsdoc**: 5 files match `tsgo --singleThreaded` (checker split); its maps, rocket's `{string=}` and
+  markdown-magic's all match since agent A's second pass (2026-10-19).
 - **`/** @type {{a: number}} */ export default { a: 1 }`**: tsgo maps the member to the literal's property when the tag's
   type and the literal's agree (with an extra optional member it maps the tag, like tttt).
-- **telegraf** partial reuse (below, unchanged), **vueuse `.test/mount.d.ts`** mismatches again (also at this
+- **telegraf** partial reuse (below, unchanged: tsgo reuses the asserted node with only a local alias reference
+  replaced, a reuse mode tttt's printer doesn't have; not cheap), **vueuse `.test/mount.d.ts`** mismatches again (also at this
   pass's base commit) after matching in the morning's full run: an order or environment effect.

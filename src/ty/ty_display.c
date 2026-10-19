@@ -116,6 +116,9 @@ static char const* token_after(TyDisplay d, char const* from, char c) {
 
 // A parameter's start (past its decorators and modifiers: tsc's node starts at them, but declaration emit makes a new
 // one without them where there were any... the transformer's updateParameterDeclaration keeps the range)
+// (An identifier's first character: a JSDoc node starting with one maps at it, others at their line's `*`)
+static bool word_start_char(char c) { return isalpha((unsigned char)c) || c == '_' || c == '$' || (unsigned char)c >= 0x80; }
+
 static char const* arg_start(FunctionArg const* arg) { return span_valid(arg->span) ? arg->span.buf : nullptr; }
 
 // An object type's braces and members: `{ a: T; }` on one line, or declaration emit's one member per line (see
@@ -2450,10 +2453,18 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
         Binding const* binding = &i->initializer.binding;
         TyDisplay arg_d = d;
         if (function->jsdoc_type && !function->jsdoc_callback) arg_d.no_map = true;
-        map_at(arg_d, arg_start(i));
+        // (A JSDoc type's parameter first on a continuation line starts at its `*` unless it starts with its name:
+        // tsgo maps skipTrivia(pos), `...rest`)
+        char const* start = arg_start(i);
+        if (start && D_MAP(arg_d) && !word_start_char(*start)) start = decl_map_jsdoc_line_start(D_MAP(arg_d), start);
+        map_at(arg_d, start);
         if (i->rest) {
             Span rest = function_arg_rest_span(i);
-            out_token_mapped(arg_d, span_valid(rest) ? span_end_ptr(rest) - 3 : nullptr, c_sv("..."));
+            // (Its token from the line's `*` too, like the parameter)
+            char const* dots = span_valid(rest) ? span_end_ptr(rest) - 3 : nullptr;
+            map_at(arg_d, dots && D_MAP(arg_d) ? decl_map_jsdoc_line_start(D_MAP(arg_d), dots) : dots);
+            out_lit(d, "...");
+            if (dots && D_MAP(arg_d)) map_at(arg_d, dots + 3);
         }
         if (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) {
             cstr pattern = cstr_init();
@@ -2803,9 +2814,9 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
         if (described && i->key.tag == INTERFACE_KEY_NAME) out_jsdoc_description(d, i);
         member_begin_node(d, comment_span);
         if (D_MAP(d) && span_valid(comment_span) && !(i->key.tag == INTERFACE_KEY_NAME && i->key.span.buf == comment_span.buf &&
-            !(i->readonly && csview_starts_with(span_sv(comment_span), "readonly")))) {
+            word_start_char(*comment_span.buf) && !(i->readonly && csview_starts_with(span_sv(comment_span), "readonly")))) {
             // (A JSDoc type literal's member first on its line starts at the line's `*` unless it starts with its name:
-            // tsgo maps a property or method signature from its name, others from skipTrivia(pos))
+            // tsgo maps a property or method signature from an identifier name, others, `'a-b'?: T` too, from skipTrivia(pos))
             map_at(d, decl_map_jsdoc_line_start(D_MAP(d), comment_span.buf));
         } else {
             map_span(d, comment_span, false);
@@ -2918,9 +2929,17 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 if (i->key.tag == INTERFACE_KEY_EXPR) {
                     display_node_computed_name(me, d, i->key.expr);
                 } else if (interface->jsdoc_literal && i->key.span.size && !ty_is_identifier_name(span_sv(i->key.span))) {
-                    // (A JSDoc `@property {T} a-b` is a string literal name: tsgo's reparser)
-                    map_span(d, i->key.span, false);
+                    // (A JSDoc `@property {T} a-b` is a string literal name: tsgo's reparser; one first on a continuation
+                    // line of a type literal starts at its `*`)
+                    if (D_MAP(d) && span_valid(i->key.span)) map_at(d, decl_map_jsdoc_line_start(D_MAP(d), i->key.span.buf));
                     display_quoted_string(d, span_sv(i->key.span), false, true);
+                    map_span(d, i->key.span, true);
+                } else if (D_MAP(d) && span_valid(i->key.span) && i->key.span.size && !word_start_char(*i->key.span.buf) &&
+                    D_MAP(d)->is_js
+                ) {
+                    // (A literal name first on a JSDoc continuation line starts at its `*`)
+                    map_at(d, decl_map_jsdoc_line_start(D_MAP(d), i->key.span.buf));
+                    out(d, span_sv(i->key.span));
                     map_span(d, i->key.span, true);
                 } else {
                     out_mapped(d, i->key.span);

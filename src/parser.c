@@ -2848,7 +2848,9 @@ static void hop_jsdoc_optional(Parser* parent, TypeNode* type) {
         return;
     }
     p.pos++;
+    u32 pos = type->pos;
     *type = jsdoc_union(*type, jsdoc_synthesized(type_undefined));
+    type->pos = pos; // (tsgo's JSDocOptionalType: from T's start past the `=`, decl_map_type_end())
     type->jsdoc_optional = true;
     type->parsed = true;
     parse_success(&p);

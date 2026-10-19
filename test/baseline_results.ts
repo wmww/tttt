@@ -1219,6 +1219,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttJsDeclarationMapsContinuationLiterals': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttJsDeclarationMapsJsDoc': {
         errors: true,
         symbols: true,
@@ -1283,6 +1289,11 @@ const baselines = {
         dts: true,
     },
     'ttttJsDocTypedExportDefaultElaborates': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsDuplicateExportedFunction': {
         errors: true,
         symbols: true,
         types: true,
@@ -1907,6 +1918,11 @@ const baselines = {
         types: true,
     },
     'ttttUnusedRedeclaration': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnusedTypeOnlyNamespaceImport': {
         errors: true,
         symbols: true,
         types: true,
