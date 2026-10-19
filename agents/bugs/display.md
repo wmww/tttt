@@ -219,8 +219,14 @@ Same diagnostics by (file, line, column, code), other text. After the 2026-10-18
 projects): 3667 match, **1 `text`** (was 54; babel-traverse and tiptap fixed by agent C 2026-10-19), 7 `diagnostics` (bugs/sourcesweep_checker.md), 0 order/exit code/crash.
 Each needs a cut-down repro first (`scripts/clidiff.py -f '^PROJECT$' -v`; `-k KIND --last` lists a bucket's
 diagnostics). Left:
-- **Truncation depth** (apollo-client/integration-tests/vite: `DeepPartial<TValue>` vs `DeepPartial<...>`, `(...)` vs
-  `...`, and a TS2322 chain three lines shorter, `'undefined & TData' ... 'RegExp & CustomMaybeMaskedImplementation'`). Method that found rxjs's and mikro-orm's: a
+- **apollo-client/integration-tests/vite** (agent C 2026-10-19 fixed its `... | ...`, `(...)` and `{}` placeholders;
+  left, each its own mechanism): ObservableQuery.ts:680's chain lacks tsc's two `'undefined & TData' is not assignable
+  to type 'RegExp & CustomMaybeMaskedImplementation<TData>'` lines three times (a relation path difference);
+  ObservableQuery.ts:559's `{ data: ... ? TComplete : CustomMaybeMaskedImplementation<...>; ... 4 more ...; }` where
+  tttt prints the last alias argument (length counted lower before it); useFragment.ts:234's chain is two levels
+  shallower in tttt (the conditional's intersection target is split differently); useSuspenseFragment.ts:239's target
+  `CustomMaybeMaskedImplementation<TData | null> extends ...` where tttt says `CustomMaybeMaskedImplementation<TData> |
+  null extends ...` (an alias argument through an HKT application, maybe a checker difference: check first). Method that found rxjs's and mikro-orm's: a
   /tmp overlay build of tsgo's cmd/tsc with nodebuilderimpl.go's typeToTypeNode logging `b.ctx.approximateLength` and
   the type's symbol on entry and exit (env-gated; `go build -overlay` with ensure-typescript.sh --env), against the same
   log of `*d.approx` around ty_display(); the first entry where the numbers part is the bug. The same logging at

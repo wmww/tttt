@@ -1,0 +1,69 @@
+//// [test/cases/ttttTruncatedPlaceholderShapes.ts] ////
+
+=== ttttTruncatedPlaceholderShapes.ts ===
+// Past a message's truncation length: a conditional's union branch is one placeholder (visitAndTransformType), a
+// placeholder member of a union or intersection isn't parenthesized (a type reference node), and the symbolless
+// empty object type of a narrowing still prints `{}` (createAnonymousTypeNodeEx prints it from its members)
+function f<T>(
+>f : <T>(long: { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1; }, c: T extends string ? { s: T; } : { n: T; } | { m: T; }, q: (T extends string ? { x: T; } : { y: T; }) & ({} | null), g: (() => T) | (() => string), u: T | undefined) => void
+
+  long: { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1 },
+>long : { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1; }
+>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : string
+>bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb : number
+>cccccccccccccccccccccccccc : boolean
+>ddddddddddddddddddd : 1
+
+  c: T extends string ? { s: T } : { n: T } | { m: T },
+>c : T extends string ? { s: T; } : { n: T; } | { m: T; }
+>s : T
+>n : T
+>m : T
+
+  q: (T extends string ? { x: T } : { y: T }) & ({} | null),
+>q : (T extends string ? { x: T; } : { y: T; }) & ({} | null)
+>x : T
+>y : T
+
+  g: (() => T) | (() => string),
+>g : (() => T) | (() => string)
+
+  u: T | undefined,
+>u : T | undefined
+
+) {
+  const x1: number = [long, c] as const;
+>x1 : number
+>[long, c] as const : readonly [{ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1; }, T extends string ? { s: T; } : { n: T; } | { m: T; }]
+>[long, c] : readonly [{ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1; }, T extends string ? { s: T; } : { n: T; } | { m: T; }]
+>long : { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1; }
+>c : T extends string ? { s: T; } : { n: T; } | { m: T; }
+
+  const x2: number = [long, q, q] as const;
+>x2 : number
+>[long, q, q] as const : readonly [{ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1; }, (T extends string ? { x: T; } : { y: T; }) & ({} | null), (T extends string ? { x: T; } : { y: T; }) & ({} | null)]
+>[long, q, q] : readonly [{ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1; }, (T extends string ? { x: T; } : { y: T; }) & ({} | null), (T extends string ? { x: T; } : { y: T; }) & ({} | null)]
+>long : { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1; }
+>q : (T extends string ? { x: T; } : { y: T; }) & ({} | null)
+>q : (T extends string ? { x: T; } : { y: T; }) & ({} | null)
+
+  const x3: number = [long, g, g] as const;
+>x3 : number
+>[long, g, g] as const : readonly [{ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1; }, (() => T) | (() => string), (() => T) | (() => string)]
+>[long, g, g] : readonly [{ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1; }, (() => T) | (() => string), (() => T) | (() => string)]
+>long : { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1; }
+>g : (() => T) | (() => string)
+>g : (() => T) | (() => string)
+
+  if (u !== undefined) { const x4: number = [long, u, u] as const; }
+>u !== undefined : boolean
+>u : T | undefined
+>undefined : undefined
+>x4 : number
+>[long, u, u] as const : readonly [{ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1; }, T & ({} | null), T & ({} | null)]
+>[long, u, u] : readonly [{ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1; }, T & ({} | null), T & ({} | null)]
+>long : { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1; }
+>u : T & ({} | null)
+>u : T & ({} | null)
+}
+

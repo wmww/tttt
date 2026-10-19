@@ -1,0 +1,74 @@
+//// [test/cases/ttttTruncatedPlaceholderShapes.ts] ////
+
+=== ttttTruncatedPlaceholderShapes.ts ===
+// Past a message's truncation length: a conditional's union branch is one placeholder (visitAndTransformType), a
+// placeholder member of a union or intersection isn't parenthesized (a type reference node), and the symbolless
+// empty object type of a narrowing still prints `{}` (createAnonymousTypeNodeEx prints it from its members)
+function f<T>(
+>f : Symbol(f, Decl(ttttTruncatedPlaceholderShapes.ts, 0, 0))
+>T : Symbol(T, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 11))
+
+  long: { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: number; cccccccccccccccccccccccccc: boolean; ddddddddddddddddddd: 1 },
+>long : Symbol(long, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 14))
+>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : Symbol(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, Decl(ttttTruncatedPlaceholderShapes.ts, 4, 9))
+>bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb : Symbol(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, Decl(ttttTruncatedPlaceholderShapes.ts, 4, 49))
+>cccccccccccccccccccccccccc : Symbol(cccccccccccccccccccccccccc, Decl(ttttTruncatedPlaceholderShapes.ts, 4, 92))
+>ddddddddddddddddddd : Symbol(ddddddddddddddddddd, Decl(ttttTruncatedPlaceholderShapes.ts, 4, 129))
+
+  c: T extends string ? { s: T } : { n: T } | { m: T },
+>c : Symbol(c, Decl(ttttTruncatedPlaceholderShapes.ts, 4, 155))
+>T : Symbol(T, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 11))
+>s : Symbol(s, Decl(ttttTruncatedPlaceholderShapes.ts, 5, 25))
+>T : Symbol(T, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 11))
+>n : Symbol(n, Decl(ttttTruncatedPlaceholderShapes.ts, 5, 36))
+>T : Symbol(T, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 11))
+>m : Symbol(m, Decl(ttttTruncatedPlaceholderShapes.ts, 5, 47))
+>T : Symbol(T, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 11))
+
+  q: (T extends string ? { x: T } : { y: T }) & ({} | null),
+>q : Symbol(q, Decl(ttttTruncatedPlaceholderShapes.ts, 5, 55))
+>T : Symbol(T, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 11))
+>x : Symbol(x, Decl(ttttTruncatedPlaceholderShapes.ts, 6, 26))
+>T : Symbol(T, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 11))
+>y : Symbol(y, Decl(ttttTruncatedPlaceholderShapes.ts, 6, 37))
+>T : Symbol(T, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 11))
+
+  g: (() => T) | (() => string),
+>g : Symbol(g, Decl(ttttTruncatedPlaceholderShapes.ts, 6, 60))
+>T : Symbol(T, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 11))
+
+  u: T | undefined,
+>u : Symbol(u, Decl(ttttTruncatedPlaceholderShapes.ts, 7, 32))
+>T : Symbol(T, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 11))
+
+) {
+  const x1: number = [long, c] as const;
+>x1 : Symbol(x1, Decl(ttttTruncatedPlaceholderShapes.ts, 10, 7))
+>long : Symbol(long, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 14))
+>c : Symbol(c, Decl(ttttTruncatedPlaceholderShapes.ts, 4, 155))
+>const : Symbol(const)
+
+  const x2: number = [long, q, q] as const;
+>x2 : Symbol(x2, Decl(ttttTruncatedPlaceholderShapes.ts, 11, 7))
+>long : Symbol(long, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 14))
+>q : Symbol(q, Decl(ttttTruncatedPlaceholderShapes.ts, 5, 55))
+>q : Symbol(q, Decl(ttttTruncatedPlaceholderShapes.ts, 5, 55))
+>const : Symbol(const)
+
+  const x3: number = [long, g, g] as const;
+>x3 : Symbol(x3, Decl(ttttTruncatedPlaceholderShapes.ts, 12, 7))
+>long : Symbol(long, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 14))
+>g : Symbol(g, Decl(ttttTruncatedPlaceholderShapes.ts, 6, 60))
+>g : Symbol(g, Decl(ttttTruncatedPlaceholderShapes.ts, 6, 60))
+>const : Symbol(const)
+
+  if (u !== undefined) { const x4: number = [long, u, u] as const; }
+>u : Symbol(u, Decl(ttttTruncatedPlaceholderShapes.ts, 7, 32))
+>undefined : Symbol(undefined)
+>x4 : Symbol(x4, Decl(ttttTruncatedPlaceholderShapes.ts, 13, 30))
+>long : Symbol(long, Decl(ttttTruncatedPlaceholderShapes.ts, 3, 14))
+>u : Symbol(u, Decl(ttttTruncatedPlaceholderShapes.ts, 7, 32))
+>u : Symbol(u, Decl(ttttTruncatedPlaceholderShapes.ts, 7, 32))
+>const : Symbol(const)
+}
+

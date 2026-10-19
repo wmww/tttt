@@ -300,6 +300,9 @@ static u64 relation_key_of(Checker* me, Ty const* source, Ty const* target, bool
             empty->anonymous.state = arena_new(&my arena, TyObjectState);
             empty->anonymous.state->members = arena_new(&my arena, Members);
             empty->anonymous.state->members_state = LAZY_STATE_DONE;
+            // (tsc's emptyObjectType, unknownEmptyObjectType and anyFunctionType have no symbol: printed from their
+            // members even past a message's truncation length, `{}`. emptyTypeLiteralType has one)
+            empty->anonymous.no_symbol = which != GLOBAL_EMPTY_TYPE_LITERAL;
             my global_types[which] = empty;
         } else {
             Symbol const* decl = program_get_global(my program, csview_from(names[which]), SYMBOL_TYPE);

@@ -6240,6 +6240,19 @@ static bool displays_as_intersection(Checker* me, TyDisplay d, Ty const* ty) {
 }
 
 static void display_parenthesized_if(Checker* me, TyDisplay d, Ty const* ty, bool parens) {
+    // (Past a message's truncation length the member may print as the elided information placeholder, a type
+    // reference node `...` that tsc's printer doesn't parenthesize: printed aside first then)
+    if (parens && d.cut_off && display_over(d) && !d.tracker && !D_MAP(d) && !d.comments) {
+        cstr text = cstr_init();
+        TyDisplay aside = d;
+        aside.target = &text;
+        ty_display(me, aside, ty);
+        bool elided = csview_equals(cstr_sv(&text), "...");
+        if (!elided) out_lit(d, "(");
+        append_printed(d, &text);
+        if (!elided) out_lit(d, ")");
+        return;
+    }
     if (parens) out_lit(d, "(");
     ty_display(me, d, ty);
     if (parens) out_lit(d, ")");
@@ -6336,6 +6349,12 @@ static void display_branch(Checker* me, TyDisplay d, Ty const* branch) {
         if (d.tracker) d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
         approx_add(d, 3);
         out(d, truncating(d) ? c_sv("...") : c_sv("any"));
+        return;
+    }
+    // (Visited as a whole, visitAndTransformType: past the truncation length the union is one placeholder, not one per
+    // member)
+    if (display_over(d)) {
+        out_elided(d);
         return;
     }
     TyDisplayVisit visit = { .ty = branch, .outer = d.visiting };
