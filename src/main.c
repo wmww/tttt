@@ -564,6 +564,9 @@ static bool count_gating_diagnostics(ErrorCtx* errs, Options const* opts) {
 
 // `defer`: deferred function bodies (plan 78); an output that tells them from the eager parse and walk runs again
 // without (program_defer_failed())
+// tsgo -b's builders (its default --builders)
+#define TSGO_BUILDERS 4
+
 static_failable check_files(Options const* opts, Output* out, csview config, ProjectSet* projects, u32 project,
     ProjectRedirects const* redirects, bool last, CheckCounts* counts, bool defer, returns int
 ) {
@@ -886,7 +889,7 @@ static_failable check_command_line(Options const* opts, returns int) {
     ProjectSet* projects = project_set_new(fs);
     project_set_run_external_code(projects, runs_external_code(opts));
     u32 project = cstr_size(&config) ? project_set_load(projects, cstr_sv(&config)) : 0;
-    ProjectRedirects* redirects = cstr_size(&config) ? project_redirects_new(projects, project) : nullptr;
+    ProjectRedirects* redirects = cstr_size(&config) ? project_redirects_new(projects, project, nullptr, 0) : nullptr;
     Output out = {0};
     FailableResult result =
         check_files(opts, &out, cstr_sv(&config), projects, project, redirects, true, nullptr, !opts->no_defer_bodies, _OUTPUT_PARAM);
@@ -1006,12 +1009,18 @@ static_failable build(Options const* opts, returns int) {
     b.jobs = calloc((size_t)count + 1, sizeof(BuildJob));
     atomic_init(&b.next, 0);
     atomic_init(&b.end, count);
-    // Everything the programs read of the project set, made before any of them runs
+    // Everything the programs read of the project set, made before any of them runs. A program reads the outputs of
+    // the projects tsc -b built before it, references or not (an import into another package's `dist`). tsgo's
+    // builders (4, else --builders) take projects in build order and only wait for references: an unreferenced
+    // project is built by the time one 4 places later starts, else it races with it, and counts as not built
+    // (hacks.md). (The one way --builders changes the output, like tsgo's: `--builders 1` is tsc 5's sequential -b)
+    u32 window = opts->build_jobs ? opts->build_jobs : TSGO_BUILDERS;
     for (u32 i = 0; i < count; i++) {
         b.jobs[i].out.buffered = jobs > 1;
         if (!project_set_at(projects, order[i])->readable) continue;
         project_set_root_files(projects, order[i]);
-        b.jobs[i].redirects = project_redirects_new(projects, order[i]);
+        u32 built = i >= window ? i - window + 1 : 0;
+        b.jobs[i].redirects = project_redirects_new(projects, order[i], order, built);
     }
     pthread_t* threads = nullptr;
     if (jobs > 1) {

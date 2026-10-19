@@ -355,6 +355,14 @@ either, and they were most of the cost of `-b` (TypeScript's `compiler/`, isolat
 default (`source_file_reads_as_declaration()`), and its const enums are ambient for TS2748 unless its project preserves
 them (`SourceFile.reference_const_enums_ambient`).
 
+Under `-b` a program also reads the outputs of projects it doesn't reference that tsc -b built before it (a test
+config importing another package through its `exports` into `dist`, `../../dist/x.js`): those projects join its
+`ProjectRedirects` as *built* ones, their outputs existing and read as their sources like a reference's, except the
+program's own root files (tsc then reads both the source and the `.d.ts`; tttt has one file, the checked source).
+Which ones are built is a race in tsgo, whose builders (4, `--builders`) take projects in build order and wait only
+for references: tttt counts a project built when it is at least that many places earlier (`build()`;
+`--builders 1` is tsc 5's sequential `-b`). `scripts/scenarios.py` also replays tttt's own scenarios (`test/scenarios`).
+
 Divergences of `-b` by design: never stale outputs, a referenced project's declarations typed under the referencing
 program's strictness, and no `/// <reference types="node" />` leaking from a built `.d.ts`.
 
@@ -368,7 +376,8 @@ project with the redirects; on a solution config (no files, only references) it 
 freed when done (release builds otherwise leave the last program to the exit; `program_drop()` frees the files on the
 program's threads), going on past errors (tsc 5.6+; `--stopBuildOnErrors`). No program needs another's result, so
 `--builders J` projects are checked at once (default 2 with 4 threads, each program on threads/J), each into an
-`Output` buffer that the main thread prints in build order: the output doesn't depend on J. The project set's root
+`Output` buffer that the main thread prints in build order: the output depends on J only through the built-outputs
+window below, which only an explicit `--builders` sets (like tsgo's). The project set's root
 files and every program's `ProjectRedirects` are made before the build threads start, which only read them. The config diagnostics of references (TS6053, TS6306, TS6310) are reported on the program's
 own config; composite's TS6307 and rootDir's TS6059 (`program_verify_project_files()`) go at the import that brought
 the file in (`SourceFile.included_at`). `scripts/scenarios.py` replays the first command of tsc's own tsbuild/tsc project

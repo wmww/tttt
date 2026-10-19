@@ -47,10 +47,11 @@ StrList const* project_set_root_files(ProjectSet* me, u32 index);
 // `circular`. Returns how many projects *out (malloc'd) holds
 u32 project_set_build_order(ProjectSet* me, u32 const* roots, u32 root_count, u32** out, StrList* cycle_errors);
 
-// What one program sees of the projects its project references, transitively (not the project itself)
+// What one program sees of the projects its project references, transitively (not the project itself), and under -b
+// of the projects built before it (built: indices into set, in build order), which it may reach through their outputs
 typedef struct ProjectRedirects ProjectRedirects;
 
-ProjectRedirects* project_redirects_new(ProjectSet* set, u32 project);
+ProjectRedirects* project_redirects_new(ProjectSet* set, u32 project, u32 const* built, u32 built_count);
 void project_redirects_destroy(ProjectRedirects* me);
 // How many referenced projects (0: the program has no redirects)
 u32 project_redirects_count(ProjectRedirects const* me);

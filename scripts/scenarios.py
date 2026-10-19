@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Project reference scenarios mined from tsgo's own baselines (plan 41; thirdparty/typescript, the 7.1 oracle): tsbuild/*
-and tsc/{projectReferences,composite}. Each baseline holds a virtual filesystem (`Input::`), a tsc command and its
+and tsc/{projectReferences,composite}, and tttt's own in test/scenarios (`own/NAME`). Each baseline holds a virtual filesystem (`Input::`), a tsc command and its
 `Output::`. Only the first command counts (later ones are incremental edits). The tree is written under a temporary
 directory, release/tttt runs the command there (`-b`/`-p` and the options tttt knows; output-only flags dropped), and
 the (file, line, code) of the diagnostics are compared with tsc's.
@@ -18,6 +18,9 @@ from collections import Counter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REF = os.path.join(ROOT, "thirdparty/typescript/tsc/testdata/baselines/reference")
+# tttt's own scenarios in the same format (named own/...): divergences found on real solutions, cut down, with tsgo's
+# output (`--builders 1` where tsgo's concurrent builders would race on outputs another project reads)
+OWN = os.path.join(ROOT, "test/scenarios")
 DIRS = ["tsbuild", "tsc/projectReferences", "tsc/composite"]
 TSC = "tsgo"
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
@@ -205,6 +208,7 @@ def main():
             for f in fs:
                 if f.endswith(".js"):
                     names.append(os.path.relpath(os.path.join(dirpath, f), REF)[:-3])
+    names += ["own/" + f[:-3] for f in os.listdir(OWN) if f.endswith(".js")]
     names.sort()
     passed, failed, skipped = [], [], Counter()
     for name in names:
@@ -214,7 +218,7 @@ def main():
         if why:
             skipped[why] += 1
             continue
-        scenario = parse(os.path.join(REF, name + ".js"))
+        scenario = parse(os.path.join(OWN, name[4:] + ".js") if name.startswith("own/") else os.path.join(REF, name + ".js"))
         if not scenario:
             skipped["no tsc command or output"] += 1
             continue

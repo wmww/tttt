@@ -195,7 +195,9 @@ static char const* declaration_extension(csview path, isize* stem) {
     return nullptr;
 }
 
-static void redirects_add_project(ProjectRedirects* me, u32 project_index) {
+// built: an unreferenced project built earlier (project_redirects_new()), whose outputs only stand for its sources,
+// and only for the files that aren't the program's own (own_roots)
+static void redirects_add_project(ProjectRedirects* me, u32 project_index, bool built, HMapProjectIndex const* own_roots) {
     project_set_root_files(my set, project_index);
     Project const* project = &my set->projects[project_index];
     u32 slot = my count++;
@@ -206,9 +208,14 @@ static void redirects_add_project(ProjectRedirects* me, u32 project_index) {
     cstr common = cstr_null;
     for (isize i = 0; i < project->root_files.count; i++) {
         csview file = cstr_sv(&project->root_files.items[i]);
+        // (A built project's file that a referenced one has is the reference's; one of the program's own roots is
+        // checked, reached through its output too)
+        if (built && hmap_project_index_contains(&my source_projects, file)) continue;
         // (A file of several referenced projects is the last one's, children after parents: tsgo's initMapperWorker
         // maps.Copy overwrites)
-        hmap_project_index_insert_or_assign(&my source_projects, cstr_from_sv(file), slot + 1);
+        if (!built || !hmap_project_index_contains(own_roots, file)) {
+            hmap_project_index_insert_or_assign(&my source_projects, cstr_from_sv(file), slot + 1);
+        }
         isize stem = 0;
         char const* extension = declaration_extension(file, &stem);
         if (!extension) continue;
@@ -242,17 +249,34 @@ static void redirects_collect(ProjectRedirects* me, u32 project, uint8_t* seen) 
         u32 referenced = p->referenced[i];
         if (seen[referenced]) continue;
         seen[referenced] = 1;
-        if (my set->projects[referenced].readable) redirects_add_project(me, referenced);
+        if (my set->projects[referenced].readable) redirects_add_project(me, referenced, false, nullptr);
         redirects_collect(me, referenced, seen);
     }
 }
 
-ProjectRedirects* project_redirects_new(ProjectSet* set, u32 project) {
+ProjectRedirects* project_redirects_new(ProjectSet* set, u32 project, u32 const* built, u32 built_count) {
     ProjectRedirects* me = c_new(ProjectRedirects, { .set = set });
     my projects = c_new_n(u32, set->count + 1);
     uint8_t* seen = calloc((size_t)(set->count + 1), 1);
     seen[project] = 1;
     redirects_collect(me, project, seen);
+    if (built_count) {
+        // tsc -b's outputs of the projects built before this one, which its program reads where an import reaches
+        // them by path (a package's `exports` into its `dist`, `../../dist/x.js`) though it doesn't reference them:
+        // read as their sources like a reference's. A file of the program's own stays its own (tsc reads both the
+        // source and the output declaration file then, two files: tttt can't, one is)
+        HMapProjectIndex own_roots = {0};
+        StrList const* roots = project_set_root_files(set, project);
+        for (isize i = 0; i < roots->count; i++) hmap_project_index_insert(&own_roots, cstr_from_sv(cstr_sv(&roots->items[i])), 1);
+        for (u32 i = 0; i < built_count; i++) {
+            Project const* p = &set->projects[built[i]];
+            bool declares = (p->options.declaration || p->options.composite) && !p->options.no_emit;
+            if (seen[built[i]] || !p->readable || !declares) continue;
+            seen[built[i]] = 1;
+            redirects_add_project(me, built[i], true, &own_roots);
+        }
+        hmap_project_index_drop(&own_roots);
+    }
     free(seen);
     if (getenv("TTTT_DEBUG_PROJECTS")) {
         eprintln("redirects of ", set->projects[project].config, " (", set->projects[project].reference_count,
