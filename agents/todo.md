@@ -30,9 +30,10 @@ re-saved baseline only.
    are 0.06% of vscode's; permuting them (`TTTT_ORDER_SEED`) changes no corpus, DT, `$ExpectType` or source sweep
    output and one suite test. The spread-of-a-union class got a structural key (suite +1). The other condition:
    is_deeply_nested_as()'s "newer id" test.
-3. **Plan 86 stage 2, session 1**: cachegrind (`--cache-sim=yes`) on drizzle and tsc at K1, rank the largest sources
-   of LL and I1 misses by function and by data structure; write the ranked lever list into plan 86 stage 2, then
-   take the top one.
+3. Done: plan 86 stage 2's ranking is in the plan ("The ranking"; `scripts/cgrank.py`). Instruction footprint about
+   42% of the stall estimate, hash tables 10%/5%, Ty header reads 5%, fresh-memory writes mostly a cachegrind
+   artifact. Taken: the SyntaxKind `!==` narrowing memo (tsc -2.3% instructions, -7% D1 misses);
+   intern_lookup()/intern_insert() saved only instructions (drizzle -0.5%).
 4. **Plan 87's planning session** (`-b` reads its references' emitted declarations): research tsgo's behaviour,
    prototype on the `-b` sweep, delete-first (the builder window, the reference-source private/internal rules), gate
    as the stub says. Write the real plan or close it.
@@ -40,7 +41,8 @@ re-saved baseline only.
    (minus tsgo's own split), the `-b` sweep's non-plan-87 leftovers (`-p` bugs first: hono request.ts, ghostfolio,
    atproto expect-type, base-ui, babel TS2590), perfsweep's worst types ratio (lightweight-charts hlc-area, 1.63).
    Skip whatever plan 87 will absorb if entry 4 said go.
-6. **Plan 86 stage 2, session 2**: the next lever from entry 3's list.
+6. **Plan 86 stage 2, session 2**: the next lever from entry 3's list: (a) the instruction footprint (outline the
+   cold arms of instantiate_inner and the relation switch, judged by cachegrind's I1 misses and by wall at K1).
 7. **Plan 87 stage 1** if entry 4 said go (its first stage, as the plan sizes it); otherwise **vue 0 / 2**: tsc's
    in-flight-free member resolution (bugs/sourcesweep_checker.md, the vue bullet), a planning-and-prototype session:
    does dropping tttt's re-entrancy guard for this shape (members_reentered_unguarded()) to let the instantiation

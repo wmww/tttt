@@ -190,6 +190,11 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   tsc follows resolved bases).
 
 ## Control flow and narrowing (`flow.c`, `ty/flow.c`)
+- `without_unit()` (ty/flow.c): the `!==`-a-unit filter of a union is memoized per (union, unit), KEY_FLOW_NOT_UNIT.
+  This assumes is_not_unit_comparable_to's answers never change, but they come from comparability relations and base
+  constraints, which tsc recomputes each time (a relation answered "maybe" inside a cycle could differ later). It is
+  a perf memo, plan 86 stage 2. Oracle: `scripts/oracles.py` byte-identical; drop the memo if a divergence traces
+  back to it.
 - Evolving arrays: switch clauses narrow the final array, not the `TY_EVOLVING_ARRAY`. Oracle: suite evolving-array
   tests, flagflip noImplicitAny cells.
 - `expr_is_narrowable_reference()`: `a = b` counts whatever its left side; tsc wants a LeftHandSideExpression (differs
