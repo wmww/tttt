@@ -6,7 +6,7 @@
  * @param {F} fn
  */
 export function g(fn) { }
->g : Symbol(g, Decl(a.js, 0, 0), Decl(a.js, 16, 46))
+>g : Symbol(g, Decl(a.js, 0, 0))
 >fn : Symbol(fn, Decl(a.js, 4, 18))
 
 /**
@@ -25,17 +25,20 @@ export function f(a, b, c) { }
 /**
  * @template {number} K
  */
-export class C { /** @param {K} k */ m(k) {} }
+export class C {
 >C : Symbol(C, Decl(a.js, 12, 30))
->m : Symbol(C.m, Decl(a.js, 16, 16))
->k : Symbol(k, Decl(a.js, 16, 39))
 
+    /** @param {K} k */
+    m(k) {}
+>m : Symbol(C.m, Decl(a.js, 16, 16))
+>k : Symbol(k, Decl(a.js, 18, 6))
+}
 /**
  * @template X
  * @typedef {{ x: X }} Box
  */
 /** @param {Box<number>} b */
-export function g(b) {}
->g : Symbol(g, Decl(a.js, 0, 0), Decl(a.js, 16, 46))
->b : Symbol(b, Decl(a.js, 22, 18))
+export function g2(b) {}
+>g2 : Symbol(g2, Decl(a.js, 19, 1))
+>b : Symbol(b, Decl(a.js, 25, 19))
 

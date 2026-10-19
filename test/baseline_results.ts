@@ -1209,7 +1209,7 @@ const baselines = {
         dts: true,
     },
     'ttttJsDeclarationMapsTemplateTags': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
         dts: true,

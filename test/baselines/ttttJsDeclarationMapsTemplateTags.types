@@ -6,7 +6,7 @@
  * @param {F} fn
  */
 export function g(fn) { }
->g : { <F extends (...args: any) => any>(fn: F): void; (b: Box<number>): void; }
+>g : <F extends (...args: any) => any>(fn: F) => void
 >fn : F
 
 /**
@@ -25,17 +25,20 @@ export function f(a, b, c) { }
 /**
  * @template {number} K
  */
-export class C { /** @param {K} k */ m(k) {} }
+export class C {
 >C : C<K>
->m : (k: any) => void
->k : any
 
+    /** @param {K} k */
+    m(k) {}
+>m : (k: K) => void
+>k : K
+}
 /**
  * @template X
  * @typedef {{ x: X }} Box
  */
 /** @param {Box<number>} b */
-export function g(b) {}
->g : { <F extends (...args: any) => any>(fn: F): void; (b: Box<number>): void; }
+export function g2(b) {}
+>g2 : (b: Box<number>) => void
 >b : Box<number>
 

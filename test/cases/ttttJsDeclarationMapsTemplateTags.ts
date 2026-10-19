@@ -23,10 +23,13 @@ export function f(a, b, c) { }
 /**
  * @template {number} K
  */
-export class C { /** @param {K} k */ m(k) {} }
+export class C {
+    /** @param {K} k */
+    m(k) {}
+}
 /**
  * @template X
  * @typedef {{ x: X }} Box
  */
 /** @param {Box<number>} b */
-export function g(b) {}
+export function g2(b) {}
