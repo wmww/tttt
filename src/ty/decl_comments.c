@@ -120,10 +120,15 @@ static char const* full_start(SourceFile const* file, char const* token) {
     char const* start = text_start(file);
     char const* c = token;
     while (true) {
-        while (c > start && (c[-1] == ' ' || c[-1] == '\t' || c[-1] == '\n' || c[-1] == '\r' || c[-1] == '\v' || c[-1] == '\f')) c--;
+        // (A line comment's range takes in the blanks after it, `// c `: looked for at each step back)
         char const* comment = c > start ? source_file_comment_ending_at(file, c) : nullptr;
-        if (!comment) return c;
-        c = comment;
+        if (comment) {
+            c = comment;
+        } else if (c > start && (c[-1] == ' ' || c[-1] == '\t' || c[-1] == '\n' || c[-1] == '\r' || c[-1] == '\v' || c[-1] == '\f')) {
+            c--;
+        } else {
+            return c;
+        }
     }
 }
 
