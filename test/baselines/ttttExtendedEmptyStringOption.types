@@ -1,0 +1,7 @@
+//// [test/cases/ttttExtendedEmptyStringOption.ts] ////
+
+=== a.ts ===
+export const x = 1;
+>x : 1
+>1 : 1
+

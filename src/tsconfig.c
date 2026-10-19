@@ -172,6 +172,10 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
             if (value->tag == JSON_ARRAY) set_path_list(me, dir, name, value);
         } else if (value->tag == JSON_BOOL) {
             ignore compiler_options_set(my options, csview_from(name), value->boolean ? c_sv("true") : c_sv("false"));
+        } else if (value->tag == JSON_STRING && !cstr_size(&value->string) && compiler_option_is_string(csview_from(name))) {
+            // (An empty string leaves what an extended config gave: tsgo merges the options' non-zero values. qwik's
+            // `"sourceRoot": ""` over its base's "." is still TS5051)
+            continue;
         } else if (value->tag == JSON_STRING) {
             // A value an enum option doesn't take: TS6046 at it, and the option stays as it was
             cstr bad = compiler_option_bad_value_message(csview_from(name), cstr_sv(&value->string));

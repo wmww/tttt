@@ -1,0 +1,17 @@
+tsconfig.json(3,26): error TS5051: Option 'sourceRoot can only be used when either option '--inlineSourceMap' or option '--sourceMap' is provided.
+
+
+==== tsconfig.json (1 errors) ====
+    {
+        "extends": "./base.json",
+        "compilerOptions": { "sourceRoot": "", "sourceMap": false, "inlineSourceMap": false }
+                             ~~~~~~~~~~~~
+!!! error TS5051: Option 'sourceRoot can only be used when either option '--inlineSourceMap' or option '--sourceMap' is provided.
+    }
+==== a.ts (0 errors) ====
+    export const x = 1;
+    
+==== base.json (0 errors) ====
+    {
+        "compilerOptions": { "sourceRoot": "." }
+    }
