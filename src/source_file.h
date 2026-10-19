@@ -240,6 +240,9 @@ typedef struct SourceFile {
     // A referenced project's TypeScript (not TSX) file: the bodies of functions with a written return type are skipped
     // rather than parsed where that's safe (parser.c's skip_typed_body()), and never resolved
     bool skip_typed_bodies;
+    // A referenced project's file read under -b whose project has stripInternal: its `@internal` declarations are left
+    // out after parsing (parse_file()), as from the `.d.ts` tsc -b would read
+    bool strip_internal;
     // A TypeScript file (not TSX, not a declaration file) whose outermost function bodies the parser skips where that is
     // safe, to parse and walk when a checker first needs them (plan 78, program_set_defer_bodies())
     bool defer_bodies;
@@ -509,6 +512,9 @@ static inline cstr module_ref_file_message_path(ModuleRef const* me) {
 // What there is to say about a module name that did find its file (TS5097)
 // type_only: of an `import type`/`export type` declaration or a side effect import (no TS2846 for naming a .d.ts)
 void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_effect, struct ErrorCtx* errs);
+// tsgo's isInternalDeclaration: a leading comment of the declaration starting at `at` says `@internal` (block comments
+// and whole-line `//` comments right before it)
+bool source_text_internal_before(struct SourceFile const* me, char const* at);
 void module_ref_report_resolved_import_type(ModuleRef const* me, struct ErrorCtx* errs);
 // TS1471/TS1479: a CommonJS use of an ES module under node16/node18, reported at `at`
 void module_ref_report_require_of_esm(ModuleRef const* me, Span at, struct ErrorCtx* errs);

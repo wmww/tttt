@@ -14977,6 +14977,49 @@ static bool parsed_file_is_module(SourceFile const* source, ParserShared const* 
 
 static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_await, FirstPassStatement** await_statements, u32* await_count);
 
+// Compacts a vector of AST nodes, leaving out those `keep` rejects: they stay in the file's AST arena, undropped, so
+// nothing that may point into them (module names, comments) dangles
+#define STRIP_VEC(vec, Type, keep) do { \
+        isize kept_ = 0; \
+        for (isize i_ = 0; i_ < (vec)->size; i_++) { \
+            Type* item = &(vec)->data[i_]; \
+            if (keep) (vec)->data[kept_++] = *item; \
+        } \
+        (vec)->size = kept_; \
+    } while (0)
+
+// SourceFile.strip_internal: what tsc -b's `.d.ts` of the file leaves out (tsgo's shouldStripInternal): declarations,
+// class and interface members and enum members whose leading comments say `@internal`
+static void strip_internal_statements(SourceFile const* source, VecStatement* statements) {
+    for_each (i, vec_statement, statements) {
+        Statement* s = i;
+        bool declaration = s->tag >= STATEMENT_DECL_VARIABLE && s->tag <= STATEMENT_DECL_NAMESPACE;
+        if (declaration && span_valid(s->span) && source_text_internal_before(source, s->span.buf)) {
+            *s = (Statement){ .tag = STATEMENT_NOOP, .span = s->span };
+            continue;
+        }
+        switch (s->tag) {
+            case STATEMENT_DECL_CLASS:
+                STRIP_VEC(&s->decl.class->items, ClassItem, !span_valid(item->span) || !source_text_internal_before(source, item->span.buf));
+                break;
+            case STATEMENT_DECL_INTERFACE:
+                if (s->decl.interface->type.tag == TYPE_INTERFACE) {
+                    STRIP_VEC(&s->decl.interface->type.interface.members, InterfaceMember,
+                        !span_valid(item->declaration) || !source_text_internal_before(source, item->declaration.buf));
+                }
+                break;
+            case STATEMENT_DECL_ENUM:
+                STRIP_VEC(&s->decl.enum_->cases, EnumCase,
+                    !span_valid(item->full_name) || !source_text_internal_before(source, item->full_name.buf));
+                break;
+            case STATEMENT_DECL_NAMESPACE:
+                strip_internal_statements(source, &s->decl.namespace->contents.statements);
+                break;
+            default: break;
+        }
+    }
+}
+
 void parse_file(SourceFile* source, ErrorCtx* errs) {
     FirstPassStatement* await_statements = nullptr;
     u32 await_count = 0;
@@ -14985,6 +15028,7 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     if (!parse_file_pass(source, errs, false, &await_statements, &await_count)) {
         parse_file_pass(source, errs, true, &await_statements, &await_count);
     }
+    if (source->strip_internal) strip_internal_statements(source, &source->ast.statements);
     ast_arena_end();
     free(await_statements);
 }

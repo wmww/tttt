@@ -1549,6 +1549,7 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
             source_file->plain_js = false;
             source_file->skip_typed_bodies = !source_file->is_js && !source_file->is_jsx && !source_file->is_json;
             CompilerOptions const* options = project_redirects_options(my redirects, source_file->from_reference - 1);
+            source_file->strip_internal = options->strip_internal && !source_file->is_declaration && !source_file->is_json;
             source_file->reference_const_enums_ambient = !options->preserve_const_enums && !options->isolated_modules &&
                 !options->verbatim_module_syntax;
         }

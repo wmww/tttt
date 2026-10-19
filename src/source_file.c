@@ -828,3 +828,50 @@ void source_text_detach(csview path) {
     }
     pthread_mutex_unlock(&texts.lock);
 }
+
+static bool contains_internal(char const* from, char const* to) {
+    for (char const* c = from; c + 9 <= to; c++) {
+        if (*c == '@' && memcmp(c, "@internal", 9) == 0) return true;
+    }
+    return false;
+}
+
+bool source_text_internal_before(SourceFile const* me, char const* at) {
+    char const* text = cstr_str(&my contents);
+    if (at < text || at > text + cstr_size(&my contents)) return false;
+    // Back over the comments and whitespace to the previous token, remembering the last block comment that says it
+    char const* internal_block = nullptr; // Its start
+    bool internal_line = false;
+    for (;;) {
+        while (at > text && (at[-1] == ' ' || at[-1] == '\t' || at[-1] == '\n' || at[-1] == '\r')) at--;
+        if (at - text >= 2 && at[-1] == '/' && at[-2] == '*') {
+            char const* open = at - 2;
+            while (open - text >= 2 && !(open[-2] == '/' && open[-1] == '*')) open--;
+            if (open - text < 2) return false;
+            open -= 2;
+            if (!internal_block && contains_internal(open, at)) internal_block = open;
+            at = open;
+            continue;
+        }
+        char const* line = at;
+        while (line > text && line[-1] != '\n') line--;
+        char const* first = line;
+        while (first < at && (*first == ' ' || *first == '\t')) first++;
+        if (at - first >= 2 && first[0] == '/' && first[1] == '/') {
+            // (A whole-line one: after a line break, so leading)
+            internal_line |= contains_internal(first, at);
+            at = line;
+            continue;
+        }
+        break;
+    }
+    if (internal_line) return true;
+    if (!internal_block) return false;
+    // A block comment on the previous token's line is its trailing comment, not the declaration's (tsc's
+    // getLeadingCommentRanges collects from the first line break on, or from the start of the file)
+    if (at == text) return true;
+    for (char const* c = at; c < internal_block; c++) {
+        if (*c == '\n') return true;
+    }
+    return false;
+}
