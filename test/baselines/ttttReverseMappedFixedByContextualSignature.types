@@ -1,0 +1,36 @@
+//// [test/cases/ttttReverseMappedFixedByContextualSignature.ts] ////
+
+=== ttttReverseMappedFixedByContextualSignature.ts ===
+// A context sensitive function's contextual signature fixes the type parameter a reverse mapped type in its parameter
+// types was inferred for: tsc's instantiateReverseMappedType instantiates the mapped type it reverses, which mentions
+// it. The second inference pass then keeps the first pass's inference (arktype's `"child?": ["this", "=>", f]`)
+type Infer<D> = { [K in keyof D]: D[K] extends string ? string : D[K] extends readonly [any, any, (x: any) => infer O] ? O : never };
+>Infer : Infer<D>
+>x : any
+
+type Elem<T, D> = { [I in keyof T]: I extends "2" ? (In: Infer<D>) => unknown : T[I] };
+>Elem : Elem<T, D>
+>In : Infer<D>
+
+type Validate<D> = { [K in keyof D]: D[K] extends string ? D[K] : Elem<D[K], D> };
+>Validate : Validate<D>
+
+declare function type<const def>(def: Validate<def>): def;
+>type : <const def>(def: Validate<def>) => def
+>def : Validate<def>
+
+const t = type({ name: "string", child: ["this", "=>", c => c] });
+>t : { readonly name: "string"; readonly child: readonly ["this", "=>", unknown]; }
+>type({ name: "string", child: ["this", "=>", c => c] }) : { readonly name: "string"; readonly child: readonly ["this", "=>", unknown]; }
+>type : <const def>(def: Validate<def>) => def
+>{ name: "string", child: ["this", "=>", c => c] } : { name: "string"; child: ["this", "=>", (c: Infer<{ readonly name: "string"; readonly child: readonly ["this", "=>", unknown]; }>) => Infer<{ readonly name: "string"; readonly child: readonly ["this", "=>", unknown]; }>]; }
+>name : "string"
+>"string" : "string"
+>child : ["this", "=>", (c: Infer<{ readonly name: "string"; readonly child: readonly ["this", "=>", unknown]; }>) => Infer<{ readonly name: "string"; readonly child: readonly ["this", "=>", unknown]; }>]
+>["this", "=>", c => c] : ["this", "=>", (c: Infer<{ readonly name: "string"; readonly child: readonly ["this", "=>", unknown]; }>) => Infer<{ readonly name: "string"; readonly child: readonly ["this", "=>", unknown]; }>]
+>"this" : "this"
+>"=>" : "=>"
+>c => c : (c: Infer<{ readonly name: "string"; readonly child: readonly ["this", "=>", unknown]; }>) => Infer<{ readonly name: "string"; readonly child: readonly ["this", "=>", unknown]; }>
+>c : Infer<{ readonly name: "string"; readonly child: readonly ["this", "=>", unknown]; }>
+>c : Infer<{ readonly name: "string"; readonly child: readonly ["this", "=>", unknown]; }>
+

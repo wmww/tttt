@@ -61,8 +61,33 @@ static bool function_expression_type(Ty const* target) {
 // Whether a type variable really occurs in the type: TYF_COULD_CONTAIN_TYPE_VARIABLES is only a hint (like tsc's
 // couldContainTypeVariables, it is set for every function type and object literal type). Walks the members of object
 // types; true when unsure (too deep, too big, a return type still being inferred)
+// tsc's couldContainTypeVariables where tttt's flag is narrower: tsc says yes for every mapped and reverse mapped type
+// (and so for unions, intersections and references with one in them), and instantiates them, where tttt knows a mapped
+// type over known types mentions none. What a fixing mapper looks up goes through those (see the reverse mapped case of
+// mentions_type_variables())
+static bool tsc_could_contain_type_variables(Ty const* ty, u32 depth) {
+    if (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) return true;
+    if (depth > 4) return false;
+    switch ((TyKind)ty->kind) {
+        case TY_ANONYMOUS: return ty->anonymous.mapped || ty->anonymous.is_reverse;
+        case TY_UNION:
+        case TY_INTERSECTION:
+            for (u32 i = 0; i < ty->composite.types.len; i++) {
+                if (tsc_could_contain_type_variables(ty->composite.types.data[i], depth + 1)) return true;
+            }
+            return false;
+        case TY_REFERENCE:
+            if (ty->reference.deferred) return false;
+            for (u32 i = 0; i < ty->reference.args.len; i++) {
+                if (tsc_could_contain_type_variables(ty->reference.args.data[i], depth + 1)) return true;
+            }
+            return false;
+        default: return false;
+    }
+}
+
 static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk, u32 depth) {
-    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
+    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && !(walk->collect && tsc_could_contain_type_variables(ty, 0))) return false;
     if (ty->kind == TY_TYPE_PARAM) {
         ty = ty_non_distributed(ty);
         for (u32 i = 0; i < walk->bound.len; i++) {
@@ -145,6 +170,23 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
     }
     if (depth > MENTION_MAX_DEPTH || walk->visited_len >= MENTION_MAX_VISITED) return true;
     if (!mention_visit(walk, ty->id + 1)) return false;
+    ReverseMapped const* reverse = ty_reverse_of(ty);
+    if (reverse && !ty->anonymous.target) {
+        // A reverse mapped type mentions what its source and the mapped type it reverses do, not what its members
+        // were inferred to be: tsc's instantiateReverseMappedType instantiates those three, so a fixing mapper fixes
+        // the type parameter `{ [K in keyof T]: ... }` maps over (arktype's `type({ "child?": ["this", "=>", f] })`:
+        // the second pass's contextual signature for f fixes `def`, tsc keeps the first pass's inference)
+        MappedInfo const* mapped = reverse->mapped;
+        u32 saved = walk->bound.len;
+        ty_buf_push(&walk->bound, mapped->type_param);
+        bool found = mentions_type_variables(me, reverse->operand, walk, depth + 1) ||
+            mentions_type_variables(me, reverse->source, walk, depth + 1) ||
+            mentions_type_variables(me, mapped->constraint, walk, depth + 1) ||
+            (mapped->name_type && mentions_type_variables(me, mapped->name_type, walk, depth + 1)) ||
+            mentions_type_variables(me, ty_mapped_template(me, mapped), walk, depth + 1);
+        walk->bound.len = saved;
+        return found;
+    }
     switch ((TyKind)ty->kind) {
         case TY_UNION:
         case TY_INTERSECTION:
@@ -289,7 +331,7 @@ bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional) {
 // Whether one of `params` occurs free in the type (true when unsure): what tsc finds out by instantiating a type with
 // a mapper that reports the types it's asked to map (reportUnreliableMapper)
 bool ty_mentions_any(Checker* me, Ty const* ty, Ty const* const* params, u32 count) {
-    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
+    if (!tsc_could_contain_type_variables(ty, 0)) return false;
     TyBuf found = {0};
     MentionWalk walk = { .collect = &found };
     bool ret = mentions_type_variables(me, ty, &walk, 0);

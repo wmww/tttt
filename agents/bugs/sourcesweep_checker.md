@@ -12,15 +12,11 @@ dokploy, chatbox, angular-components, react-navigation, telegraf, commitlint, as
 ## Source sweep fan-out 2026-10-12 leftovers (agent A)
 Agent A's list (config, module resolution, references, parser, perf) at the end of that session; everything else of it
 was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlint, jest, mcp-sdk, radix-primitives match; second round: react-router, shiki, lit, typedoc match too).
-- **redux-toolkit query/core/module.ts:656, react/module.ts:216 (+TS2322)**: `Api<BaseQuery, EndpointDefinitions,
-  ReducerPath, TagTypes, keyof ApiModules<...>>` to `Api<any, EndpointDefinitions, any, any, unique symbol>`. tttt's
-  chain ends in `util.getRunningQueryThunk()`: the target's result is `InfiniteQueryActionCreatorResult<never> |
-  QueryActionCreatorResult<never>`, i.e. tttt reduced the target's `Definitions[EndpointName] & { type: "query" }`
-  (Definitions = EndpointDefinitions, a Record of the definition union whose `type` is a DefinitionType member) to
-  never, where the source keeps `EndpointDefinition<any, ...> & { type: "query" }` unreduced. Either tsc doesn't
-  reduce that instance (getReducedType is only asked in some places) or it compares the two references by variance
-  before reaching it. Not reduced further. (The TS2344 x3 there went with never-reduction through type variables'
-  constraints, 2026-10-14.)
+- **redux-toolkit**: matches the sweep since the 2026-10-17 never-reduction work. The display probe that went with it
+  (`get<EN extends keyof Defs>(n: EN): Res<Defs[EN] & { type: "query" }> | undefined` printed `Res<ED & { type:
+  "query"; }> | undefined` by tsc, `Res<never> | undefined` by tttt) is printing only: tsc's printer reduces every type
+  (getReducedType in typeToTypeNode), so the `ED & ...` it prints comes from reusing the annotation's syntax (only with
+  the `| undefined`, only for a generic method), not from a different type. Not pursued.
 - **knip language-server/src/server.js:277 (-TS7022 on `this.fileCache = undefined`)**: a JS this-property whose
   type comes from `this.fileCache = { filePath: relPath, file }`, `file` from `this.session.describeFile(...)` narrowed
   across `if (this.fileCache?.filePath === relPath)` in the same method: tsc meets its own declared type through that
@@ -32,7 +28,7 @@ was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlin
 Fixed that round: vencord (TS2589 at the template, intersection any-before-unions, never-reduction against generic
 references), svelte x2 (JS default type arguments, hoisted constraint against a union), react-window (peer
 dependencies in package ids, landed by agent D). Left:
-- (2026-10-16, agent A) arktype this.test.ts, redux-toolkit, monkeytype: see the 2026-10-16 section at the end.
+- (2026-10-16, agent A) monkeytype: see the 2026-10-16 section at the end (arktype and redux-toolkit match since).
 - Display: `(A | L1 | P1) & V` with `V extends A | L1 | L2` (L1 and L2 sharing a `type` discriminant) prints its
   origin, tsc `(A & V) | (L1 & V)`: tsc's getReducedType drops `P1 & V` through V's apparent type (the
   never_reduced_prop() type-variable member gap of the redux-toolkit entry).
@@ -228,14 +224,6 @@ read types). Left:
 ## Source sweep fan-out 2026-10-16 (agent A)
 Fixed: arktype type.test.ts and fn.test.ts, tanstack-table, nextra, base-ui, and tiptap/demos' +TS2345 x9 along the way (see git log). 7 projects left in the
 full sweep: pixijs (binder merge unit), better-auth (2), es-toolkit, knip (entries above), and:
-- **arktype this.test.ts:190 +TS2322** (`type({ name: "string", "child?": ["this", "=>", child => child] })`):
-  reproduces in a probe project extending arktype's tsconfig (imports by absolute path). Both sides type the callback
-  parameter `{ name: string; child?: never }` (tsc prints `name` first, tttt `child` first: the types are built
-  differently); tsc's error for a wrongly typed callback shows the target `Morph<{ name: string; child?: <the
-  callback's type> }>`, so for `child => child` it compares `{ child?: { child?: never; ... } }` to `{ child?: never }`
-  under exactOptionalPropertyTypes and still says nothing: probably a deeply nested / recursion-identity Maybe on the
-  `this` expansion that tttt answers False. Not reduced further; next step is TTTT_DEBUG_RELATE_NESTED on the probe
-  against an instrumented tsgo (scripts/variancetrace.py's build has the relation log).
 - **monkeytype SearchableAutoSetting.tsx:56/59**: tsc reports TS2589 (instantiation excessively deep) at
   `name={props.key}` of `<form.Field>` (the line the @ts-expect-error covers); tttt doesn't hit the limit and reports
   the validators mismatch instead. tanstack form-core's DeepKeys/DeepKeysAndValues over `{ [x: string]: Config[T] }`

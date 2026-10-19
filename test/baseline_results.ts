@@ -1601,6 +1601,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttReverseMappedFixedByContextualSignature': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttScriptConflictExpandoHost': {
         errors: true,
         symbols: true,
