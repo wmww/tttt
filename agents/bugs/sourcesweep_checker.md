@@ -268,3 +268,27 @@ hacks.md), no TS5097 for a side-effect import (angular-cli), an empty string opt
   test/seed.e2e.test.ts:48. Both configs; it didn't show in this file's earlier lists, so possibly a recent
   regression or an order-dependent circularity (kdiff it: `scripts/kdiff.py -f '^b4run/'`).
 - monkeytype/frontend (+TS2578/+TS2322 SearchableAutoSetting.tsx): the 2026-10-16 entry above.
+
+## Every-tsconfig sweep, agent A's and B's repos (2026-10-19, agent A)
+Fixed: TS2308 between two `export *`s of unresolved imports (atproto's six tsconfig.build.json and lex-schema, with
+the TS2322/TS2339 that followed), skip-context-sensitive through `&&` (atproto oauth-provider-ui's SignUpWizard). Those
+11 repos: 762 -> 768 / 778. Left (sourcesweep_build.md has the better-auth lynx-store and hono request.ts mechanisms):
+- **atproto lex-schema -TS2394 x2** (record.ts:97, typed-object.ts:82, `build()` overloads against an implementation
+  returning `$typed(input, this.$type)`): with LexMap the error type (its module unresolved; plain `any` too), tsc's
+  apparent type of `InferOutput<TShape> & { $type: TType }` is `any` (getApparentTypeOfIntersectionType maps members
+  through their apparent types), so `Simplify<...>` has only a string index signature: neither return type relates to
+  the other. tttt lists the parts' properties ($type) in expand_generic_homomorphic(); fixing that alone (tried) isn't
+  enough: the reverse relation passes through relate.c's generic-mapped-target HACK fallback (member by member). Probe:
+  `type Simplify<T> = { [K in keyof T]: T[K] } & NonNullable<unknown>`, class `C<const TType extends string, const
+  TShape extends Validator<any>>` with `build(i: Omit<InferOutput<TShape>, '$type'>): $Typed<InferOutput<TShape>,
+  TType>` and implementation `build(i: Record<string, unknown>) { return $typed(i, this.$type) }`.
+- **astro integrations/cloudflare -TS18048 x2** (prerender-response.ts:139): tsc types `transportResponse.body.getReader()`
+  as `ReadableStreamDefaultReader<any>` (Cloudflare workers types merged with the DOM lib), so `chunk = next.value`
+  assigns any and the variable keeps its declared `| undefined`; tttt agrees on that rule (probe), so its reader isn't
+  `<any>`: a global interface merging difference. Not pursued.
+- **better-auth e2e/smoke/.../cloudflare tsconfig.skip-lib-check-false.json**: +TS2430 x4 in @types/node's
+  web-globals (TextDecoder, TextEncoder, URL, URLSearchParams `incorrectly extends` node:util's/node:url's) and +TS2610
+  in tinybench: the same workers-types + @types/node global merging, here under skipLibCheck false. Not pursued.
+- babel (+TS2322 x7 babel-parser jsx/index.ts:544 etc. in tsconfig.tstyche.json, TS6307 index-browser.ts/package.ts),
+  astro packages/astro/tsconfig.test.json (+TS6305/-TS7016 test-utils.ts:9: a reference's output under
+  scripts/node_modules/.cache): not looked at.
