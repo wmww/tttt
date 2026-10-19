@@ -52,12 +52,21 @@ and RSS** for every perf claim at the defaults.
    clidiff 153 / 156, dtsdiff 74 / 76; a new **`-b` oracle** (`sourcesweep.py --build`, in oracles.py): day one 382 /
    416 solutions, 394 after three config fixes; the rest in bugs/sourcesweep_build.md (the `-p` sweep never checked
    configs not named `tsconfig.json`). Source sweep 3807 / 3814.
-8. **Refresh fixes + perf session**: the refresh's day-one mismatches by root cause (bugs/sourcesweep_build.md's
-   22 solutions first: a fan-out fits, each first checks `-p` on the config), then `scripts/instrcount.sh`
-   against the window's start and any flagged rise.
+8. Done (2026-10-19): refresh fan-out (3 agents, ~35 picks, 1 conflict, 0 lost): `-b` sweep 394 -> **399** / 416
+   (a builder window: unreferenced projects built earlier are read from their outputs, a heuristic for tsgo's race,
+   hacks.md; reference sources' private members untyped and `@internal` type literal members stripped, as their
+   `.d.ts`; declaration naming under `-b`; jest's gated programs walk only declarations: 1.5M types -> 10K, ~10 s ->
+   0.75 s), the **`-p` sweep now takes every `tsconfig*.json`**: 3814 -> 5242 projects, **5225** match; every import
+   narrowed like tsc's behind a flow-builder gate; suite 13893 -> 13919; clidiff 3823 / 3831, dtsdiff 1325 / 1350,
+   DT, `$ExpectType`, corpora (vue 0/2) unchanged, flagflip 18 / 7 / 2 after one regression fixed (valibot sloppy).
+   Instructions +0.1-1% (tsc +0.9%: lib Array's `this is` predicates make it non-thisless, tsc pays it too; import
+   narrowing +0.2%), re-saved. Left in bugs/sourcesweep_build.md: errors *inside* emitted `.d.ts` (lit, zigbee2mqtt)
+   and body-only imports (astro) need `-b` to read emitted declarations: a design question for insights.
 9. **Triage.**
 10. **Insights.** report.md: plan 85's no-go (the census) and the defaults' CPU column (12-core: ask the human to rerun with
-    entry 1's command), clidiff's number, the third refresh's day one. Whether the human answered on plan 76.
+    entry 1's command), clidiff's number, the third refresh's day one and
+    the every-tsconfig sweep (5225 / 5242). Decide whether `-b` should feed each project's emitted declarations to its
+    downstream programs (entry 8's leftovers; the builder-window heuristic and the private-member model approximate it). Whether the human answered on plan 76.
 
 After the insights entry (for the next window): **plan 86 (multiples on many-core cold runs; the human asked for it 2026-10-19): stage 1 (PGO + LTO, one session, -8-9% measured) and the stage 4 gate session fit the next window, stage 2's sessions go in its perf slots**; plan 58 + plan 66 stage 5 when 7.1.0 is out (expected after
 2026-11-24); the many-core checker-count and budget policy from the human's 12-core numbers (tsgo keeps 4 checkers;

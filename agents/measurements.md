@@ -58,6 +58,17 @@ times** (`TTTT_FILE_TIMES=1`) / recycles / peak:
   positive at `ty.h:96`): **-8-9% wall everywhere**, untrained corpora included (vscode K1 11.83 -> 10.86 s, defaults
   2.68 -> 2.48; tsc 0.51 -> 0.47; drizzle 0.85 -> 0.78). LTO alone 1-2%. Not shipped: a build-system decision
   (triage.md).
+## Refresh fan-out (2026-10-19, todo entry 8)
+- `-b` sweep 394 -> **399 / 416**; the `-p` sweep over every `tsconfig*.json` (5242 projects, 1428 new: day one
+  1389 / 1428) **5225 / 5242**, 235 / 248 repos.
+- jest's `__tests__` `-b` builds (options-gated, declarations only): 1.49M -> 9.9K types, ~10 s -> ~0.75 s each (tsgo
+  0.5 s).
+- Suite 13919 / 13954 (dts 1879 / 1901), corpora 0/0 but vue 0/2, DT 8595, `$ExpectType` 68640, flagflip 18 / 7 / 2,
+  clidiff 3823 / 3831 (text 1, diagnostics 7), dtsdiff 1325 / 1350, kdiff 2, recycle 4 / 3814, perfsweep median 0.23,
+  worst types ratio 1.63 (lwc-plugin-hlc-area-series, 1609 -> 1697 types: lib Array's `this` types).
+- Instructions (callgrind) against the session start: tsc +0.9%, type-fest +1.05% (lib Array/ReadonlyArray have
+  `this is` predicates, so they aren't thisless: tsc instantiates their members per `this` too), effect +0.47%, the
+  rest +0.0-0.35%; re-saved to test/instrcount.txt (vscode 89.06 G).
 
 ## Refresh 3, `tsc -b` solutions and decorator-heavy code (2026-10-19, todo entry 7)
 25 repositories by a fourth rule (repos.txt's "Refresh 3" comment, `scripts/reposearch.py build|decorators`: root

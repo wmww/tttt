@@ -1,11 +1,13 @@
 # The source sweep's solutions: `tsc -b` against `tttt -b`
 `scripts/sourcesweep.py --build` (2026-10-19, refresh 3): every `tsconfig*.json` with `references` that no other
 config of its repo references, built by tsgo with `-b --force` in a bwrap overlay of `thirdparty/sources` (cache
-`test/sourcesweep/tsc-build.jsonl.gz`, `--build --tsc[-new]`) and checked by `tttt -b --no-write`. **394 / 416** after
-the day-one fixes (TS18003 for inherited `files`, TS18002 with inputs, the sandbox's writes outside a repo).
+`test/sourcesweep/tsc-build.jsonl.gz`, `--build --tsc[-new]`) and checked by `tttt -b --no-write`. 394 / 416 after
+the day-one fixes (TS18003 for inherited `files`, TS18002 with inputs, the sandbox's writes outside a repo), **399 / 416**
+after the 2026-10-19 fan-out (the builder window, reference sources' private members and `@internal` type literal
+members, declaration naming, and plain checker bugs).
 
-What it sees that the `-p` sweep doesn't: configs not named `tsconfig.json` (`tsconfig.build.json`, `.spec.json`,
-`.lib.json`, `.app.json`: the `-p` sweep only walks `tsconfig.json`), and downstream projects reading upstream ones.
+What it sees that the `-p` sweep doesn't: downstream projects reading upstream ones (the `-p` sweep takes every
+`tsconfig*.json` since 2026-10-19).
 **First question for each: does `tttt -p THAT_CONFIG --noEmit` differ from tsc's too?** Then it is a plain checker bug
 the `-p` sweep never reached (hono's `tsconfig.build.json`: jwt.ts's TS2339, request.ts's TS2769, css.test.tsx's
 TS2783 are all `-p` mismatches). Otherwise it's `-b`'s design (documentation.md "Divergences of `-b` by design":
