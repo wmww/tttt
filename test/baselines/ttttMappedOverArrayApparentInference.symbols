@@ -1,0 +1,37 @@
+//// [test/cases/ttttMappedOverArrayApparentInference.ts] ////
+
+=== ttttMappedOverArrayApparentInference.ts ===
+// Inference from a generic mapped type over an array-constrained T takes its apparent type, the array (tsc's
+// getResolvedApparentTypeOfMappedType): the contextual return type makes the callback's array literal a tuple
+declare function mp<U>(f: () => U): U[]
+>mp : Symbol(mp, Decl(ttttMappedOverArrayApparentInference.ts, 0, 0))
+>U : Symbol(U, Decl(ttttMappedOverArrayApparentInference.ts, 2, 20))
+>f : Symbol(f, Decl(ttttMappedOverArrayApparentInference.ts, 2, 23))
+>U : Symbol(U, Decl(ttttMappedOverArrayApparentInference.ts, 2, 20))
+>U : Symbol(U, Decl(ttttMappedOverArrayApparentInference.ts, 2, 20))
+
+function k<T extends readonly unknown[]>() {
+>k : Symbol(k, Decl(ttttMappedOverArrayApparentInference.ts, 2, 39))
+>T : Symbol(T, Decl(ttttMappedOverArrayApparentInference.ts, 3, 11))
+
+  return mp(() => [1, undefined]) as { [K in keyof T]: [T[K], undefined] }
+>mp : Symbol(mp, Decl(ttttMappedOverArrayApparentInference.ts, 0, 0))
+>undefined : Symbol(undefined)
+>K : Symbol(K, Decl(ttttMappedOverArrayApparentInference.ts, 4, 40))
+>T : Symbol(T, Decl(ttttMappedOverArrayApparentInference.ts, 3, 11))
+>T : Symbol(T, Decl(ttttMappedOverArrayApparentInference.ts, 3, 11))
+>K : Symbol(K, Decl(ttttMappedOverArrayApparentInference.ts, 4, 40))
+}
+function k2<T extends unknown[]>() {
+>k2 : Symbol(k2, Decl(ttttMappedOverArrayApparentInference.ts, 5, 1))
+>T : Symbol(T, Decl(ttttMappedOverArrayApparentInference.ts, 6, 12))
+
+  return mp(() => [1, undefined]) as { [K in keyof T]: [T[K], undefined] }
+>mp : Symbol(mp, Decl(ttttMappedOverArrayApparentInference.ts, 0, 0))
+>undefined : Symbol(undefined)
+>K : Symbol(K, Decl(ttttMappedOverArrayApparentInference.ts, 7, 40))
+>T : Symbol(T, Decl(ttttMappedOverArrayApparentInference.ts, 6, 12))
+>T : Symbol(T, Decl(ttttMappedOverArrayApparentInference.ts, 6, 12))
+>K : Symbol(K, Decl(ttttMappedOverArrayApparentInference.ts, 7, 40))
+}
+

@@ -1159,6 +1159,19 @@ static void collect_free_params_of_function(Checker* me, FunctionImpl const* fun
     if (function->has_body && !function->ret_explicit) out->unknown = true;
     collect_free_params(me, &function->ret, out);
     if (function->predicate && function->predicate->has_type) collect_free_params(me, &function->predicate->type, out);
+    if (function->predicate && function->predicate->is_this && function->predicate->has_type) {
+        // `this is T`, `asserts this is T`: a `this` type node (tsc's isTypeParameterPossiblyReferenced), of the class or
+        // interface the signature is in. Its members are then instantiated per `this` (a union receiver's method is
+        // a union of them, whose union signature asserts nothing: babel's NodePath.ensureBlock)
+        for (TypeFlow const* flow = function->predicate->type.flow; flow; flow = flow->outer) {
+            if (flow->scope != TYPE_FLOW_OWNER) continue;
+            Ty const* declared = flow->owner ? ty_declared_type_of(me, flow->owner) : nullptr;
+            if (declared && declared->kind == TY_DECLARED && declared->declared.this_param) {
+                free_params_add(out, declared->declared.this_param);
+            }
+            break;
+        }
+    }
     // The signature's own type parameters are in scope nowhere else: out of the lists once it's walked, so the many
     // overloads of a generic method (typesaurus's `field`, 10 of up to 10 type parameters each) don't run out of room
     // and make the type's free parameters unknown (instantiated by the whole mapper: a new type for every mapper)

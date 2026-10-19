@@ -7916,7 +7916,8 @@ static TyPredicate const* union_predicate(Checker* me, Signature* const* sigs, u
     panic_if(!types, "out of memory");
     for (u32 i = 0; i < count; i++) {
         TyPredicate const* predicate = signature_predicate(me, sigs[i]);
-        if (!predicate || !predicate->type || (first && (first->is_this != predicate->is_this ||
+        // (No composite assertion: tsc's getUnionOrIntersectionTypePredicate only combines `x is T` and `this is T`)
+        if (!predicate || !predicate->type || predicate->asserts || (first && (first->is_this != predicate->is_this ||
             first->asserts != predicate->asserts || first->param_index != predicate->param_index))
         ) {
             free(types);

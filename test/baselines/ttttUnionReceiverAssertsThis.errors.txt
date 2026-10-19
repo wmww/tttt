@@ -1,0 +1,30 @@
+ttttUnionReceiverAssertsThis.ts(22,1): error TS2775: Assertions require every name in the call target to be declared with an explicit type annotation.
+
+
+==== ttttUnionReceiverAssertsThis.ts (1 errors) ====
+    // A method asserting `this is T` mentions its class's or interface's `this` (tsc's ThisType): it is instantiated per
+    // receiver, so a union receiver's method is a union signature, which asserts nothing (no TS2775, no narrowing):
+    // babel's NodePath.ensureBlock
+    interface A { type: "A"; body: number }
+    interface B { type: "B"; body: string }
+    type N = A | B
+    interface Over {
+      ensure(this: P_Final): asserts this is P_Final<N & { body: number }>;
+    }
+    interface P<T extends N> extends Over { node: T }
+    type P_Final<T extends N = N> = T extends any ? P<T> : never
+    declare function h(p: P_Final): { fn: P_Final }
+    declare const p: P_Final
+    const { fn } = h(p)
+    fn.ensure()
+    let q = p
+    q.ensure()
+    const r = h(p).fn
+    r.ensure()
+    declare const s: P<A>
+    const t = s
+    t.ensure()
+    ~~~~~~~~
+!!! error TS2775: Assertions require every name in the call target to be declared with an explicit type annotation.
+!!! related TS2782 ttttUnionReceiverAssertsThis.ts:21:7: 't' needs an explicit type annotation.
+    

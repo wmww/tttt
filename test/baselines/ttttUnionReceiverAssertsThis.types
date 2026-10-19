@@ -1,0 +1,86 @@
+//// [test/cases/ttttUnionReceiverAssertsThis.ts] ////
+
+=== ttttUnionReceiverAssertsThis.ts ===
+// A method asserting `this is T` mentions its class's or interface's `this` (tsc's ThisType): it is instantiated per
+// receiver, so a union receiver's method is a union signature, which asserts nothing (no TS2775, no narrowing):
+// babel's NodePath.ensureBlock
+interface A { type: "A"; body: number }
+>type : "A"
+>body : number
+
+interface B { type: "B"; body: string }
+>type : "B"
+>body : string
+
+type N = A | B
+>N : N
+
+interface Over {
+  ensure(this: P_Final): asserts this is P_Final<N & { body: number }>;
+>ensure : (this: P_Final) => asserts this is P_Final<N & { body: number; }>
+>this : P<A> | P<B>
+>body : number
+}
+interface P<T extends N> extends Over { node: T }
+>node : T
+
+type P_Final<T extends N = N> = T extends any ? P<T> : never
+>P_Final : P_Final<T>
+
+declare function h(p: P_Final): { fn: P_Final }
+>h : (p: P_Final) => { fn: P_Final; }
+>p : P<A> | P<B>
+>fn : P<A> | P<B>
+
+declare const p: P_Final
+>p : P<A> | P<B>
+
+const { fn } = h(p)
+>fn : P<A> | P<B>
+>h(p) : { fn: P_Final; }
+>h : (p: P_Final) => { fn: P_Final; }
+>p : P<A> | P<B>
+
+fn.ensure()
+>fn.ensure() : void
+>fn.ensure : ((this: P_Final) => asserts this is P_Final<N & { body: number; }>) | ((this: P_Final) => asserts this is P_Final<N & { body: number; }>)
+>fn : P<A> | P<B>
+>ensure : ((this: P_Final) => asserts this is P_Final<N & { body: number; }>) | ((this: P_Final) => asserts this is P_Final<N & { body: number; }>)
+
+let q = p
+>q : P<A> | P<B>
+>p : P<A> | P<B>
+
+q.ensure()
+>q.ensure() : void
+>q.ensure : ((this: P_Final) => asserts this is P_Final<N & { body: number; }>) | ((this: P_Final) => asserts this is P_Final<N & { body: number; }>)
+>q : P<A> | P<B>
+>ensure : ((this: P_Final) => asserts this is P_Final<N & { body: number; }>) | ((this: P_Final) => asserts this is P_Final<N & { body: number; }>)
+
+const r = h(p).fn
+>r : P<A> | P<B>
+>h(p).fn : P<A> | P<B>
+>h(p) : { fn: P_Final; }
+>h : (p: P_Final) => { fn: P_Final; }
+>p : P<A> | P<B>
+>fn : P<A> | P<B>
+
+r.ensure()
+>r.ensure() : void
+>r.ensure : ((this: P_Final) => asserts this is P_Final<N & { body: number; }>) | ((this: P_Final) => asserts this is P_Final<N & { body: number; }>)
+>r : P<A> | P<B>
+>ensure : ((this: P_Final) => asserts this is P_Final<N & { body: number; }>) | ((this: P_Final) => asserts this is P_Final<N & { body: number; }>)
+
+declare const s: P<A>
+>s : P<A>
+
+const t = s
+>t : P<A>
+>s : P<A>
+
+t.ensure()
+>t.ensure() : void
+>t.ensure : (this: P_Final) => asserts this is P_Final<N & { body: number; }>
+>t : P<A>
+>ensure : (this: P_Final) => asserts this is P_Final<N & { body: number; }>
+

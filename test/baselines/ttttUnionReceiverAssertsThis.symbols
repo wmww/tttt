@@ -1,0 +1,105 @@
+//// [test/cases/ttttUnionReceiverAssertsThis.ts] ////
+
+=== ttttUnionReceiverAssertsThis.ts ===
+// A method asserting `this is T` mentions its class's or interface's `this` (tsc's ThisType): it is instantiated per
+// receiver, so a union receiver's method is a union signature, which asserts nothing (no TS2775, no narrowing):
+// babel's NodePath.ensureBlock
+interface A { type: "A"; body: number }
+>A : Symbol(A, Decl(ttttUnionReceiverAssertsThis.ts, 0, 0))
+>type : Symbol(A.type, Decl(ttttUnionReceiverAssertsThis.ts, 3, 13))
+>body : Symbol(A.body, Decl(ttttUnionReceiverAssertsThis.ts, 3, 24))
+
+interface B { type: "B"; body: string }
+>B : Symbol(B, Decl(ttttUnionReceiverAssertsThis.ts, 3, 39))
+>type : Symbol(B.type, Decl(ttttUnionReceiverAssertsThis.ts, 4, 13))
+>body : Symbol(B.body, Decl(ttttUnionReceiverAssertsThis.ts, 4, 24))
+
+type N = A | B
+>N : Symbol(N, Decl(ttttUnionReceiverAssertsThis.ts, 4, 39))
+>A : Symbol(A, Decl(ttttUnionReceiverAssertsThis.ts, 0, 0))
+>B : Symbol(B, Decl(ttttUnionReceiverAssertsThis.ts, 3, 39))
+
+interface Over {
+>Over : Symbol(Over, Decl(ttttUnionReceiverAssertsThis.ts, 5, 14))
+
+  ensure(this: P_Final): asserts this is P_Final<N & { body: number }>;
+>ensure : Symbol(Over.ensure, Decl(ttttUnionReceiverAssertsThis.ts, 6, 16))
+>this : Symbol(this, Decl(ttttUnionReceiverAssertsThis.ts, 7, 9))
+>P_Final : Symbol(P_Final, Decl(ttttUnionReceiverAssertsThis.ts, 9, 49))
+>P_Final : Symbol(P_Final, Decl(ttttUnionReceiverAssertsThis.ts, 9, 49))
+>N : Symbol(N, Decl(ttttUnionReceiverAssertsThis.ts, 4, 39))
+>body : Symbol(body, Decl(ttttUnionReceiverAssertsThis.ts, 7, 54))
+}
+interface P<T extends N> extends Over { node: T }
+>P : Symbol(P, Decl(ttttUnionReceiverAssertsThis.ts, 8, 1))
+>T : Symbol(T, Decl(ttttUnionReceiverAssertsThis.ts, 9, 12))
+>N : Symbol(N, Decl(ttttUnionReceiverAssertsThis.ts, 4, 39))
+>Over : Symbol(Over, Decl(ttttUnionReceiverAssertsThis.ts, 5, 14))
+>node : Symbol(P.node, Decl(ttttUnionReceiverAssertsThis.ts, 9, 39))
+>T : Symbol(T, Decl(ttttUnionReceiverAssertsThis.ts, 9, 12))
+
+type P_Final<T extends N = N> = T extends any ? P<T> : never
+>P_Final : Symbol(P_Final, Decl(ttttUnionReceiverAssertsThis.ts, 9, 49))
+>T : Symbol(T, Decl(ttttUnionReceiverAssertsThis.ts, 10, 13))
+>N : Symbol(N, Decl(ttttUnionReceiverAssertsThis.ts, 4, 39))
+>N : Symbol(N, Decl(ttttUnionReceiverAssertsThis.ts, 4, 39))
+>T : Symbol(T, Decl(ttttUnionReceiverAssertsThis.ts, 10, 13))
+>P : Symbol(P, Decl(ttttUnionReceiverAssertsThis.ts, 8, 1))
+>T : Symbol(T, Decl(ttttUnionReceiverAssertsThis.ts, 10, 13))
+
+declare function h(p: P_Final): { fn: P_Final }
+>h : Symbol(h, Decl(ttttUnionReceiverAssertsThis.ts, 10, 60))
+>p : Symbol(p, Decl(ttttUnionReceiverAssertsThis.ts, 11, 19))
+>P_Final : Symbol(P_Final, Decl(ttttUnionReceiverAssertsThis.ts, 9, 49))
+>fn : Symbol(fn, Decl(ttttUnionReceiverAssertsThis.ts, 11, 33))
+>P_Final : Symbol(P_Final, Decl(ttttUnionReceiverAssertsThis.ts, 9, 49))
+
+declare const p: P_Final
+>p : Symbol(p, Decl(ttttUnionReceiverAssertsThis.ts, 12, 13))
+>P_Final : Symbol(P_Final, Decl(ttttUnionReceiverAssertsThis.ts, 9, 49))
+
+const { fn } = h(p)
+>fn : Symbol(fn, Decl(ttttUnionReceiverAssertsThis.ts, 13, 7))
+>h : Symbol(h, Decl(ttttUnionReceiverAssertsThis.ts, 10, 60))
+>p : Symbol(p, Decl(ttttUnionReceiverAssertsThis.ts, 12, 13))
+
+fn.ensure()
+>fn.ensure : Symbol(Over.ensure, Decl(ttttUnionReceiverAssertsThis.ts, 6, 16))
+>fn : Symbol(fn, Decl(ttttUnionReceiverAssertsThis.ts, 13, 7))
+>ensure : Symbol(Over.ensure, Decl(ttttUnionReceiverAssertsThis.ts, 6, 16))
+
+let q = p
+>q : Symbol(q, Decl(ttttUnionReceiverAssertsThis.ts, 15, 3))
+>p : Symbol(p, Decl(ttttUnionReceiverAssertsThis.ts, 12, 13))
+
+q.ensure()
+>q.ensure : Symbol(Over.ensure, Decl(ttttUnionReceiverAssertsThis.ts, 6, 16))
+>q : Symbol(q, Decl(ttttUnionReceiverAssertsThis.ts, 15, 3))
+>ensure : Symbol(Over.ensure, Decl(ttttUnionReceiverAssertsThis.ts, 6, 16))
+
+const r = h(p).fn
+>r : Symbol(r, Decl(ttttUnionReceiverAssertsThis.ts, 17, 5))
+>h(p).fn : Symbol(fn, Decl(ttttUnionReceiverAssertsThis.ts, 11, 33))
+>h : Symbol(h, Decl(ttttUnionReceiverAssertsThis.ts, 10, 60))
+>p : Symbol(p, Decl(ttttUnionReceiverAssertsThis.ts, 12, 13))
+>fn : Symbol(fn, Decl(ttttUnionReceiverAssertsThis.ts, 11, 33))
+
+r.ensure()
+>r.ensure : Symbol(Over.ensure, Decl(ttttUnionReceiverAssertsThis.ts, 6, 16))
+>r : Symbol(r, Decl(ttttUnionReceiverAssertsThis.ts, 17, 5))
+>ensure : Symbol(Over.ensure, Decl(ttttUnionReceiverAssertsThis.ts, 6, 16))
+
+declare const s: P<A>
+>s : Symbol(s, Decl(ttttUnionReceiverAssertsThis.ts, 19, 13))
+>P : Symbol(P, Decl(ttttUnionReceiverAssertsThis.ts, 8, 1))
+>A : Symbol(A, Decl(ttttUnionReceiverAssertsThis.ts, 0, 0))
+
+const t = s
+>t : Symbol(t, Decl(ttttUnionReceiverAssertsThis.ts, 20, 5))
+>s : Symbol(s, Decl(ttttUnionReceiverAssertsThis.ts, 19, 13))
+
+t.ensure()
+>t.ensure : Symbol(Over.ensure, Decl(ttttUnionReceiverAssertsThis.ts, 6, 16))
+>t : Symbol(t, Decl(ttttUnionReceiverAssertsThis.ts, 20, 5))
+>ensure : Symbol(Over.ensure, Decl(ttttUnionReceiverAssertsThis.ts, 6, 16))
+

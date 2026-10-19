@@ -3316,7 +3316,7 @@ static CallEffects union_call_effects(Checker* me, Ty const* callee) {
             if (ret != ty_intrinsic(me, TY_FALSE)) goto fail;
             continue;
         }
-        if (!predicate->type) goto fail;
+        if (!predicate->type || predicate->asserts) goto fail; // (No composite assertion, see union_predicate())
         if (has_first && (first.is_this != predicate->is_this || first.asserts != predicate->asserts ||
             first.param_index != predicate->param_index)
         ) {

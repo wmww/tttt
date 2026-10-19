@@ -1468,6 +1468,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMappedOverArrayApparentInference': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedOverDeferredConstraintProps': {
         errors: true,
         symbols: true,
@@ -1914,6 +1919,11 @@ const baselines = {
         types: true,
     },
     'ttttUnionMemberNormalizedTargetName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnionReceiverAssertsThis': {
         errors: true,
         symbols: true,
         types: true,

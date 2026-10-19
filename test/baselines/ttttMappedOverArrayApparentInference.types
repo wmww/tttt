@@ -1,0 +1,34 @@
+//// [test/cases/ttttMappedOverArrayApparentInference.ts] ////
+
+=== ttttMappedOverArrayApparentInference.ts ===
+// Inference from a generic mapped type over an array-constrained T takes its apparent type, the array (tsc's
+// getResolvedApparentTypeOfMappedType): the contextual return type makes the callback's array literal a tuple
+declare function mp<U>(f: () => U): U[]
+>mp : <U>(f: () => U) => U[]
+>f : () => U
+
+function k<T extends readonly unknown[]>() {
+>k : <T extends readonly unknown[]>() => { [K in keyof T]: [T[K], undefined]; }
+
+  return mp(() => [1, undefined]) as { [K in keyof T]: [T[K], undefined] }
+>mp(() => [1, undefined]) as { [K in keyof T]: [T[K], undefined] } : { [K in keyof T]: [T[K], undefined]; }
+>mp(() => [1, undefined]) : [number, undefined][]
+>mp : <U>(f: () => U) => U[]
+>() => [1, undefined] : () => [number, undefined]
+>[1, undefined] : [number, undefined]
+>1 : 1
+>undefined : undefined
+}
+function k2<T extends unknown[]>() {
+>k2 : <T extends unknown[]>() => { [K in keyof T]: [T[K], undefined]; }
+
+  return mp(() => [1, undefined]) as { [K in keyof T]: [T[K], undefined] }
+>mp(() => [1, undefined]) as { [K in keyof T]: [T[K], undefined] } : { [K in keyof T]: [T[K], undefined]; }
+>mp(() => [1, undefined]) : [number, undefined][]
+>mp : <U>(f: () => U) => U[]
+>() => [1, undefined] : () => [number, undefined]
+>[1, undefined] : [number, undefined]
+>1 : 1
+>undefined : undefined
+}
+

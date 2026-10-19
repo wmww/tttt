@@ -1871,6 +1871,13 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
                 source = apparent;
             }
         }
+        // A generic mapped type over an array is apparently the array (tsc's inferFromTypes takes every source's apparent
+        // type: getResolvedApparentTypeOfMappedType), `{ [K in keyof T]: [T[K], undefined] }` to `U[]` infers a tuple
+        // (Not to a mapped type, which infers from the mapped source first: tsc's inferFromGenericMappedTypes)
+        if (source->kind == TY_ANONYMOUS && source->anonymous.mapped && !(target->kind == TY_ANONYMOUS && target->anonymous.mapped)) {
+            Ty const* apparent = ty_apparent_type(me, source);
+            if (apparent != source && (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) source = apparent;
+        }
         // (An array to an array, mutable or not, too: `T[]` to `readonly U[]`)
         bool same_reference = source->kind == TY_REFERENCE && target->kind == TY_REFERENCE &&
             (source->reference.target == target->reference.target || (ty_is_array(me, source) && ty_is_array(me, target))) &&

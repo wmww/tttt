@@ -187,8 +187,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `program_mark_init_resolved_imports()` (`ModuleRef.resolved_before_ambient`): tsc's initializeTypeChecker resolves the
   base names of global thisless interfaces before scripts' ambient modules merge, so imports those go through can't be
   ambient modules (DT ember/v2). Followed syntactically only (a local, qualified or non-interface base ends the walk;
-  tsc follows resolved bases). `InterfaceDecl.contains_this` ignores `this is T` predicates: counting them makes
-  ReadonlyArray non-thisless and loses dependentDestructuredVariablesFromNestedPatterns' tuple inference.
+  tsc follows resolved bases).
 
 ## Control flow and narrowing (`flow.c`, `ty/flow.c`)
 - Evolving arrays: switch clauses narrow the final array, not the `TY_EVOLVING_ARRAY`. Oracle: suite evolving-array

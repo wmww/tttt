@@ -6415,8 +6415,8 @@ static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
         else parse_fail(&q);
     }
     TypePredicateNode predicate = { .name = name, .is_this = span_equals(name, "this"), .asserts = asserts, .param_index = -1 };
-    // (Not counted: tsc's `this is T` is a ThisType, so ReadonlyArray isn't thisless, but tttt's members of a non-thisless
-    // ReadonlyArray then lose dependentDestructuredVariablesFromNestedPatterns' tuple inference. hacks.md)
+    // (tsc's `this is T` is a ThisType: the interface isn't thisless)
+    if (predicate.is_this) p.shared->this_count++;
     if (hop_start_if_ends_on_word_break(&p, "is")) {
         hop_whitespace(&p);
         Anchor a = anchor(&p);
