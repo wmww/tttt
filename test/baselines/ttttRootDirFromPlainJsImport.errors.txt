@@ -1,0 +1,22 @@
+other/x.js(1,19): error TS6059: File 'other/y.js' is not under 'rootDir' 'src'. 'rootDir' is expected to contain all source files.
+src/a.ts(1,19): error TS6059: File 'other/x.js' is not under 'rootDir' 'src'. 'rootDir' is expected to contain all source files.
+
+
+==== tsconfig.json (0 errors) ====
+    {
+        "compilerOptions": { "allowJs": true, "rootDir": "./src", "outDir": "./dist", "noEmit": true, "module": "esnext", "moduleResolution": "bundler" },
+        "include": ["./src/**/*.ts"]
+    }
+==== src/a.ts (1 errors) ====
+    import { x } from "../other/x.js";
+                      ~~~~~~~~~~~~~~~
+!!! error TS6059: File 'other/x.js' is not under 'rootDir' 'src'. 'rootDir' is expected to contain all source files.
+    export const a = x;
+==== other/x.js (1 errors) ====
+    import { y } from "./y.js";
+                      ~~~~~~~~
+!!! error TS6059: File 'other/y.js' is not under 'rootDir' 'src'. 'rootDir' is expected to contain all source files.
+    export const x = y;
+==== other/y.js (0 errors) ====
+    export const y = 1;
+    

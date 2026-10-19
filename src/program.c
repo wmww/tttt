@@ -3000,8 +3000,12 @@ static void program_error_explaining_file(Program* me, SourceFile const* file, u
         }
         error = error_ctx_error_s(my errs, preferred->at, code, message);
         // (A semantic diagnostic of that file: a @ts-ignore/@ts-expect-error before it applies, tsgo's
-        // GetIncludeProcessorDiagnostics through getDiagnosticsWithPrecedingDirectives)
-        if (error) error->phase = ERROR_PHASE_RESOLVE_NAMES;
+        // GetIncludeProcessorDiagnostics through getDiagnosticsWithPrecedingDirectives. Reported in plain JavaScript
+        // whatever its code)
+        if (error) {
+            error->phase = ERROR_PHASE_RESOLVE_NAMES;
+            error->include_processor = true;
+        }
     } else {
         error = error_ctx_global_error_s(my errs, code, message);
     }

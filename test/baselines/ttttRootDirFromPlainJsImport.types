@@ -1,0 +1,23 @@
+//// [test/cases/ttttRootDirFromPlainJsImport.ts] ////
+
+=== src/a.ts ===
+import { x } from "../other/x.js";
+>x : 1
+
+export const a = x;
+>a : 1
+>x : 1
+
+=== other/x.js ===
+import { y } from "./y.js";
+>y : 1
+
+export const x = y;
+>x : 1
+>y : 1
+
+=== other/y.js ===
+export const y = 1;
+>y : 1
+>1 : 1
+

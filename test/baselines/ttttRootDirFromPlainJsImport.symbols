@@ -1,0 +1,22 @@
+//// [test/cases/ttttRootDirFromPlainJsImport.ts] ////
+
+=== src/a.ts ===
+import { x } from "../other/x.js";
+>x : Symbol(x, Decl(a.ts, 0, 8))
+
+export const a = x;
+>a : Symbol(a, Decl(a.ts, 1, 12))
+>x : Symbol(x, Decl(a.ts, 0, 8))
+
+=== other/x.js ===
+import { y } from "./y.js";
+>y : Symbol(y, Decl(x.js, 0, 8))
+
+export const x = y;
+>x : Symbol(x, Decl(x.js, 1, 12))
+>y : Symbol(y, Decl(x.js, 0, 8))
+
+=== other/y.js ===
+export const y = 1;
+>y : Symbol(y, Decl(y.js, 0, 12))
+

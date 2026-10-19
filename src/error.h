@@ -30,6 +30,10 @@ typedef struct Error {
     // file's parse errors and in unchecked JavaScript, even with a grammar error's code (TS1206)
     bool js_syntax;
     bool unchecked_js; // Only reported where the checker doesn't check the JavaScript file (a checked one's is its own)
+    // A program diagnostic at an import (tsgo's include processor: TS6059, TS6307...): plain JavaScript reports it whatever
+    // its code, it isn't the checker's (GetIncludeProcessorDiagnostics only skips files canIncludeBindAndCheckDiagnostics
+    // rejects)
+    bool include_processor;
     // A scanner error about a token (parser.c's scanner_error()): the parser decided whether a parse error at its position
     // is kept, tsc's order of the two differs from tttt's
     bool scanner;

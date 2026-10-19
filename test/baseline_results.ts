@@ -974,6 +974,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExtendedEmptyStringOption': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExtendedIncludeReason': {
         errors: true,
         symbols: true,
@@ -1715,6 +1720,11 @@ const baselines = {
         dts: true,
     },
     'ttttReverseMappedFixedByContextualSignature': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttRootDirFromPlainJsImport': {
         errors: true,
         symbols: true,
         types: true,

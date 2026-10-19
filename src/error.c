@@ -833,7 +833,7 @@ void error_ctx_remove_unchecked(ErrorCtx* me) {
             (error->unchecked_js && !source->unchecked) ||
             (source->unchecked &&
             (error->phase >= ERROR_PHASE_RESOLVE_NAMES || error->grammar) &&
-            (error->jsdoc || !(source->plain_js && plain_js_reports(error->ts_code)))))
+            (error->jsdoc || !(source->plain_js && (error->include_processor || plain_js_reports(error->ts_code))))))
         ) {
             error_drop(error);
         } else {
