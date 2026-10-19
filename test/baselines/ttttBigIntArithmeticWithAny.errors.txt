@@ -1,0 +1,20 @@
+ttttBigIntArithmeticWithAny.ts(3,24): error TS2307: Cannot find module './missing' or its corresponding type declarations.
+
+
+==== ttttBigIntArithmeticWithAny.ts (1 errors) ====
+    // `bigint / any` is bigint: tsc's bothAreBigIntLike is the loose isTypeAssignableToKind, where `any` (and an unresolved
+    // import's error type) is bigint-like (ethereumjs's header.ts, its references unbuilt: TS6305 leaves `Common` unresolved)
+    import { Common } from "./missing";
+                           ~~~~~~~~~~~
+!!! error TS2307: Cannot find module './missing' or its corresponding type declarations.
+    declare const a: bigint;
+    declare const anyv: any;
+    declare const common: Common;
+    const s = a / anyv;
+    const t = anyv * 2n;
+    const u = a - common.param("x");
+    const v = a - s - t - u;
+    const w: bigint = (a * a) / common.param("y");
+    const x = a ** anyv;
+    const y = 1 - anyv; // number
+    

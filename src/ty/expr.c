@@ -2707,7 +2707,13 @@ static Ty const* arithmetic_result(Checker* me, Ty const* left, Ty const* right)
     ) {
         return ty_intrinsic(me, TY_NUMBER);
     }
-    if (is_bigint_like(me, left) && is_bigint_like(me, right)) return ty_intrinsic(me, TY_BIGINT);
+    // (tsc's bothAreBigIntLike is the loose isTypeAssignableToKind: `any` is bigint-like, `bigint / any` is bigint)
+    Ty const* bigint = ty_intrinsic(me, TY_BIGINT);
+    if (((left->flags & bigint_like) || ty_is_related(me, left, bigint, TY_RELATION_ASSIGNABLE)) &&
+        ((right->flags & bigint_like) || ty_is_related(me, right, bigint, TY_RELATION_ASSIGNABLE))
+    ) {
+        return bigint;
+    }
     return any_type(me); // Mixed: an error (tsc's errorType)
 }
 

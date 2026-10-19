@@ -1,0 +1,74 @@
+//// [test/cases/ttttBigIntArithmeticWithAny.ts] ////
+
+=== ttttBigIntArithmeticWithAny.ts ===
+// `bigint / any` is bigint: tsc's bothAreBigIntLike is the loose isTypeAssignableToKind, where `any` (and an unresolved
+// import's error type) is bigint-like (ethereumjs's header.ts, its references unbuilt: TS6305 leaves `Common` unresolved)
+import { Common } from "./missing";
+>Common : any
+
+declare const a: bigint;
+>a : bigint
+
+declare const anyv: any;
+>anyv : any
+
+declare const common: Common;
+>common : Common
+
+const s = a / anyv;
+>s : bigint
+>a / anyv : bigint
+>a : bigint
+>anyv : any
+
+const t = anyv * 2n;
+>t : bigint
+>anyv * 2n : bigint
+>anyv : any
+>2n : 2n
+
+const u = a - common.param("x");
+>u : bigint
+>a - common.param("x") : bigint
+>a : bigint
+>common.param("x") : any
+>common.param : any
+>common : Common
+>param : any
+>"x" : "x"
+
+const v = a - s - t - u;
+>v : bigint
+>a - s - t - u : bigint
+>a - s - t : bigint
+>a - s : bigint
+>a : bigint
+>s : bigint
+>t : bigint
+>u : bigint
+
+const w: bigint = (a * a) / common.param("y");
+>w : bigint
+>(a * a) / common.param("y") : bigint
+>(a * a) : bigint
+>a * a : bigint
+>a : bigint
+>a : bigint
+>common.param("y") : any
+>common.param : any
+>common : Common
+>param : any
+>"y" : "y"
+
+const x = a ** anyv;
+>x : bigint
+>a ** anyv : bigint
+>a : bigint
+>anyv : any
+
+const y = 1 - anyv; // number
+>y : number
+>1 - anyv : number
+>1 : 1
+>anyv : any
+

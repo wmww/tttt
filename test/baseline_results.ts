@@ -74,6 +74,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttBigIntArithmeticWithAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBigintMemberNames': {
         errors: true,
         symbols: true,

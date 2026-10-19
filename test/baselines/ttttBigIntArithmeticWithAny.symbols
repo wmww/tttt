@@ -1,0 +1,54 @@
+//// [test/cases/ttttBigIntArithmeticWithAny.ts] ////
+
+=== ttttBigIntArithmeticWithAny.ts ===
+// `bigint / any` is bigint: tsc's bothAreBigIntLike is the loose isTypeAssignableToKind, where `any` (and an unresolved
+// import's error type) is bigint-like (ethereumjs's header.ts, its references unbuilt: TS6305 leaves `Common` unresolved)
+import { Common } from "./missing";
+>Common : Symbol(Common, Decl(ttttBigIntArithmeticWithAny.ts, 2, 8))
+
+declare const a: bigint;
+>a : Symbol(a, Decl(ttttBigIntArithmeticWithAny.ts, 3, 13))
+
+declare const anyv: any;
+>anyv : Symbol(anyv, Decl(ttttBigIntArithmeticWithAny.ts, 4, 13))
+
+declare const common: Common;
+>common : Symbol(common, Decl(ttttBigIntArithmeticWithAny.ts, 5, 13))
+>Common : Symbol(Common, Decl(ttttBigIntArithmeticWithAny.ts, 2, 8))
+
+const s = a / anyv;
+>s : Symbol(s, Decl(ttttBigIntArithmeticWithAny.ts, 6, 5))
+>a : Symbol(a, Decl(ttttBigIntArithmeticWithAny.ts, 3, 13))
+>anyv : Symbol(anyv, Decl(ttttBigIntArithmeticWithAny.ts, 4, 13))
+
+const t = anyv * 2n;
+>t : Symbol(t, Decl(ttttBigIntArithmeticWithAny.ts, 7, 5))
+>anyv : Symbol(anyv, Decl(ttttBigIntArithmeticWithAny.ts, 4, 13))
+
+const u = a - common.param("x");
+>u : Symbol(u, Decl(ttttBigIntArithmeticWithAny.ts, 8, 5))
+>a : Symbol(a, Decl(ttttBigIntArithmeticWithAny.ts, 3, 13))
+>common : Symbol(common, Decl(ttttBigIntArithmeticWithAny.ts, 5, 13))
+
+const v = a - s - t - u;
+>v : Symbol(v, Decl(ttttBigIntArithmeticWithAny.ts, 9, 5))
+>a : Symbol(a, Decl(ttttBigIntArithmeticWithAny.ts, 3, 13))
+>s : Symbol(s, Decl(ttttBigIntArithmeticWithAny.ts, 6, 5))
+>t : Symbol(t, Decl(ttttBigIntArithmeticWithAny.ts, 7, 5))
+>u : Symbol(u, Decl(ttttBigIntArithmeticWithAny.ts, 8, 5))
+
+const w: bigint = (a * a) / common.param("y");
+>w : Symbol(w, Decl(ttttBigIntArithmeticWithAny.ts, 10, 5))
+>a : Symbol(a, Decl(ttttBigIntArithmeticWithAny.ts, 3, 13))
+>a : Symbol(a, Decl(ttttBigIntArithmeticWithAny.ts, 3, 13))
+>common : Symbol(common, Decl(ttttBigIntArithmeticWithAny.ts, 5, 13))
+
+const x = a ** anyv;
+>x : Symbol(x, Decl(ttttBigIntArithmeticWithAny.ts, 11, 5))
+>a : Symbol(a, Decl(ttttBigIntArithmeticWithAny.ts, 3, 13))
+>anyv : Symbol(anyv, Decl(ttttBigIntArithmeticWithAny.ts, 4, 13))
+
+const y = 1 - anyv; // number
+>y : Symbol(y, Decl(ttttBigIntArithmeticWithAny.ts, 12, 5))
+>anyv : Symbol(anyv, Decl(ttttBigIntArithmeticWithAny.ts, 4, 13))
+
