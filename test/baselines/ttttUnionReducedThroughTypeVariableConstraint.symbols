@@ -1,0 +1,46 @@
+//// [test/cases/ttttUnionReducedThroughTypeVariableConstraint.ts] ////
+
+=== ttttUnionReducedThroughTypeVariableConstraint.ts ===
+// A union whose intersection members put a known object next to a type variable is reduced when printed (tsc's
+// typeToTypeNode asks getReducedType): `P1 & V` with V constrained to `A | L1 | L2` is never through the `type`
+// discriminant of V's constraint, so `(A | L1 | P1) & V` prints `(A & V) | (L1 & V)`, not its origin
+interface A { type: "a"; a: 1 }
+>A : Symbol(A, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 0, 0))
+>type : Symbol(A.type, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 3, 13))
+>a : Symbol(A.a, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 3, 24))
+
+interface L1 { type: "l1"; l: 1 }
+>L1 : Symbol(L1, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 3, 31))
+>type : Symbol(L1.type, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 4, 14))
+>l : Symbol(L1.l, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 4, 26))
+
+interface L2 { type: "l2"; l: 2 }
+>L2 : Symbol(L2, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 4, 33))
+>type : Symbol(L2.type, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 5, 14))
+>l : Symbol(L2.l, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 5, 26))
+
+interface P1 { type: "p1"; p: 1 }
+>P1 : Symbol(P1, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 5, 33))
+>type : Symbol(P1.type, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 6, 14))
+>p : Symbol(P1.p, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 6, 26))
+
+export function f<V extends A | L1 | L2>(x: (A | L1 | P1) & V) {
+>f : Symbol(f, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 6, 33))
+>V : Symbol(V, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 7, 18))
+>A : Symbol(A, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 0, 0))
+>L1 : Symbol(L1, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 3, 31))
+>L2 : Symbol(L2, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 4, 33))
+>x : Symbol(x, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 7, 41))
+>A : Symbol(A, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 0, 0))
+>L1 : Symbol(L1, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 3, 31))
+>P1 : Symbol(P1, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 5, 33))
+>V : Symbol(V, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 7, 18))
+
+    const y = x;
+>y : Symbol(y, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 8, 9))
+>x : Symbol(x, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 7, 41))
+
+    return y;
+>y : Symbol(y, Decl(ttttUnionReducedThroughTypeVariableConstraint.ts, 8, 9))
+}
+

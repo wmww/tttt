@@ -1,0 +1,13 @@
+// @strict: true
+// @noEmit: true
+// A union whose intersection members put a known object next to a type variable is reduced when printed (tsc's
+// typeToTypeNode asks getReducedType): `P1 & V` with V constrained to `A | L1 | L2` is never through the `type`
+// discriminant of V's constraint, so `(A | L1 | P1) & V` prints `(A & V) | (L1 & V)`, not its origin
+interface A { type: "a"; a: 1 }
+interface L1 { type: "l1"; l: 1 }
+interface L2 { type: "l2"; l: 2 }
+interface P1 { type: "p1"; p: 1 }
+export function f<V extends A | L1 | L2>(x: (A | L1 | P1) & V) {
+    const y = x;
+    return y;
+}

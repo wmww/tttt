@@ -954,14 +954,16 @@ static Ty const* intern_composite_origin(
         if (kind == TY_UNION && (member_flags & TYF_UNDEFINED) && (member_flags & TYF_NULL)) xflags |= TYX_UNDEFINED_AND_NULL;
         if (kind == TY_UNION) {
             // (Only intersections that may reduce: two object members without type variables, or one and a type
-            // literal with them, see never_reduced_prop())
+            // literal with them or a type variable, see never_reduced_prop(): `(A | L1 | P1) & V` with V constrained to
+            // `A | L1 | L2` loses `P1 & V`)
             for (u32 i = 0; i < len && !(xflags & TYX_CONTAINS_INTERSECTIONS); i++) {
                 if (types[i]->kind != TY_INTERSECTION) continue;
                 u32 objects = 0, literals = 0;
                 TyList parts = types[i]->composite.types;
                 for (u32 j = 0; j < parts.len; j++) {
                     objects += (parts.data[j]->flags & TYF_OBJECT) && !(parts.data[j]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
-                    literals += parts.data[j]->kind == TY_ANONYMOUS && (parts.data[j]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+                    literals += (parts.data[j]->kind == TY_ANONYMOUS && (parts.data[j]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) ||
+                        parts.data[j]->kind == TY_TYPE_PARAM || parts.data[j]->kind == TY_INDEXED;
                 }
                 if (objects >= 2 || (objects && literals)) xflags |= TYX_CONTAINS_INTERSECTIONS;
             }

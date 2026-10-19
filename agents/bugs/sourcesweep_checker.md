@@ -25,9 +25,8 @@ Fixed that round: vencord (TS2589 at the template, intersection any-before-union
 references), svelte x2 (JS default type arguments, hoisted constraint against a union), react-window (peer
 dependencies in package ids, landed by agent D). Left:
 - (2026-10-16, agent A) monkeytype: see the 2026-10-16 section at the end (arktype and redux-toolkit match since).
-- Display: `(A | L1 | P1) & V` with `V extends A | L1 | L2` (L1 and L2 sharing a `type` discriminant) prints its
-  origin, tsc `(A & V) | (L1 & V)`: tsc's getReducedType drops `P1 & V` through V's apparent type (the
-  never_reduced_prop() type-variable member gap of the redux-toolkit entry).
+- Display `(A | L1 | P1) & V` with `V extends A | L1 | L2`: fixed 2026-10-18 (agent B, a union whose intersection
+  members put a known object next to a type variable is now marked as possibly reducing, TYX_CONTAINS_INTERSECTIONS).
 
 ## Source sweep fan-out 2026-10-12 leftovers (agent B)
 Fixed that round: mikro-orm 1/24 -> 23/24 (NoInfer inference through a union target's leftover, reverse comparable

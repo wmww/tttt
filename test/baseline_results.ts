@@ -1870,6 +1870,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttUnionReducedThroughTypeVariableConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttUnionRestSignaturesCombined': {
         errors: true,
         symbols: true,
