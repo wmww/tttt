@@ -221,8 +221,7 @@ Each needs a cut-down repro first (`scripts/clidiff.py -f '^PROJECT$' -v`; `-k K
 diagnostics). Left:
 - **Truncation depth** (apollo-client/integration-tests/vite: `DeepPartial<TValue>` vs `DeepPartial<...>`, `(...)` vs
   `...`, and a TS2322 chain three lines shorter, `'undefined & TData' ... 'RegExp & CustomMaybeMaskedImplementation'`;
-  babel-traverse `visitors.ts:168`: tsc's union starts with a `{}` member tttt lacks, `... 753 more` vs `754`, maybe a
-  union member difference rather than printing; tiptap/demos `JSX/{React,Vue}/Paragraph.tsx(6,3)` and 22 more: tsc
+  tiptap/demos `JSX/{React,Vue}/Paragraph.tsx(6,3)` and 22 more: tsc
   elides `Record<...>` early inside the `this:` type and prints `{ HTMLAttributes }: { node: Node; ... }` later, tttt
   the reverse, so tttt counts less before and more after; Extendable.test.ts's TS2349 prints a signature's type
   parameter defaults `= any` where tttt has `= Options`, a different bug). Method that found rxjs's and mikro-orm's: a

@@ -1,0 +1,94 @@
+//// [test/cases/ttttSpreadUnionNullableOrder.ts] ////
+
+=== ttttSpreadUnionNullableOrder.ts ===
+// A union member null or undefined spread among others makes a new {} with the literal's symbol (tsc's getSpreadType),
+// sorted among the other alternatives by creation; an `object` member gives the symbolless empty object, sorted last
+type F<S> = (this: S, p: number) => void;
+>F : Symbol(F, Decl(ttttSpreadUnionNullableOrder.ts, 0, 0))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 2, 7))
+>this : Symbol(this, Decl(ttttSpreadUnionNullableOrder.ts, 2, 13))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 2, 7))
+>p : Symbol(p, Decl(ttttSpreadUnionNullableOrder.ts, 2, 21))
+
+type O<S> = { enter?: F<S>[]; exit?: F<S>[] };
+>O : Symbol(O, Decl(ttttSpreadUnionNullableOrder.ts, 2, 41))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 3, 7))
+>enter : Symbol(enter, Decl(ttttSpreadUnionNullableOrder.ts, 3, 13))
+>F : Symbol(F, Decl(ttttSpreadUnionNullableOrder.ts, 0, 0))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 3, 7))
+>exit : Symbol(exit, Decl(ttttSpreadUnionNullableOrder.ts, 3, 29))
+>F : Symbol(F, Decl(ttttSpreadUnionNullableOrder.ts, 0, 0))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 3, 7))
+
+type V<S> = F<S> | O<S>;
+>V : Symbol(V, Decl(ttttSpreadUnionNullableOrder.ts, 3, 46))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 4, 7))
+>F : Symbol(F, Decl(ttttSpreadUnionNullableOrder.ts, 0, 0))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 4, 7))
+>O : Symbol(O, Decl(ttttSpreadUnionNullableOrder.ts, 2, 41))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 4, 7))
+
+interface Vis<S> { a?: V<S>; b?: V<S>; enter?: F<S>; }
+>Vis : Symbol(Vis, Decl(ttttSpreadUnionNullableOrder.ts, 4, 24))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 5, 14))
+>a : Symbol(Vis.a, Decl(ttttSpreadUnionNullableOrder.ts, 5, 18))
+>V : Symbol(V, Decl(ttttSpreadUnionNullableOrder.ts, 3, 46))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 5, 14))
+>b : Symbol(Vis.b, Decl(ttttSpreadUnionNullableOrder.ts, 5, 28))
+>V : Symbol(V, Decl(ttttSpreadUnionNullableOrder.ts, 3, 46))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 5, 14))
+>enter : Symbol(Vis.enter, Decl(ttttSpreadUnionNullableOrder.ts, 5, 38))
+>F : Symbol(F, Decl(ttttSpreadUnionNullableOrder.ts, 0, 0))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 5, 14))
+
+function g<S>(v: Vis<S>, k: keyof Vis<S>) {
+>g : Symbol(g, Decl(ttttSpreadUnionNullableOrder.ts, 5, 54))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 6, 11))
+>v : Symbol(v, Decl(ttttSpreadUnionNullableOrder.ts, 6, 14))
+>Vis : Symbol(Vis, Decl(ttttSpreadUnionNullableOrder.ts, 4, 24))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 6, 11))
+>k : Symbol(k, Decl(ttttSpreadUnionNullableOrder.ts, 6, 24))
+>Vis : Symbol(Vis, Decl(ttttSpreadUnionNullableOrder.ts, 4, 24))
+>S : Symbol(S, Decl(ttttSpreadUnionNullableOrder.ts, 6, 11))
+
+  const fns = v[k];
+>fns : Symbol(fns, Decl(ttttSpreadUnionNullableOrder.ts, 7, 7))
+>v : Symbol(v, Decl(ttttSpreadUnionNullableOrder.ts, 6, 14))
+>k : Symbol(k, Decl(ttttSpreadUnionNullableOrder.ts, 6, 24))
+
+  const x: number = { ...fns };
+>x : Symbol(x, Decl(ttttSpreadUnionNullableOrder.ts, 8, 7))
+>fns : Symbol(fns, Decl(ttttSpreadUnionNullableOrder.ts, 7, 7))
+}
+function h(fns: (() => void) | { a: number } | undefined) {
+>h : Symbol(h, Decl(ttttSpreadUnionNullableOrder.ts, 9, 1))
+>fns : Symbol(fns, Decl(ttttSpreadUnionNullableOrder.ts, 10, 11))
+>a : Symbol(a, Decl(ttttSpreadUnionNullableOrder.ts, 10, 32))
+
+  const x: number = { ...fns };
+>x : Symbol(x, Decl(ttttSpreadUnionNullableOrder.ts, 11, 7))
+>fns : Symbol(fns, Decl(ttttSpreadUnionNullableOrder.ts, 10, 11))
+}
+function k1(fns: (() => void) | { a: number } | object) {
+>k1 : Symbol(k1, Decl(ttttSpreadUnionNullableOrder.ts, 12, 1))
+>fns : Symbol(fns, Decl(ttttSpreadUnionNullableOrder.ts, 13, 12))
+>a : Symbol(a, Decl(ttttSpreadUnionNullableOrder.ts, 13, 33))
+
+  const x: number = { ...fns };
+>x : Symbol(x, Decl(ttttSpreadUnionNullableOrder.ts, 14, 7))
+>fns : Symbol(fns, Decl(ttttSpreadUnionNullableOrder.ts, 13, 12))
+}
+function k2(fns: { a: number } | object | undefined, g: { c: 1 } | { d: 2 }) {
+>k2 : Symbol(k2, Decl(ttttSpreadUnionNullableOrder.ts, 15, 1))
+>fns : Symbol(fns, Decl(ttttSpreadUnionNullableOrder.ts, 16, 12))
+>a : Symbol(a, Decl(ttttSpreadUnionNullableOrder.ts, 16, 18))
+>g : Symbol(g, Decl(ttttSpreadUnionNullableOrder.ts, 16, 52))
+>c : Symbol(c, Decl(ttttSpreadUnionNullableOrder.ts, 16, 57))
+>d : Symbol(d, Decl(ttttSpreadUnionNullableOrder.ts, 16, 68))
+
+  const x: number = { ...fns, ...g };
+>x : Symbol(x, Decl(ttttSpreadUnionNullableOrder.ts, 17, 7))
+>fns : Symbol(fns, Decl(ttttSpreadUnionNullableOrder.ts, 16, 12))
+>g : Symbol(g, Decl(ttttSpreadUnionNullableOrder.ts, 16, 52))
+}
+

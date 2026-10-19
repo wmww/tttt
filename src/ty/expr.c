@@ -3554,6 +3554,9 @@ typedef struct SpreadPart {
 typedef struct SpreadAlt {
     SpreadPart* parts;
     u32 part_count;
+    // A union member null or undefined was spread into it: without parts it is still a new object with the literal's
+    // symbol (tsc's getSpreadType returns its left side, emptyObjectType at first, only for primitives and `object`)
+    bool nullable_spread;
 } SpreadAlt;
 
 typedef struct SpreadAcc {
@@ -3581,7 +3584,7 @@ static void spread_alt_drop(SpreadAlt* alt) {
 }
 
 static SpreadAlt spread_alt_clone(SpreadAlt const* alt) {
-    SpreadAlt ret = {0};
+    SpreadAlt ret = { .nullable_spread = alt->nullable_spread };
     for (u32 i = 0; i < alt->part_count; i++) {
         SpreadPart const* part = &alt->parts[i];
         spread_alt_push(&ret, part->generic ? *part : (SpreadPart){ .object = literal_builder_clone(&part->object) });
@@ -3749,6 +3752,7 @@ static void spread_acc_type(Checker* me, SpreadAcc* acc, Ty const* type) {
             SpreadAlt alt = spread_alt_clone(&acc->alts[i]);
             Ty const* member = members.data[j];
             if (!spreads_into_nothing(me, member)) spread_alt_type(me, &alt, member, false, acc->readonly);
+            else if (member->flags & (TYF_NULLABLE | TYF_VOID)) alt.nullable_spread = true;
             spread_acc_add_alt(&next, alt);
         }
         spread_alt_drop(&acc->alts[i]);
@@ -3780,7 +3784,12 @@ static Ty const* spread_acc_finish(Checker* me, SpreadAcc* acc, LiteralBuilder* 
                     ty_object_literal_alternative(me, part->object.props, part->object.count, part->object.index,
                         part->object.index_count, kind, expr, acc->alt_count > 1 ? i + 1 : 0));
             }
-            ty_buf_push(&alts, parts.len == 0 ? ty_object_literal(me, nullptr, 0, nullptr, 0, kind) :
+            // (A union member null or undefined is still a new object with the literal's symbol: tsc's getSpreadType
+            // gets there for it, sorted by that symbol and not last like a symbolless one, `{} | {} | { a: number }`
+            // for `{ ...(f | { a: number } | undefined) }`)
+            ty_buf_push(&alts, parts.len == 0 ? (acc->alt_count > 1 && alt->nullable_spread ?
+                    ty_object_literal_alternative(me, nullptr, 0, nullptr, 0, kind, expr, i + 1) :
+                    ty_object_literal(me, nullptr, 0, nullptr, 0, kind)) :
                 parts.len == 1 ? parts.data[0] : ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0}));
         }
         ret = alts.len == 1 ? alts.data[0] : ty_union(me, alts.data, alts.len, nullptr, (TyList){0});

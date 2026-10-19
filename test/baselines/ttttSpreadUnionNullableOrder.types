@@ -1,0 +1,74 @@
+//// [test/cases/ttttSpreadUnionNullableOrder.ts] ////
+
+=== ttttSpreadUnionNullableOrder.ts ===
+// A union member null or undefined spread among others makes a new {} with the literal's symbol (tsc's getSpreadType),
+// sorted among the other alternatives by creation; an `object` member gives the symbolless empty object, sorted last
+type F<S> = (this: S, p: number) => void;
+>F : F<S>
+>this : S
+>p : number
+
+type O<S> = { enter?: F<S>[]; exit?: F<S>[] };
+>O : O<S>
+>enter : F<S>[] | undefined
+>exit : F<S>[] | undefined
+
+type V<S> = F<S> | O<S>;
+>V : V<S>
+
+interface Vis<S> { a?: V<S>; b?: V<S>; enter?: F<S>; }
+>a : V<S> | undefined
+>b : V<S> | undefined
+>enter : F<S> | undefined
+
+function g<S>(v: Vis<S>, k: keyof Vis<S>) {
+>g : <S>(v: Vis<S>, k: keyof Vis<S>) => void
+>v : Vis<S>
+>k : keyof Vis<S>
+
+  const fns = v[k];
+>fns : V<S> | undefined
+>v[k] : V<S> | undefined
+>v : Vis<S>
+>k : keyof Vis<S>
+
+  const x: number = { ...fns };
+>x : number
+>{ ...fns } : {} | {} | { enter?: F<S>[] | undefined; exit?: F<S>[] | undefined; }
+>fns : V<S> | undefined
+}
+function h(fns: (() => void) | { a: number } | undefined) {
+>h : (fns: (() => void) | { a: number; } | undefined) => void
+>fns : (() => void) | { a: number; } | undefined
+>a : number
+
+  const x: number = { ...fns };
+>x : number
+>{ ...fns } : {} | {} | { a: number; }
+>fns : (() => void) | { a: number; } | undefined
+}
+function k1(fns: (() => void) | { a: number } | object) {
+>k1 : (fns: (() => void) | { a: number; } | object) => void
+>fns : object | (() => void) | { a: number; }
+>a : number
+
+  const x: number = { ...fns };
+>x : number
+>{ ...fns } : {} | { a: number; } | {}
+>fns : object | (() => void) | { a: number; }
+}
+function k2(fns: { a: number } | object | undefined, g: { c: 1 } | { d: 2 }) {
+>k2 : (fns: { a: number; } | object | undefined, g: { c: 1; } | { d: 2; }) => void
+>fns : object | { a: number; } | undefined
+>a : number
+>g : { c: 1; } | { d: 2; }
+>c : 1
+>d : 2
+
+  const x: number = { ...fns, ...g };
+>x : number
+>{ ...fns, ...g } : { a?: number | undefined; c: 1; } | { a?: number | undefined; d: 2; }
+>fns : object | { a: number; } | undefined
+>g : { c: 1; } | { d: 2; }
+}
+
