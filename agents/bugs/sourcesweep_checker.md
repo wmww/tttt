@@ -254,3 +254,17 @@ tiptap/demos (+TS2590: a JSX tag's intersection member took its apparent union's
 `NoInfer<T> | (NoInfer<T> & string)` itself matches tsc's). Looked at again, unchanged (entries above):
 better-auth x2, es-toolkit (tsc's own order artifact), monkeytype TS2589, pixijs (binder merge unit). arktype this.test.ts
 and knip's TS7022 were fixed after (2026-10-18, agent B).
+
+## 2026-10-19: every tsconfig*.json (agent C)
+The `-p` sweep now also checks every non-`tsconfig.json` config no other config extends (1428 new projects). Day one:
+**1389 / 1428 match (97.3%)**, 306 of them clean under tsc. Fixed the same day: `bigint / any` (ethereumjs), the
+include walk's config-directory-first order (ethereumjs TS6307), imported-class narrowing (angular-cli; classes only,
+hacks.md), no TS5097 for a side-effect import (angular-cli), an empty string option not overriding an extended one
+(qwik TS5051), include-processor diagnostics in plain JS (mermaid TS6059). Left in this list's repos:
+- **crawlee** packages/basic-crawler/tsconfig.build.json: -TS2339 at throttling_request_manager.ts:1064
+  (`manager.extendRequestProcessingTimeSecs?.(...)` where `manager` is `this.#resolvedInner!` or an awaited
+  `#selectManagerOrThrow()`: tsc says a member of that union lacks the method; tttt finds it). Uninvestigated.
+- **b4run** packages/inspector (the old directory project too) and its tsconfig.test.json: -TS7022 at
+  test/seed.e2e.test.ts:48. Both configs; it didn't show in this file's earlier lists, so possibly a recent
+  regression or an order-dependent circularity (kdiff it: `scripts/kdiff.py -f '^b4run/'`).
+- monkeytype/frontend (+TS2578/+TS2322 SearchableAutoSetting.tsx): the 2026-10-16 entry above.
