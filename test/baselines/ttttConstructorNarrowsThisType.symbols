@@ -1,0 +1,101 @@
+//// [test/cases/ttttConstructorNarrowsThisType.ts] ////
+
+=== ttttConstructorNarrowsThisType.ts ===
+// `this.constructor === C` keeps the `this` type of C (tsc compares symbols, the `this` type has its class's): atproto's BskyAgent.clone narrowed `this` to never
+
+class Base {
+>Base : Symbol(Base, Decl(ttttConstructorNarrowsThisType.ts, 0, 0))
+
+  m = 1
+>m : Symbol(Base.m, Decl(ttttConstructorNarrowsThisType.ts, 2, 12))
+
+  copyInto<T extends Base>(t: T): T { return t }
+>copyInto : Symbol(Base.copyInto, Decl(ttttConstructorNarrowsThisType.ts, 3, 7))
+>T : Symbol(T, Decl(ttttConstructorNarrowsThisType.ts, 4, 11))
+>Base : Symbol(Base, Decl(ttttConstructorNarrowsThisType.ts, 0, 0))
+>t : Symbol(t, Decl(ttttConstructorNarrowsThisType.ts, 4, 27))
+>T : Symbol(T, Decl(ttttConstructorNarrowsThisType.ts, 4, 11))
+>T : Symbol(T, Decl(ttttConstructorNarrowsThisType.ts, 4, 11))
+>t : Symbol(t, Decl(ttttConstructorNarrowsThisType.ts, 4, 27))
+}
+class Agent extends Base {
+>Agent : Symbol(Agent, Decl(ttttConstructorNarrowsThisType.ts, 5, 1))
+>Base : Symbol(Base, Decl(ttttConstructorNarrowsThisType.ts, 0, 0))
+
+  clone(): this {
+>clone : Symbol(Agent.clone, Decl(ttttConstructorNarrowsThisType.ts, 6, 26))
+
+    if (this.constructor === Agent) {
+>this.constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>this : Symbol(Agent, Decl(ttttConstructorNarrowsThisType.ts, 5, 1))
+>constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>Agent : Symbol(Agent, Decl(ttttConstructorNarrowsThisType.ts, 5, 1))
+
+      const agent = new Agent()
+>agent : Symbol(agent, Decl(ttttConstructorNarrowsThisType.ts, 9, 11))
+>Agent : Symbol(Agent, Decl(ttttConstructorNarrowsThisType.ts, 5, 1))
+
+      agent.m = this.m
+>agent.m : Symbol(Base.m, Decl(ttttConstructorNarrowsThisType.ts, 2, 12))
+>agent : Symbol(agent, Decl(ttttConstructorNarrowsThisType.ts, 9, 11))
+>m : Symbol(Base.m, Decl(ttttConstructorNarrowsThisType.ts, 2, 12))
+>this.m : Symbol(Base.m, Decl(ttttConstructorNarrowsThisType.ts, 2, 12))
+>this : Symbol(Agent, Decl(ttttConstructorNarrowsThisType.ts, 5, 1))
+>m : Symbol(Base.m, Decl(ttttConstructorNarrowsThisType.ts, 2, 12))
+
+      return this.copyInto(agent as this)
+>this.copyInto : Symbol(Base.copyInto, Decl(ttttConstructorNarrowsThisType.ts, 3, 7))
+>this : Symbol(Agent, Decl(ttttConstructorNarrowsThisType.ts, 5, 1))
+>copyInto : Symbol(Base.copyInto, Decl(ttttConstructorNarrowsThisType.ts, 3, 7))
+>agent : Symbol(agent, Decl(ttttConstructorNarrowsThisType.ts, 9, 11))
+    }
+    if (this.constructor === Base) {
+>this.constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>this : Symbol(Agent, Decl(ttttConstructorNarrowsThisType.ts, 5, 1))
+>constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>Base : Symbol(Base, Decl(ttttConstructorNarrowsThisType.ts, 0, 0))
+
+      this.m
+    }
+    throw new TypeError()
+>TypeError : Symbol(TypeError, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+  }
+}
+class G<T> {
+>G : Symbol(G, Decl(ttttConstructorNarrowsThisType.ts, 18, 1))
+>T : Symbol(T, Decl(ttttConstructorNarrowsThisType.ts, 19, 8))
+
+  x!: T
+>x : Symbol(G.x, Decl(ttttConstructorNarrowsThisType.ts, 19, 12))
+>T : Symbol(T, Decl(ttttConstructorNarrowsThisType.ts, 19, 8))
+
+  f() {
+>f : Symbol(G.f, Decl(ttttConstructorNarrowsThisType.ts, 20, 7))
+
+    if (this.constructor === G) return this.x
+>this.constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>this : Symbol(G, Decl(ttttConstructorNarrowsThisType.ts, 18, 1))
+>constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>G : Symbol(G, Decl(ttttConstructorNarrowsThisType.ts, 18, 1))
+>this.x : Symbol(G.x, Decl(ttttConstructorNarrowsThisType.ts, 19, 12))
+>this : Symbol(G, Decl(ttttConstructorNarrowsThisType.ts, 18, 1))
+>x : Symbol(G.x, Decl(ttttConstructorNarrowsThisType.ts, 19, 12))
+  }
+}
+interface I { m: number }
+>I : Symbol(I, Decl(ttttConstructorNarrowsThisType.ts, 24, 1))
+>m : Symbol(I.m, Decl(ttttConstructorNarrowsThisType.ts, 25, 13))
+
+function h(this: I) {
+>h : Symbol(h, Decl(ttttConstructorNarrowsThisType.ts, 25, 25))
+>this : Symbol(this, Decl(ttttConstructorNarrowsThisType.ts, 26, 11))
+>I : Symbol(I, Decl(ttttConstructorNarrowsThisType.ts, 24, 1))
+
+  if (this.constructor === Agent) this.m
+>this.constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>this : Symbol(this, Decl(ttttConstructorNarrowsThisType.ts, 26, 11))
+>constructor : Symbol(Object.constructor, Decl(lib.es5.d.ts, --, --))
+>Agent : Symbol(Agent, Decl(ttttConstructorNarrowsThisType.ts, 5, 1))
+>this : Symbol(this, Decl(ttttConstructorNarrowsThisType.ts, 26, 11))
+}
+

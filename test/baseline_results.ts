@@ -183,6 +183,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttConstructorNarrowsThisType': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttContextualIntersectionUnionConstraintMember': {
         errors: true,
         symbols: true,

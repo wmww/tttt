@@ -2559,6 +2559,12 @@ static bool is_constructed_by(Checker* me, Ty const* source, void const* arg) {
     bool source_class = source->kind == TY_DECLARED && source->declared.kind == TY_DECLARED_CLASS_INSTANCE;
     bool target_class = target->kind == TY_DECLARED && target->declared.kind == TY_DECLARED_CLASS_INSTANCE;
     if (source_class || target_class) {
+        // (tsc compares symbols: a class's `this` type has the class's)
+        if (source->kind == TY_TYPE_PARAM && source->param.state->is_this && target_class) {
+            Ty const* owner = source->param.state->constraint;
+            if (owner && owner->kind == TY_REFERENCE) owner = owner->reference.target;
+            return owner && owner->kind == TY_DECLARED && owner->declared.symbol == target->declared.symbol;
+        }
         return source_class && target_class && source->declared.symbol == target->declared.symbol;
     }
     return is_subtype(me, source, target);

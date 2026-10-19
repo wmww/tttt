@@ -1,0 +1,108 @@
+//// [test/cases/ttttConstructorNarrowsThisType.ts] ////
+
+=== ttttConstructorNarrowsThisType.ts ===
+// `this.constructor === C` keeps the `this` type of C (tsc compares symbols, the `this` type has its class's): atproto's BskyAgent.clone narrowed `this` to never
+
+class Base {
+>Base : Base
+
+  m = 1
+>m : number
+>1 : 1
+
+  copyInto<T extends Base>(t: T): T { return t }
+>copyInto : <T extends Base>(t: T) => T
+>t : T
+>t : T
+}
+class Agent extends Base {
+>Agent : Agent
+>Base : Base
+
+  clone(): this {
+>clone : () => this
+
+    if (this.constructor === Agent) {
+>this.constructor === Agent : boolean
+>this.constructor : Function
+>this : this
+>constructor : Function
+>Agent : typeof Agent
+
+      const agent = new Agent()
+>agent : Agent
+>new Agent() : Agent
+>Agent : typeof Agent
+
+      agent.m = this.m
+>agent.m = this.m : number
+>agent.m : number
+>agent : Agent
+>m : number
+>this.m : number
+>this : this
+>m : number
+
+      return this.copyInto(agent as this)
+>this.copyInto(agent as this) : this
+>this.copyInto : <T extends Base>(t: T) => T
+>this : this
+>copyInto : <T extends Base>(t: T) => T
+>agent as this : this
+>agent : Agent
+    }
+    if (this.constructor === Base) {
+>this.constructor === Base : boolean
+>this.constructor : Function
+>this : this
+>constructor : Function
+>Base : typeof Base
+
+      this.m
+>this.m : any
+>this : never
+>m : any
+    }
+    throw new TypeError()
+>new TypeError() : TypeError
+>TypeError : TypeErrorConstructor
+  }
+}
+class G<T> {
+>G : G<T>
+
+  x!: T
+>x : T
+
+  f() {
+>f : () => T | undefined
+
+    if (this.constructor === G) return this.x
+>this.constructor === G : boolean
+>this.constructor : Function
+>this : this
+>constructor : Function
+>G : typeof G
+>this.x : T
+>this : this
+>x : T
+  }
+}
+interface I { m: number }
+>m : number
+
+function h(this: I) {
+>h : (this: I) => void
+>this : I
+
+  if (this.constructor === Agent) this.m
+>this.constructor === Agent : boolean
+>this.constructor : Function
+>this : I
+>constructor : Function
+>Agent : typeof Agent
+>this.m : any
+>this : never
+>m : any
+}
+
