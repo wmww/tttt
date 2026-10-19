@@ -1,0 +1,33 @@
+//// [test/cases/ttttInNarrowsImportedClass.ts] ////
+
+=== /m.ts ===
+export declare class Module { static x: number }
+>Module : Symbol(Module, Decl(m.ts, 0, 0))
+>x : Symbol(Module.x, Decl(m.ts, 0, 29))
+
+=== /a.ts ===
+import { Module } from "./m";
+>Module : Symbol(Module, Decl(a.ts, 0, 8))
+
+declare class Local { static x: number }
+>Local : Symbol(Local, Decl(a.ts, 0, 29))
+>x : Symbol(Local.x, Decl(a.ts, 1, 21))
+
+if ('_pathCache' in Module) {
+>Module : Symbol(Module, Decl(a.ts, 0, 8))
+
+    Module._pathCache = Object.create(null);
+>Module._pathCache : Symbol(_pathCache)
+>Module : Symbol(Module, Decl(a.ts, 0, 8))
+>_pathCache : Symbol(_pathCache)
+>Object.create : Symbol(ObjectConstructor.create, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>create : Symbol(ObjectConstructor.create, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+}
+if ('_pathCache' in Local) {
+>Local : Symbol(Local, Decl(a.ts, 0, 29))
+
+    Local._pathCache = 1;
+>Local : Symbol(Local, Decl(a.ts, 0, 29))
+}
+

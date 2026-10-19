@@ -1,0 +1,43 @@
+//// [test/cases/ttttInNarrowsImportedClass.ts] ////
+
+=== /m.ts ===
+export declare class Module { static x: number }
+>Module : Module
+>x : number
+
+=== /a.ts ===
+import { Module } from "./m";
+>Module : typeof Module
+
+declare class Local { static x: number }
+>Local : Local
+>x : number
+
+if ('_pathCache' in Module) {
+>'_pathCache' in Module : boolean
+>'_pathCache' : "_pathCache"
+>Module : typeof Module
+
+    Module._pathCache = Object.create(null);
+>Module._pathCache = Object.create(null) : any
+>Module._pathCache : unknown
+>Module : typeof Module & Record<"_pathCache", unknown>
+>_pathCache : unknown
+>Object.create(null) : any
+>Object.create : { (o: object | null): any; (o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any; }
+>Object : ObjectConstructor
+>create : { (o: object | null): any; (o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any; }
+}
+if ('_pathCache' in Local) {
+>'_pathCache' in Local : boolean
+>'_pathCache' : "_pathCache"
+>Local : typeof Local
+
+    Local._pathCache = 1;
+>Local._pathCache = 1 : 1
+>Local._pathCache : any
+>Local : typeof Local
+>_pathCache : any
+>1 : 1
+}
+

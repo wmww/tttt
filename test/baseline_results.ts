@@ -1070,6 +1070,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInNarrowsImportedClass': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttIncludeOrderExtensionPriority': {
         errors: true,
         symbols: true,
@@ -1715,6 +1720,11 @@ const baselines = {
         types: true,
     },
     'ttttScriptConflictExpandoHost': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSideEffectImportTsExtension': {
         errors: true,
         symbols: true,
         types: true,

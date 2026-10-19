@@ -1,0 +1,17 @@
+/a.ts(7,11): error TS2339: Property '_pathCache' does not exist on type 'typeof Local'.
+
+
+==== /m.ts (0 errors) ====
+    export declare class Module { static x: number }
+==== /a.ts (1 errors) ====
+    import { Module } from "./m";
+    declare class Local { static x: number }
+    if ('_pathCache' in Module) {
+        Module._pathCache = Object.create(null);
+    }
+    if ('_pathCache' in Local) {
+        Local._pathCache = 1;
+              ~~~~~~~~~~
+!!! error TS2339: Property '_pathCache' does not exist on type 'typeof Local'.
+    }
+    

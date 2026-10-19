@@ -2356,6 +2356,17 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         }
         return identifier->flow ? ty_flow_type(me, expr, type, type, identifier->flow) : type;
     }
+    // (An import is narrowed too, assumed initialized: tsc's checkIdentifier with isAlias, `'_pathCache' in Module` of
+    // an imported class. A class declared here isn't)
+    if (symbol && !identifier->keyword && identifier->symbol && identifier->symbol != symbol &&
+        (identifier->symbol->flags & SYMBOL_ALIAS) && !(symbol->flags & SYMBOL_VARIABLE) &&
+        // (Only a class's: an imported function or enum is used on every line of TypeScript's compiler, each use
+        // walking the flow graph for a narrowing that would take `'x' in f`, +1.4% instructions; hacks.md)
+        (symbol->flags & SYMBOL_CLASS)
+    ) {
+        if (issue_only || !identifier->flow) return issue_only ? nullptr : type;
+        return ty_flow_type(me, expr, type, type, identifier->flow);
+    }
     if (!symbol || identifier->keyword || !(symbol->flags & SYMBOL_VARIABLE)) return type;
     if (identifier->assignment_target == FLOW_TARGET_DEFINITE) {
         return identifier->compound_like_target ? base_type_of_literal(me, type) : type;
