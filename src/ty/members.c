@@ -6118,8 +6118,16 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
         bool changed = false;
         TyBuf parts = {0};
         for (u32 i = 0; i < types.len; i++) {
-            Ty const* widened = widen_nullable(me, types.data[i], depth + 1);
-            changed |= widened != types.data[i];
+            Ty const* member = types.data[i];
+            Ty const* widened = widen_nullable(me, member, depth + 1);
+            // (A member object literal that widens is widened whole, no longer an object literal: tsc's getWidenedType
+            // maps an intersection's members through getWidenedTypeOfObjectLiteral, which ty_widened_objects() doesn't
+            // reach. Else a relation holds it to its own properties: valibot's expectSchemaIssue without
+            // strictNullChecks)
+            if (widened != member && ty_is_unwidened_object_literal(widened) && !widened->anonymous.jsx_attributes) {
+                widened = widen_object_literal(me, widened, nullptr);
+            }
+            changed |= widened != member;
             ty_buf_push(&parts, widened);
         }
         if (changed) ret = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});

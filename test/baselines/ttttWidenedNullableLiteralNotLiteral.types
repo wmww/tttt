@@ -1,0 +1,77 @@
+//// [test/cases/ttttWidenedNullableLiteralNotLiteral.ts] ////
+
+=== ttttWidenedNullableLiteralNotLiteral.ts ===
+// A literal widened for its undefined properties (strictNullChecks off) is no longer an object literal (tsc's
+// getWidenedTypeOfObjectLiteral), so an intersection with more properties still fits it: one in a spread's intersection
+// `{ a: undefined } & Omit<T, K>` is widened that way only (valibot's expectSchemaIssue under flagflip's sloppy flags)
+declare function eq<E>(expected: E): void;
+>eq : <E>(expected: E) => void
+>expected : E
+
+export function f<T extends { kind: string; message: string }>(base: Omit<T, 'input'>, value: unknown) {
+>f : <T extends { kind: string; message: string; }>(base: Omit<T, 'input'>, value: unknown) => void
+>kind : string
+>message : string
+>base : Omit<T, "input">
+>value : unknown
+
+  eq({ issues: [{ requirement: undefined, path: undefined, ...base, input: value }] });
+>eq({ issues: [{ requirement: undefined, path: undefined, ...base, input: value }] }) : void
+>eq : <E>(expected: E) => void
+>{ issues: [{ requirement: undefined, path: undefined, ...base, input: value }] } : { issues: ({ requirement: undefined; path: undefined; } & Omit<T, "input"> & { input: unknown; })[]; }
+>issues : ({ requirement: undefined; path: undefined; } & Omit<T, "input"> & { input: unknown; })[]
+>[{ requirement: undefined, path: undefined, ...base, input: value }] : ({ requirement: undefined; path: undefined; } & Omit<T, "input"> & { input: unknown; })[]
+>{ requirement: undefined, path: undefined, ...base, input: value } : { requirement: undefined; path: undefined; } & Omit<T, "input"> & { input: unknown; }
+>requirement : undefined
+>undefined : undefined
+>path : undefined
+>undefined : undefined
+>base : Omit<T, "input">
+>input : unknown
+>value : unknown
+}
+
+// (Only there: a union of array literal elements still has the properties some members lack, vscode editTelemetry)
+export const rows = [
+>rows : ({ tier: string; n: number; modelId: string; } | { tier: any; n: number; modelId: string; })[]
+>[  { tier: 'a', n: 6 },  { tier: undefined, n: 3 },  { tier: undefined, n: 2, modelId: 'x' },].map(entry => ({ ...entry, modelId: entry.modelId ?? 'auto' })) : ({ tier: string; n: number; modelId: string; } | { tier: any; n: number; modelId: string; })[]
+>[  { tier: 'a', n: 6 },  { tier: undefined, n: 3 },  { tier: undefined, n: 2, modelId: 'x' },].map : <U>(callbackfn: (value: { tier: string; n: number; modelId?: undefined; } | { tier: any; n: number; modelId: string; }, index: number, array: ({ tier: string; n: number; modelId?: undefined; } | { tier: any; n: number; modelId: string; })[]) => U, thisArg?: any) => U[]
+>[  { tier: 'a', n: 6 },  { tier: undefined, n: 3 },  { tier: undefined, n: 2, modelId: 'x' },] : ({ tier: string; n: number; } | { tier: undefined; n: number; modelId: string; })[]
+
+  { tier: 'a', n: 6 },
+>{ tier: 'a', n: 6 } : { tier: string; n: number; }
+>tier : string
+>'a' : "a"
+>n : number
+>6 : 6
+
+  { tier: undefined, n: 3 },
+>{ tier: undefined, n: 3 } : { tier: undefined; n: number; }
+>tier : undefined
+>undefined : undefined
+>n : number
+>3 : 3
+
+  { tier: undefined, n: 2, modelId: 'x' },
+>{ tier: undefined, n: 2, modelId: 'x' } : { tier: undefined; n: number; modelId: string; }
+>tier : undefined
+>undefined : undefined
+>n : number
+>2 : 2
+>modelId : string
+>'x' : "x"
+
+].map(entry => ({ ...entry, modelId: entry.modelId ?? 'auto' }));
+>map : <U>(callbackfn: (value: { tier: string; n: number; modelId?: undefined; } | { tier: any; n: number; modelId: string; }, index: number, array: ({ tier: string; n: number; modelId?: undefined; } | { tier: any; n: number; modelId: string; })[]) => U, thisArg?: any) => U[]
+>entry => ({ ...entry, modelId: entry.modelId ?? 'auto' }) : (entry: { tier: string; n: number; modelId?: undefined; } | { tier: any; n: number; modelId: string; }) => { tier: string; n: number; modelId: string; } | { tier: any; n: number; modelId: string; }
+>entry : { tier: string; n: number; modelId?: undefined; } | { tier: any; n: number; modelId: string; }
+>({ ...entry, modelId: entry.modelId ?? 'auto' }) : { tier: string; n: number; modelId: string; } | { tier: any; n: number; modelId: string; }
+>{ ...entry, modelId: entry.modelId ?? 'auto' } : { tier: string; n: number; modelId: string; } | { tier: any; n: number; modelId: string; }
+>entry : { tier: string; n: number; modelId?: undefined; } | { tier: any; n: number; modelId: string; }
+>modelId : string
+>entry.modelId ?? 'auto' : string
+>entry.modelId : string
+>entry : { tier: string; n: number; modelId?: undefined; } | { tier: any; n: number; modelId: string; }
+>modelId : string
+>'auto' : "auto"
+

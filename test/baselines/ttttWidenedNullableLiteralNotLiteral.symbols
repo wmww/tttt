@@ -1,0 +1,63 @@
+//// [test/cases/ttttWidenedNullableLiteralNotLiteral.ts] ////
+
+=== ttttWidenedNullableLiteralNotLiteral.ts ===
+// A literal widened for its undefined properties (strictNullChecks off) is no longer an object literal (tsc's
+// getWidenedTypeOfObjectLiteral), so an intersection with more properties still fits it: one in a spread's intersection
+// `{ a: undefined } & Omit<T, K>` is widened that way only (valibot's expectSchemaIssue under flagflip's sloppy flags)
+declare function eq<E>(expected: E): void;
+>eq : Symbol(eq, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 0, 0))
+>E : Symbol(E, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 3, 20))
+>expected : Symbol(expected, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 3, 23))
+>E : Symbol(E, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 3, 20))
+
+export function f<T extends { kind: string; message: string }>(base: Omit<T, 'input'>, value: unknown) {
+>f : Symbol(f, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 3, 42))
+>T : Symbol(T, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 4, 18))
+>kind : Symbol(kind, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 4, 29))
+>message : Symbol(message, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 4, 43))
+>base : Symbol(base, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 4, 63))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 4, 18))
+>value : Symbol(value, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 4, 86))
+
+  eq({ issues: [{ requirement: undefined, path: undefined, ...base, input: value }] });
+>eq : Symbol(eq, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 0, 0))
+>issues : Symbol(issues, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 5, 6))
+>requirement : Symbol(requirement, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 5, 17))
+>undefined : Symbol(undefined)
+>path : Symbol(path, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 5, 41))
+>undefined : Symbol(undefined)
+>base : Symbol(base, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 4, 63))
+>input : Symbol(input, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 5, 67))
+>value : Symbol(value, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 4, 86))
+}
+
+// (Only there: a union of array literal elements still has the properties some members lack, vscode editTelemetry)
+export const rows = [
+>rows : Symbol(rows, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 9, 12))
+>[  { tier: 'a', n: 6 },  { tier: undefined, n: 3 },  { tier: undefined, n: 2, modelId: 'x' },].map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+
+  { tier: 'a', n: 6 },
+>tier : Symbol(tier, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 10, 3))
+>n : Symbol(n, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 10, 14))
+
+  { tier: undefined, n: 3 },
+>tier : Symbol(tier, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 11, 3))
+>undefined : Symbol(undefined)
+>n : Symbol(n, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 11, 20))
+
+  { tier: undefined, n: 2, modelId: 'x' },
+>tier : Symbol(tier, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 12, 3))
+>undefined : Symbol(undefined)
+>n : Symbol(n, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 12, 20))
+>modelId : Symbol(modelId, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 12, 26))
+
+].map(entry => ({ ...entry, modelId: entry.modelId ?? 'auto' }));
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>entry : Symbol(entry, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 13, 6))
+>entry : Symbol(entry, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 13, 6))
+>modelId : Symbol(modelId, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 13, 27))
+>entry.modelId : Symbol(modelId, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 12, 26))
+>entry : Symbol(entry, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 13, 6))
+>modelId : Symbol(modelId, Decl(ttttWidenedNullableLiteralNotLiteral.ts, 12, 26))
+
