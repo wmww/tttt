@@ -895,9 +895,11 @@ static bool is_excluded(Patterns const* patterns, csview path) {
     return false;
 }
 
-// resolveJsonModule, before compiler_options_resolve() (the default of bundler resolution, which module preserve has)
+// resolveJsonModule, before compiler_options_resolve() (the default of module node20 and nodenext, and of bundler
+// resolution, which module preserve has: tsgo's GetResolveJsonModule)
 static bool resolves_json(CompilerOptions const* options) {
     if (options->is_set[COMPILER_OPTION_resolve_json_module]) return options->resolve_json_module;
+    if (options->module_set && (options->module == MODULE_KIND_NODE20 || options->module == MODULE_KIND_NODENEXT)) return true;
     return options->module_resolution_set ? options->module_resolution == MODULE_RESOLUTION_BUNDLER :
         options->module_set && options->module == MODULE_KIND_PRESERVE;
 }
