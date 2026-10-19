@@ -1,0 +1,60 @@
+//// [test/cases/ttttJsxAttributeGenericCallInference.tsx] ////
+
+=== ttttJsxAttributeGenericCallInference.tsx ===
+// A generic call in a JSX attribute is left out of the first inference pass like one in an object literal argument
+// (tsc's CheckMode.SkipGenericFunctions reaches the attributes): it sees what the other attributes inferred,
+// `Table<string>` rather than `Table<unknown>`. supabase studio's UnifiedLogs.tsx `getFacetedUniqueValues={...}`
+declare namespace JSX { interface Element {} interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(ttttJsxAttributeGenericCallInference.tsx, 0, 0))
+>Element : Symbol(Element, Decl(ttttJsxAttributeGenericCallInference.tsx, 3, 23))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxAttributeGenericCallInference.tsx, 3, 44))
+
+interface Table<TData> { rows: TData[] }
+>Table : Symbol(Table, Decl(ttttJsxAttributeGenericCallInference.tsx, 3, 77))
+>TData : Symbol(TData, Decl(ttttJsxAttributeGenericCallInference.tsx, 4, 16))
+>rows : Symbol(Table.rows, Decl(ttttJsxAttributeGenericCallInference.tsx, 4, 24))
+>TData : Symbol(TData, Decl(ttttJsxAttributeGenericCallInference.tsx, 4, 16))
+
+interface Ctx<TData> {
+>Ctx : Symbol(Ctx, Decl(ttttJsxAttributeGenericCallInference.tsx, 4, 40))
+>TData : Symbol(TData, Decl(ttttJsxAttributeGenericCallInference.tsx, 5, 14))
+
+  table: Table<TData>
+>table : Symbol(Ctx.table, Decl(ttttJsxAttributeGenericCallInference.tsx, 5, 22))
+>Table : Symbol(Table, Decl(ttttJsxAttributeGenericCallInference.tsx, 3, 77))
+>TData : Symbol(TData, Decl(ttttJsxAttributeGenericCallInference.tsx, 5, 14))
+
+  f?: (table: Table<TData>) => void
+>f : Symbol(Ctx.f, Decl(ttttJsxAttributeGenericCallInference.tsx, 6, 21))
+>table : Symbol(table, Decl(ttttJsxAttributeGenericCallInference.tsx, 7, 7))
+>Table : Symbol(Table, Decl(ttttJsxAttributeGenericCallInference.tsx, 3, 77))
+>TData : Symbol(TData, Decl(ttttJsxAttributeGenericCallInference.tsx, 5, 14))
+}
+declare function Provider<TData>(props: Ctx<TData>): JSX.Element;
+>Provider : Symbol(Provider, Decl(ttttJsxAttributeGenericCallInference.tsx, 8, 1))
+>TData : Symbol(TData, Decl(ttttJsxAttributeGenericCallInference.tsx, 9, 26))
+>props : Symbol(props, Decl(ttttJsxAttributeGenericCallInference.tsx, 9, 33))
+>Ctx : Symbol(Ctx, Decl(ttttJsxAttributeGenericCallInference.tsx, 4, 40))
+>TData : Symbol(TData, Decl(ttttJsxAttributeGenericCallInference.tsx, 9, 26))
+>JSX : Symbol(JSX, Decl(ttttJsxAttributeGenericCallInference.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(ttttJsxAttributeGenericCallInference.tsx, 3, 23))
+
+declare function make<T>(): (t: Table<T>) => void;
+>make : Symbol(make, Decl(ttttJsxAttributeGenericCallInference.tsx, 9, 65))
+>T : Symbol(T, Decl(ttttJsxAttributeGenericCallInference.tsx, 10, 22))
+>t : Symbol(t, Decl(ttttJsxAttributeGenericCallInference.tsx, 10, 29))
+>Table : Symbol(Table, Decl(ttttJsxAttributeGenericCallInference.tsx, 3, 77))
+>T : Symbol(T, Decl(ttttJsxAttributeGenericCallInference.tsx, 10, 22))
+
+declare const table: Table<string>;
+>table : Symbol(table, Decl(ttttJsxAttributeGenericCallInference.tsx, 11, 13))
+>Table : Symbol(Table, Decl(ttttJsxAttributeGenericCallInference.tsx, 3, 77))
+
+export const a = <Provider table={table} f={make()} />;
+>a : Symbol(a, Decl(ttttJsxAttributeGenericCallInference.tsx, 12, 12))
+>Provider : Symbol(Provider, Decl(ttttJsxAttributeGenericCallInference.tsx, 8, 1))
+>table : Symbol(table, Decl(ttttJsxAttributeGenericCallInference.tsx, 12, 26))
+>table : Symbol(table, Decl(ttttJsxAttributeGenericCallInference.tsx, 11, 13))
+>f : Symbol(f, Decl(ttttJsxAttributeGenericCallInference.tsx, 12, 40))
+>make : Symbol(make, Decl(ttttJsxAttributeGenericCallInference.tsx, 9, 65))
+

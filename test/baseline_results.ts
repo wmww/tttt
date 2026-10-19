@@ -1375,6 +1375,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsxAttributeGenericCallInference': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsxClosingTagOwnName': {
         errors: true,
         symbols: true,

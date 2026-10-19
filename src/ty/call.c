@@ -1087,7 +1087,7 @@ static bool ternary_has_generic_call(Checker* me, Expr const* expr) {
 // branches of `Promise.resolve(c ? "open" : "close")` widened against the first pass's context)
 static bool is_literal_arg(Checker* me, Arg const* arg) {
     if (arg->spread || arg->part_of_spread) return false;
-    if (arg->expr->tag == EXPR_OBJECT || arg->expr->tag == EXPR_ARRAY) return true;
+    if (arg->expr->tag == EXPR_OBJECT || arg->expr->tag == EXPR_ARRAY || arg->expr->tag == EXPR_JSX_ATTRIBUTES) return true;
     return arg->expr->tag == EXPR_TERNARY && ternary_has_generic_call(me, arg->expr);
 }
 

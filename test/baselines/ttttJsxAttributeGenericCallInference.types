@@ -1,0 +1,40 @@
+//// [test/cases/ttttJsxAttributeGenericCallInference.tsx] ////
+
+=== ttttJsxAttributeGenericCallInference.tsx ===
+// A generic call in a JSX attribute is left out of the first inference pass like one in an object literal argument
+// (tsc's CheckMode.SkipGenericFunctions reaches the attributes): it sees what the other attributes inferred,
+// `Table<string>` rather than `Table<unknown>`. supabase studio's UnifiedLogs.tsx `getFacetedUniqueValues={...}`
+declare namespace JSX { interface Element {} interface IntrinsicElements {} }
+interface Table<TData> { rows: TData[] }
+>rows : TData[]
+
+interface Ctx<TData> {
+  table: Table<TData>
+>table : Table<TData>
+
+  f?: (table: Table<TData>) => void
+>f : ((table: Table<TData>) => void) | undefined
+>table : Table<TData>
+}
+declare function Provider<TData>(props: Ctx<TData>): JSX.Element;
+>Provider : <TData>(props: Ctx<TData>) => JSX.Element
+>props : Ctx<TData>
+>JSX : any
+
+declare function make<T>(): (t: Table<T>) => void;
+>make : <T>() => (t: Table<T>) => void
+>t : Table<T>
+
+declare const table: Table<string>;
+>table : Table<string>
+
+export const a = <Provider table={table} f={make()} />;
+>a : error
+><Provider table={table} f={make()} /> : error
+>Provider : <TData>(props: Ctx<TData>) => JSX.Element
+>table : Table<string>
+>table : Table<string>
+>f : (t: Table<string>) => void
+>make() : (t: Table<string>) => void
+>make : <T>() => (t: Table<T>) => void
+
