@@ -26,12 +26,30 @@ Day one, by project (+ spurious, - missing, counts):
 - commitlint: +TS2307 2; dyad: -TS6142 1; ghostfolio/apps/client +TS2322 6
 - hono (both roots): -TS7026 10 + -TS7016 (runtime-tests/bun), +TS2339 4, +TS2769 2, +TS2783 1 (the `-p` bugs above)
 - lightweight-charts/tsconfig.composite.json: +TS2339 8, +TS2322 7
-- lit: -TS2307 16 in `lit2/.../*.d.ts` (four test configs), lit-element -TS2882 2 (`development/polyfill-support.d.ts`)
 - sunmao-ui: -TS2590 7 (chakra Button.tsx; the `-p` sweep misses it too)
 - vue-i18n/examples/lazy-loading/vite: +TS2339 2, -TS2551 2
-- zigbee2mqtt/test: -TS2304 129, -TS2503 77, -TS2833 1 in `dist/*.d.ts` (tsc reads the outputs it just emitted, with
-  the test config's options), -TS7006 10
 
 Perf: jest's `__tests__` builds (every package gated by TS5108) were fully checked for their declarations (1.5M types,
 ~10 s); now declaration-walked only (`program_set_declarations_only()`, 10K types, ~0.75 s against tsc's 0.5 s: the
 rest is parsing and binding 25 programs). atproto 47 s / 30 s, astro 30 s / 20 s (single-threaded tttt against tsgo's default -b).
+
+**Verdict on errors inside emitted declarations (lit, lit-element, zigbee2mqtt/test; 2026-10-19): not modelled, by
+design for now.** All three are tsc reading a referenced (or built) project's emitted `.d.ts` *as a file at its output
+path*, checked under the reader's options (`skipLibCheck` false):
+- lit/packages/context `tsconfig.lit2-tests.json` (and three like it): -TS2307 16 in
+  `lit2/lit2-scope/context/lib/**/*.d.ts`: `@lit/reactive-element` re-resolved from the outDir, where nothing is
+  installed.
+- lit-element `tsconfig.json`: -TS2882 2 in `development/polyfill-support.d.ts`: its side-effect imports re-resolved
+  from `development/`.
+- zigbee2mqtt/test: -TS2304 129, -TS2503 77, -TS2833 1 in `dist/*.d.ts`: the root project's global types (`Group`,
+  `Device`, `KeyValue`, namespace `eventdata`) live in its own ambient `.d.ts` inputs, which aren't copied to `dist`; the
+  -TS7006 10 in `test/extensions/homeassistant.test.ts` are the cascade (callbacks typed by the then-`any` names).
+tttt reads a reference's (and, since the builder window, a built project's) outputs as its sources, so none of this
+can show: resolution from the source location, the project's own ambient inputs present, nothing reported in the
+reference. Modelling it means feeding each project's emitted declaration text (in memory: tttt's emit is 100771 / 100826
+files byte-identical on dtsdiff) to the programs downstream as files at their output paths. That's a different `-b`
+(programs wait on their references' emit like tsgo's, not all built at once; the window would read emitted text too;
+TS6305 and "typed under the reader's strictness" go away; downstream checks likely get cheaper: declarations, not
+inferred sources), and the payoff in the sweep is these three repos. Worth a plan if `-b` fidelity becomes a goal of
+its own (the design question for an insights session: documentation.md "Divergences of `-b` by design"); not a fix to
+bolt onto the window.
