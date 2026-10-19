@@ -1,0 +1,37 @@
+//// [test/cases/ttttUnusedTypeOnlyNamespaceImport.ts] ////
+
+=== t.ts ===
+export interface A {} export const v = 1; export default 1;
+>v : 1
+>1 : 1
+
+=== b.ts ===
+import type * as N1 from './t.js';
+>N1 : typeof N1
+
+import type { A as A1 } from './t.js';
+>A : any
+>A1 : A1
+
+import type D1 from './t.js';
+>D1 : any
+
+import * as N2 from './t.js';
+>N2 : typeof N2
+
+import { type A as A2, v } from './t.js';
+>A : any
+>A2 : any
+>v : 1
+
+export { v };
+>v : 1
+
+=== a.js ===
+/** @import * as N from './t.js' */
+/** @import { A } from './t.js' */
+/** @import D from './t.js' */
+export const x = 1;
+>x : 1
+>1 : 1
+

@@ -280,8 +280,10 @@ static void report_imports(Reporter const* r, PortStatement const* me, Span stat
         return;
     }
     for (u32 i = 0; i < unused_count; i++) {
-        // A type-only import is a type declaration
-        report_declaration(r, unused[i]->symbol, unused[i]->decl_name, main->type_only);
+        // An `import type` clause's names are type declarations (tsc's isTypeDeclaration), not its namespace import:
+        // `import type * as N` and an inline `{ type A }` are 6133
+        report_declaration(r, unused[i]->symbol, unused[i]->decl_name,
+            main->type_only && unused[i]->tag != PORT_IMPORT_GATHER);
     }
 }
 

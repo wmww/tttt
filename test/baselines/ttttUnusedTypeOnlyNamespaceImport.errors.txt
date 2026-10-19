@@ -1,0 +1,43 @@
+a.js(1,18): error TS6133: 'N' is declared but its value is never read.
+a.js(2,15): error TS6196: 'A' is declared but never used.
+a.js(3,13): error TS6196: 'D' is declared but never used.
+b.ts(1,18): error TS6133: 'N1' is declared but its value is never read.
+b.ts(2,20): error TS6196: 'A1' is declared but never used.
+b.ts(3,13): error TS6196: 'D1' is declared but never used.
+b.ts(4,13): error TS6133: 'N2' is declared but its value is never read.
+b.ts(5,20): error TS6133: 'A2' is declared but its value is never read.
+
+
+==== t.ts (0 errors) ====
+    export interface A {} export const v = 1; export default 1;
+    
+==== b.ts (5 errors) ====
+    import type * as N1 from './t.js';
+                     ~~
+!!! error TS6133: 'N1' is declared but its value is never read.
+    import type { A as A1 } from './t.js';
+                       ~~
+!!! error TS6196: 'A1' is declared but never used.
+    import type D1 from './t.js';
+                ~~
+!!! error TS6196: 'D1' is declared but never used.
+    import * as N2 from './t.js';
+                ~~
+!!! error TS6133: 'N2' is declared but its value is never read.
+    import { type A as A2, v } from './t.js';
+                       ~~
+!!! error TS6133: 'A2' is declared but its value is never read.
+    export { v };
+    
+==== a.js (3 errors) ====
+    /** @import * as N from './t.js' */
+                     ~
+!!! error TS6133: 'N' is declared but its value is never read.
+    /** @import { A } from './t.js' */
+                  ~
+!!! error TS6196: 'A' is declared but never used.
+    /** @import D from './t.js' */
+                ~
+!!! error TS6196: 'D' is declared but never used.
+    export const x = 1;
+    
