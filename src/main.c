@@ -669,7 +669,10 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         errs->errors = earlier;
     }
     phase_done(opts, out, "load+parse libs", &last_time);
-    if (config.size) verify_references(program, projects, project, true);
+    if (config.size) {
+        verify_references(program, projects, project, true);
+        program_report_empty_files(program);
+    }
 
     SourceFile* source = nullptr;
     for (intptr_t i = 0; i < opts->path_count + root_files.count; i++) {

@@ -104,9 +104,9 @@ def list_build_projects(filter=None):
 
 
 def run_tsc_build(project, timeout):
-    """tsgo's `tsc -b --force` on a solution in a sandbox (bwrap: the checkout overlaid, what the build writes
-    discarded), from SOURCES like tttt"""
-    checkout = os.path.realpath(os.path.join(SOURCES, project.split('/')[0]))
+    """tsgo's `tsc -b --force` on a solution in a sandbox (bwrap: every checkout overlaid, what the build writes
+    discarded, ngrx's outDir is outside its repo), from SOURCES like tttt"""
+    checkout = os.path.realpath(SOURCES)
     tmp = tempfile.mkdtemp(prefix='buildsweep-')
     up, work = os.path.join(tmp, 'up'), os.path.join(tmp, 'work')
     os.makedirs(up), os.makedirs(work)

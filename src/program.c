@@ -412,20 +412,30 @@ static cstr shown_spec_list(StrList const* specs) {
     return ret;
 }
 
+bool program_report_empty_files(Program* me) {
+    if (!my config_source || my config_json.tag != JSON_OBJECT) return false;
+    JsonValue const* files = json_get(&my config_json, "files");
+    JsonValue const* references = json_get(&my config_json, "references");
+    // (tsc's getConfigFileSpecs)
+    bool no_references = !references || (references->tag == JSON_ARRAY && !references->count);
+    if (!files || files->tag != JSON_ARRAY || files->count || !no_references || json_get(&my config_json, "extends")) return false;
+    cstr config = absolute_path_of(program_cwd(me), cstr_sv(&my config_source->canonical_path));
+    // (A config file parsing diagnostic: it gates nothing)
+    program_config_error(me, files->start, files->end, 18002, cstr_d("The 'files' list in config file '", config, "' is empty."))
+        ->phase = ERROR_PHASE_PARSE;
+    cstr_drop(&config);
+    return true;
+}
+
 bool program_report_no_inputs(Program* me) {
     if (!my config_source || my config_json.tag != JSON_OBJECT) return false;
     JsonValue const* files = json_get(&my config_json, "files");
     JsonValue const* references = json_get(&my config_json, "references");
     cstr config = absolute_path_of(program_cwd(me), cstr_sv(&my config_source->canonical_path));
     bool reported = false;
-    // (tsc's getConfigFileSpecs and canJsonReportNoInputFiles)
+    // (tsc's canJsonReportNoInputFiles)
     if (files) {
-        bool no_references = !references || (references->tag == JSON_ARRAY && !references->count);
-        if (files->tag == JSON_ARRAY && !files->count && no_references && !json_get(&my config_json, "extends")) {
-            program_config_error(me, files->start, files->end, 18002,
-                cstr_d("The 'files' list in config file '", config, "' is empty."));
-            reported = true;
-        }
+        reported = program_report_empty_files(me);
     } else if (!references && !my options.config_files_given) {
         // (An extended config's specs as tsconfig_load() rebased them, else the config's own)
         cstr include = my options.config_include_shown.count ? shown_spec_list(&my options.config_include_shown) :
