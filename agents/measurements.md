@@ -56,8 +56,8 @@ times** (`TTTT_FILE_TIMES=1`) / recycles / peak:
   boost. **PGO + LTO** (`-Db_lto=true -Db_pgo=generate`, trained on drizzle, zod, effect, excalidraw, webpack at K1
   and the defaults, then `use`; `-Wno-missing-profile` and `-Wno-error` at link for a GCC stringop-overflow false
   positive at `ty.h:96`): **-8-9% wall everywhere**, untrained corpora included (vscode K1 11.83 -> 10.86 s, defaults
-  2.68 -> 2.48; tsc 0.51 -> 0.47; drizzle 0.85 -> 0.78). LTO alone 1-2%. Not shipped: a build-system decision
-  (triage.md).
+  2.68 -> 2.48; tsc 0.51 -> 0.47; drizzle 0.85 -> 0.78). LTO alone 1-2%. Shipped 2026-10-19 as `scripts/pgobuild.sh`
+  (the section below).
 ## Refresh fan-out (2026-10-19, todo entry 8)
 - `-b` sweep 394 -> **399 / 416**; the `-p` sweep over every `tsconfig*.json` (5242 projects, 1428 new: day one
   1389 / 1428) **5225 / 5242**, 235 / 248 repos.

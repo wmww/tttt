@@ -38,6 +38,7 @@ from realworld import CORPORA, BUILD_CORPORA
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SOURCES = sourcesweep.SOURCES
 TSGO = os.path.join(ROOT, 'thirdparty/typescript/built/tsc')
+TTTT = os.path.join(ROOT, 'release/tttt')
 CACHE = os.path.join(ROOT, 'test/perfsweep/tsgo.jsonl.gz')
 LAST = f'/tmp/perfsweep-{os.path.basename(ROOT)}.json'
 MACHINE = socket.gethostname()
@@ -105,7 +106,7 @@ def run_tsgo(project, timeout, mem_gb, jobs):
 def run_tttt(project, timeout, mem_gb, defaults=False, extra=()):
     cwd, p = project_args(project)
     single = [] if defaults else ['--checkers', '1', '--threads', '1']
-    text, status, wall, rss, cpu = run([os.path.join(ROOT, 'release/tttt'), '-p', p, '--noEmit', '--pretty', 'false', *single,
+    text, status, wall, rss, cpu = run([TTTT, '-p', p, '--noEmit', '--pretty', 'false', *single,
                                    *extra, '--time'], cwd, timeout, mem_gb)
     phases = {m.group(1): float(m.group(2)) for m in re.finditer(r'^time: ([a-z+ ]+?) ([\d.]+) ms', text, re.M)}
     checker = re.search(r'^time: checker 0: ([\d.]+) ms, arena (\d+) MB, (\d+) types', text, re.M)
@@ -319,11 +320,16 @@ def main():
     checked = [p for p in projects if (cache[p].get('types') or 0) >= args.min_types and cache[p]['status'] in (0, 1, 2)]
     if args.defaults_only:
         args.last = args.defaults = True
+    global TTTT
+    if not args.no_build and (not args.last or args.defaults):
+        # The shipped LTO + PGO build (retrained when the sources changed); --no-build times release/ as it is
+        TTTT = os.path.join(ROOT, subprocess.run([os.path.join(ROOT, 'scripts/pgobuild.sh')], check=True,
+                                                 stdout=subprocess.PIPE, text=True).stdout.strip())
+    if not args.last or args.defaults:
+        print(f'tttt: {os.path.relpath(TTTT, ROOT)}', file=sys.stderr)
     if args.last:
         results = {r['project']: r for r in json.load(open(LAST))}
     else:
-        if not args.no_build:
-            subprocess.run(['ninja', '-C', os.path.join(ROOT, 'release'), 'tttt'], check=True, stdout=subprocess.DEVNULL)
         order = sorted(checked, key=lambda p: -(cache[p]['check_s'] or 0))
         results = {r['project']: r for r in parallel(lambda p: run_tttt(p, args.timeout, args.mem_gb), order,
                                                       args.jobs, 'tttt')}

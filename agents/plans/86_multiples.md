@@ -33,7 +33,12 @@ Expected compounding on vscode here: 2.68 -> ~2.5 (stage 1) -> ~1.6 (stage 2 at 
 worth more there). The thrashers (dokploy, monkeytype) are a different problem: perf_leads.md "Shared warm state"
 (a snapshot-style recycle); they are not this plan's measure.
 
-## Stage 1: ship PGO + LTO (one session)
+## Stage 1: ship PGO + LTO (one session) — done 2026-10-19
+Shipped as `scripts/pgobuild.sh` (`pgo/tttt`, profile regenerated from the fixed training set below whenever a
+source, the compiler or the script changes, ~3 min on 4 cores; `release/` stays plain -O3 for the edit-test loop).
+`bench.sh`, `instrcount.sh` and `perfsweep.py` measure it. Callgrind: -11.5% (nest) to -16.9% (excalidraw), the
+untrained tsc -14.1% and vscode -15.2%; output byte-identical on every corpus and DT 8595 / 8595. The human's 12-core
+rerun is still owed. The original notes:
 Measured 2026-10-19 in a scratch build: **-8-9% wall on every corpus, trained or not** (vscode K1 11.83 -> 10.86 s,
 defaults 2.68 -> 2.48; tsc 0.51 -> 0.47; drizzle 0.85 -> 0.78; zod 0.64 -> 0.58). LTO alone 1-2%.
 - Recipe that worked: `meson setup B --buildtype release -Db_lto=true -Db_pgo=generate`, run `tttt -p` on drizzle,

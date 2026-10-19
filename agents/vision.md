@@ -97,7 +97,8 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **Multiples need compounding, not a bet (the human, 2026-10-19; plan 86).** On the 12-core box all-core clocks
   slow every checker 1.62x before any tttt overhead, duplication is ~1.2x and recycling 5-8%: zero checker overhead
   is 1.5x on vscode. The single-threaded number is the multiplier for every core (stall-bound: ~1.5 IPC, 3 LLC
-  misses per 1000 instructions), PGO + LTO is a measured -8-9% not yet shipped, and many-core work is priced by
+  misses per 1000 instructions), PGO + LTO is shipped (`scripts/pgobuild.sh`: -11-17% instructions, the
+  untrained vscode and tsc included), and many-core work is priced by
   per-file time sums under real parallel runs, never serialized CPU (plan 85's census was).
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)

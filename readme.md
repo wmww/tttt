@@ -25,6 +25,8 @@ meson setup release --buildtype release
 ninja -C release
 release/tttt path/to/source.ts        # or: release/tttt -p path/to/project (tsconfig.json), or -b like tsc -b
 ```
+For the fastest binary (what the benchmarks measure, ~15% fewer instructions), `scripts/pgobuild.sh` builds `pgo/tttt`
+with LTO and GCC's profile-guided optimization, trained on a few of the pinned corpora (~3 min on 4 cores).
 
 tttt is meant as a drop-in `tsc` for checking: the same command lines and tsconfigs, the same diagnostics in the same
 formats (`--pretty false` byte for byte, the pretty one when the output is a terminal) and exit codes (tsc 7's: 1 with
