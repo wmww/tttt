@@ -12,6 +12,26 @@ text since 2026-10-18 but webpack's TS5115 name order, `scripts/clidiff.py --cor
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Refresh 3, `tsc -b` solutions and decorator-heavy code (2026-10-19, todo entry 7)
+25 repositories by a fourth rule (repos.txt's "Refresh 3" comment, `scripts/reposearch.py build|decorators`: root
+`references`, or `experimentalDecorators`; NestJS, TypeORM, Angular, MobX, DI containers), 2 dropped for their
+installs (chattyplay-agent, laudspeaker), snaps installed after a corepack `yarn` shim in ensure-sources.sh. **Day one
+(before any fix): `-p` 153 / 156 projects (98.1%), 20 / 23 repos**; clidiff 153 / 156 (0 text); dtsdiff 74 / 76
+projects, 5389 / 5396 files (ts-proto/integration's comments, snaps-cli one line). Left: discordx's @types/node 25
+TS2300/TS2720 (a lib merge), sunmao-ui's missing TS2590 (chakra Button), b4run's missing TS7022. Decorators: nothing
+spurious (a clean oracle only finds spurious ones).
+
+**The new `-b` oracle** (`sourcesweep.py --build`, bugs/sourcesweep_build.md): every repo's solution roots, 416
+(398 on the old repos, 18 new), tsgo `-b --force` sandboxed (10 min for the cache at -j 4). Day one 382 / 416
+(old 366 / 398, new 16 / 18); after three config fixes (TS18003 with `files` inherited through `extends`: 9
+responsible-ai-toolbox solutions; TS18002 when `include` finds inputs; the sandbox's writes outside a repo: ngrx)
+**394 / 416**. The whole `-p` sweep 3807 / 3814 (the old 3654 / 3658 unchanged). The `-p` sweep walks only
+`tsconfig.json`: hono's `tsconfig.build.json` alone has three checker bugs it never reached.
+Every other oracle unchanged: suite 13893, corpora 0 / 0 but vue 0 / 2, DT 8595, `$ExpectType` 68640, flagflip 18 /
+8 / 2 (xstate's 5 spurious at the session's start too), clidiff 3822 / 3831 (text 1, diagnostics 8: the old 5 and
+the new 3), dtsdiff 1324 / 1350 (+6 as tsgo --singleThreaded), kdiff 2, recycle 4 / 3814, perfsweep median 0.23,
+worst types ratio 1.54.
+
 ## Perf session: the types-ratio tail (2026-10-18, todo entry 5)
 - perfsweep: worst types ratio 1.62 -> **1.54** (date-fns/pkgs/docs 34483 -> 13679 types, tsgo 21221: 0.64), the
   rest of the tail 1-3k-type projects; 681 projects -56k types from the second commit; types 68.2M -> 68.1M vs tsgo's

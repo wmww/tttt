@@ -49,3 +49,7 @@ dtsdiff numbers went to bugs/dts_emit.md. The human's two directives and tsc-rs 
   `program_typecheck()` on each (`check_files()`'s `typecheck = !gated || emit_declarations`; 1.5M types, 10 s).
   Same output. tsgo's emit resolver only types what the declarations print; tttt has no declaration-only pass. Only
   projects with options errors pay; `sourcesweep.py --build`'s "slower than tsc" lists them.
+- 2026-10-19 (refresh 3): **the `-p` source sweep walks only files named `tsconfig.json`**; `tsconfig.build.json`,
+  `.spec.json`, `.app.json`, `.lib.json` are checked only when a `-b` solution reaches them (sourcesweep.py
+  --build). Decide whether `list_projects()` should take every `tsconfig*.json` (project names would need the file:
+  clidiff, dtsdiff, kdiff and perfsweep key on the directory) or whether the `-b` sweep's reach is enough.

@@ -48,10 +48,12 @@ and RSS** for every perf claim at the defaults.
    with verdicts), clidiff 3665 -> **3669** (text 1, diagnostics 5), `$ExpectType` 68640 / 68640, flagflip 18 / 7 / 2,
    expando instantiation fixed (bug file deleted), recycle 5 -> 4; suite 13865 -> 13893, instructions flat. vue 0 / 2
    is plan-sized (tsc's in-flight-free member resolution, sourcesweep_checker.md).
-7. **Third fresh-repository refresh**, a new rule: monorepos type-checked with `tsc -b` solution configs (project
-   references), and decorator-heavy code (Angular, NestJS, TypeORM, MobX). ~20-25 repositories, the recipe in
-   vision.md "Refresh the breadth oracles"; report day one for the source sweep, clidiff and dtsdiff before fixing.
-8. **Refresh fixes + perf session**: the refresh's day-one mismatches by root cause, then `scripts/instrcount.sh`
+7. Done (2026-10-19): third refresh, 23 repos (`tsc -b` solutions, decorators): day one `-p` 153 / 156 (98.1%),
+   clidiff 153 / 156, dtsdiff 74 / 76; a new **`-b` oracle** (`sourcesweep.py --build`, in oracles.py): day one 382 /
+   416 solutions, 394 after three config fixes; the rest in bugs/sourcesweep_build.md (the `-p` sweep never checked
+   configs not named `tsconfig.json`). Source sweep 3807 / 3814.
+8. **Refresh fixes + perf session**: the refresh's day-one mismatches by root cause (bugs/sourcesweep_build.md's
+   22 solutions first: a fan-out fits, each first checks `-p` on the config), then `scripts/instrcount.sh`
    against the window's start and any flagged rise.
 9. **Triage.**
 10. **Insights.** report.md: plan 85's no-go (the census) and the defaults' CPU column (12-core: ask the human to rerun with
