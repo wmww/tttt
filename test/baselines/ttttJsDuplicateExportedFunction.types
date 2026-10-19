@@ -1,0 +1,34 @@
+//// [test/cases/ttttJsDuplicateExportedFunction.ts] ////
+
+=== a.js ===
+export function g(a) { }
+>g : (a: any) => void
+>a : any
+
+export function g(b) {}
+>g : (a: any) => void
+>b : any
+
+export var v = 1;
+>v : number
+>1 : 1
+
+export var v = 2;
+>v : number
+>2 : 2
+
+/** @typedef {number} T */
+export const T = 1;
+>T : 1
+>1 : 1
+
+export function f() {}
+>f : { (): void; x: number; }
+
+f.x = 1;
+>f.x = 1 : 1
+>f.x : number
+>f : { (): void; x: number; }
+>x : number
+>1 : 1
+

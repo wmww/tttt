@@ -3500,7 +3500,7 @@ void program_resolve_names(Program* me) {
         block_add_names(&source->ast, source->scope);
         scope_add_commonjs_module(source->scope);
         scope_check_export_merges(source->scope, block_span(&source->ast));
-        if (source->is_module && (!source->is_js || source->is_commonjs)) scope_check_duplicate_exports(source->scope);
+        if (source->is_module) scope_check_duplicate_exports(source->scope);
     }
     binder_declare_global_augmentations(my binder);
     program_check_builtin_global_names(me);

@@ -1,0 +1,36 @@
+a.js(1,17): error TS2323: Cannot redeclare exported variable 'g'.
+a.js(1,17): error TS2393: Duplicate function implementation.
+a.js(1,19): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a.js(2,17): error TS2323: Cannot redeclare exported variable 'g'.
+a.js(2,17): error TS2393: Duplicate function implementation.
+a.js(2,19): error TS7006: Parameter 'b' implicitly has an 'any' type.
+a.js(3,12): error TS2323: Cannot redeclare exported variable 'v'.
+a.js(4,12): error TS2323: Cannot redeclare exported variable 'v'.
+
+
+==== a.js (8 errors) ====
+    export function g(a) { }
+                    ~
+!!! error TS2323: Cannot redeclare exported variable 'g'.
+                    ~
+!!! error TS2393: Duplicate function implementation.
+                      ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+    export function g(b) {}
+                    ~
+!!! error TS2323: Cannot redeclare exported variable 'g'.
+                    ~
+!!! error TS2393: Duplicate function implementation.
+                      ~
+!!! error TS7006: Parameter 'b' implicitly has an 'any' type.
+    export var v = 1;
+               ~
+!!! error TS2323: Cannot redeclare exported variable 'v'.
+    export var v = 2;
+               ~
+!!! error TS2323: Cannot redeclare exported variable 'v'.
+    /** @typedef {number} T */
+    export const T = 1;
+    export function f() {}
+    f.x = 1;
+    
