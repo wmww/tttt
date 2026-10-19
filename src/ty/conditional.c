@@ -565,7 +565,7 @@ static bool object_lacks_signatures(Checker* me, Ty const* check_type, Ty const*
 // `T[P] extends (...args: any[]) => any` over a class whose method infers its return type from a body that needs the
 // mapped type being resolved isn't circular (dexie's NonInsertProps<T>), nor is `T[K] & {} extends Function` over a
 // method whose type parameter is constrained by it (mikro-orm's CleanKeys<T, K>): TS2615 depending on which file a
-// checker saw first
+// checker saw first. Not when the source declares a property Function has (it may not fit Function's)
 static bool callable_definitely_related(Checker* me, Ty const* check_type, Ty const* extends) {
     if (!(check_type->flags & TYF_OBJECT)) return false;
     if (check_type->kind != TY_ANONYMOUS && check_type->kind != TY_REFERENCE && check_type->kind != TY_DECLARED &&
@@ -593,7 +593,16 @@ static bool callable_definitely_related(Checker* me, Ty const* check_type, Ty co
         return false;
     }
     Members const* source = ty_members(me, check_type);
-    return !source->mapped && (source->call_count || (!any_function && source->construct_count));
+    if (source->mapped || !(source->call_count || (!any_function && source->construct_count))) return false;
+    // Unless it has a property of its own that Function has too (lodash's `toString(value: any): string`): that one,
+    // not Function's, is what tsc's relation compares, so the real relation decides
+    if (!any_function) {
+        Ty const* function_type = ty_global_function_type(me);
+        for (u32 i = 0; i < source->prop_count; i++) {
+            if (ty_get_prop(me, function_type, source->props[i]->name)) return false;
+        }
+    }
+    return true;
 }
 
 // Whether the check type isn't assignable to the extends type whatever the type variables in them turn out to be: not

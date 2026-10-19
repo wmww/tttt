@@ -1,0 +1,65 @@
+//// [test/cases/ttttCallableOwnFunctionMemberExtendsFunction.ts] ////
+
+=== ttttCallableOwnFunctionMemberExtendsFunction.ts ===
+// A callable type with a property of its own that Function has too (lodash's `_.toString(value: any)`) isn't
+// assumed to extend Function: tsc's relation compares that property against Function's (chart.js's DeepPartial over
+// the DOM reaches `typeof globalThis` and the `_` global through it)
+declare const lo: { <T>(value: T): T; toString(value: any): string };
+>lo : Symbol(lo, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 3, 13))
+>T : Symbol(T, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 3, 21))
+>value : Symbol(value, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 3, 24))
+>T : Symbol(T, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 3, 21))
+>T : Symbol(T, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 3, 21))
+>toString : Symbol(toString, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 3, 37))
+>value : Symbol(value, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 3, 47))
+
+declare const plain: { <T>(value: T): T; extra: number };
+>plain : Symbol(plain, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 4, 13))
+>T : Symbol(T, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 4, 24))
+>value : Symbol(value, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 4, 27))
+>T : Symbol(T, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 4, 24))
+>T : Symbol(T, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 4, 24))
+>extra : Symbol(extra, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 4, 40))
+
+type DeepPartial<T> = T extends Function ? T : T extends object ? { [P in keyof T]?: DeepPartial<T[P]> } : T | undefined;
+>DeepPartial : Symbol(DeepPartial, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 4, 57))
+>T : Symbol(T, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 5, 17))
+>T : Symbol(T, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 5, 17))
+>Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>T : Symbol(T, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 5, 17))
+>T : Symbol(T, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 5, 17))
+>P : Symbol(P, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 5, 69))
+>T : Symbol(T, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 5, 17))
+>DeepPartial : Symbol(DeepPartial, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 4, 57))
+>T : Symbol(T, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 5, 17))
+>P : Symbol(P, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 5, 69))
+>T : Symbol(T, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 5, 17))
+
+type R = DeepPartial<typeof lo>;
+>R : Symbol(R, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 5, 121))
+>DeepPartial : Symbol(DeepPartial, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 4, 57))
+>lo : Symbol(lo, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 3, 13))
+
+const r: R = lo;
+>r : Symbol(r, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 7, 5))
+>R : Symbol(R, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 5, 121))
+>lo : Symbol(lo, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 3, 13))
+
+type F = typeof lo extends Function ? 1 : 0;
+>F : Symbol(F, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 7, 16))
+>lo : Symbol(lo, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 3, 13))
+>Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+const f: F = 0;
+>f : Symbol(f, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 9, 5))
+>F : Symbol(F, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 7, 16))
+
+type G = typeof plain extends Function ? 1 : 0;
+>G : Symbol(G, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 9, 15))
+>plain : Symbol(plain, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 4, 13))
+>Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+const g: G = 1;
+>g : Symbol(g, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 11, 5))
+>G : Symbol(G, Decl(ttttCallableOwnFunctionMemberExtendsFunction.ts, 9, 15))
+

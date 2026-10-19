@@ -105,6 +105,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttCallableOwnFunctionMemberExtendsFunction': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttCallbackParameterSettledEarly': {
         errors: true,
         symbols: true,

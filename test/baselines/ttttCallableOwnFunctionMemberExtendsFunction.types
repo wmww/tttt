@@ -1,0 +1,44 @@
+//// [test/cases/ttttCallableOwnFunctionMemberExtendsFunction.ts] ////
+
+=== ttttCallableOwnFunctionMemberExtendsFunction.ts ===
+// A callable type with a property of its own that Function has too (lodash's `_.toString(value: any)`) isn't
+// assumed to extend Function: tsc's relation compares that property against Function's (chart.js's DeepPartial over
+// the DOM reaches `typeof globalThis` and the `_` global through it)
+declare const lo: { <T>(value: T): T; toString(value: any): string };
+>lo : { <T>(value: T): T; toString(value: any): string; }
+>value : T
+>toString : (value: any) => string
+>value : any
+
+declare const plain: { <T>(value: T): T; extra: number };
+>plain : { <T>(value: T): T; extra: number; }
+>value : T
+>extra : number
+
+type DeepPartial<T> = T extends Function ? T : T extends object ? { [P in keyof T]?: DeepPartial<T[P]> } : T | undefined;
+>DeepPartial : DeepPartial<T>
+
+type R = DeepPartial<typeof lo>;
+>R : { toString?: ((value: any) => string) | undefined; }
+>lo : { <T>(value: T): T; toString(value: any): string; }
+
+const r: R = lo;
+>r : { toString?: ((value: any) => string) | undefined; }
+>lo : { <T>(value: T): T; toString(value: any): string; }
+
+type F = typeof lo extends Function ? 1 : 0;
+>F : 0
+>lo : { <T>(value: T): T; toString(value: any): string; }
+
+const f: F = 0;
+>f : 0
+>0 : 0
+
+type G = typeof plain extends Function ? 1 : 0;
+>G : 1
+>plain : { <T>(value: T): T; extra: number; }
+
+const g: G = 1;
+>g : 1
+>1 : 1
+
