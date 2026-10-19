@@ -284,6 +284,26 @@ static void remember_printed(TyDisplay d, Ty const* ty, PrintedRange range, u32 
     };
 }
 
+// What was printed into `from`, a buffer of its own, is inserted into `d`'s target at `at`: what is remembered of it is
+// now there, what was remembered after `at` moves
+static void insert_printed(TyDisplay d, isize_t at, cstr* from) {
+    isize_t len = cstr_size(from);
+    cstr_insert_sv(d.target, at, cstr_sv(from));
+    TyParamNames* names = d.param_names;
+    for (u32 i = 0; names && i < names->printed_len; i++) {
+        TyPrinted* printed = &names->printed[i];
+        if (printed->target == from) {
+            printed->target = d.target;
+            printed->range.start += at;
+            printed->range.end += at;
+        } else if (printed->target == d.target && printed->range.start >= at) {
+            printed->range.start += len;
+            printed->range.end += len;
+        }
+    }
+    cstr_drop(from);
+}
+
 // What was printed into `from`, a buffer of its own, is appended to `d`'s target: what is remembered of it is now
 // there (a later buffer at the same address would reprint from the wrong text)
 static void append_printed(TyDisplay d, cstr* from) {
@@ -3963,6 +3983,49 @@ static bool maps_merged_type_param(Checker* me, Signature const* sig, Signature 
     return false;
 }
 
+// The `this` parameter of a signature being printed, `this: T`
+static void display_this_param(
+    Checker* me, TyDisplay d, Signature const* sig, Signature const* root, FunctionImpl const* function, bool reusable,
+    bool jsdoc_this, bool instantiated
+) {
+    // (A `this` from a contextual signature whose own is a JSDoc `@this` has no declaration: tsc's
+    // getSignatureFromDeclaration makes the symbol, assignContextualParameterTypes copies it)
+    bool contextual_jsdoc_this = false;
+    if (function && reusable && !jsdoc_this && !(vec_function_arg_size(&function->args) &&
+        function->args.data[0].initializer.binding.tag == BINDING_IDENTIFIER &&
+        span_equals(function->args.data[0].initializer.binding.content_span, "this"))
+    ) {
+        Signature const* contextual = ty_function_assigned_contextual_signature(me, function);
+        while (contextual && !contextual->function && (contextual->target || contextual->declared_by)) contextual = contextual->target ? contextual->target : contextual->declared_by;
+        FunctionImpl const* context_function = contextual ? contextual->function : nullptr;
+        contextual_jsdoc_this = context_function && vec_function_arg_size(&context_function->args) &&
+            context_function->args.data[0].jsdoc_this;
+    }
+    out(reused_if(d, d.reused || (function && !jsdoc_this && !contextual_jsdoc_this)), c_sv("this"));
+    out_lit(d, ": ");
+    FunctionArg const* this_decl = function && vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, 0) : nullptr;
+    Binding const* binding = this_decl ? &this_decl->initializer.binding : nullptr;
+    if (binding && !(binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this"))) binding = nullptr;
+    bool reused = reusable && !jsdoc_this && binding && binding->has_explicit_type &&
+        !mentions(me, sig->this_type, d.fresh_params) && (!instantiated || sig->this_type == root->this_type);
+    // A function expression's `this` from its contextual signature is that signature's parameter (tsc's
+    // assignContextualParameterTypes: createSymbolWithType(context.thisParameter)), whose annotation is reused
+    Signature const* contextual = function && !binding && reusable ? ty_function_assigned_contextual_signature(me, function) : nullptr;
+    while (contextual && !contextual->function && (contextual->target || contextual->declared_by)) contextual = contextual->target ? contextual->target : contextual->declared_by;
+    FunctionImpl const* context_function = contextual ? contextual->function : nullptr;
+    FunctionArg const* context_this = context_function && vec_function_arg_size(&context_function->args) ?
+        vec_function_arg_at(&context_function->args, 0) : nullptr;
+    if (context_this && !context_this->jsdoc_this && context_this->initializer.binding.tag == BINDING_IDENTIFIER &&
+        span_equals(context_this->initializer.binding.content_span, "this") &&
+        context_this->initializer.binding.has_explicit_type && contextual->this_type == sig->this_type
+    ) {
+        binding = &context_this->initializer.binding;
+        reused = true;
+    }
+    display_annotated(me, reused_if(d, false), reused ? binding_type(binding) : nullptr, sig->this_type, false);
+    approx_add(d, 4 + 3); // (After its type, like the parameters)
+}
+
 static void display_signature_inner(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new) {
     signature_resolve(me, sig);
     approx_add(d, 3); // (tsc's signatureToSignatureDeclarationHelper; its parameters each their name and three)
@@ -4068,43 +4131,13 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         .function = function, .outer = d.printed_params, .serial = d.printed ? ++d.printed->serial : 0,
     };
     if (d.types_baseline || d.reuse_nodes) d.printed_params = &printed;
-    if (sig->this_type) {
-        // (A `this` from a contextual signature whose own is a JSDoc `@this` has no declaration: tsc's
-        // getSignatureFromDeclaration makes the symbol, assignContextualParameterTypes copies it)
-        bool contextual_jsdoc_this = false;
-        if (function && reusable && !jsdoc_this && !(vec_function_arg_size(&function->args) &&
-            function->args.data[0].initializer.binding.tag == BINDING_IDENTIFIER &&
-            span_equals(function->args.data[0].initializer.binding.content_span, "this"))
-        ) {
-            Signature const* contextual = ty_function_assigned_contextual_signature(me, function);
-            while (contextual && !contextual->function && (contextual->target || contextual->declared_by)) contextual = contextual->target ? contextual->target : contextual->declared_by;
-            FunctionImpl const* context_function = contextual ? contextual->function : nullptr;
-            contextual_jsdoc_this = context_function && vec_function_arg_size(&context_function->args) &&
-                context_function->args.data[0].jsdoc_this;
-        }
-        out(reused_if(d, d.reused || (function && !jsdoc_this && !contextual_jsdoc_this)), c_sv("this"));
-        out_lit(d, ": ");
-        FunctionArg const* this_decl = function && vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, 0) : nullptr;
-        Binding const* binding = this_decl ? &this_decl->initializer.binding : nullptr;
-        if (binding && !(binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this"))) binding = nullptr;
-        bool reused = reusable && !jsdoc_this && binding && binding->has_explicit_type &&
-            !mentions(me, sig->this_type, d.fresh_params) && (!instantiated || sig->this_type == root->this_type);
-        // A function expression's `this` from its contextual signature is that signature's parameter (tsc's
-        // assignContextualParameterTypes: createSymbolWithType(context.thisParameter)), whose annotation is reused
-        Signature const* contextual = function && !binding && reusable ? ty_function_assigned_contextual_signature(me, function) : nullptr;
-        while (contextual && !contextual->function && (contextual->target || contextual->declared_by)) contextual = contextual->target ? contextual->target : contextual->declared_by;
-        FunctionImpl const* context_function = contextual ? contextual->function : nullptr;
-        FunctionArg const* context_this = context_function && vec_function_arg_size(&context_function->args) ?
-            vec_function_arg_at(&context_function->args, 0) : nullptr;
-        if (context_this && !context_this->jsdoc_this && context_this->initializer.binding.tag == BINDING_IDENTIFIER &&
-            span_equals(context_this->initializer.binding.content_span, "this") &&
-            context_this->initializer.binding.has_explicit_type && contextual->this_type == sig->this_type
-        ) {
-            binding = &context_this->initializer.binding;
-            reused = true;
-        }
-        display_annotated(me, reused_if(d, false), reused ? binding_type(binding) : nullptr, sig->this_type, false);
-        approx_add(d, 4 + 3); // (After its type, like the parameters)
+    // (tsc's signatureToSignatureDeclarationHelper makes the parameters' nodes before the `this` parameter's: a
+    // message counts their length first, so a long `this` type is what gets cut short, `Record<...>`. Printed in
+    // place afterwards; not where positions are mapped or comments copied)
+    bool this_later = sig->this_type && d.approx && !d.tracker && !D_MAP(d) && !d.comments;
+    size_t this_at = cstr_size(d.target);
+    if (sig->this_type && !this_later) {
+        display_this_param(me, d, sig, root, function, reusable, jsdoc_this, instantiated);
         if (param_count) out_lit(d, ", ");
     }
     for (u32 i = 0; i < param_count; i++) {
@@ -4212,6 +4245,14 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
             display_annotated(me, annotated_d, reused ? binding_type(binding) : nullptr, shown, param->optional);
         }
         approx_add(d, name_length);
+    }
+    if (this_later) {
+        cstr this_text = cstr_init();
+        TyDisplay this_d = d;
+        this_d.target = &this_text;
+        display_this_param(me, this_d, sig, root, function, reusable, jsdoc_this, instantiated);
+        if (param_count) out_lit(this_d, ", ");
+        insert_printed(d, (isize_t)this_at, &this_text);
     }
     out_lit(d, ")");
     out(d, csview_from(separator));

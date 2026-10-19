@@ -1,0 +1,28 @@
+ttttThisParamTruncatedLast.ts(8,3): error TS2322: Type '(this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<...>; eeeeeeeeeeeeeeee: Record<...>; }, { HTMLAttributes }: { node: PMNode; HTMLAttributes: Record<string, any>; }) => Element' is not assignable to type '(this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<...>; eeeeeeeeeeeeeeee: Record<...>; }, props: { node: PMNode; HTMLAttributes: Record<string, any>; }) => string'.
+  Type 'Element' is not assignable to type 'string'.
+ttttThisParamTruncatedLast.ts(11,3): error TS2322: Type '(this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<...>; eeeeeeeeeeeeeeee: Record<...>; }, props: { node: PMNode; HTMLAttributes: Record<string, any>; }) => Element' is not assignable to type '(this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<...>; eeeeeeeeeeeeeeee: Record<...>; }, props: { node: PMNode; HTMLAttributes: Record<string, any>; }) => string'.
+  Type 'Element' is not assignable to type 'string'.
+
+
+==== ttttThisParamTruncatedLast.ts (2 errors) ====
+    // A signature's parameters count toward a message's truncation length before its `this` parameter (tsc's
+    // signatureToSignatureDeclarationHelper makes their nodes first): the long `this` type is the one cut short
+    interface PMNode { type: string; attrs: Record<string, any> }
+    interface Element { el: true }
+    declare const el: Element;
+    type T = { m?: ((this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<string, any>; eeeeeeeeeeeeeeee: Record<string, any>; }, props: { node: PMNode; HTMLAttributes: Record<string, any> }) => string) | null };
+    const o: T = {
+      m({ HTMLAttributes }) { return el },
+      ~
+!!! error TS2322: Type '(this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<...>; eeeeeeeeeeeeeeee: Record<...>; }, { HTMLAttributes }: { node: PMNode; HTMLAttributes: Record<string, any>; }) => Element' is not assignable to type '(this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<...>; eeeeeeeeeeeeeeee: Record<...>; }, props: { node: PMNode; HTMLAttributes: Record<string, any>; }) => string'.
+!!! error TS2322:   Type 'Element' is not assignable to type 'string'.
+!!! related TS6500 ttttThisParamTruncatedLast.ts:6:12: The expected type comes from property 'm' which is declared here on type 'T'
+    };
+    const o2: T = {
+      m(props) { return el },
+      ~
+!!! error TS2322: Type '(this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<...>; eeeeeeeeeeeeeeee: Record<...>; }, props: { node: PMNode; HTMLAttributes: Record<string, any>; }) => Element' is not assignable to type '(this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<...>; eeeeeeeeeeeeeeee: Record<...>; }, props: { node: PMNode; HTMLAttributes: Record<string, any>; }) => string'.
+!!! error TS2322:   Type 'Element' is not assignable to type 'string'.
+!!! related TS6500 ttttThisParamTruncatedLast.ts:6:12: The expected type comes from property 'm' which is declared here on type 'T'
+    };
+    

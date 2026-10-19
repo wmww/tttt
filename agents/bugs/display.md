@@ -216,14 +216,11 @@ for object literals before choosing; ~1 session.
 
 ## CLI text mismatches (clidiff `text` verdicts)
 Same diagnostics by (file, line, column, code), other text. After the 2026-10-18 fan-out (`scripts/clidiff.py`, 3675
-projects): 3665 match, **3 `text`** (was 54), 7 `diagnostics` (bugs/sourcesweep_checker.md), 0 order/exit code/crash.
+projects): 3667 match, **1 `text`** (was 54; babel-traverse and tiptap fixed by agent C 2026-10-19), 7 `diagnostics` (bugs/sourcesweep_checker.md), 0 order/exit code/crash.
 Each needs a cut-down repro first (`scripts/clidiff.py -f '^PROJECT$' -v`; `-k KIND --last` lists a bucket's
 diagnostics). Left:
 - **Truncation depth** (apollo-client/integration-tests/vite: `DeepPartial<TValue>` vs `DeepPartial<...>`, `(...)` vs
-  `...`, and a TS2322 chain three lines shorter, `'undefined & TData' ... 'RegExp & CustomMaybeMaskedImplementation'`;
-  tiptap/demos `JSX/{React,Vue}/Paragraph.tsx(6,3)` and 22 more: tsc
-  elides `Record<...>` early inside the `this:` type and prints `{ HTMLAttributes }: { node: Node; ... }` later, tttt
-  the reverse, so tttt counts less before and more after; also MarkdownManager.test.ts:979). Method that found rxjs's and mikro-orm's: a
+  `...`, and a TS2322 chain three lines shorter, `'undefined & TData' ... 'RegExp & CustomMaybeMaskedImplementation'`). Method that found rxjs's and mikro-orm's: a
   /tmp overlay build of tsgo's cmd/tsc with nodebuilderimpl.go's typeToTypeNode logging `b.ctx.approximateLength` and
   the type's symbol on entry and exit (env-gated; `go build -overlay` with ensure-typescript.sh --env), against the same
   log of `*d.approx` around ty_display(); the first entry where the numbers part is the bug. The same logging at

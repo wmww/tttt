@@ -1,0 +1,50 @@
+//// [test/cases/ttttThisParamTruncatedLast.ts] ////
+
+=== ttttThisParamTruncatedLast.ts ===
+// A signature's parameters count toward a message's truncation length before its `this` parameter (tsc's
+// signatureToSignatureDeclarationHelper makes their nodes first): the long `this` type is the one cut short
+interface PMNode { type: string; attrs: Record<string, any> }
+>type : string
+>attrs : Record<string, any>
+
+interface Element { el: true }
+>el : true
+>true : true
+
+declare const el: Element;
+>el : Element
+
+type T = { m?: ((this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<string, any>; eeeeeeeeeeeeeeee: Record<string, any>; }, props: { node: PMNode; HTMLAttributes: Record<string, any> }) => string) | null };
+>T : T
+>m : ((this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<string, any>; eeeeeeeeeeeeeeee: Record<string, any>; }, props: { node: PMNode; HTMLAttributes: Record<string, any>; }) => string) | null | undefined
+>this : { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<string, any>; eeeeeeeeeeeeeeee: Record<string, any>; }
+>aaaaaaaaaaaaaaaaaaaa : string
+>bbbbbbbbbbbbbbbbbbbbbbbb : number
+>ccccccccccccccccccccccc : boolean
+>ddddddddddddddddddddd : Record<string, any>
+>eeeeeeeeeeeeeeee : Record<string, any>
+>props : { node: PMNode; HTMLAttributes: Record<string, any>; }
+>node : PMNode
+>HTMLAttributes : Record<string, any>
+
+const o: T = {
+>o : T
+>{  m({ HTMLAttributes }) { return el },} : { m(this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<string, any>; eeeeeeeeeeeeeeee: Record<string, any>; }, { HTMLAttributes }: { node: PMNode; HTMLAttributes: Record<string, any>; }): Element; }
+
+  m({ HTMLAttributes }) { return el },
+>m : (this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<string, any>; eeeeeeeeeeeeeeee: Record<string, any>; }, { HTMLAttributes }: { node: PMNode; HTMLAttributes: Record<string, any>; }) => Element
+>HTMLAttributes : Record<string, any>
+>el : Element
+
+};
+const o2: T = {
+>o2 : T
+>{  m(props) { return el },} : { m(this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<string, any>; eeeeeeeeeeeeeeee: Record<string, any>; }, props: { node: PMNode; HTMLAttributes: Record<string, any>; }): Element; }
+
+  m(props) { return el },
+>m : (this: { aaaaaaaaaaaaaaaaaaaa: string; bbbbbbbbbbbbbbbbbbbbbbbb: number; ccccccccccccccccccccccc: boolean; ddddddddddddddddddddd: Record<string, any>; eeeeeeeeeeeeeeee: Record<string, any>; }, props: { node: PMNode; HTMLAttributes: Record<string, any>; }) => Element
+>props : { node: PMNode; HTMLAttributes: Record<string, any>; }
+>el : Element
+
+};
+
