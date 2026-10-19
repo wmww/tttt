@@ -1,0 +1,62 @@
+//// [test/cases/ttttLocalExpandoInstantiated.ts] ////
+
+=== ttttLocalExpandoInstantiated.ts ===
+// A function with expandos declared inside a generic function is an anonymous type instantiated with the outer type
+// parameters (tsc's getTypeOfFuncClassEnumModule): its signature and its expandos' types
+interface Attributes { key?: string }
+>key : string | undefined
+
+declare class Component<P = {}, S = {}> { props: P; state: S }
+>Component : Component<P, S>
+>props : P
+>state : S
+
+export function c1<P extends Attributes>(x: P) {
+>c1 : <P extends Attributes>(x: P) => { (this: Component<P>, props: P): number; _forwarded: boolean; original: P; }
+>x : P
+
+  function Memoed(this: Component<P>, props: P) { return 1; }
+>Memoed : { (this: Component<P>, props: P): number; _forwarded: boolean; original: P; }
+>this : Component<P, {}>
+>props : P
+>1 : 1
+
+  Memoed._forwarded = true;
+>Memoed._forwarded = true : true
+>Memoed._forwarded : boolean
+>Memoed : { (this: Component<P>, props: P): number; _forwarded: boolean; original: P; }
+>_forwarded : boolean
+>true : true
+
+  Memoed.original = x;
+>Memoed.original = x : P
+>Memoed.original : P
+>Memoed : { (this: Component<P>, props: P): number; _forwarded: boolean; original: P; }
+>original : P
+>x : P
+
+  return Memoed;
+>Memoed : { (this: Component<P>, props: P): number; _forwarded: boolean; original: P; }
+}
+export const t1 = c1({ key: "a" });
+>t1 : { (this: Component<{ key: string; }, {}>, props: { key: string; }): number; _forwarded: boolean; original: { key: string; }; }
+>c1({ key: "a" }) : { (this: Component<{ key: string; }, {}>, props: { key: string; }): number; _forwarded: boolean; original: { key: string; }; }
+>c1 : <P extends Attributes>(x: P) => { (this: Component<P>, props: P): number; _forwarded: boolean; original: P; }
+>{ key: "a" } : { key: string; }
+>key : string
+>"a" : "a"
+
+const s: string | undefined = t1.original.key;
+>s : string | undefined
+>t1.original.key : string
+>t1.original : { key: string; }
+>t1 : { (this: Component<{ key: string; }, {}>, props: { key: string; }): number; _forwarded: boolean; original: { key: string; }; }
+>original : { key: string; }
+>key : string
+
+const n: number = t1.original;
+>n : number
+>t1.original : { key: string; }
+>t1 : { (this: Component<{ key: string; }, {}>, props: { key: string; }): number; _forwarded: boolean; original: { key: string; }; }
+>original : { key: string; }
+

@@ -550,16 +550,7 @@ static bool global_shadowed_by_type_param(Checker* me, TyParamNames const* names
 // messages)
 // tsc's isNonLocalFunctionSymbol: a function with a parent symbol or declared directly in a file or namespace block
 static bool is_non_local_function(Symbol const* symbol) {
-    if (!(symbol->flags & SYMBOL_FUNCTION)) return false;
-    if (symbol->parent) return true;
-    for (u32 i = 0; i < symbol->decl_count; i++) {
-        Scope const* block = symbol->decls[i].block;
-        if (block && (block->kind == SCOPE_SCRIPT || block->kind == SCOPE_MODULE || block->kind == SCOPE_NAMESPACE ||
-            block->kind == SCOPE_GLOBAL_AUGMENTATION)) {
-            return true;
-        }
-    }
-    return false;
+    return ty_is_non_local_function(symbol);
 }
 
 // A function with expando properties: tsgo has no bindPotentiallyMissingNamespaces, so it is a function like any other,

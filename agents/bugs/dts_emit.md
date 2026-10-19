@@ -104,8 +104,8 @@ size on real code, each with an example:
     version } }` through `.then`s) is applied twice: tsgo's result keeps two distinct `{ '@feathersjs/cli': any }`
     intersection members (instantiations of the literal under two mappers), tttt makes one (it interns them), and
     tsgo's spread type no longer reuses the properties' nodes. Not reduced (agent B 2026-10-18).
-  - react-scan `Component<P>` vs `Component<Attributes, {}>`: a checker bug, bugs/expando_instantiation.md (a
-    function with expandos is a TY_DECLARED namespace, never instantiated). The `Readonly<{...}>` reprinted where tsc
+  - react-scan `Component<P>` vs `Component<Attributes, {}>`: fixed (a local function with expandos is an anonymous
+    type now, instantiated: is_local_expando_function()). The `Readonly<{...}>` reprinted where tsc
     no longer reuses an alias body's annotation: hacks.md "An alias body's homomorphic mapped instance".
     react-three-fiber `ReadonlyArray<...>` reuse: see agent A's note. mockoon
     `deploy.service.d.ts` `Observable<any>` (tttt `Observable<DeployInstance>`): only under the root `mockoon`

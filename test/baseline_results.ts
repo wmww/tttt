@@ -1318,6 +1318,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLocalExpandoInstantiated': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttMappedAsClauseUnionModifiers': {
         errors: true,
         symbols: true,

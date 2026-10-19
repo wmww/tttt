@@ -2354,6 +2354,35 @@ static Ty const* own_type_of_symbol(Checker* me, Symbol const* symbol) {
     return only ? value_entry_type(me, symbol, only) : ty_intrinsic(me, TY_ERROR);
 }
 
+bool ty_is_non_local_function(Symbol const* symbol) {
+    if (!(symbol->flags & SYMBOL_FUNCTION)) return false;
+    if (symbol->parent) return true;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        Scope const* block = symbol->decls[i].block;
+        if (block && (block->kind == SCOPE_SCRIPT || block->kind == SCOPE_MODULE || block->kind == SCOPE_NAMESPACE ||
+            block->kind == SCOPE_GLOBAL_AUGMENTATION)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// A function declared within a function (or a class, a block...) whose only other value declarations are expandos
+// (`function f() {}; f.x = 1`): tsc's type of it is an anonymous object type (getTypeOfFuncClassEnumModule) whose
+// outer type parameters are those in scope, instantiated with them: `function g<P>() { function f(p: P) {}; f.x = 1;
+// return f }` is `{ (p: string): void; x: number }` for g<string>(). A file's or namespace's has none to instantiate,
+// and stays `typeof f` by name
+static bool is_local_expando_function(Symbol const* symbol) {
+    if (!(symbol->flags & SYMBOL_FUNCTION) || (symbol->flags & SYMBOL_VALUE_MODULE) || symbol->is_module) return false;
+    bool expando = false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        SymbolDeclKind kind = symbol->decls[i].kind;
+        if (kind == SYMBOL_DECL_EXPANDO) expando = true;
+        else if (kind != SYMBOL_DECL_FUNCTION && (symbol->decls[i].flags & SYMBOL_VALUE)) return false;
+    }
+    return expando && !ty_is_non_local_function(symbol);
+}
+
 // The value of a symbol that several declarations contribute a value to: function overloads, a function, class
 // or enum merged with a namespace. The members of all of them (members.c: builder_add_merged_value)
 Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol) {
@@ -2369,6 +2398,7 @@ Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol) {
         if (entries[i]->kind == TY_DECLARED) named = entries[i];
     }
     free(entries);
+    if (named && is_local_expando_function(symbol)) named = nullptr;
     Ty* ret;
     if (named) {
         ret = named->declared.kind == TY_DECLARED_NAMESPACE ?

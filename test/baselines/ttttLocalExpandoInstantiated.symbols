@@ -1,0 +1,66 @@
+//// [test/cases/ttttLocalExpandoInstantiated.ts] ////
+
+=== ttttLocalExpandoInstantiated.ts ===
+// A function with expandos declared inside a generic function is an anonymous type instantiated with the outer type
+// parameters (tsc's getTypeOfFuncClassEnumModule): its signature and its expandos' types
+interface Attributes { key?: string }
+>Attributes : Symbol(Attributes, Decl(ttttLocalExpandoInstantiated.ts, 0, 0))
+>key : Symbol(Attributes.key, Decl(ttttLocalExpandoInstantiated.ts, 2, 22))
+
+declare class Component<P = {}, S = {}> { props: P; state: S }
+>Component : Symbol(Component, Decl(ttttLocalExpandoInstantiated.ts, 2, 37))
+>P : Symbol(P, Decl(ttttLocalExpandoInstantiated.ts, 3, 24))
+>S : Symbol(S, Decl(ttttLocalExpandoInstantiated.ts, 3, 31))
+>props : Symbol(Component.props, Decl(ttttLocalExpandoInstantiated.ts, 3, 41))
+>P : Symbol(P, Decl(ttttLocalExpandoInstantiated.ts, 3, 24))
+>state : Symbol(Component.state, Decl(ttttLocalExpandoInstantiated.ts, 3, 51))
+>S : Symbol(S, Decl(ttttLocalExpandoInstantiated.ts, 3, 31))
+
+export function c1<P extends Attributes>(x: P) {
+>c1 : Symbol(c1, Decl(ttttLocalExpandoInstantiated.ts, 3, 62))
+>P : Symbol(P, Decl(ttttLocalExpandoInstantiated.ts, 4, 19))
+>Attributes : Symbol(Attributes, Decl(ttttLocalExpandoInstantiated.ts, 0, 0))
+>x : Symbol(x, Decl(ttttLocalExpandoInstantiated.ts, 4, 41))
+>P : Symbol(P, Decl(ttttLocalExpandoInstantiated.ts, 4, 19))
+
+  function Memoed(this: Component<P>, props: P) { return 1; }
+>Memoed : Symbol(Memoed, Decl(ttttLocalExpandoInstantiated.ts, 4, 48))
+>this : Symbol(this, Decl(ttttLocalExpandoInstantiated.ts, 5, 18))
+>Component : Symbol(Component, Decl(ttttLocalExpandoInstantiated.ts, 2, 37))
+>P : Symbol(P, Decl(ttttLocalExpandoInstantiated.ts, 4, 19))
+>props : Symbol(props, Decl(ttttLocalExpandoInstantiated.ts, 5, 37))
+>P : Symbol(P, Decl(ttttLocalExpandoInstantiated.ts, 4, 19))
+
+  Memoed._forwarded = true;
+>Memoed._forwarded : Symbol(Memoed._forwarded, Decl(ttttLocalExpandoInstantiated.ts, 5, 61))
+>Memoed : Symbol(Memoed, Decl(ttttLocalExpandoInstantiated.ts, 4, 48))
+>_forwarded : Symbol(Memoed._forwarded, Decl(ttttLocalExpandoInstantiated.ts, 5, 61))
+
+  Memoed.original = x;
+>Memoed.original : Symbol(Memoed.original, Decl(ttttLocalExpandoInstantiated.ts, 6, 27))
+>Memoed : Symbol(Memoed, Decl(ttttLocalExpandoInstantiated.ts, 4, 48))
+>original : Symbol(Memoed.original, Decl(ttttLocalExpandoInstantiated.ts, 6, 27))
+>x : Symbol(x, Decl(ttttLocalExpandoInstantiated.ts, 4, 41))
+
+  return Memoed;
+>Memoed : Symbol(Memoed, Decl(ttttLocalExpandoInstantiated.ts, 4, 48))
+}
+export const t1 = c1({ key: "a" });
+>t1 : Symbol(t1, Decl(ttttLocalExpandoInstantiated.ts, 10, 12))
+>c1 : Symbol(c1, Decl(ttttLocalExpandoInstantiated.ts, 3, 62))
+>key : Symbol(key, Decl(ttttLocalExpandoInstantiated.ts, 10, 22))
+
+const s: string | undefined = t1.original.key;
+>s : Symbol(s, Decl(ttttLocalExpandoInstantiated.ts, 11, 5))
+>t1.original.key : Symbol(key, Decl(ttttLocalExpandoInstantiated.ts, 10, 22))
+>t1.original : Symbol(Memoed.original, Decl(ttttLocalExpandoInstantiated.ts, 6, 27))
+>t1 : Symbol(t1, Decl(ttttLocalExpandoInstantiated.ts, 10, 12))
+>original : Symbol(Memoed.original, Decl(ttttLocalExpandoInstantiated.ts, 6, 27))
+>key : Symbol(key, Decl(ttttLocalExpandoInstantiated.ts, 10, 22))
+
+const n: number = t1.original;
+>n : Symbol(n, Decl(ttttLocalExpandoInstantiated.ts, 12, 5))
+>t1.original : Symbol(Memoed.original, Decl(ttttLocalExpandoInstantiated.ts, 6, 27))
+>t1 : Symbol(t1, Decl(ttttLocalExpandoInstantiated.ts, 10, 12))
+>original : Symbol(Memoed.original, Decl(ttttLocalExpandoInstantiated.ts, 6, 27))
+

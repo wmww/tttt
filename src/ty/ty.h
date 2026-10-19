@@ -1777,6 +1777,8 @@ bool ty_export_equals_property_missing(Checker* me, Symbol const* property);
 // property, else null (the alias's own target)
 Symbol const* ty_alias_combined_type(Checker* me, Symbol const* alias);
 Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol);
+// tsc's isNonLocalFunctionSymbol: a function with a parent symbol or declared directly in a file or namespace block
+bool ty_is_non_local_function(Symbol const* symbol);
 // What `import("m")` promises: the module's value, with a synthetic `default` for an `export =` module
 Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module, struct SourceFile const* importer);
 // A JavaScript member that only `this.x = v` assignments declare, one of them in a constructor (tsc's
