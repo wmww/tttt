@@ -1081,6 +1081,19 @@ static void binding_check_computed_names_first(Binding const* me) {
     }
 }
 
+// The annotation's walk (tsc's checkSourceElement of the type node). A union or intersection is resolved at it
+// (checkUnionOrIntersectionType: TS2590 of a cross product goes to the type node, not the declaration's name)
+static void binding_annotation_typecheck(Binding const* me, ErrorCtx* errs) {
+    if (!my has_explicit_type) return;
+    TypeNode const* type = binding_type(me);
+    type_typecheck(type, errs);
+    if ((type->tag == TYPE_UNION || type->tag == TYPE_INTERSECTION) && my has_explicit_type_span) {
+        CurrentNode saved = ty_enter_node(current_checker, binding_explicit_type_span(me));
+        ty_of_node(type);
+        ty_leave_node(current_checker, saved);
+    }
+}
+
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     // `const x = require("m")`: an alias, which is all tsc checks
     // (checkVariableLikeDeclaration: checkAliasSymbol and return)
@@ -1103,7 +1116,7 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     Checker* checker = current_checker;
     CurrentNode saved = ty_enter_node(checker, my binding.content_span);
     // (The annotation is walked first, which makes the types of the literals in it: tsc's checkVariableLikeDeclaration)
-    if (my binding.has_explicit_type) type_typecheck(binding_type(&my binding), errs);
+    binding_annotation_typecheck(&my binding, errs);
     if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol && initialized_binding_value(me)->tag == EXPR_CALL) {
         ty_type_of_symbol(checker, my binding.symbol);
     }
@@ -1119,7 +1132,7 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
 }
 
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, bool bodiless, ErrorCtx* errs) {
-    if (my binding.has_explicit_type) type_typecheck(binding_type(&my binding), errs);
+    binding_annotation_typecheck(&my binding, errs);
     binding_check_computed_names_first(&my binding);
     initialized_binding_check_value(me);
     // (Only when the initializer types the declaration: an annotated one never asks for its quick type)

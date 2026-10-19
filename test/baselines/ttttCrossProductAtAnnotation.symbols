@@ -1,0 +1,191 @@
+//// [test/cases/ttttCrossProductAtAnnotation.ts] ////
+
+=== ttttCrossProductAtAnnotation.ts ===
+// TS2590 of an intersection's cross product written in a declaration's annotation goes to the type node (tsc's
+// checkUnionOrIntersectionType resolves it there), not to the declaration's name; a parameter's likewise
+type U0 = { a0: 1 } | { b0: 1 } | { c0: 1 };
+>U0 : Symbol(U0, Decl(ttttCrossProductAtAnnotation.ts, 0, 0))
+>a0 : Symbol(a0, Decl(ttttCrossProductAtAnnotation.ts, 2, 11))
+>b0 : Symbol(b0, Decl(ttttCrossProductAtAnnotation.ts, 2, 23))
+>c0 : Symbol(c0, Decl(ttttCrossProductAtAnnotation.ts, 2, 35))
+
+type U1 = { a1: 1 } | { b1: 1 } | { c1: 1 };
+>U1 : Symbol(U1, Decl(ttttCrossProductAtAnnotation.ts, 2, 44))
+>a1 : Symbol(a1, Decl(ttttCrossProductAtAnnotation.ts, 3, 11))
+>b1 : Symbol(b1, Decl(ttttCrossProductAtAnnotation.ts, 3, 23))
+>c1 : Symbol(c1, Decl(ttttCrossProductAtAnnotation.ts, 3, 35))
+
+type U2 = { a2: 1 } | { b2: 1 } | { c2: 1 };
+>U2 : Symbol(U2, Decl(ttttCrossProductAtAnnotation.ts, 3, 44))
+>a2 : Symbol(a2, Decl(ttttCrossProductAtAnnotation.ts, 4, 11))
+>b2 : Symbol(b2, Decl(ttttCrossProductAtAnnotation.ts, 4, 23))
+>c2 : Symbol(c2, Decl(ttttCrossProductAtAnnotation.ts, 4, 35))
+
+type U3 = { a3: 1 } | { b3: 1 } | { c3: 1 };
+>U3 : Symbol(U3, Decl(ttttCrossProductAtAnnotation.ts, 4, 44))
+>a3 : Symbol(a3, Decl(ttttCrossProductAtAnnotation.ts, 5, 11))
+>b3 : Symbol(b3, Decl(ttttCrossProductAtAnnotation.ts, 5, 23))
+>c3 : Symbol(c3, Decl(ttttCrossProductAtAnnotation.ts, 5, 35))
+
+type U4 = { a4: 1 } | { b4: 1 } | { c4: 1 };
+>U4 : Symbol(U4, Decl(ttttCrossProductAtAnnotation.ts, 5, 44))
+>a4 : Symbol(a4, Decl(ttttCrossProductAtAnnotation.ts, 6, 11))
+>b4 : Symbol(b4, Decl(ttttCrossProductAtAnnotation.ts, 6, 23))
+>c4 : Symbol(c4, Decl(ttttCrossProductAtAnnotation.ts, 6, 35))
+
+type U5 = { a5: 1 } | { b5: 1 } | { c5: 1 };
+>U5 : Symbol(U5, Decl(ttttCrossProductAtAnnotation.ts, 6, 44))
+>a5 : Symbol(a5, Decl(ttttCrossProductAtAnnotation.ts, 7, 11))
+>b5 : Symbol(b5, Decl(ttttCrossProductAtAnnotation.ts, 7, 23))
+>c5 : Symbol(c5, Decl(ttttCrossProductAtAnnotation.ts, 7, 35))
+
+type U6 = { a6: 1 } | { b6: 1 } | { c6: 1 };
+>U6 : Symbol(U6, Decl(ttttCrossProductAtAnnotation.ts, 7, 44))
+>a6 : Symbol(a6, Decl(ttttCrossProductAtAnnotation.ts, 8, 11))
+>b6 : Symbol(b6, Decl(ttttCrossProductAtAnnotation.ts, 8, 23))
+>c6 : Symbol(c6, Decl(ttttCrossProductAtAnnotation.ts, 8, 35))
+
+type U7 = { a7: 1 } | { b7: 1 } | { c7: 1 };
+>U7 : Symbol(U7, Decl(ttttCrossProductAtAnnotation.ts, 8, 44))
+>a7 : Symbol(a7, Decl(ttttCrossProductAtAnnotation.ts, 9, 11))
+>b7 : Symbol(b7, Decl(ttttCrossProductAtAnnotation.ts, 9, 23))
+>c7 : Symbol(c7, Decl(ttttCrossProductAtAnnotation.ts, 9, 35))
+
+type U8 = { a8: 1 } | { b8: 1 } | { c8: 1 };
+>U8 : Symbol(U8, Decl(ttttCrossProductAtAnnotation.ts, 9, 44))
+>a8 : Symbol(a8, Decl(ttttCrossProductAtAnnotation.ts, 10, 11))
+>b8 : Symbol(b8, Decl(ttttCrossProductAtAnnotation.ts, 10, 23))
+>c8 : Symbol(c8, Decl(ttttCrossProductAtAnnotation.ts, 10, 35))
+
+type U9 = { a9: 1 } | { b9: 1 } | { c9: 1 };
+>U9 : Symbol(U9, Decl(ttttCrossProductAtAnnotation.ts, 10, 44))
+>a9 : Symbol(a9, Decl(ttttCrossProductAtAnnotation.ts, 11, 11))
+>b9 : Symbol(b9, Decl(ttttCrossProductAtAnnotation.ts, 11, 23))
+>c9 : Symbol(c9, Decl(ttttCrossProductAtAnnotation.ts, 11, 35))
+
+type U10 = { a10: 1 } | { b10: 1 } | { c10: 1 };
+>U10 : Symbol(U10, Decl(ttttCrossProductAtAnnotation.ts, 11, 44))
+>a10 : Symbol(a10, Decl(ttttCrossProductAtAnnotation.ts, 12, 12))
+>b10 : Symbol(b10, Decl(ttttCrossProductAtAnnotation.ts, 12, 25))
+>c10 : Symbol(c10, Decl(ttttCrossProductAtAnnotation.ts, 12, 38))
+
+type U11 = { a11: 1 } | { b11: 1 } | { c11: 1 };
+>U11 : Symbol(U11, Decl(ttttCrossProductAtAnnotation.ts, 12, 48))
+>a11 : Symbol(a11, Decl(ttttCrossProductAtAnnotation.ts, 13, 12))
+>b11 : Symbol(b11, Decl(ttttCrossProductAtAnnotation.ts, 13, 25))
+>c11 : Symbol(c11, Decl(ttttCrossProductAtAnnotation.ts, 13, 38))
+
+type U12 = { a12: 1 } | { b12: 1 } | { c12: 1 };
+>U12 : Symbol(U12, Decl(ttttCrossProductAtAnnotation.ts, 13, 48))
+>a12 : Symbol(a12, Decl(ttttCrossProductAtAnnotation.ts, 14, 12))
+>b12 : Symbol(b12, Decl(ttttCrossProductAtAnnotation.ts, 14, 25))
+>c12 : Symbol(c12, Decl(ttttCrossProductAtAnnotation.ts, 14, 38))
+
+type U13 = { a13: 1 } | { b13: 1 } | { c13: 1 };
+>U13 : Symbol(U13, Decl(ttttCrossProductAtAnnotation.ts, 14, 48))
+>a13 : Symbol(a13, Decl(ttttCrossProductAtAnnotation.ts, 15, 12))
+>b13 : Symbol(b13, Decl(ttttCrossProductAtAnnotation.ts, 15, 25))
+>c13 : Symbol(c13, Decl(ttttCrossProductAtAnnotation.ts, 15, 38))
+
+type U14 = { a14: 1 } | { b14: 1 } | { c14: 1 };
+>U14 : Symbol(U14, Decl(ttttCrossProductAtAnnotation.ts, 15, 48))
+>a14 : Symbol(a14, Decl(ttttCrossProductAtAnnotation.ts, 16, 12))
+>b14 : Symbol(b14, Decl(ttttCrossProductAtAnnotation.ts, 16, 25))
+>c14 : Symbol(c14, Decl(ttttCrossProductAtAnnotation.ts, 16, 38))
+
+type U15 = { a15: 1 } | { b15: 1 } | { c15: 1 };
+>U15 : Symbol(U15, Decl(ttttCrossProductAtAnnotation.ts, 16, 48))
+>a15 : Symbol(a15, Decl(ttttCrossProductAtAnnotation.ts, 17, 12))
+>b15 : Symbol(b15, Decl(ttttCrossProductAtAnnotation.ts, 17, 25))
+>c15 : Symbol(c15, Decl(ttttCrossProductAtAnnotation.ts, 17, 38))
+
+type U16 = { a16: 1 } | { b16: 1 } | { c16: 1 };
+>U16 : Symbol(U16, Decl(ttttCrossProductAtAnnotation.ts, 17, 48))
+>a16 : Symbol(a16, Decl(ttttCrossProductAtAnnotation.ts, 18, 12))
+>b16 : Symbol(b16, Decl(ttttCrossProductAtAnnotation.ts, 18, 25))
+>c16 : Symbol(c16, Decl(ttttCrossProductAtAnnotation.ts, 18, 38))
+
+declare const x: U0 & U1 & U2 & U3 & U4 & U5 & U6 & U7 & U8 & U9 & U10 & U11 & U12 & U13 & U14 & U15 & U16;
+>x : Symbol(x, Decl(ttttCrossProductAtAnnotation.ts, 19, 13))
+>U0 : Symbol(U0, Decl(ttttCrossProductAtAnnotation.ts, 0, 0))
+>U1 : Symbol(U1, Decl(ttttCrossProductAtAnnotation.ts, 2, 44))
+>U2 : Symbol(U2, Decl(ttttCrossProductAtAnnotation.ts, 3, 44))
+>U3 : Symbol(U3, Decl(ttttCrossProductAtAnnotation.ts, 4, 44))
+>U4 : Symbol(U4, Decl(ttttCrossProductAtAnnotation.ts, 5, 44))
+>U5 : Symbol(U5, Decl(ttttCrossProductAtAnnotation.ts, 6, 44))
+>U6 : Symbol(U6, Decl(ttttCrossProductAtAnnotation.ts, 7, 44))
+>U7 : Symbol(U7, Decl(ttttCrossProductAtAnnotation.ts, 8, 44))
+>U8 : Symbol(U8, Decl(ttttCrossProductAtAnnotation.ts, 9, 44))
+>U9 : Symbol(U9, Decl(ttttCrossProductAtAnnotation.ts, 10, 44))
+>U10 : Symbol(U10, Decl(ttttCrossProductAtAnnotation.ts, 11, 44))
+>U11 : Symbol(U11, Decl(ttttCrossProductAtAnnotation.ts, 12, 48))
+>U12 : Symbol(U12, Decl(ttttCrossProductAtAnnotation.ts, 13, 48))
+>U13 : Symbol(U13, Decl(ttttCrossProductAtAnnotation.ts, 14, 48))
+>U14 : Symbol(U14, Decl(ttttCrossProductAtAnnotation.ts, 15, 48))
+>U15 : Symbol(U15, Decl(ttttCrossProductAtAnnotation.ts, 16, 48))
+>U16 : Symbol(U16, Decl(ttttCrossProductAtAnnotation.ts, 17, 48))
+
+let y: U0 & U1 & U2 & U3 & U4 & U5 & U6 & U7 & U8 & U9 & U10 & U11 & U12 & U13 & U14 & U15 & U16;
+>y : Symbol(y, Decl(ttttCrossProductAtAnnotation.ts, 20, 3))
+>U0 : Symbol(U0, Decl(ttttCrossProductAtAnnotation.ts, 0, 0))
+>U1 : Symbol(U1, Decl(ttttCrossProductAtAnnotation.ts, 2, 44))
+>U2 : Symbol(U2, Decl(ttttCrossProductAtAnnotation.ts, 3, 44))
+>U3 : Symbol(U3, Decl(ttttCrossProductAtAnnotation.ts, 4, 44))
+>U4 : Symbol(U4, Decl(ttttCrossProductAtAnnotation.ts, 5, 44))
+>U5 : Symbol(U5, Decl(ttttCrossProductAtAnnotation.ts, 6, 44))
+>U6 : Symbol(U6, Decl(ttttCrossProductAtAnnotation.ts, 7, 44))
+>U7 : Symbol(U7, Decl(ttttCrossProductAtAnnotation.ts, 8, 44))
+>U8 : Symbol(U8, Decl(ttttCrossProductAtAnnotation.ts, 9, 44))
+>U9 : Symbol(U9, Decl(ttttCrossProductAtAnnotation.ts, 10, 44))
+>U10 : Symbol(U10, Decl(ttttCrossProductAtAnnotation.ts, 11, 44))
+>U11 : Symbol(U11, Decl(ttttCrossProductAtAnnotation.ts, 12, 48))
+>U12 : Symbol(U12, Decl(ttttCrossProductAtAnnotation.ts, 13, 48))
+>U13 : Symbol(U13, Decl(ttttCrossProductAtAnnotation.ts, 14, 48))
+>U14 : Symbol(U14, Decl(ttttCrossProductAtAnnotation.ts, 15, 48))
+>U15 : Symbol(U15, Decl(ttttCrossProductAtAnnotation.ts, 16, 48))
+>U16 : Symbol(U16, Decl(ttttCrossProductAtAnnotation.ts, 17, 48))
+
+function f(p: U16 & U15 & U14 & U13 & U12 & U11 & U10 & U9 & U8 & U7 & U6 & U5 & U4 & U3 & U2 & U1 & U0) {}
+>f : Symbol(f, Decl(ttttCrossProductAtAnnotation.ts, 20, 97))
+>p : Symbol(p, Decl(ttttCrossProductAtAnnotation.ts, 21, 11))
+>U16 : Symbol(U16, Decl(ttttCrossProductAtAnnotation.ts, 17, 48))
+>U15 : Symbol(U15, Decl(ttttCrossProductAtAnnotation.ts, 16, 48))
+>U14 : Symbol(U14, Decl(ttttCrossProductAtAnnotation.ts, 15, 48))
+>U13 : Symbol(U13, Decl(ttttCrossProductAtAnnotation.ts, 14, 48))
+>U12 : Symbol(U12, Decl(ttttCrossProductAtAnnotation.ts, 13, 48))
+>U11 : Symbol(U11, Decl(ttttCrossProductAtAnnotation.ts, 12, 48))
+>U10 : Symbol(U10, Decl(ttttCrossProductAtAnnotation.ts, 11, 44))
+>U9 : Symbol(U9, Decl(ttttCrossProductAtAnnotation.ts, 10, 44))
+>U8 : Symbol(U8, Decl(ttttCrossProductAtAnnotation.ts, 9, 44))
+>U7 : Symbol(U7, Decl(ttttCrossProductAtAnnotation.ts, 8, 44))
+>U6 : Symbol(U6, Decl(ttttCrossProductAtAnnotation.ts, 7, 44))
+>U5 : Symbol(U5, Decl(ttttCrossProductAtAnnotation.ts, 6, 44))
+>U4 : Symbol(U4, Decl(ttttCrossProductAtAnnotation.ts, 5, 44))
+>U3 : Symbol(U3, Decl(ttttCrossProductAtAnnotation.ts, 4, 44))
+>U2 : Symbol(U2, Decl(ttttCrossProductAtAnnotation.ts, 3, 44))
+>U1 : Symbol(U1, Decl(ttttCrossProductAtAnnotation.ts, 2, 44))
+>U0 : Symbol(U0, Decl(ttttCrossProductAtAnnotation.ts, 0, 0))
+
+class C { m(a: number, q?: U1 & U2 & U3 & U4 & U5 & U6 & U7 & U8 & U9 & U10 & U11 & U12 & U13 & U14 & U15 & U16 & U0) {} }
+>C : Symbol(C, Decl(ttttCrossProductAtAnnotation.ts, 21, 107))
+>m : Symbol(C.m, Decl(ttttCrossProductAtAnnotation.ts, 22, 9))
+>a : Symbol(a, Decl(ttttCrossProductAtAnnotation.ts, 22, 12))
+>q : Symbol(q, Decl(ttttCrossProductAtAnnotation.ts, 22, 22))
+>U1 : Symbol(U1, Decl(ttttCrossProductAtAnnotation.ts, 2, 44))
+>U2 : Symbol(U2, Decl(ttttCrossProductAtAnnotation.ts, 3, 44))
+>U3 : Symbol(U3, Decl(ttttCrossProductAtAnnotation.ts, 4, 44))
+>U4 : Symbol(U4, Decl(ttttCrossProductAtAnnotation.ts, 5, 44))
+>U5 : Symbol(U5, Decl(ttttCrossProductAtAnnotation.ts, 6, 44))
+>U6 : Symbol(U6, Decl(ttttCrossProductAtAnnotation.ts, 7, 44))
+>U7 : Symbol(U7, Decl(ttttCrossProductAtAnnotation.ts, 8, 44))
+>U8 : Symbol(U8, Decl(ttttCrossProductAtAnnotation.ts, 9, 44))
+>U9 : Symbol(U9, Decl(ttttCrossProductAtAnnotation.ts, 10, 44))
+>U10 : Symbol(U10, Decl(ttttCrossProductAtAnnotation.ts, 11, 44))
+>U11 : Symbol(U11, Decl(ttttCrossProductAtAnnotation.ts, 12, 48))
+>U12 : Symbol(U12, Decl(ttttCrossProductAtAnnotation.ts, 13, 48))
+>U13 : Symbol(U13, Decl(ttttCrossProductAtAnnotation.ts, 14, 48))
+>U14 : Symbol(U14, Decl(ttttCrossProductAtAnnotation.ts, 15, 48))
+>U15 : Symbol(U15, Decl(ttttCrossProductAtAnnotation.ts, 16, 48))
+>U16 : Symbol(U16, Decl(ttttCrossProductAtAnnotation.ts, 17, 48))
+>U0 : Symbol(U0, Decl(ttttCrossProductAtAnnotation.ts, 0, 0))
+
