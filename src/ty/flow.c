@@ -1656,7 +1656,8 @@ static Ty const* prop_type_by_name(Checker* me, Ty const* ty, Atom const* name) 
 static bool is_discriminant_property(Checker* me, Ty const* type, Atom const* name) {
     if (type->kind != TY_UNION) return false;
     u64 key[3] = { KEY_FLOW_DISCRIMINANT, type->id, (u64)(uintptr_t)name };
-    uintptr_t cached = (uintptr_t)intern_get(&my links, key, 3);
+    InternMiss miss;
+    uintptr_t cached = (uintptr_t)intern_lookup(&my links, key, 3, &miss);
     if (cached) return cached == 2;
     Ty const* first = nullptr;
     bool non_uniform = false;
@@ -1694,7 +1695,7 @@ static bool is_discriminant_property(Checker* me, Ty const* type, Atom const* na
         generic |= (prop->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) != 0;
     }
     bool ret = non_uniform && has_literal && !generic;
-    *intern_slot(me, &my links, key, 3) = (void const*)(uintptr_t)(ret ? 2 : 1);
+    *intern_insert(me, &my links, &miss, key, 3) = (void const*)(uintptr_t)(ret ? 2 : 1);
     return ret;
 }
 
@@ -2108,6 +2109,20 @@ static bool is_not_unit_comparable_to(Checker* me, Ty const* member, void const*
     return !(unit_like && ty_is_comparable_either_way(me, member, value));
 }
 
+// `type` narrowed by `!== value`, a unit type. Memoized for unions: `node.kind !== SyntaxKind.X` filters a union of
+// hundreds of enum members, a cache miss per member (TypeScript's compiler: 3% of its instructions, the most data cache
+// misses of any function)
+static Ty const* without_unit(Checker* me, Ty const* type, Ty const* value) {
+    if (type->kind != TY_UNION) return filter_type(me, type, is_not_unit_comparable_to, value);
+    u64 key[3] = { KEY_FLOW_NOT_UNIT, type->id, value->id };
+    InternMiss miss;
+    Ty const* ret = intern_lookup(&my links, key, 3, &miss);
+    if (ret) return ret;
+    ret = filter_type(me, type, is_not_unit_comparable_to, value);
+    *intern_insert(me, &my links, &miss, key, 3) = ret;
+    return ret;
+}
+
 typedef struct ExtractKindArg {
     Ty const* literals;
 } ExtractKindArg;
@@ -2243,7 +2258,7 @@ static Ty const* narrow_by_equality(FlowQuery* q, Ty const* type, BinaryOp op, E
         Ty const* filtered = filter_type(me, type, double_equals ? is_comparable_or_coercible : is_comparable_to, value_type);
         return replace_primitives_with_literals(me, filtered, value_type);
     }
-    if (is_unit_type(value_type)) return filter_type(me, type, is_not_unit_comparable_to, value_type);
+    if (is_unit_type(value_type)) return without_unit(me, type, value_type);
     return type;
 }
 

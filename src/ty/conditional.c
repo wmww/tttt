@@ -630,11 +630,12 @@ static bool definitely_unrelated(Checker* me, Ty const* check_type, Ty const* ex
 // permissive and restrictive instantiations on the type)
 static bool definitely_memo(Checker* me, Ty const* source, Ty const* target, bool assignable) {
     u64 key[4] = { KEY_DEFINITELY_RELATED, source->id, target->id, assignable };
-    void const* known = intern_get(&my links, key, 4);
+    InternMiss miss;
+    void const* known = intern_lookup(&my links, key, 4, &miss);
     if (known) return (uintptr_t)known == 2;
     bool mentions = false;
     bool ret = assignable ? definitely_related(me, source, target, &mentions) : definitely_unrelated(me, source, target);
-    *intern_slot(me, &my links, key, 4) = (void const*)(uintptr_t)(1 + ret);
+    *intern_insert(me, &my links, &miss, key, 4) = (void const*)(uintptr_t)(1 + ret);
     return ret;
 }
 

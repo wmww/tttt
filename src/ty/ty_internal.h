@@ -128,6 +128,7 @@ enum {
     KEY_UNION_KEY_NAME, // Union type id -> its key property name atom, or the union itself if it has none (flow.c)
     KEY_UNION_KEY_MEMBER, // (union type id, regular literal id) -> the member whose key property is it (unknown: several)
     KEY_FLOW_NARROWED,  // (type id, candidate id, assume_true | check_derived << 1) -> narrowed_type()
+    KEY_FLOW_NOT_UNIT,  // (union id, unit type id) -> the union without the members a `!==` of the unit takes out
     KEY_FLOW_EXHAUSTIVE, // SwitchStatement -> 1 + whether it is exhaustive (2: being worked out)
     KEY_EVOLVING_ARRAY, // element type id -> the evolving array type of it (flow.c)
     KEY_AUTO_FLOW_ISSUE, // identifier Expr pointer -> the auto type its flow type was seen as (expr.c)

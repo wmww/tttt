@@ -749,7 +749,8 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
         key[0] = KEY_ANONYMOUS_INSTANCE;
         key[1] = target->id;
         for (u32 i = 0; i < len; i++) key[2 + i] = ty_id_pair(sources[i], targets[i]);
-        ret = intern_get(&my types, key, count);
+        InternMiss miss;
+        ret = intern_lookup(&my types, key, count, &miss);
         if (!ret) {
             TyMapper const* composed = ty_mapper_new(
                 me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len }
@@ -769,13 +770,13 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
                 fresh->alias_args = (TyList){ .data = alias_args, .len = target->alias_args.len };
                 for (u32 i = 0; i < target->alias_args.len; i++) fresh->flags |= alias_args[i]->flags & TYF_NON_INFERRABLE;
             }
-            // Instantiating the alias arguments may have grown the table, so the slot is looked up again
-            *intern_slot(me, &my types, key, count) = fresh;
+            void const** slot = intern_insert(me, &my types, &miss, key, count);
+            *slot = fresh;
             ret = fresh;
             // (Checked with the instance in place: a literal whose members lead back to it gets that instance, so
             // it's a new one)
             if (!inner && literal_instance_is_itself(me, target, composed)) {
-                *intern_slot(me, &my types, key, count) = target;
+                *slot = target;
                 ret = target;
             }
         }
@@ -828,7 +829,8 @@ Ty const* ty_alias_body_mapped_instance(Checker* me, Ty const* ty, Symbol const*
     stack_key[2] = UINT64_MAX - 2; // Not a type id: tells these apart from ordinary instantiations and ty_realias()'s
     stack_key[3] = (u64)(uintptr_t)alias;
     for (u32 i = 0; i < alias_args.len; i++) stack_key[4 + i] = alias_args.data[i]->id;
-    Ty const* ret = intern_get(&my types, stack_key, count);
+    InternMiss miss;
+    Ty const* ret = intern_lookup(&my types, stack_key, count, &miss);
     if (!ret) {
         Ty* fresh = ty_alloc(me, ty->kind, ty->flags);
         fresh->anonymous = ty->anonymous;
@@ -838,7 +840,7 @@ Ty const* ty_alias_body_mapped_instance(Checker* me, Ty const* ty, Symbol const*
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
         fresh->alias = ty->alias;
         fresh->alias_args = ty->alias_args;
-        *intern_slot(me, &my types, stack_key, count) = fresh;
+        *intern_insert(me, &my types, &miss, stack_key, count) = fresh;
         ret = fresh;
     }
     return ret;
@@ -894,7 +896,8 @@ Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alia
     stack_key[2] = UINT64_MAX - 1; // Not a type id: tells these apart from ordinary instantiations
     stack_key[3] = (u64)(uintptr_t)alias;
     for (u32 i = 0; i < alias_args.len; i++) stack_key[4 + i] = alias_args.data[i]->id;
-    Ty const* ret = intern_get(&my types, stack_key, count);
+    InternMiss miss;
+    Ty const* ret = intern_lookup(&my types, stack_key, count, &miss);
     if (!ret) {
         Ty* fresh = ty_alloc(me, ty->kind, ty->flags);
         if (ty->kind == TY_INDEXED) {
@@ -912,7 +915,7 @@ Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alia
         }
         fresh->alias = alias;
         fresh->alias_args = ty_list_copy(me, alias_args.data, alias_args.len);
-        *intern_slot(me, &my types, stack_key, count) = fresh;
+        *intern_insert(me, &my types, &miss, stack_key, count) = fresh;
         ret = fresh;
     }
     return ret;
@@ -1003,7 +1006,8 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
         if (i % 2) key[2 + i / 2] |= (u64)targets[i]->id << 32;
         else key[2 + i / 2] = targets[i]->id;
     }
-    Ty const* const* cached = intern_get(&my types, key, key_len);
+    InternMiss miss;
+    Ty const* const* cached = intern_lookup(&my types, key, key_len, &miss);
     if (cached && (uintptr_t)cached[2]) {
         // One cut short by the limits stays what it is, like tsgo's (root.instantiations keeps the errorType), and
         // isn't reported again: the hit was reported where it happened (from a shallower stack a report would name
@@ -1046,7 +1050,7 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
         entry[0] = ret;
         entry[1] = (Ty const*)(uintptr_t)*distributed;
         entry[2] = (Ty const*)(uintptr_t)(cut_short ? (uintptr_t)my instantiation_epoch + 1 : 0);
-        *intern_slot(me, &my types, key, key_len) = entry;
+        *intern_insert(me, &my types, &miss, key, key_len) = entry;
     }
     if (key != stack_key) free(key);
     if (targets != stack_targets) free(targets);

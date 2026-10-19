@@ -201,11 +201,13 @@ static u32 table_grown(u32 cap, u32 initial) {
     return cap ? cap / 2 * 3 : initial;
 }
 
-__attribute__((always_inline)) static inline InternEntry* intern_find(InternTable const* me, u64 hash, u64 const* words, u32 count) {
-    if (!my cap) return nullptr;
+// Probing from `start` (where the key's probe sequence starts, or a slot it has reached)
+__attribute__((always_inline)) static inline InternEntry* intern_find_from(
+    InternTable const* me, u64 hash, u64 const* words, u32 count, u32 start
+) {
     // (The hash has the count: the same hash is the same count, but a long key's count is in its block)
     bool long_key = count >= INTERN_LONG_KEY;
-    for (u32 i = table_index(hash, my cap);; i = table_next(i, my cap)) {
+    for (u32 i = start;; i = table_next(i, my cap)) {
         InternEntry* entry = &my entries[i];
         if (!entry->hash) return entry;
         if (entry->hash != hash) continue;
@@ -216,6 +218,10 @@ __attribute__((always_inline)) static inline InternEntry* intern_find(InternTabl
         while (k < count && key[k] == words[k]) k++;
         if (k == count) return entry;
     }
+}
+
+__attribute__((always_inline)) static inline InternEntry* intern_find(InternTable const* me, u64 hash, u64 const* words, u32 count) {
+    return my cap ? intern_find_from(me, hash, words, count, table_index(hash, my cap)) : nullptr;
 }
 
 static void intern_grow(InternTable* me) {
@@ -235,27 +241,55 @@ static void intern_grow(InternTable* me) {
     *me = bigger;
 }
 
+// Puts a new key at `entry` (empty)
+static void const** intern_put(Checker* me, InternTable* table, InternEntry* entry, u64 hash, u64 const* words, u32 count) {
+    bool long_key = count >= INTERN_LONG_KEY;
+    u64* block = arena_new_n(&my arena, u64, 1 + long_key + count);
+#ifdef TTTT_ARENA_SITES
+    key_kind_bytes[count ? words[0] & 255 : 0] += sizeof(u64) * (1 + long_key + count);
+    key_kind_count[count ? words[0] & 255 : 0]++;
+#endif
+    if (long_key) block[1] = count;
+    memcpy(block + 1 + long_key, words, sizeof(u64) * count);
+    entry->hash = hash;
+    entry->block = (void const**)block;
+    table->len++;
+    return entry->block;
+}
+
+static bool intern_needs_growth(InternTable const* table) {
+    return (table->len + 1) * 4 > table->cap * 3;
+}
+
 // The returned slot is null if the key is new. It is in the key's arena block, so it stays valid (callers that intern
 // while computing the value look it up again all the same, from when the slots were in the table).
 void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 count) {
-    if ((table->len + 1) * 4 > table->cap * 3) {
+    if (intern_needs_growth(table)) {
         intern_grow(table);
     }
     u64 hash = hash_words(words, count);
     InternEntry* entry = intern_find(table, hash, words, count);
-    if (!entry->hash) {
-        bool long_key = count >= INTERN_LONG_KEY;
-        u64* block = arena_new_n(&my arena, u64, 1 + long_key + count);
-#ifdef TTTT_ARENA_SITES
-        key_kind_bytes[count ? words[0] & 255 : 0] += sizeof(u64) * (1 + long_key + count);
-        key_kind_count[count ? words[0] & 255 : 0]++;
-#endif
-        if (long_key) block[1] = count;
-        memcpy(block + 1 + long_key, words, sizeof(u64) * count);
-        entry->hash = hash;
-        entry->block = (void const**)block;
-        table->len++;
+    if (!entry->hash) return intern_put(me, table, entry, hash, words, count);
+    return entry->block;
+}
+
+void const* intern_lookup(InternTable const* table, u64 const* words, u32 count, InternMiss* miss) {
+    u64 hash = hash_words(words, count);
+    InternEntry* entry = intern_find(table, hash, words, count);
+    *miss = (InternMiss){ .hash = hash, .cap = table->cap, .index = entry ? (u32)(entry - table->entries) : 0 };
+    return entry && entry->hash ? entry->block[0] : nullptr;
+}
+
+void const** intern_insert(Checker* me, InternTable* table, InternMiss const* miss, u64 const* words, u32 count) {
+    // (Same table, nothing removed since: whatever was inserted meanwhile went into the key's probe sequence, so it's
+    // probed from where the lookup stopped)
+    u32 start = miss->index;
+    if (miss->cap != table->cap || intern_needs_growth(table)) {
+        if (intern_needs_growth(table)) intern_grow(table);
+        start = table_index(miss->hash, table->cap);
     }
+    InternEntry* entry = intern_find_from(table, miss->hash, words, count, start);
+    if (!entry->hash) return intern_put(me, table, entry, miss->hash, words, count);
     return entry->block;
 }
 
@@ -1251,10 +1285,11 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
     // every time
     if (len == 2 && !alias && types[0] != types[1]) {
         u64 key[3] = { KEY_UNION_PAIR, types[0]->id, types[1]->id };
-        Ty const* cached = intern_get(&my links, key, 3);
+        InternMiss miss;
+        Ty const* cached = intern_lookup(&my links, key, 3, &miss);
         if (cached) return cached;
         Ty const* ret = union_with_origin(me, types, len, alias, alias_args, nullptr);
-        *intern_slot(me, &my links, key, 3) = ret;
+        *intern_insert(me, &my links, &miss, key, 3) = ret;
         return ret;
     }
     return union_with_origin(me, types, len, alias, alias_args, nullptr);

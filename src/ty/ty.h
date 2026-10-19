@@ -1266,6 +1266,17 @@ static inline Ty const* ty_intrinsic(Checker const* me, TyIntrinsic i) { return 
 
 // Intern key building. Keys are small, build them on the stack: u64 key[1 + n] = { n, ... }
 void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 count);
+// A lookup that missed: where intern_insert() puts the key without probing the table from the start again (the probe
+// is a cache miss in a big table: the value's computation in between evicts it, drizzle 1M misses)
+typedef struct InternMiss {
+    u64 hash;
+    u32 cap;
+    u32 index;
+} InternMiss;
+// intern_get(), keeping where the key would go
+void const* intern_lookup(InternTable const* table, u64 const* words, u32 count, InternMiss* miss);
+// intern_slot() for the key of a lookup that missed (the table may have changed since)
+void const** intern_insert(Checker* me, InternTable* table, InternMiss const* miss, u64 const* words, u32 count);
 
 Ty* ty_alloc(Checker* me, TyKind kind, u32 flags);
 TyList ty_list_copy(Checker* me, Ty const* const* data, u32 len);

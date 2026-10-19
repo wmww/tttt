@@ -4002,12 +4002,14 @@ static Ty const* mapped_keyof_names(Checker* me, Ty const* keyof) {
 Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing) {
     if (ty->kind != TY_INDEXED && ty->kind != TY_CONDITIONAL) return ty;
     u64 key[3] = { KEY_SIMPLIFIED, ty->id, writing };
-    Ty const* cached = intern_get(&my links, key, 3);
+    InternMiss miss;
+    Ty const* cached = intern_lookup(&my links, key, 3, &miss);
     if (cached) return cached;
     // (Itself while in flight, like tsc's circularConstraintType marker)
-    *intern_slot(me, &my links, key, 3) = ty;
+    void const** slot = intern_insert(me, &my links, &miss, key, 3);
+    *slot = ty;
     Ty const* ret = ty->kind == TY_CONDITIONAL ? compute_simplified_conditional(me, ty, writing) : compute_simplified(me, ty, writing);
-    *intern_slot(me, &my links, key, 3) = ret;
+    *slot = ret;
     return ret;
 }
 

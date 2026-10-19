@@ -84,6 +84,49 @@ function. Candidate levers, to be ranked by cachegrind per function (`cg_annotat
 Rules: K1 changes measured by instructions and cachegrind before wall; output byte-identical (`scripts/oracles.py`);
 no change that trades memory for time past plan 81's frontier.
 
+### The ranking (session 1, 2026-10-19; `scripts/cgrank.py`)
+Cachegrind on pgo/tttt at K1 (simulated I1 32 KB, D1 48 KB, LL 32 MB). drizzle: 5.56 G instructions, I1 miss rate
+1.63%, D1 2.7%, 2.26 LL misses per 1000 instructions; tsc: 3.92 G, 1.55%, 2.4%, 1.55. `/usr/bin/time` at K1: drizzle
+1.2 s user for 5.56 G instructions, about 1.2 instructions per cycle. Without hardware counters
+(perf_event_paranoid 4) cachegrind's misses go through a model, `cgrank.py`'s stall estimate (D1mr*12 + DLmr*150 +
+I1mr*10 + DLmw*20 cycles): drizzle 2.15 G cycles, tsc 1.40 G, so about half of the cycles. That fits the measured
+IPC. Shares of the estimate:
+1. **Instruction footprint, about 42% on both** (drizzle 0.90 G, tsc 0.61 G). Spread out: the top function,
+   instantiate_inner, has 7% of drizzle's I1 misses. The rest is relate.c, members, the flow walk and the call
+   resolver. GCC 15's `-fipa-reorder-for-locality` on top of PGO+LTO changed nothing (I1 misses within 1%), so these
+   are capacity misses: the hot code doesn't fit in 32 KB, and function order doesn't matter. Only smaller hot paths
+   would help: outlining cold arms of the giant switch functions (instantiate_inner, is_related_to's,
+   structured_related_members) and cutting duplicated inlined bodies. The real cost is uncertain: the uop cache and
+   the next-line prefetcher hide part of what cachegrind counts. Without counters, wall time is the only judge, so
+   this is a large lever but an unverified one.
+2. **The hash tables, about 10% on drizzle and 5% on tsc**: Checker.types and .links (drizzle 443k and 256k entries,
+   16 + 8 MB) and node_links (tsc: 16 MB, ty_link_get is tsc's top line). Each lookup's first probe is a random
+   line in a table the size of the LL. The rest is not a cost: the key compare at a hit costs little because the
+   caller reads the same block anyway. intern_grow's rehash and its memset are sequential, so the prefetcher hides
+   them on real hardware. The get-miss → compute → intern_slot re-probe was measured: it was already cached.
+   intern_lookup()/intern_insert() (this session) save its hash and probe, drizzle -0.5% instructions, nothing in
+   misses. What's left is the footprint: 16-byte entries at 37-75% load. Candidates: 8-byte entries (a hash tag plus
+   a 48-bit pointer; rehashing then needs the hash bits from somewhere: the tag can't hold the index past 2^19
+   entries), splitting the hottest kinds (KEY_ANONYMOUS_INSTANCE, KEY_CONDITIONAL_INSTANCE: 40% of drizzle's
+   lookups) into a table of their own, or fewer lookups (a memo on the Ty for the commonest kind).
+3. **Ty header reads in hot predicates, about 5%**: `ty->flags` in ty_instantiate()'s inline test (drizzle 700k D1
+   misses), ty_get_prop, union member walks. These are pointer chases over the type graph. **Taken for tsc**:
+   `x.kind !== SyntaxKind.X` filtered the 400-member SyntaxKind union every time (is_not_unit_comparable_to was tsc's
+   top D1 function, 8% of its misses). It is memoized now (KEY_FLOW_NOT_UNIT, flow.c without_unit()): tsc -2.3%
+   instructions, -7% D1 read misses. Other big-union walks (narrow_by_equality's assume-true side, discriminant
+   narrowing) are the same shape.
+4. **First writes to fresh memory, 8% of the estimate but mostly an artifact**: 70% of drizzle's LL misses are
+   writes, and memset (intern_grow 86%) plus memcpy (intern_slot's key copy, builder_finish, ty_list_copy,
+   ast_realloc) are 36% of those. On real hardware the kernel zeroes a page just before the first write, so the
+   lines are already cached. What's real is the page fault (drizzle 0.1 s sys out of 1.3 s): the allocation-volume
+   lever above.
+5. **Cold source text, 1.3% on drizzle and 2.6% on tsc**: memchr in source_file_make() reads every file's text for
+   the first time. Fusing it into the scanner is stage 3's business.
+
+Next sessions, in order: (a) the instruction footprint, by outlining the cold arms of instantiate_inner and the
+relation switch, judged by I1 misses in cachegrind and by wall at K1, since hardware counters are unavailable; (b)
+the remaining big-union walks; (c) the intern table footprint.
+
 ## Stage 3: the front end to its parallel floor (4-6 sessions)
 0.62 s -> ~0.25 s on vscode at the defaults. After stages 1-2 it is a quarter of the wall. Plan 72 measured the
 pieces; its "not now" on parallel declare/link was at 8% of today's wall.
