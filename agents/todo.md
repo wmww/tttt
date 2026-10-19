@@ -62,7 +62,15 @@ and RSS** for every perf claim at the defaults.
    Instructions +0.1-1% (tsc +0.9%: lib Array's `this is` predicates make it non-thisless, tsc pays it too; import
    narrowing +0.2%), re-saved. Left in bugs/sourcesweep_build.md: errors *inside* emitted `.d.ts` (lit, zigbee2mqtt)
    and body-only imports (astro) need `-b` to read emitted declarations: a design question for insights.
-9. **Triage.**
+9. Done (2026-10-19): triage (3 agents, 11 picks, 3 triage.md conflicts, 0 lost). supabase studio's 3 TS2322 fixed,
+   its whole output now tsgo's (spread intersection index signatures, JSX attribute generic calls skipped in the first
+   pass, `T[never]`, `||`/`??` operand context; one unreduced leftover in type_core.md; joining the sweep: the agent
+   advises perfsweep/corpora only, 3.4 GB install); zod v4 TS5115, TS2590 at the type node, TS2428 at lib
+   declarations, graphql-inspector's `reason?: undefined`, ty_buf_push()'s PGO+LTO warning (GCC's, reshaped: plan 86
+   stage 1 needs no `-Wno-error` at link, but a stale profile is a coverage-mismatch *error*), dtsdiff "no output";
+   plan 19 condensed into agents/corpora.md; ensure-typescript.sh no longer rebuilds the oracle tools from worktrees.
+   Suite 13919 -> **13928** / 13963, `-b` sweep 399 -> **400**, every other oracle unchanged (perfsweep's worst types
+   ratio 1.63, lightweight-charts' hlc-area plugin, unexamined), instructions flat.
 10. **Insights.** report.md: plan 85's no-go (the census) and the defaults' CPU column (12-core: ask the human to rerun with
     entry 1's command), clidiff's number, the third refresh's day one and
     the every-tsconfig sweep (5225 / 5242). Decide whether `-b` should feed each project's emitted declarations to its
