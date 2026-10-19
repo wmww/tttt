@@ -3412,6 +3412,8 @@ static void w_member_name(Walk* me, Span name, Expr const* computed_key) {
 // Where a statement ends (tsc's node end): its last token, its `;` included where it has one
 static char const* statement_end_in(Walk* me, Statement const* statement) {
     if (!my map || !span_valid(statement->span)) return nullptr;
+    // (A JSDoc `@import` is the tag's range, to the next tag or the comment's end: tsgo's reparsed declaration)
+    if (statement->tag == STATEMENT_IMPORT_EXPORT && statement->import_export->jsdoc) return span_end_ptr(statement->span);
     bool braces = statement->tag == STATEMENT_DECL_CLASS || statement->tag == STATEMENT_DECL_INTERFACE ||
         statement->tag == STATEMENT_DECL_ENUM || statement->tag == STATEMENT_DECL_NAMESPACE ||
         (statement->tag == STATEMENT_DECL_FUNCTION && statement->decl.function.impl->has_body);

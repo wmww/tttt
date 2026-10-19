@@ -1828,8 +1828,8 @@ static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* n
     Symbol const* first = identifier_type_namespace_count(identifier) ?
         (ast_symbols_size(identifier_type_namespace_symbols(identifier)) ? *identifier->rare->namespace_symbols.data : nullptr) : identifier->symbol;
     // (A CommonJS export's alias has no import item)
-    if (first && first->flags & SYMBOL_ALIAS && first->decl_count && first->decls[0].kind == SYMBOL_DECL_ALIAS &&
-        first->decls[0].node && ((PortItem const*)first->decls[0].node)->jsdoc
+    if (!identifier_type_namespace_count(identifier) && first && first->flags & SYMBOL_ALIAS && first->decl_count &&
+        first->decls[0].kind == SYMBOL_DECL_ALIAS && first->decls[0].node && ((PortItem const*)first->decls[0].node)->jsdoc
     ) {
         return false;
     }

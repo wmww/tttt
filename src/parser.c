@@ -5529,7 +5529,15 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
             statement.import_export->jsdoc = true;
             statement.import_export->main.jsdoc = true;
             for_each (i, vec_port_item, &statement.import_export->items) i->jsdoc = true;
-            statement.span = span_make(p.shared->source, tag->tag_name.buf - 1, p.pos);
+            // (The tag's range, to the next tag or the comment's end past a line break, else its last token: tsgo's
+            // reparsed declaration)
+            const char* tag_end = span_end_ptr(jsdoc_tag_node_span(tag));
+            const char* statement_end = p.pos;
+            if (statement_end < tag_end && *statement_end == ';') statement_end++;
+            const char* last_token_end = statement_end;
+            while (statement_end < tag_end && (*statement_end == ' ' || *statement_end == '\t')) statement_end++;
+            if (statement_end >= tag_end || (*statement_end != '\n' && *statement_end != '\r')) tag_end = last_token_end;
+            statement.span = span_make(p.shared->source, tag->tag_name.buf - 1, tag_end);
             statement.flow = nullptr;
             vec_statement_push(out, statement);
         } else {

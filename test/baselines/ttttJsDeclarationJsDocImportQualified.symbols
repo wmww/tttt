@@ -1,0 +1,49 @@
+//// [test/cases/ttttJsDeclarationJsDocImportQualified.ts] ////
+
+=== core.ts ===
+export interface Plugin { name: string }
+>Plugin : Symbol(Plugin, Decl(core.ts, 0, 0))
+>name : Symbol(Plugin.name, Decl(core.ts, 0, 25))
+
+=== m.ts ===
+import type { Plugin as P } from './core.js';
+>Plugin : Symbol(P, Decl(core.ts, 0, 0))
+>P : Symbol(P, Decl(m.ts, 0, 13))
+
+export namespace ESLint { export type Plugin = P; }
+>ESLint : Symbol(ESLint, Decl(m.ts, 0, 45))
+>Plugin : Symbol(Plugin, Decl(m.ts, 1, 25))
+>P : Symbol(P, Decl(m.ts, 0, 13))
+
+export namespace NS { export interface I { a: number } }
+>NS : Symbol(NS, Decl(m.ts, 1, 51))
+>I : Symbol(I, Decl(m.ts, 2, 21))
+>a : Symbol(I.a, Decl(m.ts, 2, 42))
+
+=== a.js ===
+/**
+ * @import {
+ *   ESLint,
+ * } from './m.js';
+ * @import { NS } from './m.js'
+ */
+/** @import * as M from './m.js' */
+
+/**
+ * @param {number} [options]
+ * @returns {ESLint.Plugin}
+ */
+export const getPlugin = (options = 1) => {
+>getPlugin : Symbol(getPlugin, Decl(a.js, 12, 12))
+>options : Symbol(options, Decl(a.js, 12, 26))
+
+  return { name: '' };
+>name : Symbol(name, Decl(a.js, 13, 10))
+
+};
+
+/** @returns {M.NS.I} */
+export function h() { return { a: 1 }; }
+>h : Symbol(h, Decl(a.js, 14, 2))
+>a : Symbol(a, Decl(a.js, 17, 30))
+
