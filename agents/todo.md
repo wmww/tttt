@@ -1,9 +1,8 @@
 # Todo
 Written by the insights of 2026-10-19 (after the twenty-second window); `vision.md` "Course correction" says why.
-**Ten sessions, then insights.** Delete entries as they complete (leave a one-line "done" note with the numbers). A
-plan that overruns its entry takes its extra sessions out of this budget: when 10 sessions have run (count the commits
-since this file was written), the next session is insights, whatever is left here. New work goes into plans or
-triage.md, not ahead of the insights entry. Every entry ends with `scripts/fasttest.sh -s`, `scripts/oracles.py`
+**Cut short by the human on 2026-10-19 after entry 4: triage, then insights.** Delete entries as they complete
+(leave a one-line "done" note with the numbers). New work goes into plans or triage.md, not ahead of the insights
+entry. Every entry ends with `scripts/fasttest.sh -s`, `scripts/oracles.py`
 (every oracle; it exceeds the 10-minute foreground cap: run it in the background with a bounded wait) after checker
 changes, `scripts/instrcount.sh`, the memory numbers in measurements.md after memory-relevant changes, an empty `git
 worktree list`, /tmp scratch deleted (CLAUDE.md), and a commit. **If TypeScript 7.1.0 stable is on npm when an entry
@@ -38,28 +37,33 @@ re-saved baseline only.
    `-b` sweep 406 / 416 (400), scenarios 218 / 0, tsc-src and typescript-eslint clean and faster (wall 0.77x /
    0.87x, CPU and RSS down). Three `-p` outputs-mode bugs fixed on the way (resolution from a reference output's
    source, its specifier naming, a reference's `.json` root not emitted).
-5. **Real-code fan-out** (3 agents, worktrees, disjoint lists): the source sweep's 17, clidiff's 8, dtsdiff's 25
-   (minus tsgo's own split), the `-b` sweep's non-plan-87 leftovers (`-p` bugs first: hono request.ts, ghostfolio,
-   atproto expect-type, base-ui, babel TS2590), perfsweep's worst types ratio (lightweight-charts hlc-area, 1.63).
-   Skip the `-b` sweep's leftovers: re-triage them after plan 87 stage 1 (entry 7).
-6. **Plan 86 stage 2, session 2**: the next lever from entry 3's list: (a) the instruction footprint (outline the
-   cold arms of instantiate_inner and the relation switch, judged by cachegrind's I1 misses and by wall at K1).
-7. **Plan 87 stage 1**: the store becomes the only `-b`, the sources model deleted (the plan's list), the store's texts
-   freed after their last reader, documentation.md's "Project references" rewritten. (vue 0 / 2, the re-entrancy
-   guard question of bugs/sourcesweep_checker.md, goes to the next window.)
-8. **Plan 86 stage 2, session 3** (or stage 3's first session, the loader pre-scan, if stage 2's list has run dry:
-   measure on vscode, webpack and effect with `tttt --time`).
-9. **Triage.** Drain triage.md (incl. the SIGBUS item), condense measurements.md (2000+ lines: keep the tables later
+5. **Triage.** Drain triage.md (incl. the SIGBUS item), condense measurements.md (2000+ lines: keep the tables later
    sessions compare against, move superseded sections to git history), audit hacks.md for entries whose fix landed.
-10. **Insights.** report.md: PGO + LTO shipped and what it bought (the human's 12-core rerun if it came), plan 86's
-    gate number, plan 87's go/no-go, the fan-out's numbers. Whether 7.1.0 stable is out (plan 58). Whether the
+6. **Insights.** report.md: PGO + LTO shipped and what it bought (the human's 12-core rerun if it came), plan 86's
+    gate number, plan 87's go. Whether 7.1.0 stable is out (plan 58). Whether the
     human answered on the many-core checker policy (their 12-core numbers with the CPU column).
     **And bun canary** (oven-sh/bun#45800, measurements.md "bun canary with oven-sh/bun#45800") beats tttt's wall at
     the defaults on vscode, drizzle, excalidraw and nest, which breaks the window's "faster than bun on every corpus"
     rule. Re-weigh plan 86 against it: the PR shipped a heavy-first queue without barriers and shared results (stage 4's
     territory). Its single-threaded speed and its CPU are still well behind tttt's.
+    **The human asked (2026-10-19) to reorder for significant perf progress sooner**: the big wins from using many
+    cores effectively (or whatever else moves perf by multiples) should land in the next windows, not after the rest
+    of plan 86 stage 2. Same day on the 24-thread laptop, vscode at the defaults: tttt 2.50 s wall / 26 s CPU / 1.60
+    GB, bun 1.4.3 2.48 / 47 / 2.16, bun canary 1.66 / 34 / 2.32; tttt `--checkers 24` 2.28 / 37 / 1.90. tttt keeps ~10
+    cores busy, the canary ~20, and more checkers don't close it: the gap is duplication and scheduling (stage 4, or
+    a cheaper first piece such as a heavy-first shared file queue). Stage 2 session 1 gained only ~2% (flat profile),
+    so its 1.5-2x target is doubtful. Windows are now 1-5 normal sessions (3 by default), then triage + insights
+    (CLAUDE.md).
 
-After the insights entry (for the next window): plan 86 stage 2 continues in perf slots, stage 3 (front end) after
+Dropped from this window when it was cut short (candidates for the next, the insights session reorders them):
+**plan 87 stage 1** (its prototype is in the tree behind `TTTT_BUILD_EMITTED=1`: don't leave two `-b` models for
+long; the store becomes the only `-b`, the sources model deleted, documentation.md's "Project references"
+rewritten); the real-code fan-out (source sweep 17, clidiff 8, dtsdiff 25, perfsweep's worst types ratio
+lightweight-charts 1.63; the `-b` sweep's leftovers after plan 87 stage 1); plan 86 stage 2 sessions 2-3 (instruction
+footprint: outline instantiate_inner's and the relation switch's cold arms; or stage 3's loader pre-scan); vue 0 / 2
+(the re-entrancy guard question, bugs/sourcesweep_checker.md).
+
+Also for the next window: plan 86 stage 2 continues in perf slots, stage 3 (front end) after
 it; plan 86 stage 4's design session if the gate said go; plan 87 stages if go; a fourth refresh chosen by a new rule
 (candidates: monorepos with `paths`-heavy configs, Deno/Bun-style `allowImportingTsExtensions` projects, Vue/Svelte
 tooling with `.d.ts`-generating steps); the many-core checker-count and budget policy when the human's numbers come;
