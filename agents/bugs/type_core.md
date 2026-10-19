@@ -377,3 +377,93 @@ stack" hits; compare with tsgo's recursiveTypeRelatedTo instrumented the same wa
 - type-fest checked without lib (`--keep-going`) overflows the 64 MB stack in conditional tail recursion
   (test-d/union-max.ts: `InternalUnionMax`, each of its ~1000 tail steps lowers type arguments inside the recursion):
   hacks.md `raise_stack_limit` for `ty_instantiate_tail`.
+
+## A nested call's return inference through a union contextual signature misses one branch (supabase msw, 2026-10-19)
+Found reducing supabase studio's CreateCustomOidcDialog.test.tsx (whose real, context-sensitive form is fixed: commits
+"An object indexed by never reads the plain never" and "The operands of || and ??..."). With the arrow's parameter
+*annotated* (`({ request }: any) => ...`, so it is checked in the first inference pass, the outer P and M uninferred),
+tsgo types `HttpResponse.json({...})` as `HttpResponse<string | number | boolean | APIErrorBody | Record<string, any> |
+null | undefined>` (its contextual signature is the union of both branches of the deferred conditional parameter type,
+the second instantiated with silent never), tttt as the same without `APIErrorBody`: the second branch's return
+contributes nothing. Both report a TS2322 there, so it only shows in types/message text. Smaller shapes (Paths[P] or
+an `infer` conditional instead of the RemapPaths/SuccessResponse chain below) don't reproduce. Repro (`scripts/filetest.sh`):
+```ts
+// @strict: true
+// @target: es2022
+// @lib: es2022,dom
+type MaybePromise<T> = T | Promise<T>;
+type DefaultBodyType = Record<string, any> | string | number | boolean | null | undefined;
+type JsonBodyType = Record<string, any> | string | number | boolean | null | undefined;
+type PathParams = Record<string, string | readonly string[] | undefined>;
+declare const bodyType: unique symbol;
+type DefaultUnsafeFetchResponse = Response & { [bodyType]?: never };
+interface StrictRequest<B extends JsonBodyType> extends Request { json(): Promise<B>; }
+declare class HttpResponse<BodyType extends DefaultBodyType> extends Response {
+  readonly [bodyType]: BodyType;
+  static json<BodyType extends JsonBodyType>(body?: NoInfer<BodyType> | null | undefined): HttpResponse<BodyType>;
+}
+type ResponseResolverReturnType<R extends DefaultBodyType = undefined> = ([R] extends [undefined] ? Response : R extends Record<string, any> | undefined ? HttpResponse<R> | DefaultUnsafeFetchResponse : HttpResponse<R>) | undefined | void;
+type MaybeAsyncRet<R extends DefaultBodyType> = MaybePromise<ResponseResolverReturnType<R>>;
+type AsyncRet<R extends DefaultBodyType> = MaybePromise<ResponseResolverReturnType<R> | Iterable<MaybeAsyncRet<R>, MaybeAsyncRet<R>, MaybeAsyncRet<R>> | AsyncIterable<MaybeAsyncRet<R>, MaybeAsyncRet<R>, MaybeAsyncRet<R>>>;
+type HttpResponseResolver<Params = PathParams, Req extends DefaultBodyType = DefaultBodyType, R extends DefaultBodyType = DefaultBodyType> = (info: { request: StrictRequest<Req>; params: Params }) => HttpResponse<R> | undefined;
+type TPA = { custom_jwks?: unknown; id: string; inserted_at: string; jwks_url?: string | null; oidc_issuer_url?: string | null; type: string; updated_at: string }
+interface paths {
+  '/v1/projects/{ref}/config/auth/third-party-auth': {
+    get: { responses: { 200: { content: { 'application/json': TPA[] } } } }
+    post: { responses: { 201: { content: { 'application/json': TPA } }; 401: { content?: never } } }
+    put?: never; delete?: never; patch?: never; head?: never; options?: never
+  }
+  '/v1/projects/{ref}/other': {
+    get: { responses: { 200: { content: { 'application/json': string } } } }
+    post?: never; put?: never; delete?: never; patch?: never; head?: never; options?: never
+  }
+}
+
+type RemapParams<T extends string> = T extends `${infer Before}{${infer Param}}${infer After}`
+  ? `${Before}:${Param}${RemapParams<After>}`
+  : T
+type TrimQueryParams<T extends string> = T extends `${infer Endpoint}?${string}` ? Endpoint : T
+type RemapPaths = { [K in keyof paths as RemapParams<K>]: paths[K] }
+type Endpoints = keyof RemapPaths
+type Methods = 'get' | 'post' | 'put' | 'delete' | 'patch' | 'head' | 'options'
+type SuccessResponse<P extends Endpoints, M extends Methods> = RemapPaths[P][M] extends {
+  responses: { 200: { content: { 'application/json': infer R200 } } }
+}
+  ? R200
+  : RemapPaths[P][M] extends {
+        responses: { 201: { content: { 'application/json': infer R201 } } }
+      }
+    ? R201
+    : never
+export type APIErrorBody = { message: string }
+type TypedResolver<P extends Endpoints, M extends Methods> = HttpResponseResolver<
+  PathParams,
+  DefaultBodyType,
+  SuccessResponse<P, M> | APIErrorBody
+>
+export declare const addAPIMock: <P extends Endpoints, M extends Methods>(a: SuccessResponse<P, M> extends never
+  ? { method: M; path: P; response?: HttpResponseResolver }
+  : {
+      method: M
+      path: P
+      response: SuccessResponse<P, M> | TypedResolver<P, M>
+    }) => void
+
+export const mockCreateIntegration = (requests: unknown[], response?: () => Response) => {
+  addAPIMock({
+    method: 'post',
+    path: '/v1/projects/:ref/config/auth/third-party-auth',
+    response:
+      response ??
+      (({ request }: any) => {
+        return HttpResponse.json({
+          id: '00000000-0000-0000-0000-000000000000',
+          type: 'oidc',
+          oidc_issuer_url: 'https://login.example.com',
+          inserted_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+        })
+      }),
+  })
+}
+```
