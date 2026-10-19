@@ -349,6 +349,15 @@ typedef struct Symbol {
     bool is_assigned; // Somewhere other than its declaration
     bool is_definitely_assigned; // By `=`, a pattern or a for-in/of rather than only `+=` or `++`
     bool is_assigned_in_closure; // In another function than the one it belongs to
+    // An alias a narrowing flow node names as a whole reference (an operand of a condition, an argument of a call that
+    // may assert, a called method's object): only then can an import that isn't a variable be narrowed, the checker
+    // skips the flow walk of the others (identifier_flow_type()). Set by the resolve walk, deferred bodies' too
+    atomic_bool flow_narrowed;
+    // An alias a narrowing call node has as its callee's object (`ns.isFoo()`): narrowed only by a `this` predicate
+    atomic_bool flow_narrowed_this;
+    // Whether a module's or namespace's exported functions declare a `this` predicate: 0 not known yet, 1 no, 2 yes
+    // (memo of ty/expr.c's exports_this_predicate())
+    _Atomic(uint8_t) exports_this_predicate;
     // several_types.c's declared_type_params(), once the declarations are all there (checking): 0 not known yet, 1 the
     // first declaration's type parameters, 2 a merge by name of the class and interface declarations' (atomic: checkers)
     uint8_t type_params_merge;

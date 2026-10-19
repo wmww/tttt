@@ -22,6 +22,7 @@ typedef struct Symbol Symbol;
 typedef struct Scope Scope;
 typedef struct vec_statement VecStatement;
 typedef struct FlowNode FlowNode;
+typedef struct SourceFile SourceFile;
 
 // tsc's FlowFlags
 typedef enum FlowFlags {
@@ -172,6 +173,7 @@ typedef struct FlowBuilder {
     bool has_explicit_return;
     bool has_bare_return; // `return;`
     bool has_flow_effects;
+    SourceFile* file; // Null outside a file (SourceFile.flow_unresolved_names)
     // What the next expression walked is a condition of. Whoever walks an expression takes them (expr_lookup_names()),
     // so they never leak into operands that aren't conditions themselves
     FlowNode* true_target;

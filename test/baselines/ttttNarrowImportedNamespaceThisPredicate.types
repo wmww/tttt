@@ -1,0 +1,60 @@
+//// [test/cases/ttttNarrowImportedNamespaceThisPredicate.ts] ////
+
+=== /m.ts ===
+export namespace N {
+>N : typeof N
+
+    export const a = 1;
+>a : 1
+>1 : 1
+
+    export function isTagged(this: unknown): this is { tag: string } { return true; }
+>isTagged : (this: unknown) => this is { tag: string; }
+>this : unknown
+>tag : string
+>true : true
+}
+export namespace P {
+>P : typeof P
+
+    export const b = 1;
+>b : 1
+>1 : 1
+
+    export function check(x: unknown): x is number { return true; }
+>check : (x: unknown) => x is number
+>x : unknown
+>true : true
+}
+=== /a.ts ===
+import { N, P } from "./m";
+>N : typeof N
+>P : typeof P
+
+if (N.isTagged()) {
+>N.isTagged() : boolean
+>N.isTagged : (this: unknown) => this is { tag: string; }
+>N : typeof N
+>isTagged : (this: unknown) => this is { tag: string; }
+
+    const t: string = N.tag;
+>t : string
+>N.tag : string
+>N : typeof N & { tag: string; }
+>tag : string
+}
+declare const u: unknown;
+>u : unknown
+
+if (P.check(u)) {
+>P.check(u) : boolean
+>P.check : (x: unknown) => x is number
+>P : typeof P
+>check : (x: unknown) => x is number
+>u : unknown
+
+    const n: number = u;
+>n : number
+>u : number
+}
+

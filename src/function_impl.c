@@ -552,6 +552,7 @@ bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
         .has_flow_effects = body->has_flow_effects,
         .return_target = body->return_target,
         .property_context = body->property_context,
+        .file = function_scope->file,
     };
     // (Flow node ids are for dumps only: a materialization's count on from where no file's do)
     flow.id_counter = 1u << 30;

@@ -1,0 +1,52 @@
+//// [test/cases/ttttNarrowImportedFunction.ts] ////
+
+=== /m.ts ===
+export declare function f(): void;
+>f : Symbol(f, Decl(m.ts, 0, 0))
+
+export declare function isString(x: unknown): x is string;
+>isString : Symbol(isString, Decl(m.ts, 0, 34))
+>x : Symbol(x, Decl(m.ts, 1, 33))
+>x : Symbol(x, Decl(m.ts, 1, 33))
+
+export declare function assertNumber(x: unknown): asserts x is number;
+>assertNumber : Symbol(assertNumber, Decl(m.ts, 1, 58))
+>x : Symbol(x, Decl(m.ts, 2, 37))
+>x : Symbol(x, Decl(m.ts, 2, 37))
+
+=== /a.ts ===
+import { f, isString, assertNumber } from "./m";
+>f : Symbol(f, Decl(a.ts, 0, 8))
+>isString : Symbol(isString, Decl(a.ts, 0, 11))
+>assertNumber : Symbol(assertNumber, Decl(a.ts, 0, 21))
+
+if ('cache' in f) {
+>f : Symbol(f, Decl(a.ts, 0, 8))
+
+    f.cache = 1;
+>f.cache : Symbol(cache)
+>f : Symbol(f, Decl(a.ts, 0, 8))
+>cache : Symbol(cache)
+}
+declare const u: unknown;
+>u : Symbol(u, Decl(a.ts, 4, 13))
+
+if (isString(f)) {
+>isString : Symbol(isString, Decl(a.ts, 0, 11))
+>f : Symbol(f, Decl(a.ts, 0, 8))
+
+    const s: string = f;
+>s : Symbol(s, Decl(a.ts, 6, 9))
+>f : Symbol(f, Decl(a.ts, 0, 8))
+}
+function g() {
+>g : Symbol(g, Decl(a.ts, 7, 1))
+
+    assertNumber(f);
+>assertNumber : Symbol(assertNumber, Decl(a.ts, 0, 21))
+>f : Symbol(f, Decl(a.ts, 0, 8))
+
+    return f;
+>f : Symbol(f, Decl(a.ts, 0, 8))
+}
+

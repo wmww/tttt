@@ -1,0 +1,55 @@
+//// [test/cases/ttttNarrowImportedNamespaceThisPredicate.ts] ////
+
+=== /m.ts ===
+export namespace N {
+>N : Symbol(N, Decl(m.ts, 0, 0))
+
+    export const a = 1;
+>a : Symbol(a, Decl(m.ts, 1, 16))
+
+    export function isTagged(this: unknown): this is { tag: string } { return true; }
+>isTagged : Symbol(isTagged, Decl(m.ts, 1, 23))
+>this : Symbol(this, Decl(m.ts, 2, 29))
+>tag : Symbol(tag, Decl(m.ts, 2, 54))
+}
+export namespace P {
+>P : Symbol(P, Decl(m.ts, 3, 1))
+
+    export const b = 1;
+>b : Symbol(b, Decl(m.ts, 5, 16))
+
+    export function check(x: unknown): x is number { return true; }
+>check : Symbol(check, Decl(m.ts, 5, 23))
+>x : Symbol(x, Decl(m.ts, 6, 26))
+>x : Symbol(x, Decl(m.ts, 6, 26))
+}
+=== /a.ts ===
+import { N, P } from "./m";
+>N : Symbol(N, Decl(a.ts, 0, 8))
+>P : Symbol(P, Decl(a.ts, 0, 11))
+
+if (N.isTagged()) {
+>N.isTagged : Symbol(N.isTagged, Decl(m.ts, 1, 23))
+>N : Symbol(N, Decl(a.ts, 0, 8))
+>isTagged : Symbol(N.isTagged, Decl(m.ts, 1, 23))
+
+    const t: string = N.tag;
+>t : Symbol(t, Decl(a.ts, 2, 9))
+>N.tag : Symbol(tag, Decl(m.ts, 2, 54))
+>N : Symbol(N, Decl(a.ts, 0, 8))
+>tag : Symbol(tag, Decl(m.ts, 2, 54))
+}
+declare const u: unknown;
+>u : Symbol(u, Decl(a.ts, 4, 13))
+
+if (P.check(u)) {
+>P.check : Symbol(P.check, Decl(m.ts, 5, 23))
+>P : Symbol(P, Decl(a.ts, 0, 11))
+>check : Symbol(P.check, Decl(m.ts, 5, 23))
+>u : Symbol(u, Decl(a.ts, 4, 13))
+
+    const n: number = u;
+>n : Symbol(n, Decl(a.ts, 6, 9))
+>u : Symbol(u, Decl(a.ts, 4, 13))
+}
+

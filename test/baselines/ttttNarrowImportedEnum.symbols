@@ -1,0 +1,22 @@
+//// [test/cases/ttttNarrowImportedEnum.ts] ////
+
+=== /m.ts ===
+export enum E { A, B }
+>E : Symbol(E, Decl(m.ts, 0, 0))
+>A : Symbol(E.A, Decl(m.ts, 0, 15))
+>B : Symbol(E.B, Decl(m.ts, 0, 18))
+
+=== /a.ts ===
+import { E } from "./m";
+>E : Symbol(E, Decl(a.ts, 0, 8))
+
+if ('extra' in E) {
+>E : Symbol(E, Decl(a.ts, 0, 8))
+
+    const v = E.extra;
+>v : Symbol(v, Decl(a.ts, 2, 9))
+>E.extra : Symbol(extra)
+>E : Symbol(E, Decl(a.ts, 0, 8))
+>extra : Symbol(extra)
+}
+

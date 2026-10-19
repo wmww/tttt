@@ -2329,6 +2329,31 @@ static bool in_own_root_initializer(Binding const* binding, Expr const* referenc
     return span_source(at) == span_source(span) && span_start_ptr(at) >= span_start_ptr(span) && span_end_ptr(at) <= span_end_ptr(span);
 }
 
+// Whether a method called on the import's target (`ns.isFoo()`) may be a `this` predicate or assertion, which is all
+// that narrows it there: anything but a module or namespace may (a class's static method, a function's or an enum's
+// members are rarely called on it in a condition); a module's or namespace's exported functions are looked at once
+// (Symbol.exports_this_predicate). Missed: a `this` predicate typed on an exported variable
+static bool may_have_this_predicate(Symbol* target) {
+    if (!(target->flags & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE)) || (target->flags & (SYMBOL_CLASS | SYMBOL_FUNCTION | SYMBOL_ENUM))) {
+        return true;
+    }
+    uint8_t memo = atomic_load_explicit(&target->exports_this_predicate, memory_order_relaxed);
+    if (memo) return memo == 2;
+    bool found = false;
+    for (SymbolTable const* table = symbol_exports_table(target); table && !found; table = table->parent) {
+        for (u32 i = 0; i < table->count && !found; i++) {
+            Symbol const* exported = table->entries[i].symbol;
+            for (u32 d = 0; exported && d < exported->decl_count && !found; d++) {
+                if (exported->decls[d].kind != SYMBOL_DECL_FUNCTION) continue;
+                FunctionImpl const* fn = exported->decls[d].node;
+                found = fn && fn->predicate && fn->predicate->is_this;
+            }
+        }
+    }
+    atomic_store_explicit(&target->exports_this_predicate, found ? 2 : 1, memory_order_relaxed);
+    return found;
+}
+
 static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* contextual, IdentifierFlowIssue* issue, bool issue_only) {
     IdentifierExpr const* identifier = &expr->identifier;
     if (my contextual_pattern_count && identifier->target && (identifier->target->flags & SYMBOL_VARIABLE)) {
@@ -2363,14 +2388,19 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         return identifier->flow ? ty_flow_type(me, expr, type, type, identifier->flow) : type;
     }
     // (An import is narrowed too, assumed initialized: tsc's checkIdentifier with isAlias, `'_pathCache' in Module` of
-    // an imported class. A class declared here isn't)
+    // an imported class, a predicate on an imported function. Not a class declared here. Only when a narrowing flow
+    // node names the alias (Symbol.flow_narrowed): imported functions and enums are on every line of TypeScript's
+    // compiler, a flow walk each cost +1.4% instructions there)
     if (symbol && !identifier->keyword && identifier->symbol && identifier->symbol != symbol &&
-        (identifier->symbol->flags & SYMBOL_ALIAS) && !(symbol->flags & SYMBOL_VARIABLE) &&
-        // (Only a class's: an imported function or enum is used on every line of TypeScript's compiler, each use
-        // walking the flow graph for a narrowing that would take `'x' in f`, +1.4% instructions; hacks.md)
-        (symbol->flags & SYMBOL_CLASS)
+        (identifier->symbol->flags & SYMBOL_ALIAS) && !(symbol->flags & SYMBOL_VARIABLE)
     ) {
         if (issue_only || !identifier->flow) return issue_only ? nullptr : type;
+        SourceFile const* file = span_source(identifier_expr_name(identifier));
+        Symbol* alias = (Symbol*)identifier->symbol;
+        bool narrowed = atomic_load_explicit(&alias->flow_narrowed, memory_order_relaxed) ||
+            (file && atomic_load_explicit(&file->flow_unresolved_names, memory_order_relaxed)) ||
+            (atomic_load_explicit(&alias->flow_narrowed_this, memory_order_relaxed) && may_have_this_predicate((Symbol*)symbol));
+        if (!narrowed) return type;
         return ty_flow_type(me, expr, type, type, identifier->flow);
     }
     if (!symbol || identifier->keyword || !(symbol->flags & SYMBOL_VARIABLE)) return type;

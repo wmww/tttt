@@ -5,6 +5,7 @@
 #include "scope.h"
 #include "compiler_options.h"
 #include "error.h"
+#include "flow.h"
 #include <pthread.h>
 
 // An assignment or call of a CommonJS file's statement (its index) that may declare an export (SourceFile)
@@ -268,6 +269,9 @@ typedef struct SourceFile {
     // Unchecked, but checked anyway for a few errors (tsc's isPlainJsFile: JavaScript without a `@ts-check`/`@ts-nocheck`
     // and with checkJs not set at all): only the ones on tsc's plainJSErrors list are reported
     bool plain_js;
+    // A narrowing flow node of the file names something that wasn't resolved when it was made: every import may be
+    // narrowed (Symbol.flow_narrowed can't say)
+    atomic_bool flow_unresolved_names;
     // With node16/node18/nodenext modules or resolution, or in node_modules: whether the file is an ES module, the
     // package.json that has a say in that (as messages name it, empty if there is none) and whether it says
     // (src/module_resolution.h)

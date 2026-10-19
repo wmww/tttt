@@ -1561,6 +1561,31 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNarrowImportedEnum': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNarrowImportedFunction': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNarrowImportedNamespace': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNarrowImportedNamespaceThisPredicate': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNarrowImportedSwitchTrue': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNarrowMissingElementAccess': {
         errors: true,
         symbols: true,

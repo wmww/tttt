@@ -616,12 +616,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   test, not a chain query).
 - `BaselineTestCase.any_keeps_rendering` leaks to the next types line if the node it was set for adds none.
 
-- `identifier_flow_type()` narrows an import (an alias that isn't a variable) only when it names a class: tsc's
-  checkIdentifier narrows every alias like a variable, assumed initialized, but walking the flow graph for every
-  imported function and enum reference cost +1.4% instructions on TypeScript's compiler (all named imports). Missed:
-  `'x' in importedFunction`, a type predicate or assertion on an imported function, enum or namespace. The real fix is
-  a cheap gate (does any condition in the container mention the name? the flow builder would have to record it, deferred
-  bodies included).
+- `identifier_flow_type()` walks an import's flow (an alias that isn't a variable) only when a narrowing flow node names
+  it as a whole (`Symbol.flow_narrowed`, set by the flow builder: `flow_names_of()`), or as the object of a called
+  method when the target may have a `this` predicate (`flow_narrowed_this`; a module or namespace only if one of its
+  exported function declarations declares one: `may_have_this_predicate()`). tsc walks every alias; the gate is exact
+  but for a `this` predicate typed on a namespace's exported variable (`export const isX: (this: ...) => this is ...`),
+  which isn't seen. A narrowing node naming an unresolved identifier opens the gate for the whole file
+  (`SourceFile.flow_unresolved_names`).
 
 ## Harness and tools
 - Deliberate simplifications (permanent, see documentation.md "baseline_tests"): `apply_setting`, the lib `Program`

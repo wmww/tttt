@@ -1,0 +1,37 @@
+//// [test/cases/ttttNarrowImportedNamespace.ts] ////
+
+=== /m.ts ===
+export namespace N { export const a = 1; }
+>N : Symbol(N, Decl(m.ts, 0, 0))
+>a : Symbol(a, Decl(m.ts, 0, 33))
+
+=== /b.ts ===
+export const b = 1;
+>b : Symbol(b, Decl(b.ts, 0, 12))
+
+=== /a.ts ===
+import { N } from "./m";
+>N : Symbol(N, Decl(a.ts, 0, 8))
+
+import * as B from "./b";
+>B : Symbol(B, Decl(a.ts, 1, 6))
+
+if ('extra' in N) {
+>N : Symbol(N, Decl(a.ts, 0, 8))
+
+    const v = N.extra;
+>v : Symbol(v, Decl(a.ts, 3, 9))
+>N.extra : Symbol(extra)
+>N : Symbol(N, Decl(a.ts, 0, 8))
+>extra : Symbol(extra)
+}
+if ('more' in B) {
+>B : Symbol(B, Decl(a.ts, 1, 6))
+
+    const w = B.more;
+>w : Symbol(w, Decl(a.ts, 6, 9))
+>B.more : Symbol(more)
+>B : Symbol(B, Decl(a.ts, 1, 6))
+>more : Symbol(more)
+}
+

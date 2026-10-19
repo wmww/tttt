@@ -1,0 +1,24 @@
+//// [test/cases/ttttNarrowImportedEnum.ts] ////
+
+=== /m.ts ===
+export enum E { A, B }
+>E : E
+>A : E.A
+>B : E.B
+
+=== /a.ts ===
+import { E } from "./m";
+>E : typeof E
+
+if ('extra' in E) {
+>'extra' in E : boolean
+>'extra' : "extra"
+>E : typeof E
+
+    const v = E.extra;
+>v : unknown
+>E.extra : unknown
+>E : typeof E & Record<"extra", unknown>
+>extra : unknown
+}
+

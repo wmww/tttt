@@ -2,6 +2,7 @@
 #include "expr.h"
 #include "scope.h"
 #include "statement.h"
+#include "source_file.h"
 #include "function_impl.h"
 #include "source_file.h"
 #include "binding.h"
@@ -38,9 +39,73 @@ void flow_builder_init(FlowBuilder* me, FlowBuilder const* outer, Scope* scope, 
         .statements = outer && !function ? outer->statements : nullptr,
         .container_start = outer ? outer->container_start : nullptr,
         .within_unreachable = outer && outer->within_unreachable,
+        .file = outer ? outer->file : scope->file,
     };
     my next_id = outer ? outer->next_id : &my id_counter;
     my current = &flow_unreachable; // Until the container gets its start node
+}
+
+// An alias named as a whole by a narrowing node may be narrowed (Symbol.flow_narrowed; flow_narrowed_this as the object
+// of a called method). A name not resolved yet could be one: the file's imports all may then
+static void flow_names_add(FlowBuilder* me, Expr const* identifier, bool this_object) {
+    Symbol* symbol = (Symbol*)identifier->identifier.symbol;
+    if (symbol) {
+        atomic_bool* flag = this_object ? &symbol->flow_narrowed_this : &symbol->flow_narrowed;
+        if ((symbol->flags & SYMBOL_ALIAS) && !atomic_load_explicit(flag, memory_order_relaxed)) {
+            atomic_store_explicit(flag, true, memory_order_relaxed);
+        }
+    } else if (my file) {
+        atomic_store_explicit(&my file->flow_unresolved_names, true, memory_order_relaxed);
+    }
+}
+
+// The identifiers a narrowing node's expression may narrow as a whole, the way an import (a class, function, enum or
+// namespace: never a union, so no discriminant narrows it through a property) can be narrowed: an operand of a
+// condition, `in`, `instanceof`, `typeof` or an equality, an argument of a call (a predicate or an assertion), the
+// object of a called method (a `this` predicate). Not property chains' roots nor bare callees: `node.kind ===
+// SyntaxKind.X` and `isIdentifier(node)` name neither `SyntaxKind` nor `isIdentifier` as a whole
+static Expr const* skip_generic_params(Expr const* me);
+static void flow_names_of(FlowBuilder* me, Expr const* expr, u32 depth, bool this_object) {
+    if (depth > 64) return;
+    switch (expr->tag) {
+        case EXPR_IDENTIFIER:
+            if (!expr->identifier.keyword) flow_names_add(me, expr, this_object);
+            return;
+        case EXPR_GENERIC_PARAMS: flow_names_of(me, &expr->generic_params->expr, depth + 1, this_object); return;
+        case EXPR_AS_TYPE: flow_names_of(me, &expr->as_type->expr, depth + 1, this_object); return;
+        case EXPR_UNARY_OP: flow_names_of(me, &expr->unary_op->expr, depth + 1, this_object); return;
+        case EXPR_BINARY_OP:
+            switch (expr->binary_op->op) {
+                case BINARY_OP_INSTANCEOF:
+                case BINARY_OP_EQUAL:
+                case BINARY_OP_OR_OR_EQUAL:
+                case BINARY_OP_AND_AND_EQUAL:
+                case BINARY_OP_EH_EH_EQUAL:
+                    flow_names_of(me, &expr->binary_op->left, depth + 1, this_object);
+                    return;
+                case BINARY_OP_IN:
+                case BINARY_OP_COMMA:
+                    flow_names_of(me, &expr->binary_op->right, depth + 1, this_object);
+                    return;
+                default:
+                    flow_names_of(me, &expr->binary_op->left, depth + 1, this_object);
+                    flow_names_of(me, &expr->binary_op->right, depth + 1, this_object);
+                    return;
+            }
+        case EXPR_TERNARY:
+            flow_names_of(me, &expr->ternary->condition, depth + 1, this_object);
+            flow_names_of(me, &expr->ternary->yes, depth + 1, this_object);
+            flow_names_of(me, &expr->ternary->no, depth + 1, this_object);
+            return;
+        case EXPR_CALL: {
+            for_each (i, vec_expr, &expr->call->args) flow_names_of(me, i, depth + 1, false);
+            Expr const* callee = skip_generic_params(&expr->call->callable);
+            if (callee->tag == EXPR_PROPERTY) flow_names_of(me, &callee->property->expr, depth + 1, true);
+            return;
+        }
+        default:
+            return;
+    }
 }
 
 static FlowNode* new_node(FlowBuilder* me, u32 flags, FlowNode* antecedent, void const* node) {
@@ -117,6 +182,7 @@ FlowNode* flow_new_condition(FlowBuilder* me, u32 flag, FlowNode* antecedent, Ex
     if (expr_is_boolean_literal(expr, flag & FLOW_TRUE_CONDITION ? false : true)) return &flow_unreachable;
     if (!expr_is_narrowing(expr)) return antecedent;
     set_referenced(antecedent);
+    flow_names_of(me, expr, 0, false);
     return new_node(me, flag, antecedent, expr);
 }
 
@@ -124,6 +190,11 @@ FlowNode* flow_new_switch_clause(FlowBuilder* me, FlowNode* antecedent, SwitchSt
     set_referenced(antecedent);
     FlowSwitchClause* clause = arena_new(my arena, FlowSwitchClause);
     *clause = (FlowSwitchClause){ switch_, start, end };
+    flow_names_of(me, &switch_->needle, 0, false);
+    for (u32 i = start; i < end && i < (u32)vec_switch_case_size(&switch_->cases); i++) {
+        SwitchCase const* c = vec_switch_case_at(&switch_->cases, i);
+        if (c->is_pattern) flow_names_of(me, &c->pattern, 0, false);
+    }
     return new_node(me, FLOW_SWITCH_CLAUSE, antecedent, clause);
 }
 
@@ -131,6 +202,7 @@ FlowNode* flow_new_call(FlowBuilder* me, FlowNode* antecedent, Expr const* call)
     if (flow_is_unreachable(antecedent)) return antecedent;
     set_referenced(antecedent);
     my has_flow_effects = true;
+    flow_names_of(me, call, 0, false);
     return new_node(me, FLOW_CALL, antecedent, call);
 }
 

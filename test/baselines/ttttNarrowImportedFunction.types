@@ -1,0 +1,56 @@
+//// [test/cases/ttttNarrowImportedFunction.ts] ////
+
+=== /m.ts ===
+export declare function f(): void;
+>f : () => void
+
+export declare function isString(x: unknown): x is string;
+>isString : (x: unknown) => x is string
+>x : unknown
+
+export declare function assertNumber(x: unknown): asserts x is number;
+>assertNumber : (x: unknown) => asserts x is number
+>x : unknown
+
+=== /a.ts ===
+import { f, isString, assertNumber } from "./m";
+>f : () => void
+>isString : (x: unknown) => x is string
+>assertNumber : (x: unknown) => asserts x is number
+
+if ('cache' in f) {
+>'cache' in f : boolean
+>'cache' : "cache"
+>f : () => void
+
+    f.cache = 1;
+>f.cache = 1 : 1
+>f.cache : unknown
+>f : (() => void) & Record<"cache", unknown>
+>cache : unknown
+>1 : 1
+}
+declare const u: unknown;
+>u : unknown
+
+if (isString(f)) {
+>isString(f) : boolean
+>isString : (x: unknown) => x is string
+>f : () => void
+
+    const s: string = f;
+>s : string
+>f : (() => void) & string
+}
+function g() {
+>g : () => (() => void) & number
+
+    assertNumber(f);
+>assertNumber(f) : void
+>assertNumber : (x: unknown) => asserts x is number
+>f : () => void
+
+    return f;
+>f : (() => void) & number
+}
+

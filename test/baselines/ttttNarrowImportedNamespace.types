@@ -1,0 +1,43 @@
+//// [test/cases/ttttNarrowImportedNamespace.ts] ////
+
+=== /m.ts ===
+export namespace N { export const a = 1; }
+>N : typeof N
+>a : 1
+>1 : 1
+
+=== /b.ts ===
+export const b = 1;
+>b : 1
+>1 : 1
+
+=== /a.ts ===
+import { N } from "./m";
+>N : typeof N
+
+import * as B from "./b";
+>B : typeof B
+
+if ('extra' in N) {
+>'extra' in N : boolean
+>'extra' : "extra"
+>N : typeof N
+
+    const v = N.extra;
+>v : unknown
+>N.extra : unknown
+>N : typeof N & Record<"extra", unknown>
+>extra : unknown
+}
+if ('more' in B) {
+>'more' in B : boolean
+>'more' : "more"
+>B : typeof B
+
+    const w = B.more;
+>w : unknown
+>B.more : unknown
+>B : typeof B & Record<"more", unknown>
+>more : unknown
+}
+

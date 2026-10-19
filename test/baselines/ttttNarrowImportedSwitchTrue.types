@@ -1,0 +1,39 @@
+//// [test/cases/ttttNarrowImportedSwitchTrue.ts] ////
+
+=== /m.ts ===
+export declare function f(): void;
+>f : () => void
+
+export declare function isString(x: unknown): x is string;
+>isString : (x: unknown) => x is string
+>x : unknown
+
+=== /a.ts ===
+import { f, isString } from "./m";
+>f : () => void
+>isString : (x: unknown) => x is string
+
+switch (true) {
+>true : true
+
+    case 'cache' in f:
+>'cache' in f : boolean
+>'cache' : "cache"
+>f : () => void
+
+        f.cache;
+>f.cache : unknown
+>f : (() => void) & Record<"cache", unknown>
+>cache : unknown
+
+        break;
+}
+const r = isString(f) ? f : 0;
+>r : 0 | ((() => void) & string)
+>isString(f) ? f : 0 : 0 | ((() => void) & string)
+>isString(f) : boolean
+>isString : (x: unknown) => x is string
+>f : () => void
+>f : (() => void) & string
+>0 : 0
+
