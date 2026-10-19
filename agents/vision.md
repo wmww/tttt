@@ -72,6 +72,11 @@ types components) are the oracle, not the goal; real projects that are clean und
   duplication; at K12 duplication catches up. The levers left are the policy (how many checkers, how big their
   budgets: tsgo keeps 4 checkers on any machine) and recycle cost (perf_leads.md "Shared warm state": a
   memory-snapshot recycle, bounded by `--checker-memory off`, for the thrashers only).
+- **Multiples need compounding, not a bet (the human, 2026-10-19; plan 86).** On the 12-core box all-core clocks
+  slow every checker 1.62x before any tttt overhead, duplication is ~1.2x and recycling 5-8%: zero checker overhead
+  is 1.5x on vscode. The single-threaded number is the multiplier for every core (stall-bound: ~1.5 IPC, 3 LLC
+  misses per 1000 instructions), PGO + LTO is a measured -8-9% not yet shipped, and many-core work is priced by
+  per-file time sums under real parallel runs, never serialized CPU (plan 85's census was).
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **The suite's last 12 are off the table** (2026-10-15): each is argued (bugs/tsgo_divergences.md) or a plan-sized
@@ -227,5 +232,7 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 22. **Now**: the many-core defaults (a CPU column, the checker-count policy, ~~plan 85's census and gate~~: no-go), ~~plan 82
    stage 3~~ (done), the clidiff and real-code tails by fan-out, a third refresh. Plan 58 (7.1.0 stable, then plan 66 stage
    5's fan-out) as soon as it's on npm.
-23. Then: the checker-count and budget policy for many cores with the human's 12-core numbers; plan 76 only if the
-   human reopens it.
+23. Then: **plan 86** (multiples on many-core cold runs, the human's ask of 2026-10-19: PGO + LTO, the single-threaded
+   memory-system program, the front end's parallel floor, then a gated shared concurrent type graph; measurements.md
+   "Many-core accounting on the 12-core box" is its budget: clocks cost 1.62x, the checker-side ceiling alone is
+   1.5x); the checker-count and budget policy for many cores; plan 76 only if the human reopens it.

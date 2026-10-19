@@ -59,6 +59,6 @@ and RSS** for every perf claim at the defaults.
 10. **Insights.** report.md: plan 85's no-go (the census) and the defaults' CPU column (12-core: ask the human to rerun with
     entry 1's command), clidiff's number, the third refresh's day one. Whether the human answered on plan 76.
 
-After the insights entry (for the next window): plan 58 + plan 66 stage 5 when 7.1.0 is out (expected after
+After the insights entry (for the next window): **plan 86 (multiples on many-core cold runs; the human asked for it 2026-10-19): stage 1 (PGO + LTO, one session, -8-9% measured) and the stage 4 gate session fit the next window, stage 2's sessions go in its perf slots**; plan 58 + plan 66 stage 5 when 7.1.0 is out (expected after
 2026-11-24); the many-core checker-count and budget policy from the human's 12-core numbers (tsgo keeps 4 checkers;
 at K12 duplication is as big as recycling); plan 76 only if the human reopens it.
