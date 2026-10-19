@@ -27,7 +27,7 @@ CORPORA = {
     'webpack': 'thirdparty/corpora/webpack',
     'zod': 'thirdparty/corpora/zod/packages/zod/tsconfig.test.json',
     # zod's root tsconfig: every package (docs excluded), nodenext with customConditions; not clean under tsc either
-    # (53 at 0b216ef: missing bench/fixture deps, unused locals), tttt must match tsc's list (plan 19)
+    # (53 at 0b216ef: missing bench/fixture deps, unused locals), tttt must match tsc's list (agents/corpora.md)
     'zod-root': 'thirdparty/corpora/zod',
     # xstate's core package and its type tests: generic call inference with callbacks (plan 38)
     'xstate': 'thirdparty/corpora/xstate/packages/core/tsconfig.corpus.json',

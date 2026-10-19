@@ -50,14 +50,6 @@ dtsdiff numbers went to bugs/dts_emit.md. The human's two directives and tsc-rs 
 - 2026-10-18 (clidiff fan-out): one oracles.py run reported dtsdiff tanstack-table/packages/table-core at 0 / 198
   files; three reruns of `dtsdiff.py -f` matched 198 / 198 at the same commit. Load (clidiff/perfsweep running
   alongside) or a sandbox flake; if it recurs, look at what dtsdiff records for that project (timeout? empty tree?).
-- **PGO + LTO build: -8-9% wall on every corpus, trained or not** (measurements.md "Many-core accounting",
-  2026-10-19). Decide whether `scripts/` builds release with `-Db_lto=true -Db_pgo=use` from a checked-in or
-  regenerated profile (train on a few corpora at K1 and the defaults; profiles must match the compiler version;
-  `-Wno-missing-profile`; the LTO link hits `-Werror=stringop-overflow` "writing 128 bytes into a region of size 0" at
-  `src/ty/ty.h:96`: look whether that is a real overflow before silencing it). instrcount.txt baselines would change.
-- **Many-core perf framing** (same section): on the 12-core box all-core clocks cost 1.62x per checker before any
-  tttt overhead; the checker-side ceiling on vscode is ~1.5x wall, the thrashers aside. Future perf plans for many
-  cores should price work by per-file sums under real parallel runs, not serialized CPU (plan 85's census did).
 - 2026-10-19 (graphql-inspector, `tttt -b tsconfig.build.json --no-write --dts-dump`): `packages/core/src/diff/changes/directive.d.ts`
   has an extra `reason?: undefined;` at line 145 against tsc's emit (`tsc -p ... --emitDeclarationOnly` in a bwrap
   overlay). Every other file of the project is byte-identical. Undiagnosed (an optional-property of a union of object

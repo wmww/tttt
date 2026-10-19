@@ -82,7 +82,7 @@ echo "tttt phases (one run):"
 ./release/tttt -q --time --keep-going --noEmit -p $REAL 2>&1 > /dev/null | grep -a '^time:' | sed 's/^/  /'
 
 # The modern corpora (plan 17, thirdparty/ensure-corpora.sh): type-level heavy; tttt matches tsgo on them but for a few
-# (scripts/realworld.py --corpus NAME). tsgo isn't clean on webpack (JS: TS 7's reduced JS support). zod (plan 19) is
+# (scripts/realworld.py --corpus NAME). tsgo isn't clean on webpack (JS: TS 7's reduced JS support). zod (agents/corpora.md) is
 # checked through its tsconfig.test.json, webpack (plan 33, checkJs) and type-fest through their own tsconfig, the rest
 # through our tsconfig.corpus.json. VS Code's src (3.41M lines) is the scale benchmark
 REACT=bulletproof-react/apps/react-vite/tsconfig.corpus.json

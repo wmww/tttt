@@ -171,6 +171,14 @@ passing tests).
   getBaseConstructorTypeOfClass; relating `() => undefined` to `() => D` calls isWeakType(D), which needs D's members
   while its base constructor resolves: TS2506 + TS2310, D ends with no base (types print `typeof (Anonymous class)`).
   tttt defers class expression members and meets neither cycle. Plan 39 territory, low value.
+- TS7023 through a handler's inferred return (re-probed 2026-10-19, from plan 19's drizzle notes):
+  `test/probes/plan19/drizzle/proxy_recursive_wrap2.ts` (`--strict`), `function wrap2(target: object) { return
+  Q(target, { get(target, p) { return wrap2(target); } }) }` with `Q<T>(t: T, h: { get?(target: T, p: string): any
+  }): T`: tttt reports TS7023 on both functions of the probe (the generic `wrap` too), tsgo nothing. The drizzle
+  shape itself (proxy_recursive_wrap.ts, c08d13b3) passes. c08d13b3 blamed the method's inferred type predicate
+  evaluating `wrap2(target)` while wrap2's return type is in flight; how tsgo's ordering avoids the cycle
+  (contextuallyCheckFunctionExpressionOrObjectLiteralMethod decides `get`'s return type from its body too) wasn't
+  worked out. Not corpus-visible.
 ## Classes and declarations
 - Plan 32 leftovers: a class extending a base that constructs `any` should get tsc's anyBaseTypeIndexInfo
   (`[x: string]: any`) instead of the `ty_has_unresolved_base()` gate; tsc's display of `new Outer<string>().m` clones
