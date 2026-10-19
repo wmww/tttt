@@ -67,3 +67,8 @@ dtsdiff numbers went to bugs/dts_emit.md. The human's two directives and tsc-rs 
   has an extra `reason?: undefined;` at line 145 against tsc's emit (`tsc -p ... --emitDeclarationOnly` in a bwrap
   overlay). Every other file of the project is byte-identical. Undiagnosed (an optional-property of a union of object
   literals, likely: tsc's normalized literal union member lists).
+- (2026-10-19, agent A) A script file declaring `interface Map { ... }` (no type parameters): tsc reports TS2428 "All
+  declarations of 'Map' must have identical type parameters" at the lib declarations too (lib.es2015.collection.d.ts,
+  .iterable, .symbol.wellknown, es2026.collection), tttt only in the user's file.
+- (2026-10-19, agent A) TS2590 for an intersection written in a declaration's type annotation (`declare const x: U1 &
+  ... & U17`): tsc reports it at the type node, tttt at the declaration's name (ty_error_at_current_node()).

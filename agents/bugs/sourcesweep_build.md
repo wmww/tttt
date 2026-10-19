@@ -16,18 +16,56 @@ TS2883/TS4058 naming ones (better-auth, graphql-inspector, atproto, ghostfolio) 
 destructuring's elements typed one by one, a reused name renamed through a non-portable `import()` and whether the design should change.
 
 Day one, by project (+ spurious, - missing, counts):
-- apollo-client/integration-tests/type-tests: +TS2344 11, +TS2578 6, -TS2578 4, -TS2769 4 (type tests)
+- apollo-client/integration-tests/type-tests: +TS2344 11, +TS2578 6, -TS2578 4, -TS2769 4, +TS2322 3, +TS7006 2: `-b`
+  only (`-p` of tsconfig.src.json and cacheOverride/classicSignature match tsc). The cacheOverride tests swap Apollo's
+  cache type through module augmentation in a referenced project (cacheOverride/shared): which augmentations a program
+  sees differs between referenced sources (tttt) and their emitted `.d.ts` (tsc). Not investigated further
 - astro: +TS2578 23, +TS2307 15 (`@astrojs/prism/dist/highlighter`: an output path), +TS2322 5, +TS2741 4, +TS6307 1
 - atproto: +TS2307 36, +TS7006 9, +TS4112 3, +TS2339 (`never`), +TS2551, +TS2366, +TS2882 (dev-env/bin.js
   `./dist/bin.js`)
 - babel: +TS2775 13 (assertion signatures need explicit annotations: read from source, not .d.ts), +TS2590 1
-- base-ui: +TS2322 7, +TS2590 1
-- better-auth: -TS7006 258, -TS2578 18, -TS2554 4
-- commitlint: +TS2307 2; dyad: -TS6142 1; ghostfolio/apps/client +TS2322 6
-- hono (both roots): -TS7026 10 + -TS7016 (runtime-tests/bun), +TS2339 4, +TS2769 2, +TS2783 1 (the `-p` bugs above)
-- lightweight-charts/tsconfig.composite.json: +TS2339 8, +TS2322 7
-- sunmao-ui: -TS2590 7 (chakra Button.tsx; the `-p` sweep misses it too)
-- vue-i18n/examples/lazy-loading/vite: +TS2339 2, -TS2551 2
+- base-ui: +TS2322 7, `-b` by design: MenuHandle<P> extends BasePopupHandle, whose variance comes from private
+  members (`private readonly attachedStores: Store[]`); an emitted `.d.ts` declares privates untyped, so tsc -b finds
+  `MenuHandle<"a" | "b">` assignable to `MenuHandle<string>` where the sources say it isn't (docs demos 6), and the
+  same for createItems.test.tsx's ComboboxItemCollection (a `declare class` with a private brand). Fixed: TS2590
+- better-auth: -TS7006 258, -TS2578 18, -TS2554 4, -TS2339 3, -TS7031, -TS2349: one cause, `-b` by design. tsgo's
+  declaration emit of `router` (packages/better-auth/src/api/index.ts) leaks an unbound type parameter name (`{ [K in
+  keyof T_2 as K extends keyof T_1 ? never : K]: Base[K] }`, from `OverrideMerge<Base, ...>`), so with skipLibCheck
+  `Auth<O>["api"]` reads as `any` in every downstream program (the 258 implicit-any callback parameters, the type tests
+  asserting not-any). tttt -p reading tsc's emitted outputs (bwrap overlay) reports the same 29 TS7006 on api-key's
+  test config: the checker agrees. A tsgo emit bug only reading emitted declarations would reproduce.
+  -TS2345 2 (lynx-store.ts:65, react-store.ts:67, a `-p` bug too): `listenKeys(store as any, keys, emitChange)` in an
+  arrow passed to `useCallback<T extends Function>`. tsgo computes the arrow's return type before its deferred body
+  check; that resolves the call, whose contextual return type is the arrow's own (T inferred as the arrow), and
+  isResolvingReturnTypeOfSignature doesn't see the in-flight return type below the call's resolutionStart, so the
+  return type is inferred again and the call resolved recursively: with one candidate that is NoConstraintChecks
+  (checker.go chooseOverload, #64192), S stays the outer SomeStore and fails; the nested result wins
+  (getResolvedSignature) and its TS2345 is reported. tttt computes a function's return context eagerly
+  (function_impl_enter_return_context()), never re-enters, and drops nested resolutions' errors. Matching it needs
+  lazy return contexts under the call's barrier, the NoConstraintChecks flag and nested results superseding the outer
+  (tried and reverted 2026-10-19: the last two alone change nothing, nothing re-enters). Probe:
+  `useCallback(() => listenKeys(store as any, keys, emitChange))` with `declare function useCallback<T>(cb: T): T`.
+  -TS5115 2 (to-zod.ts, tsc prints it once per program typing the file): appeared with the day's merges (not agent A's
+  commits: ai-main 36c9407c9 already shows it)
+- commitlint: +TS2307 2; dyad: -TS6142 1
+- ghostfolio/apps/client +TS2322 6: a `-p` bug of tsconfig.app.json (benchmark-comparator.component.ts:188/197,
+  investment-chart.component.ts:200): Chart.js's `Chart<"line", DistributiveArray<ChartTypeRegistry[TType][...]>>`
+  and chartjs-plugin-annotation's `_DeepPartialArray<AnnotationOptions<...>>`. Not investigated
+- hono: fixed TS2339 (jwt.ts), TS2783 (css.test.tsx). Left: +TS2769 2 (request.ts:214, a `-p` bug of
+  tsconfig.build.json): `parseBody(this, options)` with `this` against `HonoRequest | Request`. The plain check fails in
+  tsgo too (HonoRequest's variances [independent, bivariant], `I extends Input['out']` isn't `{}`); tsgo then relates
+  getEffectiveConstraintOfIntersection's `HonoRequest<P, I> & this`, whose `valid` property is an intersection of two
+  distinct function types (the declared type's own method type and its identity instantiation through `this`'s
+  apparent type, which tsgo doesn't intern into one), so signaturesRelatedTo takes the N x M path with erasure and
+  passes. tttt gets one signature and compares unerased: matching needs tsgo's non-interned identity instantiations.
+  Reduced tree: request.ts with only parseBody (overloads), valid (overload returning InputToDataByTarget<I, T>) and a
+  getter. -TS7026 10 + -TS7016 (runtime-tests/bun, `-b` only): tsgo's builder resolves `hono/jsx/jsx-runtime` to the
+  freshly emitted dist/types/jsx/jsx-runtime.js and finds no declaration; after the same build, `tsc -p` of that config
+  reports nothing, like tttt. A tsgo builder quirk: verdict, not modelled
+- sunmao-ui: -TS2590 7 (chakra Button.tsx and editor's AddTraitButton.tsx at JSX elements of chakra components;
+  the `-p` sweep misses it too). Not investigated: needs chakra's types. Related: tsc queues a JSX element's deferred
+  check the first time it checks it, also inside a call's inference (a forwardRef callback's return), tttt only when
+  the walk reaches it, so which of two sites gets a once-reported TS2590 can differ
 
 Perf: jest's `__tests__` builds (every package gated by TS5108) were fully checked for their declarations (1.5M types,
 ~10 s); now declaration-walked only (`program_set_declarations_only()`, 10K types, ~0.75 s against tsc's 0.5 s: the
