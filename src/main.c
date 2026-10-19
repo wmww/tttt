@@ -939,6 +939,7 @@ typedef struct BuildJob {
     FailableResult result;
     int ret;
     bool done; // Under Build.lock
+    bool started; // Under Build.lock, reading emitted declarations
     // Reading emitted declarations (Build.store): the jobs (by build position) whose files the program sees, which it
     // waits for, and its view of them
     bool* visible;
@@ -989,19 +990,42 @@ static void build_run(Build* me, u32 i) {
         my order[i], job->redirects, i + 1 == my count, &job->counts, !my project_opts.no_defer_bodies, &job->ret);
 }
 
+static double build_epoch;
+
 static void* build_thread(void* arg) {
     Build* me = arg;
-    for (u32 i; (i = atomic_fetch_add(&my next, 1)) < atomic_load(&my end);) {
+    for (;;) {
+        u32 i = UINT32_MAX;
         if (my store) {
-            // (What the program reads is done first: tsgo's builders wait on their references. Every job it waits for
-            // is earlier, so has been taken)
+            // Reading emitted declarations, the first job (in build order) whose program reads only what's done: tsgo's
+            // builders wait on their references. (Some job is running whenever none is ready: the first one not started
+            // waits only on started ones)
             pthread_mutex_lock(&my lock);
-            for (u32 j = 0; j < i; j++) {
-                while (my jobs[i].visible[j] && !my jobs[j].done) pthread_cond_wait(&my done, &my lock);
+            for (;;) {
+                bool pending = false;
+                u32 end = atomic_load(&my end);
+                for (u32 k = 0; k < end && i == UINT32_MAX; k++) {
+                    if (my jobs[k].started) continue;
+                    pending = true;
+                    bool ready = true;
+                    for (u32 j = 0; j < k && ready && my jobs[k].visible; j++) ready = !my jobs[k].visible[j] || my jobs[j].done;
+                    if (ready) i = k;
+                }
+                if (i != UINT32_MAX || !pending) break;
+                pthread_cond_wait(&my done, &my lock);
             }
+            if (i != UINT32_MAX) my jobs[i].started = true;
             pthread_mutex_unlock(&my lock);
+            if (i == UINT32_MAX) break;
+        } else if ((i = atomic_fetch_add(&my next, 1)) >= atomic_load(&my end)) {
+            break;
         }
+        double started = now_ms();
         build_run(me, i);
+        if (getenv("TTTT_BUILD_TIMES")) {
+            fprintf(stderr, "job %u %s: %.0f..%.0f ms\n", i, cstr_str(&project_set_at(my projects, my order[i])->config),
+                started - build_epoch, now_ms() - build_epoch);
+        }
         pthread_mutex_lock(&my lock);
         my jobs[i].done = true;
         pthread_cond_broadcast(&my done);
@@ -1097,6 +1121,7 @@ static_failable build(Options const* opts, returns int) {
     c_free_n(stack, count + 1);
     c_free_n(position, position_count ? position_count : 1);
     pthread_t* threads = nullptr;
+    build_epoch = now_ms();
     if (jobs > 1) {
         pthread_mutex_init(&b.lock, nullptr);
         pthread_cond_init(&b.done, nullptr);

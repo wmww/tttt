@@ -2653,6 +2653,14 @@ static bool emit_source_may_be_emitted(Program const* me, SourceFile const* sour
     if (source->found_searching_node_modules) return false;
     if (!source->is_json) return true;
     if (!cstr_size(&my options.out_dir)) return false;
+    // (Reading outputs, a referenced project's `.json` source is read as itself: still its project's, tsgo's
+    // GetProjectReferenceFromSource)
+    if (my reference_outputs && project_redirects_count(my redirects)) {
+        cstr absolute = absolute_path_of(program_cwd(me), cstr_sv(&source->canonical_path));
+        bool referenced = project_redirects_project_of(my redirects, cstr_sv(&absolute));
+        cstr_drop(&absolute);
+        if (referenced) return false;
+    }
     // Not when it would be written over itself, if the common source directory is known up front
     CompilerOptions const* o = &my options;
     if (!cstr_size(&o->root_dir) && !cstr_size(&o->config_dir)) return true;
