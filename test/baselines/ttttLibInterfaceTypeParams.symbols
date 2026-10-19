@@ -1,0 +1,12 @@
+//// [test/cases/ttttLibInterfaceTypeParams.ts] ////
+
+=== ttttLibInterfaceTypeParams.ts ===
+// TS2428 goes to every declaration of the merged interface, the lib files' too when they are checked
+interface Map { extra: number }
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(ttttLibInterfaceTypeParams.ts, 0, 0))
+>extra : Symbol(Map.extra, Decl(ttttLibInterfaceTypeParams.ts, 1, 15))
+
+declare const m: Map;
+>m : Symbol(m, Decl(ttttLibInterfaceTypeParams.ts, 2, 13))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(ttttLibInterfaceTypeParams.ts, 0, 0))
+

@@ -3399,8 +3399,9 @@ void ty_check_type_parameter_lists_identical(Checker* me, Symbol const* symbol, 
     if (identical) return;
     for (u32 d = 0; d < symbol->decl_count; d++) {
         if (!class_or_interface_generic(&symbol->decls[d])) continue;
+        // (A lib file's declarations too: what an unchecked one is told is dropped, error_ctx_error_s())
         Span name = symbol->decls[d].name;
-        if (!span_source(name) || span_source(name)->is_stdlib) continue;
+        if (!span_source(name)) continue;
         error_ctx_error_d(errs, name, 2428, "All declarations of '", symbol->name, "' must have identical type parameters.");
     }
 }

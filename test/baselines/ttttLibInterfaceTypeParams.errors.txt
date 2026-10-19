@@ -1,0 +1,16 @@
+ttttLibInterfaceTypeParams.ts(2,11): error TS2428: All declarations of 'Map' must have identical type parameters.
+ttttLibInterfaceTypeParams.ts(3,18): error TS2314: Generic type 'Map<K, V>' requires 2 type argument(s).
+lib.es2015.collection.d.ts(--,--): error TS2428: All declarations of 'Map' must have identical type parameters.
+lib.es2015.iterable.d.ts(--,--): error TS2428: All declarations of 'Map' must have identical type parameters.
+lib.es2015.symbol.wellknown.d.ts(--,--): error TS2428: All declarations of 'Map' must have identical type parameters.
+
+
+==== ttttLibInterfaceTypeParams.ts (2 errors) ====
+    // TS2428 goes to every declaration of the merged interface, the lib files' too when they are checked
+    interface Map { extra: number }
+              ~~~
+!!! error TS2428: All declarations of 'Map' must have identical type parameters.
+    declare const m: Map;
+                     ~~~
+!!! error TS2314: Generic type 'Map<K, V>' requires 2 type argument(s).
+    

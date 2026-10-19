@@ -1,0 +1,10 @@
+//// [test/cases/ttttLibInterfaceTypeParams.ts] ////
+
+=== ttttLibInterfaceTypeParams.ts ===
+// TS2428 goes to every declaration of the merged interface, the lib files' too when they are checked
+interface Map { extra: number }
+>extra : number
+
+declare const m: Map;
+>m : any
+

@@ -221,6 +221,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttCrossProductAtAnnotation': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttCyclicPlaceholderInMessage': {
         errors: true,
         symbols: true,
@@ -1441,6 +1446,11 @@ const baselines = {
         types: true,
     },
     'ttttLibInterfaceMergeIndexConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttLibInterfaceTypeParams': {
         errors: true,
         symbols: true,
         types: true,
