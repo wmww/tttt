@@ -1208,6 +1208,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttJsDeclarationMapsTemplateTags': {
+        errors: false,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttJsDeclarationMapsThisMembersAndJsDocTrivia': {
         errors: true,
         symbols: true,

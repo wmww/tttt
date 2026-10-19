@@ -2271,12 +2271,14 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
         if (i_index) out_lit(d, ", ");
         if (!span_valid(i->jsdoc_tag)) param_comments_begin_at(d, span_valid(i->full_span) ? i->full_span : i->name);
         TyDisplay param_d = d;
-        if (span_valid(i->jsdoc_tag)) param_d.no_map = true;
+        // (A JSDoc `@template {C} T`'s parameter is mapped at its name, its constraint where it's written, and ends where
+        // its name does: tsgo's reparsed node)
+        bool jsdoc = span_valid(i->jsdoc_tag);
         // (A constraint or default ending the parameter leaves its trailing comments to it, written below)
         if (d.comments && span_valid(i->full_span)) {
             param_d.comments_container_end = decl_comments_end(d.comments, span_end_ptr(i->full_span), nullptr);
         }
-        map_span(param_d, i->full_span, false);
+        if (!jsdoc) map_span(param_d, i->full_span, false);
         // (Its modifiers are token nodes, in the order written)
         char const* word = D_MAP(param_d) && span_valid(i->full_span) ? i->full_span.buf : nullptr;
         char const* text_end = word ? cstr_str(&D_MAP(param_d)->contents) + cstr_size(&D_MAP(param_d)->contents) : nullptr;
@@ -2311,7 +2313,15 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
         } else if (i->jsdoc_default_missing && d.multiline) {
             out_lit(d, " = ");
         }
-        if (D_MAP(param_d) && span_valid(i->full_span)) map_at(param_d, decl_map_back_trivia(span_end_ptr(i->full_span), i->full_span.buf));
+        if (jsdoc && D_MAP(param_d) && i->fallback_explicit) {
+            // (`[T=D]`: past its `]`)
+            char const* close = token_after(param_d, decl_map_type_end(i->fallback, D_MAP(param_d)), ']');
+            if (close) map_at(param_d, close + 1);
+            else map_span(param_d, i->name, true);
+        } else if (jsdoc) {
+            map_span(param_d, i->name, true);
+        }
+        else if (D_MAP(param_d) && span_valid(i->full_span)) map_at(param_d, decl_map_back_trivia(span_end_ptr(i->full_span), i->full_span.buf));
         if (d.comments && !span_valid(i->jsdoc_tag) && span_valid(i->full_span)) decl_comments_trailing(d.comments, d.target, d.indent, span_end_ptr(i->full_span));
     }
     out_lit(d, ">");

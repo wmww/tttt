@@ -1,0 +1,41 @@
+//// [test/cases/ttttJsDeclarationMapsTemplateTags.ts] ////
+
+=== a.js ===
+/**
+ * @template {(...args: any) => any} F
+ * @param {F} fn
+ */
+export function g(fn) { }
+>g : Symbol(g, Decl(a.js, 0, 0), Decl(a.js, 16, 46))
+>fn : Symbol(fn, Decl(a.js, 4, 18))
+
+/**
+ * @template T, U
+ * @template [V=string]
+ * @param {T} a
+ * @param {U} b
+ * @param {V} c
+ */
+export function f(a, b, c) { }
+>f : Symbol(f, Decl(a.js, 4, 25))
+>a : Symbol(a, Decl(a.js, 12, 18))
+>b : Symbol(b, Decl(a.js, 12, 20))
+>c : Symbol(c, Decl(a.js, 12, 23))
+
+/**
+ * @template {number} K
+ */
+export class C { /** @param {K} k */ m(k) {} }
+>C : Symbol(C, Decl(a.js, 12, 30))
+>m : Symbol(C.m, Decl(a.js, 16, 16))
+>k : Symbol(k, Decl(a.js, 16, 39))
+
+/**
+ * @template X
+ * @typedef {{ x: X }} Box
+ */
+/** @param {Box<number>} b */
+export function g(b) {}
+>g : Symbol(g, Decl(a.js, 0, 0), Decl(a.js, 16, 46))
+>b : Symbol(b, Decl(a.js, 22, 18))
+

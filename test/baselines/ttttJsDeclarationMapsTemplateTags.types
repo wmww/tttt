@@ -1,0 +1,41 @@
+//// [test/cases/ttttJsDeclarationMapsTemplateTags.ts] ////
+
+=== a.js ===
+/**
+ * @template {(...args: any) => any} F
+ * @param {F} fn
+ */
+export function g(fn) { }
+>g : { <F extends (...args: any) => any>(fn: F): void; (b: Box<number>): void; }
+>fn : F
+
+/**
+ * @template T, U
+ * @template [V=string]
+ * @param {T} a
+ * @param {U} b
+ * @param {V} c
+ */
+export function f(a, b, c) { }
+>f : <T, U, V = string>(a: T, b: U, c: V) => void
+>a : T
+>b : U
+>c : V
+
+/**
+ * @template {number} K
+ */
+export class C { /** @param {K} k */ m(k) {} }
+>C : C<K>
+>m : (k: any) => void
+>k : any
+
+/**
+ * @template X
+ * @typedef {{ x: X }} Box
+ */
+/** @param {Box<number>} b */
+export function g(b) {}
+>g : { <F extends (...args: any) => any>(fn: F): void; (b: Box<number>): void; }
+>b : Box<number>
+
