@@ -202,5 +202,5 @@ Left:
   {...}` maps fine after this pass's CommonJS rule: names mapped, the node builder's types not).
 - **`/** @type {{a: number}} */ export default { a: 1 }`**: tsgo maps the member to the literal's property when the tag's
   type and the literal's agree (with an extra optional member it maps the tag, like tttt).
-- **telegraf** partial reuse (below, unchanged), **vueuse `.test/mount.d.ts`** mismatches when run alone (also at this
-  pass's base commit) but matched in a full run: an order effect.
+- **telegraf** partial reuse (below, unchanged), **vueuse `.test/mount.d.ts`** mismatches again (also at this
+  pass's base commit) after matching in the morning's full run: an order or environment effect.
