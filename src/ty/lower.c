@@ -3730,8 +3730,9 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
         Ty const* types[2] = { non_undefined_type(me, ret), nullptr };
         if (root->has_explicit_type) {
             Ty const* default_type = ty_pad_initializer_type(me, ty_binding_default_type(me, binding), binding);
-            // (any and unknown can't be undefined either: tsc's UnknownFacts lack IsUndefined)
-            if (compiler_options()->strict_null_checks && ty_without_undefined(me, default_type) == default_type) {
+            // (any and unknown can't be undefined either: tsc's UnknownFacts lack IsUndefined; a type parameter can
+            // through its constraint: `{ x = true as T }` of `T extends boolean | undefined` keeps `T | undefined`)
+            if (compiler_options()->strict_null_checks && !ty_can_be_undefined(me, default_type)) {
                 ret = types[0];
             }
             return ret;

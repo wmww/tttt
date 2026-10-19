@@ -1,0 +1,65 @@
+//// [test/cases/ttttBindingDefaultGenericOptional.ts] ////
+
+=== ttttBindingDefaultGenericOptional.ts ===
+// A destructured optional property with a default: undefined is removed from its declared type, which on a type
+// parameter whose constraint includes undefined keeps the type parameter (`T`, not its constraint's `boolean`), so
+// the initializer `true as T` is assignable (supabase's pg-meta)
+export function list<T extends boolean | undefined = true>(
+>list : Symbol(list, Decl(ttttBindingDefaultGenericOptional.ts, 0, 0))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 3, 21))
+
+  { includeColumns = true as T }: { includeColumns?: T } = {} as any
+>includeColumns : Symbol(includeColumns, Decl(ttttBindingDefaultGenericOptional.ts, 4, 3))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 3, 21))
+>includeColumns : Symbol(includeColumns, Decl(ttttBindingDefaultGenericOptional.ts, 4, 35))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 3, 21))
+
+) {
+  return includeColumns
+>includeColumns : Symbol(includeColumns, Decl(ttttBindingDefaultGenericOptional.ts, 4, 3))
+}
+export function list2<T extends boolean | undefined>({ x = true as T }: { x?: T }) { return x }
+>list2 : Symbol(list2, Decl(ttttBindingDefaultGenericOptional.ts, 7, 1))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 8, 22))
+>x : Symbol(x, Decl(ttttBindingDefaultGenericOptional.ts, 8, 54))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 8, 22))
+>x : Symbol(x, Decl(ttttBindingDefaultGenericOptional.ts, 8, 73))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 8, 22))
+>x : Symbol(x, Decl(ttttBindingDefaultGenericOptional.ts, 8, 54))
+
+export function list3<T extends boolean | undefined>(x: T = true as T) { return x }
+>list3 : Symbol(list3, Decl(ttttBindingDefaultGenericOptional.ts, 8, 95))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 9, 22))
+>x : Symbol(x, Decl(ttttBindingDefaultGenericOptional.ts, 9, 53))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 9, 22))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 9, 22))
+>x : Symbol(x, Decl(ttttBindingDefaultGenericOptional.ts, 9, 53))
+
+export function list4<T extends boolean>({ x = true as T }: { x?: T }) { return x }
+>list4 : Symbol(list4, Decl(ttttBindingDefaultGenericOptional.ts, 9, 83))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 10, 22))
+>x : Symbol(x, Decl(ttttBindingDefaultGenericOptional.ts, 10, 42))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 10, 22))
+>x : Symbol(x, Decl(ttttBindingDefaultGenericOptional.ts, 10, 61))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 10, 22))
+>x : Symbol(x, Decl(ttttBindingDefaultGenericOptional.ts, 10, 42))
+
+export function list5<T extends string | undefined>({ x = "a" as T }: { x?: T }) { return x.length }
+>list5 : Symbol(list5, Decl(ttttBindingDefaultGenericOptional.ts, 10, 83))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 11, 22))
+>x : Symbol(x, Decl(ttttBindingDefaultGenericOptional.ts, 11, 53))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 11, 22))
+>x : Symbol(x, Decl(ttttBindingDefaultGenericOptional.ts, 11, 71))
+>T : Symbol(T, Decl(ttttBindingDefaultGenericOptional.ts, 11, 22))
+>x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttBindingDefaultGenericOptional.ts, 11, 53))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+const [y = 1 as T2] = [] as (T2 | undefined)[]
+>y : Symbol(y, Decl(ttttBindingDefaultGenericOptional.ts, 12, 7))
+>T2 : Symbol(T2, Decl(ttttBindingDefaultGenericOptional.ts, 12, 46))
+>T2 : Symbol(T2, Decl(ttttBindingDefaultGenericOptional.ts, 12, 46))
+
+type T2 = number | undefined
+>T2 : Symbol(T2, Decl(ttttBindingDefaultGenericOptional.ts, 12, 46))
+

@@ -12,6 +12,24 @@ text since 2026-10-18 but webpack's TS5115 name order, `scripts/clidiff.py --cor
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## supabase studio and bun on the 12-core box (2026-10-19, a conversation with the human)
+supabase `apps/studio` (b3757692, 12.7k files / 2.0M lines with dependencies, its own tsconfig; `pnpm install
+--ignore-scripts`; not in the source sweep), median of 5, wall / CPU / peak MB. Its tsconfig is incremental: tsgo
+runs with `--incremental false` (a leftover `.tsbuildinfo` made it a fake 1.35 s):
+| | defaults | single-threaded |
+|---|---|---|
+| tttt | 2.27 s / 22.6 / 1671 | 5.07 s / 5.0 / 1043 |
+| bun 1.4.3 | **2.02 s** / 28.9 / 1357 | 9.76 s / 9.8 / 1045 |
+| tsgo | 5.39 s / 35.0 / 4317 | 9.60 s / 17.6 / 2869 |
+**tttt loses to bun at the defaults here**: a recycle thrasher (each of 12 checkers recycles 8-14 times, rebuilding
+React and friends): K12 `--checker-memory off` 1.30 s / 12.8 / 3154, `--checker-memory 1024` 1.65 s / 16.4 / 1980,
+K4 off 1.83 s / 9.8 / 2331. perf_leads.md's snapshot recycle is aimed at exactly this. Output: tttt had tsgo's 10
+plus 7 spurious TS2322 (4 fixed with ttttBindingDefaultGenericOptional, 3 in triage.md); bun reports 1 error (none
+of the 9 TS7031). Bun on vscode the same day: 2.48-2.93 s over one session (same 1.4.3 binary that measured 2.92 /
+3.01 on 2026-10-16 / 18: machine state, not bun; `npm view @oven/bun-linux-x64 dist-tags`: latest 1.4.3, the
+1.4.4 canary no faster), tttt K12 2.69-2.81, K24 2.47-2.67: **a tie on vscode at the defaults**, tttt at ~57% of
+bun's CPU.
+
 ## Many-core accounting on the 12-core box (2026-10-19, a conversation with the human; no code change)
 vscode `-p`, release build, this laptop (12 cores / 24 threads, idle): wall / check phase / **sum of per-file check
 times** (`TTTT_FILE_TIMES=1`) / recycles / peak:

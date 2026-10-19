@@ -1,0 +1,21 @@
+ttttBindingDefaultGenericOptional.ts(12,91): error TS18048: 'x' is possibly 'undefined'.
+
+
+==== ttttBindingDefaultGenericOptional.ts (1 errors) ====
+    // A destructured optional property with a default: undefined is removed from its declared type, which on a type
+    // parameter whose constraint includes undefined keeps the type parameter (`T`, not its constraint's `boolean`), so
+    // the initializer `true as T` is assignable (supabase's pg-meta)
+    export function list<T extends boolean | undefined = true>(
+      { includeColumns = true as T }: { includeColumns?: T } = {} as any
+    ) {
+      return includeColumns
+    }
+    export function list2<T extends boolean | undefined>({ x = true as T }: { x?: T }) { return x }
+    export function list3<T extends boolean | undefined>(x: T = true as T) { return x }
+    export function list4<T extends boolean>({ x = true as T }: { x?: T }) { return x }
+    export function list5<T extends string | undefined>({ x = "a" as T }: { x?: T }) { return x.length }
+                                                                                              ~
+!!! error TS18048: 'x' is possibly 'undefined'.
+    const [y = 1 as T2] = [] as (T2 | undefined)[]
+    type T2 = number | undefined
+    

@@ -13,6 +13,13 @@ divergence in bugs/tsgo_divergences.md. Berry lockfiles install (algoliasearch b
 dtsdiff numbers went to bugs/dts_emit.md. The human's two directives and tsc-rs went to todo.md's insights entry.
 
 
+- **supabase studio: 3 spurious TS2322** (2026-10-19, human conversation; supabase b3757692 `apps/studio`, install
+  with `pnpm@11.13.1 install --ignore-scripts --filter 'studio...'`): `Logs.utils.otel.ts(397,3)` (tttt's spread
+  type prints two `[x: string]` index signatures), `UnifiedLogs.tsx(429,7)` (TanStack `Table<Row>` to `Table<unknown>`
+  through `getAutoFilterFn()`: variance or method bivariance), `CreateCustomOidcDialog.test.tsx(19,5)` (msw resolver
+  return types, `HttpResponse<...>` against `DefaultUnsafeFetchResponse`). Unreduced. Also a candidate repo for the
+  source sweep (Next.js app, recycle thrasher: measurements.md "supabase studio").
+
 - **Missing TS5115 on a synthetic zod v4 shape** (2026-10-18, clidiff fan-out agent B): this file, cut down from zod
   v4's `$ZodUnionInternals`/`$ZodRecordInternals`/`ZodJSONSchema`, gets tsgo's `(22,18) TS5115 Instantiations of the
   following types appear infinitely circular: 'IsOpt', 'Internals', 'RecOutput'.` (`--strict`); tttt reports nothing:

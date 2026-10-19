@@ -1,0 +1,65 @@
+//// [test/cases/ttttBindingDefaultGenericOptional.ts] ////
+
+=== ttttBindingDefaultGenericOptional.ts ===
+// A destructured optional property with a default: undefined is removed from its declared type, which on a type
+// parameter whose constraint includes undefined keeps the type parameter (`T`, not its constraint's `boolean`), so
+// the initializer `true as T` is assignable (supabase's pg-meta)
+export function list<T extends boolean | undefined = true>(
+>list : <T extends boolean | undefined = true>({ includeColumns }?: { includeColumns?: T; }) => T | undefined
+>true : true
+
+  { includeColumns = true as T }: { includeColumns?: T } = {} as any
+>includeColumns : T | undefined
+>true as T : T
+>true : true
+>includeColumns : T | undefined
+>{} as any : any
+>{} : {}
+
+) {
+  return includeColumns
+>includeColumns : T | undefined
+}
+export function list2<T extends boolean | undefined>({ x = true as T }: { x?: T }) { return x }
+>list2 : <T extends boolean | undefined>({ x }: { x?: T; }) => T | undefined
+>x : T | undefined
+>true as T : T
+>true : true
+>x : T | undefined
+>x : T | undefined
+
+export function list3<T extends boolean | undefined>(x: T = true as T) { return x }
+>list3 : <T extends boolean | undefined>(x?: T) => T
+>x : T
+>true as T : T
+>true : true
+>x : T
+
+export function list4<T extends boolean>({ x = true as T }: { x?: T }) { return x }
+>list4 : <T extends boolean>({ x }: { x?: T; }) => T
+>x : T
+>true as T : T
+>true : true
+>x : T | undefined
+>x : T
+
+export function list5<T extends string | undefined>({ x = "a" as T }: { x?: T }) { return x.length }
+>list5 : <T extends string | undefined>({ x }: { x?: T; }) => number
+>x : T | undefined
+>"a" as T : T
+>"a" : "a"
+>x : T | undefined
+>x.length : number
+>x : string | undefined
+>length : number
+
+const [y = 1 as T2] = [] as (T2 | undefined)[]
+>y : T2
+>1 as T2 : T2
+>1 : 1
+>[] as (T2 | undefined)[] : T2[]
+>[] : never[]
+
+type T2 = number | undefined
+>T2 : T2
+

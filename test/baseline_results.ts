@@ -89,6 +89,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttBindingDefaultGenericOptional': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBlockTypeParamPossiblyReferenced': {
         errors: true,
         symbols: true,
