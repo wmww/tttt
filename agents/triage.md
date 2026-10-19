@@ -17,3 +17,10 @@ already plan 86's. Plan 19 condensed into agents/corpora.md.
   formatter rewrites a file during a check: decide between a SIGBUS handler that falls back to a read() copy (and
   re-reads/reports like tsc would) and reading files into memory where mapping isn't worth it. Measure the memory
   cost of either on vscode (mmapped text was plan 80's win).
+- (plan 86 gate, 2026-10-19) dtsdiff's react corpus once came back "no output": bwrap "Can't bind mount /oldroot/
+  ... remount /newroot/run/credentials/serial-getty@ttyS1.service: Invalid argument" (a host mount bwrap can't
+  remount read-only). dtsdiff was 1324 / 1350 for it, 1325 otherwise. If it recurs, have dtsdiff/clidiff's bwrap
+  call bind only what the probe needs rather than `/`, or retry once.
+- (plan 86 gate) oracles.py exceeded the 1-hour background cap with a seeded source sweep running alongside, and
+  perfsweep printed only "tttt: release/tttt" as its summary line in that run (perfsweep.py's `--summary` output
+  under load, or a parse of oracles.py?). Look at what perfsweep's last line is when tsgo's side is cached.

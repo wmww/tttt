@@ -41,6 +41,9 @@ typedef struct DebugEnv {
     bool ast_stats;            // TTTT_AST_STATS: the AST arenas' churn at exit (ast_alloc.h)
     bool ast_malloc;           // TTTT_AST_MALLOC: no AST arenas, the AST in malloc (for scripts/memtrack.sh)
     bool defer_stats;          // TTTT_DEFER_STATS: deferred function bodies' counts at exit (plan 78, source_file.h)
+    bool order_stats;          // TTTT_ORDER_STATS: how often ty_compare_tie() fell back to type ids, by site and kind
+    // TTTT_ORDER_SEED: a nonzero seed permutes ty_compare_tie()'s type-id fallbacks (is the id order observable?)
+    u64 order_seed;
 } DebugEnv;
 extern DebugEnv debug_env;
 

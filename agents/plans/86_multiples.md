@@ -113,6 +113,34 @@ vscode in 1.4 GB), and determinism.
   tsgo's keys (names, declaration positions, symbols, fresh twins). If it is near zero and the remaining cases can
   be given a structural key, ids assigned by arrival order are harmless and the design is open. If not, stop here
   and write the number into this plan.
+- **Gate result (2026-10-19): go, with two conditions.** Instrument: `TTTT_ORDER_STATS=1` counts ty_compare_tie()'s
+  type-id fallbacks by site and kind (anonymous objects by origin); `TTTT_ORDER_SEED=N` permutes every non-intrinsic
+  id fallback (a bijective hash), so whether the id order is observable is a diff of the oracles' output.
+  - Rate: ties are ~0.1-1.4M a corpus at K1 (vscode 880k, excalidraw 1.19M, typescript-eslint 1.42M). The id
+    fallback decides 0.003% (tsc 39) to 0.6% (zod 450) of them. Most are intrinsics (any vs auto any, never vs
+    silent never), and every checker makes those first in a fixed order, as a shared graph would, so they're exempt.
+    Non-intrinsic: vscode ~510, excalidraw ~810, webpack ~560 (515 references), effect ~180, the rest under 200.
+  - The one big class was the alternatives of a spread of a union (`{ ...u }`: anonymous objects with the literal's
+    symbol, which tsgo also orders by id, its cross product's creation order): ~2600 of vscode's, 3243 of
+    excalidraw's. It now has a structural key (`spread_alternative`, in ty_compare_tie()), which also fixed
+    noImplicitAnyUnionNormalizedObjectLiteral1 (tttt's widened twins had come in another id order than tsgo's).
+  - Observability under three seeds: no change in the output of any corpus (vscode, tsc-src, typescript-eslint
+    too), DT 8595 / 8595, `$ExpectType` 68640 / 68640, source sweep 5225 / 5242 (seed 1). The suite moves one test,
+    dynamicImportsDeclaration (`{ default: typeof import("./case0.js") } | ...`: the synthetic default objects,
+    cached per module, ordered by first use like tsgo). Before the spread key 22 tests moved, one in its
+    diagnostics (strictOptionalProperties1: TS2322 became TS2412), and webpack's output moved while intrinsics
+    were still permuted.
+  - Condition 1: ids come from one monotone counter (an atomic), so the types one worker makes in one operation keep
+    their relative order. The residual classes get structural keys or a reason they can't be observed: the
+    synthetic default (the target module's program order, a guess against tsgo's first use), a literal's
+    fresh/regular/widened twins (derivation stage), cloned type parameters sharing one symbol (vscode 55, webpack
+    18), `anon-other` (excalidraw 800, vscode 141, not classified yet), webpack's 515 references.
+  - Condition 2, not about unions: is_deeply_nested_as() (relate.c, tsc's isDeeplyNestedType) counts a recursion
+    identity only when each type is newer (a higher id) than the one before it. A type another worker interned
+    earlier is "older" where a private checker would have just made it, so the recursion cutoff would depend on the
+    schedule. The design session must replace "newer" with something schedule-independent (a per-worker creation
+    stamp for the types this relation made, say) and show it holds on the suite. flow.c's key_entry_cmp() sorts
+    by id only for a binary search, which can't be observed. Other `->id` uses are hash keys.
 - Then a design session pricing: the table (lock-free open addressing, resize), the publish-once fields, what
   `Checker.links` becomes (per-symbol state shared, per-expression state not), how diagnostics stay K-independent
   (they do today by sorting; "whoever asks first" slots for inferred return types match tsc and tsgo's own

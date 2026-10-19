@@ -406,7 +406,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   outer parameters once contextual parameters stop carrying call type parameters; perfsweep types ratio and zod show it.
 - Stable type ordering (`ty/order.c`) ties still broken by tttt ids: roots without `outer`, deferred references with no
   cheap node position (`type_node_start()`), two nodes at one token, position-less unique symbols, intrinsic variants,
-  same-symbol anonymous types with equal mappers. Shows as union order (displaydiff, expecttypes "union order").
+  same-symbol anonymous types with equal mappers. Shows as union order (displaydiff, expecttypes "union order"); `TTTT_ORDER_STATS=1` counts
+  them by class and `TTTT_ORDER_SEED=N` permutes them (plan 86's gate). Spread alternatives are keyed structurally.
 - Pseudo types (`ty/pseudo.c`): `pseudo_of_variable()` always gets a non-contextual place (tsgo: a variable inside a
   callback is contextual); `Pseudo.in_const` is syntactic (tsgo: isConstContext); `pseudo_enter_signature()` treats an
   instantiated signature's type parameters as fresh by mention; `reused_node_length()` ignores comments in the range;

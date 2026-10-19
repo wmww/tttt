@@ -222,6 +222,56 @@ static int cmp_mappers(TyMapper const* a, TyMapper const* b) {
     return c ? c : cmp_lists(a->targets, a->len, b->targets, b->len);
 }
 
+// TTTT_ORDER_STATS / TTTT_ORDER_SEED (plan 86 stage 4's gate): ty_compare_tie()'s type-id fallbacks counted by site
+// and kind, and permuted by a seed so that whether their order shows in the output can be measured
+enum { ID_SITE_FINAL, ID_SITE_STRING_TWIN, ID_SITE_CONDITIONAL_ROOT, ID_SITE_INSTANTIATION_EXPR, ID_SITE_COUNT };
+enum {
+    ID_ANON_SPREAD_ALT = TY_EVOLVING_ARRAY + 1, ID_ANON_LITERAL, ID_ANON_INSTANTIATED, ID_ANON_FUNCTION, ID_ANON_NODE,
+    ID_ANON_MODULE, ID_ANON_OTHER, ID_ANON_LITERAL_TWIN, ID_KIND_COUNT
+};
+static _Atomic i64 id_fallbacks[ID_SITE_COUNT][ID_KIND_COUNT];
+static _Atomic i64 tie_calls;
+
+static void order_stats_print(void) {
+    static char const* const sites[ID_SITE_COUNT] = { "final", "string-twin", "conditional-root", "instantiation-expr" };
+    static char const* const kinds[ID_KIND_COUNT] = { "intrinsic", "literal", "type-param", "declared", "reference",
+        "anonymous", "union", "intersection", "keyof", "indexed", "conditional", "substitution", "template", "string-mapping",
+        "evolving-array", "anon-spread-alt", "anon-literal", "anon-instantiated", "anon-function", "anon-node",
+        "anon-module", "anon-other", "anon-literal-twin" };
+    fprintf(stderr, "order: ties %lld\n", (long long)tie_calls);
+    for (u32 s = 0; s < ID_SITE_COUNT; s++) {
+        for (u32 k = 0; k < ID_KIND_COUNT; k++) {
+            if (id_fallbacks[s][k]) fprintf(stderr, "order: id %s %s %lld\n", sites[s], kinds[k], (long long)id_fallbacks[s][k]);
+        }
+    }
+}
+
+static void order_stats_count(u32 site, u32 kind) {
+    static atomic_bool registered;
+    if (!atomic_exchange(&registered, true)) atexit(order_stats_print);
+    id_fallbacks[site][kind < ID_KIND_COUNT ? kind : 0]++;
+}
+
+static u64 permuted_id(u32 id) {
+    u64 x = (u64)id ^ debug_env.order_seed;
+    x ^= x >> 33;
+    x *= 0xff51afd7ed558ccdull;
+    x ^= x >> 33;
+    x *= 0xc4ceb9fe1a85ec53ull;
+    return x ^ x >> 33;
+}
+
+// The order of two distinct types by id: creation order, or a permutation of it under TTTT_ORDER_SEED (intrinsics
+// excepted: every checker makes them first, in a fixed order, as any shared type graph would)
+static int cmp_ids(u32 site, u32 kind, u32 ida, u32 idb) {
+    if (debug_env.order_stats) order_stats_count(site, kind);
+    if (debug_env.order_seed && kind != TY_INTRINSIC) {
+        u64 pa = permuted_id(ida), pb = permuted_id(idb);
+        if (pa != pb) return pa < pb ? -1 : 1;
+    }
+    return ida < idb ? -1 : 1;
+}
+
 // The symbol of an object type, as tsc's compareSymbols(t.symbol) would place it: a position, or none
 typedef struct ObjectSym {
     bool has; // has a symbol at all
@@ -301,7 +351,7 @@ static int cmp_object_symbols(ObjectSym a, ObjectSym b) {
     }
     if (a.symbol && b.symbol) return cmp_sv(escaped_name(a.symbol), escaped_name(b.symbol));
     // (Two `__instantiationExpression` symbols: by symbol id)
-    if (a.created && b.created) return a.created < b.created ? -1 : 1;
+    if (a.created && b.created) return cmp_ids(ID_SITE_INSTANTIATION_EXPR, TY_ANONYMOUS, a.created, b.created);
     return 0;
 }
 
@@ -454,8 +504,24 @@ static int cmp_bigints(BigintValue a, BigintValue b) {
     return c;
 }
 
+// TTTT_ORDER_STATS: which kind of tie an id decided (anonymous objects by where they come from)
+static u32 id_kind(Ty const* a, Ty const* b) {
+    if (a->kind != TY_ANONYMOUS || b->kind != TY_ANONYMOUS) return a->kind;
+    if (a->anonymous.object_literal && b->anonymous.object_literal) {
+        if (a->anonymous.spread_alternative != b->anonymous.spread_alternative) return ID_ANON_SPREAD_ALT;
+        if (a->anonymous.literal_expr == b->anonymous.literal_expr) return ID_ANON_LITERAL_TWIN;
+        return ID_ANON_LITERAL;
+    }
+    if (a->anonymous.target || b->anonymous.target) return ID_ANON_INSTANTIATED;
+    if (a->anonymous.function || b->anonymous.function) return ID_ANON_FUNCTION;
+    if (a->anonymous.node || b->anonymous.node) return ID_ANON_NODE;
+    if (a->anonymous.module_clone || a->anonymous.empty_symbol || b->anonymous.module_clone || b->anonymous.empty_symbol) return ID_ANON_MODULE;
+    return ID_ANON_OTHER;
+}
+
 // The whole of compareTypes, for types whose keys are equal (same rank)
 int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
+    if (debug_env.order_stats) tie_calls++;
     u32 ra = (u32)(key >> KEY_RANK_SHIFT);
     // tsc's compareTypeNames (equal keys: both named or both not)
     if (!(key & KEY_UNNAMED)) {
@@ -484,7 +550,7 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
         if (c) return c;
         // (A literal and its fresh twin: tsc makes the fresh one from the regular one, a later id)
         if ((a->flags ^ b->flags) & TYF_FRESH_LITERAL) return a->flags & TYF_FRESH_LITERAL ? 1 : -1;
-        return a->id < b->id ? -1 : 1;
+        return cmp_ids(ID_SITE_STRING_TWIN, a->kind, a->id, b->id);
     }
 
     switch ((TyKind)a->kind) {
@@ -601,6 +667,12 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
                 if (a->kind == TY_ANONYMOUS && b->kind == TY_ANONYMOUS && !rva && !rvb) {
                     c = cmp_mappers(a->anonymous.mapper, b->anonymous.mapper);
                     if (c) return c;
+                    // (The alternatives of one spread of a union: in the order its cross product makes them, which
+                    // is tsc's creation order)
+                    if (a->anonymous.object_literal && b->anonymous.object_literal &&
+                        a->anonymous.spread_alternative != b->anonymous.spread_alternative) {
+                        return a->anonymous.spread_alternative < b->anonymous.spread_alternative ? -1 : 1;
+                    }
                 }
             }
             break;
@@ -655,7 +727,7 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
                 TyConditionalOuter const* ob = xb->conditional.outer;
                 int c = cmp_node_spans(oa ? oa->node : span_null, ob ? ob->node : span_null, oa != nullptr, ob != nullptr);
                 if (c) return c;
-                if (!oa || !ob || oa->node.buf != ob->node.buf) return xa->id < xb->id ? -1 : 1;
+                if (!oa || !ob || oa->node.buf != ob->node.buf) return cmp_ids(ID_SITE_CONDITIONAL_ROOT, a->kind, xa->id, xb->id);
             }
             int c = cmp_mappers(a->conditional.mapper, b->conditional.mapper);
             if (c) return c;
@@ -686,5 +758,5 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
             break;
         }
     }
-    return a->id < b->id ? -1 : 1;
+    return cmp_ids(ID_SITE_FINAL, debug_env.order_stats ? id_kind(a, b) : a->kind, a->id, b->id);
 }

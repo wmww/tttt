@@ -34,6 +34,8 @@ static void read_debug_env() {
         .ast_stats = getenv("TTTT_AST_STATS") != nullptr,
         .ast_malloc = getenv("TTTT_AST_MALLOC") != nullptr,
         .defer_stats = getenv("TTTT_DEFER_STATS") != nullptr,
+        .order_stats = getenv("TTTT_ORDER_STATS") != nullptr,
+        .order_seed = getenv("TTTT_ORDER_SEED") ? strtoull(getenv("TTTT_ORDER_SEED"), nullptr, 0) : 0,
     };
 }
 

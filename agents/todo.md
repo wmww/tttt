@@ -26,10 +26,10 @@ re-saved baseline only.
    The 12-core rerun ran on the human's laptop the same day (measurements.md "The 12-core box with PGO + LTO"):
    tttt has the best wall time on every corpus at K12, K24 is not worth its cost (the cap is confirmed), and bun's
    peak is still lower on 10 / 14.
-2. **Plan 86 stage 4's gate** (one session, measurement only): how often `ty_compare_tie()` falls back to type ids
-   on every corpus and the sweep's biggest projects. Write the number and the go/stop into plan 86. It decides
-   whether a shared concurrent type graph is compatible with byte-identical output, so it comes before stage 2's
-   design choices that would differ under one.
+2. Done: plan 86 stage 4's gate says **go, with two conditions** (plan 86 "Gate result"). Non-intrinsic id ties
+   are 0.06% of vscode's; permuting them (`TTTT_ORDER_SEED`) changes no corpus, DT, `$ExpectType` or source sweep
+   output and one suite test. The spread-of-a-union class got a structural key (suite +1). The other condition:
+   is_deeply_nested_as()'s "newer id" test.
 3. **Plan 86 stage 2, session 1**: cachegrind (`--cache-sim=yes`) on drizzle and tsc at K1, rank the largest sources
    of LL and I1 misses by function and by data structure; write the ranked lever list into plan 86 stage 2, then
    take the top one.
