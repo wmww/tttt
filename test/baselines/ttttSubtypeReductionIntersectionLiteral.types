@@ -1,0 +1,67 @@
+//// [test/cases/ttttSubtypeReductionIntersectionLiteral.ts] ////
+
+=== ttttSubtypeReductionIntersectionLiteral.ts ===
+// An intersection with a property an object literal lacks isn't its strict subtype (tsc's propertiesRelatedTo checks an
+// object literal target's missing properties in the intersection source's optional-properties pass too), so a
+// conditional's subtype reduction keeps the intersection and drops the literal (hono's jwt.ts destructuring)
+type Alg = "A" | "B";
+>Alg : Alg
+
+type Options = { alg: Alg } & { iss?: string; aud?: string[] };
+>Options : Options
+>alg : Alg
+>iss : string | undefined
+>aud : string[] | undefined
+
+type Strict = { alg: string } & { iss: string };
+>Strict : Strict
+>alg : string
+>iss : string
+
+function verify(algOrOptions: Alg | Options, b: boolean, q: Strict) {
+>verify : (algOrOptions: Alg | Options, b: boolean, q: Strict) => (string | string[] | { alg: string; } | undefined)[]
+>algOrOptions : Alg | Options
+>b : boolean
+>q : Strict
+
+    const { alg, iss, aud } = typeof algOrOptions === "string" ? { alg: algOrOptions } : algOrOptions;
+>alg : Alg
+>iss : string | undefined
+>aud : string[] | undefined
+>typeof algOrOptions === "string" ? { alg: algOrOptions } : algOrOptions : Options
+>typeof algOrOptions === "string" : boolean
+>typeof algOrOptions : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>algOrOptions : Alg | Options
+>"string" : "string"
+>{ alg: algOrOptions } : { alg: Alg; }
+>alg : Alg
+>algOrOptions : Alg
+>algOrOptions : Options
+
+    const r = b ? { alg: "" } : q;
+>r : { alg: string; } | Strict
+>b ? { alg: "" } : q : { alg: string; } | Strict
+>b : boolean
+>{ alg: "" } : { alg: string; }
+>alg : string
+>"" : ""
+>q : Strict
+
+    const s = b ? q : { alg: "" };
+>s : { alg: string; } | Strict
+>b ? q : { alg: "" } : { alg: string; } | Strict
+>b : boolean
+>q : Strict
+>{ alg: "" } : { alg: string; }
+>alg : string
+>"" : ""
+
+    return [alg, iss, aud, r, s];
+>[alg, iss, aud, r, s] : (string | string[] | { alg: string; } | undefined)[]
+>alg : Alg
+>iss : string | undefined
+>aud : string[] | undefined
+>r : { alg: string; } | Strict
+>s : { alg: string; } | Strict
+}
+

@@ -1,0 +1,59 @@
+//// [test/cases/ttttSubtypeReductionIntersectionLiteral.ts] ////
+
+=== ttttSubtypeReductionIntersectionLiteral.ts ===
+// An intersection with a property an object literal lacks isn't its strict subtype (tsc's propertiesRelatedTo checks an
+// object literal target's missing properties in the intersection source's optional-properties pass too), so a
+// conditional's subtype reduction keeps the intersection and drops the literal (hono's jwt.ts destructuring)
+type Alg = "A" | "B";
+>Alg : Symbol(Alg, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 0, 0))
+
+type Options = { alg: Alg } & { iss?: string; aud?: string[] };
+>Options : Symbol(Options, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 3, 21))
+>alg : Symbol(alg, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 4, 16))
+>Alg : Symbol(Alg, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 0, 0))
+>iss : Symbol(iss, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 4, 31))
+>aud : Symbol(aud, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 4, 45))
+
+type Strict = { alg: string } & { iss: string };
+>Strict : Symbol(Strict, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 4, 63))
+>alg : Symbol(alg, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 5, 15))
+>iss : Symbol(iss, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 5, 33))
+
+function verify(algOrOptions: Alg | Options, b: boolean, q: Strict) {
+>verify : Symbol(verify, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 5, 48))
+>algOrOptions : Symbol(algOrOptions, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 7, 16))
+>Alg : Symbol(Alg, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 0, 0))
+>Options : Symbol(Options, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 3, 21))
+>b : Symbol(b, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 7, 44))
+>q : Symbol(q, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 7, 56))
+>Strict : Symbol(Strict, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 4, 63))
+
+    const { alg, iss, aud } = typeof algOrOptions === "string" ? { alg: algOrOptions } : algOrOptions;
+>alg : Symbol(alg, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 8, 11))
+>iss : Symbol(iss, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 8, 16))
+>aud : Symbol(aud, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 8, 21))
+>algOrOptions : Symbol(algOrOptions, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 7, 16))
+>alg : Symbol(alg, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 8, 66))
+>algOrOptions : Symbol(algOrOptions, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 7, 16))
+>algOrOptions : Symbol(algOrOptions, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 7, 16))
+
+    const r = b ? { alg: "" } : q;
+>r : Symbol(r, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 9, 9))
+>b : Symbol(b, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 7, 44))
+>alg : Symbol(alg, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 9, 19))
+>q : Symbol(q, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 7, 56))
+
+    const s = b ? q : { alg: "" };
+>s : Symbol(s, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 10, 9))
+>b : Symbol(b, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 7, 44))
+>q : Symbol(q, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 7, 56))
+>alg : Symbol(alg, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 10, 23))
+
+    return [alg, iss, aud, r, s];
+>alg : Symbol(alg, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 8, 11))
+>iss : Symbol(iss, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 8, 16))
+>aud : Symbol(aud, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 8, 21))
+>r : Symbol(r, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 9, 9))
+>s : Symbol(s, Decl(ttttSubtypeReductionIntersectionLiteral.ts, 10, 9))
+}
+

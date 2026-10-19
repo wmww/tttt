@@ -1770,6 +1770,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttSubtypeReductionIntersectionLiteral': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttSuperConstructorsForTypeArguments': {
         errors: true,
         symbols: true,

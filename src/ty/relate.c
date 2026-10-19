@@ -2693,8 +2693,10 @@ static Ternary props_related_impl(
     // An object literal that isn't widened yet has no room for other properties, undefined ones included since tsgo 7.1
     // (propertiesRelatedTo for an isObjectLiteralType target): `string` isn't a subtype of the element `{}` of
     // `x.push("s"); x.push({})`, so the evolving array ends up `(string | {})[]`, and `{ valid: boolean; msg?: undefined }`
-    // isn't one of `{ valid: true }`
-    if (!optionals_only && ty_is_unwidened_object_literal(target) && (source->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
+    // isn't one of `{ valid: true }`. Also in the optional properties' check of an intersection source (tsc's
+    // propertiesRelatedTo doesn't skip it for optionalsOnly): `{ a } & { b? }` isn't a strict subtype of `{ a }`, which
+    // subtype reduction keeps next to it
+    if (ty_is_unwidened_object_literal(target) && (source->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
         u32 prop_count;
         SourceProp* props = source_props(me, source, source->kind == TY_INTERSECTION ? nullptr : ty_members(me, source), &prop_count);
         for (u32 i = 0; i < prop_count; i++) {
