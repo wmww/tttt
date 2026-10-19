@@ -2072,15 +2072,6 @@ static void move_error_into_chain(Error* error, Error* parent, VecError* related
     vec_error_push(&parent->sub_errors, line);
 }
 
-// An error a candidate's check logs directly (Error.always_logged), once however many candidates do (tsc's
-// diagnostics collection drops duplicates)
-static void append_logged_once(ErrorCtx* errs, Error const* error) {
-    for_each (other, vec_error, &errs->errors) {
-        if (other->ts_code == error->ts_code && span_eq(other->span, error->span) && cstr_eq(&other->message, &error->message)) return;
-    }
-    error_ctx_append_error(errs, error_clone(*error));
-}
-
 // tsgo's reportCallResolutionErrors: the last candidate's errors, each its own "No overload matches this call." chain
 // when there were several candidates (TypeScript 6 listed every candidate's errors for two or three)
 static void report_no_match(
@@ -2092,7 +2083,6 @@ static void report_no_match(
     for_each (e, vec_error, &collected.errors) {
         Error error = *e;
         if (unfit_count > 1) {
-            if (e->always_logged) append_logged_once(errs, e);
             error = (Error){ .ts_code = 2769, .phase = e->phase, .span = e->span,
                 .message = cstr_lit("No overload matches this call.") };
             error_sub_error_s(&error, span_null, TS_CODE_NONE, cstr_lit("The last overload gave the following error."));

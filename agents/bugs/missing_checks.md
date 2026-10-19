@@ -248,8 +248,6 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
     property declared optional (ty_check_assignable_to_access). Reduced: `class Inv { private _d?: D; get d() { return
     this._d } set d(v: typeof this._d) {...} }` and `inv.d = src` with src `{ kind: "s"; a: boolean | undefined } |
     undefined` against `D { kind: "s"; a?: boolean }`. Needs the missing type to survive reads (deep).
-  - vscode/eopt extensionsActions.ts:578 extra TS2412 next to tsc's TS2769 (dialogService.prompt's generic overloads,
-    `custom: cond ? undefined : {...}`): not reproduced in a probe.
 
 ## TS 7.1 window leftovers (triage 2026-10-09)
 - **Suggestion diagnostics** (harness only, `@captureSuggestions`): TS6807 overshifts and TS6385 'x' is deprecated for

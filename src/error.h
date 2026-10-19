@@ -34,9 +34,6 @@ typedef struct Error {
     // is kept, tsc's order of the two differs from tttt's
     bool scanner;
     bool suggestion; // tsc's DiagnosticCategory.Suggestion (only with CompilerOptions.capture_suggestions)
-    // Reported even where errors are only collected (an overload candidate's): tsc's elaborateElementwise adds its
-    // exactOptionalPropertyTypes error to the diagnostics directly
-    bool always_logged;
     // A declaration diagnostic (tsc's getDeclarationDiagnostics, TS4xxx/TS9xxx): emit reports them whatever gated the
     // semantic ones
     bool declaration;

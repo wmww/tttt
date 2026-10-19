@@ -1,0 +1,158 @@
+//// [test/cases/ttttOverloadExactOptionalElaboration.ts] ////
+
+=== ttttOverloadExactOptionalElaboration.ts ===
+// An overload candidate's elaborateElementwise TS2412 is one of its errors (tsgo collects it into the candidate's
+// diagnostics; TypeScript 6 logged it directly next to TS2769)
+interface IMd { readonly value: string; readonly isTrusted?: boolean }
+>IMd : Symbol(IMd, Decl(ttttOverloadExactOptionalElaboration.ts, 0, 0))
+>value : Symbol(IMd.value, Decl(ttttOverloadExactOptionalElaboration.ts, 2, 15))
+>isTrusted : Symbol(IMd.isTrusted, Decl(ttttOverloadExactOptionalElaboration.ts, 2, 39))
+
+declare class Md implements IMd { value: string; isTrusted?: boolean | undefined }
+>Md : Symbol(Md, Decl(ttttOverloadExactOptionalElaboration.ts, 2, 70))
+>IMd : Symbol(IMd, Decl(ttttOverloadExactOptionalElaboration.ts, 0, 0))
+>value : Symbol(Md.value, Decl(ttttOverloadExactOptionalElaboration.ts, 3, 33))
+>isTrusted : Symbol(Md.isTrusted, Decl(ttttOverloadExactOptionalElaboration.ts, 3, 48))
+
+interface Box { readonly md?: { markdown: IMd }[] }
+>Box : Symbol(Box, Decl(ttttOverloadExactOptionalElaboration.ts, 3, 82))
+>md : Symbol(Box.md, Decl(ttttOverloadExactOptionalElaboration.ts, 4, 15))
+>markdown : Symbol(markdown, Decl(ttttOverloadExactOptionalElaboration.ts, 4, 31))
+>IMd : Symbol(IMd, Decl(ttttOverloadExactOptionalElaboration.ts, 0, 0))
+
+interface Base { readonly message: string; readonly custom?: boolean | Box }
+>Base : Symbol(Base, Decl(ttttOverloadExactOptionalElaboration.ts, 4, 51))
+>message : Symbol(Base.message, Decl(ttttOverloadExactOptionalElaboration.ts, 5, 16))
+>custom : Symbol(Base.custom, Decl(ttttOverloadExactOptionalElaboration.ts, 5, 42))
+>Box : Symbol(Box, Decl(ttttOverloadExactOptionalElaboration.ts, 3, 82))
+
+interface P<T> extends Base { readonly buttons?: { label: string; run(): T }[]; readonly cancelButton?: { run(): T } | true | string }
+>P : Symbol(P, Decl(ttttOverloadExactOptionalElaboration.ts, 5, 76))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 6, 12))
+>Base : Symbol(Base, Decl(ttttOverloadExactOptionalElaboration.ts, 4, 51))
+>buttons : Symbol(P.buttons, Decl(ttttOverloadExactOptionalElaboration.ts, 6, 29))
+>label : Symbol(label, Decl(ttttOverloadExactOptionalElaboration.ts, 6, 50))
+>run : Symbol(run, Decl(ttttOverloadExactOptionalElaboration.ts, 6, 65))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 6, 12))
+>cancelButton : Symbol(P.cancelButton, Decl(ttttOverloadExactOptionalElaboration.ts, 6, 79))
+>run : Symbol(run, Decl(ttttOverloadExactOptionalElaboration.ts, 6, 105))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 6, 12))
+
+interface PC<T> extends P<T> { readonly cancelButton: { run(): T } }
+>PC : Symbol(PC, Decl(ttttOverloadExactOptionalElaboration.ts, 6, 134))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 7, 13))
+>P : Symbol(P, Decl(ttttOverloadExactOptionalElaboration.ts, 5, 76))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 7, 13))
+>cancelButton : Symbol(PC.cancelButton, Decl(ttttOverloadExactOptionalElaboration.ts, 7, 30))
+>run : Symbol(run, Decl(ttttOverloadExactOptionalElaboration.ts, 7, 55))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 7, 13))
+
+interface PD<T> extends P<T> { readonly cancelButton: true | string }
+>PD : Symbol(PD, Decl(ttttOverloadExactOptionalElaboration.ts, 7, 68))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 8, 13))
+>P : Symbol(P, Decl(ttttOverloadExactOptionalElaboration.ts, 5, 76))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 8, 13))
+>cancelButton : Symbol(PD.cancelButton, Decl(ttttOverloadExactOptionalElaboration.ts, 8, 30))
+
+interface S {
+>S : Symbol(S, Decl(ttttOverloadExactOptionalElaboration.ts, 8, 69))
+
+  prompt<T>(p: PC<T>): Promise<T | undefined>;
+>prompt : Symbol(S.prompt, Decl(ttttOverloadExactOptionalElaboration.ts, 9, 13), Decl(ttttOverloadExactOptionalElaboration.ts, 10, 46), Decl(ttttOverloadExactOptionalElaboration.ts, 11, 34))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 10, 9))
+>p : Symbol(p, Decl(ttttOverloadExactOptionalElaboration.ts, 10, 12))
+>PC : Symbol(PC, Decl(ttttOverloadExactOptionalElaboration.ts, 6, 134))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 10, 9))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 10, 9))
+
+  prompt<T>(p: PD<T>): Promise<T>;
+>prompt : Symbol(S.prompt, Decl(ttttOverloadExactOptionalElaboration.ts, 9, 13), Decl(ttttOverloadExactOptionalElaboration.ts, 10, 46), Decl(ttttOverloadExactOptionalElaboration.ts, 11, 34))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 11, 9))
+>p : Symbol(p, Decl(ttttOverloadExactOptionalElaboration.ts, 11, 12))
+>PD : Symbol(PD, Decl(ttttOverloadExactOptionalElaboration.ts, 7, 68))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 11, 9))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 11, 9))
+
+  prompt<T>(p: P<T>): Promise<T>;
+>prompt : Symbol(S.prompt, Decl(ttttOverloadExactOptionalElaboration.ts, 9, 13), Decl(ttttOverloadExactOptionalElaboration.ts, 10, 46), Decl(ttttOverloadExactOptionalElaboration.ts, 11, 34))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 12, 9))
+>p : Symbol(p, Decl(ttttOverloadExactOptionalElaboration.ts, 12, 12))
+>P : Symbol(P, Decl(ttttOverloadExactOptionalElaboration.ts, 5, 76))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 12, 9))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 12, 9))
+}
+interface S1 { prompt<T>(p: P<T>): Promise<T>; }
+>S1 : Symbol(S1, Decl(ttttOverloadExactOptionalElaboration.ts, 13, 1))
+>prompt : Symbol(S1.prompt, Decl(ttttOverloadExactOptionalElaboration.ts, 14, 14))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 14, 22))
+>p : Symbol(p, Decl(ttttOverloadExactOptionalElaboration.ts, 14, 25))
+>P : Symbol(P, Decl(ttttOverloadExactOptionalElaboration.ts, 5, 76))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 14, 22))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttOverloadExactOptionalElaboration.ts, 14, 22))
+
+declare const s: S;
+>s : Symbol(s, Decl(ttttOverloadExactOptionalElaboration.ts, 15, 13))
+>S : Symbol(S, Decl(ttttOverloadExactOptionalElaboration.ts, 8, 69))
+
+declare const s1: S1;
+>s1 : Symbol(s1, Decl(ttttOverloadExactOptionalElaboration.ts, 16, 13))
+>S1 : Symbol(S1, Decl(ttttOverloadExactOptionalElaboration.ts, 13, 1))
+
+declare const detail: string | Md;
+>detail : Symbol(detail, Decl(ttttOverloadExactOptionalElaboration.ts, 17, 13))
+>Md : Symbol(Md, Decl(ttttOverloadExactOptionalElaboration.ts, 2, 70))
+
+declare function isString(x: unknown): x is string;
+>isString : Symbol(isString, Decl(ttttOverloadExactOptionalElaboration.ts, 17, 34))
+>x : Symbol(x, Decl(ttttOverloadExactOptionalElaboration.ts, 18, 26))
+>x : Symbol(x, Decl(ttttOverloadExactOptionalElaboration.ts, 18, 26))
+
+async function f() {
+>f : Symbol(f, Decl(ttttOverloadExactOptionalElaboration.ts, 18, 51))
+
+  await s.prompt({
+>s.prompt : Symbol(S.prompt, Decl(ttttOverloadExactOptionalElaboration.ts, 9, 13), Decl(ttttOverloadExactOptionalElaboration.ts, 10, 46), Decl(ttttOverloadExactOptionalElaboration.ts, 11, 34))
+>s : Symbol(s, Decl(ttttOverloadExactOptionalElaboration.ts, 15, 13))
+>prompt : Symbol(S.prompt, Decl(ttttOverloadExactOptionalElaboration.ts, 9, 13), Decl(ttttOverloadExactOptionalElaboration.ts, 10, 46), Decl(ttttOverloadExactOptionalElaboration.ts, 11, 34))
+
+    message: "m",
+>message : Symbol(message, Decl(ttttOverloadExactOptionalElaboration.ts, 20, 18))
+
+    custom: isString(detail) ? undefined : { md: [{ markdown: detail }] },
+>custom : Symbol(custom, Decl(ttttOverloadExactOptionalElaboration.ts, 21, 17))
+>isString : Symbol(isString, Decl(ttttOverloadExactOptionalElaboration.ts, 17, 34))
+>detail : Symbol(detail, Decl(ttttOverloadExactOptionalElaboration.ts, 17, 13))
+>undefined : Symbol(undefined)
+>md : Symbol(md, Decl(ttttOverloadExactOptionalElaboration.ts, 22, 44))
+>markdown : Symbol(markdown, Decl(ttttOverloadExactOptionalElaboration.ts, 22, 51))
+>detail : Symbol(detail, Decl(ttttOverloadExactOptionalElaboration.ts, 17, 13))
+
+    cancelButton: { run: () => 1 },
+>cancelButton : Symbol(cancelButton, Decl(ttttOverloadExactOptionalElaboration.ts, 22, 74))
+>run : Symbol(run, Decl(ttttOverloadExactOptionalElaboration.ts, 23, 19))
+
+  });
+  await s1.prompt({
+>s1.prompt : Symbol(S1.prompt, Decl(ttttOverloadExactOptionalElaboration.ts, 14, 14))
+>s1 : Symbol(s1, Decl(ttttOverloadExactOptionalElaboration.ts, 16, 13))
+>prompt : Symbol(S1.prompt, Decl(ttttOverloadExactOptionalElaboration.ts, 14, 14))
+
+    message: "m",
+>message : Symbol(message, Decl(ttttOverloadExactOptionalElaboration.ts, 25, 19))
+
+    custom: isString(detail) ? undefined : { md: [{ markdown: detail }] },
+>custom : Symbol(custom, Decl(ttttOverloadExactOptionalElaboration.ts, 26, 17))
+>isString : Symbol(isString, Decl(ttttOverloadExactOptionalElaboration.ts, 17, 34))
+>detail : Symbol(detail, Decl(ttttOverloadExactOptionalElaboration.ts, 17, 13))
+>undefined : Symbol(undefined)
+>md : Symbol(md, Decl(ttttOverloadExactOptionalElaboration.ts, 27, 44))
+>markdown : Symbol(markdown, Decl(ttttOverloadExactOptionalElaboration.ts, 27, 51))
+>detail : Symbol(detail, Decl(ttttOverloadExactOptionalElaboration.ts, 17, 13))
+
+  });
+}
+

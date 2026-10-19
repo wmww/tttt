@@ -1477,6 +1477,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttOverloadExactOptionalElaboration': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttOverloadedStaticMethodTypeof': {
         errors: true,
         symbols: true,

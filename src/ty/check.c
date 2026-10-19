@@ -302,11 +302,11 @@ static bool elaborate_element(
     AssignHead head = item->computed_non_literal ? HEAD_COMPUTED : HEAD_TYPE;
     Error* error;
     if (!item->message_code && ty_exact_optional_mismatch(me, specific, target_prop)) {
-        // (tsc's elaborateElementwise: the error is on the property, with no elaboration)
+        // (tsc's elaborateElementwise: the error is on the property, with no elaboration. tsgo collects it with the
+        // others, TypeScript 6 logged it directly even for an overload candidate)
         cstr source_str = ty_to_cstr(me, specific), target_str = ty_to_cstr(me, target_prop);
         error = error_ctx_error_d(errs, item->error_span, 2412, "Type '", source_str, "' is not assignable to type '", target_str,
             "' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.");
-        if (error) error->always_logged = true;
         c_drop(cstr, &source_str, &target_str);
     } else {
         // (An optional target property's type is shown without the missing type: tsc's removeMissingType)

@@ -1,0 +1,134 @@
+//// [test/cases/ttttOverloadExactOptionalElaboration.ts] ////
+
+=== ttttOverloadExactOptionalElaboration.ts ===
+// An overload candidate's elaborateElementwise TS2412 is one of its errors (tsgo collects it into the candidate's
+// diagnostics; TypeScript 6 logged it directly next to TS2769)
+interface IMd { readonly value: string; readonly isTrusted?: boolean }
+>value : string
+>isTrusted : boolean | undefined
+
+declare class Md implements IMd { value: string; isTrusted?: boolean | undefined }
+>Md : Md
+>value : string
+>isTrusted : boolean | undefined
+
+interface Box { readonly md?: { markdown: IMd }[] }
+>md : { markdown: IMd; }[] | undefined
+>markdown : IMd
+
+interface Base { readonly message: string; readonly custom?: boolean | Box }
+>message : string
+>custom : boolean | Box | undefined
+
+interface P<T> extends Base { readonly buttons?: { label: string; run(): T }[]; readonly cancelButton?: { run(): T } | true | string }
+>buttons : { label: string; run(): T; }[] | undefined
+>label : string
+>run : () => T
+>cancelButton : string | true | { run(): T; } | undefined
+>run : () => T
+>true : true
+
+interface PC<T> extends P<T> { readonly cancelButton: { run(): T } }
+>cancelButton : { run(): T; }
+>run : () => T
+
+interface PD<T> extends P<T> { readonly cancelButton: true | string }
+>cancelButton : string | true
+>true : true
+
+interface S {
+  prompt<T>(p: PC<T>): Promise<T | undefined>;
+>prompt : { <T>(p: PC<T>): Promise<T | undefined>; <T_1>(p: PD<T_1>): Promise<T_1>; <T_1>(p: P<T_1>): Promise<T_1>; }
+>p : PC<T>
+
+  prompt<T>(p: PD<T>): Promise<T>;
+>prompt : { <T_1>(p: PC<T_1>): Promise<T_1 | undefined>; <T>(p: PD<T>): Promise<T>; <T_1>(p: P<T_1>): Promise<T_1>; }
+>p : PD<T>
+
+  prompt<T>(p: P<T>): Promise<T>;
+>prompt : { <T_1>(p: PC<T_1>): Promise<T_1 | undefined>; <T_1>(p: PD<T_1>): Promise<T_1>; <T>(p: P<T>): Promise<T>; }
+>p : P<T>
+}
+interface S1 { prompt<T>(p: P<T>): Promise<T>; }
+>prompt : <T>(p: P<T>) => Promise<T>
+>p : P<T>
+
+declare const s: S;
+>s : S
+
+declare const s1: S1;
+>s1 : S1
+
+declare const detail: string | Md;
+>detail : string | Md
+
+declare function isString(x: unknown): x is string;
+>isString : (x: unknown) => x is string
+>x : unknown
+
+async function f() {
+>f : () => Promise<void>
+
+  await s.prompt({
+>await s.prompt({    message: "m",    custom: isString(detail) ? undefined : { md: [{ markdown: detail }] },    cancelButton: { run: () => 1 },  }) : number | undefined
+>s.prompt({    message: "m",    custom: isString(detail) ? undefined : { md: [{ markdown: detail }] },    cancelButton: { run: () => 1 },  }) : Promise<number | undefined>
+>s.prompt : { <T>(p: PC<T>): Promise<T | undefined>; <T>(p: PD<T>): Promise<T>; <T>(p: P<T>): Promise<T>; }
+>s : S
+>prompt : { <T>(p: PC<T>): Promise<T | undefined>; <T>(p: PD<T>): Promise<T>; <T>(p: P<T>): Promise<T>; }
+>{    message: "m",    custom: isString(detail) ? undefined : { md: [{ markdown: detail }] },    cancelButton: { run: () => 1 },  } : { message: string; custom: { md: { markdown: Md; }[]; } | undefined; cancelButton: { run: () => number; }; }
+
+    message: "m",
+>message : string
+>"m" : "m"
+
+    custom: isString(detail) ? undefined : { md: [{ markdown: detail }] },
+>custom : { md: { markdown: Md; }[]; } | undefined
+>isString(detail) ? undefined : { md: [{ markdown: detail }] } : { md: { markdown: Md; }[]; } | undefined
+>isString(detail) : boolean
+>isString : (x: unknown) => x is string
+>detail : string | Md
+>undefined : undefined
+>{ md: [{ markdown: detail }] } : { md: { markdown: Md; }[]; }
+>md : { markdown: Md; }[]
+>[{ markdown: detail }] : { markdown: Md; }[]
+>{ markdown: detail } : { markdown: Md; }
+>markdown : Md
+>detail : Md
+
+    cancelButton: { run: () => 1 },
+>cancelButton : { run: () => number; }
+>{ run: () => 1 } : { run: () => number; }
+>run : () => number
+>() => 1 : () => number
+>1 : 1
+
+  });
+  await s1.prompt({
+>await s1.prompt({    message: "m",    custom: isString(detail) ? undefined : { md: [{ markdown: detail }] },  }) : unknown
+>s1.prompt({    message: "m",    custom: isString(detail) ? undefined : { md: [{ markdown: detail }] },  }) : Promise<unknown>
+>s1.prompt : <T>(p: P<T>) => Promise<T>
+>s1 : S1
+>prompt : <T>(p: P<T>) => Promise<T>
+>{    message: "m",    custom: isString(detail) ? undefined : { md: [{ markdown: detail }] },  } : { message: string; custom: { md: { markdown: Md; }[]; } | undefined; }
+
+    message: "m",
+>message : string
+>"m" : "m"
+
+    custom: isString(detail) ? undefined : { md: [{ markdown: detail }] },
+>custom : { md: { markdown: Md; }[]; } | undefined
+>isString(detail) ? undefined : { md: [{ markdown: detail }] } : { md: { markdown: Md; }[]; } | undefined
+>isString(detail) : boolean
+>isString : (x: unknown) => x is string
+>detail : string | Md
+>undefined : undefined
+>{ md: [{ markdown: detail }] } : { md: { markdown: Md; }[]; }
+>md : { markdown: Md; }[]
+>[{ markdown: detail }] : { markdown: Md; }[]
+>{ markdown: detail } : { markdown: Md; }
+>markdown : Md
+>detail : Md
+
+  });
+}
+
