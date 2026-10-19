@@ -20,14 +20,14 @@ Day one, by project (+ spurious, - missing, counts):
   only (`-p` of tsconfig.src.json and cacheOverride/classicSignature match tsc). The cacheOverride tests swap Apollo's
   cache type through module augmentation in a referenced project (cacheOverride/shared): which augmentations a program
   sees differs between referenced sources (tttt) and their emitted `.d.ts` (tsc). Not investigated further
-- astro: +TS2322 5, +TS2741 4, +TS2345 2, +TS2740 1, -TS18048 2 (agent B's verdicts below)
+- astro: +TS2322 1, +TS2741 2, -TS18048 2 (agent B's verdicts below)
 - atproto: +TS2554 2, +TS2322 1, +TS2307 1 (below)
 - babel: +TS2590 1 (babel-traverse/src/visitors.ts:168; tttt `-p` against the built `.d.ts` reports it too, tsc's
   `-p` there not checked: probably a plain checker bug, not looked into)
-- base-ui: +TS2322 7, `-b` by design: MenuHandle<P> extends BasePopupHandle, whose variance comes from private
-  members (`private readonly attachedStores: Store[]`); an emitted `.d.ts` declares privates untyped, so tsc -b finds
-  `MenuHandle<"a" | "b">` assignable to `MenuHandle<string>` where the sources say it isn't (docs demos 6), and the
-  same for createItems.test.tsx's ComboboxItemCollection (a `declare class` with a private brand). Fixed: TS2590
+- base-ui: +TS2322 1: createItems.test.tsx's ComboboxItemCollection (a `declare class` with a private brand and an
+  explicit `in out Item`, so its variance doesn't come from the private member: some other difference, not looked
+  into). The docs demos' MenuHandle ones (6, variance from private members) are fixed: a reference source's private
+  members are untyped to its readers, as in its `.d.ts`. Fixed: TS2590
 - better-auth: -TS7006 258, -TS2578 18, -TS2554 4, -TS2339 3, -TS7031, -TS2349: one cause, `-b` by design. tsgo's
   declaration emit of `router` (packages/better-auth/src/api/index.ts) leaks an unbound type parameter name (`{ [K in
   keyof T_2 as K extends keyof T_1 ? never : K]: Base[K] }`, from `OverrideMerge<Base, ...>`), so with skipLibCheck
@@ -94,7 +94,11 @@ bolt onto the window.
 **Fixed 2026-10-19 (agent B):** outputs of unreferenced projects built earlier (the builder window: atproto's and
 commitlint's TS2307 and cascades, astro's `dist` imports), `stripInternal` references (astro's TS2578 x23), the
 `x.constructor === C` narrowing of `this` (atproto's TS2339 `never`), `this is T` predicates (babel's TS2775), TS6142 on
-import types (dyad), `.json` includes under module node20/nodenext (astro's TS6307, a `-p` bug too).
+import types (dyad), `.json` includes under module node20/nodenext (astro's TS6307, a `-p` bug too); then a built
+project's file reached by its own path is the program's own (better-auth's TS5115 x3), a reference source's
+private and #private members are untyped to its readers (relations skip their types, `x['p']` from outside is any;
+astro telemetry's TS2740, base-ui's MenuHandle demos), stripInternal strips type literal members too (astro's
+ImageMetadata.fsPath: the image tests' TS2322/TS2345).
 
 **What's left of atproto, astro (agent B's verdicts):**
 - **Imports only a body uses** (astro `markdown/remark` tests: +TS2322/+TS2741 on `ElementData`): tsc reads
@@ -104,12 +108,6 @@ import types (dyad), `.json` includes under module node20/nodenext (astro's TS63
   its `.d.ts` keeps them (side-effect imports, names its declarations mention, and whatever `import("...")` inferred types
   add), which needs the declaration emit's view of the file: not a cheap approximation. The same family as the verdict
   above (reading emitted declarations, not sources).
-- **Private members are untyped in a `.d.ts`** (astro telemetry/test/index.test.ts +TS2740: `telemetry['config'] =
-  config` writes a `private config: GlobalConfig`): declaration emit writes `private config;`, so tsc sees `any`. A
-  cheap, principled candidate (base-ui's verdict above is the same effect, through variance): in a reference source read under `-b` (`from_reference`), a class's `private` members
-  read as untyped properties (methods too), like `source_file_reads_as_declaration()` does for synthetic defaults.
-  Probably also astro's +TS2345/+TS2322 on `ImageMetadata`-ish literals (assets/utils.test.ts, getImage.test.ts,
-  build/incremental-images.test.ts): not checked.
 - astro -TS18048 2 (integrations/cloudflare/src/utils/prerender-response.ts:139 `chunk`): not looked into.
 - **The builder window is a race in tsgo** (atproto +TS2307 1, oauth-client's `@atproto-labs/identity-resolver`): tsgo's
   4 builders take projects in build order and wait only on references, so whether an unreferenced project's `dist`
