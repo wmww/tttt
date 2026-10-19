@@ -698,6 +698,22 @@ static csview program_source_of_output(Program const* me, csview path) {
     return ret;
 }
 
+// The source file a referenced project's output declaration file stands for (absolute), empty if path isn't one,
+// reading outputs too
+static csview program_source_of_output_any(Program const* me, csview path) {
+    if (!my redirects || !is_declaration_path(path)) return c_sv("");
+    cstr absolute = path.size && path.buf[0] == '/' ? cstr_from_sv(path) : absolute_path_of(program_cwd(me), path);
+    csview ret = project_redirects_source_of_output(my redirects, cstr_sv(&absolute));
+    // (Through a link that wasn't followed: preserveSymlinks, tsgo's realpathDtsToSource)
+    if (!ret.size && csview_contains(cstr_sv(&absolute), "/node_modules/") && my resolver) {
+        cstr real = module_resolver_real_path_lenient(my resolver, cstr_sv(&absolute));
+        if (cstr_size(&real)) ret = project_redirects_source_of_output(my redirects, cstr_sv(&real));
+        cstr_drop(&real);
+    }
+    cstr_drop(&absolute);
+    return ret;
+}
+
 // The output declaration file of a referenced project's source (absolute), empty if path isn't one
 static csview program_output_of_source(Program const* me, csview path) {
     if (!my redirects || is_declaration_path(path)) return c_sv("");
@@ -837,11 +853,22 @@ static bool preresolved_take(Preresolved* me, ModuleRef const* ref, ResolutionMo
     return false;
 }
 
+// Where a file's module names resolve from: reading outputs, a referenced project's output declaration file's resolve
+// from its source (tsgo's getRedirectForResolution), with its project's options (program_resolver_of())
+static csview program_resolution_containing(Program const* me, SourceFile const* file) {
+    if (!file) return c_sv("");
+    if (my reference_outputs && file->resolution_project && file->is_declaration) {
+        csview source = program_source_of_output_any(me, cstr_sv(&file->canonical_path));
+        if (source.size) return source;
+    }
+    return cstr_sv(&file->canonical_path);
+}
+
 // A resolved TypeScript file becomes part of the program, anything else is remembered on the ref as why there's no file
 static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* ref) {
     program_resolver(me);
     ModuleResolver* resolver = program_resolver_of(me, source);
-    csview containing = cstr_sv(&source->canonical_path);
+    csview containing = program_resolution_containing(me, source);
     ResolutionMode mode = program_module_ref_mode(me, source, ref);
     ResolvedModule resolved;
     if (!preresolved_take(source->preresolved, ref, mode, &resolved)) {
@@ -1056,7 +1083,7 @@ static SourceFile* program_load_type_reference(
     else has_mode = false;
     program_resolver(me);
     ResolvedModule resolved = module_resolver_resolve_type_reference(
-        program_resolver_of(me, source), name, source ? cstr_sv(&source->canonical_path) : c_sv(""),
+        program_resolver_of(me, source), name, program_resolution_containing(me, source),
         has_mode ? &mode : nullptr
     );
     program_learn_symlink(me, &resolved);
@@ -1538,8 +1565,13 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
         cstr absolute = absolute_path_of(program_cwd(me), path);
         if (my reference_outputs) {
             csview source = source_file->is_declaration ?
-                project_redirects_source_of_output(my redirects, cstr_sv(&absolute)) : c_sv("");
+                program_source_of_output_any(me, cstr_sv(&absolute)) : c_sv("");
             if (source.size) source_file->resolution_project = project_redirects_project_of(my redirects, source);
+            // (A referenced project's own declaration file, read as itself, resolves with its options too: tsgo's
+            // getRedirectForResolution)
+            else if (source_file->is_declaration) {
+                source_file->resolution_project = project_redirects_project_of(my redirects, cstr_sv(&absolute));
+            }
         } else {
             source_file->from_reference = project_redirects_project_of(my redirects, cstr_sv(&absolute));
             source_file->resolution_project = source_file->from_reference;
@@ -1637,7 +1669,7 @@ static void program_queue_path(Program* me, LoadPool* pool, csview absolute, boo
 static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* file) {
     if (my options.no_resolve) return;
     ModuleResolver* resolver = program_resolver_of(me, file);
-    csview containing = cstr_sv(&file->canonical_path);
+    csview containing = program_resolution_containing(me, file);
     Preresolved* preresolved = file->module_ref_count ? c_new(Preresolved, {
         .entries = c_new_n(PreresolvedEntry, file->module_ref_count),
     }) : nullptr;
@@ -4911,6 +4943,15 @@ cstr program_module_specifier_ending(
     // (tsc's command line names a referenced project's source by its output declaration file first, then by itself:
     // GetSourceOfProjectReferenceIfOutputIncluded and GetEachFileNameOfModule's referenceRedirect)
     csview output = target->from_reference ? project_redirects_output_of_source(my redirects, cstr_sv(&target_path)) : c_sv("");
+    // (Reading outputs, a referenced project's output declaration file is named as its source would be, the output
+    // first: tsgo's GetSourceOfProjectReferenceIfOutputIncluded)
+    if (my reference_outputs && target->resolution_project && target->is_declaration) {
+        csview source = program_source_of_output_any(me, cstr_sv(&target_path));
+        if (source.size) {
+            output = project_redirects_output_of_source(my redirects, source);
+            cstr_assign_sv(&target_path, source);
+        }
+    }
     CompilerOptions const* options = program_options_of(me, importing);
     cstr project_dir = cstr_size(&options->config_dir) ? absolute_path_of(cwd, cstr_sv(&options->config_dir)) : cstr_null;
     SpecifierRequest request = {

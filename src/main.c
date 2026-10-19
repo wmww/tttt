@@ -21,6 +21,7 @@
 #include "project.h"
 #include "load_pool.h"
 #include "expect_types.h"
+#include "emit_store.h"
 #include <cleat/filesystem.h>
 #include <pthread.h>
 #include <stdatomic.h>
@@ -71,6 +72,11 @@ typedef struct Options {
     // Not -b and no noEmit on the command line: tttt is `tsc --noEmit` unless the options make it
     // `tsc --emitDeclarationOnly` (apply_compiler_options())
     bool implicit_no_emit;
+    // -b reading its references' emitted declarations (plan 87): the store the program adds its declaration files to
+    // (as emit_owner, its build position) and the view of the earlier ones' it reads through
+    EmitStore* emit_store;
+    u32 emit_owner;
+    EmitView* emit_view;
     const char** paths;
     intptr_t path_count;
     // --strictNullChecks false, --target es2020 and so on, in order
@@ -548,6 +554,17 @@ static bool write_declarations(Options const* opts, Output* out, Program* progra
     return failed;
 }
 
+// -b reading emitted declarations (plan 87): every declaration file the program emits goes to the store, written or not
+static void store_declarations(Options const* opts, Program* program) {
+    for (u32 i = 0; i < program_source_count(program); i++) {
+        SourceFile const* source = program_source_at(program, i);
+        csview path = cstr_sv(&source->declaration_output_path);
+        if (!source->declaration_output || !path.size || program_emit_blocked(program, path)) continue;
+        if (getenv("TTTT_DEBUG_EMIT_STORE")) eprintln("stored ", path, " for ", opts->emit_owner);
+        emit_store_add(opts->emit_store, opts->emit_owner, path, cstr_sv(source->declaration_output));
+    }
+}
+
 // Checks one program, logically returning the exit code to leave with: the files on the command line (with the
 // config's options if there's a config), else the config's files. With a config the program sees the projects it
 // references through their sources (projects is where they're loaded, project the config's). Problems with the checked
@@ -571,10 +588,15 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     ProjectRedirects const* redirects, bool last, CheckCounts* counts, bool defer, returns int
 ) {
     ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
-    Program* program = program_new(errs, fs);
+    Program* program = program_new(errs, opts->emit_view ? emit_view_fs(opts->emit_view) : fs);
     program_set_defer_bodies(program, defer);
-    program_set_realpath(program, real_path_of, nullptr);
-    program_set_file_size(program, file_size_of, nullptr);
+    if (opts->emit_view) {
+        program_set_realpath(program, emit_view_real_path, opts->emit_view);
+        program_set_file_size(program, emit_view_file_size, opts->emit_view);
+    } else {
+        program_set_realpath(program, real_path_of, nullptr);
+        program_set_file_size(program, file_size_of, nullptr);
+    }
     program_set_checkers(program, opts->checkers);
     program_set_checker_cap(program, opts->checker_cap);
     // (--expect-types reads each file's types in the checker that checked it)
@@ -605,7 +627,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     }
     // (-p reads a referenced project's built outputs like tsc's command line, -b its sources: they stand for the
     // outputs its build would have written)
-    if (project_redirects_count(redirects)) program_set_references(program, redirects, !opts->build);
+    if (project_redirects_count(redirects)) program_set_references(program, redirects, !opts->build || opts->emit_store);
     program_set_threads(program, opts->threads);
     // (Libraries' errors are dropped once they're loaded: these come after)
     bool has_inputs = opts->path_count + root_files.count > 0;
@@ -765,7 +787,9 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
             typecheck = emit_declarations;
         }
         program_declaration_diagnostics_cli(program, parse_errors || !error_ctx_empty(&names) || !error_ctx_empty(errs));
-        if (opts->dts_dump || (options->emit_declaration_only && emit_declarations)) program_set_emit_declarations(program, true);
+        if (opts->dts_dump || ((options->emit_declaration_only || opts->emit_store) && emit_declarations)) {
+            program_set_emit_declarations(program, true);
+        }
         // (Gated, only the declarations are walked: tsc's emit resolver types only what they print. Same output, a
         // fraction of the work: jest's packages, each gated by TS5108)
         bool declarations_only = (gated || getenv("TTTT_DECLARATIONS_ONLY")) && typecheck && !opts->expect_types;
@@ -841,6 +865,10 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         report_errors(&shown, errs);
         if (!ret) ret = 1;
     }
+    // (What tsc -b writes, the programs after this one read: tsc 5.6+ writes past errors, but not with noEmitOnError)
+    if (opts->emit_store && emit_declarations && typecheck && !(options->no_emit_on_error && vec_error_size(&shown))) {
+        store_declarations(opts, program);
+    }
     intptr_t printed = print_diagnostics(opts, out, program, &shown);
     if (opts->expect_types && typecheck) {
         output_flush(out);
@@ -911,6 +939,10 @@ typedef struct BuildJob {
     FailableResult result;
     int ret;
     bool done; // Under Build.lock
+    // Reading emitted declarations (Build.store): the jobs (by build position) whose files the program sees, which it
+    // waits for, and its view of them
+    bool* visible;
+    EmitView* view;
 } BuildJob;
 
 typedef struct Build {
@@ -920,6 +952,7 @@ typedef struct Build {
     u32 const* order;
     u32 count;
     BuildJob* jobs;
+    EmitStore* store; // Null: references read as sources
     atomic_uint next; // The next job a build thread takes
     atomic_uint end; // Nothing from here on is started (--stopBuildOnErrors)
     pthread_mutex_t lock;
@@ -946,13 +979,28 @@ static void build_run(Build* me, u32 i) {
         return;
     }
     // (The project set is complete and only read from here on: build() listed every root file up front)
-    job->result = check_files(&my project_opts, &job->out, cstr_sv(&project->config), (ProjectSet*)my projects,
+    Options opts = my project_opts;
+    if (my store) {
+        opts.emit_store = my store;
+        opts.emit_owner = i;
+        opts.emit_view = job->view = emit_view_new(my store, fs, job->visible);
+    }
+    job->result = check_files(&opts, &job->out, cstr_sv(&project->config), (ProjectSet*)my projects,
         my order[i], job->redirects, i + 1 == my count, &job->counts, !my project_opts.no_defer_bodies, &job->ret);
 }
 
 static void* build_thread(void* arg) {
     Build* me = arg;
     for (u32 i; (i = atomic_fetch_add(&my next, 1)) < atomic_load(&my end);) {
+        if (my store) {
+            // (What the program reads is done first: tsgo's builders wait on their references. Every job it waits for
+            // is earlier, so has been taken)
+            pthread_mutex_lock(&my lock);
+            for (u32 j = 0; j < i; j++) {
+                while (my jobs[i].visible[j] && !my jobs[j].done) pthread_cond_wait(&my done, &my lock);
+            }
+            pthread_mutex_unlock(&my lock);
+        }
         build_run(me, i);
         pthread_mutex_lock(&my lock);
         my jobs[i].done = true;
@@ -1015,13 +1063,39 @@ static_failable build(Options const* opts, returns int) {
     // project is built by the time one 4 places later starts, else it races with it, and counts as not built
     // (hacks.md). (The one way --builders changes the output, like tsgo's: `--builders 1` is tsc 5's sequential -b)
     u32 window = opts->build_jobs ? opts->build_jobs : TSGO_BUILDERS;
+    // Reading emitted declarations (plan 87): a program sees what its references (transitively) and the projects the
+    // window counts as built emitted, through its view of the store
+    if (getenv("TTTT_BUILD_EMITTED")) b.store = emit_store_new(count);
+    u32 position_count = 0;
+    for (u32 i = 0; i < count; i++) if (order[i] + 1 > position_count) position_count = order[i] + 1;
+    u32* position = c_new_n(u32, position_count ? position_count : 1);
+    for (u32 i = 0; i < position_count; i++) position[i] = UINT32_MAX;
+    for (u32 i = 0; i < count; i++) position[order[i]] = i;
+    u32* stack = c_new_n(u32, count + 1);
     for (u32 i = 0; i < count; i++) {
         b.jobs[i].out.buffered = jobs > 1;
         if (!project_set_at(projects, order[i])->readable) continue;
         project_set_root_files(projects, order[i]);
         u32 built = i >= window ? i - window + 1 : 0;
-        b.jobs[i].redirects = project_redirects_new(projects, order[i], order, built);
+        b.jobs[i].redirects = project_redirects_new(projects, order[i], order, b.store ? 0 : built);
+        if (!b.store) continue;
+        bool* visible = b.jobs[i].visible = calloc((size_t)count + 1, sizeof(bool));
+        for (u32 j = 0; j < built; j++) visible[j] = true;
+        u32 depth = 0;
+        stack[depth++] = order[i];
+        while (depth) {
+            Project const* p = project_set_at(projects, stack[--depth]);
+            if (!p->readable) continue;
+            for (u32 r = 0; r < p->reference_count; r++) {
+                u32 at = p->referenced[r] < position_count ? position[p->referenced[r]] : UINT32_MAX;
+                if (at >= i || visible[at]) continue;
+                visible[at] = true;
+                if (depth < count) stack[depth++] = p->referenced[r];
+            }
+        }
     }
+    c_free_n(stack, count + 1);
+    c_free_n(position, position_count ? position_count : 1);
     pthread_t* threads = nullptr;
     if (jobs > 1) {
         pthread_mutex_init(&b.lock, nullptr);
@@ -1081,7 +1155,10 @@ static_failable build(Options const* opts, returns int) {
         cstr_drop(&b.jobs[i].out.emitted);
         failable_result_drop(&b.jobs[i].result);
         project_redirects_destroy(b.jobs[i].redirects);
+        emit_view_destroy(b.jobs[i].view);
+        free(b.jobs[i].visible);
     }
+    emit_store_destroy(b.store);
     free(b.jobs);
     free(order);
     if (failure.error) {

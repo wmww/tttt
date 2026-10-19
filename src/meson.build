@@ -30,6 +30,7 @@ core_files = files(
     'source_file.c',
     'program.c',
     'cached_fs.c',
+    'emit_store.c',
     'json.c',
     'module_resolution.c',
     'module_specifiers.c',
