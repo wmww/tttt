@@ -1,0 +1,37 @@
+//// [test/cases/ttttDeclarationMapClassLiteralFieldPseudo.ts] ////
+
+=== ttttDeclarationMapClassLiteralFieldPseudo.ts ===
+// A class expression printed as a type literal writes each inferred field from its pseudo type, mapped where the
+// field's initializer says it (tsgo's serializeTypeForDeclaration of the PropertyDeclaration; lit's ssr-dom-shim)
+export const Shim = class ElementInternals {
+>Shim : Symbol(Shim, Decl(ttttDeclarationMapClassLiteralFieldPseudo.ts, 2, 12))
+>ElementInternals : Symbol(ElementInternals, Decl(ttttDeclarationMapClassLiteralFieldPseudo.ts, 2, 19))
+
+  form = null;
+>form : Symbol(ElementInternals.form, Decl(ttttDeclarationMapClassLiteralFieldPseudo.ts, 2, 44))
+
+  labels = [] as unknown as NodeListOf<HTMLLabelElement>;
+>labels : Symbol(ElementInternals.labels, Decl(ttttDeclarationMapClassLiteralFieldPseudo.ts, 3, 14))
+>NodeListOf : Symbol(NodeListOf, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLLabelElement : Symbol(HTMLLabelElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+  validity = {} as ValidityState;
+>validity : Symbol(ElementInternals.validity, Decl(ttttDeclarationMapClassLiteralFieldPseudo.ts, 4, 57))
+>ValidityState : Symbol(ValidityState, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+  n = 1;
+>n : Symbol(ElementInternals.n, Decl(ttttDeclarationMapClassLiteralFieldPseudo.ts, 5, 33))
+
+  s = new Set<string>();
+>s : Symbol(ElementInternals.s, Decl(ttttDeclarationMapClassLiteralFieldPseudo.ts, 6, 8))
+>Set : Symbol(Set, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+  o = { a: 1 };
+>o : Symbol(ElementInternals.o, Decl(ttttDeclarationMapClassLiteralFieldPseudo.ts, 7, 24))
+>a : Symbol(a, Decl(ttttDeclarationMapClassLiteralFieldPseudo.ts, 8, 7))
+
+  willValidate = true;
+>willValidate : Symbol(ElementInternals.willValidate, Decl(ttttDeclarationMapClassLiteralFieldPseudo.ts, 8, 15))
+
+};
+

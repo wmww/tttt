@@ -870,6 +870,25 @@ static void out_symbol_name_impl(Checker* me, TyDisplay d, Symbol const* symbol,
 // The object literal member that declared a property, through its instantiations (a homomorphic mapped type's property
 // is declared where the property it maps is, a property of one over an intersection where any of its members' is:
 // tsgo's mapped symbol has their declarations)
+// The class field that declared an inferred property of a class printed as a type literal (its PropDecl.lazy is the
+// field's), null for any other: declaration emit prints it from the field's pseudo type (tsgo's
+// serializeTypeForDeclaration of the PropertyDeclaration, lit's `labels = [] as unknown as NodeListOf<...>`)
+static ClassItem const* declared_field(Ty const* ty, Prop const* prop) {
+    while (prop->target) prop = prop->target; // (An instantiation for `this`: the field's own)
+    if (!prop->decl->lazy) return nullptr;
+    Ty const* declared = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
+    if (declared->kind != TY_DECLARED || (declared->declared.kind != TY_DECLARED_CLASS_INSTANCE &&
+        declared->declared.kind != TY_DECLARED_CLASS_STATIC) || !declared->declared.symbol) {
+        return nullptr;
+    }
+    ClassDecl const* cls = symbol_find_node(declared->declared.symbol, SYMBOL_DECL_CLASS);
+    if (!cls) return nullptr;
+    for_each (i, vec_class_item, &cls->items) {
+        if (i->tag == CLASS_ITEM_FIELD && &i->field.lazy_type == prop->decl->lazy) return i;
+    }
+    return nullptr;
+}
+
 static ObjectExprItem const* declared_item(Checker* me, Prop const* prop, u32 depth) {
     for (; depth < 64 && prop; depth++) {
         if (prop->decl->item) return prop->decl->item;
@@ -5940,8 +5959,13 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         ObjectExprItem const* item = placeholder || reverse_prop || d.reused || !reuses_nodes(d) ? nullptr : declared_item(me, prop, 0);
         bool item_accessor = item && (item->tag == OBJECT_ITEM_GETTER || item->tag == OBJECT_ITEM_SETTER) && item->value.tag == EXPR_FUNCTION;
         bool item_property = item && (item->tag == OBJECT_ITEM_PROPERTY || item->tag == OBJECT_ITEM_SHORTHAND);
-        if ((item_property && !requires_widening(type) && !(unwidened && item_is_literal(item) && literal_shaped(me, type))) || item_accessor) {
-            Pseudo const* pseudo = item_accessor ? pseudo_of_accessor(me, item->value.function) : pseudo_of_object_member(me, item);
+        ClassItem const* field = !item && !placeholder && !reverse_prop && !d.reused && reuses_nodes(d) && d.tracker ?
+            declared_field(ty, prop) : nullptr;
+        if ((item_property && !requires_widening(type) && !(unwidened && item_is_literal(item) && literal_shaped(me, type))) ||
+            item_accessor || (field && !requires_widening(type))
+        ) {
+            Pseudo const* pseudo = field ? pseudo_of_field(me, field) : item_accessor ? pseudo_of_accessor(me, item->value.function) :
+                pseudo_of_object_member(me, item);
             Ty const* item_type = type;
             PseudoReporter storage;
             if (pseudo_equivalent(me, d, pseudo, item_type, false, display_reporter(d, &storage))) {

@@ -475,6 +475,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationMapClassLiteralFieldPseudo': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationMapClassLiteralFreshTypeParams': {
         errors: true,
         symbols: true,
