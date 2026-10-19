@@ -1718,6 +1718,13 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
 // divide and conquer caches the error type under the outer key: base-ui's `<Element ref={r} {...props} />` twice)
 static Ty const* intersection_cached(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, u32 opts) {
     if (alias || len < 2) return intersection(me, types, len, alias, alias_args, opts);
+    // (A long one only if it distributes over a union, where the work and TS2590 are: the rest are cheaper to make
+    // again than to key, type-fest's long intersections of objects)
+    if (len > 14) {
+        bool has_union = false;
+        for (u32 i = 0; i < len && !has_union; i++) has_union = types[i]->kind == TY_UNION;
+        if (!has_union) return intersection(me, types, len, alias, alias_args, opts);
+    }
     u64 small[16];
     u64* key = len <= 14 ? small : malloc(sizeof(u64) * (len + 2));
     panic_if(!key, "out of memory");
