@@ -1,0 +1,99 @@
+//// [test/cases/ttttSkipSensitiveThroughAndAnd.ts] ////
+
+=== ttttSkipSensitiveThroughAndAnd.ts ===
+// A context-sensitive function under `&&` (or a comma) is left out of a call's first inference pass like any other:
+// tsc's check mode reaches the operand though `a && f` isn't context sensitive itself. Typing it early fixed T at its
+// constraint (atproto's oauth-provider-ui sign-up wizard, `hcaptchaSiteKey != null && { contentRender: ... }`)
+type DisabledStep = null | undefined | false;
+>DisabledStep : Symbol(DisabledStep, Decl(ttttSkipSensitiveThroughAndAnd.ts, 0, 0))
+
+type Step<D = any> = { render: (p: { next: (data: D) => void }) => string };
+>Step : Symbol(Step, Decl(ttttSkipSensitiveThroughAndAnd.ts, 3, 45))
+>D : Symbol(D, Decl(ttttSkipSensitiveThroughAndAnd.ts, 4, 10))
+>render : Symbol(render, Decl(ttttSkipSensitiveThroughAndAnd.ts, 4, 22))
+>p : Symbol(p, Decl(ttttSkipSensitiveThroughAndAnd.ts, 4, 32))
+>next : Symbol(next, Decl(ttttSkipSensitiveThroughAndAnd.ts, 4, 36))
+>data : Symbol(data, Decl(ttttSkipSensitiveThroughAndAnd.ts, 4, 44))
+>D : Symbol(D, Decl(ttttSkipSensitiveThroughAndAnd.ts, 4, 10))
+
+type Props<T extends readonly any[]> = {
+>Props : Symbol(Props, Decl(ttttSkipSensitiveThroughAndAnd.ts, 4, 76))
+>T : Symbol(T, Decl(ttttSkipSensitiveThroughAndAnd.ts, 5, 11))
+
+  onDone: (data: T) => void;
+>onDone : Symbol(onDone, Decl(ttttSkipSensitiveThroughAndAnd.ts, 5, 40))
+>data : Symbol(data, Decl(ttttSkipSensitiveThroughAndAnd.ts, 6, 11))
+>T : Symbol(T, Decl(ttttSkipSensitiveThroughAndAnd.ts, 5, 11))
+
+  steps: { [K in keyof T]: null extends T[K] ? Step<T[K]> | DisabledStep : Step<T[K]> };
+>steps : Symbol(steps, Decl(ttttSkipSensitiveThroughAndAnd.ts, 6, 28))
+>K : Symbol(K, Decl(ttttSkipSensitiveThroughAndAnd.ts, 7, 12))
+>T : Symbol(T, Decl(ttttSkipSensitiveThroughAndAnd.ts, 5, 11))
+>T : Symbol(T, Decl(ttttSkipSensitiveThroughAndAnd.ts, 5, 11))
+>K : Symbol(K, Decl(ttttSkipSensitiveThroughAndAnd.ts, 7, 12))
+>Step : Symbol(Step, Decl(ttttSkipSensitiveThroughAndAnd.ts, 3, 45))
+>T : Symbol(T, Decl(ttttSkipSensitiveThroughAndAnd.ts, 5, 11))
+>K : Symbol(K, Decl(ttttSkipSensitiveThroughAndAnd.ts, 7, 12))
+>DisabledStep : Symbol(DisabledStep, Decl(ttttSkipSensitiveThroughAndAnd.ts, 0, 0))
+>Step : Symbol(Step, Decl(ttttSkipSensitiveThroughAndAnd.ts, 3, 45))
+>T : Symbol(T, Decl(ttttSkipSensitiveThroughAndAnd.ts, 5, 11))
+>K : Symbol(K, Decl(ttttSkipSensitiveThroughAndAnd.ts, 7, 12))
+
+};
+declare function Wizard<const T extends readonly any[]>(p: Props<T>): T;
+>Wizard : Symbol(Wizard, Decl(ttttSkipSensitiveThroughAndAnd.ts, 8, 2))
+>T : Symbol(T, Decl(ttttSkipSensitiveThroughAndAnd.ts, 9, 24))
+>p : Symbol(p, Decl(ttttSkipSensitiveThroughAndAnd.ts, 9, 56))
+>Props : Symbol(Props, Decl(ttttSkipSensitiveThroughAndAnd.ts, 4, 76))
+>T : Symbol(T, Decl(ttttSkipSensitiveThroughAndAnd.ts, 9, 24))
+>T : Symbol(T, Decl(ttttSkipSensitiveThroughAndAnd.ts, 9, 24))
+
+declare const key: string | undefined;
+>key : Symbol(key, Decl(ttttSkipSensitiveThroughAndAnd.ts, 10, 13))
+
+const r = Wizard({
+>r : Symbol(r, Decl(ttttSkipSensitiveThroughAndAnd.ts, 11, 5))
+>Wizard : Symbol(Wizard, Decl(ttttSkipSensitiveThroughAndAnd.ts, 8, 2))
+
+  onDone: ([a, b]: [string, number | null]) => {},
+>onDone : Symbol(onDone, Decl(ttttSkipSensitiveThroughAndAnd.ts, 11, 18))
+>a : Symbol(a, Decl(ttttSkipSensitiveThroughAndAnd.ts, 12, 12))
+>b : Symbol(b, Decl(ttttSkipSensitiveThroughAndAnd.ts, 12, 14))
+
+  steps: [
+>steps : Symbol(steps, Decl(ttttSkipSensitiveThroughAndAnd.ts, 12, 50))
+
+    { render: (p) => "" },
+>render : Symbol(render, Decl(ttttSkipSensitiveThroughAndAnd.ts, 14, 5))
+>p : Symbol(p, Decl(ttttSkipSensitiveThroughAndAnd.ts, 14, 15))
+
+    key != null && { render: (p) => "" },
+>key : Symbol(key, Decl(ttttSkipSensitiveThroughAndAnd.ts, 10, 13))
+>render : Symbol(render, Decl(ttttSkipSensitiveThroughAndAnd.ts, 15, 20))
+>p : Symbol(p, Decl(ttttSkipSensitiveThroughAndAnd.ts, 15, 30))
+
+  ],
+});
+const r2 = Wizard({
+>r2 : Symbol(r2, Decl(ttttSkipSensitiveThroughAndAnd.ts, 18, 5))
+>Wizard : Symbol(Wizard, Decl(ttttSkipSensitiveThroughAndAnd.ts, 8, 2))
+
+  onDone: ([a, b]: [string, number | null]) => {},
+>onDone : Symbol(onDone, Decl(ttttSkipSensitiveThroughAndAnd.ts, 18, 19))
+>a : Symbol(a, Decl(ttttSkipSensitiveThroughAndAnd.ts, 19, 12))
+>b : Symbol(b, Decl(ttttSkipSensitiveThroughAndAnd.ts, 19, 14))
+
+  steps: [
+>steps : Symbol(steps, Decl(ttttSkipSensitiveThroughAndAnd.ts, 19, 50))
+
+    { render: (p) => "" },
+>render : Symbol(render, Decl(ttttSkipSensitiveThroughAndAnd.ts, 21, 5))
+>p : Symbol(p, Decl(ttttSkipSensitiveThroughAndAnd.ts, 21, 15))
+
+    { render: (p) => "" },
+>render : Symbol(render, Decl(ttttSkipSensitiveThroughAndAnd.ts, 22, 5))
+>p : Symbol(p, Decl(ttttSkipSensitiveThroughAndAnd.ts, 22, 15))
+
+  ],
+});
+

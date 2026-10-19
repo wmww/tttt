@@ -1,0 +1,103 @@
+//// [test/cases/ttttSkipSensitiveThroughAndAnd.ts] ////
+
+=== ttttSkipSensitiveThroughAndAnd.ts ===
+// A context-sensitive function under `&&` (or a comma) is left out of a call's first inference pass like any other:
+// tsc's check mode reaches the operand though `a && f` isn't context sensitive itself. Typing it early fixed T at its
+// constraint (atproto's oauth-provider-ui sign-up wizard, `hcaptchaSiteKey != null && { contentRender: ... }`)
+type DisabledStep = null | undefined | false;
+>DisabledStep : DisabledStep
+>false : false
+
+type Step<D = any> = { render: (p: { next: (data: D) => void }) => string };
+>Step : Step<D>
+>render : (p: { next: (data: D) => void; }) => string
+>p : { next: (data: D) => void; }
+>next : (data: D) => void
+>data : D
+
+type Props<T extends readonly any[]> = {
+>Props : Props<T>
+
+  onDone: (data: T) => void;
+>onDone : (data: T) => void
+>data : T
+
+  steps: { [K in keyof T]: null extends T[K] ? Step<T[K]> | DisabledStep : Step<T[K]> };
+>steps : { [K in keyof T]: null extends T[K] ? Step<T[K]> | DisabledStep : Step<T[K]>; }
+
+};
+declare function Wizard<const T extends readonly any[]>(p: Props<T>): T;
+>Wizard : <const T extends readonly any[]>(p: Props<T>) => T
+>p : Props<T>
+
+declare const key: string | undefined;
+>key : string | undefined
+
+const r = Wizard({
+>r : [string, number | null]
+>Wizard({  onDone: ([a, b]: [string, number | null]) => {},  steps: [    { render: (p) => "" },    key != null && { render: (p) => "" },  ],}) : [string, number | null]
+>Wizard : <const T extends readonly any[]>(p: Props<T>) => T
+>{  onDone: ([a, b]: [string, number | null]) => {},  steps: [    { render: (p) => "" },    key != null && { render: (p) => "" },  ],} : { onDone: ([a, b]: [string, number | null]) => void; steps: [{ render: (p: { next: (data: string) => void; }) => string; }, false | { render: (p: { next: (data: number | null) => void; }) => string; }]; }
+
+  onDone: ([a, b]: [string, number | null]) => {},
+>onDone : ([a, b]: [string, number | null]) => void
+>([a, b]: [string, number | null]) => {} : ([a, b]: [string, number | null]) => void
+>a : string
+>b : number | null
+
+  steps: [
+>steps : [{ render: (p: { next: (data: string) => void; }) => string; }, false | { render: (p: { next: (data: number | null) => void; }) => string; }]
+>[    { render: (p) => "" },    key != null && { render: (p) => "" },  ] : [{ render: (p: { next: (data: string) => void; }) => string; }, false | { render: (p: { next: (data: number | null) => void; }) => string; }]
+
+    { render: (p) => "" },
+>{ render: (p) => "" } : { render: (p: { next: (data: string) => void; }) => string; }
+>render : (p: { next: (data: string) => void; }) => string
+>(p) => "" : (p: { next: (data: string) => void; }) => string
+>p : { next: (data: string) => void; }
+>"" : ""
+
+    key != null && { render: (p) => "" },
+>key != null && { render: (p) => "" } : false | { render: (p: { next: (data: number | null) => void; }) => string; }
+>key != null : boolean
+>key : string | undefined
+>{ render: (p) => "" } : { render: (p: { next: (data: number | null) => void; }) => string; }
+>render : (p: { next: (data: number | null) => void; }) => string
+>(p) => "" : (p: { next: (data: number | null) => void; }) => string
+>p : { next: (data: number | null) => void; }
+>"" : ""
+
+  ],
+});
+const r2 = Wizard({
+>r2 : [string, number | null]
+>Wizard({  onDone: ([a, b]: [string, number | null]) => {},  steps: [    { render: (p) => "" },    { render: (p) => "" },  ],}) : [string, number | null]
+>Wizard : <const T extends readonly any[]>(p: Props<T>) => T
+>{  onDone: ([a, b]: [string, number | null]) => {},  steps: [    { render: (p) => "" },    { render: (p) => "" },  ],} : { onDone: ([a, b]: [string, number | null]) => void; steps: [{ render: (p: { next: (data: string) => void; }) => string; }, { render: (p: { next: (data: number | null) => void; }) => string; }]; }
+
+  onDone: ([a, b]: [string, number | null]) => {},
+>onDone : ([a, b]: [string, number | null]) => void
+>([a, b]: [string, number | null]) => {} : ([a, b]: [string, number | null]) => void
+>a : string
+>b : number | null
+
+  steps: [
+>steps : [{ render: (p: { next: (data: string) => void; }) => string; }, { render: (p: { next: (data: number | null) => void; }) => string; }]
+>[    { render: (p) => "" },    { render: (p) => "" },  ] : [{ render: (p: { next: (data: string) => void; }) => string; }, { render: (p: { next: (data: number | null) => void; }) => string; }]
+
+    { render: (p) => "" },
+>{ render: (p) => "" } : { render: (p: { next: (data: string) => void; }) => string; }
+>render : (p: { next: (data: string) => void; }) => string
+>(p) => "" : (p: { next: (data: string) => void; }) => string
+>p : { next: (data: string) => void; }
+>"" : ""
+
+    { render: (p) => "" },
+>{ render: (p) => "" } : { render: (p: { next: (data: number | null) => void; }) => string; }
+>render : (p: { next: (data: number | null) => void; }) => string
+>(p) => "" : (p: { next: (data: number | null) => void; }) => string
+>p : { next: (data: number | null) => void; }
+>"" : ""
+
+  ],
+});
+

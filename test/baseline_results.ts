@@ -974,6 +974,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExportStarUnresolvedSame': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExtendedEmptyStringOption': {
         errors: true,
         symbols: true,
@@ -1760,6 +1765,11 @@ const baselines = {
         types: true,
     },
     'ttttSignatureSuggestionBodyLocals': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSkipSensitiveThroughAndAnd': {
         errors: true,
         symbols: true,
         types: true,

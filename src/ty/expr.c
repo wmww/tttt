@@ -307,6 +307,12 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (expr->tag == EXPR_FUNCTION) return return_only_type(me, expr->function, ctx.contextual);
             return compute(me, expr, ctx);
         }
+        // (`a && { f: (x) => x }` isn't context sensitive, but tsc's check mode reaches its operand all the same: the
+        // function is left out of the first pass, atproto's wizard steps `key != null && { contentRender: (p) => ... }`)
+        if (expr->tag == EXPR_BINARY_OP && (expr->binary_op->op == BINARY_OP_AND_AND || expr->binary_op->op == BINARY_OP_COMMA) &&
+            ty_expr_is_context_sensitive(&expr->binary_op->right)) {
+            return compute(me, expr, ctx);
+        }
         ctx.skip_sensitive = false;
     }
     if (ctx.generic_mode) {
@@ -3096,7 +3102,8 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
         case BINARY_OP_AND_AND:
         case BINARY_OP_COMMA:
             left = ty_expr_type(me, &binary->left);
-            right = ty_check_expr(me, &binary->right, passed_on_context(ctx).contextual);
+            right = check_with(me, &binary->right, (ExprCtx){ .contextual = passed_on_context(ctx).contextual,
+                .skip_sensitive = ctx.skip_sensitive });
             break;
         default:
             left = ty_expr_type(me, &binary->left);
