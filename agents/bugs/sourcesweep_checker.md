@@ -15,12 +15,8 @@ was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlin
 - **redux-toolkit**: matches the sweep since the 2026-10-17 never-reduction work. The display probe that went with it
   (`get<EN extends keyof Defs>(n: EN): Res<Defs[EN] & { type: "query" }> | undefined` printed `Res<ED & { type:
   "query"; }> | undefined` by tsc, `Res<never> | undefined` by tttt) is printing only: tsc's printer reduces every type
-  (getReducedType in typeToTypeNode), so the `ED & ...` it prints comes from reusing the annotation's syntax (only with
-  the `| undefined`, only for a generic method), not from a different type. Not pursued.
-- **knip language-server/src/server.js:277 (-TS7022 on `this.fileCache = undefined`)**: a JS this-property whose
-  type comes from `this.fileCache = { filePath: relPath, file }`, `file` from `this.session.describeFile(...)` narrowed
-  across `if (this.fileCache?.filePath === relPath)` in the same method: tsc meets its own declared type through that
-  flow narrowing, tttt doesn't. Not reduced.
+  (getReducedType in typeToTypeNode), so the `ED & ...` it prints probably comes from reusing the annotation's syntax (only
+  with the `| undefined`, only for a generic method) rather than from a different type (not confirmed). Not pursued.
 - **Content mappers with --runExternalCode**: tttt validates `contentMappers` and reports TS18068 without the flag
   (like tsgo), but with it tsgo resolves each mapper package (TS18075) and runs it; tttt does neither.
 
@@ -223,7 +219,7 @@ read types). Left:
 
 ## Source sweep fan-out 2026-10-16 (agent A)
 Fixed: arktype type.test.ts and fn.test.ts, tanstack-table, nextra, base-ui, and tiptap/demos' +TS2345 x9 along the way (see git log). 7 projects left in the
-full sweep: pixijs (binder merge unit), better-auth (2), es-toolkit, knip (entries above), and:
+full sweep: pixijs (binder merge unit), better-auth (2), es-toolkit (entries above; knip fixed since), and:
 - **monkeytype SearchableAutoSetting.tsx:56/59**: tsc reports TS2589 (instantiation excessively deep) at
   `name={props.key}` of `<form.Field>` (the line the @ts-expect-error covers); tttt doesn't hit the limit and reports
   the validators mismatch instead. tanstack form-core's DeepKeys/DeepKeysAndValues over `{ [x: string]: Config[T] }`
@@ -251,10 +247,6 @@ Fixed: rocket (+TS7031: a callback parameter asked for before its call statement
 this-property read elsewhere first; `InitializedBindingRare.settled_by`. Only statement calls are settled that way:
 callbacks of calls in initializers, returns or nested arguments still miss tsc's on-demand contextual typing),
 tiptap/demos (+TS2590: a JSX tag's intersection member took its apparent union's intrinsic signatures; the tag's type
-`NoInfer<T> | (NoInfer<T> & string)` itself matches tsc's). Looked at again, unchanged (entries above): arktype
-this.test.ts (the callback's parameter `{ name; child?: never }` against Morph's input one `this` expansion deeper),
-better-auth x2, es-toolkit (tsc's own order artifact), knip TS7022, monkeytype TS2589, pixijs (binder merge unit).
-For knip: tsc's TS7022 is at the *first* assignment declaration of `fileCache` (server.js:277, `this.fileCache =
-undefined` in stop()), so the cycle runs through the property's declared type; the suspect is the flow walk for
-`this.session` in getFileDescriptor crossing `if (this.fileCache?.filePath === relPath)`. Confirm with an
-instrumented tsgo (where getTypeOfSymbol of fileCache is re-entered) before trying to mirror it.
+`NoInfer<T> | (NoInfer<T> & string)` itself matches tsc's). Looked at again, unchanged (entries above):
+better-auth x2, es-toolkit (tsc's own order artifact), monkeytype TS2589, pixijs (binder merge unit). arktype this.test.ts
+and knip's TS7022 were fixed after (2026-10-18, agent B).

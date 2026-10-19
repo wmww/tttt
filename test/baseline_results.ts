@@ -1269,6 +1269,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsThisPropertyCircularThroughNarrowing': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsonRecovery': {
         errors: true,
         symbols: true,

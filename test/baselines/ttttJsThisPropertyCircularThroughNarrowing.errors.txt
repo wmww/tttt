@@ -1,0 +1,23 @@
+a.js(3,5): error TS7022: 'fileCache' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+
+
+==== a.js (1 errors) ====
+    export class S {
+      stop() {
+        this.fileCache = undefined;
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: 'fileCache' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+      }
+      /** @param {string} relPath */
+      get(relPath) {
+        if (this.fileCache?.filePath === relPath) return 1;
+        this.fileCache = { filePath: relPath };
+      }
+    }
+    export class C {
+      constructor() {
+        this.count = 0;
+        this.count = this.count + 1;
+      }
+    }
+    

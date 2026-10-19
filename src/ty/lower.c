@@ -2238,7 +2238,7 @@ static Ty const* guarded_assignment_symbol_type(Checker* me, Symbol const* symbo
     SymbolDecl const* decl = &symbol->decls[0];
     bool single = symbol->decl_count == 1 && decl->assignment == ASSIGNMENT_DECL_PROPERTY && !symbol_decl_jsdoc_type(decl);
     // (A class's `this.x = v` members are typed by control flow in the constructor: not here)
-    if (decl->assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR || decl->assignment == ASSIGNMENT_DECL_THIS_IN_METHOD) {
+    if (decl->assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR) {
         return single ? value_entry_type(me, symbol, decl) : assignment_symbol_type(me, symbol);
     }
     Ty const* circular = ty_intrinsic(me, TY_CIRCULAR);

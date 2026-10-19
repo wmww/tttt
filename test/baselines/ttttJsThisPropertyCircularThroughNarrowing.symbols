@@ -1,0 +1,53 @@
+//// [test/cases/ttttJsThisPropertyCircularThroughNarrowing.ts] ////
+
+=== a.js ===
+export class S {
+>S : Symbol(S, Decl(a.js, 0, 0))
+
+  stop() {
+>stop : Symbol(S.stop, Decl(a.js, 0, 16))
+
+    this.fileCache = undefined;
+>this.fileCache : Symbol(S.fileCache, Decl(a.js, 1, 10), Decl(a.js, 6, 55))
+>this : Symbol(S, Decl(a.js, 0, 0))
+>fileCache : Symbol(S.fileCache, Decl(a.js, 1, 10), Decl(a.js, 6, 55))
+>undefined : Symbol(undefined)
+  }
+  /** @param {string} relPath */
+  get(relPath) {
+>get : Symbol(S.get, Decl(a.js, 3, 3))
+>relPath : Symbol(relPath, Decl(a.js, 5, 6))
+
+    if (this.fileCache?.filePath === relPath) return 1;
+>this.fileCache : Symbol(S.fileCache, Decl(a.js, 1, 10), Decl(a.js, 6, 55))
+>this : Symbol(S, Decl(a.js, 0, 0))
+>fileCache : Symbol(S.fileCache, Decl(a.js, 1, 10), Decl(a.js, 6, 55))
+>relPath : Symbol(relPath, Decl(a.js, 5, 6))
+
+    this.fileCache = { filePath: relPath };
+>this.fileCache : Symbol(S.fileCache, Decl(a.js, 1, 10), Decl(a.js, 6, 55))
+>this : Symbol(S, Decl(a.js, 0, 0))
+>fileCache : Symbol(S.fileCache, Decl(a.js, 1, 10), Decl(a.js, 6, 55))
+>filePath : Symbol(filePath, Decl(a.js, 7, 22))
+>relPath : Symbol(relPath, Decl(a.js, 5, 6))
+  }
+}
+export class C {
+>C : Symbol(C, Decl(a.js, 9, 1))
+
+  constructor() {
+    this.count = 0;
+>this.count : Symbol(C.count, Decl(a.js, 11, 17), Decl(a.js, 12, 19))
+>this : Symbol(C, Decl(a.js, 9, 1))
+>count : Symbol(C.count, Decl(a.js, 11, 17), Decl(a.js, 12, 19))
+
+    this.count = this.count + 1;
+>this.count : Symbol(C.count, Decl(a.js, 11, 17), Decl(a.js, 12, 19))
+>this : Symbol(C, Decl(a.js, 9, 1))
+>count : Symbol(C.count, Decl(a.js, 11, 17), Decl(a.js, 12, 19))
+>this.count : Symbol(C.count, Decl(a.js, 11, 17), Decl(a.js, 12, 19))
+>this : Symbol(C, Decl(a.js, 9, 1))
+>count : Symbol(C.count, Decl(a.js, 11, 17), Decl(a.js, 12, 19))
+  }
+}
+

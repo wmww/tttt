@@ -1,0 +1,65 @@
+//// [test/cases/ttttJsThisPropertyCircularThroughNarrowing.ts] ////
+
+=== a.js ===
+export class S {
+>S : S
+
+  stop() {
+>stop : () => void
+
+    this.fileCache = undefined;
+>this.fileCache = undefined : undefined
+>this.fileCache : any
+>this : this
+>fileCache : any
+>undefined : undefined
+  }
+  /** @param {string} relPath */
+  get(relPath) {
+>get : (relPath: string) => 1 | undefined
+>relPath : string
+
+    if (this.fileCache?.filePath === relPath) return 1;
+>this.fileCache?.filePath === relPath : boolean
+>this.fileCache?.filePath : any
+>this.fileCache : any
+>this : this
+>fileCache : any
+>filePath : any
+>relPath : string
+>1 : 1
+
+    this.fileCache = { filePath: relPath };
+>this.fileCache = { filePath: relPath } : { filePath: string; }
+>this.fileCache : any
+>this : this
+>fileCache : any
+>{ filePath: relPath } : { filePath: string; }
+>filePath : string
+>relPath : string
+  }
+}
+export class C {
+>C : C
+
+  constructor() {
+    this.count = 0;
+>this.count = 0 : 0
+>this.count : any
+>this : this
+>count : any
+>0 : 0
+
+    this.count = this.count + 1;
+>this.count = this.count + 1 : number
+>this.count : any
+>this : this
+>count : any
+>this.count + 1 : number
+>this.count : number
+>this : this
+>count : number
+>1 : 1
+  }
+}
+
