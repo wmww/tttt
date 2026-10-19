@@ -225,6 +225,9 @@ full sweep: pixijs (binder merge unit), better-auth (lynx-store), es-toolkit (en
   with T generic. Matching tsc's TS2589 there means matching its instantiation count/depth on a big recursive type:
   not attempted. Probe: a tsconfig extending frontend's with `"types": []`, `"paths": {"*": [frontend node_modules]}`,
   SearchableAutoSetting's imports made absolute (@monkeytype/schemas -> packages/schemas/src).
+  Verdict (2026-10-18, agent B, a tsgo printing depth and count at the limit): tsc stops on the *count*, 5M
+  instantiations in that one statement at depth 5-7 (`NonNullable<NonNullable<...>>` chains of DeepKeysAndValues), not
+  on depth. Matching that means matching tsc's instantiation count to the unit on an exponential type: won't fix.
 - **redux-toolkit module.ts:656 / react/module.ts:216**: no progress. Seen on the way: with
   `interface Api<Defs extends Record<string, QD | MD>> { util: { get<EN extends keyof Defs>(n: EN): Res<Defs[EN] &
   { type: "query" }> | undefined } }` (QD/MD discriminated by a string enum), tsc prints `c.util.get`'s return as
