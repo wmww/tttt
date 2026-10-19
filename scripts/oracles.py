@@ -98,7 +98,8 @@ def perf():
     # (tttt only, tsgo's side is cached; -j 4 inflates the times of both sides alike, types are exact)
     out = run(['scripts/perfsweep.py', '--no-build', '-j', '4', '--summary'])
     # (Its stderr follows stdout in `out`: ensure-typescript's messages when tsgo's side ran for new projects)
-    lines = [l for l in out.strip().splitlines() if not l.startswith('ensure-typescript')]
+    # (and perfsweep's own "tttt: BINARY" line, which can come after the summary)
+    lines = [l for l in out.strip().splitlines() if not l.startswith(('ensure-typescript', 'tttt: '))]
     print('perfsweep (tttt/tsgo): ' + (lines or ['?'])[-1], flush=True)
 
 def dts():
