@@ -1,0 +1,22 @@
+//// [test/cases/ttttJsDeclarationPropertyDefaultBrackets.ts] ////
+
+=== a.js ===
+/**
+ * @typedef {Object} Options
+ * @property {string[]} [exclude=[]] - Array of glob patterns to exclude from the tree.
+ * @property {number} [depth=[1][0]] - Depth.
+ */
+
+/** @param {Options} o */
+function tree(o) {}
+>tree : (o: Options) => void
+>o : Options
+
+module.exports = { tree };
+>module.exports = { tree } : { tree: (o: Options) => void; }
+>module.exports : { tree: (o: Options) => void; }
+>module : { exports: { tree: (o: Options) => void; }; }
+>exports : { tree: (o: Options) => void; }
+>{ tree } : { tree: (o: Options) => void; }
+>tree : (o: Options) => void
+

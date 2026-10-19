@@ -2572,7 +2572,13 @@ static cstr jsdoc_tag_description(Span tag, Span name) {
     while (before[-1] == ' ' || before[-1] == '\t') before--;
     bool bracketed = before[-1] == '[';
     if (bracketed) {
-        while (c < end && *c != ']' && *c != '\n') c++;
+        // (A default may have brackets of its own, `[a=[]]`: tsgo parses it as an expression)
+        int depth = 0;
+        while (c < end && (*c != ']' || depth) && *c != '\n') {
+            if (*c == '[') depth++;
+            else if (*c == ']') depth--;
+            c++;
+        }
         if (c < end && *c == ']') c++;
     }
     int margin;
