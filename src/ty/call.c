@@ -2734,10 +2734,16 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
 // The arguments of a call that resolved to tsc's unknownSignature (resolveErrorCall: an invocation error) have the
 // contextual type any (getContextualTypeForArgumentAtIndex: no parameter, `?? anyType`): `this` in their object literal
 // methods is any, `x.extend({ m() { this.parent } })` on a union of incompatible signatures
+// tsc's resolveUntypedCall: every argument is checked with the call (the contextual type any: an object literal's
+// methods' `this`, a generic call's inference). The others' types are computed right there too: b4run's
+// `const page = await store.browse(c === null ? {...} : { cursor })` on an unresolved store is TS7022, the argument
+// reading `cursor`, which the loop assigns from `page`
 static void check_args_untyped(Checker* me, CallExpr const* call) {
     if (!call) return;
     for_each (i, vec_expr, &call->args) {
         if (i->tag == EXPR_OBJECT || i->tag == EXPR_CALL) ty_check_expr(me, i, ty_intrinsic(me, TY_ANY));
+        else if (i->tag == EXPR_SPREAD) ty_expr_type(me, i->spread);
+        else if (i->tag != EXPR_IMPLICIT_ANY) ty_expr_type(me, i);
     }
 }
 
@@ -2805,11 +2811,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         // The arguments have the contextual type any (tsc's getContextualTypeForArgumentAtIndex of anySignature, and of
         // unknownSignature's too), which makes `this` in the methods of an object literal any, and a generic call's
         // return type inference any (`untyped(produce(state, ...args))` picks another immer overload)
-        if (call) {
-            for_each (i, vec_expr, &call->args) {
-                if (i->tag == EXPR_OBJECT || i->tag == EXPR_CALL) ty_check_expr(me, i, any);
-            }
-        }
+        check_args_untyped(me, call);
         return callee->flags & TYF_ERROR ? ty_intrinsic(me, TY_ERROR) : any; // (resolveErrorCall: an unresolved name's any too)
     }
 

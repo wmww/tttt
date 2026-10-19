@@ -2044,6 +2044,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttUntypedCallArgumentsCircular': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttUnusedRedeclaration': {
         errors: true,
         symbols: true,

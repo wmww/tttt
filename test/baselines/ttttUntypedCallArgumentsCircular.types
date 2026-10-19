@@ -1,0 +1,82 @@
+//// [test/cases/ttttUntypedCallArgumentsCircular.ts] ////
+
+=== ttttUntypedCallArgumentsCircular.ts ===
+// An untyped call checks every argument with the call (tsc's resolveUntypedCall): here the argument reads `cursor`, which
+// the loop assigns from `page`, so `page` is circular, TS7022 (b4run's seed.e2e.test.ts with its store unresolved)
+import type { Query, Store } from "./missing";
+>Query : any
+>Store : any
+
+let store: Store;
+>store : Store
+
+async function all(query: Query = {}): Promise<string[]> {
+>all : (query?: Query) => Promise<string[]>
+>query : Query
+>{} : {}
+
+    const ids: string[] = [];
+>ids : string[]
+>[] : never[]
+
+    let cursor: string | null = null;
+>cursor : string | null
+
+    for (;;) {
+        const page = await store.browse(
+>page : any
+>await store.browse(            cursor === null ? { ...query, limit: 500 } : { ...query, limit: 500, cursor },        ) : any
+>store.browse(            cursor === null ? { ...query, limit: 500 } : { ...query, limit: 500, cursor },        ) : any
+>store.browse : any
+>store : Store
+>browse : any
+
+            cursor === null ? { ...query, limit: 500 } : { ...query, limit: 500, cursor },
+>cursor === null ? { ...query, limit: 500 } : { ...query, limit: 500, cursor } : any
+>cursor === null : boolean
+>cursor : string | null
+>{ ...query, limit: 500 } : any
+>query : Query
+>limit : number
+>500 : 500
+>{ ...query, limit: 500, cursor } : any
+>query : Query
+>limit : number
+>500 : 500
+>cursor : string
+
+        );
+        ids.push(...page.records.map((record: any) => record.id));
+>ids.push(...page.records.map((record: any) => record.id)) : number
+>ids.push : (...items: string[]) => number
+>ids : string[]
+>push : (...items: string[]) => number
+>...page.records.map((record: any) => record.id) : any
+>page.records.map((record: any) => record.id) : any
+>page.records.map : any
+>page.records : any
+>page : any
+>records : any
+>map : any
+>(record: any) => record.id : (record: any) => any
+>record : any
+>record.id : any
+>record : any
+>id : any
+
+        if (!page.continuation) return ids;
+>!page.continuation : boolean
+>page.continuation : any
+>page : any
+>continuation : any
+>ids : string[]
+
+        cursor = page.continuation;
+>cursor = page.continuation : any
+>cursor : string | null
+>page.continuation : any
+>page : any
+>continuation : any
+    }
+}
+

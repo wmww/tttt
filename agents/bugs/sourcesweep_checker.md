@@ -264,9 +264,6 @@ hacks.md), no TS5097 for a side-effect import (angular-cli), an empty string opt
 - **crawlee** packages/basic-crawler/tsconfig.build.json: -TS2339 at throttling_request_manager.ts:1064
   (`manager.extendRequestProcessingTimeSecs?.(...)` where `manager` is `this.#resolvedInner!` or an awaited
   `#selectManagerOrThrow()`: tsc says a member of that union lacks the method; tttt finds it). Uninvestigated.
-- **b4run** packages/inspector (the old directory project too) and its tsconfig.test.json: -TS7022 at
-  test/seed.e2e.test.ts:48. Both configs; it didn't show in this file's earlier lists, so possibly a recent
-  regression or an order-dependent circularity (kdiff it: `scripts/kdiff.py -f '^b4run/'`).
 - monkeytype/frontend (+TS2578/+TS2322 SearchableAutoSetting.tsx): the 2026-10-16 entry above.
 
 ## Every-tsconfig sweep, agent A's and B's repos (2026-10-19, agent A)

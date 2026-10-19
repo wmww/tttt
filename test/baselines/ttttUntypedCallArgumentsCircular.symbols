@@ -1,0 +1,57 @@
+//// [test/cases/ttttUntypedCallArgumentsCircular.ts] ////
+
+=== ttttUntypedCallArgumentsCircular.ts ===
+// An untyped call checks every argument with the call (tsc's resolveUntypedCall): here the argument reads `cursor`, which
+// the loop assigns from `page`, so `page` is circular, TS7022 (b4run's seed.e2e.test.ts with its store unresolved)
+import type { Query, Store } from "./missing";
+>Query : Symbol(Query, Decl(ttttUntypedCallArgumentsCircular.ts, 2, 13))
+>Store : Symbol(Store, Decl(ttttUntypedCallArgumentsCircular.ts, 2, 20))
+
+let store: Store;
+>store : Symbol(store, Decl(ttttUntypedCallArgumentsCircular.ts, 3, 3))
+>Store : Symbol(Store, Decl(ttttUntypedCallArgumentsCircular.ts, 2, 20))
+
+async function all(query: Query = {}): Promise<string[]> {
+>all : Symbol(all, Decl(ttttUntypedCallArgumentsCircular.ts, 3, 17))
+>query : Symbol(query, Decl(ttttUntypedCallArgumentsCircular.ts, 4, 19))
+>Query : Symbol(Query, Decl(ttttUntypedCallArgumentsCircular.ts, 2, 13))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+    const ids: string[] = [];
+>ids : Symbol(ids, Decl(ttttUntypedCallArgumentsCircular.ts, 5, 9))
+
+    let cursor: string | null = null;
+>cursor : Symbol(cursor, Decl(ttttUntypedCallArgumentsCircular.ts, 6, 7))
+
+    for (;;) {
+        const page = await store.browse(
+>page : Symbol(page, Decl(ttttUntypedCallArgumentsCircular.ts, 8, 13))
+>store : Symbol(store, Decl(ttttUntypedCallArgumentsCircular.ts, 3, 3))
+
+            cursor === null ? { ...query, limit: 500 } : { ...query, limit: 500, cursor },
+>cursor : Symbol(cursor, Decl(ttttUntypedCallArgumentsCircular.ts, 6, 7))
+>query : Symbol(query, Decl(ttttUntypedCallArgumentsCircular.ts, 4, 19))
+>limit : Symbol(limit, Decl(ttttUntypedCallArgumentsCircular.ts, 9, 41))
+>query : Symbol(query, Decl(ttttUntypedCallArgumentsCircular.ts, 4, 19))
+>limit : Symbol(limit, Decl(ttttUntypedCallArgumentsCircular.ts, 9, 68))
+>cursor : Symbol(cursor, Decl(ttttUntypedCallArgumentsCircular.ts, 9, 80))
+
+        );
+        ids.push(...page.records.map((record: any) => record.id));
+>ids.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>ids : Symbol(ids, Decl(ttttUntypedCallArgumentsCircular.ts, 5, 9))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>page : Symbol(page, Decl(ttttUntypedCallArgumentsCircular.ts, 8, 13))
+>record : Symbol(record, Decl(ttttUntypedCallArgumentsCircular.ts, 11, 38))
+>record : Symbol(record, Decl(ttttUntypedCallArgumentsCircular.ts, 11, 38))
+
+        if (!page.continuation) return ids;
+>page : Symbol(page, Decl(ttttUntypedCallArgumentsCircular.ts, 8, 13))
+>ids : Symbol(ids, Decl(ttttUntypedCallArgumentsCircular.ts, 5, 9))
+
+        cursor = page.continuation;
+>cursor : Symbol(cursor, Decl(ttttUntypedCallArgumentsCircular.ts, 6, 7))
+>page : Symbol(page, Decl(ttttUntypedCallArgumentsCircular.ts, 8, 13))
+    }
+}
+

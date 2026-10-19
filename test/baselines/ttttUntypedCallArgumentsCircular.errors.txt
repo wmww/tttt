@@ -1,0 +1,26 @@
+ttttUntypedCallArgumentsCircular.ts(3,35): error TS2307: Cannot find module './missing' or its corresponding type declarations.
+ttttUntypedCallArgumentsCircular.ts(9,15): error TS7022: 'page' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+
+
+==== ttttUntypedCallArgumentsCircular.ts (2 errors) ====
+    // An untyped call checks every argument with the call (tsc's resolveUntypedCall): here the argument reads `cursor`, which
+    // the loop assigns from `page`, so `page` is circular, TS7022 (b4run's seed.e2e.test.ts with its store unresolved)
+    import type { Query, Store } from "./missing";
+                                      ~~~~~~~~~~~
+!!! error TS2307: Cannot find module './missing' or its corresponding type declarations.
+    let store: Store;
+    async function all(query: Query = {}): Promise<string[]> {
+        const ids: string[] = [];
+        let cursor: string | null = null;
+        for (;;) {
+            const page = await store.browse(
+                  ~~~~
+!!! error TS7022: 'page' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                cursor === null ? { ...query, limit: 500 } : { ...query, limit: 500, cursor },
+            );
+            ids.push(...page.records.map((record: any) => record.id));
+            if (!page.continuation) return ids;
+            cursor = page.continuation;
+        }
+    }
+    
