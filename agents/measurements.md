@@ -12,6 +12,35 @@ text since 2026-10-18 but webpack's TS5115 name order, `scripts/clidiff.py --cor
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## Many-core accounting on the 12-core box (2026-10-19, a conversation with the human; no code change)
+vscode `-p`, release build, this laptop (12 cores / 24 threads, idle): wall / check phase / **sum of per-file check
+times** (`TTTT_FILE_TIMES=1`) / recycles / peak:
+| configuration | wall | check | per-file sum | recycles | peak |
+|---|---|---|---|---|---|
+| K1, `--threads 1` | 12.1 s | 10.5 s | 8.8 s | 8 | 1.4 GB |
+| K1, `--threads 1`, **11 other cores spinning** (pure ALU loops, package at 2.3 GHz) | 19.1 s | 17.2 s | 14.2 s | 8 | |
+| K12 defaults (24 threads) | 2.68 s | 2.06 s | 20.8 s | 171 | 1.46 GB |
+| K12 `--checker-memory off` | 2.63 s | 1.90 s | 19.9 s | 0 | 5.0 GB |
+| K12 `--threads 12 --checker-memory off` | 2.37 s | 1.75 s | 17.1 s | 0 | 5.0 GB |
+| K6 `--threads 12` | 3.77 s | 3.19 s | 16.0 s | 150 | 1.37 GB |
+| K4 `--threads 12` | 4.91 s | 4.31 s | 14.6 s | 119 | 1.27 GB |
+- **All-core clocks alone slow a checker 1.62x** (the spinning-cores row). 8.8 x 1.62 x 1.19 (plan 72's K12
+  duplication) = 17.0 s against the 17.1 measured without recycling: duplication ~1.2x, recycling 5-8% of check
+  time (for 3.5 GB), the rest is clocks. The checker-side ceiling on vscode here: zero duplication and recycling
+  would make the check ~14.2 / 12 = 1.2 s against 2.06, wall ~1.8 s against 2.68 (**1.5x**); the front end (libs
+  0.04 + load/parse 0.33 + resolve 0.25 s at the defaults) is at its serial floor (loader ~0.3, declare/link 0.15).
+  drizzle: per-file sum K1 0.69 s, K12 2.8-3.2 s (duplication 1.4x serialized), wall 0.39 -> floor ~0.15.
+- Plan 85's census measured at `--threads 1` (serialized checkers), which hides clocks and memory contention: price
+  many-core work by per-file sums under real parallel runs, with the spinning-cores row as the floor.
+- Minor page faults: K1 215k, K12 401k (recycling) / 374k (off); kernel time 2.4 s of 24 s CPU at K12.
+- Hardware level (drizzle K1, cachegrind): 6.4 G instructions, LL misses 19.3 M (3 per 1000 instructions, ~1.5 s of
+  DRAM latency hidden into 0.85 s), I1 miss rate 2.1% (134 M), D1 2.5%. IPC from callgrind counts / cycles ~1.5 at
+  boost. **PGO + LTO** (`-Db_lto=true -Db_pgo=generate`, trained on drizzle, zod, effect, excalidraw, webpack at K1
+  and the defaults, then `use`; `-Wno-missing-profile` and `-Wno-error` at link for a GCC stringop-overflow false
+  positive at `ty.h:96`): **-8-9% wall everywhere**, untrained corpora included (vscode K1 11.83 -> 10.86 s, defaults
+  2.68 -> 2.48; tsc 0.51 -> 0.47; drizzle 0.85 -> 0.78). LTO alone 1-2%. Not shipped: a build-system decision
+  (triage.md).
+
 ## Refresh 3, `tsc -b` solutions and decorator-heavy code (2026-10-19, todo entry 7)
 25 repositories by a fourth rule (repos.txt's "Refresh 3" comment, `scripts/reposearch.py build|decorators`: root
 `references`, or `experimentalDecorators`; NestJS, TypeORM, Angular, MobX, DI containers), 2 dropped for their
