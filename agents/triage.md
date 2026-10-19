@@ -43,5 +43,3 @@ dtsdiff numbers went to bugs/dts_emit.md. The human's two directives and tsc-rs 
 - 2026-10-18 (clidiff fan-out): one oracles.py run reported dtsdiff tanstack-table/packages/table-core at 0 / 198
   files; three reruns of `dtsdiff.py -f` matched 198 / 198 at the same commit. Load (clidiff/perfsweep running
   alongside) or a sandbox flake; if it recurs, look at what dtsdiff records for that project (timeout? empty tree?).
-- 2026-10-19: corpus:vue misses two TS7006 in compiler-sfc/src/style/pluginScoped.ts (`n.nodes[0].each(ss => ...)`),
-  already at 7d4facb9 (oracles.py --quick shows `vue 0/2 !`; B owns it).

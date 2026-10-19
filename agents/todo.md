@@ -41,8 +41,13 @@ and RSS** for every perf claim at the defaults.
    isGenericMappedType; 681 more projects -56k types), worst now 1.54 on 1-3k-type projects; the K1 check-ratio tail
    was load noise (perf_leads.md "The types-ratio tail"); `variancetrace.py` prints types per measurement. Every
    oracle unchanged.
-6. **Real-code tail fan-out**: dtsdiff's real tail (bugs/dts_emit.md), the source sweep's 8
-   (bugs/sourcesweep_checker.md, vue's 2 TS7006 included), bugs/expando_instantiation.md.
+6. Done (2026-10-19): real-code tail fan-out (3 agents, ~37 picks, 0 conflicts, 0 duplicates). dtsdiff 1244 ->
+   **1250** / 1274 (refresh 2's checkJs projects and vest nearly all match; what's left is tsgo's checker split or
+   tsgo's own misnaming), source sweep 3650 -> **3654** / 3658 (arktype, knip, redux-toolkit, better-auth's TS2339
+   fixed; left: pixijs binder merge unit, better-auth's recursive resolveCall, es-toolkit, monkeytype's 5M count, all
+   with verdicts), clidiff 3665 -> **3669** (text 1, diagnostics 5), `$ExpectType` 68640 / 68640, flagflip 18 / 7 / 2,
+   expando instantiation fixed (bug file deleted), recycle 5 -> 4; suite 13865 -> 13893, instructions flat. vue 0 / 2
+   is plan-sized (tsc's in-flight-free member resolution, sourcesweep_checker.md).
 7. **Third fresh-repository refresh**, a new rule: monorepos type-checked with `tsc -b` solution configs (project
    references), and decorator-heavy code (Angular, NestJS, TypeORM, MobX). ~20-25 repositories, the recipe in
    vision.md "Refresh the breadth oracles"; report day one for the source sweep, clidiff and dtsdiff before fixing.

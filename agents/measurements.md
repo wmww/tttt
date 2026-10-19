@@ -107,6 +107,15 @@ helpers, so it isn't `--singleThreaded`):
   tttt at `--threads 1`); tttt's K4 emit differs from K1 on 5 / 18 of the member order bucket, tsgo's own split
   (bugs/dts_emit.md "Member order", one K1 exception there).
 
+## Real-code tail fan-out (2026-10-19, todo entry 6)
+- Suite 13893 / 13928 (dts 1877 / 1899 with the new repros), `--no-defer-bodies` and `-m 0` clean; corpora 0/0 but
+  vue 0/2; DT 8595; `$ExpectType` 68640 / 68640; flagflip 18 / 7 / 2; source sweep 3654 / 3658 (sample 882 / 884);
+  clidiff 3669 / 3675 (text 1, diagnostics 5); dtsdiff 1250 / 1274 projects, 100771 / 100826 files (+6 projects as
+  tsgo `--singleThreaded`); kdiff 2 (inbox-zero, rxjs), recycle 4 (rocket's TS7031 gone); perfsweep worst types
+  ratio 1.54. Instructions against test/instrcount.txt: all within +-1% (drizzle +0.72%, type-fest -1.01%), not
+  re-saved. Two agents reported nest +8% / react +3.6% from their worktrees at the base commit too: a worktree
+  artifact (symlinked corpora), the main tree measures them flat.
+
 ## Triage: message text as an oracle (2026-10-18, todo entry 9)
 - clidiff from the caches (tsc's `--pretty false` text in test/sourcesweep/tsc.jsonl.gz and test/corpora.tsc.jsonl):
   **3612 / 3675 projects byte-identical, 54 text, 9 diagnostics**, 0 order / exit code / crash; corpora 15 / 17 (vue
