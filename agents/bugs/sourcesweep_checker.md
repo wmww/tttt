@@ -75,7 +75,8 @@ Its mikro-orm/trpc +TS2698, react-navigation TS2349, discord.js and redux-toolki
   default type argument is left out (`E<EO>` for `E<EO, Cfg<EO>>`), and `PayloadAction<..., never>` prints a defaulted
   `never` argument tsc leaves out.
 
-## Two missing-diagnostic quirks from the source sweep (plan 52 drain, ss-d round 2)
+## A missing-diagnostic quirk from the source sweep (plan 52 drain, ss-d round 2)
+(The other one, property access on a union of `E & null`-like members, fixed 2026-10-18 by agent B.)
 ### `import * as X` of an `export =` module under esModuleInterop is a *clone* of the target (docmost, -TS2322)
 tsc's resolveESModuleSymbol: a namespace import (or `import()`) of an `export =` whose type has call/construct
 signatures (or a `default`) under esModuleInterop resolves to `cloneTypeAsModuleType(symbol, ...)`: a new transient
@@ -102,15 +103,6 @@ export function f(zip: JSZip) {
 Fixing it means a second declared type for the same declarations, keyed by the import (tttt keys declared types by
 symbol): plan-sized for one repo; only worth it if more show up. (2026-10-16: docmost itself matches now, the probe
 above still differs.)
-
-### Property access on a union member `E & null` with E constrained to the error type (react-navigation, -TS2339)
-`T extends Unresolved` narrowed by `=== undefined` is `T & ({} | null)`; tsc reports TS2339 on it ("does not exist on
-type 'T & null'"). Probing tsc (`function f<E extends Unresolved>(a: E & {}, b: E & null, c: E & { c: 3 },
-d: (E & {}) | (E & null))`): only `d.x` is an error, `a.x`, `b.x`, `c.x` alone are not. So a lone intersection with
-an error-constrained member is any-like but a union of them isn't (getUnionOrIntersectionProperty skips members whose
-apparent type is the error type, and the union's property needs every member). tttt's check_access treats any union
-member with a type parameter as opaque. Needs reading tsc's getPropertyOfType for unions of intersections first; the
-lone-intersection case must stay silent. (2026-10-16: react-navigation matches now, the probe above still differs.)
 
 ## Spelling suggestions counted in check order: the deferred bodies are done, lazy type resolution isn't
 tsc gives at most 10 "Did you mean" suggestions per checker (`suggestionCount` / `maximumSuggestionCount` in
@@ -161,6 +153,9 @@ subtype pass). Left:
   emitChange)); }`. Mirroring it: when a call's contextual type comes through the return of a function whose
   contextual signature is its own and still in flight, resolve it once more without contextual type and without
   constraint checks (single generic candidate) and keep that pass's errors. Not done (2 diagnostics, one repo).
+  (2026-10-18, agent B: still reproduces with the reduction above. tttt has neither tsc's callResolutionStack nor
+  InferenceFlagsNoConstraintChecks, and the re-entry itself happens only because checkExpressionCached hides the
+  arrow's in-flight return type (resolutionStart); tttt's lazies answer in flight instead. Plan-sized for 2 diagnostics.)
 - mermaid create-types-from-json-schema.mts:129 +TS2345 (ajv's `UncheckedPropertiesSchema<T>` measuring 8 in tttt, 9 in
   tsgo: `scripts/variancetrace.py --block UncheckedPropertiesSchema`) is gone from the sweep (2026-10-16); the
   variance difference itself wasn't rechecked (variance_accuracy.md).
@@ -209,6 +204,15 @@ read types). Left:
   `NodeTypes { selector; root; pseudo; tag }`, `Node = NodeTypes[keyof NodeTypes]`, Base/Container/_Selector/Root/
   Pseudo/Tag, 20 lines, `export {}`). Matching it means making the second round's error type land where tsc's does:
   plan-sized and fragile; only worth it with a faithful in-flight-free member resolution.
+  Verdict (2026-10-18, agent B): plan-sized, not attempted. tttt caches members while they resolve (one round), tsc
+  re-resolves them from scratch on re-entry, and *which* instantiation is the one at depth 100 decides what becomes the
+  error type for good; an approximation (members_reentered_unguarded() already reports the TS5115) can't place it
+  without replaying tsc's whole re-entrant order. Same family, seen on the way (no oracle has it): arktype's
+  `type({ name: "string", "child?": ["this", "=>", (child: { name: string; child?: { name: string } }) => child] })`
+  (an annotated callback) is TS5115 in tsc ('finalizeDistillation', '_distill', 'inferredDefaultKeyOf',
+  'unwrapInput': the instantiation stack repeats an 8-long distill cycle to 100), nothing in tttt. Both are "tttt's
+  instantiation depth doesn't follow tsc's instantiationStack". A tsgo with a stack print at the depth limit
+  (instantiateTypeWithAlias, `c.instantiationStack`) shows tsc's side in seconds.
 - better-auth,
   es-toolkit, knip, pixijs: unchanged, not looked at again (see
   the entries above). svelte-query's +TS2554 matched in this round's runs (order-dependent, entry above).
@@ -236,7 +240,9 @@ full sweep: pixijs (binder merge unit), better-auth (lynx-store), es-toolkit (en
   import, find the UMD global: ethereumjs's `debug.Debugger`) is fixed in symbol_has_meaning(); telling the two apart
   needs the property's existence, which the scope pass doesn't know (lower.c export_equals_property_type() decides it
   later). Only in programs that already have an error at the import. Repro: test/cases/ttttImportExportEqualsPropertyUmdNamespace.ts
-  with the `{ dbg: ... }` intersection dropped and the import renamed.
+  with the `{ dbg: ... }` intersection dropped and the import renamed. (2026-10-18, agent B: the TS2503 comes from
+  the scope pass's not-found report (scope_report_not_found / its deferred event); fixing it needs a diagnostic the
+  checker confirms later, "only if the property exists", which nothing in tttt does yet. Left.)
 
 ## clidiff `diagnostics` verdicts, 2026-10-18 (agent C)
 Fixed: rocket (+TS7031: a callback parameter asked for before its call statement is checked, through a JS

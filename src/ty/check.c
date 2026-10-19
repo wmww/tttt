@@ -1868,22 +1868,46 @@ static Ty const* type_param_access_apparent(Checker* me, Ty const* param) {
 
 // A union with type parameter members has a property every member's apparent type has (tsc's getPropertyOfType of a
 // union: getUnionOrIntersectionProperty, getReducedApparentType of each member). Null if a member can't say
-static Ty const* union_apparent_members(Checker* me, Ty const* object) {
+// Whether a union member's apparent type is the error type: a type parameter constrained to it, or an intersection with
+// one (tsc's getApparentType of an intersection intersects its members' apparent types, and any error type in an
+// intersection makes it the error type)
+static bool apparent_is_error(Checker* me, Ty const* member) {
+    if (member->kind == TY_TYPE_PARAM) return !member->param.state->is_this && (ty_apparent_type(me, member)->flags & TYF_ERROR);
+    if (member->kind != TY_INTERSECTION) return false;
+    for (u32 i = 0; i < member->composite.types.len; i++) {
+        if (apparent_is_error(me, member->composite.types.data[i])) return true;
+    }
+    return false;
+}
+
+// A union with type parameter members has a property every member's apparent type has (tsc's getPropertyOfType of a
+// union: getUnionOrIntersectionProperty, getReducedApparentType of each member). Null if a member can't say. A member
+// whose apparent type is the error type says nothing (createUnionOrIntersectionProperty skips it): `*none_left` when
+// that's every member, which then has no property at all (`(E & {}) | (E & null)` with E constrained to an unresolved
+// type, where either alone is the error type and silent)
+static Ty const* union_apparent_members(Checker* me, Ty const* object, bool* none_left) {
+    *none_left = false;
     u32 len = object->composite.types.len;
     Ty const* buf[64];
     if (len > c_arraylen(buf)) return nullptr;
+    u32 kept = 0;
     for (u32 i = 0; i < len; i++) {
         Ty const* member = object->composite.types.data[i];
         if (member->flags & (TYF_ANY | TYF_DEFERRED)) return nullptr;
+        if ((member->kind == TY_TYPE_PARAM || member->kind == TY_INTERSECTION) && apparent_is_error(me, member)) continue;
         if (member->kind == TY_TYPE_PARAM && !member->param.state->is_this) {
             member = type_param_access_apparent(me, member);
             if (!member) return nullptr;
         } else if (member->flags & TYF_TYPE_PARAM) {
             return nullptr;
         }
-        buf[i] = member;
+        buf[kept++] = member;
     }
-    return ty_union(me, buf, len, nullptr, (TyList){0});
+    if (!kept) {
+        *none_left = true;
+        return nullptr;
+    }
+    return ty_union(me, buf, kept, nullptr, (TyList){0});
 }
 
 // TS18047/TS18048/TS18049 about a named object, TS2531/TS2532/TS2533 about another
@@ -1987,7 +2011,8 @@ static void check_access(
                 has_null |= ty_can_be_null(me, member);
                 has_undefined |= ty_can_be_undefined(me, member);
             }
-            opaque |= (member->flags & (TYF_ANY | TYF_TYPE_PARAM | TYF_DEFERRED)) != 0;
+            opaque |= (member->flags & (TYF_ANY | TYF_TYPE_PARAM | TYF_DEFERRED)) != 0 ||
+                (member->kind == TY_INTERSECTION && apparent_is_error(me, member));
         }
         // A destructured property (no object expression) is looked up in the union as it is, undefined included
         // (tsc's getBindingElementTypeFromParentType: getIndexedAccessType, no checkNonNullType)
@@ -2021,7 +2046,12 @@ static void check_access(
         if (!error_if_not_found) return;
         Ty const* looked_into = object;
         if (opaque) {
-            looked_into = union_apparent_members(me, object);
+            bool none_left;
+            looked_into = union_apparent_members(me, object, &none_left);
+            if (none_left) {
+                report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
+                return;
+            }
             if (!looked_into) return;
         }
         if (!ty_access(me, looked_into, index)) report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);

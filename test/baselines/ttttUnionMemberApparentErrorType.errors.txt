@@ -1,0 +1,43 @@
+ttttUnionMemberApparentErrorType.ts(5,33): error TS2307: Cannot find module 'nonexistent' or its corresponding type declarations.
+ttttUnionMemberApparentErrorType.ts(11,7): error TS2339: Property 'x' does not exist on type '(E & null) | (E & {})'.
+  Property 'x' does not exist on type 'E & null'.
+ttttUnionMemberApparentErrorType.ts(12,7): error TS2339: Property 'y' does not exist on type 'B | E'.
+  Property 'y' does not exist on type 'B'.
+ttttUnionMemberApparentErrorType.ts(13,7): error TS2339: Property 'y' does not exist on type 'string | E'.
+  Property 'y' does not exist on type 'string'.
+ttttUnionMemberApparentErrorType.ts(14,7): error TS2339: Property 'y' does not exist on type '{ q: 1; } | (E & {})'.
+  Property 'y' does not exist on type '{ q: 1; }'.
+
+
+==== ttttUnionMemberApparentErrorType.ts (5 errors) ====
+    // A union member whose apparent type is the error type (a type parameter constrained to an unresolved type, or an
+    // intersection with one) contributes nothing to the union's properties (tsc's createUnionOrIntersectionProperty skips
+    // it): a union of only such members has none, though each alone is the error type and silent (react-navigation's
+    // narrowed `T & ({} | null)`)
+    import type { Unresolved } from "nonexistent";
+                                    ~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module 'nonexistent' or its corresponding type declarations.
+    export function f<E extends Unresolved, B extends Unresolved>(a: E & {}, b: E & null, c: E & { c: 3 }, d: (E & {}) | (E & null),
+        x: E | B, y: E | string, z: (E & {}) | { q: 1 }, w: Unresolved | E) {
+        a.x;
+        b.x;
+        c.x;
+        d.x;
+          ~
+!!! error TS2339: Property 'x' does not exist on type '(E & null) | (E & {})'.
+!!! error TS2339:   Property 'x' does not exist on type 'E & null'.
+        x.y;
+          ~
+!!! error TS2339: Property 'y' does not exist on type 'B | E'.
+!!! error TS2339:   Property 'y' does not exist on type 'B'.
+        y.y;
+          ~
+!!! error TS2339: Property 'y' does not exist on type 'string | E'.
+!!! error TS2339:   Property 'y' does not exist on type 'string'.
+        z.y;
+          ~
+!!! error TS2339: Property 'y' does not exist on type '{ q: 1; } | (E & {})'.
+!!! error TS2339:   Property 'y' does not exist on type '{ q: 1; }'.
+        w.y;
+    }
+    

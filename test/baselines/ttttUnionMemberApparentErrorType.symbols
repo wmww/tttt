@@ -1,0 +1,65 @@
+//// [test/cases/ttttUnionMemberApparentErrorType.ts] ////
+
+=== ttttUnionMemberApparentErrorType.ts ===
+// A union member whose apparent type is the error type (a type parameter constrained to an unresolved type, or an
+// intersection with one) contributes nothing to the union's properties (tsc's createUnionOrIntersectionProperty skips
+// it): a union of only such members has none, though each alone is the error type and silent (react-navigation's
+// narrowed `T & ({} | null)`)
+import type { Unresolved } from "nonexistent";
+>Unresolved : Symbol(Unresolved, Decl(ttttUnionMemberApparentErrorType.ts, 4, 13))
+
+export function f<E extends Unresolved, B extends Unresolved>(a: E & {}, b: E & null, c: E & { c: 3 }, d: (E & {}) | (E & null),
+>f : Symbol(f, Decl(ttttUnionMemberApparentErrorType.ts, 4, 46))
+>E : Symbol(E, Decl(ttttUnionMemberApparentErrorType.ts, 5, 18))
+>Unresolved : Symbol(Unresolved, Decl(ttttUnionMemberApparentErrorType.ts, 4, 13))
+>B : Symbol(B, Decl(ttttUnionMemberApparentErrorType.ts, 5, 39))
+>Unresolved : Symbol(Unresolved, Decl(ttttUnionMemberApparentErrorType.ts, 4, 13))
+>a : Symbol(a, Decl(ttttUnionMemberApparentErrorType.ts, 5, 62))
+>E : Symbol(E, Decl(ttttUnionMemberApparentErrorType.ts, 5, 18))
+>b : Symbol(b, Decl(ttttUnionMemberApparentErrorType.ts, 5, 72))
+>E : Symbol(E, Decl(ttttUnionMemberApparentErrorType.ts, 5, 18))
+>c : Symbol(c, Decl(ttttUnionMemberApparentErrorType.ts, 5, 85))
+>E : Symbol(E, Decl(ttttUnionMemberApparentErrorType.ts, 5, 18))
+>c : Symbol(c, Decl(ttttUnionMemberApparentErrorType.ts, 5, 94))
+>d : Symbol(d, Decl(ttttUnionMemberApparentErrorType.ts, 5, 102))
+>E : Symbol(E, Decl(ttttUnionMemberApparentErrorType.ts, 5, 18))
+>E : Symbol(E, Decl(ttttUnionMemberApparentErrorType.ts, 5, 18))
+
+    x: E | B, y: E | string, z: (E & {}) | { q: 1 }, w: Unresolved | E) {
+>x : Symbol(x, Decl(ttttUnionMemberApparentErrorType.ts, 5, 128))
+>E : Symbol(E, Decl(ttttUnionMemberApparentErrorType.ts, 5, 18))
+>B : Symbol(B, Decl(ttttUnionMemberApparentErrorType.ts, 5, 39))
+>y : Symbol(y, Decl(ttttUnionMemberApparentErrorType.ts, 6, 13))
+>E : Symbol(E, Decl(ttttUnionMemberApparentErrorType.ts, 5, 18))
+>z : Symbol(z, Decl(ttttUnionMemberApparentErrorType.ts, 6, 28))
+>E : Symbol(E, Decl(ttttUnionMemberApparentErrorType.ts, 5, 18))
+>q : Symbol(q, Decl(ttttUnionMemberApparentErrorType.ts, 6, 44))
+>w : Symbol(w, Decl(ttttUnionMemberApparentErrorType.ts, 6, 52))
+>Unresolved : Symbol(Unresolved, Decl(ttttUnionMemberApparentErrorType.ts, 4, 13))
+>E : Symbol(E, Decl(ttttUnionMemberApparentErrorType.ts, 5, 18))
+
+    a.x;
+>a : Symbol(a, Decl(ttttUnionMemberApparentErrorType.ts, 5, 62))
+
+    b.x;
+>b : Symbol(b, Decl(ttttUnionMemberApparentErrorType.ts, 5, 72))
+
+    c.x;
+>c : Symbol(c, Decl(ttttUnionMemberApparentErrorType.ts, 5, 85))
+
+    d.x;
+>d : Symbol(d, Decl(ttttUnionMemberApparentErrorType.ts, 5, 102))
+
+    x.y;
+>x : Symbol(x, Decl(ttttUnionMemberApparentErrorType.ts, 5, 128))
+
+    y.y;
+>y : Symbol(y, Decl(ttttUnionMemberApparentErrorType.ts, 6, 13))
+
+    z.y;
+>z : Symbol(z, Decl(ttttUnionMemberApparentErrorType.ts, 6, 28))
+
+    w.y;
+>w : Symbol(w, Decl(ttttUnionMemberApparentErrorType.ts, 6, 52))
+}
+

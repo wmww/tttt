@@ -1,0 +1,66 @@
+//// [test/cases/ttttUnionMemberApparentErrorType.ts] ////
+
+=== ttttUnionMemberApparentErrorType.ts ===
+// A union member whose apparent type is the error type (a type parameter constrained to an unresolved type, or an
+// intersection with one) contributes nothing to the union's properties (tsc's createUnionOrIntersectionProperty skips
+// it): a union of only such members has none, though each alone is the error type and silent (react-navigation's
+// narrowed `T & ({} | null)`)
+import type { Unresolved } from "nonexistent";
+>Unresolved : any
+
+export function f<E extends Unresolved, B extends Unresolved>(a: E & {}, b: E & null, c: E & { c: 3 }, d: (E & {}) | (E & null),
+>f : <E extends Unresolved, B extends Unresolved>(a: E & {}, b: E & null, c: E & { c: 3; }, d: (E & {}) | (E & null), x: E | B, y: E | string, z: (E & {}) | { q: 1; }, w: Unresolved | E) => void
+>a : E & {}
+>b : E & null
+>c : E & { c: 3; }
+>c : 3
+>d : (E & null) | (E & {})
+
+    x: E | B, y: E | string, z: (E & {}) | { q: 1 }, w: Unresolved | E) {
+>x : B | E
+>y : string | E
+>z : { q: 1; } | (E & {})
+>q : 1
+>w : any
+
+    a.x;
+>a.x : any
+>a : E & {}
+>x : any
+
+    b.x;
+>b.x : any
+>b : E & null
+>x : any
+
+    c.x;
+>c.x : any
+>c : E & { c: 3; }
+>x : any
+
+    d.x;
+>d.x : any
+>d : (E & null) | (E & {})
+>x : any
+
+    x.y;
+>x.y : any
+>x : B | E
+>y : any
+
+    y.y;
+>y.y : any
+>y : string | E
+>y : any
+
+    z.y;
+>z.y : any
+>z : { q: 1; } | (E & {})
+>y : any
+
+    w.y;
+>w.y : any
+>w : any
+>y : any
+}
+
