@@ -1,0 +1,56 @@
+//// [test/cases/ttttJsDocFencedCodeBlocks.ts] ////
+
+=== a.js ===
+/**
+ * Preserves (``` or ~~~).
+ * @param {string} content - c
+ * @returns {string} r
+ */
+export function f1(content) { return content; }
+>f1 : (content: any) => any
+>content : any
+>content : any
+
+/**
+ * Unclosed `tick here @param {number} x
+ * @param {string} y - c
+ */
+export function f2(x, y) { }
+>f2 : (x: any, y: string) => void
+>x : any
+>y : string
+
+/**
+ * Inline `@param {number} q` mention @param {number} z
+ * @param {string} w - c
+ */
+export function f3(z, w) { }
+>f3 : (z: number, w: string) => void
+>z : number
+>w : string
+
+/**
+ * @param {string} a - example:
+ * ```js
+ * @param {number} b
+ * ```
+ * @param {boolean} c
+ */
+export function f4(a, b, c) { }
+>f4 : (a: string, b: any, c: boolean) => void
+>a : string
+>b : any
+>c : boolean
+
+/**
+ * Fence
+ * ```
+ * @param {number} d
+ * ```
+ * @param {boolean} e
+ */
+export function f5(d, e) { }
+>f5 : (d: any, e: boolean) => void
+>d : any
+>e : boolean
+

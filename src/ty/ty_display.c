@@ -1309,6 +1309,8 @@ cstr ty_prop_written_name(Checker* me, Prop const* prop) {
         return cstr_from_sv(span_sv(name));
     }
     if (span_valid(name) && name.size && name.buf[0] >= '0' && name.buf[0] <= '9') return cstr_from_sv(span_sv(name));
+    // (A missing name, a JSDoc `@property {function(A): B} f`'s: the binder's '(Missing)' as it is)
+    if (span_valid(name) && !name.size) return cstr_from_sv(atom_sv(prop->name));
     if (ty_prop_name_form_of(root) & PROP_NAME_RAW) return cstr_from_sv(atom_sv(prop->name));
     return ty_prop_name_cstr(me, prop->name);
 }
@@ -2866,7 +2868,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 }
                 if (i->key.tag == INTERFACE_KEY_EXPR) {
                     display_node_computed_name(me, d, i->key.expr);
-                } else if (interface->jsdoc_literal && !ty_is_identifier_name(span_sv(i->key.span))) {
+                } else if (interface->jsdoc_literal && i->key.span.size && !ty_is_identifier_name(span_sv(i->key.span))) {
                     // (A JSDoc `@property {T} a-b` is a string literal name: tsgo's reparser)
                     map_span(d, i->key.span, false);
                     display_quoted_string(d, span_sv(i->key.span), false, true);

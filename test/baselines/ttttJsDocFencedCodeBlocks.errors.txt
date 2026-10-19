@@ -1,0 +1,52 @@
+a.js(6,20): error TS7006: Parameter 'content' implicitly has an 'any' type.
+a.js(12,20): error TS7006: Parameter 'x' implicitly has an 'any' type.
+a.js(27,23): error TS7006: Parameter 'b' implicitly has an 'any' type.
+a.js(36,20): error TS7006: Parameter 'd' implicitly has an 'any' type.
+
+
+==== a.js (4 errors) ====
+    /**
+     * Preserves (``` or ~~~).
+     * @param {string} content - c
+     * @returns {string} r
+     */
+    export function f1(content) { return content; }
+                       ~~~~~~~
+!!! error TS7006: Parameter 'content' implicitly has an 'any' type.
+    
+    /**
+     * Unclosed `tick here @param {number} x
+     * @param {string} y - c
+     */
+    export function f2(x, y) { }
+                       ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    
+    /**
+     * Inline `@param {number} q` mention @param {number} z
+     * @param {string} w - c
+     */
+    export function f3(z, w) { }
+    
+    /**
+     * @param {string} a - example:
+     * ```js
+     * @param {number} b
+     * ```
+     * @param {boolean} c
+     */
+    export function f4(a, b, c) { }
+                          ~
+!!! error TS7006: Parameter 'b' implicitly has an 'any' type.
+    
+    /**
+     * Fence
+     * ```
+     * @param {number} d
+     * ```
+     * @param {boolean} e
+     */
+    export function f5(d, e) { }
+                       ~
+!!! error TS7006: Parameter 'd' implicitly has an 'any' type.
+    

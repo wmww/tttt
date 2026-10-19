@@ -4197,15 +4197,21 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
     const char* end = range.end - 2;
     bool line_start = true;
     bool saw_asterisk = false;
-    // Backticks keep an `@` from starting a tag in a tag's comment, up to the end of the line; not in the description
-    // (tsc's JSDocState.SavingBackticks, "only used when parsing tag comments")
+    // Backticks keep an `@` from starting a tag, up to the end of the line (tsgo's jsdocStateSavingBackticks, in the
+    // description and in tags' comments); a fenced code block (a run of three or more backticks opens or closes one)
+    // until it closes (tsgo's inFencedCodeBlock, each tag's comment starting outside one)
     bool in_backticks = false;
-    bool in_tag = false;
+    bool fenced = false;
+    int backtick_run = 0;
     JsDocTagKind owner = JSDOC_TAG_OTHER; // The @typedef or @callback the tags are part of, if any
     bool typedef_children = false; // The @typedef has no type or `{Object}`: it takes an `@type` child
     bool typedef_typed = false; // It took one
     while (c < end) {
         char ch = *c;
+        if (ch != '`' && backtick_run) {
+            if (backtick_run >= 3) fenced = !fenced;
+            backtick_run = 0;
+        }
         if (ch == '\n') {
             line_start = true;
             saw_asterisk = false;
@@ -4216,11 +4222,12 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
         } else if (ch == '*' && line_start && !saw_asterisk) {
             saw_asterisk = true;
             c++;
-        } else if (ch == '@' && !in_backticks && (line_start || ((c[-1] == ' ' || c[-1] == '\t') && !is_jsdoc_space(c[1])))) {
+        } else if (ch == '@' && !in_backticks && !fenced && (line_start || ((c[-1] == ' ' || c[-1] == '\t') && !is_jsdoc_space(c[1])))) {
             isize before = tags->size;
             c = parse_jsdoc_tag(parent, c, end, tags);
             line_start = false;
-            in_tag = true;
+            fenced = false; // (Its comment starts outside a fenced block)
+            backtick_run = 0;
             for (isize i = before; i < tags->size; i++) tags->data[i].comment = range.start;
             // tsc's parseCallbackTag/parseTypedefTag/parseOverloadTag take the tags that follow as their children
             JsDocTag* tag = vec_jsdoc_tag_back_mut(tags);
@@ -4279,7 +4286,10 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
                 owner = JSDOC_TAG_OTHER;
             }
         } else {
-            if (ch == '`' && in_tag) in_backticks = !in_backticks;
+            if (ch == '`') {
+                in_backticks = !in_backticks;
+                backtick_run++;
+            }
             line_start = false;
             c++;
         }
@@ -4818,6 +4828,18 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
     VecInterfaceMember members = {0};
     for (isize i = 0; i < count; i++) {
         JsDocTag* tag = &props[i];
+        if (!span_valid(tag->name) && !prefix.size && span_valid(tag->missing_name) && tag->has_type) {
+            // A typed tag whose name is missing, `@property {function(A): B} f` (tsgo's parser stops the type at the
+            // `(`, TS1005): a property of the missing identifier, which tsgo names '(Missing)' and writes nameless
+            TypeNode type = jsdoc_take_type(tag, nullptr);
+            type.from_jsdoc = false;
+            bool optional = type.jsdoc_optional;
+            Span name_span = tag->missing_name;
+            list_push(vec_interface_member, &members, interface_member_make(
+                jsdoc_tag_node_span_with(tag, &type), nullptr, false, optional, cstr_from("(Missing)"), name_span, false, type
+            ));
+            continue;
+        }
         if (!span_valid(tag->name)) continue;
         csview name = span_sv(tag->name);
         if (prefix.size && !jsdoc_name_rest(name, prefix, &name)) continue;

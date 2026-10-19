@@ -1,0 +1,16 @@
+//// [test/cases/ttttJsDocPropertyMissingName.ts] ////
+
+=== a.js ===
+/**
+ * @typedef {Object} Middleware
+ * @property {string} name - Name
+ * @property {function(string, number): Promise<string>|string} transform - Transform fn
+ */
+
+/** @type {Middleware} */
+export const m = { name: '' };
+>m : Middleware
+>{ name: '' } : { name: string; }
+>name : string
+>'' : ""
+

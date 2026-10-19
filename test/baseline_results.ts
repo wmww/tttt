@@ -1225,10 +1225,22 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsDocFencedCodeBlocks': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttJsDocNamespaceDeclarationOrder': {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'ttttJsDocPropertyMissingName': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
     },
     'ttttJsDocTypedExportDefaultElaborates': {
         errors: true,

@@ -1,0 +1,19 @@
+a.js(4,23): error TS1005: '}' expected.
+a.js(8,14): error TS2741: Property '(Missing)' is missing in type '{ name: string; }' but required in type 'Middleware'.
+
+
+==== a.js (2 errors) ====
+    /**
+     * @typedef {Object} Middleware
+     * @property {string} name - Name
+     * @property {function(string, number): Promise<string>|string} transform - Transform fn
+                          ~
+!!! error TS1005: '}' expected.
+     */
+    
+    /** @type {Middleware} */
+    export const m = { name: '' };
+                 ~
+!!! error TS2741: Property '(Missing)' is missing in type '{ name: string; }' but required in type 'Middleware'.
+!!! related TS2728 a.js:4:23: '(Missing)' is declared here.
+    
