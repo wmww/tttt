@@ -1198,6 +1198,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttIntersectionTooComplexOnce': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttIntersectionTupleThis': {
         errors: true,
         symbols: true,

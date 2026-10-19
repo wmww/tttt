@@ -1714,14 +1714,22 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
 // Intersections without an alias are cached by their members (tsc's intersectionTypes by type list id, which it
 // looks up before distributing over unions, as this does): distributing `SyntaxKind & T` over a big union again at
 // every relation that asks was ~4% of the tsc corpus
+// (Of any length: a big one that is too complex, TS2590, is the error type from then on, reported once like tsc's whose
+// divide and conquer caches the error type under the outer key: base-ui's `<Element ref={r} {...props} />` twice)
 static Ty const* intersection_cached(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, u32 opts) {
-    if (alias || len < 2 || len > 14) return intersection(me, types, len, alias, alias_args, opts);
-    u64 key[16] = { KEY_INTERSECTION_OF, opts };
+    if (alias || len < 2) return intersection(me, types, len, alias, alias_args, opts);
+    u64 small[16];
+    u64* key = len <= 14 ? small : malloc(sizeof(u64) * (len + 2));
+    panic_if(!key, "out of memory");
+    key[0] = KEY_INTERSECTION_OF;
+    key[1] = opts;
     for (u32 i = 0; i < len; i++) key[2 + i] = types[i]->id;
-    Ty const* cached = intern_get(&my links, key, len + 2);
-    if (cached) return cached;
-    Ty const* ret = intersection(me, types, len, alias, alias_args, opts);
-    *intern_slot(me, &my links, key, len + 2) = ret;
+    Ty const* ret = intern_get(&my links, key, len + 2);
+    if (!ret) {
+        ret = intersection(me, types, len, alias, alias_args, opts);
+        *intern_slot(me, &my links, key, len + 2) = ret;
+    }
+    if (key != small) free(key);
     return ret;
 }
 
@@ -1783,8 +1791,7 @@ static bool union_has(Ty const* ty, u32 flag) {
 // is a union with undefined (or null) in it, that is taken out, `(A | undefined) & (B | undefined)` being
 // `(A & B) | undefined`; three or more members are intersected in halves, which usually makes far fewer combinations
 // than the whole cross product; one of 100000 or more combinations is the error type (tsc's TS2590, reported at the
-// current node; tsc doesn't cache it and reports it each time it makes the intersection, tttt only the first time, as it
-// may make one again where tsc has a node's or symbol's type cached). Null if the plain cross product it is. `len`: how many types the intersection was asked for
+// current node, once per intersection asked for: see intersection_cached()). Null if the plain cross product it is. `len`: how many types the intersection was asked for
 static Ty const* intersect_unions(Checker* me, TyBuf* buf, u32 len, Symbol const* alias, TyList alias_args, u32 opts) {
     u32 flags[2] = { TYF_UNDEFINED, TYF_NULL };
     for (u32 f = 0; f < 2; f++) {

@@ -1,0 +1,47 @@
+ttttIntersectionTooComplexOnce.ts(39,22): error TS2590: Expression produces a union type that is too complex to represent.
+
+
+==== ttttIntersectionTooComplexOnce.ts (1 errors) ====
+    // An intersection too complex to represent (TS2590) is the error type from then on, reported once: tsc caches it
+    // under the intersection's key (getIntersectionType's divide and conquer), whatever its length (base-ui's
+    // `<Element ref={r} {...props} />` with Element a keyof JSX.IntrinsicElements, twice)
+    type U1 = { a1: 1 } | { b1: 1 };
+    type U2 = { a2: 1 } | { b2: 1 };
+    type U3 = { a3: 1 } | { b3: 1 };
+    type U4 = { a4: 1 } | { b4: 1 };
+    type U5 = { a5: 1 } | { b5: 1 };
+    type U6 = { a6: 1 } | { b6: 1 };
+    type U7 = { a7: 1 } | { b7: 1 };
+    type U8 = { a8: 1 } | { b8: 1 };
+    type U9 = { a9: 1 } | { b9: 1 };
+    type U10 = { a10: 1 } | { b10: 1 };
+    type U11 = { a11: 1 } | { b11: 1 };
+    type U12 = { a12: 1 } | { b12: 1 };
+    type U13 = { a13: 1 } | { b13: 1 };
+    type U14 = { a14: 1 } | { b14: 1 };
+    type U15 = { a15: 1 } | { b15: 1 };
+    type U16 = { a16: 1 } | { b16: 1 };
+    type U17 = { a17: 1 } | { b17: 1 };
+    declare const u1: U1;
+    declare const u2: U2;
+    declare const u3: U3;
+    declare const u4: U4;
+    declare const u5: U5;
+    declare const u6: U6;
+    declare const u7: U7;
+    declare const u8: U8;
+    declare const u9: U9;
+    declare const u10: U10;
+    declare const u11: U11;
+    declare const u12: U12;
+    declare const u13: U13;
+    declare const u14: U14;
+    declare const u15: U15;
+    declare const u16: U16;
+    declare const u17: U17;
+    declare function all<A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17>(a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6, a7: A7, a8: A8, a9: A9, a10: A10, a11: A11, a12: A12, a13: A13, a14: A14, a15: A15, a16: A16, a17: A17): A1 & A2 & A3 & A4 & A5 & A6 & A7 & A8 & A9 & A10 & A11 & A12 & A13 & A14 & A15 & A16 & A17;
+    export const first = all(u1, u2, u3, u4, u5, u6, u7, u8, u9, u10, u11, u12, u13, u14, u15, u16, u17);
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2590: Expression produces a union type that is too complex to represent.
+    export const second = all(u1, u2, u3, u4, u5, u6, u7, u8, u9, u10, u11, u12, u13, u14, u15, u16, u17);
+    

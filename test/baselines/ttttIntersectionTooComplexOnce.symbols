@@ -1,0 +1,272 @@
+//// [test/cases/ttttIntersectionTooComplexOnce.ts] ////
+
+=== ttttIntersectionTooComplexOnce.ts ===
+// An intersection too complex to represent (TS2590) is the error type from then on, reported once: tsc caches it
+// under the intersection's key (getIntersectionType's divide and conquer), whatever its length (base-ui's
+// `<Element ref={r} {...props} />` with Element a keyof JSX.IntrinsicElements, twice)
+type U1 = { a1: 1 } | { b1: 1 };
+>U1 : Symbol(U1, Decl(ttttIntersectionTooComplexOnce.ts, 0, 0))
+>a1 : Symbol(a1, Decl(ttttIntersectionTooComplexOnce.ts, 3, 11))
+>b1 : Symbol(b1, Decl(ttttIntersectionTooComplexOnce.ts, 3, 23))
+
+type U2 = { a2: 1 } | { b2: 1 };
+>U2 : Symbol(U2, Decl(ttttIntersectionTooComplexOnce.ts, 3, 32))
+>a2 : Symbol(a2, Decl(ttttIntersectionTooComplexOnce.ts, 4, 11))
+>b2 : Symbol(b2, Decl(ttttIntersectionTooComplexOnce.ts, 4, 23))
+
+type U3 = { a3: 1 } | { b3: 1 };
+>U3 : Symbol(U3, Decl(ttttIntersectionTooComplexOnce.ts, 4, 32))
+>a3 : Symbol(a3, Decl(ttttIntersectionTooComplexOnce.ts, 5, 11))
+>b3 : Symbol(b3, Decl(ttttIntersectionTooComplexOnce.ts, 5, 23))
+
+type U4 = { a4: 1 } | { b4: 1 };
+>U4 : Symbol(U4, Decl(ttttIntersectionTooComplexOnce.ts, 5, 32))
+>a4 : Symbol(a4, Decl(ttttIntersectionTooComplexOnce.ts, 6, 11))
+>b4 : Symbol(b4, Decl(ttttIntersectionTooComplexOnce.ts, 6, 23))
+
+type U5 = { a5: 1 } | { b5: 1 };
+>U5 : Symbol(U5, Decl(ttttIntersectionTooComplexOnce.ts, 6, 32))
+>a5 : Symbol(a5, Decl(ttttIntersectionTooComplexOnce.ts, 7, 11))
+>b5 : Symbol(b5, Decl(ttttIntersectionTooComplexOnce.ts, 7, 23))
+
+type U6 = { a6: 1 } | { b6: 1 };
+>U6 : Symbol(U6, Decl(ttttIntersectionTooComplexOnce.ts, 7, 32))
+>a6 : Symbol(a6, Decl(ttttIntersectionTooComplexOnce.ts, 8, 11))
+>b6 : Symbol(b6, Decl(ttttIntersectionTooComplexOnce.ts, 8, 23))
+
+type U7 = { a7: 1 } | { b7: 1 };
+>U7 : Symbol(U7, Decl(ttttIntersectionTooComplexOnce.ts, 8, 32))
+>a7 : Symbol(a7, Decl(ttttIntersectionTooComplexOnce.ts, 9, 11))
+>b7 : Symbol(b7, Decl(ttttIntersectionTooComplexOnce.ts, 9, 23))
+
+type U8 = { a8: 1 } | { b8: 1 };
+>U8 : Symbol(U8, Decl(ttttIntersectionTooComplexOnce.ts, 9, 32))
+>a8 : Symbol(a8, Decl(ttttIntersectionTooComplexOnce.ts, 10, 11))
+>b8 : Symbol(b8, Decl(ttttIntersectionTooComplexOnce.ts, 10, 23))
+
+type U9 = { a9: 1 } | { b9: 1 };
+>U9 : Symbol(U9, Decl(ttttIntersectionTooComplexOnce.ts, 10, 32))
+>a9 : Symbol(a9, Decl(ttttIntersectionTooComplexOnce.ts, 11, 11))
+>b9 : Symbol(b9, Decl(ttttIntersectionTooComplexOnce.ts, 11, 23))
+
+type U10 = { a10: 1 } | { b10: 1 };
+>U10 : Symbol(U10, Decl(ttttIntersectionTooComplexOnce.ts, 11, 32))
+>a10 : Symbol(a10, Decl(ttttIntersectionTooComplexOnce.ts, 12, 12))
+>b10 : Symbol(b10, Decl(ttttIntersectionTooComplexOnce.ts, 12, 25))
+
+type U11 = { a11: 1 } | { b11: 1 };
+>U11 : Symbol(U11, Decl(ttttIntersectionTooComplexOnce.ts, 12, 35))
+>a11 : Symbol(a11, Decl(ttttIntersectionTooComplexOnce.ts, 13, 12))
+>b11 : Symbol(b11, Decl(ttttIntersectionTooComplexOnce.ts, 13, 25))
+
+type U12 = { a12: 1 } | { b12: 1 };
+>U12 : Symbol(U12, Decl(ttttIntersectionTooComplexOnce.ts, 13, 35))
+>a12 : Symbol(a12, Decl(ttttIntersectionTooComplexOnce.ts, 14, 12))
+>b12 : Symbol(b12, Decl(ttttIntersectionTooComplexOnce.ts, 14, 25))
+
+type U13 = { a13: 1 } | { b13: 1 };
+>U13 : Symbol(U13, Decl(ttttIntersectionTooComplexOnce.ts, 14, 35))
+>a13 : Symbol(a13, Decl(ttttIntersectionTooComplexOnce.ts, 15, 12))
+>b13 : Symbol(b13, Decl(ttttIntersectionTooComplexOnce.ts, 15, 25))
+
+type U14 = { a14: 1 } | { b14: 1 };
+>U14 : Symbol(U14, Decl(ttttIntersectionTooComplexOnce.ts, 15, 35))
+>a14 : Symbol(a14, Decl(ttttIntersectionTooComplexOnce.ts, 16, 12))
+>b14 : Symbol(b14, Decl(ttttIntersectionTooComplexOnce.ts, 16, 25))
+
+type U15 = { a15: 1 } | { b15: 1 };
+>U15 : Symbol(U15, Decl(ttttIntersectionTooComplexOnce.ts, 16, 35))
+>a15 : Symbol(a15, Decl(ttttIntersectionTooComplexOnce.ts, 17, 12))
+>b15 : Symbol(b15, Decl(ttttIntersectionTooComplexOnce.ts, 17, 25))
+
+type U16 = { a16: 1 } | { b16: 1 };
+>U16 : Symbol(U16, Decl(ttttIntersectionTooComplexOnce.ts, 17, 35))
+>a16 : Symbol(a16, Decl(ttttIntersectionTooComplexOnce.ts, 18, 12))
+>b16 : Symbol(b16, Decl(ttttIntersectionTooComplexOnce.ts, 18, 25))
+
+type U17 = { a17: 1 } | { b17: 1 };
+>U17 : Symbol(U17, Decl(ttttIntersectionTooComplexOnce.ts, 18, 35))
+>a17 : Symbol(a17, Decl(ttttIntersectionTooComplexOnce.ts, 19, 12))
+>b17 : Symbol(b17, Decl(ttttIntersectionTooComplexOnce.ts, 19, 25))
+
+declare const u1: U1;
+>u1 : Symbol(u1, Decl(ttttIntersectionTooComplexOnce.ts, 20, 13))
+>U1 : Symbol(U1, Decl(ttttIntersectionTooComplexOnce.ts, 0, 0))
+
+declare const u2: U2;
+>u2 : Symbol(u2, Decl(ttttIntersectionTooComplexOnce.ts, 21, 13))
+>U2 : Symbol(U2, Decl(ttttIntersectionTooComplexOnce.ts, 3, 32))
+
+declare const u3: U3;
+>u3 : Symbol(u3, Decl(ttttIntersectionTooComplexOnce.ts, 22, 13))
+>U3 : Symbol(U3, Decl(ttttIntersectionTooComplexOnce.ts, 4, 32))
+
+declare const u4: U4;
+>u4 : Symbol(u4, Decl(ttttIntersectionTooComplexOnce.ts, 23, 13))
+>U4 : Symbol(U4, Decl(ttttIntersectionTooComplexOnce.ts, 5, 32))
+
+declare const u5: U5;
+>u5 : Symbol(u5, Decl(ttttIntersectionTooComplexOnce.ts, 24, 13))
+>U5 : Symbol(U5, Decl(ttttIntersectionTooComplexOnce.ts, 6, 32))
+
+declare const u6: U6;
+>u6 : Symbol(u6, Decl(ttttIntersectionTooComplexOnce.ts, 25, 13))
+>U6 : Symbol(U6, Decl(ttttIntersectionTooComplexOnce.ts, 7, 32))
+
+declare const u7: U7;
+>u7 : Symbol(u7, Decl(ttttIntersectionTooComplexOnce.ts, 26, 13))
+>U7 : Symbol(U7, Decl(ttttIntersectionTooComplexOnce.ts, 8, 32))
+
+declare const u8: U8;
+>u8 : Symbol(u8, Decl(ttttIntersectionTooComplexOnce.ts, 27, 13))
+>U8 : Symbol(U8, Decl(ttttIntersectionTooComplexOnce.ts, 9, 32))
+
+declare const u9: U9;
+>u9 : Symbol(u9, Decl(ttttIntersectionTooComplexOnce.ts, 28, 13))
+>U9 : Symbol(U9, Decl(ttttIntersectionTooComplexOnce.ts, 10, 32))
+
+declare const u10: U10;
+>u10 : Symbol(u10, Decl(ttttIntersectionTooComplexOnce.ts, 29, 13))
+>U10 : Symbol(U10, Decl(ttttIntersectionTooComplexOnce.ts, 11, 32))
+
+declare const u11: U11;
+>u11 : Symbol(u11, Decl(ttttIntersectionTooComplexOnce.ts, 30, 13))
+>U11 : Symbol(U11, Decl(ttttIntersectionTooComplexOnce.ts, 12, 35))
+
+declare const u12: U12;
+>u12 : Symbol(u12, Decl(ttttIntersectionTooComplexOnce.ts, 31, 13))
+>U12 : Symbol(U12, Decl(ttttIntersectionTooComplexOnce.ts, 13, 35))
+
+declare const u13: U13;
+>u13 : Symbol(u13, Decl(ttttIntersectionTooComplexOnce.ts, 32, 13))
+>U13 : Symbol(U13, Decl(ttttIntersectionTooComplexOnce.ts, 14, 35))
+
+declare const u14: U14;
+>u14 : Symbol(u14, Decl(ttttIntersectionTooComplexOnce.ts, 33, 13))
+>U14 : Symbol(U14, Decl(ttttIntersectionTooComplexOnce.ts, 15, 35))
+
+declare const u15: U15;
+>u15 : Symbol(u15, Decl(ttttIntersectionTooComplexOnce.ts, 34, 13))
+>U15 : Symbol(U15, Decl(ttttIntersectionTooComplexOnce.ts, 16, 35))
+
+declare const u16: U16;
+>u16 : Symbol(u16, Decl(ttttIntersectionTooComplexOnce.ts, 35, 13))
+>U16 : Symbol(U16, Decl(ttttIntersectionTooComplexOnce.ts, 17, 35))
+
+declare const u17: U17;
+>u17 : Symbol(u17, Decl(ttttIntersectionTooComplexOnce.ts, 36, 13))
+>U17 : Symbol(U17, Decl(ttttIntersectionTooComplexOnce.ts, 18, 35))
+
+declare function all<A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17>(a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6, a7: A7, a8: A8, a9: A9, a10: A10, a11: A11, a12: A12, a13: A13, a14: A14, a15: A15, a16: A16, a17: A17): A1 & A2 & A3 & A4 & A5 & A6 & A7 & A8 & A9 & A10 & A11 & A12 & A13 & A14 & A15 & A16 & A17;
+>all : Symbol(all, Decl(ttttIntersectionTooComplexOnce.ts, 36, 23))
+>A1 : Symbol(A1, Decl(ttttIntersectionTooComplexOnce.ts, 37, 21))
+>A2 : Symbol(A2, Decl(ttttIntersectionTooComplexOnce.ts, 37, 24))
+>A3 : Symbol(A3, Decl(ttttIntersectionTooComplexOnce.ts, 37, 28))
+>A4 : Symbol(A4, Decl(ttttIntersectionTooComplexOnce.ts, 37, 32))
+>A5 : Symbol(A5, Decl(ttttIntersectionTooComplexOnce.ts, 37, 36))
+>A6 : Symbol(A6, Decl(ttttIntersectionTooComplexOnce.ts, 37, 40))
+>A7 : Symbol(A7, Decl(ttttIntersectionTooComplexOnce.ts, 37, 44))
+>A8 : Symbol(A8, Decl(ttttIntersectionTooComplexOnce.ts, 37, 48))
+>A9 : Symbol(A9, Decl(ttttIntersectionTooComplexOnce.ts, 37, 52))
+>A10 : Symbol(A10, Decl(ttttIntersectionTooComplexOnce.ts, 37, 56))
+>A11 : Symbol(A11, Decl(ttttIntersectionTooComplexOnce.ts, 37, 61))
+>A12 : Symbol(A12, Decl(ttttIntersectionTooComplexOnce.ts, 37, 66))
+>A13 : Symbol(A13, Decl(ttttIntersectionTooComplexOnce.ts, 37, 71))
+>A14 : Symbol(A14, Decl(ttttIntersectionTooComplexOnce.ts, 37, 76))
+>A15 : Symbol(A15, Decl(ttttIntersectionTooComplexOnce.ts, 37, 81))
+>A16 : Symbol(A16, Decl(ttttIntersectionTooComplexOnce.ts, 37, 86))
+>A17 : Symbol(A17, Decl(ttttIntersectionTooComplexOnce.ts, 37, 91))
+>a1 : Symbol(a1, Decl(ttttIntersectionTooComplexOnce.ts, 37, 97))
+>A1 : Symbol(A1, Decl(ttttIntersectionTooComplexOnce.ts, 37, 21))
+>a2 : Symbol(a2, Decl(ttttIntersectionTooComplexOnce.ts, 37, 104))
+>A2 : Symbol(A2, Decl(ttttIntersectionTooComplexOnce.ts, 37, 24))
+>a3 : Symbol(a3, Decl(ttttIntersectionTooComplexOnce.ts, 37, 112))
+>A3 : Symbol(A3, Decl(ttttIntersectionTooComplexOnce.ts, 37, 28))
+>a4 : Symbol(a4, Decl(ttttIntersectionTooComplexOnce.ts, 37, 120))
+>A4 : Symbol(A4, Decl(ttttIntersectionTooComplexOnce.ts, 37, 32))
+>a5 : Symbol(a5, Decl(ttttIntersectionTooComplexOnce.ts, 37, 128))
+>A5 : Symbol(A5, Decl(ttttIntersectionTooComplexOnce.ts, 37, 36))
+>a6 : Symbol(a6, Decl(ttttIntersectionTooComplexOnce.ts, 37, 136))
+>A6 : Symbol(A6, Decl(ttttIntersectionTooComplexOnce.ts, 37, 40))
+>a7 : Symbol(a7, Decl(ttttIntersectionTooComplexOnce.ts, 37, 144))
+>A7 : Symbol(A7, Decl(ttttIntersectionTooComplexOnce.ts, 37, 44))
+>a8 : Symbol(a8, Decl(ttttIntersectionTooComplexOnce.ts, 37, 152))
+>A8 : Symbol(A8, Decl(ttttIntersectionTooComplexOnce.ts, 37, 48))
+>a9 : Symbol(a9, Decl(ttttIntersectionTooComplexOnce.ts, 37, 160))
+>A9 : Symbol(A9, Decl(ttttIntersectionTooComplexOnce.ts, 37, 52))
+>a10 : Symbol(a10, Decl(ttttIntersectionTooComplexOnce.ts, 37, 168))
+>A10 : Symbol(A10, Decl(ttttIntersectionTooComplexOnce.ts, 37, 56))
+>a11 : Symbol(a11, Decl(ttttIntersectionTooComplexOnce.ts, 37, 178))
+>A11 : Symbol(A11, Decl(ttttIntersectionTooComplexOnce.ts, 37, 61))
+>a12 : Symbol(a12, Decl(ttttIntersectionTooComplexOnce.ts, 37, 188))
+>A12 : Symbol(A12, Decl(ttttIntersectionTooComplexOnce.ts, 37, 66))
+>a13 : Symbol(a13, Decl(ttttIntersectionTooComplexOnce.ts, 37, 198))
+>A13 : Symbol(A13, Decl(ttttIntersectionTooComplexOnce.ts, 37, 71))
+>a14 : Symbol(a14, Decl(ttttIntersectionTooComplexOnce.ts, 37, 208))
+>A14 : Symbol(A14, Decl(ttttIntersectionTooComplexOnce.ts, 37, 76))
+>a15 : Symbol(a15, Decl(ttttIntersectionTooComplexOnce.ts, 37, 218))
+>A15 : Symbol(A15, Decl(ttttIntersectionTooComplexOnce.ts, 37, 81))
+>a16 : Symbol(a16, Decl(ttttIntersectionTooComplexOnce.ts, 37, 228))
+>A16 : Symbol(A16, Decl(ttttIntersectionTooComplexOnce.ts, 37, 86))
+>a17 : Symbol(a17, Decl(ttttIntersectionTooComplexOnce.ts, 37, 238))
+>A17 : Symbol(A17, Decl(ttttIntersectionTooComplexOnce.ts, 37, 91))
+>A1 : Symbol(A1, Decl(ttttIntersectionTooComplexOnce.ts, 37, 21))
+>A2 : Symbol(A2, Decl(ttttIntersectionTooComplexOnce.ts, 37, 24))
+>A3 : Symbol(A3, Decl(ttttIntersectionTooComplexOnce.ts, 37, 28))
+>A4 : Symbol(A4, Decl(ttttIntersectionTooComplexOnce.ts, 37, 32))
+>A5 : Symbol(A5, Decl(ttttIntersectionTooComplexOnce.ts, 37, 36))
+>A6 : Symbol(A6, Decl(ttttIntersectionTooComplexOnce.ts, 37, 40))
+>A7 : Symbol(A7, Decl(ttttIntersectionTooComplexOnce.ts, 37, 44))
+>A8 : Symbol(A8, Decl(ttttIntersectionTooComplexOnce.ts, 37, 48))
+>A9 : Symbol(A9, Decl(ttttIntersectionTooComplexOnce.ts, 37, 52))
+>A10 : Symbol(A10, Decl(ttttIntersectionTooComplexOnce.ts, 37, 56))
+>A11 : Symbol(A11, Decl(ttttIntersectionTooComplexOnce.ts, 37, 61))
+>A12 : Symbol(A12, Decl(ttttIntersectionTooComplexOnce.ts, 37, 66))
+>A13 : Symbol(A13, Decl(ttttIntersectionTooComplexOnce.ts, 37, 71))
+>A14 : Symbol(A14, Decl(ttttIntersectionTooComplexOnce.ts, 37, 76))
+>A15 : Symbol(A15, Decl(ttttIntersectionTooComplexOnce.ts, 37, 81))
+>A16 : Symbol(A16, Decl(ttttIntersectionTooComplexOnce.ts, 37, 86))
+>A17 : Symbol(A17, Decl(ttttIntersectionTooComplexOnce.ts, 37, 91))
+
+export const first = all(u1, u2, u3, u4, u5, u6, u7, u8, u9, u10, u11, u12, u13, u14, u15, u16, u17);
+>first : Symbol(first, Decl(ttttIntersectionTooComplexOnce.ts, 38, 12))
+>all : Symbol(all, Decl(ttttIntersectionTooComplexOnce.ts, 36, 23))
+>u1 : Symbol(u1, Decl(ttttIntersectionTooComplexOnce.ts, 20, 13))
+>u2 : Symbol(u2, Decl(ttttIntersectionTooComplexOnce.ts, 21, 13))
+>u3 : Symbol(u3, Decl(ttttIntersectionTooComplexOnce.ts, 22, 13))
+>u4 : Symbol(u4, Decl(ttttIntersectionTooComplexOnce.ts, 23, 13))
+>u5 : Symbol(u5, Decl(ttttIntersectionTooComplexOnce.ts, 24, 13))
+>u6 : Symbol(u6, Decl(ttttIntersectionTooComplexOnce.ts, 25, 13))
+>u7 : Symbol(u7, Decl(ttttIntersectionTooComplexOnce.ts, 26, 13))
+>u8 : Symbol(u8, Decl(ttttIntersectionTooComplexOnce.ts, 27, 13))
+>u9 : Symbol(u9, Decl(ttttIntersectionTooComplexOnce.ts, 28, 13))
+>u10 : Symbol(u10, Decl(ttttIntersectionTooComplexOnce.ts, 29, 13))
+>u11 : Symbol(u11, Decl(ttttIntersectionTooComplexOnce.ts, 30, 13))
+>u12 : Symbol(u12, Decl(ttttIntersectionTooComplexOnce.ts, 31, 13))
+>u13 : Symbol(u13, Decl(ttttIntersectionTooComplexOnce.ts, 32, 13))
+>u14 : Symbol(u14, Decl(ttttIntersectionTooComplexOnce.ts, 33, 13))
+>u15 : Symbol(u15, Decl(ttttIntersectionTooComplexOnce.ts, 34, 13))
+>u16 : Symbol(u16, Decl(ttttIntersectionTooComplexOnce.ts, 35, 13))
+>u17 : Symbol(u17, Decl(ttttIntersectionTooComplexOnce.ts, 36, 13))
+
+export const second = all(u1, u2, u3, u4, u5, u6, u7, u8, u9, u10, u11, u12, u13, u14, u15, u16, u17);
+>second : Symbol(second, Decl(ttttIntersectionTooComplexOnce.ts, 39, 12))
+>all : Symbol(all, Decl(ttttIntersectionTooComplexOnce.ts, 36, 23))
+>u1 : Symbol(u1, Decl(ttttIntersectionTooComplexOnce.ts, 20, 13))
+>u2 : Symbol(u2, Decl(ttttIntersectionTooComplexOnce.ts, 21, 13))
+>u3 : Symbol(u3, Decl(ttttIntersectionTooComplexOnce.ts, 22, 13))
+>u4 : Symbol(u4, Decl(ttttIntersectionTooComplexOnce.ts, 23, 13))
+>u5 : Symbol(u5, Decl(ttttIntersectionTooComplexOnce.ts, 24, 13))
+>u6 : Symbol(u6, Decl(ttttIntersectionTooComplexOnce.ts, 25, 13))
+>u7 : Symbol(u7, Decl(ttttIntersectionTooComplexOnce.ts, 26, 13))
+>u8 : Symbol(u8, Decl(ttttIntersectionTooComplexOnce.ts, 27, 13))
+>u9 : Symbol(u9, Decl(ttttIntersectionTooComplexOnce.ts, 28, 13))
+>u10 : Symbol(u10, Decl(ttttIntersectionTooComplexOnce.ts, 29, 13))
+>u11 : Symbol(u11, Decl(ttttIntersectionTooComplexOnce.ts, 30, 13))
+>u12 : Symbol(u12, Decl(ttttIntersectionTooComplexOnce.ts, 31, 13))
+>u13 : Symbol(u13, Decl(ttttIntersectionTooComplexOnce.ts, 32, 13))
+>u14 : Symbol(u14, Decl(ttttIntersectionTooComplexOnce.ts, 33, 13))
+>u15 : Symbol(u15, Decl(ttttIntersectionTooComplexOnce.ts, 34, 13))
+>u16 : Symbol(u16, Decl(ttttIntersectionTooComplexOnce.ts, 35, 13))
+>u17 : Symbol(u17, Decl(ttttIntersectionTooComplexOnce.ts, 36, 13))
+
