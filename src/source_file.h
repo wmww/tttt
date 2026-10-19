@@ -509,6 +509,7 @@ static inline cstr module_ref_file_message_path(ModuleRef const* me) {
 // What there is to say about a module name that did find its file (TS5097)
 // type_only: of an `import type`/`export type` declaration or a side effect import (no TS2846 for naming a .d.ts)
 void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_effect, struct ErrorCtx* errs);
+void module_ref_report_resolved_import_type(ModuleRef const* me, struct ErrorCtx* errs);
 // TS1471/TS1479: a CommonJS use of an ES module under node16/node18, reported at `at`
 void module_ref_report_require_of_esm(ModuleRef const* me, Span at, struct ErrorCtx* errs);
 

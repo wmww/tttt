@@ -1,0 +1,29 @@
+//// [test/cases/ttttImportTypeJsxNotSet.ts] ////
+
+=== b.tsx ===
+export const x = 1
+>x : 1
+>1 : 1
+
+=== a.ts ===
+import { x } from "./b"
+>x : 1
+
+type T = typeof import("./b")
+>T : typeof import("./b")
+
+declare function f<U>(): U
+>f : <U>() => U
+
+const y = f<typeof import("./b")>()
+>y : typeof import("./b")
+>f<typeof import("./b")>() : typeof import("./b")
+>f : <U>() => U
+
+export { x, y }
+>x : 1
+>y : typeof import("./b")
+
+export type { T }
+>T : typeof import("./b")
+

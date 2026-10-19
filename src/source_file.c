@@ -545,6 +545,14 @@ static void report_unsafe_rewrite(ModuleRef const* me, ErrorCtx* errs) {
     }
 }
 
+// A resolved name in an import type, `import("./a.tsx")`: what tsc's resolveExternalModule says of it there
+void module_ref_report_resolved_import_type(ModuleRef const* me, ErrorCtx* errs) {
+    if (my failure == MODULE_REF_JSX_NOT_SET) {
+        error_ctx_error_d(errs, my span, 6142,
+            "Module '", my path, "' was resolved to '", module_ref_rare(me)->resolved_path, "', but '--jsx' is not set.");
+    }
+}
+
 // side_effect: an import without a clause, `import "./a.ts"` (TS5097, but no TS2846: tsc's importOrExport is missing)
 void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_effect, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();

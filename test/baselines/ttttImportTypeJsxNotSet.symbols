@@ -1,0 +1,29 @@
+//// [test/cases/ttttImportTypeJsxNotSet.ts] ////
+
+=== b.tsx ===
+export const x = 1
+>x : Symbol(x, Decl(b.tsx, 0, 12))
+
+=== a.ts ===
+import { x } from "./b"
+>x : Symbol(x, Decl(a.ts, 0, 8))
+
+type T = typeof import("./b")
+>T : Symbol(T, Decl(a.ts, 0, 23))
+
+declare function f<U>(): U
+>f : Symbol(f, Decl(a.ts, 1, 29))
+>U : Symbol(U, Decl(a.ts, 2, 19))
+>U : Symbol(U, Decl(a.ts, 2, 19))
+
+const y = f<typeof import("./b")>()
+>y : Symbol(y, Decl(a.ts, 3, 5))
+>f : Symbol(f, Decl(a.ts, 1, 29))
+
+export { x, y }
+>x : Symbol(x, Decl(a.ts, 4, 8))
+>y : Symbol(y, Decl(a.ts, 4, 11))
+
+export type { T }
+>T : Symbol(T, Decl(a.ts, 5, 13))
+

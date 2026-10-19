@@ -1,0 +1,21 @@
+a.ts(1,19): error TS6142: Module './b' was resolved to 'b.tsx', but '--jsx' is not set.
+a.ts(2,24): error TS6142: Module './b' was resolved to 'b.tsx', but '--jsx' is not set.
+a.ts(4,27): error TS6142: Module './b' was resolved to 'b.tsx', but '--jsx' is not set.
+
+
+==== b.tsx (0 errors) ====
+    export const x = 1
+==== a.ts (3 errors) ====
+    import { x } from "./b"
+                      ~~~~~
+!!! error TS6142: Module './b' was resolved to 'b.tsx', but '--jsx' is not set.
+    type T = typeof import("./b")
+                           ~~~~~
+!!! error TS6142: Module './b' was resolved to 'b.tsx', but '--jsx' is not set.
+    declare function f<U>(): U
+    const y = f<typeof import("./b")>()
+                              ~~~~~
+!!! error TS6142: Module './b' was resolved to 'b.tsx', but '--jsx' is not set.
+    export { x, y }
+    export type { T }
+    
