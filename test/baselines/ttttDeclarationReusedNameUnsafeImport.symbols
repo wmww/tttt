@@ -1,0 +1,38 @@
+//// [test/cases/ttttDeclarationReusedNameUnsafeImport.ts] ////
+
+=== /node_modules/client/index.d.ts ===
+import type { components } from "openapi-types";
+>components : Symbol(components, Decl(index.d.ts, 0, 13))
+
+export declare function get(): Promise<{ user: components["schemas"]["user"]; id: number }>;
+>get : Symbol(get, Decl(index.d.ts, 0, 48))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>user : Symbol(user, Decl(index.d.ts, 1, 40))
+>components : Symbol(components, Decl(index.d.ts, 0, 13))
+>id : Symbol(id, Decl(index.d.ts, 1, 77))
+
+=== /node_modules/client/node_modules/openapi-types/index.d.ts ===
+export interface components {
+>components : Symbol(components, Decl(index.d.ts, 0, 0))
+
+    schemas: {
+>schemas : Symbol(components.schemas, Decl(index.d.ts, 0, 29))
+
+        user: { login: string; site_admin: boolean };
+>user : Symbol(user, Decl(index.d.ts, 1, 14))
+>login : Symbol(login, Decl(index.d.ts, 2, 15))
+>site_admin : Symbol(site_admin, Decl(index.d.ts, 2, 30))
+
+    };
+}
+=== /src/index.ts ===
+import { get } from "client";
+>get : Symbol(get, Decl(index.ts, 0, 8))
+
+export async function pullRequest() {
+>pullRequest : Symbol(pullRequest, Decl(index.ts, 0, 29))
+
+    return (await get());
+>get : Symbol(get, Decl(index.ts, 0, 8))
+}
+

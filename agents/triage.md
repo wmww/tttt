@@ -63,3 +63,7 @@ dtsdiff numbers went to bugs/dts_emit.md. The human's two directives and tsc-rs 
 - **Many-core perf framing** (same section): on the 12-core box all-core clocks cost 1.62x per checker before any
   tttt overhead; the checker-side ceiling on vscode is ~1.5x wall, the thrashers aside. Future perf plans for many
   cores should price work by per-file sums under real parallel runs, not serialized CPU (plan 85's census did).
+- 2026-10-19 (graphql-inspector, `tttt -b tsconfig.build.json --no-write --dts-dump`): `packages/core/src/diff/changes/directive.d.ts`
+  has an extra `reason?: undefined;` at line 145 against tsc's emit (`tsc -p ... --emitDeclarationOnly` in a bwrap
+  overlay). Every other file of the project is byte-identical. Undiagnosed (an optional-property of a union of object
+  literals, likely: tsc's normalized literal union member lists).

@@ -2621,6 +2621,9 @@ typedef struct DeclTracker {
     // A name the printer roots at `import("...")` of this file (symbolToTypeNode's import type: the specifier may only
     // reach it through a node_modules, TS2883 naming `symbol`)
     void (*track_module_file)(struct DeclTracker* me, struct SourceFile const* file, Symbol const* symbol);
+    // Whether track_module_file() of this file would report (optional): a reused name renamed through it fails its
+    // node instead, which prints its type (tsgo's recovery boundary around tryReuseExistingNode)
+    bool (*module_file_unsafe)(struct DeclTracker* me, struct SourceFile const* file);
     // ReportInferenceFallback: where the printer serializes a declaration's type from its syntax (pseudo.h), what the
     // syntax doesn't say (isolatedDeclarations' diagnostics)
     void (*report_fallback)(struct DeclTracker* me, struct PseudoError const* node);

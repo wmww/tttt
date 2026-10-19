@@ -1,0 +1,47 @@
+//// [test/cases/ttttDeclarationBindingPatternWholeType.ts] ////
+
+=== /node_modules/pg/index.d.ts ===
+import pgTypes = require("pg-types");
+>pgTypes : typeof pgTypes
+
+export class Pool { x: number }
+>Pool : Pool
+>x : number
+
+export const types: typeof pgTypes;
+>types : typeof pgTypes
+>pgTypes : typeof pgTypes
+
+=== /node_modules/pg/node_modules/pg-types/index.d.ts ===
+export function getTypeParser(oid: number): (s: string) => any;
+>getTypeParser : (oid: number) => (s: string) => any
+>oid : number
+>s : string
+
+=== /src/db.ts ===
+import pg from 'pg'
+>pg : typeof pg
+
+const { Pool: PgPool, types: pgTypes } = pg
+>Pool : any
+>PgPool : typeof pg.Pool
+>types : any
+>pgTypes : typeof import("pg/node_modules/pg-types")
+>pg : typeof pg
+
+type PgPool = InstanceType<typeof PgPool>
+>PgPool : pg.Pool
+>PgPool : typeof pg.Pool
+
+export class Database { pool!: PgPool }
+>Database : Database
+>pool : pg.Pool
+
+export const t = pgTypes.getTypeParser(1);
+>t : (s: string) => any
+>pgTypes.getTypeParser(1) : (s: string) => any
+>pgTypes.getTypeParser : (oid: number) => (s: string) => any
+>pgTypes : typeof import("pg/node_modules/pg-types")
+>getTypeParser : (oid: number) => (s: string) => any
+>1 : 1
+

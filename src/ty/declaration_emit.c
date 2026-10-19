@@ -776,19 +776,29 @@ static cstr walk_module_specifier(void* ctx, SourceFile const* target) {
     return cstr_clone(memo->plain);
 }
 
-static void track_module_file(DeclTracker* tracker, SourceFile const* target, Symbol const* symbol) {
-    Walk* me = tracker->ctx;
-    if (my emitting.kind == EMIT_NONE || target == my file) return;
+// unsafe_specifier(), remembered (empty if the file is named safely, or nothing would be reported)
+static csview memo_unsafe_specifier(Walk* me, SourceFile const* target) {
+    if (my emitting.kind == EMIT_NONE || target == my file) return c_sv("");
     SpecifierMemo* memo = specifier_memo(me, target);
     if (!memo->has_unsafe) {
         memo->unsafe = unsafe_specifier(me, target);
         memo->has_unsafe = true;
     }
-    if (!cstr_size(&memo->unsafe)) return;
+    return cstr_sv(&memo->unsafe);
+}
+
+static bool module_file_unsafe(DeclTracker* tracker, SourceFile const* target) {
+    return memo_unsafe_specifier(tracker->ctx, target).size > 0;
+}
+
+static void track_module_file(DeclTracker* tracker, SourceFile const* target, Symbol const* symbol) {
+    Walk* me = tracker->ctx;
+    csview unsafe = memo_unsafe_specifier(me, target);
+    if (!unsafe.size) return;
     csview name;
     Span at = error_name_node(me, &name);
     report_once(me, at, 2883, cstr_d("The inferred type of '", name, "' cannot be named without a reference to '",
-        symbol->name, "' from '", memo->unsafe, "'. This is likely not portable. A type annotation is necessary."));
+        symbol->name, "' from '", unsafe, "'. This is likely not portable. A type annotation is necessary."));
 }
 
 // trackComputedName: the first identifier of a late bound name as resolved from here, else as resolved where the name
@@ -2019,7 +2029,9 @@ static void check_variable(Walk* me, InitializedBinding const* decl, bool is_con
             if (binding->has_explicit_type) check_written_type(me, binding_type(binding));
             else if (type) print_type(me, ty_widened_literal(my checker, ty_widened_objects(my checker, ty_regular(my checker, type))), false);
             emit_leave(me, saved);
+            return;
         }
+        // (With initializers, each element is a declaration of its own: tsgo's recreateBindingPattern)
         print_binding_elements(me, binding);
         return;
     }
@@ -6128,7 +6140,7 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs, bool 
     };
     walk.tracker = (DeclTracker){
         .track_symbol = track_symbol, .track_computed_name = track_computed_name, .report = tracker_report,
-        .track_module_file = track_module_file, .report_fallback = tracker_report_fallback, .ctx = &walk,
+        .track_module_file = track_module_file, .module_file_unsafe = module_file_unsafe, .report_fallback = tracker_report_fallback, .ctx = &walk,
     };
     symbol_chain_set_painted((Symbol const* const* const*)&walk.painted, &walk.painted_count);
     symbol_chain_set_module_specifier(walk_module_specifier, &walk);

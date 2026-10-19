@@ -1930,6 +1930,13 @@ static IdentifierReuse identifier_reuse(Checker* me, TyDisplay d, TypeNode const
     if (target && !(target->flags & SYMBOL_TYPE_PARAMETER) &&
         symbol_type_accessible_at(d.enclosing, target)
     ) {
+        // (Renamed through `import("...")` of a module only a node_modules path reaches, TS2883: tsgo's recovery
+        // boundary drops the reuse and prints the type. graphql-inspector's octokit `components["schemas"][...]`)
+        if (d.tracker && d.tracker->module_file_unsafe) {
+            SymbolChain chain = display_chain_at(d, target, SYMBOL_TYPE, true);
+            SourceFile const* file = chain.len && chain.items[0]->is_module && chain.items[0]->module ? chain.items[0]->module->file : nullptr;
+            if (file && d.tracker->module_file_unsafe(d.tracker, file)) return IDENTIFIER_FAILS;
+        }
         return IDENTIFIER_RENAMED;
     }
     return IDENTIFIER_FAILS;

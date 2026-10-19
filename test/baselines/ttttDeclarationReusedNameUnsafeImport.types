@@ -1,0 +1,37 @@
+//// [test/cases/ttttDeclarationReusedNameUnsafeImport.ts] ////
+
+=== /node_modules/client/index.d.ts ===
+import type { components } from "openapi-types";
+>components : components
+
+export declare function get(): Promise<{ user: components["schemas"]["user"]; id: number }>;
+>get : () => Promise<{ user: components["schemas"]["user"]; id: number; }>
+>user : { login: string; site_admin: boolean; }
+>id : number
+
+=== /node_modules/client/node_modules/openapi-types/index.d.ts ===
+export interface components {
+    schemas: {
+>schemas : { user: { login: string; site_admin: boolean; }; }
+
+        user: { login: string; site_admin: boolean };
+>user : { login: string; site_admin: boolean; }
+>login : string
+>site_admin : boolean
+
+    };
+}
+=== /src/index.ts ===
+import { get } from "client";
+>get : () => Promise<{ user: import("client/node_modules/openapi-types").components["schemas"]["user"]; id: number; }>
+
+export async function pullRequest() {
+>pullRequest : () => Promise<{ user: import("client/node_modules/openapi-types").components["schemas"]["user"]; id: number; }>
+
+    return (await get());
+>(await get()) : { user: import("client/node_modules/openapi-types").components["schemas"]["user"]; id: number; }
+>await get() : { user: import("client/node_modules/openapi-types").components["schemas"]["user"]; id: number; }
+>get() : Promise<{ user: import("client/node_modules/openapi-types").components["schemas"]["user"]; id: number; }>
+>get : () => Promise<{ user: import("client/node_modules/openapi-types").components["schemas"]["user"]; id: number; }>
+}
+

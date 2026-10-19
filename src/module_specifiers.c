@@ -1032,13 +1032,14 @@ static DirectoryResult directory_with_package_json(
 
 // tsc's tryGetModuleNameAsNodeModule: the name of a file in a node_modules as a package name (and subpath), empty if
 // the file can't be reached that way from the importing file
-static cstr as_node_module(Generator* me, csview path, SpecifierMode mode) {
+static cstr as_node_module(Generator* me, csview path, SpecifierMode mode, bool is_redirect) {
     NodeModulePathParts parts;
     if (!node_module_path_parts(path, &parts)) return cstr_null;
     Endings endings = allowed_endings(me, SPECIFIER_MODE_NONE);
     cstr specifier = cstr_from_sv(path);
     isize root_index = parts.package_root;
     cstr module_file = cstr_null;
+    bool package_root = false;
     while (true) {
         DirectoryResult r = directory_with_package_json(me, path, &parts, root_index, &endings, mode);
         if (r.blocked_by_exports) {
@@ -1052,6 +1053,7 @@ static cstr as_node_module(Generator* me, csview path, SpecifierMode mode) {
         if (r.package_root) {
             cstr_take(&specifier, cstr_from_sv(js_substring(path, 0, root_index)));
             cstr_drop(&r.module_file);
+            package_root = true;
             break;
         }
         if (!cstr_size(&module_file)) cstr_take(&module_file, r.module_file);
@@ -1064,6 +1066,12 @@ static cstr as_node_module(Generator* me, csview path, SpecifierMode mode) {
         root_index = root_index + 1 + next;
     }
     cstr_drop(&module_file);
+    // (A referenced project's output declaration file is named by its package's name alone: a subpath would be into
+    // its outDir, which its own source names better, better-auth's `node_modules/.cache/ts/out`)
+    if (is_redirect && !package_root) {
+        cstr_drop(&specifier);
+        return cstr_null;
+    }
     csview s = cstr_sv(&specifier);
     // Only through a node_modules the importing file sees
     csview top = js_substring(s, 0, parts.top_level_node_modules);
@@ -1234,14 +1242,23 @@ cstr module_specifier_generate(SpecifierRequest const* request) {
     }
     bool target_in_node_modules = false;
     for (u32 i = 0; i < paths.len; i++) target_in_node_modules |= paths.items[i].in_node_modules;
-    // A package name through node_modules, else a `paths` mapping, else relative
-    cstr node_modules = cstr_null, mapped = cstr_null, relative = cstr_null;
+    // A `paths` mapping, else one of a referenced project's output declaration file (a redirect), else a package name
+    // through node_modules, else relative
+    cstr node_modules = cstr_null, mapped = cstr_null, redirect_mapped = cstr_null, relative = cstr_null;
     SpecifierMode local_mode = request->override_mode ? request->override_mode : request->importing_format;
     for (u32 i = 0; i < paths.len; i++) {
         csview path = cstr_sv(&paths.items[i].path);
-        cstr specifier = paths.items[i].in_node_modules ? as_node_module(&gen, path, request->override_mode) : cstr_null;
+        bool is_redirect = paths.items[i].is_redirect;
+        cstr specifier = paths.items[i].in_node_modules ? as_node_module(&gen, path, request->override_mode, is_redirect) : cstr_null;
         if (cstr_size(&specifier) && !cstr_size(&node_modules)) cstr_take(&node_modules, cstr_clone(specifier));
-        cstr local = local_specifier(&gen, path, local_mode, cstr_size(&specifier) > 0);
+        // (A redirect's is its package's bare name: none will be better, not even an earlier `paths` mapping)
+        if (cstr_size(&specifier) && is_redirect) {
+            cstr_drop(&specifier);
+            module_paths_drop(&paths);
+            c_drop(cstr, &mapped, &redirect_mapped, &relative);
+            return node_modules;
+        }
+        cstr local = local_specifier(&gen, path, local_mode, is_redirect || cstr_size(&specifier) > 0);
         cstr_drop(&specifier);
         if (!cstr_size(&local)) {
             cstr_drop(&local);
@@ -1249,7 +1266,9 @@ cstr module_specifier_generate(SpecifierRequest const* request) {
         }
         csview l = cstr_sv(&local);
         bool bare = !(l.size && l.buf[0] == '/') && !path_is_relative(l);
-        if (bare && !path_contains_node_modules(l)) {
+        if (is_redirect) {
+            if (!cstr_size(&redirect_mapped)) cstr_take(&redirect_mapped, cstr_clone(local));
+        } else if (bare && !path_contains_node_modules(l)) {
             if (!cstr_size(&mapped)) cstr_take(&mapped, cstr_clone(local));
         } else if (bare || !target_in_node_modules || paths.items[i].in_node_modules) {
             // (A relative path that doesn't go through a node_modules when another one does is likely into a sibling
@@ -1259,7 +1278,8 @@ cstr module_specifier_generate(SpecifierRequest const* request) {
         cstr_drop(&local);
     }
     module_paths_drop(&paths);
-    cstr ret = cstr_size(&mapped) ? cstr_clone(mapped) : cstr_size(&node_modules) ? cstr_clone(node_modules) : cstr_clone(relative);
-    c_drop(cstr, &node_modules, &mapped, &relative);
+    cstr ret = cstr_size(&mapped) ? cstr_clone(mapped) : cstr_size(&redirect_mapped) ? cstr_clone(redirect_mapped) :
+        cstr_size(&node_modules) ? cstr_clone(node_modules) : cstr_clone(relative);
+    c_drop(cstr, &node_modules, &mapped, &redirect_mapped, &relative);
     return ret;
 }

@@ -1,0 +1,47 @@
+//// [test/cases/ttttDeclarationBindingPatternWholeType.ts] ////
+
+=== /node_modules/pg/index.d.ts ===
+import pgTypes = require("pg-types");
+>pgTypes : Symbol(pgTypes, Decl(index.d.ts, 0, 0))
+
+export class Pool { x: number }
+>Pool : Symbol(Pool, Decl(index.d.ts, 0, 37))
+>x : Symbol(Pool.x, Decl(index.d.ts, 1, 19))
+
+export const types: typeof pgTypes;
+>types : Symbol(types, Decl(index.d.ts, 2, 12))
+>pgTypes : Symbol(pgTypes, Decl(index.d.ts, 0, 0))
+
+=== /node_modules/pg/node_modules/pg-types/index.d.ts ===
+export function getTypeParser(oid: number): (s: string) => any;
+>getTypeParser : Symbol(getTypeParser, Decl(index.d.ts, 0, 0))
+>oid : Symbol(oid, Decl(index.d.ts, 0, 30))
+>s : Symbol(s, Decl(index.d.ts, 0, 45))
+
+=== /src/db.ts ===
+import pg from 'pg'
+>pg : Symbol(pg, Decl(db.ts, 0, 6))
+
+const { Pool: PgPool, types: pgTypes } = pg
+>Pool : Symbol(pg.Pool, Decl(index.d.ts, 0, 37))
+>PgPool : Symbol(PgPool, Decl(db.ts, 1, 7), Decl(db.ts, 1, 43))
+>types : Symbol(pg.types, Decl(index.d.ts, 2, 12))
+>pgTypes : Symbol(pgTypes, Decl(db.ts, 1, 21))
+>pg : Symbol(pg, Decl(db.ts, 0, 6))
+
+type PgPool = InstanceType<typeof PgPool>
+>PgPool : Symbol(PgPool, Decl(db.ts, 1, 7), Decl(db.ts, 1, 43))
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>PgPool : Symbol(PgPool, Decl(db.ts, 1, 7), Decl(db.ts, 1, 43))
+
+export class Database { pool!: PgPool }
+>Database : Symbol(Database, Decl(db.ts, 2, 41))
+>pool : Symbol(Database.pool, Decl(db.ts, 3, 23))
+>PgPool : Symbol(PgPool, Decl(db.ts, 1, 7), Decl(db.ts, 1, 43))
+
+export const t = pgTypes.getTypeParser(1);
+>t : Symbol(t, Decl(db.ts, 4, 12))
+>pgTypes.getTypeParser : Symbol(getTypeParser, Decl(index.d.ts, 0, 0))
+>pgTypes : Symbol(pgTypes, Decl(db.ts, 1, 21))
+>getTypeParser : Symbol(getTypeParser, Decl(index.d.ts, 0, 0))
+

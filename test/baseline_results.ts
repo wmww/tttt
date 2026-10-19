@@ -245,6 +245,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationBindingPatternWholeType': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationBuilderListComments': {
         errors: true,
         symbols: true,
@@ -690,6 +696,12 @@ const baselines = {
         dts: true,
     },
     'ttttDeclarationReusedNameExportListed': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
+    'ttttDeclarationReusedNameUnsafeImport': {
         errors: true,
         symbols: true,
         types: true,
