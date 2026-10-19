@@ -50,11 +50,6 @@ dtsdiff numbers went to bugs/dts_emit.md. The human's two directives and tsc-rs 
 - 2026-10-18 (clidiff fan-out): one oracles.py run reported dtsdiff tanstack-table/packages/table-core at 0 / 198
   files; three reruns of `dtsdiff.py -f` matched 198 / 198 at the same commit. Load (clidiff/perfsweep running
   alongside) or a sandbox flake; if it recurs, look at what dtsdiff records for that project (timeout? empty tree?).
-- 2026-10-19 (refresh 3): **the `-p` source sweep walks only files named `tsconfig.json`**; `tsconfig.build.json`,
-  `.spec.json`, `.app.json`, `.lib.json` are checked only when a `-b` solution reaches them (sourcesweep.py
-  --build). Decide whether `list_projects()` should take every `tsconfig*.json` (project names would need the file:
-  clidiff, dtsdiff, kdiff and perfsweep key on the directory) or whether the `-b` sweep's reach is enough.
-
 - **PGO + LTO build: -8-9% wall on every corpus, trained or not** (measurements.md "Many-core accounting",
   2026-10-19). Decide whether `scripts/` builds release with `-Db_lto=true -Db_pgo=use` from a checked-in or
   regenerated profile (train on a few corpora at K1 and the defaults; profiles must match the compiler version;
