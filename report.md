@@ -430,3 +430,6 @@ A small robustness concern: a file truncated mid-run can crash tttt (mmapped sou
 **For you**: with PGO + LTO in, a 12-core rerun of `scripts/bench.sh --runs 3 --bun PATH --tscrs PATH` would check the
 gain and the checkers-per-physical-core default. Plan 76 (`--watch`/`--incremental`) stays parked unless you say
 otherwise.
+
+## 2026-10-19 — ask for the human (execution session, not an insights entry)
+PGO + LTO ships as `scripts/pgobuild.sh` (`pgo/tttt`, plan 86 stage 1): 11-17% fewer instructions on every corpus, including vscode and tsc, which aren't in its training set. Output is unchanged. Could you rerun the 12-core table with it? It's `scripts/bench.sh --runs 3 --checkers 24 --bun PATH --tscrs PATH`, and bench.sh now builds and uses `pgo/tttt` by itself. The first run retrains, which takes a few minutes.

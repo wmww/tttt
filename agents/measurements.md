@@ -12,6 +12,33 @@ text since 2026-10-18 but webpack's TS5115 name order, `scripts/clidiff.py --cor
 Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
+## PGO + LTO shipped (2026-10-19, todo entry 1; plan 86 stage 1)
+`scripts/pgobuild.sh` (pgo/tttt) is what bench.sh, instrcount.sh and perfsweep.py measure from now on. Callgrind
+(`scripts/instrcount.sh`, re-saved: compare against it, not the older release numbers above) against release -O3:
+tsc 4.530 -> 3.893 G (-14.1%, untrained), type-fest -12.9%, valibot -15.1%, react -12.7%, nest -11.5%, webpack
+-14.6%, zod -16.2%, xstate -15.2%, drizzle -16.5%, vue -15.5%, effect -16.4%, vscode 89.06 -> 75.52 G (-15.2%,
+untrained), excalidraw -16.9%, tanstack-router -15.9%. Wall K1-ish, one run, release -> pgo: vscode 12.37 -> 10.93 s,
+tsc 0.67 -> 0.54, vue 0.79 -> 0.62, zod 0.78 -> 0.74. `scripts/bench.sh --runs 3` on the 4-vCPU box (pgo/tttt;
+best wall s / CPU s / peak MB; drizzle's defaults above its K1 is the 4-core box's known checker split):
+| corpus | tttt defaults | tttt K1 | tsgo defaults | tsgo single |
+|---|---|---|---|---|
+| TypeScript6 | 0.480 / 0.94 / 232 | 0.670 / 0.78 / 221 | 1.780 / 3.33 / 510 | 2.300 / 2.71 / 417 |
+| type-fest | 0.860 / 1.51 / 425 | 0.890 / 0.90 / 425 | 12.130 / 22.06 / 5718 | 11.700 / 15.38 / 4334 |
+| valibot | 0.580 / 0.92 / 169 | 0.680 / 0.69 / 251 | 2.540 / 5.14 / 832 | 2.860 / 3.91 / 652 |
+| bulletproof-react | 0.210 / 0.41 / 160 | 0.250 / 0.25 / 139 | 1.420 / 2.52 / 501 | 1.140 / 1.35 / 290 |
+| nestjs-boilerplate | 0.190 / 0.28 / 147 | 0.230 / 0.25 / 130 | 0.590 / 0.91 / 232 | 0.600 / 0.72 / 192 |
+| webpack | 1.220 / 2.27 / 400 | 1.780 / 1.77 / 522 | 4.090 / 7.79 / 1167 | 5.420 / 6.03 / 955 |
+| zod | 0.650 / 1.50 / 275 | 0.690 / 0.70 / 388 | 2.800 / 7.69 / 1419 | 3.140 / 4.59 / 962 |
+| xstate | 0.280 / 0.75 / 185 | 0.340 / 0.36 / 190 | 1.010 / 2.76 / 460 | 1.130 / 1.54 / 338 |
+| drizzle | 1.280 / 2.24 / 361 | 0.930 / 0.94 / 393 | 5.010 / 9.73 / 1683 | 3.390 / 4.42 / 880 |
+| vue | 0.810 / 1.27 / 221 | 1.060 / 1.05 / 300 | 2.450 / 5.73 / 850 | 2.310 / 3.40 / 675 |
+| effect | 0.810 / 2.25 / 331 | 1.610 / 1.81 / 511 | 5.760 / 11.13 / 1592 | 4.300 / 6.49 / 1241 |
+| vscode | 6.100 / 21.56 / 1235 | 13.150 / 15.60 / 1363 | 18.030 / 64.25 / 8072 | 28.700 / 37.25 / 6628 |
+| excalidraw | 0.520 / 1.86 / 273 | 0.860 / 0.85 / 361 | 2.970 / 10.78 / 1975 | 2.770 / 3.80 / 899 |
+| tanstack-router | 0.300 / 1.09 / 282 | 0.610 / 0.64 / 302 | 2.040 / 6.91 / 977 | 2.590 / 3.52 / 673 |
+| `-b` TypeScript6/src | 1.040 / 3.49 / 325 | - | 2.050 / 6.41 / 742 | 3.000 / 3.95 / 512 |
+The 12-core table (the human's box) is owed a rerun with this build.
+
 ## supabase studio and bun on the 12-core box (2026-10-19, a conversation with the human)
 supabase `apps/studio` (b3757692, 12.7k files / 2.0M lines with dependencies, its own tsconfig; `pnpm install
 --ignore-scripts`; not in the source sweep), median of 5, wall / CPU / peak MB. Its tsconfig is incremental: tsgo
