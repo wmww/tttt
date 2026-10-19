@@ -885,6 +885,7 @@ typedef struct Patterns {
     StrList include;
     StrList exclude;
     StrList json; // Found JSON files: only include patterns ending in `.json` take them, with resolveJsonModule
+    csview walked; // A directory an earlier walk took whole (the config's own): not entered again (tsgo's visited)
 } Patterns;
 
 static bool is_excluded(Patterns const* patterns, csview path) {
@@ -915,7 +916,7 @@ static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrLis
             }
             // (Wildcards don't go into package directories or hidden ones, glob_may_match_inside() says, but a pattern
             // may name one: `./.vitepress/**/*.ts`)
-            if (wanted && !is_excluded(patterns, cstr_sv(&path))) {
+            if (wanted && !is_excluded(patterns, cstr_sv(&path)) && !csview_equals_sv(cstr_sv(&path), patterns->walked)) {
                 str_list_push(&subdirs, cstr_sv(&path));
             }
         } else if (has_source_extension(me, item.name) && !is_excluded(patterns, cstr_sv(&path))) {
@@ -1054,8 +1055,10 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
         if (cstr_size(&my options->declaration_dir)) str_list_push(&patterns.exclude, cstr_sv(&my options->declaration_dir));
     }
 
-    // One walk per distinct base directory, skipping bases inside another (tsgo's getBasePaths). tsgo sorts them first,
-    // which with its include-ordered buckets doesn't change the files' order
+    // One walk per base directory (tsgo's getBasePaths): the config's own directory first, then the include patterns'
+    // bases in path order, each unless an earlier base contains it. An `include` inherited from a config higher up
+    // still finds the extending config's own files first (ethereumjs's packages/*/tsconfig.lint.json extending the
+    // root's `./packages/**/*.ts`: TS6307 goes at the first importer, its own package's)
     StrList found = {0};
     StrList bases = {0};
     StrList all = {0};
@@ -1064,15 +1067,22 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
         str_list_push(&all, cstr_sv(&base));
         cstr_drop(&base);
     }
+    // (Insertion sort by path: the lists are short)
+    for (isize i = 1; i < all.count; i++) {
+        for (isize j = i; j > 0 && strcmp(cstr_str(&all.items[j - 1]), cstr_str(&all.items[j])) > 0; j--) {
+            cstr t = all.items[j];
+            all.items[j] = all.items[j - 1];
+            all.items[j - 1] = t;
+        }
+    }
+    str_list_push(&bases, cstr_sv(&my config_dir));
     for (isize i = 0; i < all.count; i++) {
         csview base = cstr_sv(&all.items[i]);
         bool covered = false;
-        for (isize j = 0; j < all.count && !covered; j++) {
-            csview other = cstr_sv(&all.items[j]);
-            if (j == i) continue;
-            if (csview_equals_sv(base, other)) covered = j < i;
-            else covered = base.size > other.size && !memcmp(base.buf, other.buf, (size_t)other.size) &&
-                (other.size == 1 || base.buf[other.size] == '/');
+        for (isize j = 0; j < bases.count && !covered; j++) {
+            csview other = cstr_sv(&bases.items[j]);
+            covered = csview_equals_sv(base, other) || (base.size > other.size && !memcmp(base.buf, other.buf, (size_t)other.size) &&
+                (other.size == 1 || other.buf[other.size - 1] == '/' || base.buf[other.size] == '/'));
         }
         if (!covered) str_list_push(&bases, base);
     }
@@ -1082,6 +1092,7 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
         if (fs_is_directory(my fs, cstr_sv(&bases.items[i]))) {
             collect_files(me, &patterns, cstr_sv(&bases.items[i]), buckets, 0);
         }
+        if (!i) patterns.walked = cstr_sv(&bases.items[0]);
     }
     for (isize i = 0; i < patterns.include.count; i++) {
         for (isize j = 0; j < buckets[i].count; j++) str_list_push(&found, cstr_sv(&buckets[i].items[j]));
