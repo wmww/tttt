@@ -1,0 +1,13 @@
+// A never index reads nothing as the plain never, also the silent never an outer call's uninferred type parameter
+// stands for while a nested call infers from its contextual return type (tsc's getPropertyTypeForIndexType returns
+// neverType): `Paths[P]` there is never, which infers, not the silent never, which doesn't. supabase studio's msw
+// mocks (CreateCustomOidcDialog.test.tsx) got the constraint instead
+// @strict: true
+declare class Box<T> { t: T; static of<T extends object | null>(body?: NoInfer<T>): Box<T> }
+type Resolver<R> = (info: { request: string }) => Box<R> | undefined;
+type Bd = { id: string };
+type Paths = { a: Bd };
+declare function add<P extends keyof Paths>(a: P extends 'x' ? { path: P; response?: Resolver<object> } : { path: P; response: Resolver<Paths[P]> }): void;
+add({ path: 'a', response: ({ request }: { request: string }) => Box.of({ id: "0" }) });
+declare function add2<P extends keyof Paths>(a: { path: P; response: Resolver<Paths[P]> }): void;
+add2({ path: 'a', response: ({ request }: { request: string }) => Box.of({ id: "0" }) });

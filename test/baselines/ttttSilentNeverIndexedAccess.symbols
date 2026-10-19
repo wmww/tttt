@@ -1,0 +1,88 @@
+//// [test/cases/ttttSilentNeverIndexedAccess.ts] ////
+
+=== ttttSilentNeverIndexedAccess.ts ===
+// A never index reads nothing as the plain never, also the silent never an outer call's uninferred type parameter
+// stands for while a nested call infers from its contextual return type (tsc's getPropertyTypeForIndexType returns
+// neverType): `Paths[P]` there is never, which infers, not the silent never, which doesn't. supabase studio's msw
+// mocks (CreateCustomOidcDialog.test.tsx) got the constraint instead
+declare class Box<T> { t: T; static of<T extends object | null>(body?: NoInfer<T>): Box<T> }
+>Box : Symbol(Box, Decl(ttttSilentNeverIndexedAccess.ts, 0, 0))
+>T : Symbol(T, Decl(ttttSilentNeverIndexedAccess.ts, 4, 18))
+>t : Symbol(Box.t, Decl(ttttSilentNeverIndexedAccess.ts, 4, 22))
+>T : Symbol(T, Decl(ttttSilentNeverIndexedAccess.ts, 4, 18))
+>of : Symbol(Box.of, Decl(ttttSilentNeverIndexedAccess.ts, 4, 28))
+>T : Symbol(T, Decl(ttttSilentNeverIndexedAccess.ts, 4, 39))
+>body : Symbol(body, Decl(ttttSilentNeverIndexedAccess.ts, 4, 64))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttSilentNeverIndexedAccess.ts, 4, 39))
+>Box : Symbol(Box, Decl(ttttSilentNeverIndexedAccess.ts, 0, 0))
+>T : Symbol(T, Decl(ttttSilentNeverIndexedAccess.ts, 4, 39))
+
+type Resolver<R> = (info: { request: string }) => Box<R> | undefined;
+>Resolver : Symbol(Resolver, Decl(ttttSilentNeverIndexedAccess.ts, 4, 92))
+>R : Symbol(R, Decl(ttttSilentNeverIndexedAccess.ts, 5, 14))
+>info : Symbol(info, Decl(ttttSilentNeverIndexedAccess.ts, 5, 20))
+>request : Symbol(request, Decl(ttttSilentNeverIndexedAccess.ts, 5, 27))
+>Box : Symbol(Box, Decl(ttttSilentNeverIndexedAccess.ts, 0, 0))
+>R : Symbol(R, Decl(ttttSilentNeverIndexedAccess.ts, 5, 14))
+
+type Bd = { id: string };
+>Bd : Symbol(Bd, Decl(ttttSilentNeverIndexedAccess.ts, 5, 69))
+>id : Symbol(id, Decl(ttttSilentNeverIndexedAccess.ts, 6, 11))
+
+type Paths = { a: Bd };
+>Paths : Symbol(Paths, Decl(ttttSilentNeverIndexedAccess.ts, 6, 25))
+>a : Symbol(a, Decl(ttttSilentNeverIndexedAccess.ts, 7, 14))
+>Bd : Symbol(Bd, Decl(ttttSilentNeverIndexedAccess.ts, 5, 69))
+
+declare function add<P extends keyof Paths>(a: P extends 'x' ? { path: P; response?: Resolver<object> } : { path: P; response: Resolver<Paths[P]> }): void;
+>add : Symbol(add, Decl(ttttSilentNeverIndexedAccess.ts, 7, 23))
+>P : Symbol(P, Decl(ttttSilentNeverIndexedAccess.ts, 8, 21))
+>Paths : Symbol(Paths, Decl(ttttSilentNeverIndexedAccess.ts, 6, 25))
+>a : Symbol(a, Decl(ttttSilentNeverIndexedAccess.ts, 8, 44))
+>P : Symbol(P, Decl(ttttSilentNeverIndexedAccess.ts, 8, 21))
+>path : Symbol(path, Decl(ttttSilentNeverIndexedAccess.ts, 8, 64))
+>P : Symbol(P, Decl(ttttSilentNeverIndexedAccess.ts, 8, 21))
+>response : Symbol(response, Decl(ttttSilentNeverIndexedAccess.ts, 8, 73))
+>Resolver : Symbol(Resolver, Decl(ttttSilentNeverIndexedAccess.ts, 4, 92))
+>path : Symbol(path, Decl(ttttSilentNeverIndexedAccess.ts, 8, 107))
+>P : Symbol(P, Decl(ttttSilentNeverIndexedAccess.ts, 8, 21))
+>response : Symbol(response, Decl(ttttSilentNeverIndexedAccess.ts, 8, 116))
+>Resolver : Symbol(Resolver, Decl(ttttSilentNeverIndexedAccess.ts, 4, 92))
+>Paths : Symbol(Paths, Decl(ttttSilentNeverIndexedAccess.ts, 6, 25))
+>P : Symbol(P, Decl(ttttSilentNeverIndexedAccess.ts, 8, 21))
+
+add({ path: 'a', response: ({ request }: { request: string }) => Box.of({ id: "0" }) });
+>add : Symbol(add, Decl(ttttSilentNeverIndexedAccess.ts, 7, 23))
+>path : Symbol(path, Decl(ttttSilentNeverIndexedAccess.ts, 9, 5))
+>response : Symbol(response, Decl(ttttSilentNeverIndexedAccess.ts, 9, 16))
+>request : Symbol(request, Decl(ttttSilentNeverIndexedAccess.ts, 9, 29))
+>request : Symbol(request, Decl(ttttSilentNeverIndexedAccess.ts, 9, 42))
+>Box.of : Symbol(Box.of, Decl(ttttSilentNeverIndexedAccess.ts, 4, 28))
+>Box : Symbol(Box, Decl(ttttSilentNeverIndexedAccess.ts, 0, 0))
+>of : Symbol(Box.of, Decl(ttttSilentNeverIndexedAccess.ts, 4, 28))
+>id : Symbol(id, Decl(ttttSilentNeverIndexedAccess.ts, 9, 73))
+
+declare function add2<P extends keyof Paths>(a: { path: P; response: Resolver<Paths[P]> }): void;
+>add2 : Symbol(add2, Decl(ttttSilentNeverIndexedAccess.ts, 9, 88))
+>P : Symbol(P, Decl(ttttSilentNeverIndexedAccess.ts, 10, 22))
+>Paths : Symbol(Paths, Decl(ttttSilentNeverIndexedAccess.ts, 6, 25))
+>a : Symbol(a, Decl(ttttSilentNeverIndexedAccess.ts, 10, 45))
+>path : Symbol(path, Decl(ttttSilentNeverIndexedAccess.ts, 10, 49))
+>P : Symbol(P, Decl(ttttSilentNeverIndexedAccess.ts, 10, 22))
+>response : Symbol(response, Decl(ttttSilentNeverIndexedAccess.ts, 10, 58))
+>Resolver : Symbol(Resolver, Decl(ttttSilentNeverIndexedAccess.ts, 4, 92))
+>Paths : Symbol(Paths, Decl(ttttSilentNeverIndexedAccess.ts, 6, 25))
+>P : Symbol(P, Decl(ttttSilentNeverIndexedAccess.ts, 10, 22))
+
+add2({ path: 'a', response: ({ request }: { request: string }) => Box.of({ id: "0" }) });
+>add2 : Symbol(add2, Decl(ttttSilentNeverIndexedAccess.ts, 9, 88))
+>path : Symbol(path, Decl(ttttSilentNeverIndexedAccess.ts, 11, 6))
+>response : Symbol(response, Decl(ttttSilentNeverIndexedAccess.ts, 11, 17))
+>request : Symbol(request, Decl(ttttSilentNeverIndexedAccess.ts, 11, 30))
+>request : Symbol(request, Decl(ttttSilentNeverIndexedAccess.ts, 11, 43))
+>Box.of : Symbol(Box.of, Decl(ttttSilentNeverIndexedAccess.ts, 4, 28))
+>Box : Symbol(Box, Decl(ttttSilentNeverIndexedAccess.ts, 0, 0))
+>of : Symbol(Box.of, Decl(ttttSilentNeverIndexedAccess.ts, 4, 28))
+>id : Symbol(id, Decl(ttttSilentNeverIndexedAccess.ts, 11, 74))
+

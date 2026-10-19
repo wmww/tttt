@@ -3411,11 +3411,14 @@ static bool mapped_keys_have_index_signature(Ty const* constraint) {
     // strictNullChecks (flagflip nosnc/sloppy: +7); tsc never instantiates a keyless mapped type's template. Only a
     // mapped type reads its index signature, its keys known from its declaration (instantiated, unexpanded):
     // `Record<string, T>[never]` is T (es-toolkit's sampleSize), `Partial<Record<string, T>>[never]` T | undefined
+    // (Nothing read is the plain never, also for a silent never index, inference_mapper_no_default()'s nothing: tsc's
+    // getPropertyTypeForIndexType returns neverType, which infers)
+    Ty const* never = my intrinsics[TY_NEVER];
     if (object->kind == TY_ANONYMOUS) {
-        if (!object->anonymous.mapped) return index;
+        if (!object->anonymous.mapped) return never;
         MappedInfo const* mapped = ty_mapped_info_unexpanded(me, object);
-        if (!mapped || mapped->name_type || (mapped->constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return index;
-        return mapped_keys_have_index_signature(mapped->constraint) ? nullptr : index;
+        if (!mapped || mapped->name_type || (mapped->constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return never;
+        return mapped_keys_have_index_signature(mapped->constraint) ? nullptr : never;
     }
     if (ty_is_tuple(object)) {
         TyList elements = ty_reference_args(me, object);
@@ -3431,7 +3434,7 @@ static bool mapped_keys_have_index_signature(Ty const* constraint) {
             }
             ty_buf_push(&parts, element);
         }
-        Ty const* ret = parts.len ? ty_union(me, parts.data, parts.len, nullptr, (TyList){0}) : index;
+        Ty const* ret = parts.len ? ty_union(me, parts.data, parts.len, nullptr, (TyList){0}) : never;
         ty_buf_drop(&parts);
         return ret;
     }

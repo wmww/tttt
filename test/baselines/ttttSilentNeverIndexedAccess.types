@@ -1,0 +1,76 @@
+//// [test/cases/ttttSilentNeverIndexedAccess.ts] ////
+
+=== ttttSilentNeverIndexedAccess.ts ===
+// A never index reads nothing as the plain never, also the silent never an outer call's uninferred type parameter
+// stands for while a nested call infers from its contextual return type (tsc's getPropertyTypeForIndexType returns
+// neverType): `Paths[P]` there is never, which infers, not the silent never, which doesn't. supabase studio's msw
+// mocks (CreateCustomOidcDialog.test.tsx) got the constraint instead
+declare class Box<T> { t: T; static of<T extends object | null>(body?: NoInfer<T>): Box<T> }
+>Box : Box<T>
+>t : T
+>of : <T extends object | null>(body?: NoInfer<T>) => Box<T>
+>body : NoInfer<T> | undefined
+
+type Resolver<R> = (info: { request: string }) => Box<R> | undefined;
+>Resolver : Resolver<R>
+>info : { request: string; }
+>request : string
+
+type Bd = { id: string };
+>Bd : Bd
+>id : string
+
+type Paths = { a: Bd };
+>Paths : Paths
+>a : Bd
+
+declare function add<P extends keyof Paths>(a: P extends 'x' ? { path: P; response?: Resolver<object> } : { path: P; response: Resolver<Paths[P]> }): void;
+>add : <P extends keyof Paths>(a: P extends 'x' ? { path: P; response?: Resolver<object>; } : { path: P; response: Resolver<Paths[P]>; }) => void
+>a : P extends "x" ? { path: P; response?: Resolver<object>; } : { path: P; response: Resolver<Paths[P]>; }
+>path : P
+>response : Resolver<object> | undefined
+>path : P
+>response : Resolver<Paths[P]>
+
+add({ path: 'a', response: ({ request }: { request: string }) => Box.of({ id: "0" }) });
+>add({ path: 'a', response: ({ request }: { request: string }) => Box.of({ id: "0" }) }) : void
+>add : <P extends keyof Paths>(a: P extends 'x' ? { path: P; response?: Resolver<object>; } : { path: P; response: Resolver<Paths[P]>; }) => void
+>{ path: 'a', response: ({ request }: { request: string }) => Box.of({ id: "0" }) } : { path: "a"; response: ({ request }: { request: string; }) => Box<Bd>; }
+>path : "a"
+>'a' : "a"
+>response : ({ request }: { request: string; }) => Box<Bd>
+>({ request }: { request: string }) => Box.of({ id: "0" }) : ({ request }: { request: string; }) => Box<Bd>
+>request : string
+>request : string
+>Box.of({ id: "0" }) : Box<Bd>
+>Box.of : <T extends object | null>(body?: NoInfer<T>) => Box<T>
+>Box : typeof Box
+>of : <T extends object | null>(body?: NoInfer<T>) => Box<T>
+>{ id: "0" } : { id: string; }
+>id : string
+>"0" : "0"
+
+declare function add2<P extends keyof Paths>(a: { path: P; response: Resolver<Paths[P]> }): void;
+>add2 : <P extends keyof Paths>(a: { path: P; response: Resolver<Paths[P]>; }) => void
+>a : { path: P; response: Resolver<Paths[P]>; }
+>path : P
+>response : Resolver<Paths[P]>
+
+add2({ path: 'a', response: ({ request }: { request: string }) => Box.of({ id: "0" }) });
+>add2({ path: 'a', response: ({ request }: { request: string }) => Box.of({ id: "0" }) }) : void
+>add2 : <P extends keyof Paths>(a: { path: P; response: Resolver<Paths[P]>; }) => void
+>{ path: 'a', response: ({ request }: { request: string }) => Box.of({ id: "0" }) } : { path: "a"; response: ({ request }: { request: string; }) => Box<never>; }
+>path : "a"
+>'a' : "a"
+>response : ({ request }: { request: string; }) => Box<never>
+>({ request }: { request: string }) => Box.of({ id: "0" }) : ({ request }: { request: string; }) => Box<never>
+>request : string
+>request : string
+>Box.of({ id: "0" }) : Box<never>
+>Box.of : <T extends object | null>(body?: NoInfer<T>) => Box<T>
+>Box : typeof Box
+>of : <T extends object | null>(body?: NoInfer<T>) => Box<T>
+>{ id: "0" } : { id: string; }
+>id : string
+>"0" : "0"
+

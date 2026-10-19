@@ -368,7 +368,8 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
         Ty const* apparent = ty_apparent_type(me, object);
         if (apparent->flags & TYF_ANY) return apparent;
         IndexInfo const* info = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_applicable_index_info(me, apparent, index) : nullptr;
-        if (!info) return index;
+        // (The plain never, also for inference_mapper_no_default()'s silent never: tsc's neverType, which infers)
+        if (!info) return ty_intrinsic(me, TY_NEVER);
         return include_undefined ? with_missing(me, info->value) : info->value;
     }
     if (index->flags & TYF_ANY) {

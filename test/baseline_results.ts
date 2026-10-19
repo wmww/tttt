@@ -1647,6 +1647,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNullishOperandContextualSignature': {
+        errors: undefined,
+        symbols: undefined,
+        types: undefined,
+    },
     'ttttObjectToGenericMappedRecord': {
         errors: true,
         symbols: true,
@@ -1811,6 +1816,11 @@ const baselines = {
         types: true,
     },
     'ttttSignatureSuggestionBodyLocals': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSilentNeverIndexedAccess': {
         errors: true,
         symbols: true,
         types: true,
