@@ -1,0 +1,81 @@
+//// [test/cases/ttttJsDeclarationMapsCommonJsAliases.ts] ////
+
+=== dep.js ===
+module.exports = { v: 1 };
+>module.exports = { v: 1 } : { v: number; }
+>module.exports : { v: number; }
+>module : { exports: { v: number; }; }
+>exports : { v: number; }
+>{ v: 1 } : { v: number; }
+>v : number
+>1 : 1
+
+=== a.js ===
+const dep = require('./dep')
+>dep : { v: number; }
+>require('./dep') : { v: number; }
+>require : any
+>'./dep' : "./dep"
+
+function loadConfig() { return dep.v }
+>loadConfig : () => number
+>dep.v : number
+>dep : { v: number; }
+>v : number
+
+function toposort() { return 1 }
+>toposort : () => number
+>1 : 1
+
+module.exports.loadConfig = loadConfig
+>module.exports.loadConfig = loadConfig : () => number
+>module.exports.loadConfig : () => number
+>module.exports : typeof import("./a")
+>module : { exports: typeof import("./a"); }
+>exports : typeof import("./a")
+>loadConfig : () => number
+>loadConfig : () => number
+
+module.exports.array = toposort
+>module.exports.array = toposort : () => number
+>module.exports.array : () => number
+>module.exports : typeof import("./a")
+>module : { exports: typeof import("./a"); }
+>exports : typeof import("./a")
+>array : () => number
+>toposort : () => number
+
+module.exports.dep = dep
+>module.exports.dep = dep : { v: number; }
+>module.exports.dep : { v: number; }
+>module.exports : typeof import("./a")
+>module : { exports: typeof import("./a"); }
+>exports : typeof import("./a")
+>dep : { v: number; }
+>dep : { v: number; }
+
+=== c.js ===
+const q = 1
+>q : 1
+>1 : 1
+
+exports.o = { v: 1 }
+>exports.o = { v: 1 } : { v: number; }
+>exports.o : { v: number; }
+>exports : typeof import("./c")
+>o : { v: number; }
+>{ v: 1 } : { v: number; }
+>v : number
+>1 : 1
+
+module.exports.p = { w: q }
+>module.exports.p = { w: q } : { w: number; }
+>module.exports.p : { w: number; }
+>module.exports : typeof import("./c")
+>module : { exports: typeof import("./c"); }
+>exports : typeof import("./c")
+>p : { w: number; }
+>{ w: q } : { w: number; }
+>w : number
+>q : 1
+

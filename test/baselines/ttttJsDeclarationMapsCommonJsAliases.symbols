@@ -1,0 +1,67 @@
+//// [test/cases/ttttJsDeclarationMapsCommonJsAliases.ts] ////
+
+=== dep.js ===
+module.exports = { v: 1 };
+>module.exports : Symbol(exports, Decl(dep.js, 0, 0))
+>module : Symbol(module, Decl(dep.js, 0, 0))
+>exports : Symbol(exports, Decl(dep.js, 0, 0))
+>v : Symbol(v, Decl(dep.js, 0, 18))
+
+=== a.js ===
+const dep = require('./dep')
+>dep : Symbol(dep, Decl(a.js, 0, 5))
+>require : Symbol(require)
+>'./dep' : Symbol("./dep", Decl(dep.js, 0, 0))
+
+function loadConfig() { return dep.v }
+>loadConfig : Symbol(loadConfig, Decl(a.js, 0, 28))
+>dep.v : Symbol(v, Decl(dep.js, 0, 18))
+>dep : Symbol(dep, Decl(a.js, 0, 5))
+>v : Symbol(v, Decl(dep.js, 0, 18))
+
+function toposort() { return 1 }
+>toposort : Symbol(toposort, Decl(a.js, 1, 38))
+
+module.exports.loadConfig = loadConfig
+>module.exports.loadConfig : Symbol(loadConfig, Decl(a.js, 2, 32))
+>module.exports : Symbol(exports, Decl(a.js, 0, 0))
+>module : Symbol(module, Decl(a.js, 0, 0))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>loadConfig : Symbol(loadConfig, Decl(a.js, 2, 32))
+>loadConfig : Symbol(loadConfig, Decl(a.js, 0, 28))
+
+module.exports.array = toposort
+>module.exports.array : Symbol(array, Decl(a.js, 3, 38))
+>module.exports : Symbol(exports, Decl(a.js, 0, 0))
+>module : Symbol(module, Decl(a.js, 0, 0))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>array : Symbol(array, Decl(a.js, 3, 38))
+>toposort : Symbol(toposort, Decl(a.js, 1, 38))
+
+module.exports.dep = dep
+>module.exports.dep : Symbol(dep, Decl(a.js, 4, 31))
+>module.exports : Symbol(exports, Decl(a.js, 0, 0))
+>module : Symbol(module, Decl(a.js, 0, 0))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>dep : Symbol(dep, Decl(a.js, 4, 31))
+>dep : Symbol(dep, Decl(a.js, 0, 5))
+
+=== c.js ===
+const q = 1
+>q : Symbol(q, Decl(c.js, 0, 5))
+
+exports.o = { v: 1 }
+>exports.o : Symbol(o, Decl(c.js, 0, 11))
+>exports : Symbol(exports, Decl(c.js, 0, 0))
+>o : Symbol(o, Decl(c.js, 0, 11))
+>v : Symbol(v, Decl(c.js, 1, 13))
+
+module.exports.p = { w: q }
+>module.exports.p : Symbol(p, Decl(c.js, 1, 20))
+>module.exports : Symbol(exports, Decl(c.js, 0, 0))
+>module : Symbol(module, Decl(c.js, 0, 0))
+>exports : Symbol(exports, Decl(c.js, 0, 0))
+>p : Symbol(p, Decl(c.js, 1, 20))
+>w : Symbol(w, Decl(c.js, 2, 20))
+>q : Symbol(q, Decl(c.js, 0, 5))
+

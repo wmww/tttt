@@ -4026,10 +4026,14 @@ static void emit_variable_statement(Walk* me, Statement const* statement, Contai
             my out = outer;
             w_indent(me);
             if (binding->tag == BINDING_IDENTIFIER) {
+                // (The name and the specifier are the declaration's, mapped)
+                Span specifier_span = vec_expr_at(&initialized_binding_value(i)->call->args, 0)->inner_span;
                 w_lit(me, "import ");
-                w(me, span_sv(binding->content_span));
+                w_name(me, binding->content_span);
                 w_lit(me, " = require(");
+                m_span(me, specifier_span, false);
                 w(me, specifier);
+                m_span(me, specifier_span, true);
                 w_lit(me, ");\n");
             } else {
                 w_lit(me, "import { ");
@@ -5594,6 +5598,8 @@ static void emit_export_assignment_of(
         else w_type(me, ty_of_node(annotation));
     } else {
         w_lit(me, ": ");
+        // (A JavaScript `module.exports = e`'s type is the node builder's, without positions)
+        if (export_equals && my file->is_js) decl_map_strip(&text);
         w_serialized(me, &text);
     }
     w_lit(me, ";");
@@ -5787,12 +5793,19 @@ static void w_cjs_member_variable(Walk* me, CjsMember const* member, char const*
     }
     w_indent(me);
     w(me, csview_from(keyword));
+    // (The export's own name is the left's property name, mapped; the type the node builder makes of the value has no
+    // positions, tsgo's transformCommonJSExportWorker)
+    Span left_name = member->expr->tag == EXPR_BINARY_OP && csview_equals_sv(name, member->name) ?
+        expr_static_property_name(&member->expr->binary_op->left) : span_null;
+    m_span(me, left_name, false);
     w(me, name);
+    m_span(me, left_name, true);
     w_lit(me, ": ");
     if (annotation) {
         w_node(me, annotation);
         cstr_drop(&text);
     } else {
+        decl_map_strip(&text);
         w_serialized(me, &text);
     }
     w_lit(me, ";\n");
@@ -5834,11 +5847,15 @@ static void emit_commonjs_member(Walk* me, CjsMember const* member, csview ns) {
         w_indent(me);
         w_lit(me, "export { ");
         csview source = span_sv(value->inner_span);
+        // (The specifier's names are the assignment's: the value and the left's property name, mapped)
         if (!member->identifier || !csview_equals_sv(source, member->name)) {
-            w(me, source);
+            w_name(me, value->inner_span);
             w_lit(me, " as ");
         }
+        Span left_name = expr_static_property_name(&member->expr->binary_op->left);
+        m_span(me, left_name, false);
         w_export_name(me, member);
+        m_span(me, left_name, true);
         w_lit(me, " };\n");
     } else if (value && value->tag == EXPR_CLASS_DECL) {
         ClassDecl const* cls = value->class_decl;

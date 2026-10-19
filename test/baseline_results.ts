@@ -1190,6 +1190,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttJsDeclarationMapsCommonJsAliases': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttJsDeclarationMapsContinuationLine': {
         errors: true,
         symbols: true,
