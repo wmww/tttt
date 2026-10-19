@@ -1,0 +1,153 @@
+//// [test/cases/ttttEagerBaseRunawayDeferredBase.ts] ////
+
+=== ttttEagerBaseRunawayDeferredBase.ts ===
+// tsgo's eager-base runaway (TS5115) through an interface whose base is a deferred alias reference (`J extends _J`,
+// `type _J = Union<[Rec<J>]>`): cut down from zod v4's $ZodUnionInternals/$ZodRecordInternals/ZodJSONSchema
+type OptSchema = { _z: { opt: "o" | "d" } };
+>OptSchema : Symbol(OptSchema, Decl(ttttEagerBaseRunawayDeferredBase.ts, 0, 0))
+>_z : Symbol(_z, Decl(ttttEagerBaseRunawayDeferredBase.ts, 2, 18))
+>opt : Symbol(opt, Decl(ttttEagerBaseRunawayDeferredBase.ts, 2, 24))
+
+type IsOpt<T extends Some> = T extends OptSchema ? true : false;
+>IsOpt : Symbol(IsOpt, Decl(ttttEagerBaseRunawayDeferredBase.ts, 2, 44))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayDeferredBase.ts, 3, 11))
+>Some : Symbol(Some, Decl(ttttEagerBaseRunawayDeferredBase.ts, 5, 99))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayDeferredBase.ts, 3, 11))
+>OptSchema : Symbol(OptSchema, Decl(ttttEagerBaseRunawayDeferredBase.ts, 0, 0))
+
+interface BaseInternals { version: 1; opt?: "o" | "d" | undefined; pat: RegExp | undefined; }
+>BaseInternals : Symbol(BaseInternals, Decl(ttttEagerBaseRunawayDeferredBase.ts, 3, 64))
+>version : Symbol(BaseInternals.version, Decl(ttttEagerBaseRunawayDeferredBase.ts, 4, 25))
+>opt : Symbol(BaseInternals.opt, Decl(ttttEagerBaseRunawayDeferredBase.ts, 4, 37))
+>pat : Symbol(BaseInternals.pat, Decl(ttttEagerBaseRunawayDeferredBase.ts, 4, 66))
+>RegExp : Symbol(RegExp, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.regexp.d.ts, --, --) ... and 3 more)
+
+interface Internals<out O = unknown, out I = unknown> extends BaseInternals { output: O; input: I }
+>Internals : Symbol(Internals, Decl(ttttEagerBaseRunawayDeferredBase.ts, 4, 93))
+>O : Symbol(O, Decl(ttttEagerBaseRunawayDeferredBase.ts, 5, 20))
+>I : Symbol(I, Decl(ttttEagerBaseRunawayDeferredBase.ts, 5, 36))
+>BaseInternals : Symbol(BaseInternals, Decl(ttttEagerBaseRunawayDeferredBase.ts, 3, 64))
+>output : Symbol(Internals.output, Decl(ttttEagerBaseRunawayDeferredBase.ts, 5, 77))
+>O : Symbol(O, Decl(ttttEagerBaseRunawayDeferredBase.ts, 5, 20))
+>input : Symbol(Internals.input, Decl(ttttEagerBaseRunawayDeferredBase.ts, 5, 88))
+>I : Symbol(I, Decl(ttttEagerBaseRunawayDeferredBase.ts, 5, 36))
+
+type Some = { _z: BaseInternals };
+>Some : Symbol(Some, Decl(ttttEagerBaseRunawayDeferredBase.ts, 5, 99))
+>_z : Symbol(_z, Decl(ttttEagerBaseRunawayDeferredBase.ts, 6, 13))
+>BaseInternals : Symbol(BaseInternals, Decl(ttttEagerBaseRunawayDeferredBase.ts, 3, 64))
+
+interface Type<O = unknown, I = unknown, N extends Internals<O, I> = Internals<O, I>> { _z: N }
+>Type : Symbol(Type, Decl(ttttEagerBaseRunawayDeferredBase.ts, 6, 34))
+>O : Symbol(O, Decl(ttttEagerBaseRunawayDeferredBase.ts, 7, 15))
+>I : Symbol(I, Decl(ttttEagerBaseRunawayDeferredBase.ts, 7, 27))
+>N : Symbol(N, Decl(ttttEagerBaseRunawayDeferredBase.ts, 7, 40))
+>Internals : Symbol(Internals, Decl(ttttEagerBaseRunawayDeferredBase.ts, 4, 93))
+>O : Symbol(O, Decl(ttttEagerBaseRunawayDeferredBase.ts, 7, 15))
+>I : Symbol(I, Decl(ttttEagerBaseRunawayDeferredBase.ts, 7, 27))
+>Internals : Symbol(Internals, Decl(ttttEagerBaseRunawayDeferredBase.ts, 4, 93))
+>O : Symbol(O, Decl(ttttEagerBaseRunawayDeferredBase.ts, 7, 15))
+>I : Symbol(I, Decl(ttttEagerBaseRunawayDeferredBase.ts, 7, 27))
+>_z : Symbol(Type._z, Decl(ttttEagerBaseRunawayDeferredBase.ts, 7, 87))
+>N : Symbol(N, Decl(ttttEagerBaseRunawayDeferredBase.ts, 7, 40))
+
+interface UnionInternals<T extends readonly Some[] = readonly Type[]> extends BaseInternals {
+>UnionInternals : Symbol(UnionInternals, Decl(ttttEagerBaseRunawayDeferredBase.ts, 7, 95))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayDeferredBase.ts, 8, 25))
+>Some : Symbol(Some, Decl(ttttEagerBaseRunawayDeferredBase.ts, 5, 99))
+>Type : Symbol(Type, Decl(ttttEagerBaseRunawayDeferredBase.ts, 6, 34))
+>BaseInternals : Symbol(BaseInternals, Decl(ttttEagerBaseRunawayDeferredBase.ts, 3, 64))
+
+    output: unknown; input: unknown; pat: T[number]["_z"]["pat"];
+>output : Symbol(UnionInternals.output, Decl(ttttEagerBaseRunawayDeferredBase.ts, 8, 93))
+>input : Symbol(UnionInternals.input, Decl(ttttEagerBaseRunawayDeferredBase.ts, 9, 20))
+>pat : Symbol(UnionInternals.pat, Decl(ttttEagerBaseRunawayDeferredBase.ts, 9, 36))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayDeferredBase.ts, 8, 25))
+
+    opt: IsOpt<T[number]> extends false ? "o" | "d" | undefined : "o" | "d";
+>opt : Symbol(UnionInternals.opt, Decl(ttttEagerBaseRunawayDeferredBase.ts, 9, 65))
+>IsOpt : Symbol(IsOpt, Decl(ttttEagerBaseRunawayDeferredBase.ts, 2, 44))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayDeferredBase.ts, 8, 25))
+}
+interface Union<T extends readonly Some[] = readonly Type[]> extends Type<any, any, UnionInternals<T>> { _z: UnionInternals<T> }
+>Union : Symbol(Union, Decl(ttttEagerBaseRunawayDeferredBase.ts, 11, 1))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayDeferredBase.ts, 12, 16))
+>Some : Symbol(Some, Decl(ttttEagerBaseRunawayDeferredBase.ts, 5, 99))
+>Type : Symbol(Type, Decl(ttttEagerBaseRunawayDeferredBase.ts, 6, 34))
+>Type : Symbol(Type, Decl(ttttEagerBaseRunawayDeferredBase.ts, 6, 34))
+>UnionInternals : Symbol(UnionInternals, Decl(ttttEagerBaseRunawayDeferredBase.ts, 7, 95))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayDeferredBase.ts, 12, 16))
+>_z : Symbol(Union._z, Decl(ttttEagerBaseRunawayDeferredBase.ts, 12, 104))
+>UnionInternals : Symbol(UnionInternals, Decl(ttttEagerBaseRunawayDeferredBase.ts, 7, 95))
+>T : Symbol(T, Decl(ttttEagerBaseRunawayDeferredBase.ts, 12, 16))
+
+type RecInput<V extends Some = Type> = [V] extends [OptSchema] ? Partial<Record<string, V>> : Record<string, V>;
+>RecInput : Symbol(RecInput, Decl(ttttEagerBaseRunawayDeferredBase.ts, 12, 128))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayDeferredBase.ts, 13, 14))
+>Some : Symbol(Some, Decl(ttttEagerBaseRunawayDeferredBase.ts, 5, 99))
+>Type : Symbol(Type, Decl(ttttEagerBaseRunawayDeferredBase.ts, 6, 34))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayDeferredBase.ts, 13, 14))
+>OptSchema : Symbol(OptSchema, Decl(ttttEagerBaseRunawayDeferredBase.ts, 0, 0))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayDeferredBase.ts, 13, 14))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayDeferredBase.ts, 13, 14))
+
+type RecOutput<V extends Some = Type> = V extends OptSchema ? Partial<Record<string, V>> : Record<string, V>;
+>RecOutput : Symbol(RecOutput, Decl(ttttEagerBaseRunawayDeferredBase.ts, 13, 112))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayDeferredBase.ts, 14, 15))
+>Some : Symbol(Some, Decl(ttttEagerBaseRunawayDeferredBase.ts, 5, 99))
+>Type : Symbol(Type, Decl(ttttEagerBaseRunawayDeferredBase.ts, 6, 34))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayDeferredBase.ts, 14, 15))
+>OptSchema : Symbol(OptSchema, Decl(ttttEagerBaseRunawayDeferredBase.ts, 0, 0))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayDeferredBase.ts, 14, 15))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayDeferredBase.ts, 14, 15))
+
+interface RecordInternals<V extends Some = Type> extends Internals<RecOutput<V>, RecInput<V>> { def: V }
+>RecordInternals : Symbol(RecordInternals, Decl(ttttEagerBaseRunawayDeferredBase.ts, 14, 109))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayDeferredBase.ts, 15, 26))
+>Some : Symbol(Some, Decl(ttttEagerBaseRunawayDeferredBase.ts, 5, 99))
+>Type : Symbol(Type, Decl(ttttEagerBaseRunawayDeferredBase.ts, 6, 34))
+>Internals : Symbol(Internals, Decl(ttttEagerBaseRunawayDeferredBase.ts, 4, 93))
+>RecOutput : Symbol(RecOutput, Decl(ttttEagerBaseRunawayDeferredBase.ts, 13, 112))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayDeferredBase.ts, 15, 26))
+>RecInput : Symbol(RecInput, Decl(ttttEagerBaseRunawayDeferredBase.ts, 12, 128))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayDeferredBase.ts, 15, 26))
+>def : Symbol(RecordInternals.def, Decl(ttttEagerBaseRunawayDeferredBase.ts, 15, 95))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayDeferredBase.ts, 15, 26))
+
+interface Rec<V extends Some = Type> extends Type { _z: RecordInternals<V> }
+>Rec : Symbol(Rec, Decl(ttttEagerBaseRunawayDeferredBase.ts, 15, 104))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayDeferredBase.ts, 16, 14))
+>Some : Symbol(Some, Decl(ttttEagerBaseRunawayDeferredBase.ts, 5, 99))
+>Type : Symbol(Type, Decl(ttttEagerBaseRunawayDeferredBase.ts, 6, 34))
+>Type : Symbol(Type, Decl(ttttEagerBaseRunawayDeferredBase.ts, 6, 34))
+>_z : Symbol(Rec._z, Decl(ttttEagerBaseRunawayDeferredBase.ts, 16, 51))
+>RecordInternals : Symbol(RecordInternals, Decl(ttttEagerBaseRunawayDeferredBase.ts, 14, 109))
+>V : Symbol(V, Decl(ttttEagerBaseRunawayDeferredBase.ts, 16, 14))
+
+type _J = Union<[Rec<J>]>;
+>_J : Symbol(_J, Decl(ttttEagerBaseRunawayDeferredBase.ts, 16, 76))
+>Union : Symbol(Union, Decl(ttttEagerBaseRunawayDeferredBase.ts, 11, 1))
+>Rec : Symbol(Rec, Decl(ttttEagerBaseRunawayDeferredBase.ts, 15, 104))
+>J : Symbol(J, Decl(ttttEagerBaseRunawayDeferredBase.ts, 19, 44))
+
+type _JI = _J["_z"];
+>_JI : Symbol(_JI, Decl(ttttEagerBaseRunawayDeferredBase.ts, 17, 26))
+>_J : Symbol(_J, Decl(ttttEagerBaseRunawayDeferredBase.ts, 16, 76))
+
+interface JI extends _JI { output: unknown }
+>JI : Symbol(JI, Decl(ttttEagerBaseRunawayDeferredBase.ts, 18, 20))
+>_JI : Symbol(_JI, Decl(ttttEagerBaseRunawayDeferredBase.ts, 17, 26))
+>output : Symbol(JI.output, Decl(ttttEagerBaseRunawayDeferredBase.ts, 19, 26))
+
+interface J extends _J { _z: JI }
+>J : Symbol(J, Decl(ttttEagerBaseRunawayDeferredBase.ts, 19, 44))
+>_J : Symbol(_J, Decl(ttttEagerBaseRunawayDeferredBase.ts, 16, 76))
+>_z : Symbol(J._z, Decl(ttttEagerBaseRunawayDeferredBase.ts, 20, 24))
+>JI : Symbol(JI, Decl(ttttEagerBaseRunawayDeferredBase.ts, 18, 20))
+

@@ -3179,7 +3179,13 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             }
             bool recursive_bases = false;
             for (u32 i = 0; i < written_bases.len && !recursive_bases; i++) {
-                recursive_bases = mentions_declared(me, written_bases.data[i], ty, 0);
+                // (A deferred base's arguments too, `interface J extends _J` with `type _J = Union<[Rec<J>]>`: tsc's
+                // resolveObjectTypeMembers has them, getTypeArguments of the base whose members it takes)
+                Ty const* base = written_bases.data[i];
+                if (base->kind == TY_REFERENCE && base->reference.deferred && base->reference.deferred->state == LAZY_STATE_NOT_STARTED) {
+                    ty_reference_args(me, base);
+                }
+                recursive_bases = mentions_declared(me, base, ty, 0);
             }
             TyBuf eager = {0};
             if (ty->declared.type_params.len) {

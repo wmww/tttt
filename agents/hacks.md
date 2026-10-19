@@ -390,7 +390,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Eager-base runaway model (`probe_eager_bases()`, documentation.md "Eager base runaways"; a deliberate artifact
   model: webpack and zod need it).
   Approximations: probes run only when the reference's arguments mention a type whose members are in flight or whose
-  bases mention itself at depth >= 2 (`mentions_declared()`, perf: valibot's depth-1 `BaseIssue<T>` is skipped); the
+  bases mention itself at depth >= 2 (`mentions_declared()`, perf: valibot's depth-1 `BaseIssue<T>` is skipped; a
+  deferred base's arguments are resolved for it, nested deferred references aren't looked into); the
   guard is "the resolving stack is unchanged since the re-entered members started", with `RESOLVING_MAPPED_CONSTRAINT`
   standing for tsc's key-parameter constraint entry; tsgo's poisoned caches after the runaway aren't modelled (vue's
   two TS7006, missing_checks.md). Right rule: none (tsgo artifact); the corpora (zod, vue, valibot) show drift.

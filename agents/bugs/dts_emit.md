@@ -45,6 +45,11 @@ size on real code, each with an example:
     `getShadowStyle` `?: never` too): tsgo's getUndefinedProperty caches one symbol per name per checker, declared
     where the first property it was made for is, so the order depends on which file that checker checked first (tsgo
     runs 4 checkers). tttt emulates the cache (KEY_UNDEFINED_PROPERTY) but its checking order/distribution differs.
+    A single-checker case where tttt's order differs (triage C, 2026-10-19): `test/cases/
+    ttttPseudoInferredUnionOfLiterals.ts` with `e: [safe ? { a: 1 } : { b: '' }]` added to `m` prints `{ a: number;
+    b?: undefined; }` where tsgo has `{ b?: undefined; a: number; }`; dropping almost any other function of the file
+    makes tttt agree (a structurally interned widened literal reused from an earlier widening, with its order?). Look
+    whether this is the part of the bucket `--tsc-single` doesn't explain.
     Plan-sized: needs tsgo's file-to-checker assignment and check order. tttt's K>1 emit follows its own history the
     same way (`dtsdiff.py --kdiff 4` on the bucket: 5 / 18 projects write other files at K4, the same 5 twice; at the
     defaults work stealing makes that timing-dependent), accepted as tsgo's split (2026-10-18, todo entry 1(d));

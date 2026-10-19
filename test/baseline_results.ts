@@ -909,6 +909,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttEagerBaseRunawayDeferredBase': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttEagerBaseRunawayNullKeyProperty': {
         errors: true,
         symbols: true,
