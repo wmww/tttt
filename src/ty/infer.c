@@ -1567,6 +1567,12 @@ static bool reduce_intersection_target(Checker* me, Inference* inf, Ty const** s
         // tsc remakes the source as an intersection, which without strictNullChecks makes a widening null or undefined
         // the plain one (getIntersectionType): `f(null)` to `T & Bear` infers null, not the any a widening null becomes
         *source = ty_intrinsic(me, ((*source)->flags & TYF_UNDEFINED) ? TY_UNDEFINED : TY_NULL);
+    } else if (left && ((*source)->flags & TYF_ANY) &&
+        ((*source)->alias || (((*source)->flags & TYF_ERROR) && *source != ty_intrinsic(me, TY_ERROR)))
+    ) {
+        // So does it make an error type named after what didn't resolve, or an any named by an alias, the plain one: an
+        // unresolved `Opt` argument to `O & {}` infers any, to a bare O `Opt` (better-auth's `betterAuth(config)`)
+        *source = ty_intrinsic(me, ((*source)->flags & TYF_ERROR) ? TY_ERROR : TY_ANY);
     }
     ty_buf_drop(&kept_sources);
     ty_buf_drop(&kept_targets);

@@ -34,14 +34,10 @@ Fixed that round: mikro-orm 1/24 -> 23/24 (NoInfer inference through a union tar
 check before normalization, intersection typesDefinitelyUnrelated), crawlee (Partial<C> over `C extends X<P>`, vi.fn
 reverse mapping of callables), base-ui TS2740 (Pick<T, K | "a"> keys), folo (untyped call args contextual any),
 msw/discord.js (`...([] | [A])` spread), apollo QueryManager (SkipGenericFunctions in conditional args), super-productivity (TS2347 on tagged templates). Left:
-- better-auth +TS2339 `signUpEmail` on `InferAPI<Prettify<{ [x: string]: any }>>` (get-migration-schema.test.ts:293
-  and 15 sites in other test files once that file is the only root): reproduces with a tsconfig extending the
-  package's (composite/incremental/emitDeclarationOnly turned off, its references by absolute path) whose only file is
-  get-migration-schema.test.ts; a hand-written `declare const auth: Auth<BetterAuthOptions>; auth.api.signUpEmail` or
-  `betterAuth(config)` probe doesn't. tsctypeat: tsc has `auth: Auth<BetterAuthOptions>`, `config: BetterAuthOptions`.
-  A copy of the file outside the package (modules unresolved) shows another divergence: tsc infers `Auth<any>` (api
-  any) from the error-typed config, tttt `Auth<BetterAuthOptions>` (api `FilteredAPI<Record<string, Endpoint>>`) and
-  reports TS2722 there. Not reduced further. lynx-store.ts:65 -TS2345 x2 not looked at.
+- better-auth +TS2339 `signUpEmail`: fixed 2026-10-18 (agent B): `betterAuth(config)` with `config` typed by an
+  unresolved import inferred `Options` from the named error type through `Options & {}`; tsc remakes the source as an
+  intersection there, which is the plain error type (`Auth<any>`). lynx-store.ts:65 -TS2345 x2: the recursive
+  resolveCall quirk below.
 
 ## Source sweep fan-out 2026-10-12 leftovers (agent D)
 Probes are under /tmp/d-probes (gone after a reboot; the reductions are quoted here).
@@ -219,7 +215,7 @@ read types). Left:
 
 ## Source sweep fan-out 2026-10-16 (agent A)
 Fixed: arktype type.test.ts and fn.test.ts, tanstack-table, nextra, base-ui, and tiptap/demos' +TS2345 x9 along the way (see git log). 7 projects left in the
-full sweep: pixijs (binder merge unit), better-auth (2), es-toolkit (entries above; knip fixed since), and:
+full sweep: pixijs (binder merge unit), better-auth (lynx-store), es-toolkit (entries above; knip fixed since), and:
 - **monkeytype SearchableAutoSetting.tsx:56/59**: tsc reports TS2589 (instantiation excessively deep) at
   `name={props.key}` of `<form.Field>` (the line the @ts-expect-error covers); tttt doesn't hit the limit and reports
   the validators mismatch instead. tanstack form-core's DeepKeys/DeepKeysAndValues over `{ [x: string]: Config[T] }`

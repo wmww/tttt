@@ -1057,6 +1057,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttInferUnresolvedThroughIntersectionTarget': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInferVisitedPairByVariance': {
         errors: true,
         symbols: true,

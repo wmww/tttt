@@ -1,0 +1,35 @@
+//// [test/cases/ttttInferUnresolvedThroughIntersectionTarget.ts] ////
+
+=== ttttInferUnresolvedThroughIntersectionTarget.ts ===
+// Inferring to an intersection target that isn't only object types remakes the source as an intersection (tsc's
+// inferFromTypes, getIntersectionType): an error type named after what didn't resolve becomes the plain error type,
+// so `O & {}` infers any where a bare `O` infers `Opt` (better-auth's `betterAuth(config)`, `Auth<any>`)
+import type { Opt } from "nonexistent";
+>Opt : any
+
+interface Box<T> { v: T }
+>v : T
+
+declare function f<O extends Opt>(o: O & {}): Box<O>;
+>f : <O extends Opt>(o: O & {}) => Box<O>
+>o : O & {}
+
+declare function g<O extends Opt>(o: O): Box<O>;
+>g : <O extends Opt>(o: O) => Box<O>
+>o : O
+
+declare const c: Opt;
+>c : Opt
+
+export const r = f(c);
+>r : Box<any>
+>f(c) : Box<any>
+>f : <O extends Opt>(o: O & {}) => Box<O>
+>c : Opt
+
+export const s = g(c);
+>s : Box<Opt>
+>g(c) : Box<Opt>
+>g : <O extends Opt>(o: O) => Box<O>
+>c : Opt
+

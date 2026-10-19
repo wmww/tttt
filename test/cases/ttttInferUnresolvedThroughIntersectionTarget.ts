@@ -1,0 +1,12 @@
+// @strict: true
+// @noEmit: true
+// Inferring to an intersection target that isn't only object types remakes the source as an intersection (tsc's
+// inferFromTypes, getIntersectionType): an error type named after what didn't resolve becomes the plain error type,
+// so `O & {}` infers any where a bare `O` infers `Opt` (better-auth's `betterAuth(config)`, `Auth<any>`)
+import type { Opt } from "nonexistent";
+interface Box<T> { v: T }
+declare function f<O extends Opt>(o: O & {}): Box<O>;
+declare function g<O extends Opt>(o: O): Box<O>;
+declare const c: Opt;
+export const r = f(c);
+export const s = g(c);

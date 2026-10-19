@@ -1,0 +1,47 @@
+//// [test/cases/ttttInferUnresolvedThroughIntersectionTarget.ts] ////
+
+=== ttttInferUnresolvedThroughIntersectionTarget.ts ===
+// Inferring to an intersection target that isn't only object types remakes the source as an intersection (tsc's
+// inferFromTypes, getIntersectionType): an error type named after what didn't resolve becomes the plain error type,
+// so `O & {}` infers any where a bare `O` infers `Opt` (better-auth's `betterAuth(config)`, `Auth<any>`)
+import type { Opt } from "nonexistent";
+>Opt : Symbol(Opt, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 3, 13))
+
+interface Box<T> { v: T }
+>Box : Symbol(Box, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 3, 39))
+>T : Symbol(T, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 4, 14))
+>v : Symbol(Box.v, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 4, 18))
+>T : Symbol(T, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 4, 14))
+
+declare function f<O extends Opt>(o: O & {}): Box<O>;
+>f : Symbol(f, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 4, 25))
+>O : Symbol(O, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 5, 19))
+>Opt : Symbol(Opt, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 3, 13))
+>o : Symbol(o, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 5, 34))
+>O : Symbol(O, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 5, 19))
+>Box : Symbol(Box, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 3, 39))
+>O : Symbol(O, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 5, 19))
+
+declare function g<O extends Opt>(o: O): Box<O>;
+>g : Symbol(g, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 5, 53))
+>O : Symbol(O, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 6, 19))
+>Opt : Symbol(Opt, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 3, 13))
+>o : Symbol(o, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 6, 34))
+>O : Symbol(O, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 6, 19))
+>Box : Symbol(Box, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 3, 39))
+>O : Symbol(O, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 6, 19))
+
+declare const c: Opt;
+>c : Symbol(c, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 7, 13))
+>Opt : Symbol(Opt, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 3, 13))
+
+export const r = f(c);
+>r : Symbol(r, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 8, 12))
+>f : Symbol(f, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 4, 25))
+>c : Symbol(c, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 7, 13))
+
+export const s = g(c);
+>s : Symbol(s, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 9, 12))
+>g : Symbol(g, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 5, 53))
+>c : Symbol(c, Decl(ttttInferUnresolvedThroughIntersectionTarget.ts, 7, 13))
+
