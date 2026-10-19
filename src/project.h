@@ -56,6 +56,8 @@ void project_redirects_destroy(ProjectRedirects* me);
 // How many referenced projects (0: the program has no redirects)
 u32 project_redirects_count(ProjectRedirects const* me);
 CompilerOptions const* project_redirects_options(ProjectRedirects const* me, u32 index);
+// Whether that project is one built before the program rather than a reference of it
+bool project_redirects_built(ProjectRedirects const* me, u32 index);
 // 1 + the index of the referenced project that has the file at absolute (a root file of it), 0 if none
 u32 project_redirects_project_of(ProjectRedirects const* me, csview absolute);
 // The source file a referenced project's output declaration file stands for (absolute in and out), empty if absolute

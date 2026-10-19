@@ -61,6 +61,8 @@ typedef struct ModuleRef {
     SourceFile* file; // What the program's module resolution found, may be null
     ModuleRefFailure failure; // Without a file
     bool used_ts_extension; // The name ends in .ts/.tsx/.mts/.cts and that is the file: TS5097 without the option
+    // Resolved to a referenced or built project's output, read as its source (program_redirect_resolved())
+    bool through_output;
     // The file is another project's whose directories aren't placed like this one's: rewriting a `.ts` import path is
     // unsafe (TS2878, program_rewrite_crosses_projects())
     bool rewrite_crosses_projects;
@@ -243,6 +245,11 @@ typedef struct SourceFile {
     // A referenced project's file read under -b whose project has stripInternal: its `@internal` declarations are left
     // out after parsing (parse_file()), as from the `.d.ts` tsc -b would read
     bool strip_internal;
+    // A file of a project built before the program that it doesn't reference (project_redirects_new()): a reference
+    // source while every import reaches it through that project's outputs, the program's own (checked) once one
+    // reaches it by its own path (program_own_direct_built_files(); tsc has both files then). What `unchecked` and
+    // `plain_js` would be for the program's own
+    bool from_built, built_unchecked, built_plain_js;
     // A TypeScript file (not TSX, not a declaration file) whose outermost function bodies the parser skips where that is
     // safe, to parse and walk when a checker first needs them (plan 78, program_set_defer_bodies())
     bool defer_bodies;

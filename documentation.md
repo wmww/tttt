@@ -357,8 +357,11 @@ them (`SourceFile.reference_const_enums_ambient`).
 
 Under `-b` a program also reads the outputs of projects it doesn't reference that tsc -b built before it (a test
 config importing another package through its `exports` into `dist`, `../../dist/x.js`): those projects join its
-`ProjectRedirects` as *built* ones, their outputs existing and read as their sources like a reference's, except the
-program's own root files (tsc then reads both the source and the `.d.ts`; tttt has one file, the checked source).
+`ProjectRedirects` as *built* ones, their outputs existing and read as their sources like a reference's. Not a file
+the program reaches by its own path (a root, or an import of one of the program's own files that didn't go through an
+output): tsc has it twice then, the checked source and the `.d.ts`; tttt's one file is the program's own, checked. That
+is decided once loading is done (`program_own_direct_built_files()`), so a built project's file is parsed whole and
+nothing stripped (`SourceFile.from_built`).
 Which ones are built is a race in tsgo, whose builders (4, `--builders`) take projects in build order and wait only
 for references: tttt counts a project built when it is at least that many places earlier (`build()`;
 `--builders 1` is tsc 5's sequential `-b`). `scripts/scenarios.py` also replays tttt's own scenarios (`test/scenarios`).

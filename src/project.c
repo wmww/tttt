@@ -161,6 +161,7 @@ u32 project_set_build_order(ProjectSet* me, u32 const* roots, u32 root_count, u3
 typedef struct ProjectRedirects {
     ProjectSet* set;
     u32* projects; // The referenced projects (indices into set)
+    bool* built; // Per entry of projects: a project built before the program, not referenced (project_redirects_new())
     u32 count;
     HMapProjectIndex source_projects; // A root file of a referenced project -> 1 + its index in projects
     HMapProjectIndex outputs; // An output declaration file -> its index in sources
@@ -202,6 +203,7 @@ static void redirects_add_project(ProjectRedirects* me, u32 project_index, bool 
     Project const* project = &my set->projects[project_index];
     u32 slot = my count++;
     my projects[slot] = project_index;
+    my built[slot] = built;
     CompilerOptions const* o = &project->options;
     csview declaration_dir = cstr_size(&o->declaration_dir) ? cstr_sv(&o->declaration_dir) : cstr_sv(&o->out_dir);
     if (declaration_dir.size) str_list_push(&my declaration_dirs, declaration_dir);
@@ -257,6 +259,7 @@ static void redirects_collect(ProjectRedirects* me, u32 project, uint8_t* seen) 
 ProjectRedirects* project_redirects_new(ProjectSet* set, u32 project, u32 const* built, u32 built_count) {
     ProjectRedirects* me = c_new(ProjectRedirects, { .set = set });
     my projects = c_new_n(u32, set->count + 1);
+    my built = c_new_n(bool, set->count + 1);
     uint8_t* seen = calloc((size_t)(set->count + 1), 1);
     seen[project] = 1;
     redirects_collect(me, project, seen);
@@ -294,6 +297,7 @@ ProjectRedirects* project_redirects_new(ProjectSet* set, u32 project, u32 const*
 void project_redirects_destroy(ProjectRedirects* me) {
     if (!me) return;
     free(my projects);
+    free(my built);
     hmap_project_index_drop(&my source_projects);
     hmap_project_index_drop(&my outputs);
     str_list_drop(&my sources);
@@ -301,6 +305,11 @@ void project_redirects_destroy(ProjectRedirects* me) {
     str_list_drop(&my output_paths);
     str_list_drop(&my declaration_dirs);
     free(me);
+}
+
+bool project_redirects_built(ProjectRedirects const* me, u32 index) {
+    check(index < my count);
+    return my built[index];
 }
 
 u32 project_redirects_count(ProjectRedirects const* me) {

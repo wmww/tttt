@@ -725,12 +725,12 @@ static csview program_output_of_resolved(Program const* me, ResolvedModule* reso
 
 // A resolution that found a referenced project's output finds its source (tsc's getSourceOfProjectReferenceRedirect),
 // or reading outputs, one that found its source finds its built output (else nothing)
-static void program_redirect_resolved(Program const* me, ResolvedModule* resolved) {
+static bool program_redirect_resolved(Program const* me, ResolvedModule* resolved) {
     if (my reference_outputs) {
         if (program_output_of_resolved(me, resolved).size) resolved->kind = RESOLVED_NONE;
-        return;
+        return false;
     }
-    if (resolved->kind != RESOLVED_DTS || !my redirects) return;
+    if (resolved->kind != RESOLVED_DTS || !my redirects) return false;
     csview source = program_source_of_output(me, cstr_sv(&resolved->path));
     if (!source.size && csview_contains(cstr_sv(&resolved->path), "/node_modules/")) {
         // Through a link that wasn't followed (preserveSymlinks)
@@ -738,11 +738,12 @@ static void program_redirect_resolved(Program const* me, ResolvedModule* resolve
         if (cstr_size(&real)) source = program_source_of_output(me, cstr_sv(&real));
         cstr_drop(&real);
     }
-    if (!source.size) return;
+    if (!source.size) return false;
     cstr_assign_sv(&resolved->path, source);
     resolved->kind = path_is_js(source) ? RESOLVED_JS : RESOLVED_TS;
     resolved->is_external_library = false;
     cstr_take(&resolved->package_id, cstr_null);
+    return true;
 }
 
 // A resolution that followed a symlink (tsc's symlink cache, setSymlinksFromResolutions)
@@ -855,7 +856,7 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
         resolved_module_drop(&resolved);
         return;
     }
-    program_redirect_resolved(me, &resolved);
+    ref->through_output = program_redirect_resolved(me, &resolved);
     if (cstr_size(&resolved.ambiguous_root_package_json)) {
         cstr shown = program_path_for_message(me, cstr_sv(&resolved.ambiguous_root_package_json));
         cstr message = cstr_d(
@@ -1545,11 +1546,17 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
         }
         cstr_drop(&absolute);
         if (source_file->from_reference) {
+            // (A built project's file may turn out to be the program's own: parsed whole, nothing stripped)
+            source_file->from_built = project_redirects_built(my redirects, source_file->from_reference - 1);
+            source_file->built_unchecked = source_file->unchecked;
+            source_file->built_plain_js = source_file->plain_js;
             source_file->unchecked = true;
             source_file->plain_js = false;
-            source_file->skip_typed_bodies = !source_file->is_js && !source_file->is_jsx && !source_file->is_json;
+            source_file->skip_typed_bodies = !source_file->from_built && !source_file->is_js && !source_file->is_jsx &&
+                !source_file->is_json;
             CompilerOptions const* options = project_redirects_options(my redirects, source_file->from_reference - 1);
-            source_file->strip_internal = options->strip_internal && !source_file->is_declaration && !source_file->is_json;
+            source_file->strip_internal = !source_file->from_built && options->strip_internal &&
+                !source_file->is_declaration && !source_file->is_json;
             source_file->reference_const_enums_ambient = !options->preserve_const_enums && !options->isolated_modules &&
                 !options->verbatim_module_syntax;
         }
@@ -2155,6 +2162,36 @@ static void program_collect_files(Program* me) {
     my load_roots = (VecSourceFilePtr){0};
 }
 
+// SourceFile.from_built: a built project's file that one of the program's own files imports by its own path is the
+// program's own, checked (tsc has it as a source next to the output declaration file other imports reach); so is
+// what those import by path in turn. Decided once loading is done, whatever order the files came in
+static void program_own_direct_built_files(Program* me) {
+    if (!my redirects || my reference_outputs) return;
+    VecSourceFilePtr work = {0};
+    for (auto it = hmap_box_source_file_begin(&my source_files_map); it.ref; hmap_box_source_file_next(&it)) {
+        SourceFile* file = it.ref->second.get;
+        if (!file->from_reference) vec_source_file_ptr_push(&work, file);
+    }
+    while (vec_source_file_ptr_size(&work)) {
+        SourceFile* file = vec_source_file_ptr_pull(&work);
+        for (u32 i = 0; i < file->module_ref_count; i++) {
+            ModuleRef const* ref = file->module_refs[i];
+            SourceFile* target = ref->file;
+            if (!target || !target->from_built || !target->from_reference || ref->through_output) continue;
+            target->from_reference = 0;
+            target->unchecked = target->built_unchecked;
+            target->plain_js = target->built_plain_js;
+            target->reference_const_enums_ambient = false;
+            // (Typed with the program's options from now on: its imports stay resolved as they were)
+            target->resolution_project = 0;
+            target->reference_emits_esm = false;
+            target->reference_preserves_const_enums = false;
+            vec_source_file_ptr_push(&work, target);
+        }
+    }
+    vec_source_file_ptr_drop(&work);
+}
+
 void program_load_automatic_types(Program* me) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     set_compiler_options(&my options);
@@ -2172,6 +2209,7 @@ void program_load_automatic_types(Program* me) {
     }
     str_list_drop(&names);
     clear_compiler_options();
+    program_own_direct_built_files(me);
     program_collect_files(me);
     // (The parse errors of referenced projects' files and of what isn't in the program, and the parser's grammar errors
     // in unchecked files (tsc's checker's, a skipLibCheck declaration file's), before anyone reports them)

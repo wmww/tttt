@@ -630,9 +630,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   reads an unreferenced project's outputs (as its sources) only when that project is at least 4 places (`--builders`)
   earlier in build order: a deterministic stand-in for tsgo's builder race (it waits only on references, so whether
   `dist` exists yet depends on timing; atproto's whole solution gets it right but for one import, oauth-client alone
-  at its default builders doesn't). A source of such a project that the program reaches directly is the unchecked
-  reference source too (tsc reads two files then: the checked source and the `.d.ts`), unless it's one of the
-  program's own roots.
+  at its default builders doesn't). A file of such a project that both the program's own files and an output path reach
+  is one file, checked (tsc has two: the source and the `.d.ts`).
 - The CLI checks a config that would emit JavaScript as `noEmit` (`Options.implicit_no_emit`): its emit-only option
   diagnostics (TS5055/5056 of .js outputs) are missing and noEmitOnError's exit code is 2 where tsc's is 1;
   `scenarios.py` drops `EMIT_ONLY_CODES` (TS5011/5055/5056) from emitting commands. Lifts with JS emit (plan 64).
