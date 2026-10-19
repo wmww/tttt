@@ -6,6 +6,10 @@ the day-one fixes (TS18003 for inherited `files`, TS18002 with inputs, the sandb
 after the 2026-10-19 fan-out (the builder window, reference sources' private members and `@internal` type literal
 members, declaration naming, and plain checker bugs).
 
+**Plan 87 (2026-10-19) supersedes the "by design" verdicts below**: under `TTTT_BUILD_EMITTED=1` (stage 1 makes it
+the only `-b`) better-auth, lit ×5, zigbee2mqtt/test and astro's remark tests match (406 / 416). Re-triage what's left
+under that model after stage 1; the verdicts on emitted declarations and body-only imports are kept until then.
+
 What it sees that the `-p` sweep doesn't: downstream projects reading upstream ones (the `-p` sweep takes every
 `tsconfig*.json` since 2026-10-19).
 **First question for each: does `tttt -p THAT_CONFIG --noEmit` differ from tsc's too?** Then it is a plain checker bug

@@ -634,6 +634,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 ## Harness and tools
 - Deliberate simplifications (permanent, see documentation.md "baseline_tests"): `apply_setting`, the lib `Program`
   cache, `@noTypesAndSymbols`, `engine.c`, `failstats.py`'s `line_ratio`.
+- Two `-b` models in the tree until plan 87 stage 1: `TTTT_BUILD_EMITTED=1` (`build()`'s `EmitStore`, references read
+  as their emitted declarations, tsc -b's) and the default sources model below (`program_set_references(..., false)`,
+  `from_reference` and everything hanging off it). Stage 1 deletes the sources model. The store's `EmitView` doesn't
+  list in-memory files in directory listings (an `include` glob into a reference's `dist` misses them).
 - `-b`'s built-outputs window (`build()` in main.c, `project_redirects_new(..., built, built_count)`): a program
   reads an unreferenced project's outputs (as its sources) only when that project is at least 4 places (`--builders`)
   earlier in build order: a deterministic stand-in for tsgo's builder race (it waits only on references, so whether

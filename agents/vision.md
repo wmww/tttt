@@ -52,13 +52,13 @@ types components) are the oracle, not the goal; real projects that are clean und
   ~1.2x, recycling 5-8%. The next window is perf-heavy: PGO + LTO shipped, the stage 4 gate measured early (it
   decides whether a shared type graph is even possible under our determinism rule), and stage 2's memory-system
   sessions. CPU at the defaults is reported but still not a bound.
-- **`-b` reads sources where tsc reads emitted declarations: decided, plan it (plan 87).** The window approximated
-  the `.d.ts` view three times on top of sources (the builder window heuristic, untyped private members of reference
-  sources, stripped `@internal` type literal members), and what's left (errors inside emitted `.d.ts`, imports only a
-  body uses, tsgo's emit leaking downstream) can't be approximated at all. That is an approximation family growing
-  per divergence. tttt's emit is byte-identical on 99.95% of dtsdiff's files, so reading its own emitted declarations
-  is within reach and likely makes downstream checks cheaper. A planning session prototypes it with a gate; no more
-  source-side approximations of `.d.ts` in the meantime (record new ones in bugs/sourcesweep_build.md).
+- **`-b` reads its references' emitted declarations: go (plan 87, prototyped 2026-10-19).** The sources model needed
+  a new approximation per divergence (builder window, untyped private members, stripped `@internal` members) and
+  couldn't express errors inside emitted `.d.ts`, body-only imports or tsgo's emit leaking downstream. The prototype
+  (an in-memory store of each program's declarations, read by downstream programs through a per-program `Fs` view,
+  `-p`'s outputs mode) gains 6 `-b` sweep projects without losing one, holds the scenarios, and is *faster* (tsc-src
+  wall -23%, CPU -31%, RSS -32%): checking against declarations more than pays for the ordering constraint. Stage 1
+  deletes the sources model; stage 2 shares parsed declaration files across programs like tsgo's build host.
 - **Robustness of a drop-in**: mmapped sources SIGBUS if a file is truncated mid-run (an agent's oracle run hit it
   once, hacks.md `source_text_map()`). A drop-in tsc must not crash when a formatter rewrites a file; triage decides
   between a SIGBUS fallback and reading into memory for files that can change.

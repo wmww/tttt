@@ -34,19 +34,19 @@ re-saved baseline only.
    42% of the stall estimate, hash tables 10%/5%, Ty header reads 5%, fresh-memory writes mostly a cachegrind
    artifact. Taken: the SyntaxKind `!==` narrowing memo (tsc -2.3% instructions, -7% D1 misses);
    intern_lookup()/intern_insert() saved only instructions (drizzle -0.5%).
-4. **Plan 87's planning session** (`-b` reads its references' emitted declarations): research tsgo's behaviour,
-   prototype on the `-b` sweep, delete-first (the builder window, the reference-source private/internal rules), gate
-   as the stub says. Write the real plan or close it.
+4. Done: plan 87 says **go** (plan 87 "Gate results"). The prototype is in the tree behind `TTTT_BUILD_EMITTED=1`:
+   `-b` sweep 406 / 416 (400), scenarios 218 / 0, tsc-src and typescript-eslint clean and faster (wall 0.77x /
+   0.87x, CPU and RSS down). Three `-p` outputs-mode bugs fixed on the way (resolution from a reference output's
+   source, its specifier naming, a reference's `.json` root not emitted).
 5. **Real-code fan-out** (3 agents, worktrees, disjoint lists): the source sweep's 17, clidiff's 8, dtsdiff's 25
    (minus tsgo's own split), the `-b` sweep's non-plan-87 leftovers (`-p` bugs first: hono request.ts, ghostfolio,
    atproto expect-type, base-ui, babel TS2590), perfsweep's worst types ratio (lightweight-charts hlc-area, 1.63).
-   Skip whatever plan 87 will absorb if entry 4 said go.
+   Skip the `-b` sweep's leftovers: re-triage them after plan 87 stage 1 (entry 7).
 6. **Plan 86 stage 2, session 2**: the next lever from entry 3's list: (a) the instruction footprint (outline the
    cold arms of instantiate_inner and the relation switch, judged by cachegrind's I1 misses and by wall at K1).
-7. **Plan 87 stage 1** if entry 4 said go (its first stage, as the plan sizes it); otherwise **vue 0 / 2**: tsc's
-   in-flight-free member resolution (bugs/sourcesweep_checker.md, the vue bullet), a planning-and-prototype session:
-   does dropping tttt's re-entrancy guard for this shape (members_reentered_unguarded()) to let the instantiation
-   depth limit decide, like tsc, hold on every oracle?
+7. **Plan 87 stage 1**: the store becomes the only `-b`, the sources model deleted (the plan's list), the store's texts
+   freed after their last reader, documentation.md's "Project references" rewritten. (vue 0 / 2, the re-entrancy
+   guard question of bugs/sourcesweep_checker.md, goes to the next window.)
 8. **Plan 86 stage 2, session 3** (or stage 3's first session, the loader pre-scan, if stage 2's list has run dry:
    measure on vscode, webpack and effect with `tttt --time`).
 9. **Triage.** Drain triage.md (incl. the SIGBUS item), condense measurements.md (2000+ lines: keep the tables later
