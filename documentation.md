@@ -330,44 +330,39 @@ through `extends`), each once by absolute path; a project's root files are liste
 (`project_set_root_files()`, which the CLI also takes its roots from, so each include walk runs once).
 `project_set_build_order()` is tsc's `-b` order (depth-first, references first, TS6202 on a cycle unless `circular`).
 
-A program checks one project. Under **`-p`** the projects it references, transitively, are read like tsc's command
-line does (`program_set_references(..., outputs)`, `Program.reference_outputs`): a resolution (or root file) that lands
-on a referenced project's source is swapped for its output declaration file, read like any `.d.ts` of the program if it
-was built (its module names resolve with its project's options, `SourceFile.resolution_project`; its const enums aren't
-ambient if that project preserves them), else a TS6305 at the import (`MODULE_REF_NOT_BUILT`, the module is `any`) or a
-global one for a root file. The resolver sees only the real file system. Under **`-b`** they are read **as sources,
-never as built outputs**: tsc's `useSourceOfProjectReferenceRedirect`, what its language service and tsgo's LSP do, and
-what tsc -b's freshly built outputs would say. `ProjectRedirects`
-(per program) holds every referenced project's root files and the output declaration path of each
-(getOutputDeclarationFileName: `declarationDir`, else `outDir`, below `rootDir`, composite's config directory or the
-common source directory; next to the source without either), mapped back to the source, and the declaration
-directories. The resolver's file and directory existence checks treat those outputs as existing, built or not, also
-through a `node_modules` link (a lenient realpath follows the nearest existing directory); `program_redirect_resolved()`
-turns a resolved output into its source, for imports, type references, `/// <reference path>` and roots. A file that is
-a referenced project's root file is `SourceFile.from_reference`: unchecked, every diagnostic in it dropped (parse
-errors too, at the end of `program_load_automatic_types()`), and its module names resolved by a resolver with *its*
-project's options (`program_resolver_of()`, `program_options_of()`); parsing, checking and the automatic types stay
-the program's. Since nothing in a reference source is checked, the body of a function with a written return type is
-neither parsed (`skip_typed_body()` steps over it with a brace scanner that falls back to parsing when unsure: a `/`
-after `)` or `}`, `import`, `require`) nor resolved (`function_impl_lookup_names_as()`): tsc -b's `.d.ts` has no bodies
-either, and they were most of the cost of `-b` (TypeScript's `compiler/`, isolatedDeclarations, is read by 11 of its
-13 programs). Where tsc -b's reading of the `.d.ts` shows to an importer, the source reads like one: a synthetic
-default (`source_file_reads_as_declaration()`), and its const enums are ambient for TS2748 unless its project preserves
-them (`SourceFile.reference_const_enums_ambient`).
+A program checks one project and reads the projects it references, transitively, like tsc's command line
+(`program_set_references()`): a resolution (or root file, or `/// <reference path>`) that lands on a referenced
+project's source is swapped for its output declaration file (`program_redirect_resolved()`, `program_load()`), read
+like any `.d.ts` of the program if it exists, else a TS6305 at the import (`MODULE_REF_NOT_BUILT`, the module is
+`any`) or a global one for a root file. `ProjectRedirects` (per program) holds every referenced project's root files
+and the output declaration path of each (getOutputDeclarationFileName: `declarationDir`, else `outDir`, below
+`rootDir`, composite's config directory or the common source directory; next to the source without either), mapped
+both ways. An output declaration file (or a referenced project's own `.d.ts` input) is `SourceFile.resolution_project`:
+its module names resolve **from its source** (`program_resolution_containing()`, tsgo's getRedirectForResolution)
+with a resolver with *its* project's options (`program_resolver_of()`, `program_options_of()`); its const enums aren't
+ambient if that project preserves them (`reference_preserves_const_enums`), an ES module importing it has no synthetic
+default if its project emits ES modules (`reference_emits_esm`). Module specifiers name it by its source, the output
+first (`program_module_specifier_ending()`), and a referenced project's root file, `.json` too, is never the
+program's to emit (`emit_source_may_be_emitted()`).
 
-Under `-b` a program also reads the outputs of projects it doesn't reference that tsc -b built before it (a test
-config importing another package through its `exports` into `dist`, `../../dist/x.js`): those projects join its
-`ProjectRedirects` as *built* ones, their outputs existing and read as their sources like a reference's. Not a file
-the program reaches by its own path (a root, or an import of one of the program's own files that didn't go through an
-output): tsc has it twice then, the checked source and the `.d.ts`; tttt's one file is the program's own, checked. That
-is decided once loading is done (`program_own_direct_built_files()`), so a built project's file is parsed whole and
-nothing stripped (`SourceFile.from_built`).
-Which ones are built is a race in tsgo, whose builders (4, `--builders`) take projects in build order and wait only
-for references: tttt counts a project built when it is at least that many places earlier (`build()`;
-`--builders 1` is tsc 5's sequential `-b`). `scripts/scenarios.py` also replays tttt's own scenarios (`test/scenarios`).
+**`-b`** (plan 87) is tsc -b: each project in build order is its own program that checks, emits its declarations **in
+memory** (`EmitStore`, `emit_store.h`; under the conditions tsc writes them: not with noEmitOnError and errors, not a
+blocked path), and the programs after it read those like `-p` reads written ones. Each program's `Fs` is an
+`EmitView`: the disk with the files of the build positions it sees on top (their directories existing; relative paths
+absolutized against the cwd, `..` normalized for the inner fs; lookups through a `node_modules` link by the realpath of
+the deepest existing ancestor; `emit_view_real_path()`/`emit_view_file_size()` are the program's realpath and size
+callbacks; directory listings show only the disk). A program sees its references, transitively, and every project at
+least `--builders` places earlier (default 4, tsgo's builders: they take projects in build order and wait only for
+references, so an unreferenced project's outputs, a test config importing another package's `dist`, exist by timing;
+tttt's window makes that deterministic, `--builders 1` is tsc 5's sequential `-b`). Build threads take the first ready
+job in build order (`build_thread()`), each waiting until everything it sees is done; a position's texts are freed
+once its last reader is (`build_job_done()`). What tsgo's emit writes downstream reads, errors inside emitted
+declarations and tsgo's own emit bugs included, follows from that. `scripts/scenarios.py` also replays tttt's own
+scenarios (`test/scenarios`); `TTTT_BUILD_TIMES=1` prints each job's start and end.
 
-Divergences of `-b` by design: never stale outputs, a referenced project's declarations typed under the referencing
-program's strictness, and no `/// <reference types="node" />` leaking from a built `.d.ts`.
+Divergences of `-b` by design: the window above (tsgo races), never stale outputs (tttt always builds everything, no
+tsbuildinfo), nothing but declarations emitted (a config that also emits JavaScript gets its declarations into the
+store only).
 
 The CLI (`main.c`) prints like tsc's: every diagnostic a program reports is collected (`report_errors()`), then sorted
 and deduplicated by file path like tsc's sortAndDeduplicateDiagnostics (`error_vec_sort_and_dedupe()`) and printed
@@ -377,10 +372,10 @@ else goes to stdout; exit codes are tsc 7's (0, 1 with any diagnostic, 4 for a r
 `scripts/clidiff.py` diffs the output byte for byte against tsc's. `-p` on a config with references checks that
 project with the redirects; on a solution config (no files, only references) it says nothing and exits 0. `-b [PROJECT...]` checks each project in build order as its own program,
 freed when done (release builds otherwise leave the last program to the exit; `program_drop()` frees the files on the
-program's threads), going on past errors (tsc 5.6+; `--stopBuildOnErrors`). No program needs another's result, so
-`--builders J` projects are checked at once (default 2 with 4 threads, each program on threads/J), each into an
-`Output` buffer that the main thread prints in build order: the output depends on J only through the built-outputs
-window below, which only an explicit `--builders` sets (like tsgo's). The project set's root
+program's threads), going on past errors (tsc 5.6+; `--stopBuildOnErrors`). Up to J projects whose inputs are done are
+checked at once (2 with 4 threads, each program on threads/J), each into an `Output` buffer that the main thread
+prints in build order: the output depends only on the static visibility above, which only an explicit `--builders`
+changes (like tsgo's). The project set's root
 files and every program's `ProjectRedirects` are made before the build threads start, which only read them. The config diagnostics of references (TS6053, TS6306, TS6310) are reported on the program's
 own config; composite's TS6307 and rootDir's TS6059 (`program_verify_project_files()`) go at the import that brought
 the file in (`SourceFile.included_at`). `scripts/scenarios.py` replays the first command of tsc's own tsbuild/tsc project

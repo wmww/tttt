@@ -22,6 +22,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAliasReentersBelowVarianceBarrier': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAliasThroughImportNewIdentity': {
         errors: true,
         symbols: true,

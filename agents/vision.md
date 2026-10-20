@@ -67,7 +67,8 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **Single-threaded speed is the multiplier, but its cheap part is spent.** With hardware counters unavailable here,
   stage 2's remaining levers (instruction footprint, intern table layout) can't be confirmed except by wall time.
   Keep them for perf slots and measure them on wall at K1.
-- **Two `-b` models must not outlive the next window**: plan 87 stage 1 deletes the sources model.
+- **`-b` has one model since 2026-10-20** (plan 87 stage 1: emitted declarations, the sources model deleted, ~350
+  lines net). Its leftovers are `-p` checker bugs (bugs/sourcesweep_build.md).
 - **Correctness is in its long tail and holds** (5234 / 5242 projects, clidiff 3824 / 3831, every corpus clean but
   vue). Each window keeps one real-code session; a fourth refresh comes after the stage 4 gate.
 

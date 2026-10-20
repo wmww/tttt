@@ -28,9 +28,9 @@ on the 12-core box (put it in report.md, as 2026-10-19's ask did).
    90.2-100% in time (strict flow tainting would be a no-go: 39-76% of time). Cleandiff leaves two named mechanisms
    for 4b (the distributed twin made on demand, an instance's alias missing from its key), a residue of <= 0.03% per
    kind, and 46 drizzle prop types that only the lenient flow rule admits (root-cause before 4d).
-3. **Plan 87 stage 1**: `-b` reads emitted declarations only. Drop `TTTT_BUILD_EMITTED`, delete the sources model
-   (the plan's list), rewrite documentation.md's "Project references", and hold scenarios, both `-b` corpora and the
-   `-b` sweep (>= 406 / 416) at every step. Two `-b` models must not live on into another window.
+3. ~~Plan 87 stage 1~~ done 2026-10-20: `-b` reads emitted declarations only, the sources model deleted; `-b`
+   sweep 409 / 416 byte-identical to the flag's run, scenarios 221 / 0, oracles unchanged. Re-triage: apollo
+   cacheOverride was a `-p` alias-re-entry bug (fixed), the rest in bugs/sourcesweep_build.md.
 4. **Perf: costliest file first, then the front end measured** (plan 86 "Order", stage 3). Start each checker's
    share with its costliest file (tsc's checker.ts and type-fest's biggest file are the critical path; bun canary's
    heavy-first queue is the same idea). Size is the first cost model to try, bun's the second (identifiers in

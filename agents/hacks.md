@@ -650,16 +650,12 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   explicit kinds are covered (FUNCTION_RETURN, BASE_CONSTRAINT, FUNCTION_FREE_PARAMS)
 - Deliberate simplifications (permanent, see documentation.md "baseline_tests"): `apply_setting`, the lib `Program`
   cache, `@noTypesAndSymbols`, `engine.c`, `failstats.py`'s `line_ratio`.
-- Two `-b` models in the tree until plan 87 stage 1: `TTTT_BUILD_EMITTED=1` (`build()`'s `EmitStore`, references read
-  as their emitted declarations, tsc -b's) and the default sources model below (`program_set_references(..., false)`,
-  `from_reference` and everything hanging off it). Stage 1 deletes the sources model. The store's `EmitView` doesn't
-  list in-memory files in directory listings (an `include` glob into a reference's `dist` misses them).
-- `-b`'s built-outputs window (`build()` in main.c, `project_redirects_new(..., built, built_count)`): a program
-  reads an unreferenced project's outputs (as its sources) only when that project is at least 4 places (`--builders`)
-  earlier in build order: a deterministic stand-in for tsgo's builder race (it waits only on references, so whether
-  `dist` exists yet depends on timing; atproto's whole solution gets it right but for one import, oauth-client alone
-  at its default builders doesn't). A file of such a project that both the program's own files and an output path reach
-  is one file, checked (tsc has two: the source and the `.d.ts`).
+- `-b`'s visibility window (`build()` in main.c): a program sees an unreferenced project's emitted declarations only
+  when that project is at least 4 places (`--builders`) earlier in build order, and waits for it: a deterministic
+  stand-in for tsgo's builder race (it waits only on references, so whether `dist` exists yet depends on timing;
+  atproto's whole solution gets it right but for one import, oauth-client alone at its default builders doesn't). The
+  `EmitView` doesn't list in-memory files in directory listings (an `include` glob into a reference's `dist` misses
+  them).
 - The CLI checks a config that would emit JavaScript as `noEmit` (`Options.implicit_no_emit`): its emit-only option
   diagnostics (TS5055/5056 of .js outputs) are missing and noEmitOnError's exit code is 2 where tsc's is 1;
   `scenarios.py` drops `EMIT_ONLY_CODES` (TS5011/5055/5056) from emitting commands. Lifts with JS emit (plan 64).
