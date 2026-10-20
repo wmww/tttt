@@ -10,6 +10,14 @@
   but `unknown` in the CLI. tttt (noEmit) checks in the CLI's order; the mechanism (record the current node when
   the constraint walk finds the cycle, relate it in generic_typecheck()) was tried 2026-10-12 and dropped: it can't
   match without emulating the emit resolver's queries.
+- Shared lib programs (baseline_test_case.c's `my libs`, bound once with their `declare global` augmentations
+  already in the globals) put a lib augmentation's declarations before a test file's script declarations of the same
+  global; tsc (and the CLI) merges script locals first, augmentations after. Seen: es2026.json's `declare global {
+  interface RawJSON extends RawJSONInstance {} }` with a test's own `interface RawJSON { readonly rawJSON: number }`
+  (mutant jsonRawJSON2 ann-string-number): the CLI reports TS2430 at the test's interface, the harness picks the lib's
+  as the first declaration and reports nothing (interface_heritage_typecheck()). Any first-declaration choice can differ
+  so (valueDeclaration, TS2717's first type). Fix: merge the test's globals in front of the lib's augmentation
+  declarations, or keep those apart until the test program merges them.
 - `FAST=1 scripts/test.sh -f '.*import[A-Z].*'` (some test in that set) ends with valgrind's "131 bytes in 3 blocks
   definitely lost" from symbol_text() in namespace_decl_compile_test_info (baseline_test_traversal.c), at the
   base commit too: a leaked cstr in the symbols walk.

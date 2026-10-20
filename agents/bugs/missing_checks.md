@@ -157,7 +157,7 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   missing TS2313 (mut4105/mut3177, plan 39); 9 text/elaboration ones.
 - Seed-4 mutation leftovers (rerun 2026-10-16, `scripts/mutate.py -n 8000 --seed 4`: 12 differ, the suite's passing set
   has moved so the mutants aren't the original 21's): missing TS2589 x2 (esNextWeakRefs_IterableWeakMap member-typo),
-  missing TS2430 (jsonRawJSON2), spurious TS2693 (reachabilityChecksNoCrash1 never-const), missing TS2698
+  missing TS2430 (jsonRawJSON2: harness only, see seed 2026102101), spurious TS2693 (reachabilityChecksNoCrash1 never-const), missing TS2698
   (nestedSpreadsAndWidening), text TS2322 (templateLiteralTypeSurrogatePairConcatenation), and known families
   (TS2310, TS2590, TS7022, localTypeParameterInferencePriority, signatureCombiningRestParameters1). Not looked at.
 ## Local vs export symbol split
@@ -385,9 +385,8 @@ type through the member fallback (`{ type: T }` to `Partial<X>`, `Partial<C<T>>`
 - complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound add-optional: the TS2322 now comes, at the `return` where
   tsgo puts it at the shorthand `type` of the returned literal (tsgo's hasExcessProperties moves r.errorNode to the
   excess property during a reporting pass, then a later failure reports there; not reproduced).
-- jsonRawJSON2 ann-string-number (also seed 4): TS2430 at a script's `interface RawJSON` merged with es2026.json's
-  `declare global { interface RawJSON extends RawJSONInstance {} }`: the CLI reports it (b.ts(53,11)), the harness not
-  (only with `@lib`; interface_heritage_typecheck()'s first-declaration / walked-file choice; not found why).
+- jsonRawJSON2 ann-string-number (also seed 4's missing TS2430): harness only, the shared lib program's declaration
+  order (harness.md "Shared lib programs"); the CLI reports it.
 - Known families: unknownSymbolOffContextualType1 (TS7022 circularity), conditionalContextualReturnSubstitutionCache
   (TS2208 render), narrowingDestructuring (TS2700), typeGuardsAsAssertions (loop partial types), restElementWithInitializer2
   (lazy TS2304), selfReferencingSpreadInLoop (TS2488 twice).
