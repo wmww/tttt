@@ -22,6 +22,9 @@ prototype** (4-0, done 2026-10-20: G0 says go with three conditions, "Gate G0 re
 the fallback is stage 3 (front end) plus perf_leads.md's snapshot recycle, which goes after the thrashers (supabase
 studio: `--checker-memory off` takes 2.27 -> 1.30 s). Stage 3's cheapest piece, starting the costliest file first, is
 done (2026-10-20: TypeScript6 -6% at K4, type-fest -2%, the rest flat on 4 cores).
+The twenty-fifth window (insights of 2026-10-20) is 4a, three sessions: plan 88 stage A (one barrier stack) is 4a's
+substrate for per-checker in-flight records, and plan 88 stage B (barrier termination instead of "once" flags) is
+decided inside 4a session 2. Session 1 writes the overlay record's shape and API into "The design" for the rest.
 
 ## The budget (vscode `-p`, the 12-core box, 2026-10-19)
 | part of the 2.68 s wall | today | floor | what moves it |

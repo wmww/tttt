@@ -480,3 +480,27 @@ of its 2.5 s, which confirms plan 86 stage 3's premise. The race with bun's cana
 still wins wall at the defaults on vscode (2.05 against ~2.5 s), drizzle and nest. tttt wins the other corpora, is
 1.5-7x faster single-threaded and uses less CPU everywhere. Nothing landed in between that should have moved it.
 Plan 86 stage 4 (the shared type graph) is still the lever.
+
+## 2026-10-20 — insights (after the twenty-fourth window)
+The window did all six of its sessions and broke nothing. The shared type graph (plan 86 stage 4) passed both
+checkpoints it had to pass before any build-out. The design found that extra checkers do 1.4-1.7x the single
+checker's work on drizzle, excalidraw and zod, and that only a graph shared while checking (not a frozen warm start)
+removes that. The prototype found that 98.9-100% of the hot cached results are "clean" (computed the same way
+whatever else is going on) and safe to share. `-b` now has one model, reading its references' emitted
+declarations (`-b` sweep 402 -> 411 / 416). Each checker now starts with its biggest file. That's 6% off TypeScript's own compiler on this 4-core box, but
+it was a wash in your 12-core run. A real-code session and a triage brought the source sweep to 5235 / 5242
+and the suite to 13957 / 13991. On the way they fixed a relation bug that had looked like a perf problem in mikro-orm.
+
+Next comes the first build-out window of a ~25-session bet. Everything a checker has "in flight" (half-computed
+types, variance measurements, re-entry guards) moves into per-checker records, so that later stages can share the
+rest. Nothing is shared yet: every step must leave the output byte-identical and cost at most 1% of instructions.
+That way a later no-go still leaves cleaner code behind. The re-entrancy cleanup (plan 88) folds into this
+work. The window's correctness slot is an audit of how relations pass "intersection state" down, which is the
+mechanism behind the mikro-orm bug. My concern is creep. If this stage overruns its 3-5 sessions or the
+cleanliness numbers drop, the next insights session will weigh the bet against the cheaper fallback (front end
+plus snapshot recycle).
+
+TypeScript 7.1.0-beta came out today. We re-pin once, to stable (expected after 2026-11-24). Thanks for the
+12-core rerun. bun canary still wins wall at the defaults on vscode, drizzle and nest, and the front end is ~0.5 s
+of vscode's 2.5 s. Neither changes the plan. **For you**: nothing is needed until the shared graph's gate G2, which will ask for a 12-core
+run.

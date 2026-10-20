@@ -5,23 +5,23 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal; real projects that are clean under tsc are the second oracle.
 
-## State (2026-10-20, insights after the twenty-third window)
+## State (2026-10-20, insights after the twenty-fourth window)
 - **Target: TypeScript 7.1** (`main` at the 7.1 nightly fed0bf24, `thirdparty/typescript`; re-pin to 7.1.0 stable
-  once it is on npm, expected after 2026-11-24: plan 58; on 2026-10-20 npm's `latest` was 7.0.2, `next`
-  7.1.0-dev.20261019.1). Its native suite: 13556 / 13568 (99.9%), the last 12 off the table (argued or one-test
-  mechanisms, bugs/tsgo_divergences.md); with own tests and the dts component **13944 / 13978** (dts 1885 / 1907).
+  once it is on npm, expected after 2026-11-24: plan 58; on 2026-10-20 npm's `latest` was 7.0.2 and 7.1.0-beta was published
+  that day: not a re-pin target, one re-pin to stable). Its native suite: 13556 / 13568 (99.9%), the last 12 off the table (argued or one-test
+  mechanisms, bugs/tsgo_divergences.md); with own tests and the dts component **13957 / 13991** (dts 1887 / 1909).
   Every oracle cache is tsgo 7.1's, every probe runs tsgo (`test/oracle`: a Go overlay, so a patched tsgo is one
   `go build` away).
 - **Drop-in `tsc --noEmit`, and drop-in `tsc` where the config only emits declarations**, TypeScript and JavaScript
   sources alike (plans 53, 64). **clidiff** (the whole `--pretty false` output, byte for byte, every corpus and
-  source sweep project): **3824 / 3831**. dtsdiff **1329 / 1350** projects (part of the rest is tsgo's own checker
+  source sweep project): **3824 / 3831**. dtsdiff **1330 / 1350** projects (part of the rest is tsgo's own checker
   split). JS emit is out of scope (the human, 2026-10-12). **Refused**: `--watch`, `--incremental`'s
   `.tsbuildinfo`, `--showConfig`, `--explainFiles`, `--init` (plan 76, parked by the human 2026-10-16; asked twice
   whether to reopen it, no answer: stays parked).
 - **Real code**: corpora 0 / 0 everywhere but vue (0 / 2, plan-sized: tsc's in-flight-free member resolution), **DT
-  sweep 8595 / 8595**, `$ExpectType` 68640 / 68640, flagflip 18 / 3 / 2, scenarios 210 / 0 failed, **source sweep
-  5234 / 5242 projects** (every `tsconfig*.json` since 2026-10-19; three refreshes, 96.1%, 97.1%, 98.1% on day one),
-  **`-b` sweep 402 / 416 solutions** (406 with plan 87's store), kdiff 2, recycle 4.
+  sweep 8595 / 8595**, `$ExpectType` 68640 / 68640, flagflip 18 / 3 / 2, scenarios 221 / 0 failed, **source sweep
+  5235 / 5242 projects** (every `tsconfig*.json` since 2026-10-19; three refreshes, 96.1%, 97.1%, 98.1% on day one),
+  **`-b` sweep 411 / 416 solutions** (one model since plan 87 stage 1), kdiff 4, recycle 4 (all tsgo-shared).
 - **Perf and memory** (12-core box, PGO + LTO shipped: measurements.md "The 12-core box with PGO + LTO" and "bun
   canary"): tttt is fastest single-threaded everywhere (1.1-2.9x bun canary, vscode 10.4 s against tsc-rs's 14.0)
   and uses the least CPU at the defaults but tsc-rs's 4 checkers on 3 / 14. **At the defaults bun canary
@@ -42,7 +42,30 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **Absent or approximated**: pseudo-type builder gaps (plan 55's list), namespace-import clones
   (cloneTypeAsModuleType), member identity (members aren't Symbols), the CLI modes above.
 
-## Course correction (insights of 2026-10-20, end of the twenty-third window)
+## Course correction (insights of 2026-10-20, end of the twenty-fourth window)
+- **The window did what it said, in six sessions.** Plan 86 stage 4's design (go, staged, ~25 sessions) and its
+  taint prototype (G0: go, three conditions) both passed; `-b` has one model (plan 87 stage 1, the sources model
+  deleted, `-b` sweep 402 -> 411 / 416); costliest-file-first took 6% off TypeScript6 at K4; a real-code fan-out and
+  a triage moved the source sweep 5234 -> 5235 and fixed a relation bug (IntersectionState leaking into a generic
+  mapped target) that had been hiding as a 3.5x types ratio. Nothing regressed; instruction counts within 2%.
+- **Decision: the next window is stage 4a (in-flight state into per-checker overlays), with nothing shared yet.**
+  This is the first build-out window of the ~25-session bet, and its stages 4a-4c are K1 refactors that must leave
+  every oracle byte-identical: so a later no-go at G1 or G2 leaves better-structured code, not a half-feature. The
+  risk worth watching is creep: each stage may cost 1% of K1 instructions (3% to G1). If 4a takes more than its 3-5
+  sessions, or cleandiff grows, the next insights reprices the bet against the fallback (stage 3 plus the snapshot
+  recycle) before 4b.
+- **Plan 88 (re-entrancy) folds into 4a, not beside it.** Its stage A (one barrier stack) is the natural substrate for
+  per-checker in-flight records, and stage B (barrier termination instead of "once" flags) removes in-flight flags
+  instead of moving them. Both are scheduled inside 4a; C-E stay where plan 88 put them.
+- **IntersectionState stickiness is the next correctness debt** (hacks.md): one session, the window's real-code slot.
+  It already produced one wrong answer that looked like a perf problem (mikro-orm), the pattern "a relation that is
+  too lenient hides other bugs" again.
+- **The 12-core rerun (the human, 2026-10-20; measurements.md "The 12-core box at efb91998")**: costliest-first is a
+  wash there (its -6% was a 4-core effect), the front end is ~0.5 s of vscode's 2.5 s, and bun canary still wins
+  default wall on vscode (2.05 against ~2.5 s), drizzle and nest. Nothing changes the order: stage 4 is the lever,
+  stage 3 its fallback.
+
+## Course correction (insights of 2026-10-20, end of the twenty-third window) (superseded where the newer one disagrees)
 - **The perf window shipped its cheap stages and found the next one is the big one.** PGO + LTO took 11-17%
   instructions (-8-9% wall) on every corpus, the untrained ones too. Plan 86's stage 4 gate said go: id-decided
   union ties are 0.003-0.6% and unobservable on every oracle once the spread-of-a-union class has a structural key.
@@ -72,26 +95,11 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **Correctness is in its long tail and holds** (5234 / 5242 projects, clidiff 3824 / 3831, every corpus clean but
   vue). Each window keeps one real-code session; a fourth refresh comes after the stage 4 gate.
 
-## Course correction (insights of 2026-10-19, end of the twenty-second window) (superseded where the 2026-10-20 one disagrees)
-- **The window did what it said, and the correctness side is in its long tail.** Plan 82 finished, clidiff 3612 ->
-  3823 / 3831 (text mismatches 54 -> 1), dtsdiff 1244 -> 1325 / 1350, a third refresh at 98.1% on day one, the `-p`
-  sweep widened to every `tsconfig*.json` (3814 -> 5242 projects, 99.7%) and a new `-b` oracle (400 / 416). Each
-  refresh's day-one rate has risen (96.1, 97.1, 98.1): the checker generalizes. Correctness work now comes from
-  refreshes and new oracle axes, not from the existing oracles' tails; fan-outs on a 99.7% sweep are getting smaller.
-- **Perf is where the multiples are, and the order is set (plan 86, the human's ask).** Plan 85 closed no-go
-  (declared-world duplication is 2-6% of the extra CPU); the many-core accounting says clocks 1.62x, duplication
-  ~1.2x, recycling 5-8%. The next window is perf-heavy: PGO + LTO shipped, the stage 4 gate measured early (it
-  decides whether a shared type graph is even possible under our determinism rule), and stage 2's memory-system
-  sessions. CPU at the defaults is reported but still not a bound.
-- **`-b` reads its references' emitted declarations: go (plan 87, prototyped 2026-10-19).** The sources model needed
-  a new approximation per divergence (builder window, untyped private members, stripped `@internal` members) and
-  couldn't express errors inside emitted `.d.ts`, body-only imports or tsgo's emit leaking downstream. The prototype
-  (an in-memory store of each program's declarations, read by downstream programs through a per-program `Fs` view,
-  `-p`'s outputs mode) gains 6 `-b` sweep projects without losing one, holds the scenarios, and is *faster* (tsc-src
-  wall -23%, CPU -31%, RSS -32%): checking against declarations more than pays for the ordering constraint. Stage 1
-  deletes the sources model; stage 2 shares parsed declaration files across programs like tsgo's build host.
-- **Robustness of a drop-in**: a source truncated mid-run no longer SIGBUSes (fixed 2026-10-20: `text_sigbus()`
-  zeroes the page and warns once).
+## Course correction (insights of 2026-10-19, condensed 2026-10-20)
+- Correctness work now comes from refreshes and new oracle axes, not the existing oracles' tails (day-one rates
+  96.1, 97.1, 98.1%: the checker generalizes). Perf is where the multiples are (plan 86, the human's ask).
+- `-b` reads its references' emitted declarations (plan 87): more correct and faster than checking their sources.
+- A drop-in must survive its inputs changing mid-run (`text_sigbus()`).
 
 ## Course correction (insights of 2026-10-18, condensed 2026-10-20)
 - Debt windows after feature or memory windows are cheap (one session each, as sized): keep scheduling them.
@@ -258,8 +266,9 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    real-code tails by fan-out, a third refresh (`-b` oracle, every tsconfig)~~ done.
 23. ~~PGO + LTO (86 stage 1), plan 86's stage 4 gate (go), stage 2's ranking, plan 87 planned and prototyped (go),
    a real-code fan-out~~ done.
-24. **Now: plan 86 stage 4** (a shared concurrent type graph: design, prototype, gate, then its own build-out
-   window), plan 87 stage 1 (one `-b`), costliest-file-first and the front end measured (stage 3), one real-code
-   session. Then the build-out or the fallback (stage 3 + the snapshot recycle), plan 87 stage 2, a fourth refresh.
+24. ~~Plan 86 stage 4's design and gate G0 (go), plan 87 stage 1 (one `-b`), costliest-file-first and the front
+   end measured, a real-code fan-out~~ done.
+25. **Now: plan 86 stage 4a** (in-flight state into per-checker overlays, plan 88 A-B inside it), the IntersectionState
+   audit. Then 4b-4c to gate G1, 4d behind `--shared-graph` to G2, plan 87 stage 2, a fourth refresh after G1.
    Plan 58 (7.1.0 stable, then plan 66 stage 5's fan-out) as soon as it's on npm, ahead of everything; plan 76 only if
    the human reopens it.
