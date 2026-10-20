@@ -13,9 +13,7 @@ runs). Then a project's leftovers are plain `-p` bugs: probe with a scratch conf
 `skipLibCheck: false` shows errors *in* the emitted `.d.ts` (apollo's TS2456 was only visible that way).
 
 Left (2026-10-20, by project; + spurious, - missing):
-- atproto: +TS2554 2 (lex/lex-schema/src/schema/string.test.ts:767, 777, expect-type's
-  `expectTypeOf<...>().not.toMatchObjectType<...>()`), +TS2307 1 (oauth-client's `@atproto-labs/identity-resolver`:
-  the builder-window race, below). The TS2554 not looked into under the new model.
+- atproto: +TS2307 1 (oauth-client's `@atproto-labs/identity-resolver`: the builder-window race, below).
 - better-auth: -TS2345 2 (lynx-store.ts:65, react-store.ts:67, a `-p` bug too): `listenKeys(store as any, keys,
   emitChange)` in an arrow passed to `useCallback<T extends Function>`. tsgo computes the arrow's return type before
   its deferred body check; that resolves the call, whose contextual return type is the arrow's own (T inferred as the

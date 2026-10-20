@@ -1,0 +1,148 @@
+//// [test/cases/ttttMappedOverApparentlyAnyIntersection.ts] ////
+
+=== ttttMappedOverApparentlyAnyIntersection.ts ===
+// A homomorphic mapped type over an intersection with a member whose constraint is any (here an unresolved import's
+// error type would do too) is a string index signature only: the intersection's apparent type is any (tsc's
+// getApparentTypeOfIntersectionType), so `$type` isn't one of its keys. Its relations with an object type both fail,
+// which atproto's lex-schema `build()` overloads report as incompatible with their implementation (TS2394)
+interface Validator<TInput = unknown, TOutput = TInput> { readonly ['__lex']: { input: TInput; output: TOutput } }
+>Validator : Symbol(Validator, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 0, 0))
+>TInput : Symbol(TInput, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 4, 20))
+>TOutput : Symbol(TOutput, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 4, 37))
+>TInput : Symbol(TInput, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 4, 20))
+>['__lex'] : Symbol(Validator['__lex'], Decl(ttttMappedOverApparentlyAnyIntersection.ts, 4, 57))
+>'__lex' : Symbol(Validator['__lex'], Decl(ttttMappedOverApparentlyAnyIntersection.ts, 4, 57))
+>input : Symbol(input, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 4, 79))
+>TInput : Symbol(TInput, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 4, 20))
+>output : Symbol(output, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 4, 94))
+>TOutput : Symbol(TOutput, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 4, 37))
+
+type InferInput<V extends Validator> = V['__lex']['input']
+>InferInput : Symbol(InferInput, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 4, 114))
+>V : Symbol(V, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 5, 16))
+>Validator : Symbol(Validator, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 0, 0))
+>V : Symbol(V, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 5, 16))
+
+type InferOutput<V extends Validator> = V['__lex']['output']
+>InferOutput : Symbol(InferOutput, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 5, 58))
+>V : Symbol(V, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 6, 17))
+>Validator : Symbol(Validator, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 0, 0))
+>V : Symbol(V, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 6, 17))
+
+type Simplify<T> = { [K in keyof T]: T[K] } & NonNullable<unknown>
+>Simplify : Symbol(Simplify, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 6, 60))
+>T : Symbol(T, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 7, 14))
+>K : Symbol(K, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 7, 22))
+>T : Symbol(T, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 7, 14))
+>T : Symbol(T, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 7, 14))
+>K : Symbol(K, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 7, 22))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+
+type $Typed<V, T extends string = string> = Simplify<V & { $type: T }>
+>$Typed : Symbol($Typed, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 7, 66))
+>V : Symbol(V, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 8, 12))
+>T : Symbol(T, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 8, 14))
+>Simplify : Symbol(Simplify, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 6, 60))
+>V : Symbol(V, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 8, 12))
+>$type : Symbol($type, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 8, 58))
+>T : Symbol(T, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 8, 14))
+
+declare function $typed<V extends { $type?: unknown }, T extends string>(value: V, $type: T): $Typed<V, T>
+>$typed : Symbol($typed, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 8, 70))
+>V : Symbol(V, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 9, 24))
+>$type : Symbol($type, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 9, 35))
+>T : Symbol(T, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 9, 54))
+>value : Symbol(value, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 9, 73))
+>V : Symbol(V, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 9, 24))
+>$type : Symbol($type, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 9, 82))
+>T : Symbol(T, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 9, 54))
+>$Typed : Symbol($Typed, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 7, 66))
+>V : Symbol(V, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 9, 24))
+>T : Symbol(T, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 9, 54))
+
+export class X<const TType extends string, const TShape extends Validator<any>> {
+>X : Symbol(X, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 9, 106))
+>TType : Symbol(TType, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 11, 15))
+>TShape : Symbol(TShape, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 11, 42))
+>Validator : Symbol(Validator, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 0, 0))
+
+  declare $type: TType
+>$type : Symbol(X.$type, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 11, 81))
+>TType : Symbol(TType, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 11, 15))
+
+  build(input: Omit<InferOutput<TShape>, '$type'>): $Typed<InferOutput<TShape>, TType>
+>build : Symbol(X.build, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 12, 22), Decl(ttttMappedOverApparentlyAnyIntersection.ts, 13, 86), Decl(ttttMappedOverApparentlyAnyIntersection.ts, 14, 84))
+>input : Symbol(input, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 13, 8))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>InferOutput : Symbol(InferOutput, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 5, 58))
+>TShape : Symbol(TShape, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 11, 42))
+>$Typed : Symbol($Typed, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 7, 66))
+>InferOutput : Symbol(InferOutput, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 5, 58))
+>TShape : Symbol(TShape, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 11, 42))
+>TType : Symbol(TType, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 11, 15))
+
+  build(input: Omit<InferInput<TShape>, '$type'>): $Typed<InferInput<TShape>, TType>
+>build : Symbol(X.build, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 12, 22), Decl(ttttMappedOverApparentlyAnyIntersection.ts, 13, 86), Decl(ttttMappedOverApparentlyAnyIntersection.ts, 14, 84))
+>input : Symbol(input, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 14, 8))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>InferInput : Symbol(InferInput, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 4, 114))
+>TShape : Symbol(TShape, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 11, 42))
+>$Typed : Symbol($Typed, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 7, 66))
+>InferInput : Symbol(InferInput, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 4, 114))
+>TShape : Symbol(TShape, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 11, 42))
+>TType : Symbol(TType, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 11, 15))
+
+  build(input: Record<string, unknown>) { return $typed(input, this.$type) }
+>build : Symbol(X.build, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 12, 22), Decl(ttttMappedOverApparentlyAnyIntersection.ts, 13, 86), Decl(ttttMappedOverApparentlyAnyIntersection.ts, 14, 84))
+>input : Symbol(input, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 15, 8))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>$typed : Symbol($typed, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 8, 70))
+>input : Symbol(input, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 15, 8))
+>this.$type : Symbol(X.$type, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 11, 81))
+>this : Symbol(X, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 9, 106))
+>$type : Symbol(X.$type, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 11, 81))
+}
+
+function f<const TType extends string, const TShape extends Validator<any>>(
+>f : Symbol(f, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 16, 1))
+>TType : Symbol(TType, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 18, 11))
+>TShape : Symbol(TShape, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 18, 38))
+>Validator : Symbol(Validator, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 0, 0))
+
+  a: $Typed<InferOutput<TShape>, TType>, b: $Typed<Record<string, unknown>, TType>) {
+>a : Symbol(a, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 18, 76))
+>$Typed : Symbol($Typed, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 7, 66))
+>InferOutput : Symbol(InferOutput, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 5, 58))
+>TShape : Symbol(TShape, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 18, 38))
+>TType : Symbol(TType, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 18, 11))
+>b : Symbol(b, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 19, 40))
+>$Typed : Symbol($Typed, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 7, 66))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>TType : Symbol(TType, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 18, 11))
+
+  const t = a.$type;
+>t : Symbol(t, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 20, 7))
+>a : Symbol(a, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 18, 76))
+
+  let s1: { $type: TType } = a;
+>s1 : Symbol(s1, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 21, 5))
+>$type : Symbol($type, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 21, 11))
+>TType : Symbol(TType, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 18, 11))
+>a : Symbol(a, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 18, 76))
+
+  let s2: { [x: string]: unknown } = a;
+>s2 : Symbol(s2, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 22, 5))
+>x : Symbol(x, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 22, 13))
+>a : Symbol(a, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 18, 76))
+
+  let x1: typeof b = a;
+>x1 : Symbol(x1, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 23, 5))
+>b : Symbol(b, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 19, 40))
+>a : Symbol(a, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 18, 76))
+
+  let x2: typeof a = b;
+>x2 : Symbol(x2, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 24, 5))
+>a : Symbol(a, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 18, 76))
+>b : Symbol(b, Decl(ttttMappedOverApparentlyAnyIntersection.ts, 19, 40))
+}
+

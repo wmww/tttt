@@ -1,0 +1,101 @@
+//// [test/cases/ttttNoSupertypeReductionEmptyLiteralType.ts] ////
+
+=== ttttNoSupertypeReductionEmptyLiteralType.ts ===
+// `string & X` keeps X when X is the empty type literal however it was written (tsc's NoSupertypeReduction compares
+// types with emptyTypeLiteralType): NonNullable<unknown> is lib's `{}`, so atproto's UnknownString stays `string & {}`
+// and an identity check tells it from string (expect-type's `.not.toMatchObjectType`)
+type UnknownString = string & NonNullable<unknown>
+>UnknownString : Symbol(UnknownString, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 0, 0))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+
+type U2 = string & {}
+>U2 : Symbol(U2, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 3, 50))
+
+type Eq<L, R> = (<T>() => T extends (L & T) | T ? true : false) extends (<T>() => T extends (R & T) | T ? true : false) ? true : false;
+>Eq : Symbol(Eq, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 4, 21))
+>L : Symbol(L, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 5, 8))
+>R : Symbol(R, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 5, 10))
+>T : Symbol(T, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 5, 18))
+>T : Symbol(T, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 5, 18))
+>L : Symbol(L, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 5, 8))
+>T : Symbol(T, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 5, 18))
+>T : Symbol(T, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 5, 18))
+>T : Symbol(T, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 5, 74))
+>T : Symbol(T, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 5, 74))
+>R : Symbol(R, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 5, 10))
+>T : Symbol(T, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 5, 74))
+>T : Symbol(T, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 5, 74))
+
+type A1 = Eq<{ foo: UnknownString }, { foo: string }>;
+>A1 : Symbol(A1, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 5, 135))
+>Eq : Symbol(Eq, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 4, 21))
+>foo : Symbol(foo, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 6, 14))
+>UnknownString : Symbol(UnknownString, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 0, 0))
+>foo : Symbol(foo, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 6, 38))
+
+type A2 = Eq<UnknownString, string>;
+>A2 : Symbol(A2, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 6, 54))
+>Eq : Symbol(Eq, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 4, 21))
+>UnknownString : Symbol(UnknownString, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 0, 0))
+
+type A3 = Eq<U2, string>;
+>A3 : Symbol(A3, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 7, 36))
+>Eq : Symbol(Eq, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 4, 21))
+>U2 : Symbol(U2, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 3, 50))
+
+type A4 = Eq<{ foo: U2 }, { foo: string }>;
+>A4 : Symbol(A4, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 8, 25))
+>Eq : Symbol(Eq, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 4, 21))
+>foo : Symbol(foo, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 9, 14))
+>U2 : Symbol(U2, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 3, 50))
+>foo : Symbol(foo, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 9, 27))
+
+type A5 = Eq<{ foo: 'a' | UnknownString }, { foo: string }>;
+>A5 : Symbol(A5, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 9, 43))
+>Eq : Symbol(Eq, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 4, 21))
+>foo : Symbol(foo, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 10, 14))
+>UnknownString : Symbol(UnknownString, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 0, 0))
+>foo : Symbol(foo, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 10, 44))
+
+declare const a: [A1, A2, A3, A4, A5];
+>a : Symbol(a, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 11, 13))
+>A1 : Symbol(A1, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 5, 135))
+>A2 : Symbol(A2, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 6, 54))
+>A3 : Symbol(A3, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 7, 36))
+>A4 : Symbol(A4, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 8, 25))
+>A5 : Symbol(A5, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 9, 43))
+
+type N = NonNullable<unknown>
+>N : Symbol(N, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 11, 38))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+
+type B1 = string & N
+>B1 : Symbol(B1, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 12, 29))
+>N : Symbol(N, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 11, 38))
+
+type B2 = string & NonNullable<unknown>
+>B2 : Symbol(B2, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 13, 20))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+
+type N2 = unknown & {}
+>N2 : Symbol(N2, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 14, 39))
+
+type B3 = string & N2
+>B3 : Symbol(B3, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 15, 22))
+>N2 : Symbol(N2, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 14, 39))
+
+type B4 = string & (unknown & {})
+>B4 : Symbol(B4, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 16, 21))
+
+type B5 = string & ({} & unknown)
+>B5 : Symbol(B5, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 17, 33))
+
+declare const b: [B1, B2, B3, B4, B5, N];
+>b : Symbol(b, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 19, 13))
+>B1 : Symbol(B1, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 12, 29))
+>B2 : Symbol(B2, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 13, 20))
+>B3 : Symbol(B3, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 15, 22))
+>B4 : Symbol(B4, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 16, 21))
+>B5 : Symbol(B5, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 17, 33))
+>N : Symbol(N, Decl(ttttNoSupertypeReductionEmptyLiteralType.ts, 11, 38))
+

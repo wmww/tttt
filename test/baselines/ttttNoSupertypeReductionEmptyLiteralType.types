@@ -1,0 +1,69 @@
+//// [test/cases/ttttNoSupertypeReductionEmptyLiteralType.ts] ////
+
+=== ttttNoSupertypeReductionEmptyLiteralType.ts ===
+// `string & X` keeps X when X is the empty type literal however it was written (tsc's NoSupertypeReduction compares
+// types with emptyTypeLiteralType): NonNullable<unknown> is lib's `{}`, so atproto's UnknownString stays `string & {}`
+// and an identity check tells it from string (expect-type's `.not.toMatchObjectType`)
+type UnknownString = string & NonNullable<unknown>
+>UnknownString : UnknownString
+
+type U2 = string & {}
+>U2 : U2
+
+type Eq<L, R> = (<T>() => T extends (L & T) | T ? true : false) extends (<T>() => T extends (R & T) | T ? true : false) ? true : false;
+>Eq : Eq<L, R>
+>true : true
+>false : false
+>true : true
+>false : false
+>true : true
+>false : false
+
+type A1 = Eq<{ foo: UnknownString }, { foo: string }>;
+>A1 : false
+>foo : UnknownString
+>foo : string
+
+type A2 = Eq<UnknownString, string>;
+>A2 : true
+
+type A3 = Eq<U2, string>;
+>A3 : true
+
+type A4 = Eq<{ foo: U2 }, { foo: string }>;
+>A4 : false
+>foo : U2
+>foo : string
+
+type A5 = Eq<{ foo: 'a' | UnknownString }, { foo: string }>;
+>A5 : false
+>foo : "a" | UnknownString
+>foo : string
+
+declare const a: [A1, A2, A3, A4, A5];
+>a : [false, true, true, false, false]
+
+type N = NonNullable<unknown>
+>N : {}
+
+type B1 = string & N
+>B1 : B1
+
+type B2 = string & NonNullable<unknown>
+>B2 : B2
+
+type N2 = unknown & {}
+>N2 : {}
+
+type B3 = string & N2
+>B3 : B3
+
+type B4 = string & (unknown & {})
+>B4 : B4
+
+type B5 = string & ({} & unknown)
+>B5 : B5
+
+declare const b: [B1, B2, B3, B4, B5, N];
+>b : [B1, B2, B3, B4, B5, {}]
+

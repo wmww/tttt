@@ -382,7 +382,15 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Artifact models (each fitted to one real project or probe, kept because real code needs it until the underlying
   rule is found): `canonical_signature()` skips erasing (vue `toHandlerKey` TS2322), tuple number-index relation only under `Checker.base_constructors_in_flight`
   (effect TS2506), `ty_resolving_cycle_across_calls()` (tsc's second resolution round, RESOLVING_BASES), the mapped-type
-  rule in `relation_line_said()` (vitest TS2344), `intersection_props_related`'s TS2741 member choice (a valibot probe).
+  rule in `relation_line_said()` (vitest TS2344; since 2026-10-20 only for a mapped source whose apparent type
+  differs, atproto's string-index Simplify gets tsc's TS2741 head), `intersection_props_related`'s TS2741 member
+  choice (a valibot probe).
+- **A generic mapped target falls back to member-by-member comparison for a generic source** (relate.c, after
+  `generic_mapped_target_related()`): tsc returns False there unless both are mapped types (mappedTypeRelatedTo).
+  Carve-outs keep tsc's False for an object source without properties, arrays and tuples, and (2026-10-20) a
+  non-generic-keyed object source against a constraint that is a type parameter or a `keyof` (alone or in a union:
+  atproto's `$Typed`); zod's SortItem<output<T>> (generic keys) against `{ [K in keyof A | keyof B]: (A & B)[K] }` still
+  needs the fallback.
 
 ## Type core (`src/ty/`)
 - **An alias body's homomorphic mapped instance is re-instantiated only where met directly** (`ty_alias_body_mapped_instance()`,

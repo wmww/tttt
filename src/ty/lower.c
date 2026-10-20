@@ -4369,13 +4369,13 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             len -= placeholders;
             // A written `string & {}` (or number, bigint) stays as it is: the idiom for "any string, but show the
             // literals" (tsc's NoSupertypeReduction)
-            // (Either way round, `{} & string`, and a pattern template literal too)
+            // (Either way round, `{} & string`, and a pattern template literal too. By type, tsc's emptyTypeLiteralType:
+            // `string & NonNullable<unknown>` is one too, NonNullable<unknown> is lib's `{}`, atproto's UnknownString)
             bool keep_empty_object = false;
             if (node->tag == TYPE_INTERSECTION && len == 2 && !placeholders) {
                 for (u32 e = 0; e < 2 && !keep_empty_object; e++) {
-                    TypeNode const* empty = vec_type_at(&node->composite, e);
                     Ty const* t = types[1 - e];
-                    keep_empty_object = empty->tag == TYPE_INTERFACE && !vec_interface_member_size(&empty->interface.members) &&
+                    keep_empty_object = types[e] == ty_empty_type_literal(me) &&
                         (t == ty_intrinsic(me, TY_STRING) || t == ty_intrinsic(me, TY_NUMBER) || t == ty_intrinsic(me, TY_BIGINT) ||
                             (t->kind == TY_TEMPLATE_LITERAL && ty_is_pattern_literal(t)));
                 }

@@ -1592,6 +1592,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMappedOverApparentlyAnyIntersection': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedOverArrayApparentInference': {
         errors: true,
         symbols: true,
@@ -1717,6 +1722,11 @@ const baselines = {
         types: true,
     },
     'ttttNoLibTupleSpread': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNoSupertypeReductionEmptyLiteralType': {
         errors: true,
         symbols: true,
         types: true,

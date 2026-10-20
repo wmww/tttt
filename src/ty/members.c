@@ -3723,10 +3723,17 @@ static bool mapped_members_known(Members const* members) {
 static Members const* expand_generic_homomorphic(Checker* me, Members const* members) {
     MappedInfo const* mapped = members->mapped;
     if (!mapped->keyof_constraint || mapped->name_type || !mapped->modifiers_type) return members;
+    Ty const* apparent = nullptr;
     if (mapped->modifiers_type->kind == TY_INTERSECTION) {
-        return expand_generic_intersection_homomorphic(me, members, mapped->modifiers_type->composite.types);
+        // (Unless a generic member is apparently any, which makes the whole intersection's apparent type any (tsc's
+        // getApparentTypeOfIntersectionType): its keys are then any's, a string index signature, below. An
+        // unresolved import's type in a constraint, atproto's `V['__lex']['output'] & { $type: T }`)
+        if (!ty_intersection_apparently_any(me, mapped->modifiers_type)) {
+            return expand_generic_intersection_homomorphic(me, members, mapped->modifiers_type->composite.types);
+        }
+        apparent = ty_intrinsic(me, TY_ANY);
     }
-    Ty const* apparent = ty_apparent_type(me, mapped->modifiers_type);
+    if (!apparent) apparent = ty_apparent_type(me, mapped->modifiers_type);
     // (A generic mapped type is its own apparent type, and has the properties of the lower bound of its keys:
     // `Partial<M<T>>` with `M<T> = { [K in keyof T]: T[K] }` has T's constraint's, tsc's resolveMappedTypeMembers over
     // getPropertiesOfType of its modifiers type)

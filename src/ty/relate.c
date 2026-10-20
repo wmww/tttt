@@ -1064,7 +1064,8 @@ static bool relation_line_said(Checker* me, RelationState* st, Ty const* source,
             // tttt lists them as the mapped type's own (vitest's `BrowserCommand<ConvertUserEventParameters<...>>`
             // is TS2344 in tsgo, without a chain)
             if (source->kind == TY_ANONYMOUS && ty_members(me, source)->mapped &&
-                (ty_members(me, source)->mapped->constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
+                (ty_members(me, source)->mapped->constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
+                ty_apparent_type(me, source) != source
             ) {
                 return false;
             }
@@ -1646,6 +1647,18 @@ FoundProp ty_find_own_prop(Checker* me, Ty const* ty, Atom const* name) { return
 Prop const* ty_property_of_type(Checker* me, Ty const* ty, Atom const* name) { return find_prop(me, ty, name, 0).prop; }
 Ty const* ty_tuple_as_array(Checker* me, Ty const* tuple) { return tuple_as_array(me, tuple); }
 Ty const* ty_apparent_type(Checker* me, Ty const* ty) { return apparent_type(me, ty); }
+// Whether a generic member of an intersection is apparently any, which makes the intersection's apparent type any
+// (tsc's getApparentTypeOfIntersectionType intersects its members' apparent types)
+bool ty_intersection_apparently_any(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_INTERSECTION) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        Ty const* member = ty->composite.types.data[i];
+        bool generic = member->kind == TY_TYPE_PARAM || member->kind == TY_INDEXED || member->kind == TY_CONDITIONAL ||
+            member->kind == TY_SUBSTITUTION;
+        if (generic && (apparent_type(me, member)->flags & TYF_ANY)) return true;
+    }
+    return false;
+}
 bool ty_is_tuple(Ty const* ty) { return is_tuple(ty); }
 TupleShape const* ty_tuple_shape(Ty const* ty) {
     if (is_tuple(ty)) return ty->reference.target->declared.tuple;
@@ -4249,6 +4262,16 @@ static bool has_variadic_element(Checker* me, Ty const* ty) {
     return false;
 }
 
+// A mapped type's constraint that is `keyof X` or a union with one (`"$type" | keyof V`, the keys of an intersection)
+static bool keyof_constraint(Ty const* constraint) {
+    if (constraint->kind == TY_KEYOF) return true;
+    if (constraint->kind != TY_UNION) return false;
+    for (u32 i = 0; i < constraint->composite.types.len; i++) {
+        if (constraint->composite.types.data[i]->kind == TY_KEYOF) return true;
+    }
+    return false;
+}
+
 static Ternary generic_mapped_target_related(
     Checker* me, RelationState* st, Ty const* source, MappedInfo const* mapped, bool report
 ) {
@@ -6008,9 +6031,11 @@ static Ternary structured_related_members(
         }
         // (Nor an object type whose properties don't depend on its type variables against a mapped type over a type
         // parameter (`Record<M, M>`): `P<M>`'s `{ values: M }` isn't related to it, its keys can't cover M's (sequelize's
-        // EnumOptions<Member> against EnumValues<Member> dropped it from a flow union by subtype reduction)
+        // EnumOptions<Member> against EnumValues<Member> dropped it from a flow union by subtype reduction). Nor over
+        // `keyof X` (atproto's `{ [x: string]: unknown; $type: T }` against `Simplify<V["output"] & { $type: T }>`)
         if ((source->flags & TYF_OBJECT) && source->kind != TY_INTERSECTION && !ty_members(me, source)->mapped &&
-            !ty_is_array(me, source) && !ty_is_tuple(source) && target_mapped->constraint->kind == TY_TYPE_PARAM &&
+            !ty_is_array(me, source) && !ty_is_tuple(source) &&
+            (target_mapped->constraint->kind == TY_TYPE_PARAM || keyof_constraint(target_mapped->constraint)) &&
             !ty_is_generic_index(ty_keyof(me, source))
         ) {
             return related;

@@ -1,0 +1,91 @@
+//// [test/cases/ttttMappedOverApparentlyAnyIntersection.ts] ////
+
+=== ttttMappedOverApparentlyAnyIntersection.ts ===
+// A homomorphic mapped type over an intersection with a member whose constraint is any (here an unresolved import's
+// error type would do too) is a string index signature only: the intersection's apparent type is any (tsc's
+// getApparentTypeOfIntersectionType), so `$type` isn't one of its keys. Its relations with an object type both fail,
+// which atproto's lex-schema `build()` overloads report as incompatible with their implementation (TS2394)
+interface Validator<TInput = unknown, TOutput = TInput> { readonly ['__lex']: { input: TInput; output: TOutput } }
+>['__lex'] : { input: TInput; output: TOutput; }
+>'__lex' : "__lex"
+>input : TInput
+>output : TOutput
+
+type InferInput<V extends Validator> = V['__lex']['input']
+>InferInput : InferInput<V>
+
+type InferOutput<V extends Validator> = V['__lex']['output']
+>InferOutput : InferOutput<V>
+
+type Simplify<T> = { [K in keyof T]: T[K] } & NonNullable<unknown>
+>Simplify : { [K in keyof T]: T[K]; }
+
+type $Typed<V, T extends string = string> = Simplify<V & { $type: T }>
+>$Typed : V & { $type: T; } extends infer T_1 ? { [K in keyof T_1]: T_1[K]; } : never
+>$type : T
+
+declare function $typed<V extends { $type?: unknown }, T extends string>(value: V, $type: T): $Typed<V, T>
+>$typed : <V extends { $type?: unknown; }, T extends string>(value: V, $type: T) => $Typed<V, T>
+>$type : unknown
+>value : V
+>$type : T
+
+export class X<const TType extends string, const TShape extends Validator<any>> {
+>X : X<TType, TShape>
+
+  declare $type: TType
+>$type : TType
+
+  build(input: Omit<InferOutput<TShape>, '$type'>): $Typed<InferOutput<TShape>, TType>
+>build : { (input: Omit<InferOutput<TShape>, '$type'>): $Typed<InferOutput<TShape>, TType>; (input: Omit<InferInput<TShape>, '$type'>): $Typed<InferInput<TShape>, TType>; }
+>input : Omit<InferOutput<TShape>, "$type">
+
+  build(input: Omit<InferInput<TShape>, '$type'>): $Typed<InferInput<TShape>, TType>
+>build : { (input: Omit<InferOutput<TShape>, '$type'>): $Typed<InferOutput<TShape>, TType>; (input: Omit<InferInput<TShape>, '$type'>): $Typed<InferInput<TShape>, TType>; }
+>input : Omit<InferInput<TShape>, "$type">
+
+  build(input: Record<string, unknown>) { return $typed(input, this.$type) }
+>build : { (input: Omit<InferOutput<TShape>, '$type'>): $Typed<InferOutput<TShape>, TType>; (input: Omit<InferInput<TShape>, '$type'>): $Typed<InferInput<TShape>, TType>; }
+>input : Record<string, unknown>
+>$typed(input, this.$type) : { [x: string]: unknown; $type: TType; }
+>$typed : <V extends { $type?: unknown; }, T extends string>(value: V, $type: T) => $Typed<V, T>
+>input : Record<string, unknown>
+>this.$type : TType
+>this : this
+>$type : TType
+}
+
+function f<const TType extends string, const TShape extends Validator<any>>(
+>f : <const TType extends string, const TShape extends Validator<any>>(a: $Typed<InferOutput<TShape>, TType>, b: $Typed<Record<string, unknown>, TType>) => void
+
+  a: $Typed<InferOutput<TShape>, TType>, b: $Typed<Record<string, unknown>, TType>) {
+>a : InferOutput<TShape> & { $type: TType; } extends infer T ? { [K in keyof T]: T[K]; } : never
+>b : { [x: string]: unknown; $type: TType; }
+
+  const t = a.$type;
+>t : (InferOutput<TShape> & { $type: TType; })[string]
+>a.$type : (InferOutput<TShape> & { $type: TType; })[string]
+>a : InferOutput<TShape> & { $type: TType; } extends infer T ? { [K in keyof T]: T[K]; } : never
+>$type : (InferOutput<TShape> & { $type: TType; })[string]
+
+  let s1: { $type: TType } = a;
+>s1 : { $type: TType; }
+>$type : TType
+>a : InferOutput<TShape> & { $type: TType; } extends infer T ? { [K in keyof T]: T[K]; } : never
+
+  let s2: { [x: string]: unknown } = a;
+>s2 : { [x: string]: unknown; }
+>x : string
+>a : InferOutput<TShape> & { $type: TType; } extends infer T ? { [K in keyof T]: T[K]; } : never
+
+  let x1: typeof b = a;
+>x1 : { [x: string]: unknown; $type: TType; }
+>b : { [x: string]: unknown; $type: TType; }
+>a : InferOutput<TShape> & { $type: TType; } extends infer T ? { [K in keyof T]: T[K]; } : never
+
+  let x2: typeof a = b;
+>x2 : InferOutput<TShape> & { $type: TType; } extends infer T ? { [K in keyof T]: T[K]; } : never
+>a : InferOutput<TShape> & { $type: TType; } extends infer T ? { [K in keyof T]: T[K]; } : never
+>b : { [x: string]: unknown; $type: TType; }
+}
+

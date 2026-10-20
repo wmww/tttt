@@ -262,15 +262,6 @@ hacks.md), no TS5097 for a side-effect import (angular-cli), an empty string opt
 Fixed: TS2308 between two `export *`s of unresolved imports (atproto's six tsconfig.build.json and lex-schema, with
 the TS2322/TS2339 that followed), skip-context-sensitive through `&&` (atproto oauth-provider-ui's SignUpWizard). Those
 11 repos: 762 -> 768 / 778. Left (sourcesweep_build.md has the better-auth lynx-store and hono request.ts mechanisms):
-- **atproto lex-schema -TS2394 x2** (record.ts:97, typed-object.ts:82, `build()` overloads against an implementation
-  returning `$typed(input, this.$type)`): with LexMap the error type (its module unresolved; plain `any` too), tsc's
-  apparent type of `InferOutput<TShape> & { $type: TType }` is `any` (getApparentTypeOfIntersectionType maps members
-  through their apparent types), so `Simplify<...>` has only a string index signature: neither return type relates to
-  the other. tttt lists the parts' properties ($type) in expand_generic_homomorphic(); fixing that alone (tried) isn't
-  enough: the reverse relation passes through relate.c's generic-mapped-target HACK fallback (member by member). Probe:
-  `type Simplify<T> = { [K in keyof T]: T[K] } & NonNullable<unknown>`, class `C<const TType extends string, const
-  TShape extends Validator<any>>` with `build(i: Omit<InferOutput<TShape>, '$type'>): $Typed<InferOutput<TShape>,
-  TType>` and implementation `build(i: Record<string, unknown>) { return $typed(i, this.$type) }`.
 - **better-auth e2e/smoke/.../cloudflare tsconfig.skip-lib-check-false.json**: fixed 2026-10-20 (agent B): the TS2430s
   were the cross-file merge unit, the TS2610 `extends globalThis.Event` (a class is no globalThis property). Its TS5115
   (zod schemas.d.cts:790, tsc's too) is also reported at miniflare index.d.ts:550 at `--threads` > 1: which checker
@@ -289,7 +280,7 @@ babel jsx (evolving array pushes typed with the contextual type any, tsc's getCo
 (conditional union members with an error apparent type skipped), react-navigation stack (object-literal padding
 still needs a member with the property itself), astro cloudflare (an interface property merged with a later class
 accessor is typed by the accessor). better-auth's cloudflare skip-lib-check-false matched after the day's merges.
-Unchanged verdicts: es-toolkit (tsc order artifact), monkeytype (TS2589 count), atproto lex-schema TS2394, better-auth
+Unchanged verdicts: es-toolkit (tsc order artifact), monkeytype (TS2589 count), better-auth
 lynx-store, hono request.ts (entries above). Seen, not done: `declare abstract class C { get x() }` then
 `interface C { readonly x }` is TS2687 in tsc, not in tttt; an interface `opt?: T` taken over by `get opt(): T` reads
 `T` in tsc (no optionality), `T | undefined` in tttt.
