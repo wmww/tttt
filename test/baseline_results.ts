@@ -1800,6 +1800,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttReturnMapperAnyContextualArgument': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttReturnTypeUniqueUnresolved': {
         errors: true,
         symbols: true,
