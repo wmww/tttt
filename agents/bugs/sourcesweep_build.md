@@ -53,9 +53,6 @@ Day one, by project (+ spurious, - missing, counts):
   `useCallback(() => listenKeys(store as any, keys, emitChange))` with `declare function useCallback<T>(cb: T): T`.
   -TS5115 2 (to-zod.ts, tsc prints it once per program typing the file): appeared with the day's merges (not agent A's
   commits: ai-main 36c9407c9 already shows it)
-- ghostfolio/apps/client +TS2322 6: a `-p` bug of tsconfig.app.json (benchmark-comparator.component.ts:188/197,
-  investment-chart.component.ts:200): Chart.js's `Chart<"line", DistributiveArray<ChartTypeRegistry[TType][...]>>`
-  and chartjs-plugin-annotation's `_DeepPartialArray<AnnotationOptions<...>>`. Not investigated
 - hono: fixed TS2339 (jwt.ts), TS2783 (css.test.tsx). Left: +TS2769 2 (request.ts:214, a `-p` bug of
   tsconfig.build.json): `parseBody(this, options)` with `this` against `HonoRequest | Request`. The plain check fails in
   tsgo too (HonoRequest's variances [independent, bivariant], `I extends Input['out']` isn't `{}`); tsgo then relates
@@ -114,7 +111,6 @@ ImageMetadata.fsPath: the image tests' TS2322/TS2345).
   its `.d.ts` keeps them (side-effect imports, names its declarations mention, and whatever `import("...")` inferred types
   add), which needs the declaration emit's view of the file: not a cheap approximation. The same family as the verdict
   above (reading emitted declarations, not sources).
-- astro -TS18048 2 (integrations/cloudflare/src/utils/prerender-response.ts:139 `chunk`): not looked into.
 - **The builder window is a race in tsgo** (atproto +TS2307 1, oauth-client's `@atproto-labs/identity-resolver`): tsgo's
   4 builders take projects in build order and wait only on references, so whether an unreferenced project's `dist`
   exists is timing (atproto's oauth-client alone at default builders reports TS2307s the whole-solution build doesn't;

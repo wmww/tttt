@@ -261,9 +261,6 @@ The `-p` sweep now also checks every non-`tsconfig.json` config no other config 
 include walk's config-directory-first order (ethereumjs TS6307), imported-class narrowing (angular-cli; classes only,
 hacks.md), no TS5097 for a side-effect import (angular-cli), an empty string option not overriding an extended one
 (qwik TS5051), include-processor diagnostics in plain JS (mermaid TS6059). Left in this list's repos:
-- **crawlee** packages/basic-crawler/tsconfig.build.json: -TS2339 at throttling_request_manager.ts:1064
-  (`manager.extendRequestProcessingTimeSecs?.(...)` where `manager` is `this.#resolvedInner!` or an awaited
-  `#selectManagerOrThrow()`: tsc says a member of that union lacks the method; tttt finds it). Uninvestigated.
 - monkeytype/frontend (+TS2578/+TS2322 SearchableAutoSetting.tsx): the 2026-10-16 entry above.
 
 ## Every-tsconfig sweep, agent A's and B's repos (2026-10-19, agent A)
@@ -279,13 +276,17 @@ the TS2322/TS2339 that followed), skip-context-sensitive through `&&` (atproto o
   `type Simplify<T> = { [K in keyof T]: T[K] } & NonNullable<unknown>`, class `C<const TType extends string, const
   TShape extends Validator<any>>` with `build(i: Omit<InferOutput<TShape>, '$type'>): $Typed<InferOutput<TShape>,
   TType>` and implementation `build(i: Record<string, unknown>) { return $typed(i, this.$type) }`.
-- **astro integrations/cloudflare -TS18048 x2** (prerender-response.ts:139): tsc types `transportResponse.body.getReader()`
-  as `ReadableStreamDefaultReader<any>` (Cloudflare workers types merged with the DOM lib), so `chunk = next.value`
-  assigns any and the variable keeps its declared `| undefined`; tttt agrees on that rule (probe), so its reader isn't
-  `<any>`: a global interface merging difference. Not pursued.
-- **better-auth e2e/smoke/.../cloudflare tsconfig.skip-lib-check-false.json**: +TS2430 x4 in @types/node's
-  web-globals (TextDecoder, TextEncoder, URL, URLSearchParams `incorrectly extends` node:util's/node:url's) and +TS2610
-  in tinybench: the same workers-types + @types/node global merging, here under skipLibCheck false. Not pursued.
-- babel (+TS2322 x7 babel-parser jsx/index.ts:544 etc. in tsconfig.tstyche.json, TS6307 index-browser.ts/package.ts),
-  astro packages/astro/tsconfig.test.json (+TS6305/-TS7016 test-utils.ts:9: a reference's output under
+- astro packages/astro/tsconfig.test.json (+TS6305/-TS7016 test-utils.ts:9: a reference's output under
   scripts/node_modules/.cache): not looked at.
+
+
+## Every-tsconfig sweep, round 2 (2026-10-20, agent A)
+Fixed: ghostfolio (a callable with its own `toString(value)` isn't assumed to extend Function: lodash's `_`),
+babel jsx (evolving array pushes typed with the contextual type any, tsc's getContextFreeTypeOfExpression), crawlee
+(conditional union members with an error apparent type skipped), react-navigation stack (object-literal padding
+still needs a member with the property itself), astro cloudflare (an interface property merged with a later class
+accessor is typed by the accessor). better-auth's cloudflare skip-lib-check-false matched after the day's merges.
+Unchanged verdicts: es-toolkit (tsc order artifact), monkeytype (TS2589 count), atproto lex-schema TS2394, better-auth
+lynx-store, hono request.ts (entries above). Seen, not done: `declare abstract class C { get x() }` then
+`interface C { readonly x }` is TS2687 in tsc, not in tttt; an interface `opt?: T` taken over by `get opt(): T` reads
+`T` in tsc (no optionality), `T | undefined` in tttt.
