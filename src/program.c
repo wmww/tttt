@@ -142,6 +142,8 @@ typedef struct Program {
     // of its dealt files nobody claimed yet
     _Atomic u32* share_states;
     _Atomic u64* share_left;
+    struct timespec check_start; // While typechecking: when the checkers started (TTTT_FILE_TIMES' timeline)
+    u32* share_first; // malloc'd, per checker while typechecking: the file of check_files it starts with (deal_files())
     bool steal_files; // While typechecking: checkers take each other's files (TTTT_NO_STEAL=1: never, to measure)
     u32 requested_checkers; // program_set_checkers()
     u32 checker_cap; // program_set_checker_cap(), 0: the threads
@@ -4366,8 +4368,8 @@ static u32 steal_file(Program* me, u32 c, u32 count) {
         for (u32 at = (u32)vec_source_file_ptr_size(&my check_files); at-- > 0;) {
             if (my file_shares[at] != victim) continue;
             u32 owner = atomic_load_explicit(&my file_checkers[at], memory_order_relaxed);
-            // (Its own checker takes its files in order: everything before one it took is taken)
-            if (owner == victim) break;
+            // (Its own checker takes its files in order after its first: everything before one it took is taken)
+            if (owner == victim && at != my share_first[victim]) break;
             if (owner != UINT32_MAX) continue;
             any = true;
             if (claim_file(me, at, c)) return at;
@@ -4408,9 +4410,11 @@ static void check_share(Program* me, u32 c, u32 count) {
     isize scanned = 0; // Of checker->errs->errors, for declaration_walk_moot()
     bool moot_watch = my declaration_errs && !my emit_declarations && program_declaration_diagnostics_gated(me);
     bool steal = my steal_files && count > 1;
-    for (u32 next = 0;;) {
+    for (u32 next = 0, first = my share_first[c];;) {
         u32 at = UINT32_MAX;
-        for (; next < total; next++) {
+        if (first != UINT32_MAX && claim_file(me, first, c)) at = first;
+        first = UINT32_MAX;
+        for (; at == UINT32_MAX && next < total; next++) {
             if (my file_shares[next] == c && claim_file(me, next, c)) {
                 at = next++;
                 break;
@@ -4462,7 +4466,8 @@ static void check_share(Program* me, u32 c, u32 count) {
             segment_ms += file_ms;
             if (file_ms > segment_max_ms) segment_max_ms = file_ms;
             print_file_time(my file_shares[at] == c ? "check" : "check (taken)", file_start, source);
-            fprintf(stderr, "file time: checker %u holds %.1f MB\n", c, (double)checker_memory(checker) / (1 << 20));
+            double end_ms = (double)(file_end.tv_sec - my check_start.tv_sec) * 1e3 + (double)(file_end.tv_nsec - my check_start.tv_nsec) / 1e6;
+            fprintf(stderr, "file time: checker %u holds %.1f MB, done at %.1f ms\n", c, (double)checker_memory(checker) / (1 << 20), end_ms);
         }
         for (; moot_watch && scanned < vec_error_size(&checker->errs->errors); scanned++) {
             if (!error_surely_reported(&checker->errs->errors.data[scanned])) continue;
@@ -4472,7 +4477,9 @@ static void check_share(Program* me, u32 c, u32 count) {
         if (my checker_budget == UINT64_MAX) continue;
         u64 held = checker_memory(checker);
         if (held > checker->peak_memory) checker->peak_memory = held;
-        if (!segment_base) segment_base = held;
+        // (Not the costliest file the share starts with: what it holds is mostly its own types, and twice that kept
+        // excalidraw's first checker at 47 MB)
+        if (!segment_base && at != my share_first[c]) segment_base = held;
         // (A budget of 0 recycles after every file, warm-up or not: kdiff's fresh checker per file)
         if (budget && (held <= budget || held <= 2 * segment_base)) continue;
         // (A segment this short rebuilt a shared warm state the first file didn't show: the next may hold twice as
@@ -4568,10 +4575,20 @@ static void deal_files(Program* me) {
         atomic_init(&my share_states[c], 0);
         atomic_init(&my share_left[c], 0);
     }
+    // Each checker starts with its share's costliest file (by size), then the rest in order: the biggest file is a
+    // run's critical path when it would come late (TypeScript6's checker.ts, 195 of a 290 ms check at 4 checkers:
+    // -6% wall). Not at one checker, where the order only moves the warm-up. TTTT_NO_COSTLIEST_FIRST=1 turns it off
+    bool costliest_first = my checker_count > 1 && !getenv("TTTT_NO_COSTLIEST_FIRST");
+    u64* first_cost = c_new_n(u64, my checker_count);
+    for (u32 c = 0; c < my checker_count; c++) my share_first[c] = UINT32_MAX, first_cost[c] = 0;
     for (u32 at = 0; at < total; at++) {
         SourceFile const* source = vec_source_file_ptr_at(&my check_files, at)[0];
-        atomic_fetch_add_explicit(&my share_left[my file_shares[at]], share_cost(source), memory_order_relaxed);
+        u32 c = my file_shares[at];
+        u64 cost = share_cost(source);
+        atomic_fetch_add_explicit(&my share_left[c], cost, memory_order_relaxed);
+        if (costliest_first && cost > first_cost[c]) first_cost[c] = cost, my share_first[c] = at;
     }
+    free(first_cost);
 }
 
 u64 program_checked_source_bytes(Program const* me) {
@@ -4678,7 +4695,9 @@ void program_typecheck(Program* me) {
     my steal_files = !getenv("TTTT_NO_STEAL");
     my share_states = c_new_n(_Atomic u32, count);
     my share_left = c_new_n(_Atomic u64, count);
+    my share_first = c_new_n(u32, count);
     deal_files(me);
+    timespec_get(&my check_start, TIME_UTC);
     CheckShares shares = { .program = me, .count = count };
     u32 threads = my threads ? my threads : 1;
     u32 helpers = threads > count && program_has_deferred_bodies(me) ? threads - count : 0;
@@ -4742,6 +4761,7 @@ void program_typecheck(Program* me) {
     free(checker_errs);
     free(my share_states);
     free(my share_left);
+    free(my share_first);
     my share_states = nullptr;
     my share_left = nullptr;
     // (Recycled: the first share's last checker)

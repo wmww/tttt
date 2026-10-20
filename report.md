@@ -461,3 +461,13 @@ vscode's 2.6 s) plus a snapshot recycle for projects like supabase studio. Also 
 
 **For you**: nothing is blocking. Once the prototype exists, its 12-core numbers will matter more than anything this
 4-vCPU box can measure, and the session will leave you a command to run.
+
+## 2026-10-20 — ask for the human (execution session, not an insights entry)
+Each checker now starts with its biggest file. On this 4-core box that's 6% off TypeScript6's compiler (checker.ts is
+its critical path) and 2% off type-fest, with nothing else changed. The front-end split says the loader's serial work
+(~280 ms on vscode) comes before parallel declare/link (~140 ms) in plan 86 stage 3. Both should matter more on 12
+cores. Could you run this on the 12-core box? It A/Bs the same binary and prints vscode's front-end split:
+```
+B=$(scripts/pgobuild.sh); for c in TypeScript6/src/compiler type-fest drizzle/drizzle-orm/tsconfig.corpus.json vscode/src/tsconfig.corpus.json; do for off in "" 1; do for i in 1 2 3; do env ${off:+TTTT_NO_COSTLIEST_FIRST=1} /usr/bin/time -f "$c off=$off %e s wall %U+%S s cpu %M KB" $B -q --keep-going --noEmit -p thirdparty/corpora/$c >/dev/null; done; done; done
+TTTT_LOAD_POOL_STATS=1 TTTT_RESOLVE_TIMES=1 $B -q --time --keep-going --noEmit -p thirdparty/corpora/vscode/src/tsconfig.corpus.json 2>&1 >/dev/null | grep -av '^time: checker'
+```

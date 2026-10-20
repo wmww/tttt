@@ -31,14 +31,11 @@ on the 12-core box (put it in report.md, as 2026-10-19's ask did).
 3. ~~Plan 87 stage 1~~ done 2026-10-20: `-b` reads emitted declarations only, the sources model deleted; `-b`
    sweep 409 / 416 byte-identical to the flag's run, scenarios 221 / 0, oracles unchanged. Re-triage: apollo
    cacheOverride was a `-p` alias-re-entry bug (fixed), the rest in bugs/sourcesweep_build.md.
-4. **Perf: costliest file first, then the front end measured** (plan 86 "Order", stage 3). Start each checker's
-   share with its costliest file (tsc's checker.ts and type-fest's biggest file are the critical path; bun canary's
-   heavy-first queue is the same idea). Size is the first cost model to try, bun's the second (identifiers in
-   expressions plus type nodes: within 1.1x of measured time where size was 1.8x, plan 86's census part C §6); the
-   output must not change. Then
-   `tttt --time` and `TTTT_LOAD_POOL_STATS=1` on vscode, webpack and effect at `--threads 4` and 1, to say which
-   stage 3 piece (loader pre-scan, parallel declare/link, parser) comes first. Write the 12-core command for the
-   human.
+4. ~~Perf: costliest file first, then the front end measured~~ done 2026-10-20: each checker starts with its
+   share's biggest file (TypeScript6 -6% wall at K4, type-fest -2%, the rest flat on 4 cores, output byte-identical;
+   type-fest's costly files are tiny, so no syntactic cost model helps; kdiff 2 -> 4, sequelize's tsgo-shared TS7022). Front end: the loader's serial 279 ms on
+   vscode, then declare + link's 138 ms, so stage 3 starts with the import pre-scan (measurements.md "Costliest file
+   first and the front end's split"). The 12-core command is in report.md.
 5. **Real code**: vue 0 / 2 (the re-entrancy guard question, bugs/sourcesweep_checker.md) and whatever the source
    sweep, `-b` sweep and dtsdiff leftovers rank highest (the last fan-out's verdicts in bugs/). Prefer a mechanism
    over a project.

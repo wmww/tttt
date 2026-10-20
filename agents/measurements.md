@@ -30,6 +30,41 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## Costliest file first and the front end's split (2026-10-20, todo entry 4; this box, 4 vCPUs, release build)
+Each checker now starts with its share's biggest file (`deal_files()`'s `share_first`; `TTTT_NO_COSTLIEST_FIRST=1`
+turns it off). Best of 5 at the defaults (K4 T4), wall / CPU s / peak MB, before -> after: TypeScript6/src/compiler
+0.31 / 0.92 / 235 -> 0.29 / 0.90 / 262, type-fest 0.49 / 1.42 / 413 -> 0.48 / 1.40 / 413; webpack, zod, xstate,
+drizzle, vue, effect, excalidraw, tanstack-router, valibot, nest and vscode (6.13 -> 6.07) are within noise.
+Output byte-identical (checkerdiff K4, threadcheck); every oracle unchanged but kdiff 2 -> 4: sequelize's TS7022,
+which depends on the checker count in tsgo too (tsgo_divergences.md), now shows at K16. What the timeline (`TTTT_FILE_TIMES=1`, now with each file's
+end time per checker) shows:
+- TypeScript6: checker.ts alone is the critical path, ~65 ms materializing its deferred bodies (serial, the file's
+  lock) and 195 ms checking it cold, while the other three finish at ~190 ms. `--no-defer-bodies` is 0.27 s: the
+  biggest file's body parse sits on the critical path when it is checked first. Splitting one file's materialization,
+  or parsing the costliest file's bodies up front in the loader, are the levers left; both are stage 3 material.
+- type-fest: size predicts nothing. union-to-tuple.ts is 1.4 KB and 180 ms at K1, the next are int-range.ts (2.3 KB,
+  68 ms) and array-reverse.ts. bun's cost model (identifiers in expressions + type nodes) wouldn't see them either:
+  their cost is type-level evaluation. So no second cost model was tried.
+- A first version let the costliest file set its segment's recycle warm-up base (`segment_base`): excalidraw and
+  xstate got 5-10% faster but excalidraw's peak rose 34 MB, because checker 0 held 2x its first file's 23 MB before
+  recycling. That gain was fewer recycles, not ordering. The costliest file no longer sets the base.
+
+The front end (`--time`, `TTTT_LOAD_POOL_STATS=1`, `TTTT_RESOLVE_TIMES=1`), ms:
+| corpus, threads | libs | load+parse | resolve | of which declare + link (serial) / walk | check |
+|---|---|---|---|---|---|
+| vscode T4 | 34 | 454 | 318 | 138 / 130 | 5226 |
+| vscode T1 | 10 | 866 | 551 | 135 / 365 | 11873 |
+| webpack T4 | 15 | 85 | 85 | | 433 |
+| webpack T1 | 9 | 231 | 165 | | 857 |
+| effect T4 | 13 | 35 | 48 | | 512 |
+| effect T1 | 10 | 100 | 89 | | 1187 |
+On vscode at T4 the load pool's workers are busy 1779 of 1953 ms, so load is CPU-bound here (1953 / 4 = 488 ms).
+The loader's own work is 279 ms, 201 ms of it parsing 3075 of 11035 files itself, because they weren't preparsed
+yet when it needed their imports. On 12 cores the parse CPU is ~163 ms, so **the loader's serial 279 ms is the
+front end's floor, then declare + link's 138 ms**. Stage 3's order: (1) the import pre-scan, so that the loader
+never parses; (2) parallel declare and link; (3) the parser itself, which is CPU and so helps 4-core boxes most.
+webpack and effect show the same shape at a smaller scale (their pools are saturated at T4).
+
 ## PGO + LTO shipped (2026-10-19, todo entry 1; plan 86 stage 1)
 `scripts/pgobuild.sh` (pgo/tttt) is what bench.sh, instrcount.sh and perfsweep.py measure from now on. Callgrind
 (`scripts/instrcount.sh`, re-saved: compare against it, not older release numbers) against release -O3:

@@ -20,8 +20,8 @@ Stage 4 comes next, ahead of stage 2's remaining sessions, which are demoted to 
 Sessions: **design** (done 2026-10-20: go, staged, ~25 sessions; "The design" under stage 4), then the **taint
 prototype** (4-0, done 2026-10-20: G0 says go with three conditions, "Gate G0 result"), then K1 refactors (4a-4c) up to gate G1, before anything is shared. If a gate says no,
 the fallback is stage 3 (front end) plus perf_leads.md's snapshot recycle, which goes after the thrashers (supabase
-studio: `--checker-memory off` takes 2.27 -> 1.30 s). Stage 3's cheapest piece, starting the costliest file first
-(tsc and type-fest are bound by their biggest file), doesn't depend on stage 4 and can go in any perf slot.
+studio: `--checker-memory off` takes 2.27 -> 1.30 s). Stage 3's cheapest piece, starting the costliest file first, is
+done (2026-10-20: TypeScript6 -6% at K4, type-fest -2%, the rest flat on 4 cores).
 
 ## The budget (vscode `-p`, the 12-core box, 2026-10-19)
 | part of the 2.68 s wall | today | floor | what moves it |
@@ -147,6 +147,11 @@ the remaining big-union walks; (c) the intern table footprint.
 ## Stage 3: the front end to its parallel floor (4-6 sessions)
 0.62 s -> ~0.25 s on vscode at the defaults. After stages 1-2 it is a quarter of the wall. Plan 72 measured the
 pieces; its "not now" on parallel declare/link was at 8% of today's wall.
+**Measured order (2026-10-20, measurements.md "Costliest file first and the front end's split")**: the loader's
+own serial work is 279 ms on vscode (201 ms of it parsing files the pool hadn't reached), declare + link 138 ms
+serial, the walk parallel. So the pre-scan goes first, then declare/link, then the parser. Costliest-first is done
+(`share_first`); the critical file's deferred-body materialization (~65 ms for checker.ts) is what's left of
+TypeScript6's tail, so the costliest file's bodies are a candidate for the loader's pool too.
 - **The loader off the critical path**: a lexical import pre-scan (`import`/`export ... from`, `require(`,
   `import(`, `/// <reference`) so workers queue a file's children before its full parse, and the loader thread's own
   work (plan 72 stage 1 cut it to ~0.3 s) measured again on the 12-core box with `TTTT_LOAD_POOL_STATS=1`.

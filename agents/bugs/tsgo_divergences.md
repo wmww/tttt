@@ -83,7 +83,9 @@ argued here instead. Nothing a user sees differs in any of them.
   flagflip spurious count flickers 8 / 9 between identical runs). The oracles run tsgo single-threaded and tttt's
   kdiff/recycle oracles use default flags, which never hit the limit. Accepted: a program-wide "reported" set would
   still depend on which checker gets there first. Read flagflip's TS5115/TS2589 deltas as noise.
-- sequelize/packages/core's TS7022 differs with the checker count in tsgo too (kdiff, plan 62).
+- sequelize/packages/core's TS7022 differs with the checker count in tsgo too (kdiff, plan 62); tttt's K16 shows it
+  since costliest-first (2026-10-20: kdiff 2 -> 4, sequelize and sequelize/packages/core; `TTTT_NO_COSTLIEST_FIRST=1`
+  hides it again). The defaults match tsc.
 - rxjs/packages/rxjs's TS2322 elaborations (2026-10-18, since b3c2fbfa normalized deferred references in the
   relation): tsgo `--singleThreaded` (the cached oracle) says "types returned by '[bufferTime](...)[bufferTime](...)
   [groupBy]'" with `number[][]` below, tsgo `--checkers 16` "'[bufferTime](...)[groupBy]'" with `number[]`: which
