@@ -30,3 +30,8 @@ already plan 86's. Plan 19 condensed into agents/corpora.md.
 - (fan-out 2026-10-20) perfsweep's wall/CPU ratio: 140 projects show tttt wall > 2.5x its CPU time (nuqs docs 20.6 s
   wall, 1.4 s CPU). One live recheck (faker: 1.25 s wall, 0.65 s CPU at load 6) says load, not a stall, but no one
   has looked at it on a quiet machine: rerun `scripts/perfsweep.py -f 'nuqs|faker|umami'` with nothing else running.
+- (fan-out 2026-10-20) `scripts/pgobuild.sh` once failed its `-fprofile-use` build with "pgo/tttt.p/src_ty_expr.c.gcda
+  is corrupted" although it deletes every .gcda before training; `--force` right after succeeded. An earlier
+  instrcount.sh of that session had been killed by `timeout` mid-training (the stamp was unset, so the next run
+  retrained): look for a way a killed training run leaves a partial .gcda that the next run's `find -delete` misses
+  (e.g. a training tttt still running after its parent was killed, writing at exit).
