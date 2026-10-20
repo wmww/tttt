@@ -176,6 +176,7 @@ int main(int argc, const char** argv) {
 #ifdef DEBUG_BUILD
     cstr_drop(&lib_dir);
     box_baseline_test_suite_drop(&suite);
+    source_texts_drop();
 #endif
 
     return 0;

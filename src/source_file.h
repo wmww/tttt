@@ -471,6 +471,9 @@ void source_text_unmap(u32 id);
 // Drops every mapped text's pages from the process: they stay in the page cache, reading faults them back. After
 // names, and when a checker is recycled (what it read is mostly what it won't read again)
 void source_texts_release(void);
+// Frees the mapping bookkeeping at the end of a debug run (the mappings stay: the process is exiting), so valgrind's
+// leak check doesn't see it as possibly lost
+void source_texts_drop(void);
 // Before the process writes over the file at path: a mapping of it gets its own copy at the same address
 void source_text_detach(csview path);
 bool source_file_parse_error_within(Span node);

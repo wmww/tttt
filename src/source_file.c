@@ -802,6 +802,16 @@ void source_texts_release(void) {
     pthread_mutex_unlock(&texts.lock);
 }
 
+void source_texts_drop(void) {
+    pthread_mutex_lock(&texts.lock);
+    free(texts.segments);
+    free(texts.mappings);
+    texts.segments = nullptr;
+    texts.mappings = nullptr;
+    texts.count = texts.cap = texts.mapping_count = texts.mapping_cap = 0;
+    pthread_mutex_unlock(&texts.lock);
+}
+
 void source_text_detach(csview path) {
     cstr z = cstr_from_sv(path);
     struct stat st;
