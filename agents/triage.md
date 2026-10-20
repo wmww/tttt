@@ -24,3 +24,9 @@ already plan 86's. Plan 19 condensed into agents/corpora.md.
 - (plan 86 gate) oracles.py exceeded the 1-hour background cap with a seeded source sweep running alongside, and
   perfsweep printed only "tttt: release/tttt" as its summary line in that run (perfsweep.py's `--summary` output
   under load, or a parse of oracles.py?). Look at what perfsweep's last line is when tsgo's side is cached.
+- (fan-out 2026-10-20) dokploy/apps/dokploy times out under `scripts/kdiff.py -k 1 -m 0` (a fresh checker per file,
+  oracles.py's recycle line "1 timed out"): probably just slow (each file re-resolves the program's shared types), but
+  check whether `--checker-memory 0` makes some per-checker work quadratic there before dismissing it.
+- (fan-out 2026-10-20) perfsweep's wall/CPU ratio: 140 projects show tttt wall > 2.5x its CPU time (nuqs docs 20.6 s
+  wall, 1.4 s CPU). One live recheck (faker: 1.25 s wall, 0.65 s CPU at load 6) says load, not a stall, but no one
+  has looked at it on a quiet machine: rerun `scripts/perfsweep.py -f 'nuqs|faker|umami'` with nothing else running.

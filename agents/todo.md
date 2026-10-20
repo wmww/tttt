@@ -37,10 +37,18 @@ re-saved baseline only.
    `-b` sweep 406 / 416 (400), scenarios 218 / 0, tsc-src and typescript-eslint clean and faster (wall 0.77x /
    0.87x, CPU and RSS down). Three `-p` outputs-mode bugs fixed on the way (resolution from a reference output's
    source, its specifier naming, a reference's `.json` root not emitted).
+   Done anyway (2026-10-20, it had started before the cut reached this tree): the **real-code fan-out** (3 agents, 26
+   picks, 0 lost). Source sweep 5225 -> **5234** / 5242 (none lost), `-b` sweep 400 -> 402, dtsdiff 1325 -> 1329,
+   clidiff 3823 -> 3824, flagflip spurious 7 -> 3 (flagflip.py runs tttt at `--checkers 1` now, like tsc's
+   `--singleThreaded` cache), perfsweep worst types ratio 1.63 -> 1.40, suite +14 (new cases). Cross-file merging by
+   file symbol (pixijs, discordx, better-auth: the "architectural" binder verdict took one session). kdiff 2 /
+   recycle 4 are all tsgo-shared dependences (tsgo_divergences.md). Left: hono TS2769, discordx http2 TS2344, sunmao
+   TS2590, atproto TS2394, lynx-store, es-toolkit, monkeytype (verdicts in bugs/). Valgrind runs of the harness had
+   failed on a "possibly lost" since 2026-10-17 (fixed). instrcount within 2% (not re-saved).
 5. **Triage.** Drain triage.md (incl. the SIGBUS item), condense measurements.md (2000+ lines: keep the tables later
    sessions compare against, move superseded sections to git history), audit hacks.md for entries whose fix landed.
 6. **Insights.** report.md: PGO + LTO shipped and what it bought (the human's 12-core rerun if it came), plan 86's
-    gate number, plan 87's go. Whether 7.1.0 stable is out (plan 58). Whether the
+    gate number, plan 87's go, the fan-out's numbers. Whether 7.1.0 stable is out (plan 58). Whether the
     human answered on the many-core checker policy (their 12-core numbers with the CPU column).
     **And bun canary** (oven-sh/bun#45800, measurements.md "bun canary with oven-sh/bun#45800") beats tttt's wall at
     the defaults on vscode, drizzle, excalidraw and nest, which breaks the window's "faster than bun on every corpus"
@@ -58,8 +66,7 @@ re-saved baseline only.
 Dropped from this window when it was cut short (candidates for the next, the insights session reorders them):
 **plan 87 stage 1** (its prototype is in the tree behind `TTTT_BUILD_EMITTED=1`: don't leave two `-b` models for
 long; the store becomes the only `-b`, the sources model deleted, documentation.md's "Project references"
-rewritten); the real-code fan-out (source sweep 17, clidiff 8, dtsdiff 25, perfsweep's worst types ratio
-lightweight-charts 1.63; the `-b` sweep's leftovers after plan 87 stage 1); plan 86 stage 2 sessions 2-3 (instruction
+rewritten); the `-b` sweep's leftovers after plan 87 stage 1 (the real-code fan-out itself ran, above); plan 86 stage 2 sessions 2-3 (instruction
 footprint: outline instantiate_inner's and the relation switch's cold arms; or stage 3's loader pre-scan); vue 0 / 2
 (the re-entrancy guard question, bugs/sourcesweep_checker.md).
 
