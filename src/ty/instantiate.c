@@ -815,6 +815,41 @@ bool ty_mapped_names_itself(Checker* me, Ty const* instance) {
     return became != variable && became->kind != TY_UNION;
 }
 
+// tsc's couldContainTypeVariables of a type argument, which tsc's getObjectTypeInstantiation carries to the instance it
+// makes: tttt's flag, or what tsc can't rule out syntactically, an object literal or anonymous type unless it is a
+// non-generic alias's (isNonGenericTopLevelType), a reference whose arguments may (a non-generic interface can't)
+static bool tsc_may_contain_type_variables(Checker* me, Ty const* ty, u32 depth) {
+    if (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) return true;
+    if (depth > 8) return true;
+    switch (ty->kind) {
+        case TY_ANONYMOUS:
+            // (An instance carries its arguments' answer: getObjectTypeInstantiation's resultCouldContainObjectFlags)
+            if (ty->anonymous.target && ty->anonymous.mapper) {
+                TyMapper const* mapper = ty->anonymous.mapper;
+                for (u32 i = 0; i < mapper->len; i++) {
+                    if (tsc_may_contain_type_variables(me, mapper->targets[i], depth + 1)) return true;
+                }
+                return false;
+            }
+            return !ty->alias || ty->alias_args.len;
+        case TY_UNION: case TY_INTERSECTION:
+            for (u32 i = 0; i < ty->composite.types.len; i++) {
+                if (tsc_may_contain_type_variables(me, ty->composite.types.data[i], depth + 1)) return true;
+            }
+            return false;
+        case TY_REFERENCE: {
+            if (ty->reference.deferred) return true;
+            TyList args = ty_reference_args(me, ty);
+            for (u32 i = 0; i < args.len; i++) {
+                if (tsc_may_contain_type_variables(me, args.data[i], depth + 1)) return true;
+            }
+            return false;
+        }
+        default:
+            return false;
+    }
+}
+
 Ty const* ty_alias_body_mapped_instance(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args) {
     if (ty->kind != TY_ANONYMOUS || !ty->anonymous.mapped || !ty->anonymous.target || ty->anonymous.realiased || !alias ||
         ty->alias == alias
@@ -836,7 +871,12 @@ Ty const* ty_alias_body_mapped_instance(Checker* me, Ty const* ty, Symbol const*
         fresh->anonymous = ty->anonymous;
         // (Instantiated, ty_realias() puts back the name it has, the mapped type's own: the ordinary instance)
         fresh->anonymous.realiased = true;
-        fresh->anonymous.alias_body_twin = true;
+        // (Only if tsc's instance could contain type variables, as its arguments say: `type Slots =
+        // Readonly<InternalSlots>`, InternalSlots a non-generic alias, is never instantiated and stays Slots)
+        bool may = false;
+        TyMapper const* mapper = ty->anonymous.mapper;
+        for (u32 i = 0; mapper && i < mapper->len && !may; i++) may = tsc_may_contain_type_variables(me, mapper->targets[i], 0);
+        fresh->anonymous.alias_body_twin = may;
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
         fresh->alias = ty->alias;
         fresh->alias_args = ty->alias_args;

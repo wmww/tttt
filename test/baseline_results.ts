@@ -11,6 +11,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttAliasBodyTwinArgumentsClosed': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttAliasBodyTwinInstantiated': {
         errors: true,
         symbols: true,

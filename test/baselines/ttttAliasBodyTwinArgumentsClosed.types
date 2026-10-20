@@ -1,0 +1,90 @@
+//// [test/cases/ttttAliasBodyTwinArgumentsClosed.ts] ////
+
+=== ttttAliasBodyTwinArgumentsClosed.ts ===
+// An alias body's mapped twin turns back into the ordinary instance under a mapper only where tsc's instance could
+// contain type variables, as its type arguments say (getObjectTypeInstantiation's carried flag): `Readonly<InternalSlots>`
+// of a non-generic alias, an interface or an instantiated alias stays the alias (vue's `$slots: Slots`), a type literal's doesn't
+type InternalSlots = { [name: string]: (() => void) | undefined };
+>InternalSlots : InternalSlots
+>name : string
+
+interface Foo { a: number }
+>a : number
+
+type G<T> = { g: T };
+>G : G<T>
+>g : T
+
+export type Slots = Readonly<InternalSlots>;
+>Slots : Readonly<InternalSlots>
+
+export type Action = Readonly<{ type: string }>;
+>Action : Readonly<{ type: string; }>
+>type : string
+
+export type F = Readonly<Foo>;
+>F : Readonly<Foo>
+
+export type GA = Readonly<G<number>>;
+>GA : Readonly<G<number>>
+
+export type AR = Readonly<Array<{ a: 1 }>>;
+>AR : readonly { a: 1; }[]
+>a : 1
+
+export type U = Partial<InternalSlots | Foo>;
+>U : U
+
+export type U2 = Partial<Foo | { b: 1 }>;
+>U2 : U2
+>b : 1
+
+interface Box<P> { a(p: P): Slots; b(p: P): Action; c(p: P): F; d(p: P): GA; e(p: P): AR; f(p: P): U; g(p: P): U2 }
+>a : (p: P) => Slots
+>p : P
+>b : (p: P) => Action
+>p : P
+>c : (p: P) => F
+>p : P
+>d : (p: P) => GA
+>p : P
+>e : (p: P) => AR
+>p : P
+>f : (p: P) => U
+>p : P
+>g : (p: P) => U2
+>p : P
+
+declare const b: Box<string>;
+>b : Box<string>
+
+export const ya = b.a, yb = b.b, yc = b.c, yd = b.d, ye = b.e, yf = b.f, yg = b.g;
+>ya : (p: string) => Slots
+>b.a : (p: string) => Slots
+>b : Box<string>
+>a : (p: string) => Slots
+>yb : (p: string) => Readonly<{ type: string; }>
+>b.b : (p: string) => Readonly<{ type: string; }>
+>b : Box<string>
+>b : (p: string) => Readonly<{ type: string; }>
+>yc : (p: string) => F
+>b.c : (p: string) => F
+>b : Box<string>
+>c : (p: string) => F
+>yd : (p: string) => GA
+>b.d : (p: string) => GA
+>b : Box<string>
+>d : (p: string) => GA
+>ye : (p: string) => AR
+>b.e : (p: string) => AR
+>b : Box<string>
+>e : (p: string) => AR
+>yf : (p: string) => U
+>b.f : (p: string) => U
+>b : Box<string>
+>f : (p: string) => U
+>yg : (p: string) => U2
+>b.g : (p: string) => U2
+>b : Box<string>
+>g : (p: string) => U2
+

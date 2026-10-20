@@ -1,0 +1,124 @@
+//// [test/cases/ttttAliasBodyTwinArgumentsClosed.ts] ////
+
+=== ttttAliasBodyTwinArgumentsClosed.ts ===
+// An alias body's mapped twin turns back into the ordinary instance under a mapper only where tsc's instance could
+// contain type variables, as its type arguments say (getObjectTypeInstantiation's carried flag): `Readonly<InternalSlots>`
+// of a non-generic alias, an interface or an instantiated alias stays the alias (vue's `$slots: Slots`), a type literal's doesn't
+type InternalSlots = { [name: string]: (() => void) | undefined };
+>InternalSlots : Symbol(InternalSlots, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 0, 0))
+>name : Symbol(name, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 3, 24))
+
+interface Foo { a: number }
+>Foo : Symbol(Foo, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 3, 66))
+>a : Symbol(Foo.a, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 4, 15))
+
+type G<T> = { g: T };
+>G : Symbol(G, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 4, 27))
+>T : Symbol(T, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 5, 7))
+>g : Symbol(g, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 5, 13))
+>T : Symbol(T, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 5, 7))
+
+export type Slots = Readonly<InternalSlots>;
+>Slots : Symbol(Slots, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 5, 21))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>InternalSlots : Symbol(InternalSlots, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 0, 0))
+
+export type Action = Readonly<{ type: string }>;
+>Action : Symbol(Action, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 6, 44))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>type : Symbol(type, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 7, 31))
+
+export type F = Readonly<Foo>;
+>F : Symbol(F, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 7, 48))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Foo : Symbol(Foo, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 3, 66))
+
+export type GA = Readonly<G<number>>;
+>GA : Symbol(GA, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 8, 30))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>G : Symbol(G, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 4, 27))
+
+export type AR = Readonly<Array<{ a: 1 }>>;
+>AR : Symbol(AR, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 9, 37))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>a : Symbol(a, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 10, 33))
+
+export type U = Partial<InternalSlots | Foo>;
+>U : Symbol(U, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 10, 43))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>InternalSlots : Symbol(InternalSlots, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 0, 0))
+>Foo : Symbol(Foo, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 3, 66))
+
+export type U2 = Partial<Foo | { b: 1 }>;
+>U2 : Symbol(U2, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 11, 45))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Foo : Symbol(Foo, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 3, 66))
+>b : Symbol(b, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 12, 32))
+
+interface Box<P> { a(p: P): Slots; b(p: P): Action; c(p: P): F; d(p: P): GA; e(p: P): AR; f(p: P): U; g(p: P): U2 }
+>Box : Symbol(Box, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 12, 41))
+>P : Symbol(P, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 14))
+>a : Symbol(Box.a, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 18))
+>p : Symbol(p, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 21))
+>P : Symbol(P, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 14))
+>Slots : Symbol(Slots, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 5, 21))
+>b : Symbol(Box.b, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 34))
+>p : Symbol(p, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 37))
+>P : Symbol(P, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 14))
+>Action : Symbol(Action, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 6, 44))
+>c : Symbol(Box.c, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 51))
+>p : Symbol(p, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 54))
+>P : Symbol(P, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 14))
+>F : Symbol(F, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 7, 48))
+>d : Symbol(Box.d, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 63))
+>p : Symbol(p, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 66))
+>P : Symbol(P, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 14))
+>GA : Symbol(GA, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 8, 30))
+>e : Symbol(Box.e, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 76))
+>p : Symbol(p, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 79))
+>P : Symbol(P, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 14))
+>AR : Symbol(AR, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 9, 37))
+>f : Symbol(Box.f, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 89))
+>p : Symbol(p, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 92))
+>P : Symbol(P, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 14))
+>U : Symbol(U, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 10, 43))
+>g : Symbol(Box.g, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 101))
+>p : Symbol(p, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 104))
+>P : Symbol(P, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 14))
+>U2 : Symbol(U2, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 11, 45))
+
+declare const b: Box<string>;
+>b : Symbol(b, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 14, 13))
+>Box : Symbol(Box, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 12, 41))
+
+export const ya = b.a, yb = b.b, yc = b.c, yd = b.d, ye = b.e, yf = b.f, yg = b.g;
+>ya : Symbol(ya, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 15, 12))
+>b.a : Symbol(Box.a, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 18))
+>b : Symbol(b, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 14, 13))
+>a : Symbol(Box.a, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 18))
+>yb : Symbol(yb, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 15, 22))
+>b.b : Symbol(Box.b, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 34))
+>b : Symbol(b, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 14, 13))
+>b : Symbol(Box.b, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 34))
+>yc : Symbol(yc, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 15, 32))
+>b.c : Symbol(Box.c, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 51))
+>b : Symbol(b, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 14, 13))
+>c : Symbol(Box.c, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 51))
+>yd : Symbol(yd, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 15, 42))
+>b.d : Symbol(Box.d, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 63))
+>b : Symbol(b, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 14, 13))
+>d : Symbol(Box.d, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 63))
+>ye : Symbol(ye, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 15, 52))
+>b.e : Symbol(Box.e, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 76))
+>b : Symbol(b, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 14, 13))
+>e : Symbol(Box.e, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 76))
+>yf : Symbol(yf, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 15, 62))
+>b.f : Symbol(Box.f, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 89))
+>b : Symbol(b, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 14, 13))
+>f : Symbol(Box.f, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 89))
+>yg : Symbol(yg, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 15, 72))
+>b.g : Symbol(Box.g, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 101))
+>b : Symbol(b, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 14, 13))
+>g : Symbol(Box.g, Decl(ttttAliasBodyTwinArgumentsClosed.ts, 13, 101))
+
