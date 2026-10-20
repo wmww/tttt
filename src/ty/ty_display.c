@@ -3095,6 +3095,9 @@ static bool display_template_source(Checker* me, TyDisplay d, TemplateType const
         out_template_raw(d, (csview){ at, part_end - at });
         if (i == types) break;
         TypeNode const* type = vec_type_at(&template->types, i);
+        // (Mapped at its start whatever prints it: a type parameter reference of an instantiated signature, effect's
+        // `tagStartsWith`, is printed by name without a mapping of its own)
+        map_at(d, decl_map_type_start(type, D_MAP(d)));
         display_node(me, d, type);
         at = template_part_close(template, i, end);
         map_at(d, at);

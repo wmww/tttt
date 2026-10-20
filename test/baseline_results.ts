@@ -590,6 +590,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationMapTemplateInstantiatedParam': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationMappedOverSubstitution': {
         errors: true,
         symbols: true,

@@ -1,0 +1,27 @@
+//// [test/cases/ttttDeclarationMapTemplateInstantiatedParam.ts] ////
+
+=== ttttDeclarationMapTemplateInstantiatedParam.ts ===
+// A template literal type's type reused in an instantiated signature is mapped at its start: the type parameter
+// reference of the returned generic function (a fresh clone, printed by name) has no mapping of its own (effect's
+// matcher `tagStartsWith = discriminatorStartsWith("_tag")`)
+export const discriminatorStartsWith = <D extends string>(field: D) =>
+>discriminatorStartsWith : <D extends string>(field: D) => <P extends string, Fn extends [D, `${P}${string}`]>(pattern: P, f: Fn) => readonly [D, P, Fn]
+><D extends string>(field: D) =><P extends string, Fn extends [D, `${P}${string}`]>(pattern: P, f: Fn) => [field, pattern, f] as const : <D extends string>(field: D) => <P extends string, Fn extends [D, `${P}${string}`]>(pattern: P, f: Fn) => readonly [D, P, Fn]
+>field : D
+
+<P extends string, Fn extends [D, `${P}${string}`]>(pattern: P, f: Fn) => [field, pattern, f] as const
+><P extends string, Fn extends [D, `${P}${string}`]>(pattern: P, f: Fn) => [field, pattern, f] as const : <P extends string, Fn extends [D, `${P}${string}`]>(pattern: P, f: Fn) => readonly [D, P, Fn]
+>pattern : P
+>f : Fn
+>[field, pattern, f] as const : readonly [D, P, Fn]
+>[field, pattern, f] : readonly [D, P, Fn]
+>field : D
+>pattern : P
+>f : Fn
+
+export const tagStartsWith = discriminatorStartsWith("_tag")
+>tagStartsWith : <P extends string, Fn extends ["_tag", `${P}${string}`]>(pattern: P, f: Fn) => readonly ["_tag", P, Fn]
+>discriminatorStartsWith("_tag") : <P extends string, Fn extends ["_tag", `${P}${string}`]>(pattern: P, f: Fn) => readonly ["_tag", P, Fn]
+>discriminatorStartsWith : <D extends string>(field: D) => <P extends string, Fn extends [D, `${P}${string}`]>(pattern: P, f: Fn) => readonly [D, P, Fn]
+>"_tag" : "_tag"
+

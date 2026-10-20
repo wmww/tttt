@@ -1,0 +1,30 @@
+//// [test/cases/ttttDeclarationMapTemplateInstantiatedParam.ts] ////
+
+=== ttttDeclarationMapTemplateInstantiatedParam.ts ===
+// A template literal type's type reused in an instantiated signature is mapped at its start: the type parameter
+// reference of the returned generic function (a fresh clone, printed by name) has no mapping of its own (effect's
+// matcher `tagStartsWith = discriminatorStartsWith("_tag")`)
+export const discriminatorStartsWith = <D extends string>(field: D) =>
+>discriminatorStartsWith : Symbol(discriminatorStartsWith, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 3, 12))
+>D : Symbol(D, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 3, 40))
+>field : Symbol(field, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 3, 58))
+>D : Symbol(D, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 3, 40))
+
+<P extends string, Fn extends [D, `${P}${string}`]>(pattern: P, f: Fn) => [field, pattern, f] as const
+>P : Symbol(P, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 4, 1))
+>Fn : Symbol(Fn, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 4, 18))
+>D : Symbol(D, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 3, 40))
+>P : Symbol(P, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 4, 1))
+>pattern : Symbol(pattern, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 4, 52))
+>P : Symbol(P, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 4, 1))
+>f : Symbol(f, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 4, 63))
+>Fn : Symbol(Fn, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 4, 18))
+>field : Symbol(field, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 3, 58))
+>pattern : Symbol(pattern, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 4, 52))
+>f : Symbol(f, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 4, 63))
+>const : Symbol(const)
+
+export const tagStartsWith = discriminatorStartsWith("_tag")
+>tagStartsWith : Symbol(tagStartsWith, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 5, 12))
+>discriminatorStartsWith : Symbol(discriminatorStartsWith, Decl(ttttDeclarationMapTemplateInstantiatedParam.ts, 3, 12))
+
