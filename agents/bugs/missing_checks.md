@@ -239,8 +239,13 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
     instantiations ("Two different types with this name exist"): `{ input?: number } & { [K in "input"]: unknown }` is
     not assignable to itself structurally under exactOptionalPropertyTypes (the intersection's input keeps the missing
     type), tsgo never compares it (the same cached instantiation: identity). Small probes reuse the instantiation in
-    tttt too; not reduced.
-  - xstate/sloppy spurious TS5115 (type_core.md), webpack/nuia UmdLibraryPlugin.js (triage.md), the -TS7006 in vue's
+    tttt too; not reduced. (2026-10-20, agent A: reproduces in a program of the test file alone, with vitest's types,
+    only while \`const child = createMachine(...)\` (the \`logic: typeof child\`) is local to a function: hoisted to
+    the top level it matches. So tttt makes two instantiations of the options object where tsgo makes one, and tsgo's
+    isSourceIntersectionNeedingExtraCheck skips a source member identical to the target. Which instantiation key
+    differs wasn't found: no function-expression instance is made for child's arrow.)
+  - xstate/sloppy and nosnc +TS5115: gone since flagflip.py runs tttt at --checkers 1 like its --singleThreaded tsc
+    cache (2026-10-20: tsgo's own TS5115 places change with --checkers). webpack/nuia UmdLibraryPlugin.js (triage.md), the -TS7006 in vue's
     pluginScoped.ts (above).
 
 ## TS 7.1 window leftovers (triage 2026-10-09)
@@ -358,3 +363,13 @@ Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
 - seed 42 signatureCombiningRestParameters1 add-optional: a union of signatures one of which has a rest parameter of
   type `[string] | undefined` (TS2370): tsgo's combined signature reports a spread argument as TS2556, tttt combines
   the rest parameter to never and says TS2345.
+
+## Mutation seed 2026102001 (2026-10-20, agent A, -n 3000: 5 / 1552 differ)
+Fixed: a computed key naming no property against a generic mapped contextual type, recursive-return skip with type
+arguments / through exported variables. Left:
+- **satisfies elaboration evaluating a getter in flight** (noCircularitySelfReferentialGetter3/4 with \`prop: number\`
+  against \`satisfies { prop: string; self: any }\`): tsc checks \`satisfies\` while typing \`a\`'s initializer, and
+  elaborateElementwise reads every property's type, \`get self() { return a }\` included, while \`a\` is in flight:
+  TS7022 on a, TS7023 on self. tttt checks satisfies in the check walk, after \`a\` is typed. Only on failing
+  satisfies of self-referencing getters.
+- arrayFrom return-void (the binding-element entry above).
