@@ -45,8 +45,9 @@ re-saved baseline only.
    recycle 4 are all tsgo-shared dependences (tsgo_divergences.md). Left: hono TS2769, discordx http2 TS2344, sunmao
    TS2590, atproto TS2394, lynx-store, es-toolkit, monkeytype (verdicts in bugs/). Valgrind runs of the harness had
    failed on a "possibly lost" since 2026-10-17 (fixed). instrcount within 2% (not re-saved).
-5. **Triage.** Drain triage.md (incl. the SIGBUS item), condense measurements.md (2000+ lines: keep the tables later
-   sessions compare against, move superseded sections to git history), audit hacks.md for entries whose fix landed.
+5. Done (triage, 2026-10-20): triage.md drained (SIGBUS on truncated sources fixed, pgobuild.sh's corrupt-.gcda
+   race closed, the rest dismissed with reasons), measurements.md 2139 -> 408 lines, hacks.md audited. Suite 13944,
+   corpora unchanged.
 6. **Insights.** report.md: PGO + LTO shipped and what it bought (the human's 12-core rerun if it came), plan 86's
     gate number, plan 87's go, the fan-out's numbers. Whether 7.1.0 stable is out (plan 58). Whether the
     human answered on the many-core checker policy (their 12-core numbers with the CPU column).

@@ -11,6 +11,10 @@ own form (`baseline_tests --checkers K --dump DIR` against a K=1 dump) and the c
   scripts/kdiff.py --dt            # DefinitelyTyped (~4.5 min)
   scripts/kdiff.py -k 4 -f trpc    # some projects, K=4
   scripts/kdiff.py -k 1 -m 0       # one checker against a fresh checker per file (plan 67)
+
+At -m 0 a project whose files each pull a big shared type graph is slow, not stuck: dokploy/apps/dokploy (994
+files, most importing the tRPC router: 165k types for one .tsx alone) takes ~270 s against 5 s, flat per file
+(measured 2026-10-20), so it times out under load at the default --timeout.
 """
 import argparse, concurrent.futures, json, os, subprocess, sys
 

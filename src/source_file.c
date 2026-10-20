@@ -10,6 +10,8 @@
 #include "compiler_options.h"
 #include <cleat/filesystem.h>
 #include <fcntl.h>
+#include <signal.h>
+#include <stdatomic.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -708,10 +710,12 @@ typedef struct TextMapping {
     char* slot; // Null once unmapped
     size_t size; // The file's
 } TextMapping;
+// (A fixed array: text_sigbus() reads it without the lock)
+#define TEXT_MAX_SEGMENTS 256
 static struct {
     pthread_mutex_t lock;
-    TextSegment* segments;
-    u32 count, cap;
+    TextSegment segments[TEXT_MAX_SEGMENTS];
+    _Atomic u32 count;
     TextMapping* mappings; // By SourceFile.text_mapping - 1
     u32 mapping_count, mapping_cap;
     u32 live;
@@ -728,13 +732,11 @@ static char* text_slot_locked(size_t size) {
     TextSegment* last = texts.count ? &texts.segments[texts.count - 1] : nullptr;
     if (!last || last->size - last->used < size) {
         size_t reserve = size > TEXT_SEGMENT ? size : TEXT_SEGMENT;
+        if (texts.count == TEXT_MAX_SEGMENTS) return nullptr;
         void* base = mmap(nullptr, reserve, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
         if (base == MAP_FAILED) return nullptr;
-        if (texts.count == texts.cap) {
-            texts.cap = texts.cap ? texts.cap * 2 : 8;
-            texts.segments = realloc(texts.segments, texts.cap * sizeof(TextSegment));
-        }
-        texts.segments[texts.count++] = (TextSegment){ .base = base, .size = reserve };
+        texts.segments[texts.count] = (TextSegment){ .base = base, .size = reserve };
+        texts.count++;
         last = &texts.segments[texts.count - 1];
     }
     char* slot = last->base + last->used;
@@ -742,7 +744,41 @@ static char* text_slot_locked(size_t size) {
     return slot;
 }
 
+// A file truncated by another process while it's mapped faults with SIGBUS past its new end: the faulting page becomes
+// zeros (the text reads as ending there) and the run goes on, with a warning, rather than crashing. tsc read the file
+// whole before checking it; tttt's output for that file is then unreliable, as a file changed mid-run is anyway
+static void text_sigbus(int sig, siginfo_t* info, void* context) {
+    (void)context;
+    char* at = info->si_addr;
+    size_t page = (size_t)sysconf(_SC_PAGESIZE);
+    u32 count = texts.count;
+    for (u32 i = 0; i < count; i++) {
+        TextSegment const* segment = &texts.segments[i];
+        if (at < segment->base || at >= segment->base + segment->size) continue;
+        char* start = (char*)((uintptr_t)at / page * page);
+        if (mmap(start, page, PROT_READ, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0) == MAP_FAILED) break;
+        static _Atomic bool warned;
+        if (!atomic_exchange(&warned, true)) {
+            static char const message[] = "tttt: warning: a source file was truncated while it was being checked; "
+                                          "diagnostics for it may be wrong\n";
+            ssize_t written = write(STDERR_FILENO, message, sizeof message - 1);
+            (void)written;
+        }
+        return;
+    }
+    // Not a mapped text's: the default action when the access is retried
+    signal(sig, SIG_DFL);
+}
+
+static void text_sigbus_install(void) {
+    struct sigaction action = { .sa_sigaction = text_sigbus, .sa_flags = SA_SIGINFO };
+    sigemptyset(&action.sa_mask);
+    sigaction(SIGBUS, &action, nullptr);
+}
+
 u32 source_text_map(csview path, cstr* out) {
+    static pthread_once_t installed = PTHREAD_ONCE_INIT;
+    pthread_once(&installed, text_sigbus_install);
     cstr z = cstr_from_sv(path);
     int fd = open(cstr_str(&z), O_RDONLY | O_CLOEXEC);
     cstr_drop(&z);
@@ -804,11 +840,10 @@ void source_texts_release(void) {
 
 void source_texts_drop(void) {
     pthread_mutex_lock(&texts.lock);
-    free(texts.segments);
+    // (The segments stay reserved: a later run's texts go after the used part)
     free(texts.mappings);
-    texts.segments = nullptr;
     texts.mappings = nullptr;
-    texts.count = texts.cap = texts.mapping_count = texts.mapping_cap = 0;
+    texts.mapping_count = texts.mapping_cap = 0;
     pthread_mutex_unlock(&texts.lock);
 }
 

@@ -77,6 +77,10 @@
   short names (`-p`, `-b`, `-w`... are tttt's own handling). tsc's TS5024 (an option given a value of the wrong type)
   and watchOptions/typeAcquisition keys aren't checked.
 
+- dtsdiff/clidiff `--emit` sandbox flake (2026-10-19, once): bwrap "Can't bind mount /oldroot/... remount
+  /newroot/run/credentials/serial-getty@ttyS1.service: Invalid argument" (a host mount bwrap can't remount
+  read-only) made a whole corpus "no output". Not seen again. If it recurs: bind only the dirs the probe needs
+  instead of `/`, or retry the bwrap call once on that message.
 ## TS 7.1 window leftovers (triage 2026-10-09)
 - `--showConfig`, `--explainFiles`, `--watch`, `--init` are refused (exit 1): plan 76 sizes them. `--listFiles` and
   `--listFilesOnly` match tsgo on probes (2026-10-16) but no oracle compares them.

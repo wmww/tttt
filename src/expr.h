@@ -577,8 +577,8 @@ void await_check_grammar(AwaitPlace place, AwaitKind kind, Span at, FunctionImpl
 typedef struct UnaryOpExpr {
     UnaryOp op;
     uint8_t await_place; // `await`: an AwaitPlace
-    // `yield x` outside a generator (tsc parses one where an operand follows on the line, isYieldExpression): TS1163,
-    // the operand is neither checked nor reports unresolved names
+    // `yield x` outside a generator (tsc parses one where an operand follows on the line, isYieldExpression): TS1163;
+    // the operand is still checked
     bool outside_generator;
     Expr expr;
     FunctionImpl const* generator; // `yield`: the generator it is in (set when resolving), null if there's none

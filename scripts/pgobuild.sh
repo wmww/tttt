@@ -25,7 +25,23 @@ if test -z "$FORCE" && test -x $B/tttt && test "$(cat $B/.stamp 2>/dev/null)" = 
     echo $B/tttt
     exit 0
 fi
+# One build at a time, and none while a tttt of this build runs: a training run orphaned by a killed build (an
+# instrcount.sh under `timeout`) writes its .gcda files at exit, over the next build's ("src_ty_expr.c.gcda is
+# corrupted")
+mkdir -p $B
+exec 9> $B/.lock
+flock 9
 rm -f $B/.stamp
+EXE=$(realpath $B/tttt 2>/dev/null || true)
+while test -n "$EXE"; do
+    BUSY=
+    for P in $(pgrep -x tttt || true); do
+        case "$(readlink /proc/$P/exe 2>/dev/null || true)" in "$EXE"|"$EXE (deleted)") BUSY=$P ;; esac
+    done
+    test -n "$BUSY" || break
+    echo "pgobuild: waiting for $B/tttt (pid $BUSY) to exit" >&2
+    sleep 1
+done
 
 if test ! -e $B/build.ninja; then
     meson setup $B --buildtype release -Db_lto=true -Db_pgo=generate >&2
@@ -43,11 +59,21 @@ TRAIN=(
     thirdparty/corpora/excalidraw/tsconfig.corpus.json
     thirdparty/corpora/webpack
 )
+# (A training run dies with this script)
+TRAINING=
+trap 'test -z "$TRAINING" || kill $TRAINING 2>/dev/null || true' EXIT
+trap 'exit 143' TERM INT
+train() {
+    "$@" > /dev/null &
+    TRAINING=$!
+    # (Their exit codes don't matter: webpack has errors under tsc too)
+    wait $TRAINING || true
+    TRAINING=
+}
 for P in "${TRAIN[@]}"; do
     echo "pgobuild: training on $P" >&2
-    # (Their exit codes don't matter: webpack has errors under tsc too)
-    $B/tttt --threads 1 --checkers 1 --noEmit -p "$P" > /dev/null || true
-    $B/tttt --noEmit -p "$P" > /dev/null || true
+    train $B/tttt --threads 1 --checkers 1 --noEmit -p "$P"
+    train $B/tttt --noEmit -p "$P"
 done
 
 # Functions the training never reached have no profile: that's -Wmissing-profile, which -Werror would make fatal
