@@ -1,0 +1,72 @@
+//// [test/cases/ttttReturnMapperAnyContextualArgument.ts] ////
+
+=== ttttReturnMapperAnyContextualArgument.ts ===
+// A literal argument's contextual type is the parameter type instantiated with the return mapper unless that is any or
+// unknown (tsc's instantiateContextualType): S -> any from `Struct<any, any>` leaves S, whose constraint types `x`
+// (snaps-cli's superstruct config, `builtIns?: any`)
+declare class Struct<T, S> { t: T; s: S; }
+>Struct : Struct<T, S>
+>t : T
+>s : S
+
+declare function defaulted<T, S>(struct: Struct<T, S>, fallback: any): Struct<T, S>;
+>defaulted : <T, S>(struct: Struct<T, S>, fallback: any) => Struct<T, S>
+>struct : Struct<T, S>
+>fallback : any
+
+declare function object<S extends Record<string, Struct<any, any>>>(s: S): Struct<S, S>;
+>object : <S extends Record<string, Struct<any, any>>>(s: S) => Struct<S, S>
+>s : S
+
+declare const anyv: any;
+>anyv : any
+
+export const a: Struct<any, any> = object({ x: defaulted(anyv, {}) });
+>a : Struct<any, any>
+>object({ x: defaulted(anyv, {}) }) : Struct<{ x: Struct<any, any>; }, { x: Struct<any, any>; }>
+>object : <S extends Record<string, Struct<any, any>>>(s: S) => Struct<S, S>
+>{ x: defaulted(anyv, {}) } : { x: Struct<any, any>; }
+>x : Struct<any, any>
+>defaulted(anyv, {}) : Struct<any, any>
+>defaulted : <T, S>(struct: Struct<T, S>, fallback: any) => Struct<T, S>
+>anyv : any
+>{} : {}
+
+export const b = object({ y: object({ x: defaulted(anyv, {}) }) });
+>b : Struct<{ y: Struct<{ x: Struct<any, any>; }, { x: Struct<any, any>; }>; }, { y: Struct<{ x: Struct<any, any>; }, { x: Struct<any, any>; }>; }>
+>object({ y: object({ x: defaulted(anyv, {}) }) }) : Struct<{ y: Struct<{ x: Struct<any, any>; }, { x: Struct<any, any>; }>; }, { y: Struct<{ x: Struct<any, any>; }, { x: Struct<any, any>; }>; }>
+>object : <S extends Record<string, Struct<any, any>>>(s: S) => Struct<S, S>
+>{ y: object({ x: defaulted(anyv, {}) }) } : { y: Struct<{ x: Struct<any, any>; }, { x: Struct<any, any>; }>; }
+>y : Struct<{ x: Struct<any, any>; }, { x: Struct<any, any>; }>
+>object({ x: defaulted(anyv, {}) }) : Struct<{ x: Struct<any, any>; }, { x: Struct<any, any>; }>
+>object : <S extends Record<string, Struct<any, any>>>(s: S) => Struct<S, S>
+>{ x: defaulted(anyv, {}) } : { x: Struct<any, any>; }
+>x : Struct<any, any>
+>defaulted(anyv, {}) : Struct<any, any>
+>defaulted : <T, S>(struct: Struct<T, S>, fallback: any) => Struct<T, S>
+>anyv : any
+>{} : {}
+
+declare function box<T>(x: T): { value: T };
+>box : <T>(x: T) => { value: T; }
+>x : T
+>value : T
+
+export const c: { value: any } = box({ n: 1 });
+>c : { value: any; }
+>value : any
+>box({ n: 1 }) : { value: { n: number; }; }
+>box : <T>(x: T) => { value: T; }
+>{ n: 1 } : { n: number; }
+>n : number
+>1 : 1
+
+export const d: { value: unknown } = box([1, "a"]);
+>d : { value: unknown; }
+>value : unknown
+>box([1, "a"]) : { value: (string | number)[]; }
+>box : <T>(x: T) => { value: T; }
+>[1, "a"] : (string | number)[]
+>1 : 1
+>"a" : "a"
+

@@ -1092,9 +1092,13 @@ static bool is_literal_arg(Checker* me, Arg const* arg) {
 }
 
 // The contextual type of a literal argument in the first pass: what the return type says about the type parameters
-// helps type it (a tuple, a literal)
+// helps type it (a tuple, a literal). An instantiation that is any or unknown says nothing, the parameter type stays
+// (tsc's instantiateContextualType): `const a: Struct<any, any> = object({ x: defaulted(v, {}) })` with
+// `object<S extends Record<string, Struct<any, any>>>(s: S): Struct<S, S>` types `x` by S's constraint
 static Ty const* literal_arg_context(Checker* me, Ty const* param_type, TyMapper const* return_mapper) {
-    return param_type && return_mapper ? instantiate_instantiable(me, param_type, return_mapper) : param_type;
+    if (!param_type || !return_mapper) return param_type;
+    Ty const* ret = instantiate_instantiable(me, param_type, return_mapper);
+    return ret->flags & (TYF_ANY | TYF_UNKNOWN) ? param_type : ret;
 }
 
 // A variadic rest parameter takes the remaining arguments as a tuple (tsc's getSpreadArgumentType at the end of
@@ -1403,7 +1407,7 @@ static TyMapper const* infer_type_arguments(
                 // context-sensitive functions fix what their contextual signatures mention: tsc's
                 // contextuallyCheckFunctionExpressionOrObjectLiteralMethod with the inference context's mapper)
                 self.fixing = true;
-                Ty const* context = return_mapper ? instantiate_instantiable(me, param_type, return_mapper) : param_type;
+                Ty const* context = literal_arg_context(me, param_type, return_mapper);
                 GenericFunctionMode mode = {0};
                 Ty const* type = ty_check_literal_argument(me, arg->expr, context, ty_is_const_type_variable(me, param_type, 0),
                     true, &mode);
