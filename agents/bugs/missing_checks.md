@@ -240,7 +240,7 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
     not assignable to itself structurally under exactOptionalPropertyTypes (the intersection's input keeps the missing
     type), tsgo never compares it (the same cached instantiation: identity). Small probes reuse the instantiation in
     tttt too; not reduced. (2026-10-20, agent A: reproduces in a program of the test file alone, with vitest's types,
-    only while \`const child = createMachine(...)\` (the \`logic: typeof child\`) is local to a function: hoisted to
+    only while `const child = createMachine(...)` (the `logic: typeof child`) is local to a function: hoisted to
     the top level it matches. So tttt makes two instantiations of the options object where tsgo makes one, and tsgo's
     isSourceIntersectionNeedingExtraCheck skips a source member identical to the target. Which instantiation key
     differs wasn't found: no function-expression instance is made for child's arrow.)
@@ -367,9 +367,9 @@ Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
 ## Mutation seed 2026102001 (2026-10-20, agent A, -n 3000: 5 / 1552 differ)
 Fixed: a computed key naming no property against a generic mapped contextual type, recursive-return skip with type
 arguments / through exported variables. Left:
-- **satisfies elaboration evaluating a getter in flight** (noCircularitySelfReferentialGetter3/4 with \`prop: number\`
-  against \`satisfies { prop: string; self: any }\`): tsc checks \`satisfies\` while typing \`a\`'s initializer, and
-  elaborateElementwise reads every property's type, \`get self() { return a }\` included, while \`a\` is in flight:
-  TS7022 on a, TS7023 on self. tttt checks satisfies in the check walk, after \`a\` is typed. Only on failing
+- **satisfies elaboration evaluating a getter in flight** (noCircularitySelfReferentialGetter3/4 with `prop: number`
+  against `satisfies { prop: string; self: any }`): tsc checks `satisfies` while typing `a`'s initializer, and
+  elaborateElementwise reads every property's type, `get self() { return a }` included, while `a` is in flight:
+  TS7022 on a, TS7023 on self. tttt checks satisfies in the check walk, after `a` is typed. Only on failing
   satisfies of self-referencing getters.
 - arrayFrom return-void (the binding-element entry above).
