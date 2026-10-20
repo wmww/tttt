@@ -89,3 +89,15 @@ argued here instead. Nothing a user sees differs in any of them.
   [groupBy]'" with `number[][]` below, tsgo `--checkers 16` "'[bufferTime](...)[groupBy]'" with `number[]`: which
   nested pairs a checker related before decides where the chain fails. tttt prints the same two texts at K1 and K16
   (kdiff and the recycle oracle list it): matching tsgo, not a tttt order bug.
+  Rechecked 2026-10-20 (agent B): tsgo 65 / 37 deep / shallow chains at `--singleThreaded`, 55 / 43 at 16; tttt 65 /
+  37 at K1.
+- inbox-zero/apps/web choose-args.security.test.ts:334 (2026-10-20, agent B): the `to?: undefined` / `content?:
+  undefined` order of widened object literals is tsgo's undefinedProperties cache (one symbol per name per checker,
+  declared by the first property it was made for; getNamedMembers sorts by declaration). At one checker both caches
+  come from chat-inbox-tools.ts:725's async return union, in tsgo (`--singleThreaded --incremental false`, logged with
+  an instrumented build) as in tttt: `{ to?; content?; label }`. The project is incremental: tsgo without
+  `--incremental false` printed `{ content?; label; to? }` at every checker count, so compare it with that flag.
+- better-auth e2e/smoke cloudflare tsconfig.skip-lib-check-false.json's TS5115: zod schemas.d.cts:790 alone at
+  tsgo `--singleThreaded` / `--checkers 2`, plus miniflare index.d.ts:550 at `--checkers 8`; tttt the same shape (K1
+  zod alone, K2+ and `--checker-memory 0` both). The first bullet's mechanism.
+- dokploy/apps/dokploy times out under `kdiff.py -k 1 -m 0` (a fresh checker per file is slow there): no verdict.
