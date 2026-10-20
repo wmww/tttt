@@ -36,15 +36,21 @@ on the 12-core box (put it in report.md, as 2026-10-19's ask did).
    type-fest's costly files are tiny, so no syntactic cost model helps; kdiff 2 -> 4, sequelize's tsgo-shared TS7022). Front end: the loader's serial 279 ms on
    vscode, then declare + link's 138 ms, so stage 3 starts with the import pre-scan (measurements.md "Costliest file
    first and the front end's split"). The 12-core command is in report.md.
-5. **Real code**: vue 0 / 2 (the re-entrancy guard question, bugs/sourcesweep_checker.md) and whatever the source
-   sweep, `-b` sweep and dtsdiff leftovers rank highest (the last fan-out's verdicts in bugs/). Prefer a mechanism
-   over a project.
+5. ~~Real code~~ done 2026-10-20 (three agents): apollo signatures/modern (never-reduction's HasNeverType), atproto
+   lex-schema -p and -b (apparently-any intersections in mapped types, NoSupertypeReduction by type), ghostfolio
+   TS4058 (combined import symbols), react-three-fiber's nested mapped rest, two mutation seeds' fixes (accessor-joined
+   property symbols, comparable heads, union signatures' last overload). Source sweep 5235 / 5242, `-b` 411 / 416,
+   dtsdiff 1330 / 1350, suite 13955 / 13989, the rest unchanged. **Plan 88** (re-entrancy below resolution barriers,
+   `scripts/reentrytrace.py`): no general mechanism this session, staged A-E; vue 0 / 2 is stage E (won't fix unless
+   members resolve in tsc's order), better-auth stages B-D. A mapped-target cut cost mikro-orm 3.7x types mid-session
+   (narrowed back, triage has the relation bug behind it).
 6. **Triage.** Drain triage.md and condense whatever the window grew (measurements.md, plan 86).
 7. **Insights.** report.md: the stage 4 gate's verdict and what it means for the next windows, `-b`'s single model,
    costliest-first's numbers. Check whether 7.1.0 stable is out (plan 58) and whether the human ran the 12-core
    command.
 
-Not in this window (candidates for the next, which the insights session reorders): plan 86 stages 4a-4c up to gate
+Not in this window (candidates for the next, which the insights session reorders): plan 88 stages A-B (one barrier
+stack, barrier termination instead of "once" flags; weigh against plan 86 stage 4's in-flight markers); plan 86 stages 4a-4c up to gate
 G1 (if G0 says go); stage 3's chosen piece; plan 87 stage 2 (share declaration files across `-b` programs); stage 2's leftovers in
 perf slots (outlining instantiate_inner's and the relation switch's cold arms, the big-union walks, the intern table
 footprint); the snapshot recycle (perf_leads.md "Shared warm state") if stage 4 is no-go; a fourth refresh chosen by
