@@ -300,7 +300,18 @@ typedef struct SymbolRare {
     // which tsc's getFullyQualifiedName prints (symbol.parent stays the augmentation's symbol, mergeSymbolTable only
     // reparents what it merged). Its parent here is the module it was merged into
     csview augmentation_name;
+    // A name of a table several files declare into (the globals, an ambient module's or a global namespace's exports):
+    // the files whose declarations of it conflicted with it as a whole (tsc's mergeSymbol merges a file's symbol, all
+    // of the file's declarations of the name, into what the earlier files made), each with that symbol of its own,
+    // which the file's later declarations of the name join (declare_file_conflict())
+    struct FileConflict* file_conflicts;
 } SymbolRare;
+
+typedef struct FileConflict {
+    struct SourceFile const* file;
+    struct Symbol* symbol;
+    struct FileConflict* next;
+} FileConflict;
 
 // PERF: ~80k of them on nest/webpack: keep it small (what few symbols have goes to SymbolRare)
 typedef struct Symbol {
@@ -660,6 +671,11 @@ typedef struct Binder {
     u32 pending_alias_merge_count;
     u32 pending_alias_merge_cap;
     bool alias_merges_done; // binder_link() decided them: later declarations merge as usual
+    // The conflicts of declare_file_conflict(), reported by binder_link() once the files' symbols have all their
+    // declarations (tsc's reportMergeSymbolError, at checker initialization)
+    struct PendingFileConflict* pending_file_conflicts; // malloc'd
+    u32 pending_file_conflict_count;
+    u32 pending_file_conflict_cap;
     // What `require` is in `require("m")` in a JavaScript file where nothing else is called that (tsc's requireSymbol:
     // any). Made when first needed
     Symbol* require_symbol;

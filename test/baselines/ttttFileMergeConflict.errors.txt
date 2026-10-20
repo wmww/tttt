@@ -1,0 +1,101 @@
+first.d.ts(3,11): error TS2300: Duplicate identifier 'C'.
+first.d.ts(4,15): error TS2300: Duplicate identifier 'C'.
+first.d.ts(5,11): error TS2451: Cannot redeclare block-scoped variable 'D'.
+first.d.ts(11,14): error TS2300: Duplicate identifier 'f'.
+first.d.ts(13,19): error TS2300: Duplicate identifier 'N'.
+second.d.ts(3,11): error TS2300: Duplicate identifier 'C'.
+second.d.ts(4,15): error TS2300: Duplicate identifier 'C'.
+second.d.ts(5,11): error TS2451: Cannot redeclare block-scoped variable 'D'.
+second.d.ts(6,10): error TS2451: Cannot redeclare block-scoped variable 'D'.
+second.d.ts(7,15): error TS2649: Cannot augment module 'S' with value exports because it resolves to a non-module entity.
+second.d.ts(12,14): error TS2300: Duplicate identifier 'f'.
+second.d.ts(14,11): error TS2300: Duplicate identifier 'N'.
+second.d.ts(15,13): error TS2300: Duplicate identifier 'N'.
+second.d.ts(15,16): error TS2709: Cannot use namespace 'N' as a type.
+second.d.ts(16,18): error TS2709: Cannot use namespace 'N' as a type.
+
+
+==== first.d.ts (5 errors) ====
+    declare module "m" {
+        interface Events { on(): void }
+        class C implements Events { x: number }
+              ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 second.d.ts:3:11: 'C' was also declared here.
+!!! related TS6204 second.d.ts:4:15: and here.
+        interface C extends Events {}
+                  ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 second.d.ts:3:11: 'C' was also declared here.
+!!! related TS6204 second.d.ts:4:15: and here.
+        const D: number;
+              ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'D'.
+!!! related TS6203 second.d.ts:5:11: 'D' was also declared here.
+!!! related TS6204 second.d.ts:6:10: and here.
+        namespace S {}
+        const S: number;
+    }
+    declare module "e" {
+        function e(): void;
+        export = e;
+                 ~
+!!! error TS2300: Duplicate identifier 'f'.
+!!! related TS6203 second.d.ts:12:14: 'f' was also declared here.
+    }
+    declare namespace N { const A: number }
+                      ~
+!!! error TS2300: Duplicate identifier 'N'.
+!!! related TS6203 second.d.ts:14:11: 'N' was also declared here.
+!!! related TS6204 second.d.ts:15:13: and here.
+==== second.d.ts (10 errors) ====
+    declare module "m" {
+        interface Events { on(): void }
+        class C implements Events { y: number }
+              ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 first.d.ts:3:11: 'C' was also declared here.
+!!! related TS6204 first.d.ts:4:15: and here.
+        interface C extends Events {}
+                  ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 first.d.ts:3:11: 'C' was also declared here.
+!!! related TS6204 first.d.ts:4:15: and here.
+        const D: string;
+              ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'D'.
+!!! related TS6203 first.d.ts:5:11: 'D' was also declared here.
+        type D = number;
+             ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'D'.
+!!! related TS6203 first.d.ts:5:11: 'D' was also declared here.
+        namespace S {}
+                  ~
+!!! error TS2649: Cannot augment module 'S' with value exports because it resolves to a non-module entity.
+        const S: number;
+    }
+    declare module "e" {
+        function f(): void;
+        export = f;
+                 ~
+!!! error TS2300: Duplicate identifier 'f'.
+!!! related TS6203 first.d.ts:11:14: 'f' was also declared here.
+    }
+    interface N { readonly A: number }
+              ~
+!!! error TS2300: Duplicate identifier 'N'.
+!!! related TS6203 first.d.ts:13:19: 'N' was also declared here.
+    declare var N: N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+!!! related TS6203 first.d.ts:13:19: 'N' was also declared here.
+                   ~
+!!! error TS2709: Cannot use namespace 'N' as a type.
+    declare const n: N;
+                     ~
+!!! error TS2709: Cannot use namespace 'N' as a type.
+==== use.ts (0 errors) ====
+    import { C } from "m";
+    declare const c: C;
+    c.on();
+    

@@ -1004,6 +1004,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttFileMergeConflict': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttForceTupleNestedElaboration': {
         errors: true,
         symbols: true,

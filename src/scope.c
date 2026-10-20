@@ -233,6 +233,7 @@ void binder_destroy(Binder* me) {
     free(my pending_type_as_value);
     free(my pending_export_merges);
     free(my pending_alias_merges);
+    free(my pending_file_conflicts);
     if (my discarded_errs) {
         error_ctx_drop(my discarded_errs);
         free(my discarded_errs);
@@ -1163,12 +1164,170 @@ static bool symbol_has_assignment_decl(Symbol const* me) {
     return false;
 }
 
-static Symbol* declare_symbol(
+static void retarget_decl(SymbolDecl const* decl, Symbol* symbol);
+
+typedef struct PendingFileConflict {
+    Symbol* target;
+    u32 target_decls; // The declarations target had then: tsc reports those
+    Symbol* source;
+} PendingFileConflict;
+
+static FileConflict const* find_file_conflict(Symbol const* symbol, SourceFile const* file) {
+    for (FileConflict const* i = symbol_rare(symbol)->file_conflicts; i; i = i->next) {
+        if (i->file == file) return i;
+    }
+    return nullptr;
+}
+
+// What declare_file_conflict() can take out of the symbol it merged into: nothing was declared into it through them
+static bool file_conflict_movable(SymbolDecl const* decl) {
+    switch (decl->kind) {
+        case SYMBOL_DECL_VARIABLE:
+        case SYMBOL_DECL_FUNCTION:
+        case SYMBOL_DECL_CLASS:
+        case SYMBOL_DECL_INTERFACE:
+        case SYMBOL_DECL_TYPE_ALIAS:
+            return decl->node != nullptr;
+        case SYMBOL_DECL_NAMESPACE: {
+            // (An empty one: `namespace signals {}` next to `const signals`)
+            NamespaceDecl const* namespace = decl->node;
+            return namespace && !namespace->is_ambient_module && !namespace->is_global &&
+                !vec_statement_size(&namespace->contents.statements);
+        }
+        default:
+            return false;
+    }
+}
+
+// A declaration that existing (of a table several files declare into) excludes, where existing has declarations of
+// other files: tsc's binder declares the file's declarations of the name into a symbol of the file's own, which the
+// checker's mergeSymbol merges into what the earlier files made as a whole. So whether it conflicts is a matter of all
+// of the file's declarations: the file's earlier ones that merged into existing move out into a symbol of their own with
+// this one (later ones join it), and every declaration of both sides is reported once the file's are all there
+// (report_file_conflict()). Null when that isn't the case (a conflict within the file is the binder's, what's left of
+// the old declaration by declaration merge: an earlier declaration of the file that other declarations went into)
+static Symbol* declare_file_conflict(
+    Scope* scope, Symbol* existing, csview name, Span name_span, u32 includes, bool default_export, bool* merged,
+    bool* split
+) {
+    Binder* binder = scope->binder;
+    SourceFile const* file = span_source(name_span);
+    if (!file || default_export || resolve_shard || binder->frozen || existing->is_global_this || existing->binder != binder) {
+        return nullptr;
+    }
+    u32 own = 0, other = 0, own_count = 0;
+    for (u32 i = 0; i < existing->decl_count; i++) {
+        SymbolDecl const* decl = &existing->decls[i];
+        if (span_source(decl->full) != file) {
+            other |= decl->flags;
+            continue;
+        }
+        if (!file_conflict_movable(decl)) return nullptr;
+        own |= decl->flags;
+        own_count++;
+    }
+    if (!(other & symbol_excludes(includes)) || (own & symbol_excludes(includes))) return nullptr;
+    Symbol* ret = binder_new_symbol(binder, name, includes);
+    if (own_count) {
+        u32 kept = 0, moved = 0, remaining = 0;
+        for (u32 i = 0; i < existing->decl_count; i++) {
+            SymbolDecl decl = existing->decls[i];
+            if (span_source(decl.full) != file) {
+                remaining |= decl.flags;
+                existing->decls[kept++] = decl;
+                continue;
+            }
+            moved |= decl.flags;
+            symbol_add_decl(ret, decl);
+            retarget_decl(&decl, ret);
+            if (decl.kind == SYMBOL_DECL_NAMESPACE) {
+                NamespaceDecl* namespace = (NamespaceDecl*)decl.node;
+                symbol_ensure_exports(ret);
+                if (namespace->inner_scope && namespace->inner_scope->container == existing) namespace->inner_scope->container = ret;
+            }
+        }
+        existing->decl_count = kept;
+        existing->flags &= ~(moved & ~remaining);
+        ret->flags |= moved;
+        ret->decl_flags_before = moved;
+        ret->name_span = ret->decls[0].name;
+        ret->parent = existing->parent;
+        ret->exported = existing->exported;
+        ret->is_ambient = existing->is_ambient;
+        ret->is_const = existing->is_const;
+        *merged = true;
+    }
+    FileConflict* conflict = arena_new(binder_arena(binder), FileConflict);
+    *conflict = (FileConflict){ file, ret, symbol_rare(existing)->file_conflicts };
+    symbol_rare_mut(existing)->file_conflicts = conflict;
+    PendingFileConflict* pending = list_push((void**)&binder->pending_file_conflicts, &binder->pending_file_conflict_count,
+        &binder->pending_file_conflict_cap, sizeof(PendingFileConflict));
+    *pending = (PendingFileConflict){ existing, existing->decl_count, ret };
+    *split = true;
+    return ret;
+}
+
+// The name tsc's reportMergeSymbolError says, symbolToString(source): an `export =`'s is the identifier it assigns
+static csview file_conflict_display(Symbol const* source) {
+    if (!csview_equals_sv(source->name, c_sv("export="))) return source->name;
+    for (u32 i = 0; i < source->decl_count; i++) {
+        csview text = span_sv(source->decls[i].name);
+        bool identifier = text.size > 0;
+        for (isize c = 0; c < text.size && identifier; c++) {
+            unsigned char ch = (unsigned char)text.buf[c];
+            identifier = ch == '_' || ch == '$' || ch >= 0x80 || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+                (c > 0 && ch >= '0' && ch <= '9');
+        }
+        if (identifier) return text;
+    }
+    return source->name;
+}
+
+// tsc's mergeSymbol, a conflict: TS2649 into a namespace, else reportMergeSymbolError on every declaration of both sides
+static void report_file_conflict(Binder* binder, PendingFileConflict const* conflict) {
+    ErrorCtx* errs = binder_errs(binder);
+    Symbol const* target = conflict->target;
+    Symbol const* source = conflict->source;
+    u32 target_flags = 0;
+    for (u32 i = 0; i < conflict->target_decls; i++) target_flags |= target->decls[i].flags;
+    if (!source->decl_count || !conflict->target_decls) return;
+    if (target_flags & SYMBOL_NAMESPACE_MODULE) {
+        Span at = source->decls[0].name;
+        if (span_valid(at) && span_source(at) && !span_source(at)->is_stdlib) {
+            error_ctx_error_d(errs, at, 2649, "Cannot augment module '", target->name,
+                "' with value exports because it resolves to a non-module entity.");
+        }
+        return;
+    }
+    u32 both = target_flags | source->flags;
+    unsigned code = both & SYMBOL_ENUM ? 2567 : both & SYMBOL_BLOCK_SCOPED_VARIABLE ? 2451 : 2300;
+    csview display = file_conflict_display(source);
+    SourceFile const* source_file = span_source(source->decls[0].full);
+    SourceFile const* target_file = span_source(target->decls[0].full);
+    bool lib_too = lib_files_checked();
+    if (!(source_file && source_file->plain_js)) {
+        for (u32 i = 0; i < source->decl_count; i++) {
+            Span at = source->decls[i].name;
+            Error* error = report_conflict_named(errs, at, code, display, false, true);
+            for (u32 t = 0; t < conflict->target_decls; t++) add_duplicate_related_named(error, at, target->decls[t].name, display);
+        }
+    }
+    if (!(target_file && target_file->plain_js)) {
+        for (u32 t = 0; t < conflict->target_decls; t++) {
+            Span at = target->decls[t].name;
+            Error* error = report_conflict_named(errs, at, code, display, lib_too, true);
+            for (u32 i = 0; i < source->decl_count; i++) add_duplicate_related_named(error, at, source->decls[i].name, display);
+        }
+    }
+}
+
+static Symbol* declare_symbol_split(
     Scope* scope, SymbolTable* table, csview name, Span name_span, u32 includes, u32 excludes, bool default_export,
-    bool* merged
+    bool* merged, bool* split
 ) {
     Binder* binder = scope->binder;
     *merged = false;
+    *split = false;
     // A class declaration without a name (`class {}` outside `export default`) is a symbol of its own: tsc's
     // getDeclarationName is undefined for it, where a missing identifier's name ("") merges
     if (!name.buf && !default_export && includes & SYMBOL_CLASS) return binder_new_symbol(binder, name, includes);
@@ -1207,6 +1366,23 @@ static Symbol* declare_symbol(
         }
         return ret;
     }
+    if (existing && existing->rare && existing->rare->file_conflicts && !default_export) {
+        // A declaration of a file whose earlier ones of the name conflicted with another file's as a whole: it joins
+        // them (tsc's binder declares into the file's own symbol)
+        FileConflict const* conflict = find_file_conflict(existing, span_source(name_span));
+        if (conflict) {
+            Symbol* own = conflict->symbol;
+            if (own->flags & excludes) {
+                report_conflicts(binder_errs(scope->binder), own, name_span, includes, false, (csview){0});
+                return binder_new_symbol(binder, name, includes);
+            }
+            own->decl_flags_before = own->flags;
+            own->flags |= includes;
+            if (includes & SYMBOL_ALIAS && !own->alias) own->alias = arena_new(binder_arena(binder), SymbolAlias);
+            *merged = true;
+            return own;
+        }
+    }
     if (existing) {
         // A global namespace JavaScript expandos of another file made merges with anything (tsc's mergeSymbol: the
         // Assignment flag)
@@ -1220,6 +1396,8 @@ static Symbol* declare_symbol(
             // (Across files it's tsc's checker that merges, whose mergeSymbol reports a duplicate identifier: two
             // ambient `declare module '*.css' { export default classes }`)
             bool same_file = existing->decl_count && span_source(default_error_span(&existing->decls[0])) == span_source(name_span);
+            Symbol* own = declare_file_conflict(scope, existing, name, name_span, includes, default_export, merged, split);
+            if (own) return own;
             if (default_export && existing->decl_count && same_file) report_multiple_defaults(binder_errs(scope->binder), existing, name_span);
             // (Every declaration of a conflict across files is named by the symbol merged in, the later one:
             // reportMergeSymbolError's symbolToString(source), which a default export's differ in: `export default src`
@@ -1237,6 +1415,15 @@ static Symbol* declare_symbol(
     Symbol* ret = binder_new_symbol(binder, name, includes);
     symbol_table_insert(table, binder_arena(binder), name, hash, ret);
     return ret;
+}
+
+// `split`: declare_file_conflict() made the symbol, of the file's declarations of the name (*merged if there were some)
+static Symbol* declare_symbol(
+    Scope* scope, SymbolTable* table, csview name, Span name_span, u32 includes, u32 excludes, bool default_export,
+    bool* merged
+) {
+    bool split;
+    return declare_symbol_split(scope, table, name, name_span, includes, excludes, default_export, merged, &split);
 }
 
 // Where a declaration made in this scope goes
@@ -1453,8 +1640,9 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     bool pending_alias_merge = false;
     Symbol* symbol = props.default_export ? nullptr :
         declare_pending_alias_merge(scope, table, name, error_at, includes, excludes, props.kind, &merged, &pending_alias_merge);
-    if (!symbol) symbol = declare_symbol(scope, table, name, error_at, includes, excludes, props.default_export, &merged);
-    if (!merged && !pending_alias_merge && !props.default_export && (includes & SYMBOL_VALUE) && scope->container && table == scope->container->exports &&
+    bool split = false;
+    if (!symbol) symbol = declare_symbol_split(scope, table, name, error_at, includes, excludes, props.default_export, &merged, &split);
+    if ((!merged || split) && !pending_alias_merge && !props.default_export && (includes & SYMBOL_VALUE) && scope->container && table == scope->container->exports &&
         table != scope->locals && (scope->kind == SCOPE_MODULE || scope->kind == SCOPE_NAMESPACE) &&
         symbol_table_get_own(table, name, symbol_name_hash(name)) != symbol
     ) {
@@ -1463,7 +1651,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         *duplicate = (DuplicateExport){ symbol, scope_rare(scope)->duplicate_exports };
         scope_rare_mut(scope)->duplicate_exports = duplicate;
     }
-    if (!merged && scope->kind == SCOPE_SCRIPT && table == &scope->binder->globals &&
+    if ((!merged || split) && scope->kind == SCOPE_SCRIPT && table == &scope->binder->globals &&
         symbol_table_get_own(table, name, symbol_name_hash(name)) != symbol
     ) {
         DuplicateExport* duplicate = arena_new(binder_arena(scope->binder), DuplicateExport);
@@ -4570,6 +4758,8 @@ static void binder_link_alias_merges(Binder* me) {
 }
 
 void binder_link(Binder* me) {
+    for (u32 i = 0; i < my pending_file_conflict_count; i++) report_file_conflict(me, &my pending_file_conflicts[i]);
+    my pending_file_conflict_count = 0;
     binder_link_alias_merges(me);
     // (tsc's initializeTypeChecker merges the globals, a UMD global's `declare global` namespaces with it, before the
     // module augmentations)

@@ -1,0 +1,87 @@
+//// [test/cases/ttttFileMergeConflict.ts] ////
+
+=== first.d.ts ===
+declare module "m" {
+>"m" : typeof import("m")
+
+    interface Events { on(): void }
+>on : { (): void; (): void; }
+
+    class C implements Events { x: number }
+>C : C
+>x : number
+
+    interface C extends Events {}
+    const D: number;
+>D : number
+
+    namespace S {}
+    const S: number;
+>S : number
+}
+declare module "e" {
+>"e" : typeof import("e")
+
+    function e(): void;
+>e : () => void
+
+    export = e;
+>e : () => void
+}
+declare namespace N { const A: number }
+>N : typeof N
+>A : number
+
+=== second.d.ts ===
+declare module "m" {
+>"m" : typeof import("m")
+
+    interface Events { on(): void }
+>on : { (): void; (): void; }
+
+    class C implements Events { y: number }
+>C : import("m").C
+>y : number
+
+    interface C extends Events {}
+    const D: string;
+>D : string
+
+    type D = number;
+>D : number
+
+    namespace S {}
+    const S: number;
+>S : number
+}
+declare module "e" {
+>"e" : typeof import("e")
+
+    function f(): void;
+>f : () => void
+
+    export = f;
+>f : () => void
+}
+interface N { readonly A: number }
+>A : number
+
+declare var N: N;
+>N : N
+
+declare const n: N;
+>n : N
+
+=== use.ts ===
+import { C } from "m";
+>C : typeof C
+
+declare const c: C;
+>c : C
+
+c.on();
+>c.on() : void
+>c.on : { (): void; (): void; }
+>c : C
+>on : { (): void; (): void; }
+
