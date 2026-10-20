@@ -118,6 +118,7 @@ enum {
     KEY_FLOW_REACHABLE, // FlowNode (shared ones) -> FlowReachability + 1, see flow.c
     KEY_FLOW_REFERENCE, // (declared id, initial id, symbol | this, property names...) -> reference key id
     KEY_FLOW_EXPR,      // Expr -> Ty, see ty_flow_expr_type()
+    KEY_FLOW_CONTEXT_FREE_EXPR, // Expr -> Ty, see flow_context_free_type()
     KEY_FLOW_CALL,      // call Expr -> CallEffects as a statement's (node_links), see flow.c
     KEY_FLOW_CALL_IN_EXPR, // call Expr -> CallEffects as an expression's (node_links)
     KEY_FLOW_DISCRIMINANT, // (type id, property name) -> 1 + whether the property discriminates the union

@@ -1,0 +1,41 @@
+ttttEvolvingArrayPushContextFree.ts(12,7): error TS2322: Type '(A | B)[]' is not assignable to type 'B[]'.
+  Type 'A | B' is not assignable to type 'B'.
+    Property 'b' is missing in type 'A' but required in type 'B'.
+
+
+==== ttttEvolvingArrayPushContextFree.ts (1 errors) ====
+    // A value pushed onto an evolving array is typed with the contextual type any (tsc's getContextFreeTypeOfExpression),
+    // so a generic call returning its type parameter infers any from it: babel's
+    // `children.push(this.parseLiteral(value, "JSXText"))` makes `children` any[]
+    interface A { type: "A"; a: number }
+    interface B { type: "B"; b: string }
+    declare function parse<T extends A | B>(value: any, type: T["type"]): T;
+    declare function wrap<T>(value: T): { value: T };
+    declare function make<T = string>(): T;
+    
+    const children = [];
+    children.push(parse(1, "B"));
+    const onlyB: B[] = children;
+          ~~~~~
+!!! error TS2322: Type '(A | B)[]' is not assignable to type 'B[]'.
+!!! error TS2322:   Type 'A | B' is not assignable to type 'B'.
+!!! error TS2322:     Property 'b' is missing in type 'A' but required in type 'B'.
+!!! related TS2728 ttttEvolvingArrayPushContextFree.ts:5:26: 'b' is declared here.
+    const direct = parse(1, "B");
+    
+    const wrapped = [];
+    wrapped.push(wrap(1));
+    const w = wrapped;
+    
+    const made = [];
+    made.push(make());
+    const m = made;
+    
+    const fns = [];
+    fns.push((x: number) => x, 1);
+    const f = fns;
+    
+    const literals = [];
+    literals.push("a", { k: 1 });
+    const l = literals;
+    

@@ -1,0 +1,110 @@
+//// [test/cases/ttttEvolvingArrayPushContextFree.ts] ////
+
+=== ttttEvolvingArrayPushContextFree.ts ===
+// A value pushed onto an evolving array is typed with the contextual type any (tsc's getContextFreeTypeOfExpression),
+// so a generic call returning its type parameter infers any from it: babel's
+// `children.push(this.parseLiteral(value, "JSXText"))` makes `children` any[]
+interface A { type: "A"; a: number }
+>A : Symbol(A, Decl(ttttEvolvingArrayPushContextFree.ts, 0, 0))
+>type : Symbol(A.type, Decl(ttttEvolvingArrayPushContextFree.ts, 3, 13))
+>a : Symbol(A.a, Decl(ttttEvolvingArrayPushContextFree.ts, 3, 24))
+
+interface B { type: "B"; b: string }
+>B : Symbol(B, Decl(ttttEvolvingArrayPushContextFree.ts, 3, 36))
+>type : Symbol(B.type, Decl(ttttEvolvingArrayPushContextFree.ts, 4, 13))
+>b : Symbol(B.b, Decl(ttttEvolvingArrayPushContextFree.ts, 4, 24))
+
+declare function parse<T extends A | B>(value: any, type: T["type"]): T;
+>parse : Symbol(parse, Decl(ttttEvolvingArrayPushContextFree.ts, 4, 36))
+>T : Symbol(T, Decl(ttttEvolvingArrayPushContextFree.ts, 5, 23))
+>A : Symbol(A, Decl(ttttEvolvingArrayPushContextFree.ts, 0, 0))
+>B : Symbol(B, Decl(ttttEvolvingArrayPushContextFree.ts, 3, 36))
+>value : Symbol(value, Decl(ttttEvolvingArrayPushContextFree.ts, 5, 40))
+>type : Symbol(type, Decl(ttttEvolvingArrayPushContextFree.ts, 5, 51))
+>T : Symbol(T, Decl(ttttEvolvingArrayPushContextFree.ts, 5, 23))
+>T : Symbol(T, Decl(ttttEvolvingArrayPushContextFree.ts, 5, 23))
+
+declare function wrap<T>(value: T): { value: T };
+>wrap : Symbol(wrap, Decl(ttttEvolvingArrayPushContextFree.ts, 5, 72))
+>T : Symbol(T, Decl(ttttEvolvingArrayPushContextFree.ts, 6, 22))
+>value : Symbol(value, Decl(ttttEvolvingArrayPushContextFree.ts, 6, 25))
+>T : Symbol(T, Decl(ttttEvolvingArrayPushContextFree.ts, 6, 22))
+>value : Symbol(value, Decl(ttttEvolvingArrayPushContextFree.ts, 6, 37))
+>T : Symbol(T, Decl(ttttEvolvingArrayPushContextFree.ts, 6, 22))
+
+declare function make<T = string>(): T;
+>make : Symbol(make, Decl(ttttEvolvingArrayPushContextFree.ts, 6, 49))
+>T : Symbol(T, Decl(ttttEvolvingArrayPushContextFree.ts, 7, 22))
+>T : Symbol(T, Decl(ttttEvolvingArrayPushContextFree.ts, 7, 22))
+
+const children = [];
+>children : Symbol(children, Decl(ttttEvolvingArrayPushContextFree.ts, 9, 5))
+
+children.push(parse(1, "B"));
+>children.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>children : Symbol(children, Decl(ttttEvolvingArrayPushContextFree.ts, 9, 5))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>parse : Symbol(parse, Decl(ttttEvolvingArrayPushContextFree.ts, 4, 36))
+
+const onlyB: B[] = children;
+>onlyB : Symbol(onlyB, Decl(ttttEvolvingArrayPushContextFree.ts, 11, 5))
+>B : Symbol(B, Decl(ttttEvolvingArrayPushContextFree.ts, 3, 36))
+>children : Symbol(children, Decl(ttttEvolvingArrayPushContextFree.ts, 9, 5))
+
+const direct = parse(1, "B");
+>direct : Symbol(direct, Decl(ttttEvolvingArrayPushContextFree.ts, 12, 5))
+>parse : Symbol(parse, Decl(ttttEvolvingArrayPushContextFree.ts, 4, 36))
+
+const wrapped = [];
+>wrapped : Symbol(wrapped, Decl(ttttEvolvingArrayPushContextFree.ts, 14, 5))
+
+wrapped.push(wrap(1));
+>wrapped.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>wrapped : Symbol(wrapped, Decl(ttttEvolvingArrayPushContextFree.ts, 14, 5))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>wrap : Symbol(wrap, Decl(ttttEvolvingArrayPushContextFree.ts, 5, 72))
+
+const w = wrapped;
+>w : Symbol(w, Decl(ttttEvolvingArrayPushContextFree.ts, 16, 5))
+>wrapped : Symbol(wrapped, Decl(ttttEvolvingArrayPushContextFree.ts, 14, 5))
+
+const made = [];
+>made : Symbol(made, Decl(ttttEvolvingArrayPushContextFree.ts, 18, 5))
+
+made.push(make());
+>made.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>made : Symbol(made, Decl(ttttEvolvingArrayPushContextFree.ts, 18, 5))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>make : Symbol(make, Decl(ttttEvolvingArrayPushContextFree.ts, 6, 49))
+
+const m = made;
+>m : Symbol(m, Decl(ttttEvolvingArrayPushContextFree.ts, 20, 5))
+>made : Symbol(made, Decl(ttttEvolvingArrayPushContextFree.ts, 18, 5))
+
+const fns = [];
+>fns : Symbol(fns, Decl(ttttEvolvingArrayPushContextFree.ts, 22, 5))
+
+fns.push((x: number) => x, 1);
+>fns.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>fns : Symbol(fns, Decl(ttttEvolvingArrayPushContextFree.ts, 22, 5))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttEvolvingArrayPushContextFree.ts, 23, 10))
+>x : Symbol(x, Decl(ttttEvolvingArrayPushContextFree.ts, 23, 10))
+
+const f = fns;
+>f : Symbol(f, Decl(ttttEvolvingArrayPushContextFree.ts, 24, 5))
+>fns : Symbol(fns, Decl(ttttEvolvingArrayPushContextFree.ts, 22, 5))
+
+const literals = [];
+>literals : Symbol(literals, Decl(ttttEvolvingArrayPushContextFree.ts, 26, 5))
+
+literals.push("a", { k: 1 });
+>literals.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>literals : Symbol(literals, Decl(ttttEvolvingArrayPushContextFree.ts, 26, 5))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>k : Symbol(k, Decl(ttttEvolvingArrayPushContextFree.ts, 27, 20))
+
+const l = literals;
+>l : Symbol(l, Decl(ttttEvolvingArrayPushContextFree.ts, 28, 5))
+>literals : Symbol(literals, Decl(ttttEvolvingArrayPushContextFree.ts, 26, 5))
+

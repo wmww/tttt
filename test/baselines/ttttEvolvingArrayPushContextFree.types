@@ -1,0 +1,121 @@
+//// [test/cases/ttttEvolvingArrayPushContextFree.ts] ////
+
+=== ttttEvolvingArrayPushContextFree.ts ===
+// A value pushed onto an evolving array is typed with the contextual type any (tsc's getContextFreeTypeOfExpression),
+// so a generic call returning its type parameter infers any from it: babel's
+// `children.push(this.parseLiteral(value, "JSXText"))` makes `children` any[]
+interface A { type: "A"; a: number }
+>type : "A"
+>a : number
+
+interface B { type: "B"; b: string }
+>type : "B"
+>b : string
+
+declare function parse<T extends A | B>(value: any, type: T["type"]): T;
+>parse : <T extends A | B>(value: any, type: T["type"]) => T
+>value : any
+>type : T["type"]
+
+declare function wrap<T>(value: T): { value: T };
+>wrap : <T>(value: T) => { value: T; }
+>value : T
+>value : T
+
+declare function make<T = string>(): T;
+>make : <T = string>() => T
+
+const children = [];
+>children : any[]
+>[] : never[]
+
+children.push(parse(1, "B"));
+>children.push(parse(1, "B")) : number
+>children.push : (...items: any[]) => number
+>children : any[]
+>push : (...items: any[]) => number
+>parse(1, "B") : A | B
+>parse : <T extends A | B>(value: any, type: T["type"]) => T
+>1 : 1
+>"B" : "B"
+
+const onlyB: B[] = children;
+>onlyB : B[]
+>children : (A | B)[]
+
+const direct = parse(1, "B");
+>direct : A | B
+>parse(1, "B") : A | B
+>parse : <T extends A | B>(value: any, type: T["type"]) => T
+>1 : 1
+>"B" : "B"
+
+const wrapped = [];
+>wrapped : any[]
+>[] : never[]
+
+wrapped.push(wrap(1));
+>wrapped.push(wrap(1)) : number
+>wrapped.push : (...items: any[]) => number
+>wrapped : any[]
+>push : (...items: any[]) => number
+>wrap(1) : { value: number; }
+>wrap : <T>(value: T) => { value: T; }
+>1 : 1
+
+const w = wrapped;
+>w : { value: number; }[]
+>wrapped : { value: number; }[]
+
+const made = [];
+>made : any[]
+>[] : never[]
+
+made.push(make());
+>made.push(make()) : number
+>made.push : (...items: any[]) => number
+>made : any[]
+>push : (...items: any[]) => number
+>make() : string
+>make : <T = string>() => T
+
+const m = made;
+>m : string[]
+>made : string[]
+
+const fns = [];
+>fns : any[]
+>[] : never[]
+
+fns.push((x: number) => x, 1);
+>fns.push((x: number) => x, 1) : number
+>fns.push : (...items: any[]) => number
+>fns : any[]
+>push : (...items: any[]) => number
+>(x: number) => x : (x: number) => number
+>x : number
+>x : number
+>1 : 1
+
+const f = fns;
+>f : (number | ((x: number) => number))[]
+>fns : (number | ((x: number) => number))[]
+
+const literals = [];
+>literals : any[]
+>[] : never[]
+
+literals.push("a", { k: 1 });
+>literals.push("a", { k: 1 }) : number
+>literals.push : (...items: any[]) => number
+>literals : any[]
+>push : (...items: any[]) => number
+>"a" : "a"
+>{ k: 1 } : { k: number; }
+>k : number
+>1 : 1
+
+const l = literals;
+>l : (string | { k: number; })[]
+>literals : (string | { k: number; })[]
+

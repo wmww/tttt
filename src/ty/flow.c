@@ -184,9 +184,11 @@ static Ty const* final_array_type(Checker* me, Ty const* ty) {
     return ty->evolving_array.final_array;
 }
 
+static Ty const* flow_context_free_type(Checker* me, Expr const* expr);
+
 // tsc's addEvolvingArrayElementType: no subtype reduction until the final array type
 static Ty const* add_evolving_element(Checker* me, Ty const* evolving, Expr const* expr) {
-    Ty const* element = ty_regular_object_literal(me, ty_regular(me, ty_base_type_of_literal(me, ty_flow_expr_type(me, expr))));
+    Ty const* element = ty_regular_object_literal(me, ty_regular(me, ty_base_type_of_literal(me, flow_context_free_type(me, expr))));
     Ty const* current = evolving->evolving_array.element;
     if (is_type_subset_of(element, current)) return evolving;
     Ty const* types[2] = { current, element };
@@ -901,6 +903,24 @@ static Ty const* flow_expr_type_in(Checker* me, Expr const* expr, BinaryOpExpr c
     my flow_uncached++;
     Ty const* contextual = assignment ? ty_assigned_value_context(me, assignment) : nullptr;
     Ty const* ret = contextual ? ty_check_expr(me, expr, contextual) : ty_compute_expr_without_context(me, expr);
+    my flow_uncached--;
+    *intern_slot(me, &my links, key, 3) = ret;
+    return ret;
+}
+
+// tsc's getContextFreeTypeOfExpression, what a pushed value adds to an evolving array: checked with the contextual
+// type any, context-sensitive functions left out. A generic call infers from that any through its return type: babel's
+// `children.push(this.parseLiteral(value, "JSXText"))` (`parseLiteral<T extends Node>(v: any, t: T["type"]): T`)
+// pushes any, not Node
+static Ty const* flow_context_free_type(Checker* me, Expr const* expr) {
+    Ty const* quick = ty_quick_expr_type(me, expr, true);
+    if (quick) return quick;
+    bool complete = my flow_loop_count == my flow_loop_start;
+    u64 key[3] = { KEY_FLOW_CONTEXT_FREE_EXPR, (u64)(uintptr_t)expr, complete ? 0 : my flow_expr_generation };
+    Ty const* cached = intern_get(&my links, key, 3);
+    if (cached) return cached;
+    my flow_uncached++;
+    Ty const* ret = ty_check_expr_skipping_sensitive(me, expr, ty_intrinsic(me, TY_ANY), false);
     my flow_uncached--;
     *intern_slot(me, &my links, key, 3) = ret;
     return ret;

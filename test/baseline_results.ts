@@ -959,6 +959,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttEvolvingArrayPushContextFree': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExactOptionalAccessorTarget': {
         errors: true,
         symbols: true,
