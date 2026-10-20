@@ -115,8 +115,10 @@ def run_tttt(corpus, flags, timeout=600, mem_gb=12):
     cwd, project = corpus_cwd(corpus)
     limit = mem_gb << 30
     try:
-        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--noEmit', '-p', project,
-                               *flags], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
+        # (One checker, like tsc's cached --singleThreaded run: where an instantiation limit is first hit, TS5115,
+        # depends on which files a checker saw before, in tsgo too: xstate nosnc's StateId at --checkers 4)
+        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--noEmit', '--checkers', '1',
+                               '-p', project, *flags], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         out, code = proc.stdout, proc.returncode
         status = 'ok' if code in (0, 1, 2) else f'exit {code}' if code > 0 else f'signal {-code}'
