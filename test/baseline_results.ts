@@ -147,6 +147,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttClassStaticSideOwnFirst': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttCollidingListMembersCountTwice': {
         errors: true,
         symbols: true,
