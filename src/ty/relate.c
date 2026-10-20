@@ -2794,18 +2794,22 @@ static Ternary props_related_impl(
         // doesn't ask for the source property's type then, a getter's that would be circular. Only skipped for a getter:
         // elsewhere asking is unobservable, and type-fest costs 0.8% more instructions when its property types are
         // resolved later instead)
+        // The relation itself is skipped whatever the source: is_related_to() would reduce it first, and reducing `Window
+        // & typeof globalThis` (vue's `typeof globalThis extends { window: unknown }`) resolves ~600 types)
         Ternary related = TERNARY_TRUE;
-        bool skip = (target_type->flags & (st->relation == TY_RELATION_STRICT_SUBTYPE ? TYF_ANY : TYF_ANY | TYF_UNKNOWN)) &&
-            source_prop.prop && (source_prop.prop->flags & PROP_GETTER);
+        bool trivial = target_type->flags & (st->relation == TY_RELATION_STRICT_SUBTYPE ? TYF_ANY : TYF_ANY | TYF_UNKNOWN);
+        bool skip = trivial && source_prop.prop && (source_prop.prop->flags & PROP_GETTER);
         // (A reference source's private member, the one declaration modifiers_related() saw both are: untyped in the
         // `.d.ts` tsc -b relates, see ty_prop_reference_private())
         skip |= (target_prop->flags & PROP_PRIVATE || target_prop->name->str[0] == '#') && ty_prop_reference_private(me, target_prop);
         if (!skip) {
             Ty const* source_type = source_prop.type ? source_prop.type : prop_type(me, source_prop.prop);
-            // (tsc's getNonMissingTypeOfSymbol of both)
-            target_type = ty_remove_missing(me, target_type, target_prop->flags & PROP_OPTIONAL);
-            source_type = ty_remove_missing(me, source_type, source_prop.flags & PROP_OPTIONAL);
-            related = is_related_to(me, st, source_type, target_type, report);
+            if (!trivial) {
+                // (tsc's getNonMissingTypeOfSymbol of both)
+                target_type = ty_remove_missing(me, target_type, target_prop->flags & PROP_OPTIONAL);
+                source_type = ty_remove_missing(me, source_type, source_prop.flags & PROP_OPTIONAL);
+                related = is_related_to(me, st, source_type, target_type, report);
+            }
         }
         if (debug_env.debug_variance && my variance_depth) {
             for (u32 j = 0; j < st->source_depth; j++) fputc(' ', stderr);
@@ -7713,9 +7717,12 @@ static bool check_related(
     }
     // (Comparable either way round, before normalization: anything is comparable to unknown, and a generic target
     // simplified for writing can be too complex to represent, `FilterQuery<T>[keyof FilterQuery<T>]`: tsc's
-    // isTypeRelatedTo. Only where normalization would change the target: is_related_to() asks it again after)
+    // isTypeRelatedTo. Only where normalization would change the target: is_related_to() asks it again after. A union
+    // or intersection is reduced there, which computes the types of its discriminant-like properties: `window as
+    // unknown` resolved every property of `Window & typeof globalThis`, ~600 types)
     if (relation == TY_RELATION_COMPARABLE && !st->reporting &&
-        (target->kind == TY_INDEXED || target->kind == TY_CONDITIONAL || target->kind == TY_SUBSTITUTION) &&
+        (target->kind == TY_INDEXED || target->kind == TY_CONDITIONAL || target->kind == TY_SUBSTITUTION ||
+            target->kind == TY_INTERSECTION || target->kind == TY_UNION) &&
         is_simple_related(me, st, target, source)
     ) {
         return true;

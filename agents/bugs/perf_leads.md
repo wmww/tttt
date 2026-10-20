@@ -18,8 +18,14 @@ overload (58, 212, ... 8238 against tsgo's 3), then gdb on `indexed()` creating 
 (`break checker.c:LINE if fresh != 0 && me->variance_depth > 0`, `bt 80`, aggregated by function). The other
 predicates that asked `ty_members(me, ty)->mapped` only to decide genericity went the same way (the next commit:
 681 perfsweep projects -56k types); the remaining `ty_members(...)->mapped` reads use the mapped info itself.
-What's left above 1.3 are 1-3k-type projects (lightweight-charts plugins, rpg-js vue-gui, query's vue examples:
-a few hundred types each, no runaway; not chased). **The check-time tail is noise**: perfsweep's "> 1" K1 check
+What was left above 1.3 (2026-10-20, agent C): rpg-js vue-gui 1.49 -> 1.00 and query's vue examples were vue's
+`typeof globalThis extends { window: unknown }`: props_related_impl() related the `window` property's `Window & typeof
+globalThis` to `unknown`, and is_related_to() reduced it first (never_reduced_prop() resolving every property both
+sides have, ~600 types); tsc's isPropertySymbolTypeRelated returns True for an any/unknown target property. The
+lightweight-charts plugins (1.63 -> 1.23) were `window as unknown as any`: check_related() asked the reverse simple
+relation of the comparable relation before normalizing only for indexed/conditional/substitution targets, not for
+reduced unions and intersections. Left there: ~80 types per program from array_this_props() resolving every Array
+method's type to find those mentioning `this` (tsc instantiates them lazily), the first tuple's members; harmless. **The check-time tail is noise**: perfsweep's "> 1" K1 check
 ratios (ethereumjs 2.4, dokploy 1.2, arktype 1.25) were tttt under load (another session's kdiff, load 8 on 4 vCPUs)
 against tsgo's cached quiet times: measured back to back, ethereumjs statemanager 0.33 s vs 0.39-0.56, dokploy 6.0 vs
 10.2, arktype 4.6 vs 7.8. Compare live (`tsc --tsBuildInfoFile /tmp/x` for composite projects: without it tsgo writes
