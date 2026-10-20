@@ -299,13 +299,14 @@ done; `--threads 4` K4 is this box's default (2 cores x 2 SMT). `off` is `--chec
   project's own `.ts` code instantiating its libraries (dokploy's trpc router of zod schemas, drizzle's own sources),
   which no up-front layer can hold. Plan 85 closed on this (vision.md).
 
-## Oracle totals (2026-10-20, a9c5e07da: the real-code fan-out's end)
-Suite 13944 / 13978 (dts 1885 / 1907; `scripts/passcount.py`), every corpus 0/0 but vue 0/2, DT 8595 / 8595, `$ExpectType` 68640 / 68640,
-flagflip 18 / 3 / 2 (missing / spurious / other code; flagflip.py runs at `--checkers 1`), source sweep (every
-`tsconfig*.json`, 5242 projects in 248 repos) **5234 / 5242**, `-b` sweep 402 / 416, clidiff 3824 / 3831, dtsdiff
-1329 / 1350 projects, kdiff 2 and recycle 4 (all tsgo-shared dependences; dokploy a recycle timeout), perfsweep check
-median 0.23, worst types ratio 1.40. Instructions within 2% of `test/instrcount.txt` (type-fest +0.94%: PGO layout).
-`scripts/oracles.py` reprints all of these; compare against its output, not this paragraph, once it's stale.
+## Oracle totals (2026-10-20, b93fd63f3: the twenty-third window's triage)
+Suite 13957 / 13991 (dts 1887 / 1909; `scripts/passcount.py`), every corpus 0/0 but vue 0/2, DT 8595 / 8595,
+`$ExpectType` 68640 / 68640, flagflip 18 / 3 / 2 (missing / spurious / other code; flagflip.py runs at `--checkers 1`),
+source sweep (every `tsconfig*.json`, 5242 projects in 248 repos) **5235 / 5242**, `-b` sweep 411 / 416, clidiff 3824 /
+3831, dtsdiff 1330 / 1350 projects, kdiff 4 and recycle 4 (all tsgo-shared dependences; dokploy a recycle timeout),
+perfsweep worst types ratio 1.40 (lit tsserver-plugin; mikro-orm's 3.47 is gone). Instructions: `test/instrcount.txt`.
+`scripts/oracles.py` reprints all of these (it takes over 25 minutes on this 4-vCPU box when loaded: give it a
+generous background timeout); compare against its output, not this paragraph, once it's stale.
 
 ## Past conclusions
 Condensed from the per-session sections (2026-09-28 .. 2026-10-19); `git log -S'<heading>' -- agents/measurements.md`
