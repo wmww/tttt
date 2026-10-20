@@ -365,8 +365,17 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   (tsc: same symbol).
 - `generic_mapped_target_related`: a generic source failing it falls through to member comparison, which memberless
   mapped types pass (`Readonly<T>` to `T`), except memberless objects, arrays, non-variadic tuples and known-key objects
-  (whatever the mapped type iterates over since 2026-10-20: `{ type: T }` passed `Partial<X>` through X's constraint's
-  members); tsc lets only a mapped source go on. Returning outright loses
+  against a mapped type over a type parameter or `keyof` (or a union with one); tsc lets only a mapped source go on.
+  Cutting it for every constraint (2026-10-20, agent C) is right by tsc (`OperatorMap<T>` isn't an `EntityProps<T>` in
+  tsgo either) but made mikro-orm's IndexFilterQuery variance measurement 1.3M types (tsgo's whole program: 400k): the
+  False exposes another divergence. Trace (`variancetrace.py` on perf_leads.md's probe): tsgo relates
+  `IndexFilterQuery<SUB, U>` to its conditional `IndexFilterQuery<SUPER, U>` target, the true branch `FilterQuery<SUPER>`
+  fails on the source union's first member (the Array) and it stops; tttt finds `Array<...>` related to `OperatorMap<SUPER>
+  & FilterObject<SUPER>` (T, tsgo: F) and goes on through the false branch and the other members. Standalone: tttt
+  accepts `string[]` as `OperatorMap<A> & FilterObject<A>` (tsc TS2322): under IntersectionState.Target the weak type
+  check is skipped, and `string[]` to the generic mapped `FilterObject<A>` passes there where it failed alone (alone
+  it fails by the weak type check, which tsc doesn't apply to a mapped type with generic keys: it isn't weak).
+  Fix that, then cut the fallback for every constraint again. Returning outright loses
   circularConstrainedMappedTypeNoCrash, restTypeRetainsMappyness, mappedTypeRelationships and zod's `SortItem`.
 - `is_rest_array` takes anything but a type parameter or a generic mapped type as a rest array. Correct: normalize `[...X]` when the tuple is made
   (tsc's createNormalizedTupleType).

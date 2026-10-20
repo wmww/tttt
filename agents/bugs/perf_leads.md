@@ -9,6 +9,9 @@ allocating function; massif's extra-heap estimate is wrong for glibc), `scripts/
 and checker arenas by call site.
 
 ## mikro-orm/packages/mongodb: IndexFilterQuery's variance measurement (perfsweep 2026-10-20, agent B)
+(2026-10-20, agent C: the 3.47 was aae473ae3's generic-mapped-target fallback cut; narrowed back to type parameter and
+keyof constraints, 374886 types again. The mechanism behind it is in hacks.md `generic_mapped_target_related`;
+`variancetrace.py` builds again with its own GOCACHE.)
 The only project above 1.5 in `perfsweep.py --sample 4`: **types 3.47** (1.39M against tsgo's 400k), check 2.87x.
 Almost all of it is one variance measurement: `TTTT_DEBUG_VARIANCE=1` prints `VAR< WithUsingOptions [20 16 1]
 types=1344755` around `VAR< IndexFilterQuery [16 20] types=1317037` (the next is Loaded at 11k). Inside it, ~77k

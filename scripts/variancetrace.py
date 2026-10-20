@@ -203,6 +203,9 @@ def build():
             os.path.join(TSC_DIR, 'internal/checker/tttt_debug.go'), os.path.join(OUT, 'tttt_debug.go')))
     env_line = subprocess.check_output([os.path.join(ROOT, 'thirdparty/ensure-typescript.sh'), '--env'], text=True)
     print('variancetrace: building the instrumented tsgo (~2 min)...', file=sys.stderr)
+    # (Its own build cache: the shared GOCACHE of ensure-typescript.sh can miss entries a plain go build then needs,
+    # "could not import ..."; delete OUT/gocache after use, it's ~1-2 GB of tmpfs)
+    env_line += f'\nexport GOCACHE={OUT}/gocache\n'
     subprocess.run(['bash', '-c', f'{env_line}\ngo build -overlay {OUT}/overlay.json -o {exe} ./cmd/tsc'],
                    cwd=TSC_DIR, check=True)
     return exe
