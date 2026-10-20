@@ -166,6 +166,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttComputedNeverKeyGenericMappedContext': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttConditionalCallableAgainstAnyFunction': {
         errors: true,
         symbols: true,

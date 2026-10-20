@@ -1,0 +1,22 @@
+ttttComputedNeverKeyGenericMappedContext.ts(10,14): error TS7006: Parameter 'ap' implicitly has an 'any' type.
+ttttComputedNeverKeyGenericMappedContext.ts(12,20): error TS7006: Parameter 'cp' implicitly has an 'any' type.
+
+
+==== ttttComputedNeverKeyGenericMappedContext.ts (2 errors) ====
+    // A computed key whose type names no property (`[A]` with `A: never`) gets no contextual type from a generic mapped
+    // type: tsc looks such a key up in the index signatures only (getContextualTypeForObjectLiteralElement past
+    // isTypeUsableAsPropertyName), and a generic mapped type has none, so `ap` is implicitly any (mutation of
+    // contextuallyTypedSymbolNamedProperties)
+    declare const A: never;
+    declare const B: unique symbol;
+    type Action = { type: typeof A, data: string } | { type: typeof B, data: number };
+    declare const ab: Action;
+    declare function f<T extends { type: string | symbol }>(action: T, blah: { [K in T['type']]: (p: K) => void }): any;
+    f(ab, { [A]: ap => { ap.description }, [B]: bp => { bp.description } });
+                 ~~
+!!! error TS7006: Parameter 'ap' implicitly has an 'any' type.
+    declare function g<K extends symbol>(blah: { [P in K]: (p: P) => void }): any;
+    g<typeof B>({ [A]: cp => { cp }, [B]: bp => { } });
+                       ~~
+!!! error TS7006: Parameter 'cp' implicitly has an 'any' type.
+    

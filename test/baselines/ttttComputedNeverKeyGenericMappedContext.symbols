@@ -1,0 +1,72 @@
+//// [test/cases/ttttComputedNeverKeyGenericMappedContext.ts] ////
+
+=== ttttComputedNeverKeyGenericMappedContext.ts ===
+// A computed key whose type names no property (`[A]` with `A: never`) gets no contextual type from a generic mapped
+// type: tsc looks such a key up in the index signatures only (getContextualTypeForObjectLiteralElement past
+// isTypeUsableAsPropertyName), and a generic mapped type has none, so `ap` is implicitly any (mutation of
+// contextuallyTypedSymbolNamedProperties)
+declare const A: never;
+>A : Symbol(A, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 4, 13))
+
+declare const B: unique symbol;
+>B : Symbol(B, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 5, 13))
+
+type Action = { type: typeof A, data: string } | { type: typeof B, data: number };
+>Action : Symbol(Action, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 5, 31))
+>type : Symbol(type, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 6, 15))
+>A : Symbol(A, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 4, 13))
+>data : Symbol(data, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 6, 31))
+>type : Symbol(type, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 6, 50))
+>B : Symbol(B, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 5, 13))
+>data : Symbol(data, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 6, 66))
+
+declare const ab: Action;
+>ab : Symbol(ab, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 7, 13))
+>Action : Symbol(Action, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 5, 31))
+
+declare function f<T extends { type: string | symbol }>(action: T, blah: { [K in T['type']]: (p: K) => void }): any;
+>f : Symbol(f, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 7, 25))
+>T : Symbol(T, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 8, 19))
+>type : Symbol(type, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 8, 30))
+>action : Symbol(action, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 8, 56))
+>T : Symbol(T, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 8, 19))
+>blah : Symbol(blah, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 8, 66))
+>K : Symbol(K, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 8, 76))
+>T : Symbol(T, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 8, 19))
+>p : Symbol(p, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 8, 94))
+>K : Symbol(K, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 8, 76))
+
+f(ab, { [A]: ap => { ap.description }, [B]: bp => { bp.description } });
+>f : Symbol(f, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 7, 25))
+>ab : Symbol(ab, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 7, 13))
+>[A] : Symbol([A], Decl(ttttComputedNeverKeyGenericMappedContext.ts, 9, 7))
+>A : Symbol(A, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 4, 13))
+>ap : Symbol(ap, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 9, 12))
+>ap : Symbol(ap, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 9, 12))
+>[B] : Symbol([B], Decl(ttttComputedNeverKeyGenericMappedContext.ts, 9, 38))
+>B : Symbol(B, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 5, 13))
+>bp : Symbol(bp, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 9, 43))
+>bp.description : Symbol(Symbol.description, Decl(lib.es2019.symbol.d.ts, --, --))
+>bp : Symbol(bp, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 9, 43))
+>description : Symbol(Symbol.description, Decl(lib.es2019.symbol.d.ts, --, --))
+
+declare function g<K extends symbol>(blah: { [P in K]: (p: P) => void }): any;
+>g : Symbol(g, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 9, 72))
+>K : Symbol(K, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 10, 19))
+>blah : Symbol(blah, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 10, 37))
+>P : Symbol(P, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 10, 46))
+>K : Symbol(K, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 10, 19))
+>p : Symbol(p, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 10, 56))
+>P : Symbol(P, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 10, 46))
+
+g<typeof B>({ [A]: cp => { cp }, [B]: bp => { } });
+>g : Symbol(g, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 9, 72))
+>B : Symbol(B, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 5, 13))
+>[A] : Symbol([A], Decl(ttttComputedNeverKeyGenericMappedContext.ts, 11, 13))
+>A : Symbol(A, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 4, 13))
+>cp : Symbol(cp, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 11, 18))
+>cp : Symbol(cp, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 11, 18))
+>[B] : Symbol([B], Decl(ttttComputedNeverKeyGenericMappedContext.ts, 11, 32))
+>B : Symbol(B, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 5, 13))
+>bp : Symbol(bp, Decl(ttttComputedNeverKeyGenericMappedContext.ts, 11, 37))
+
