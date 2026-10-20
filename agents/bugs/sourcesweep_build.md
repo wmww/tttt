@@ -29,10 +29,7 @@ Day one, by project (+ spurious, - missing, counts):
 - astro: +TS2322 1, +TS2741 2, -TS18048 2 (agent B's verdicts below)
 - atproto: +TS2554 2, +TS2322 1, +TS2307 1 (below)
 - babel: matches since 2026-10-20 (the +TS2590 at babel-traverse visitors.ts:168 is gone).
-- base-ui: +TS2322 1: createItems.test.tsx's ComboboxItemCollection (a `declare class` with a private brand and an
-  explicit `in out Item`, so its variance doesn't come from the private member: some other difference, not looked
-  into). The docs demos' MenuHandle ones (6, variance from private members) are fixed: a reference source's private
-  members are untyped to its readers, as in its `.d.ts`. Fixed: TS2590
+- base-ui: matches (`-p` and `-b`) since 2026-10-20 (the createItems.test.tsx +TS2322 is gone). Fixed: TS2590
 - better-auth: -TS7006 258, -TS2578 18, -TS2554 4, -TS2339 3, -TS7031, -TS2349: one cause, `-b` by design. tsgo's
   declaration emit of `router` (packages/better-auth/src/api/index.ts) leaks an unbound type parameter name (`{ [K in
   keyof T_2 as K extends keyof T_1 ? never : K]: Base[K] }`, from `OverrideMerge<Base, ...>`), so with skipLibCheck
