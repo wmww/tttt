@@ -433,3 +433,31 @@ otherwise.
 
 ## 2026-10-19 — ask for the human (execution session, not an insights entry)
 PGO + LTO ships as `scripts/pgobuild.sh` (`pgo/tttt`, plan 86 stage 1): 11-17% fewer instructions on every corpus, including vscode and tsc, which aren't in its training set. Output is unchanged. Could you rerun the 12-core table with it? It's `scripts/bench.sh --runs 3 --checkers 24 --bun PATH --tscrs PATH`, and bench.sh now builds and uses `pgo/tttt` by itself. The first run retrains, which takes a few minutes.
+
+## 2026-10-20 — insights (after the twenty-third window)
+This window was about perf, and you cut it short after four entries. PGO + LTO now ships (`scripts/pgobuild.sh`) and
+takes 11-17% of instructions on every corpus, including the ones it wasn't trained on. Your 12-core rerun showed
+tttt with the best wall time on all 14 corpora at the defaults, and it confirmed the checkers-per-physical-core cap:
+K24 costs 40-160% more CPU for at most 7% wall. The gate for a shared type graph (plan 86 stage 4) said go. Union
+ordering only falls back to type ids in 0.003-0.6% of ties, and permuting those ids changed no oracle's output. `-b`
+reading its references' emitted declarations (plan 87) also said go: it was both more correct and faster
+(tsc-src wall -23%). A real-code fan-out brought the source sweep to 5234 / 5242 projects, and the suite is at 13944
+/ 13978. 7.1.0 stable isn't on npm yet.
+
+The bun canary you measured (oven-sh/bun#45800) changes the picture. At the defaults it now beats tttt's wall on 4 /
+14 corpora: vscode 2.00 against 2.44 s, plus drizzle, excalidraw and nest. It does this by keeping ~20 threads busy
+at 1.7x tttt's CPU. tttt is still 1.1-2.9x faster single-threaded and uses less CPU everywhere. Bun's output also
+isn't tsc's (21 errors on drizzle against tsc's 41). Even so, "faster than bun at the defaults" is broken. Following
+your ask, I've reordered plan 86. The shared concurrent type graph (stage 4) goes next. It's the one lever that lets
+extra checkers pay off instead of duplicating work, and it is also the one that cuts memory at the defaults, where
+bun is lower on 10 / 14. The single-threaded memory-system work (stage 2) gained only ~2% in its first session, so it
+drops to filler.
+
+This is the riskiest change since the type core was rebuilt: every lazily computed type field has to become safe to
+publish from any thread. So the window starts with a design session and a prototype on drizzle, with an explicit
+go/no-go, before any build-out. If the answer is no, the fallback is the front end's serial floor (~0.6 s of
+vscode's 2.6 s) plus a snapshot recycle for projects like supabase studio. Also in the window: deleting the old
+`-b` model, starting each checker with its costliest file (bun's heavy-first idea, cheap), and one real-code session.
+
+**For you**: nothing is blocking. Once the prototype exists, its 12-core numbers will matter more than anything this
+4-vCPU box can measure, and the session will leave you a command to run.

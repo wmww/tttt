@@ -6,6 +6,22 @@ projects. The answer: no single architectural bet gives them; three programs of 
 on vscode** (2.68 s -> ~1.0 s on the 12-core box), in a specific order. This plan is the order and the gates. **The
 next insights session schedules it**: stages 1-3 fit perf sessions in any window; stage 4 is its own window.
 
+## Order (insights of 2026-10-20: supersedes the stage order below)
+Stage 4 comes next, ahead of stage 2's remaining sessions, which are demoted to opportunistic perf slots. The reasons:
+- The human asked (2026-10-19) for the big many-core wins first. Stage 2 session 1 found a flat profile and took
+  ~2%. Its 1.5-2x target rests on a 42% instruction-footprint share that cachegrind can't confirm without hardware
+  counters, so it is the weakest lever we have.
+- bun canary (oven-sh/bun#45800) beats tttt's wall at the defaults on vscode, drizzle, excalidraw and nest, while
+  using 1.7x tttt's CPU. It keeps ~20 of 24 threads busy; tttt keeps ~10 of its 12 checkers busy, and more checkers
+  don't help (K24 is +40-160% CPU for 0-7% wall) because each one rebuilds the same instantiations and recycles. Only
+  a shared graph makes the SMT half of the machine useful, and it is also the only lever on memory at the defaults
+  (bun is lower on 10 / 14).
+- The gate already said go (below). What's left before the build-out is a design and a prototype, with a go/no-go.
+Sessions: **design** (one), **prototype + gate** (one or two), then a build-out window if go. If the gate says no,
+the fallback is stage 3 (front end) plus perf_leads.md's snapshot recycle, which goes after the thrashers (supabase
+studio: `--checker-memory off` takes 2.27 -> 1.30 s). Stage 3's cheapest piece, starting the costliest file first
+(tsc and type-fest are bound by their biggest file), doesn't depend on stage 4 and can go in any perf slot.
+
 ## The budget (vscode `-p`, the 12-core box, 2026-10-19)
 | part of the 2.68 s wall | today | floor | what moves it |
 |---|---|---|---|
@@ -61,7 +77,7 @@ defaults 2.68 -> 2.48; tsc 0.51 -> 0.47; drizzle 0.85 -> 0.78; zod 0.64 -> 0.58)
   re-saved as the new baseline (instruction counts change with inlining decisions); measurements.md's 12-core
   table re-run by the human.
 
-## Stage 2: the single-threaded memory-system program (8-12 sessions, spread over perf windows)
+## Stage 2: the single-threaded memory-system program (opportunistic since 2026-10-20; was 8-12 sessions)
 Target: **1.5-2x on single-threaded check time**, measured as instructions (`scripts/instrcount.sh`), cachegrind
 misses (`valgrind --tool=cachegrind --cache-sim=yes` on drizzle and tsc at K1: LL misses per 1000 instructions, I1
 miss rate) and wall at K1 and at the defaults. Each session picks the largest measured source of misses, not a
@@ -184,6 +200,13 @@ vscode in 1.4 GB), and determinism.
     schedule. The design session must replace "newer" with something schedule-independent (a per-worker creation
     stamp for the types this relation made, say) and show it holds on the suite. flow.c's key_entry_cmp() sorts
     by id only for a binary search, which can't be observed. Other `->id` uses are hash keys.
+- **The design session also answers** (insights 2026-10-20): what bun #45800's "shared results in small commits"
+  shares between its workers, and how it keeps the output deterministic (read the PR; bun's output isn't tsc's,
+  so its rules aren't ours, but its mechanism is a data point). It also lists every lazily written field on
+  `Ty` and in `Checker` with whether it is per-type (it must publish once) or per-query (it stays scratch); this
+  census is what the 10-20 session estimate rests on, so re-estimate from it. And it decides the memory story:
+  no recycling with a shared graph (K1 holds vscode in 1.4 GB) against a shared graph plus per-worker scratch
+  recycling.
 - Then a design session pricing: the table (lock-free open addressing, resize), the publish-once fields, what
   `Checker.links` becomes (per-symbol state shared, per-expression state not), how diagnostics stay K-independent
   (they do today by sorting; "whoever asks first" slots for inferred return types match tsc and tsgo's own
