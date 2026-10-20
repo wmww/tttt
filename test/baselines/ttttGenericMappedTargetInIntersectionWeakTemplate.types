@@ -1,0 +1,39 @@
+//// [test/cases/ttttGenericMappedTargetInIntersectionWeakTemplate.ts] ////
+
+=== ttttGenericMappedTargetInIntersectionWeakTemplate.ts ===
+// The template of a generic mapped target is related without IntersectionState.Target (tsc's plain isRelatedTo), so a
+// weak member of it still gets the common property check inside an intersection target: `string[]`'s methods aren't
+// `Weak`s and `string[]` isn't a `Query<T>` (mikro-orm's OperatorMap<T> & FilterObject<T>)
+type Weak = { $eq?: number; $ne?: number };
+>Weak : Weak
+>$eq : number | undefined
+>$ne : number | undefined
+
+type Keys<T> = string & { [K in keyof T]-?: K }[keyof T];
+>Keys : Keys<T>
+
+type Filter<T> = { [K in Keys<T>]?: Weak | null };
+>Filter : Filter<T>
+
+type Query<T> = Weak & Filter<T>;
+>Query : Query<T>
+
+function f<A>(x: string[], y: { $eq: number }) {
+>f : <A>(x: string[], y: { $eq: number; }) => void
+>x : string[]
+>y : { $eq: number; }
+>$eq : number
+
+    const a: Query<A> = x;
+>a : Query<A>
+>x : string[]
+
+    const b: Filter<A> = x;
+>b : Filter<A>
+>x : string[]
+
+    const c: Query<A> = y;
+>c : Query<A>
+>y : { $eq: number; }
+}
+

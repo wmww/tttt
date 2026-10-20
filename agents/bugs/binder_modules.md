@@ -8,6 +8,14 @@ Done (plan 69, deleted 2026-10-15): cross-file merges into aliases (binder_link_
 merge_into_umd_globals()), an alias a merge went through (SymbolRare.merge_detached), an augmentation of a module whose
 `export =` is a cloned namespace import (SymbolRare.export_equals_clone), combined value+interface imports
 (SymbolAlias.combined_type). The suite has no test of these left; new divergences go here.
+- (ghostfolio probe, 2026-10-20; symbols and types baselines only, ghostfolio itself matches) tsc's combined import
+  symbol (`import { Big } from "big.js"`, value property + interface) has the interface's own members (Members cloned),
+  so `a.plus` is `Symbol(Big.Big.plus)`; tttt's combined has its own declarations and names it `Big.plus`. And the
+  union tie `c ? arr[0] : new Big(0)` keeps `import("big.js").Big` in tttt where tsc keeps the combined `Big`: Big.Big's
+  declared type gets a lower id in tttt, likely because resolving the import's value half
+  (ty_export_equals_property_missing() -> BigConstructor's members) lowers signature return types eagerly where tsc's
+  are lazy. Probe: test/cases/ttttCombinedImportNamedByAlias.ts plus `export function u(c: boolean) { return c ?
+  arr[0] : new Big(0); }`.
 
 ## Bigint property names
 - Done 2026-10-14 by syntax: span_is_bigint_name() (span.h) is what the member builders, duplicate checks and symbol

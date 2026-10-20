@@ -1,0 +1,60 @@
+//// [test/cases/ttttGenericMappedTargetInIntersectionWeakTemplate.ts] ////
+
+=== ttttGenericMappedTargetInIntersectionWeakTemplate.ts ===
+// The template of a generic mapped target is related without IntersectionState.Target (tsc's plain isRelatedTo), so a
+// weak member of it still gets the common property check inside an intersection target: `string[]`'s methods aren't
+// `Weak`s and `string[]` isn't a `Query<T>` (mikro-orm's OperatorMap<T> & FilterObject<T>)
+type Weak = { $eq?: number; $ne?: number };
+>Weak : Symbol(Weak, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 0, 0))
+>$eq : Symbol($eq, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 3, 13))
+>$ne : Symbol($ne, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 3, 27))
+
+type Keys<T> = string & { [K in keyof T]-?: K }[keyof T];
+>Keys : Symbol(Keys, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 3, 43))
+>T : Symbol(T, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 4, 10))
+>K : Symbol(K, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 4, 27))
+>T : Symbol(T, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 4, 10))
+>K : Symbol(K, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 4, 27))
+>T : Symbol(T, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 4, 10))
+
+type Filter<T> = { [K in Keys<T>]?: Weak | null };
+>Filter : Symbol(Filter, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 4, 57))
+>T : Symbol(T, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 5, 12))
+>K : Symbol(K, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 5, 20))
+>Keys : Symbol(Keys, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 3, 43))
+>T : Symbol(T, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 5, 12))
+>Weak : Symbol(Weak, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 0, 0))
+
+type Query<T> = Weak & Filter<T>;
+>Query : Symbol(Query, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 5, 50))
+>T : Symbol(T, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 6, 11))
+>Weak : Symbol(Weak, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 0, 0))
+>Filter : Symbol(Filter, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 4, 57))
+>T : Symbol(T, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 6, 11))
+
+function f<A>(x: string[], y: { $eq: number }) {
+>f : Symbol(f, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 6, 33))
+>A : Symbol(A, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 8, 11))
+>x : Symbol(x, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 8, 14))
+>y : Symbol(y, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 8, 26))
+>$eq : Symbol($eq, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 8, 31))
+
+    const a: Query<A> = x;
+>a : Symbol(a, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 9, 9))
+>Query : Symbol(Query, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 5, 50))
+>A : Symbol(A, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 8, 11))
+>x : Symbol(x, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 8, 14))
+
+    const b: Filter<A> = x;
+>b : Symbol(b, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 10, 9))
+>Filter : Symbol(Filter, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 4, 57))
+>A : Symbol(A, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 8, 11))
+>x : Symbol(x, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 8, 14))
+
+    const c: Query<A> = y;
+>c : Symbol(c, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 11, 9))
+>Query : Symbol(Query, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 5, 50))
+>A : Symbol(A, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 8, 11))
+>y : Symbol(y, Decl(ttttGenericMappedTargetInIntersectionWeakTemplate.ts, 8, 26))
+}
+

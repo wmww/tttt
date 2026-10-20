@@ -4251,6 +4251,16 @@ static Ternary mapped_related(Checker* me, RelationState* st, MappedInfo const* 
     return result & is_related_to(me, st, ty_instantiate(me, source_template, mapper), target_template, report);
 }
 
+// (Without IntersectionState, tsc's plain isRelatedTo in mappedTypeRelatedTo)
+static Ternary mapped_related_plain(Checker* me, RelationState* st, MappedInfo const* source, MappedInfo const* target, bool report) {
+    bool saved_target = st->intersection_target, saved_source = st->intersection_source;
+    st->intersection_target = st->intersection_source = false;
+    Ternary related = mapped_related(me, st, source, target, report);
+    st->intersection_target = saved_target;
+    st->intersection_source = saved_source;
+    return related;
+}
+
 // A tuple with a variadic element (a rest element that isn't an array: tsc's ElementFlags.Variadic)
 static bool has_variadic_element(Checker* me, Ty const* ty) {
     if (!ty_is_tuple(ty)) return false;
@@ -4258,16 +4268,6 @@ static bool has_variadic_element(Checker* me, Ty const* ty) {
     TyList args = ty_reference_args(me, ty);
     for (u32 i = 0; i < shape->arity && i < args.len; i++) {
         if ((shape->flags[i] & TUPLE_ELEMENT_REST) && !ty_is_array(me, args.data[i]) && !ty_is_tuple(args.data[i])) return true;
-    }
-    return false;
-}
-
-// A mapped type's constraint that is `keyof X` or a union with one (`"$type" | keyof V`, the keys of an intersection)
-static bool keyof_constraint(Ty const* constraint) {
-    if (constraint->kind == TY_KEYOF) return true;
-    if (constraint->kind != TY_UNION) return false;
-    for (u32 i = 0; i < constraint->composite.types.len; i++) {
-        if (constraint->composite.types.data[i]->kind == TY_KEYOF) return true;
     }
     return false;
 }
@@ -6006,12 +6006,18 @@ static Ternary structured_related_members(
     }
     if (target_mapped && source->kind == TY_ANONYMOUS && (source->flags & TYF_OBJECT) && ty_members(me, source)->mapped) {
         // Two mapped types whose keys aren't known yet: by constraint and template (tsc's mappedTypeRelatedTo)
-        return mapped_related(me, st, ty_members(me, source)->mapped, target_mapped, report);
+        return mapped_related_plain(me, st, ty_members(me, source)->mapped, target_mapped, report);
     }
     bool quiet_members = false;
     if (target_mapped) {
         isize_t saved = vec_ty_report_line_size(&st->lines);
+        // (Without IntersectionState: tsc's plain isRelatedTo, so `S[P]` meets a weak template member's common property
+        // check even inside an intersection target, mikro-orm's `string[]` isn't an `OperatorMap<T> & FilterObject<T>`)
+        bool saved_target = st->intersection_target, saved_source = st->intersection_source;
+        st->intersection_target = st->intersection_source = false;
         Ternary related = generic_mapped_target_related(me, st, source, target_mapped, report);
+        st->intersection_target = saved_target;
+        st->intersection_source = saved_source;
         // (Why S[K] isn't the template says nothing: tsc resets the error info, resetErrorInfo(saveErrorInfo))
         if (!related) report_truncate(st, saved);
         // HACK: a generic source falls through to the member-by-member comparison, which a mapped type without
@@ -6029,17 +6035,13 @@ static Ternary structured_related_members(
         ) {
             return related;
         }
-        // (Nor an object type with known keys against a mapped type over a type parameter or over keyof (or a union with
-        // one): `P<M>`'s `{ values: M }` isn't a `Record<M, M>` (sequelize's EnumOptions<Member> against
-        // EnumValues<Member> dropped it from a flow union by subtype reduction), `{ type: T }` isn't a `Partial<X>` nor a
-        // `Partial<C<T>>` of a deferred conditional, atproto's `{ [x: string]: unknown; $type: T }` isn't a
-        // `Simplify<V["output"] & { $type: T }>`: what the fallback compares are the members of the constraint's.
-        // HACK: other constraints still fall back: tsc returns False for them too, but mikro-orm's `OperatorMap<T>`
-        // against `EntityProps<T>` (`{ [K in EntityKey<T>]?: T[K] }`) failing that way made IndexFilterQuery's variance
-        // measurement 1.3M types (tsgo's whole program: 400k): the failure exposes other divergences (hacks.md)
+        // (Nor an object type with known keys: `P<M>`'s `{ values: M }` isn't a `Record<M, M>` (sequelize's
+        // EnumOptions<Member> against EnumValues<Member> dropped it from a flow union by subtype reduction), `{ type: T }`
+        // isn't a `Partial<X>` nor a `Partial<C<T>>` of a deferred conditional, atproto's `{ [x: string]: unknown; $type:
+        // T }` isn't a `Simplify<V["output"] & { $type: T }>`, mikro-orm's `OperatorMap<T>` isn't an `EntityProps<T>`
+        // (`{ [K in EntityKey<T>]?: T[K] }`): what the fallback compares are the members of the constraint's)
         if ((source->flags & TYF_OBJECT) && source->kind != TY_INTERSECTION && !ty_members(me, source)->mapped &&
-            !ty_is_array(me, source) && !ty_is_tuple(source) && !ty_is_generic_index(ty_keyof(me, source)) &&
-            (target_mapped->constraint->kind == TY_TYPE_PARAM || keyof_constraint(target_mapped->constraint))
+            !ty_is_array(me, source) && !ty_is_tuple(source) && !ty_is_generic_index(ty_keyof(me, source))
         ) {
             return related;
         }

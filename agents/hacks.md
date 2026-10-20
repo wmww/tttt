@@ -363,20 +363,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   source goes on to its constraints).
 - `props_related` skips the same property by `Prop` identity plus a rule for object literal accessors of one function
   (tsc: same symbol).
-- `generic_mapped_target_related`: a generic source failing it falls through to member comparison, which memberless
-  mapped types pass (`Readonly<T>` to `T`), except memberless objects, arrays, non-variadic tuples and known-key objects
-  against a mapped type over a type parameter or `keyof` (or a union with one); tsc lets only a mapped source go on.
-  Cutting it for every constraint (2026-10-20, agent C) is right by tsc (`OperatorMap<T>` isn't an `EntityProps<T>` in
-  tsgo either) but made mikro-orm's IndexFilterQuery variance measurement 1.3M types (tsgo's whole program: 400k): the
-  False exposes another divergence. Trace (`variancetrace.py` on perf_leads.md's probe): tsgo relates
-  `IndexFilterQuery<SUB, U>` to its conditional `IndexFilterQuery<SUPER, U>` target, the true branch `FilterQuery<SUPER>`
-  fails on the source union's first member (the Array) and it stops; tttt finds `Array<...>` related to `OperatorMap<SUPER>
-  & FilterObject<SUPER>` (T, tsgo: F) and goes on through the false branch and the other members. Standalone: tttt
-  accepts `string[]` as `OperatorMap<A> & FilterObject<A>` (tsc TS2322): under IntersectionState.Target the weak type
-  check is skipped, and `string[]` to the generic mapped `FilterObject<A>` passes there where it failed alone (alone
-  it fails by the weak type check, which tsc doesn't apply to a mapped type with generic keys: it isn't weak).
-  Fix that, then cut the fallback for every constraint again. Returning outright loses
-  circularConstrainedMappedTypeNoCrash, restTypeRetainsMappyness, mappedTypeRelationships and zod's `SortItem`.
 - `is_rest_array` takes anything but a type parameter or a generic mapped type as a rest array. Correct: normalize `[...X]` when the tuple is made
   (tsc's createNormalizedTupleType).
 - Identity (`identity_structured`): differently shaped tuples never identical (tsc compares their properties), no
@@ -402,11 +388,21 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   differs, atproto's string-index Simplify gets tsc's TS2741 head), `intersection_props_related`'s TS2741 member
   choice (a valibot probe).
 - **A generic mapped target falls back to member-by-member comparison for a generic source** (relate.c, after
-  `generic_mapped_target_related()`): tsc returns False there unless both are mapped types (mappedTypeRelatedTo).
-  Carve-outs keep tsc's False for an object source without properties, arrays and tuples, and (2026-10-20) a
-  non-generic-keyed object source against a constraint that is a type parameter or a `keyof` (alone or in a union:
-  atproto's `$Typed`); zod's SortItem<output<T>> (generic keys) against `{ [K in keyof A | keyof B]: (A & B)[K] }` still
-  needs the fallback.
+  `generic_mapped_target_related()`): tsc returns False there unless both are mapped types (mappedTypeRelatedTo), and
+  the memberless mapped types the fallback passes stand in for its rules between two generic mapped types (`Readonly<T>`
+  to `T`). Carve-outs keep tsc's False for an object source without properties, arrays and non-variadic tuples, and
+  (2026-10-20) any object source with non-generic keys (atproto's `$Typed`, mikro-orm's `OperatorMap<T>` against
+  `EntityProps<T>`). Returning outright loses circularConstrainedMappedTypeNoCrash, restTypeRetainsMappyness,
+  mappedTypeRelationships and zod's SortItem<output<T>> (generic keys) against `{ [K in keyof A | keyof B]: (A & B)[K] }`.
+- **IntersectionState is sticky** (relate.c, `RelationState.intersection_target`/`intersection_source`): once set (an
+  intersection target's members, an intersection source's), every nested comparison below inherits it, where tsc
+  passes intersectionState only through recursiveTypeRelatedTo, union/intersection decomposition, constraints and
+  property/index types, and resets it (plain isRelatedTo) for type arguments of identical-kind pairs, keyof, indexed
+  access, conditional branches, string mappings, mapped types, signatures... tttt clears it at the few sites a bug
+  was found (conditional sources, generic mapped targets and mappedTypeRelatedTo since 2026-10-20: mikro-orm's
+  `string[]` passed `OperatorMap<T> & FilterObject<T>` because `() => string` skipped the weak type check against a
+  template's `OperatorMap<...>`, which kept IndexFilterQuery's variance measurement going to 1.3M types). Correct:
+  clear both by default on entering structured comparison and pass them on only where tsc does.
 
 ## Type core (`src/ty/`)
 - Re-entry below resolution barriers (plan 88): tsc re-enters anything in flight below `resolutionStart` (a call's

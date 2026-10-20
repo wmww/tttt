@@ -1,0 +1,36 @@
+//// [test/cases/ttttNeverReductionTypeVariableHasNeverType.ts] ////
+
+=== ttttNeverReductionTypeVariableHasNeverType.ts ===
+// A literal property conflicting with a type parameter's constraint reduces the intersection to never, unless another
+// constituent's property is never (tsc's CheckFlags.HasNeverType across all of them): `U`'s `a: never` keeps `p`'s
+function f<T extends { a: "y" }, U extends { a: never }>(x: T & U & { a: "x" }, y: T & { a: "x" }, z: T & { a: "x" } & { a?: never }) {
+>f : Symbol(f, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 0, 0))
+>T : Symbol(T, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 11))
+>a : Symbol(a, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 22))
+>U : Symbol(U, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 32))
+>a : Symbol(a, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 44))
+>x : Symbol(x, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 57))
+>T : Symbol(T, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 11))
+>U : Symbol(U, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 32))
+>a : Symbol(a, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 69))
+>y : Symbol(y, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 79))
+>T : Symbol(T, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 11))
+>a : Symbol(a, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 88))
+>z : Symbol(z, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 98))
+>T : Symbol(T, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 11))
+>a : Symbol(a, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 107))
+>a : Symbol(a, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 120))
+
+    let p = x;
+>p : Symbol(p, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 3, 7))
+>x : Symbol(x, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 57))
+
+    let q = y;
+>q : Symbol(q, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 4, 7))
+>y : Symbol(y, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 79))
+
+    let r = z;
+>r : Symbol(r, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 5, 7))
+>z : Symbol(z, Decl(ttttNeverReductionTypeVariableHasNeverType.ts, 2, 98))
+}
+

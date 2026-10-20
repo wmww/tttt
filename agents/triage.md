@@ -2,30 +2,10 @@
 Uninvestigated items: dump here what you don't want to deal with now. Triage sessions drain this into `bugs/*.md`,
 plans, or fixes.
 
-Last drained 2026-10-20 (triage session, todo entry 5 of the twenty-third window). A truncated mapped source no
-longer SIGBUSes (`text_sigbus()`: zeros over the page, one warning; verified by truncating a 6 MB file mid-run).
-pgobuild.sh serializes builds (flock), waits out running pgo/tttt processes and kills its training run with itself
-(the corrupt .gcda). dokploy at `kdiff -m 0`: slow, not quadratic (kdiff.py's docstring). perfsweep's summary line
-was already fixed (e76f67ca); its wall/CPU gap was load (nuqs docs 0.33 s wall quiet). The bwrap flake went to
-bugs/harness.md. measurements.md condensed 2139 -> 408 lines, hacks.md audited (no entry gone, many narrowed).
+Last drained 2026-10-20 (triage session, todo entry 6 of the twenty-third window). mikro-orm's `string[]` against
+`OperatorMap<T> & FilterObject<T>` was IntersectionState.Target leaking into the generic mapped target's template
+comparison (fixed; the fallback cut is wide again, mikro-orm's probe 258k types against tsgo's 393k, its chain
+identical; the general stickiness is hacks.md "IntersectionState is sticky"). never_reduced_literal_prop() honours
+HasNeverType (fixed). The combined import's member symbols went to bugs/binder_modules.md, the apparently-any
+intersection's property symbol to bugs/type_core.md. Plan 86's done stage 1 condensed.
 
-
-- (2026-10-20, agent B, ghostfolio probe) tsc's combined import symbol (SymbolAlias.combined_type, `import { Big }
-  from "big.js"`): its members are the interface's own symbols in tsc (Members cloned), so `a.plus` is
-  `Symbol(Big.Big.plus)`; tttt's combined has its own decls and names it `Big.plus` (symbols baseline only). And the
-  union tie `c ? arr[0] : new Big(0)` keeps Big.Big in tttt (`import("big.js").Big`) where tsc keeps the combined
-  type (`Big`): Big.Big's declared type gets a lower id in tttt, likely because resolving the import's value half
-  (ty_export_equals_property_missing -> BigConstructor's members) lowers signature return types eagerly where tsc's
-  are lazy. Probe: test/cases/ttttCombinedImportNamedByAlias.ts plus `export function u(c: boolean) { return c ?
-  arr[0] : new Big(0); }`. ghostfolio itself matches.
-- (2026-10-20, agent B) Property access on an intersection whose apparent type is any (a generic member constrained
-  to any) finds the object member's symbol in tttt; tsc's getApparentTypeOfIntersectionType makes it any, no symbol
-  (symbols baseline only; see ttttMappedOverApparentlyAnyIntersection's probe with `i: InferOutput<TShape> & {
-  $type: TType }`, `i.$type`). find_prop_in() isn't the path property access takes.
-- (2026-10-20, agent B) never_reduced_literal_prop() (the type-variable path of never-reduction) may want the
-  HasNeverType rule some_prop_is_never() now gives the known-objects path.
-- (2026-10-20, agent C) tttt accepts `string[]` as `OperatorMap<A> & FilterObject<A>` (mikro-orm's FilterQuery) where
-  tsc reports TS2322: inside an intersection target tttt skips the weak-type check, and alone `string[]` fails
-  `FilterObject<A>` only through that weak-type check, which tsc doesn't apply to a mapped type over still-generic keys.
-  Fix this first, then widen generic_mapped_target_related()'s cut back to every constraint (hacks.md): the wide cut
-  cost mikro-orm/packages/mongodb 375k -> 1.39M types because this wrong "related" kept the union walk going.

@@ -58,6 +58,11 @@ passing tests).
   Instantiation) passes; do it if another shows up (ex plan 42 stage 4).
 
 ## Relations, instantiation, reduction
+- (atproto probe, 2026-10-20; symbols baseline only) Property access on an intersection whose apparent type is any
+  (a generic member constrained to any) finds the object member's symbol in tttt; tsc's
+  getApparentTypeOfIntersectionType makes the whole apparent type any, no symbol. Probe:
+  ttttMappedOverApparentlyAnyIntersection with `i: InferOutput<TShape> & { $type: TType }`, `i.$type`. find_prop_in()
+  isn't the path property access takes; look at what property access does with an intersection's apparent type.
 - **Two copies of one declaration file (webpack through a symlink): one diagnostic left.** From a worktree (where
   `thirdparty/corpora` is a symlink) webpack's `types.d.ts` is in the program twice, as in tsc (root files keep the
   symlinked path, only node_modules results are realpathed and `node_modules/webpack -> ..`), and the examples'

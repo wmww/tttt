@@ -1,0 +1,30 @@
+//// [test/cases/ttttNeverReductionTypeVariableHasNeverType.ts] ////
+
+=== ttttNeverReductionTypeVariableHasNeverType.ts ===
+// A literal property conflicting with a type parameter's constraint reduces the intersection to never, unless another
+// constituent's property is never (tsc's CheckFlags.HasNeverType across all of them): `U`'s `a: never` keeps `p`'s
+function f<T extends { a: "y" }, U extends { a: never }>(x: T & U & { a: "x" }, y: T & { a: "x" }, z: T & { a: "x" } & { a?: never }) {
+>f : <T extends { a: "y"; }, U extends { a: never; }>(x: T & U & { a: "x"; }, y: T & { a: "x"; }, z: T & { a: "x"; } & { a?: never; }) => void
+>a : "y"
+>a : never
+>x : T & U & { a: "x"; }
+>a : "x"
+>y : never
+>a : "x"
+>z : never
+>a : "x"
+>a : undefined
+
+    let p = x;
+>p : T & U & { a: "x"; }
+>x : T & U & { a: "x"; }
+
+    let q = y;
+>q : never
+>y : never
+
+    let r = z;
+>r : never
+>z : never
+}
+

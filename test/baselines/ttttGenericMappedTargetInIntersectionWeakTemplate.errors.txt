@@ -1,0 +1,30 @@
+ttttGenericMappedTargetInIntersectionWeakTemplate.ts(10,11): error TS2322: Type 'string[]' is not assignable to type 'Query<A>'.
+  Type 'string[]' is not assignable to type 'Filter<A>'.
+ttttGenericMappedTargetInIntersectionWeakTemplate.ts(11,11): error TS2322: Type 'string[]' is not assignable to type 'Filter<A>'.
+ttttGenericMappedTargetInIntersectionWeakTemplate.ts(12,11): error TS2322: Type '{ $eq: number; }' is not assignable to type 'Query<A>'.
+  Type '{ $eq: number; }' is not assignable to type 'Filter<A>'.
+
+
+==== ttttGenericMappedTargetInIntersectionWeakTemplate.ts (3 errors) ====
+    // The template of a generic mapped target is related without IntersectionState.Target (tsc's plain isRelatedTo), so a
+    // weak member of it still gets the common property check inside an intersection target: `string[]`'s methods aren't
+    // `Weak`s and `string[]` isn't a `Query<T>` (mikro-orm's OperatorMap<T> & FilterObject<T>)
+    type Weak = { $eq?: number; $ne?: number };
+    type Keys<T> = string & { [K in keyof T]-?: K }[keyof T];
+    type Filter<T> = { [K in Keys<T>]?: Weak | null };
+    type Query<T> = Weak & Filter<T>;
+    
+    function f<A>(x: string[], y: { $eq: number }) {
+        const a: Query<A> = x;
+              ~
+!!! error TS2322: Type 'string[]' is not assignable to type 'Query<A>'.
+!!! error TS2322:   Type 'string[]' is not assignable to type 'Filter<A>'.
+        const b: Filter<A> = x;
+              ~
+!!! error TS2322: Type 'string[]' is not assignable to type 'Filter<A>'.
+        const c: Query<A> = y;
+              ~
+!!! error TS2322: Type '{ $eq: number; }' is not assignable to type 'Query<A>'.
+!!! error TS2322:   Type '{ $eq: number; }' is not assignable to type 'Filter<A>'.
+    }
+    

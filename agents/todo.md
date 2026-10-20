@@ -44,12 +44,16 @@ on the 12-core box (put it in report.md, as 2026-10-19's ask did).
    `scripts/reentrytrace.py`): no general mechanism this session, staged A-E; vue 0 / 2 is stage E (won't fix unless
    members resolve in tsc's order), better-auth stages B-D. A mapped-target cut cost mikro-orm 3.7x types mid-session
    (narrowed back, triage has the relation bug behind it).
-6. **Triage.** Drain triage.md and condense whatever the window grew (measurements.md, plan 86).
+6. ~~Triage~~ done 2026-10-20: triage.md drained. mikro-orm's IndexFilterQuery was IntersectionState.Target leaking
+   into a generic mapped target's template (a weak member's common property check skipped): fixed, the fallback cut
+   wide again (mikro-orm's probe 258k types, tsgo 393k, chain identical; perfsweep's worst types ratio 1.40).
+   never_reduction's HasNeverType through type variables fixed. Plan 86 stage 1 condensed.
 7. **Insights.** report.md: the stage 4 gate's verdict and what it means for the next windows, `-b`'s single model,
    costliest-first's numbers. Check whether 7.1.0 stable is out (plan 58) and whether the human ran the 12-core
    command.
 
-Not in this window (candidates for the next, which the insights session reorders): plan 88 stages A-B (one barrier
+Not in this window (candidates for the next, which the insights session reorders): hacks.md "IntersectionState is sticky" (an audit of relate.c's
+calls against tsc's plain isRelatedTo sites, one session; the mikro-orm bug was one); plan 88 stages A-B (one barrier
 stack, barrier termination instead of "once" flags; weigh against plan 86 stage 4's in-flight markers); plan 86 stages 4a-4c up to gate
 G1 (if G0 says go); stage 3's chosen piece; plan 87 stage 2 (share declaration files across `-b` programs); stage 2's leftovers in
 perf slots (outlining instantiate_inner's and the relation switch's cold arms, the big-union walks, the intern table

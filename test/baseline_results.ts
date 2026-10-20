@@ -1100,6 +1100,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttGenericMappedTargetInIntersectionWeakTemplate': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttGenericMappedTargetKnownKeys': {
         errors: true,
         symbols: true,
@@ -1738,6 +1743,11 @@ const baselines = {
         types: true,
     },
     'ttttNeverReducedTypeVariableConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNeverReductionTypeVariableHasNeverType': {
         errors: true,
         symbols: true,
         types: true,

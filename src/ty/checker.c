@@ -1588,6 +1588,23 @@ static Ty const* known_objects_constraint(Checker* me, Ty const* ty) {
     return constraint;
 }
 
+// Whether a constituent's property `name` is never (tsc's CheckFlags.HasNeverType of the intersection's property): it
+// isn't reduced then. A known object's, or a type variable's through a constraint of known objects
+static bool some_prop_is_never(Checker* me, Atom const* name, Ty const* const* types, u32 len) {
+    for (u32 k = 0; k < len; k++) {
+        if (types[k]->kind == TY_TYPE_PARAM || types[k]->kind == TY_INDEXED) {
+            Ty const* constraint = known_objects_constraint(me, types[k]);
+            Ty const* type = constraint ? apparent_union_prop_type(me, constraint, name) : nullptr;
+            if (type && (type->flags & TYF_NEVER)) return true;
+            continue;
+        }
+        if (!is_known_object_for_reduction(me, types[k])) continue;
+        Prop const* prop = ty_get_prop(me, types[k], name);
+        if (prop && (prop_type(me, prop)->flags & TYF_NEVER)) return true;
+    }
+    return false;
+}
+
 static Atom const* never_reduced_literal_prop(Checker* me, Ty const* const* types, u32 len) {
     // (A type variable whose constraint is known objects, which a type literal's literal property can conflict with:
     // see below. Looked for first, it is rare: resolving the members of every type literal next to a type variable
@@ -1634,7 +1651,11 @@ static Atom const* never_reduced_literal_prop(Checker* me, Ty const* const* type
                         if (!is_literal_like(a_type) || (a_type->flags & TYF_NEVER)) break;
                     }
                     Ty const* both[2] = { a_type, b_type };
-                    if (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER) return prop->name;
+                    if (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER) {
+                        // (Not when a third constituent's is never, see never_reduced_prop())
+                        if (some_prop_is_never(me, prop->name, types, len)) break;
+                        return prop->name;
+                    }
                     continue;
                 }
                 if (!a_type) {
@@ -1648,22 +1669,14 @@ static Atom const* never_reduced_literal_prop(Checker* me, Ty const* const* type
                 // (A literal part on one side is enough, tsc's CheckFlags.HasLiteralPart)
                 if (b_type->flags & TYF_NEVER) continue;
                 Ty const* both[2] = { a_type, b_type };
-                if (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER) return prop->name;
+                if (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER) {
+                    if (some_prop_is_never(me, prop->name, types, len)) break;
+                    return prop->name;
+                }
             }
         }
     }
     return nullptr;
-}
-
-// Whether a known object constituent's property `name` is never (tsc's CheckFlags.HasNeverType of the intersection's
-// property): it isn't reduced then
-static bool some_prop_is_never(Checker* me, Atom const* name, Ty const* const* types, u32 len) {
-    for (u32 k = 0; k < len; k++) {
-        if (!is_known_object_for_reduction(me, types[k])) continue;
-        Prop const* prop = ty_get_prop(me, types[k], name);
-        if (prop && (prop_type(me, prop)->flags & TYF_NEVER)) return true;
-    }
-    return false;
 }
 
 static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 len, bool* private_conflict) {
