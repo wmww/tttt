@@ -3280,13 +3280,30 @@ static Ternary tuple_shapes_related(
 
 // Variances
 
+// Measured variances, what the links hold (KEY_VARIANCES, KEY_ALIAS_VARIANCES): only ever finished ones
 typedef struct Variances {
-    LazyState state;
-    // Met again while being measured (tsgo's empty variances): Ternary Unknown from then on, no more restarts
-    bool circular;
     u32 len;
     unsigned char data[];
 } Variances;
+
+// A measurement in flight (Checker.variance_claims), on the stack of the get_variances() or get_alias_variances() that
+// started it. What a checker reads of variances while they are being measured is its own, never the links'
+typedef struct VarianceClaim {
+    struct VarianceClaim* next; // The claim in flight around this one
+    Ty const* declared; // What it measures: a generic declared type, or else
+    Symbol const* alias; // a generic type alias
+    u32 len;
+    // Met again while being measured (tsgo's empty variances): Ternary Unknown from then on, no more restarts
+    bool circular;
+    Variances const* done; // Set by the first measurement of it to finish (a restart's may be first)
+} VarianceClaim;
+
+static VarianceClaim* variance_claim_of(Checker* me, Ty const* declared, Symbol const* alias) {
+    for (VarianceClaim* claim = my variance_claims; claim; claim = claim->next) {
+        if (claim->declared == declared && claim->alias == alias) return claim;
+    }
+    return nullptr;
+}
 
 static Ty const* variance_marker(Checker* me, u32 which) {
     // 0: super, 1: sub (constrained to super, so it's related to it), 2: unrelated to either
@@ -3426,35 +3443,45 @@ static Symbol const* subject_symbol(VarianceSubject subject) {
     return subject.declared ? subject.declared->declared.symbol : subject.alias;
 }
 
-static VarianceSubject subject_of_frame(Checker* me, u32 i) {
-    Ty const* declared = my variance_stack[i].declared;
+static VarianceSubject subject_of_claim(Checker* me, VarianceClaim const* claim) {
+    Ty const* declared = claim->declared;
     if (declared) return (VarianceSubject){ .declared = declared, .params = declared->declared.type_params };
-    Symbol const* alias = my variance_stack[i].alias;
-    return (VarianceSubject){ .alias = alias, .params = ty_alias_type_params(me, alias) };
+    return (VarianceSubject){ .alias = claim->alias, .params = ty_alias_type_params(me, claim->alias) };
 }
 
-// Measures into `variances` (tsgo's getVariancesWorker), unless a restart (see measured_variances()) gets there first
-static void measure_variances(Checker* me, VarianceSubject subject, Variances* variances) {
+// The claim's measurement is done: the links get it
+static Variances const* publish_variances(Checker* me, VarianceClaim* claim, unsigned char const* data) {
+    Variances* variances = arena_alloc(&my arena, sizeof(Variances) + claim->len);
+    variances->len = claim->len;
+    memcpy(variances->data, data, claim->len);
+    u64 key[2] = { claim->declared ? KEY_VARIANCES : KEY_ALIAS_VARIANCES,
+        claim->declared ? claim->declared->id : (u64)(uintptr_t)claim->alias };
+    *intern_slot(me, &my links, key, 2) = variances;
+    claim->done = variances;
+    return variances;
+}
+
+// Measures the claim's variances (tsgo's getVariancesWorker), unless a restart (see measured_variances()) gets there
+// first
+static void measure_variances(Checker* me, VarianceSubject subject, VarianceClaim* claim) {
     unsigned char saved_reports = my variance_reports;
     my variance_depth++;
     // (The outermost measurement is a resolution barrier, tsgo's resolutionStart: an alias in flight around it isn't a
     // cycle when the measurement reaches it, it is resolved again: an alias whose conditional type relates a class
     // whose methods name a generic type constrained by that alias, apollo-client's Cache.Implementation)
     bool outermost = !my variance_stack_len;
-    u32 saved_start = my resolving_variance_start;
-    if (outermost) my resolving_variance_start = my resolving_len;
+    if (outermost) ty_barrier_push(me, BARRIER_VARIANCE);
     bool pushed = my variance_stack_len < c_arraylen(my variance_stack);
     if (pushed) {
-        my variance_stack[my variance_stack_len++] =
-            (typeof(my variance_stack[0])){ .declared = subject.declared, .alias = subject.alias, .variances = variances };
+        my variance_stack[my variance_stack_len++] = claim;
     }
-    unsigned char measured[variances->len ? variances->len : 1];
+    unsigned char measured[claim->len ? claim->len : 1];
     if (debug_env.debug_variance) {
         Symbol const* sym = subject_symbol(subject);
         fprintf(stderr, "VAR> %.*s depth=%u\n", (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "", my variance_stack_len);
     }
     u32 types_before = my next_type_id;
-    for (u32 i = 0; i < variances->len; i++) {
+    for (u32 i = 0; i < claim->len; i++) {
         // Variance annotations (`in T`, `out T`, `in out T`) are taken as they are (tsc's getVariancesWorker), those of
         // every declaration of a merged interface together
         unsigned modifiers = subject_variance_modifiers(subject, i);
@@ -3476,27 +3503,26 @@ static void measure_variances(Checker* me, VarianceSubject subject, Variances* v
         variance |= my variance_reports;
         measured[i] = (unsigned char)variance;
         // (A computation restarted from a circularity measured them already: tsgo exits early)
-        if (variances->state == LAZY_STATE_DONE) break;
+        if (claim->done) break;
     }
     if (debug_env.debug_variance) {
         Symbol const* sym = subject_symbol(subject);
         fprintf(stderr, "VAR< %.*s [", (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "");
         // (tsgo's VarianceFlags values: 0 invariant, 1 co, 2 contra, 3 bi, 4 independent, +8 unmeasurable, +16
         // unreliable; tttt's own flags are the other way round)
-        for (u32 i = 0; i < variances->len; i++) {
+        for (u32 i = 0; i < claim->len; i++) {
             unsigned v = measured[i];
             unsigned tsgo = (v & 7) | (v & VARIANCE_UNMEASURABLE ? 8 : 0) | (v & VARIANCE_UNRELIABLE ? 16 : 0);
             fprintf(stderr, i ? " %u" : "%u", tsgo);
         }
-        fprintf(stderr, "] stored=%s types=%u\n", variances->state == LAZY_STATE_DONE ? "false" : "true", my next_type_id - types_before);
+        fprintf(stderr, "] stored=%s types=%u\n", claim->done ? "false" : "true", my next_type_id - types_before);
     }
     if (pushed) my variance_stack_len--;
-    if (outermost) my resolving_variance_start = saved_start;
+    if (outermost) ty_barrier_pop(me);
     my variance_depth--;
     my variance_reports = saved_reports;
-    if (variances->state == LAZY_STATE_DONE) return;
-    memcpy(variances->data, measured, variances->len);
-    variances->state = LAZY_STATE_DONE;
+    if (claim->done) return;
+    Variances const* variances = publish_variances(me, claim, measured);
     if (debug_env.dump_variances) {
         cstr name = subject.declared ? ty_to_cstr(me, subject.declared) : cstr_from_sv(subject.alias->name);
         for (u32 i = 0; i < variances->len; i++) log_info("variance of ", name, " #", i, ": ", (u32)variances->data[i]);
@@ -3508,25 +3534,30 @@ static void measure_variances(Checker* me, VarianceSubject subject, Variances* v
 // (null). Since the result depends on where a circularity is entered, it is measured again from the circular region's
 // smallest symbol (by declaration order) when that isn't the one entered first, so circular generic types get the same
 // variances whichever is asked for first; what that restart measured is then known here too
-static Variances const* measured_variances(Checker* me, VarianceSubject subject, Variances* variances) {
-    if (variances->state == LAZY_STATE_DONE) return variances;
-    if (variances->circular) return nullptr;
+static Variances const* measured_variances(Checker* me, VarianceClaim* claim) {
+    if (claim->done) return claim->done;
+    if (claim->circular) return nullptr;
+    VarianceSubject subject = subject_of_claim(me, claim);
     i32 index = -1;
     for (u32 i = 0; i < my variance_stack_len && index < 0; i++) {
-        if (my variance_stack[i].variances == variances) index = (i32)i;
+        if (my variance_stack[i] == claim) index = (i32)i;
     }
     if (index < 0) {
         // (In flight outside the current stack, which a restart set aside: measured afresh, like tsgo)
-        measure_variances(me, subject, variances);
-        return variances;
+        measure_variances(me, subject, claim);
+        return claim->done;
     }
     u32 min = (u32)index;
     for (u32 i = (u32)index + 1; i < my variance_stack_len; i++) {
-        if (ty_compare_symbols(subject_symbol(subject_of_frame(me, i)), subject_symbol(subject_of_frame(me, min))) < 0) min = i;
+        if (ty_compare_symbols(subject_symbol(subject_of_claim(me, my variance_stack[i])),
+            subject_symbol(subject_of_claim(me, my variance_stack[min]))) < 0
+        ) {
+            min = i;
+        }
     }
     if (debug_env.debug_variance) {
         Symbol const* sym = subject_symbol(subject);
-        Symbol const* restart = subject_symbol(subject_of_frame(me, min));
+        Symbol const* restart = subject_symbol(subject_of_claim(me, my variance_stack[min]));
         fprintf(stderr, "VAR circular %.*s restart=%.*s\n", (int)sym->name.size, sym->name.buf, (int)restart->name.size, restart->name.buf);
     }
     if (min > (u32)index) {
@@ -3534,40 +3565,41 @@ static Variances const* measured_variances(Checker* me, VarianceSubject subject,
         typeof(my variance_stack) saved;
         memcpy(saved, my variance_stack, sizeof(saved[0]) * saved_len);
         my variance_stack_len = 0;
-        Variances* restarted = saved[min].variances;
-        if (restarted->state != LAZY_STATE_DONE) {
-            VarianceSubject restart = saved[min].declared ?
-                (VarianceSubject){ .declared = saved[min].declared, .params = saved[min].declared->declared.type_params } :
-                (VarianceSubject){ .alias = saved[min].alias, .params = ty_alias_type_params(me, saved[min].alias) };
-            measure_variances(me, restart, restarted);
-        }
+        VarianceClaim* restarted = saved[min];
+        if (!restarted->done) measure_variances(me, subject_of_claim(me, restarted), restarted);
         memcpy(my variance_stack, saved, sizeof(saved[0]) * saved_len);
         my variance_stack_len = saved_len;
     }
-    if (variances->state == LAZY_STATE_DONE) return variances;
-    variances->circular = true;
+    if (claim->done) return claim->done;
+    claim->circular = true;
     return nullptr;
 }
 
-static Variances* new_variances(Checker* me, u64 const* key, u32 len) {
-    Variances* variances = arena_alloc(&my arena, sizeof(Variances) + len);
-    variances->len = len;
-    variances->state = LAZY_STATE_IN_FLIGHT;
-    variances->circular = false;
-    *intern_slot(me, &my links, key, 2) = variances;
-    return variances;
+// Measures what is neither in the links nor in flight, under a claim of its own
+static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) {
+    VarianceClaim claim = { .next = my variance_claims, .declared = subject.declared, .alias = subject.alias,
+        .len = subject.params.len };
+    my variance_claims = &claim;
+    measure_variances(me, subject, &claim);
+    my variance_claims = claim.next;
+    return claim.done;
+}
+
+// Whether the declared type's variances are measured, or being measured
+static bool variances_known(Checker* me, Ty const* target) {
+    return intern_get(&my links, (u64[]){ KEY_VARIANCES, target->id }, 2) || variance_claim_of(me, target, nullptr);
 }
 
 // Null while the variances are being measured (the caller then goes by Ternary Unknown, like tsc)
 static Variances const* get_variances(Checker* me, Ty const* target) {
     u64 key[2] = { KEY_VARIANCES, target->id };
-    Variances* variances = (Variances*)intern_get(&my links, key, 2);
-    if (variances && variances->state == LAZY_STATE_DONE) {
+    Variances const* variances = intern_get(&my links, key, 2);
+    if (variances) {
         TAINT_READ(TK_VARIANCES, variances);
         return variances;
     }
-    VarianceSubject subject = { .declared = target, .params = target->declared.type_params };
-    if (variances) {
+    VarianceClaim* claim = variance_claim_of(me, target, nullptr);
+    if (claim) {
         // (TTTT_TAINT_VARIANCES_CLEAN=1: measuring again from the smallest symbol makes the result the same whichever
         // is entered first, so what is read in flight here could be internal to the measurement; cleandiff checks it)
 #ifdef TTTT_TAINT
@@ -3575,34 +3607,33 @@ static Variances const* get_variances(Checker* me, Ty const* target) {
         if (variances_clean < 0) variances_clean = getenv("TTTT_TAINT_VARIANCES_CLEAN") && *getenv("TTTT_TAINT_VARIANCES_CLEAN");
         if (!variances_clean) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
 #endif
-        return measured_variances(me, subject, variances);
+        return measured_variances(me, claim);
     }
 
     TAINT_BEGIN(taint_frame);
-    variances = new_variances(me, key, target->declared.type_params.len);
+    VarianceSubject subject = { .declared = target, .params = target->declared.type_params };
     if (is_array_target(me, target) || target->declared.kind == TY_DECLARED_TUPLE_TARGET ||
         target->declared.kind == TY_DECLARED_SYNTHETIC
     ) {
-        memset(variances->data, VARIANCE_COVARIANT, variances->len);
-        variances->state = LAZY_STATE_DONE;
-        return variances;
+        Variances* covariant = arena_alloc(&my arena, sizeof(Variances) + subject.params.len);
+        covariant->len = subject.params.len;
+        memset(covariant->data, VARIANCE_COVARIANT, covariant->len);
+        *intern_slot(me, &my links, key, 2) = covariant;
+        return covariant;
     }
-    measure_variances(me, subject, variances);
-    if (variances->state == LAZY_STATE_DONE) TAINT_END(taint_frame, TK_VARIANCES, variances, target, variances);
+    variances = claim_and_measure(me, subject);
+    TAINT_END(taint_frame, TK_VARIANCES, variances, target, variances);
     return variances;
 }
 
 // The variances of a generic type alias's type parameters (tsc's getAliasVariances), null while being measured
 static Variances const* get_alias_variances(Checker* me, Symbol const* alias) {
     u64 key[2] = { KEY_ALIAS_VARIANCES, (u64)(uintptr_t)alias };
-    Variances* variances = (Variances*)intern_get(&my links, key, 2);
-    if (variances && variances->state == LAZY_STATE_DONE) return variances;
-    if (variances) return measured_variances(me, (VarianceSubject){ .alias = alias, .params = ty_alias_type_params(me, alias) }, variances);
-
-    TyList params = ty_alias_type_params(me, alias);
-    variances = new_variances(me, key, params.len);
-    measure_variances(me, (VarianceSubject){ .alias = alias, .params = params }, variances);
-    return variances;
+    Variances const* variances = intern_get(&my links, key, 2);
+    if (variances) return variances;
+    VarianceClaim* claim = variance_claim_of(me, nullptr, alias);
+    if (claim) return measured_variances(me, claim);
+    return claim_and_measure(me, (VarianceSubject){ .alias = alias, .params = ty_alias_type_params(me, alias) });
 }
 
 bool ty_alias_param_is_contravariant(Checker* me, Symbol const* alias, u32 index) {
@@ -6270,8 +6301,7 @@ static Ternary structured_related_members(
         bool marker = my variance_depth && source_target == target_target && use_variances && !source_self && !target_self &&
             (is_marker_reference(me, source) || is_marker_reference(me, target)) &&
             !is_array_target(me, source_target) && source_target->declared.kind != TY_DECLARED_TUPLE_TARGET &&
-            source_target->declared.kind != TY_DECLARED_SYNTHETIC &&
-            intern_get(&my links, (u64[]){ KEY_VARIANCES, source_target->id }, 2);
+            source_target->declared.kind != TY_DECLARED_SYNTHETIC && variances_known(me, source_target);
         if (source_target == target_target && use_variances && !is_check_marker(me, source) && !is_check_marker(me, target) && !marker) {
             // `[]` to `never[]` without strictNullChecks (tsc's isEmptyArrayLiteralType)
             if (!source_self && is_array_target(me, source_target) && !compiler_options()->strict_null_checks &&

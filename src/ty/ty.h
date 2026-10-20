@@ -1129,11 +1129,10 @@ struct Checker {
     struct Resolving* resolving;
     u32 resolving_len;
     u32 resolving_cap;
-    u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
-    // The outermost variance measurement's resolving_len (tsc's resolutionStart there): an alias in flight below it is
-    // resolved again (lower.c's alias_reenters()). Only aliases: what else is in flight there isn't re-entered by tttt,
-    // so moving resolving_start would hide its cycles (TS7022 in classVarianceResolveCircularity2)
-    u32 resolving_variance_start;
+    // The resolution barriers, innermost last (tsc's resolutionStart, saved and moved): see ty_barrier_push()
+    struct Barrier* barriers;
+    u32 barriers_len, barriers_cap;
+    u32 resolving_start; // The innermost call barrier's resolving_len (cached): cycles aren't looked for below it
     u32 base_constructors_in_flight; // RESOLVING_BASE_CONSTRUCTOR entries on the stack (relate.c's tuple index relation)
     // The classes, interfaces and references whose members are being resolved, innermost last, with the resolving stack's
     // length and the instantiation depth when each started (see probe_eager_bases())
@@ -1149,7 +1148,6 @@ struct Checker {
     // types are that candidate's parameters meanwhile (tsc's getSignatureApplicabilityError pushes them)
     struct { void const* call; struct Signature const* sig; struct TyMapper const* mapper; } reporting_candidate;
     bool resolving_nested_call; // The next resolve_call() is a call re-entered while in flight (no barrier)
-    u32 resolving_call_start; // resolving_start outside the call being resolved: what its return type is resolved with
     bool creating_from_type_node; // ty_reference_with_this() marks what it makes from_type_node (see lower.c)
     bool circular_bindings; // Whether a KEY_CIRCULAR_BINDING was recorded (it's rare: most checkers skip the lookup)
     u32 instantiation_limit_hits; // How many times ty_instantiate() gave up (TS2589): whether a computation was cut short
@@ -1217,8 +1215,11 @@ struct Checker {
     u32 variance_depth; // Variances are being measured, which is only reliable while the marker types are compared
     // The declared types and aliases whose variances are being measured, outermost first (tsgo's varianceStack): a
     // circularity restarts from its smallest symbol (relate.c, measured_variances())
-    struct { struct Ty const* declared; struct Symbol const* alias; void* variances; } variance_stack[64];
+    struct VarianceClaim* variance_stack[64];
     u32 variance_stack_len;
+    // Every variance measurement in flight, innermost first, those a restart set aside from variance_stack too: the
+    // checker's own in-flight records (relate.c's get_variances()). The links only ever hold finished variances
+    struct VarianceClaim* variance_claims;
     unsigned char variance_reports; // VARIANCE_UNRELIABLE/UNMEASURABLE of what the measurement went through (relate.c)
     struct IterationState const* iteration; // The lib's iteration interfaces, looked up on first use (iterate.c)
     // `Disposable | null | undefined` and `AsyncDisposable | Disposable | null | undefined`, what a `using` / `await
@@ -2215,6 +2216,33 @@ static inline bool ty_resolving_find(Checker* me, ResolvingKind kind, void const
     }
     return false;
 }
+
+// Resolution barriers (tsc's resolutionStart). What is in flight below the innermost barrier isn't a cycle when it is
+// asked for again: it is resolved again, nested, above the barrier, where a third request is one. tsc moves
+// resolutionStart for a call's first resolution (getResolvedSignature) and the outermost variance measurement
+// (getVariancesWorker, a restart from a variance circularity being outermost again). Every in-flight record of a checker
+// is judged against this one stack (ty_resolving_reenters())
+typedef enum BarrierKind {
+    BARRIER_CALL, // A call's first resolution: moves resolving_start to the top
+    BARRIER_NESTED_CALL, // A call resolved again while in flight: no barrier of its own, the whole stack stays visible
+    BARRIER_VARIANCE, // The outermost variance measurement: only aliases see it (see ty_resolving_reenters())
+} BarrierKind;
+typedef struct Barrier {
+    u32 resolving_len; // What is in flight below this is resolved again
+    u32 outer_start; // (Calls) resolving_start outside the call: what its return type is resolved with
+    BarrierKind kind;
+} Barrier;
+void ty_barrier_push(Checker* me, BarrierKind kind);
+void ty_barrier_pop(Checker* me);
+// resolving_start outside the innermost call's barrier (tsc's checkCallExpression asks the resolved signature's return
+// type after getResolvedSignature is done)
+u32 ty_barrier_outer_call_start(Checker* me);
+// Whether `key`, in flight (its own state says so), is in flight only below the innermost barrier that applies to its
+// kind, so it is resolved again rather than being a cycle. Each kind's rule is tttt's approximation of tsc's (plan 88):
+// declarations, return types and properties see the call barriers, aliases only the variance barrier (what else is in
+// flight there isn't re-entered by tttt, so the variance barrier would hide its cycles: TS7022 in
+// classVarianceResolveCircularity2). How often it is resolved again is the caller's (`reevaluating`, prop_type())
+bool ty_resolving_reenters(Checker* me, ResolvingKind kind, void const* key);
 
 // Control flow queries (ty/flow.c)
 typedef struct FlowNode FlowNode;

@@ -160,7 +160,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
         // resolutionStart), it isn't a cycle: it's evaluated again, once, and the inner evaluation's result is the one
         // remembered (tsc's getTypeOfVariableOrParameterOrProperty)
         bool below_barrier = my tag != LAZY_TYPE_EXPR && !lazy_type_pattern_root(me) &&
-            !ty_resolving_find(current_checker, RESOLVING_DECLARATION, me);
+            ty_resolving_reenters(current_checker, RESOLVING_DECLARATION, me);
         if (below_barrier) {
             if (debug_env.debug_reentry) ty_debug_reentry(current_checker, state->reevaluating ? "ONCE 0 call" : "REENTER 0 call", span_null);
             if (state->reevaluating) goto circular;

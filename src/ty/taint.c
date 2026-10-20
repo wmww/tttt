@@ -681,9 +681,9 @@ static void cleandiff(unsigned kind, void const* subject, void const* result) {
             break;
         case TK_VARIANCES: {
             // (relate.c's Variances, which only it knows)
-            struct { LazyState state; bool circular; u32 len; unsigned char data[]; } const* v = result;
+            struct { u32 len; unsigned char data[]; } const* v = result;
             key = fp_ty(subject);
-            value = fp_mix(fp_bytes(v->data, v->len), v->circular);
+            value = fp_bytes(v->data, v->len);
             break;
         }
         case TK_SYMBOL_DECLARED:

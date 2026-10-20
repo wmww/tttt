@@ -1471,7 +1471,7 @@ Ty const* ty_contextual_return_type_self(Checker* me, FunctionImpl const* functi
             if (sig->function == function && !sig->target) {
                 *self = CONTEXT_OWN;
                 if (ty_function_return_in_flight(me, function)) {
-                    if (debug_env.debug_reentry && !ty_resolving_find(me, RESOLVING_FUNCTION_RETURN, function)) ty_debug_reentry(me, "RETINFLIGHT call", span_null);
+                    if (debug_env.debug_reentry && ty_resolving_reenters(me, RESOLVING_FUNCTION_RETURN, function)) ty_debug_reentry(me, "RETINFLIGHT call", span_null);
                     return nullptr;
                 }
             }
@@ -1485,7 +1485,7 @@ Ty const* ty_contextual_return_type_self(Checker* me, FunctionImpl const* functi
     if (sig->function == function && !sig->target) {
         *self = CONTEXT_OWN;
         if (ty_function_return_in_flight(me, function)) {
-            if (debug_env.debug_reentry && !ty_resolving_find(me, RESOLVING_FUNCTION_RETURN, function)) ty_debug_reentry(me, "RETINFLIGHT call", span_null);
+            if (debug_env.debug_reentry && ty_resolving_reenters(me, RESOLVING_FUNCTION_RETURN, function)) ty_debug_reentry(me, "RETINFLIGHT call", span_null);
             return nullptr;
         }
     }

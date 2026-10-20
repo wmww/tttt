@@ -1831,7 +1831,7 @@ static Ty const* candidate_return_type(Checker* me, Candidate const* candidate) 
 // getReturnTypeOfSignature after getResolvedSignature is done): a cycle through it is the declarations' around the call
 static Ty const* resolved_return_type(Checker* me, Candidate const* candidate) {
     u32 start = my resolving_start;
-    my resolving_start = my resolving_call_start;
+    my resolving_start = ty_barrier_outer_call_start(me);
     Ty const* ret = candidate_return_type(me, candidate);
     my resolving_start = start;
     return ret;
@@ -2757,15 +2757,12 @@ static void check_args_untyped(Checker* me, CallExpr const* call) {
 }
 
 static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs) {
-    u32 start = my resolving_start, call_start = my resolving_call_start;
-    my resolving_call_start = start;
-    if (!my resolving_nested_call) my resolving_start = my resolving_len;
     bool nested = my resolving_nested_call;
+    ty_barrier_push(me, nested ? BARRIER_NESTED_CALL : BARRIER_CALL);
     my resolving_nested_call = false;
     Ty const* ret = resolve_call_inner(me, callee, info, call_span, errs);
     my resolving_nested_call = nested;
-    my resolving_start = start;
-    my resolving_call_start = call_start;
+    ty_barrier_pop(me);
     return ret;
 }
 

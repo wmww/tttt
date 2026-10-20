@@ -386,6 +386,41 @@ Not measured: the share of these results another checker actually reuses (the wa
 the duplication, not which kinds). Cleandiff compares a fresh checker per file against the first one, not two
 interleaved shared histories, so the mixed derivation of census B §4 is still untested.
 
+### 4a's overlay: record shape and API (session 1, 2026-10-20)
+Every 4a session follows this, so the sessions don't each invent a shape. The rule: **a field another worker could
+read holds only finished values; anything about a computation in progress lives in a record owned by the computing
+checker.** At K1 nothing is shared, so 4a is a pure refactor (byte-identical output, instructions flat).
+- **The barrier stack** (plan 88 stage A, done): `Checker.barriers` (`Barrier { resolving_len, outer_start, kind }`,
+  ty.h), pushed by resolve_call() (BARRIER_CALL for a first resolution, BARRIER_NESTED_CALL for one re-entered in
+  flight, which doesn't move the barrier) and the outermost measure_variances() (BARRIER_VARIANCE, a restart included).
+  `resolving_start` is the innermost call barrier's position, cached; `ty_barrier_outer_call_start()` is what a call's
+  return type is resolved with. `ty_resolving_reenters(me, kind, key)` is the one place that decides "in flight only
+  below the barrier, resolve again": each kind keeps its current rule there (aliases see the variance barrier, the
+  rest the call barriers), so plan 88 stage B changes one function, not five sites.
+- **Records live on the C stack of the computation that owns them**, linked into the checker: the `VarianceClaim`
+  pattern (relate.c, done). `get_variances()` and `get_alias_variances()` look in the links (only finished
+  `Variances`, no state field any more), then in `Checker.variance_claims` (every measurement in flight, the ones a
+  restart set aside included), then claim and measure. The claim holds `circular` and `done` (the first measurement to
+  finish, a restart's or a nested one's); `publish_variances()` writes the links once. The variance stack holds claim
+  pointers. Lifetime is the C frame, so recycling and errors need no cleanup.
+- **For kinds that push a `Resolving` entry** (declarations, return types, props, aliases, bindings, base constraints,
+  bases, base constructors...): the entry *is* the record's anchor. Session 2 adds `void* record` to `Resolving` (the
+  per-kind payload: `reevaluating`, `hits`, `circular`, a placeholder, a sentinel's meaning) and
+  `ty_in_flight_record(me, kind, key)`, a scan of the whole resolving stack (not just above the barrier). Kinds with
+  no push of their own (KEY_SIMPLIFIED, members, mapped `unexpanded`, deferred reference args, param defaults) get one,
+  or a claim list like the variances' when the payload is bigger than a flag.
+- **The shared field's state byte stays as a hint at K1**: IN_FLIGHT means "someone has it in flight, ask the
+  overlay", never a value. Nothing else about the computation may be read from or written to the shared object
+  (`Prop.circular`, `TyDeferredRef.circular`, `fallback_circular`, `FunctionReturn.reevaluating`,
+  `LazyMemo.reevaluating`/`hits`, KEY_SIMPLIFIED's self placeholder, KEY_BASE_CONSTRAINT's sentinels,
+  KEY_TYPE_VARIABLE_REDUCTION's `1`, early members). The fast path (`state == DONE`) is unchanged, and the scan only runs
+  on an in-flight hit, which is rare (G0: in-flight reads are a few percent of tainted entries). In 4d the hint becomes
+  owner-tagged (a worker id, or a per-worker bit) so a foreign IN_FLIGHT means "compute privately", not "cycle".
+- **Publication** is one function per kind (`publish_variances()` is the model): it writes the value and DONE
+  together, and is where 4d puts the CAS and the taint test. A computation that finishes after another one published
+  (a nested re-entry, a restart) keeps the first value, as today.
+- Session 1's cost: K1 instructions in `test/instrcount.txt`'s session-1 commit, against b7ad0eac's counts.
+
 ## Validation of the whole plan
 The 12-core table in measurements.md re-run by the human after each stage (`scripts/bench.sh --runs 3 --bun PATH
 --tscrs PATH`, the CPU column included), per-file sums at K1 / K1-with-spinning-cores / K12 on vscode and drizzle

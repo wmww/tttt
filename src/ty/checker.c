@@ -693,6 +693,7 @@ void checker_drop(Checker* me) {
     ty_active_mappers_drop(me);
     free(my flow_loops);
     free(my resolving);
+    free(my barriers);
     free(my members_in_flight);
     free(my flow_shared);
     for (u32 i = 0; i < my call_errors_len; i++) error_ctx_drop(my call_errors[i]);
@@ -3909,6 +3910,44 @@ void ty_resolving_grow(Checker* me) {
     my resolving_cap = my resolving_cap ? my resolving_cap * 2 : 64;
     my resolving = realloc(my resolving, sizeof(Resolving) * my resolving_cap);
     panic_if(!my resolving, "out of memory");
+}
+
+void ty_barrier_push(Checker* me, BarrierKind kind) {
+    if (my barriers_len == my barriers_cap) {
+        my barriers_cap = my barriers_cap ? my barriers_cap * 2 : 16;
+        my barriers = realloc(my barriers, sizeof(Barrier) * my barriers_cap);
+        panic_if(!my barriers, "out of memory");
+    }
+    Barrier barrier = { .resolving_len = my resolving_len, .outer_start = my resolving_start, .kind = kind };
+    if (kind == BARRIER_NESTED_CALL) barrier.resolving_len = my resolving_start;
+    if (kind != BARRIER_VARIANCE) my resolving_start = barrier.resolving_len;
+    my barriers[my barriers_len++] = barrier;
+}
+
+void ty_barrier_pop(Checker* me) {
+    Barrier const* barrier = &my barriers[--my barriers_len];
+    if (barrier->kind != BARRIER_VARIANCE) my resolving_start = barrier->outer_start;
+}
+
+u32 ty_barrier_outer_call_start(Checker* me) {
+    for (u32 i = my barriers_len; i-- > 0;) {
+        if (my barriers[i].kind != BARRIER_VARIANCE) return my barriers[i].outer_start;
+    }
+    return 0;
+}
+
+bool ty_resolving_reenters(Checker* me, ResolvingKind kind, void const* key) {
+    u32 start = my resolving_start;
+    if (kind == RESOLVING_ALIAS) {
+        u32 i = my barriers_len;
+        while (i-- > 0 && my barriers[i].kind != BARRIER_VARIANCE) {}
+        if (i == UINT32_MAX) return false;
+        start = my barriers[i].resolving_len;
+    }
+    for (u32 i = my resolving_len; i-- > start;) {
+        if (my resolving[i].key == key && my resolving[i].kind == kind) return false;
+    }
+    return true;
 }
 
 void ty_debug_reentry(Checker* me, char const* event, Span at) {

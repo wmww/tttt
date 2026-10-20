@@ -20,11 +20,12 @@ excalidraw, zod, effect and vscode after each session, and its mismatch counts m
 4a session finds the overlay split can't be made without semantic changes the oracles reject, stop and write up why
 (plan 86's fallback is stage 3 plus the snapshot recycle): a no-go is a valid outcome.
 
-1. **Plan 86 stage 4a, session 1: one barrier stack, variance claims into the overlay.** Plan 88 stage A first (one
-   `Barrier` stack, `ty_resolving_reenters()`, a pure refactor) as the substrate every per-checker in-flight record
-   hangs off; then G0 condition 2: variance claims and measurement state as per-checker records, the shared-looking
-   variance field only ever written done. Write the overlay's record shape and API into plan 86 (one place, so
-   sessions 2-3 follow it).
+1. Done 2026-10-20 (session 1): plan 88 stage A (`Checker.barriers`, ty_resolving_reenters()) and variance claims
+   (`VarianceClaim`, the links hold only finished `Variances`); the overlay's record shape and API are in plan 86
+   ("4a's overlay"). Suite 13957, corpora, DT, `$ExpectType`, flagflip, source sweep, `-b`, perfsweep, dtsdiff and
+   clidiff unchanged; K1 instructions +0.04-0.12% (not saved); taint cleandiff mismatches identical to b7ad0eac's on
+   all five corpora. **kdiff and recycle were not run** (stopped: the machine was being moved): run
+   `scripts/oracles.py --only kdiff,recycle` first in session 2.
 2. **Stage 4a, session 2: the rest of the in-flight state.** The IN_FLIGHT LazyStates, LazyMemo flags,
    KEY_SIMPLIFIED's placeholder, KEY_BASE_CONSTRAINT's sentinels, early and partial members (census A/B lists).
    Decide plan 88 stage B here (barrier termination instead of `reevaluating` / `prop_reentry_depth`): do it only if it

@@ -31,13 +31,14 @@ check. Tool: `scripts/reentrytrace.py` (below).
 ## tttt's model (2026-10-20)
 
 Per-site approximations, each tuned to the tests that needed it:
-- `Checker.resolving` / `resolving_start`: the same stack and barrier, set by resolve_call() (not for a nested
-  re-resolution, `resolving_nested_call`); `resolved_return_type()` reads the return type outside the barrier.
+- `Checker.resolving` and `Checker.barriers`: the same stack and barriers, pushed by resolve_call() (a nested
+  re-resolution's doesn't move it, `resolving_nested_call`) and the outermost variance measurement;
+  `resolved_return_type()` reads the return type outside the barrier. Each site's rule is in ty_resolving_reenters().
 - Declarations (lazy_type_evaluate_inner()) and inferred return types (function_return_type()) re-enter below the
   call barrier **once** (`reevaluating`), then say circular. tsc has no "once": it re-enters until the request is
   above a barrier.
-- Aliases re-enter only below the outermost variance measurement (`resolving_variance_start`, alias_reenters(), the
-  apollo fix 7238e629e). Nothing else sees the variance barrier.
+- Aliases re-enter only below the outermost variance measurement (BARRIER_VARIANCE, alias_reenters(), the apollo fix
+  7238e629e). Nothing else sees the variance barrier.
 - Symbol properties re-enter below the call barrier up to depth 4, instantiated properties up to 200
   (prop_type_slow(), `prop_reentry_depth`).
 - Base types look for their cycle across barriers (ty_resolving_cycle_across_calls(): tsc's second round finds it
@@ -102,11 +103,8 @@ and "first to finish wins" is a publish-once (CAS) rule. But every value compute
 re-entered is history-dependent (taint: it must not be published to a shared graph; the taint prototype's
 TAINT_IN_FLIGHT_* events already mark these). The model, in order of dependency:
 
-- **A. One barrier stack.** A `Barrier { u32 resolving_len; u8 kind; }` pushed by resolve_call()'s first resolution
-  and the outermost measure_variances() (and its restarts); `resolving_variance_start` and `resolving_call_start`
-  derived from it; one helper `ty_resolving_reenters(me, kind, key)` ("in flight, not above the innermost barrier")
-  used by every in-flight site. Pure refactor if each site keeps its current rule (the variance barrier applies to
-  aliases only, as now).
+- **A. One barrier stack** (done 2026-10-20, plan 86 4a session 1: `Checker.barriers`, ty_barrier_push()/pop(),
+  ty_resolving_reenters(); the output unchanged).
 - **B. Barrier termination instead of "once".** Drop `reevaluating` (LazyMemo, FunctionReturn) and
   `prop_reentry_depth < 4`: re-enter whenever not above the innermost barrier; the nested computation is above it, so
   a third request is a cycle. Then extend A's helper to every kind below both barriers (experiments 1 and 2 become

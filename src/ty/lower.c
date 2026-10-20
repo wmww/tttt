@@ -249,15 +249,12 @@ static Symbol const* exported_alias_twin(Symbol const* symbol, SymbolDecl const*
 }
 
 // A type alias asked for while in flight that isn't being resolved above a variance measurement's resolution barrier
-// (Checker.resolving_variance_start): tsc's pushTypeResolution finds no cycle and resolves it again. (Bounded: the
-// nested resolution is above the barrier)
+// (ty_resolving_reenters()): tsc's pushTypeResolution finds no cycle and resolves it again. (Bounded: the nested
+// resolution is above the barrier)
 static bool alias_reenters(Checker* me, Symbol const* symbol) {
     SymbolFlags other = SYMBOL_INTERFACE | SYMBOL_CLASS | SYMBOL_ENUM | SYMBOL_ENUM_MEMBER | SYMBOL_TYPE_PARAMETER;
-    if (!(symbol->flags & SYMBOL_TYPE_ALIAS) || (symbol->flags & other) || !my variance_stack_len) return false;
-    for (u32 i = my resolving_len; i-- > my resolving_variance_start;) {
-        if (my resolving[i].key == symbol && my resolving[i].kind == RESOLVING_ALIAS) return false;
-    }
-    return true;
+    if (!(symbol->flags & SYMBOL_TYPE_ALIAS) || (symbol->flags & other)) return false;
+    return ty_resolving_reenters(me, RESOLVING_ALIAS, symbol);
 }
 
 // The type a symbol stands for in a type position: the symbol must be the one that has the type meaning (what
