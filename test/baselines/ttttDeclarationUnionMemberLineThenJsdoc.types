@@ -1,0 +1,79 @@
+//// [test/cases/ttttDeclarationUnionMemberLineThenJsdoc.ts] ////
+
+=== ttttDeclarationUnionMemberLineThenJsdoc.ts ===
+// A reused union member's leading JSDoc on its own line after a `//` comment (ts-proto's oneof unions): tsc's
+// writer indents lazily, so the comment lines and the member are indented like the line comment
+export interface Value {
+  kind:
+>kind : { a: 1; } | { b: 2; } | undefined
+
+    | //
+    /** Represents a null value. */
+    { a: 1 }
+>a : 1
+
+    | //
+    /** Represents a double value. */
+    { b: 2 }
+>b : 2
+
+    | undefined;
+  k2:
+>k2 : { a: 1; } | { b: 2; }
+
+    | /** A */ { a: 1 }
+>a : 1
+
+    | /** B */
+    { b: 2 };
+>b : 2
+
+  k3:
+>k3 : { a: 1; } | { b: 2; }
+
+    | // x
+    { a: 1 }
+>a : 1
+
+    | { b: 2 };
+>b : 2
+
+  k4:
+>k4 : { a: 1; }
+
+    /** A */
+    { a: 1 };
+>a : 1
+
+  k5:
+>k5 : { a: 1; } | { b: 2; }
+
+    | /** A */
+    /** B */
+    { a: 1 }
+>a : 1
+
+    | // c
+    // d
+    { b: 2 };
+>b : 2
+
+  k6: Array<
+>k6 : { a: 1; }[]
+
+    // x
+    /** y */
+    { a: 1 }>;
+>a : 1
+}
+export type T =
+>T : T
+
+  | //
+  /** doc */
+  { a: 1 }
+>a : 1
+
+  | { b: 1 };
+>b : 1
+

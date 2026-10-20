@@ -3121,7 +3121,24 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
         display_node_mapped(me, d, node);
         return;
     }
-    if (start != d.comments_container_start) decl_comments_leading(d.comments, d.target, d.indent, start);
+    if (start != d.comments_container_start) {
+        // (The writer indents lazily, tsc's writeLine is a no-op at a line start: a line that is only the indentation
+        // out_intervening_comments() wrote after a `//` comment is a line start for the comments on the lines below,
+        // and the node goes on an indented line after them, ts-proto's `| //\n /** doc */\n { ... }`)
+        cstr* target = d.target;
+        isize_t size = cstr_size(target), spaces = 0;
+        char const* text = cstr_str(target);
+        while (spaces < size && text[size - 1 - spaces] == ' ') spaces++;
+        bool blank_line = spaces && spaces < size && text[size - 1 - spaces] == '\n';
+        if (blank_line) cstr_resize(target, size - spaces, '\0');
+        isize_t before = cstr_size(target);
+        decl_comments_leading(d.comments, target, d.indent, start);
+        if (cstr_size(target) == before) {
+            if (blank_line) for (isize_t i = 0; i < spaces; i++) out(d, c_sv(" "));
+        } else if (decl_map_last_char(cstr_sv(target)) == '\n') {
+            out_indent(d);
+        }
+    }
     char const* container_end = d.comments_container_end;
     d.comments_container_start = start;
     d.comments_container_end = end;

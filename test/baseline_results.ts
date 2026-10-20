@@ -800,6 +800,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationUnionMemberLineThenJsdoc': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationUnknownImportRenamed': {
         errors: true,
         symbols: true,

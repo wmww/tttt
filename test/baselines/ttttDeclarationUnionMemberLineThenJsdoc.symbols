@@ -1,0 +1,82 @@
+//// [test/cases/ttttDeclarationUnionMemberLineThenJsdoc.ts] ////
+
+=== ttttDeclarationUnionMemberLineThenJsdoc.ts ===
+// A reused union member's leading JSDoc on its own line after a `//` comment (ts-proto's oneof unions): tsc's
+// writer indents lazily, so the comment lines and the member are indented like the line comment
+export interface Value {
+>Value : Symbol(Value, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 0, 0))
+
+  kind:
+>kind : Symbol(Value.kind, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 2, 24))
+
+    | //
+    /** Represents a null value. */
+    { a: 1 }
+>a : Symbol(a, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 6, 5))
+
+    | //
+    /** Represents a double value. */
+    { b: 2 }
+>b : Symbol(b, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 9, 5))
+
+    | undefined;
+  k2:
+>k2 : Symbol(Value.k2, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 10, 16))
+
+    | /** A */ { a: 1 }
+>a : Symbol(a, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 12, 16))
+
+    | /** B */
+    { b: 2 };
+>b : Symbol(b, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 14, 5))
+
+  k3:
+>k3 : Symbol(Value.k3, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 14, 13))
+
+    | // x
+    { a: 1 }
+>a : Symbol(a, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 17, 5))
+
+    | { b: 2 };
+>b : Symbol(b, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 18, 7))
+
+  k4:
+>k4 : Symbol(Value.k4, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 18, 15))
+
+    /** A */
+    { a: 1 };
+>a : Symbol(a, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 21, 5))
+
+  k5:
+>k5 : Symbol(Value.k5, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 21, 13))
+
+    | /** A */
+    /** B */
+    { a: 1 }
+>a : Symbol(a, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 25, 5))
+
+    | // c
+    // d
+    { b: 2 };
+>b : Symbol(b, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 28, 5))
+
+  k6: Array<
+>k6 : Symbol(Value.k6, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 28, 13))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+
+    // x
+    /** y */
+    { a: 1 }>;
+>a : Symbol(a, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 32, 5))
+}
+export type T =
+>T : Symbol(T, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 33, 1))
+
+  | //
+  /** doc */
+  { a: 1 }
+>a : Symbol(a, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 37, 3))
+
+  | { b: 1 };
+>b : Symbol(b, Decl(ttttDeclarationUnionMemberLineThenJsdoc.ts, 38, 5))
+
