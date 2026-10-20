@@ -2051,6 +2051,11 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
 // Where a signature is declared, as tsc's createDiagnosticForNode(signature.declaration) points at it
 static Span signature_decl_span(Signature const* sig) {
     while (sig->target) sig = sig->target;
+    // (A union's signature is declared by the one it was made from: tsc's createUnionSignature clones it)
+    while (!sig->function && sig->declared_by && sig->declared_by != sig) {
+        sig = sig->declared_by;
+        while (sig->target) sig = sig->target;
+    }
     // (A JSDoc `@overload`: its tag name, where tsgo's reparsed declaration is)
     if (sig->function && sig->function->jsdoc_callback && span_valid(sig->function->full_span) &&
         csview_starts_with(span_sv(sig->function->full_span), "@overload")

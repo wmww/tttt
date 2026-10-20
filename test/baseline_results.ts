@@ -184,6 +184,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttComparableHeadNormalizedTarget': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttComputedAccessorPairChecks': {
         errors: true,
         symbols: true,
@@ -2171,6 +2176,11 @@ const baselines = {
         types: true,
     },
     'ttttUnionRestSignaturesCombined': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnionSignatureLastOverloadDeclared': {
         errors: true,
         symbols: true,
         types: true,

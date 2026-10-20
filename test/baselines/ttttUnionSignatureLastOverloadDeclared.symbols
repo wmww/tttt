@@ -1,0 +1,39 @@
+//// [test/cases/ttttUnionSignatureLastOverloadDeclared.ts] ////
+
+=== ttttUnionSignatureLastOverloadDeclared.ts ===
+// A failed call of a union's combined overloads says where the last one is declared: a union signature is a clone of
+// the member signature it was made from (tsc's createUnionSignature), declared where that one is
+declare var arr: string[] | number[];
+>arr : Symbol(arr, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 2, 11))
+
+arr.splice(1, "1");
+>arr.splice : Symbol(Array.splice, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>arr : Symbol(arr, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 2, 11))
+>splice : Symbol(Array.splice, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+interface A { f(x: string): void; f(x: number, y: number): void; }
+>A : Symbol(A, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 3, 19))
+>f : Symbol(A.f, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 4, 13), Decl(ttttUnionSignatureLastOverloadDeclared.ts, 4, 33))
+>x : Symbol(x, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 4, 16))
+>f : Symbol(A.f, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 4, 13), Decl(ttttUnionSignatureLastOverloadDeclared.ts, 4, 33))
+>x : Symbol(x, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 4, 36))
+>y : Symbol(y, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 4, 46))
+
+interface B { f(x: string): void; f(x: number, y: number): void; }
+>B : Symbol(B, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 4, 66))
+>f : Symbol(B.f, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 5, 13), Decl(ttttUnionSignatureLastOverloadDeclared.ts, 5, 33))
+>x : Symbol(x, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 5, 16))
+>f : Symbol(B.f, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 5, 13), Decl(ttttUnionSignatureLastOverloadDeclared.ts, 5, 33))
+>x : Symbol(x, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 5, 36))
+>y : Symbol(y, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 5, 46))
+
+declare var ab: A | B;
+>ab : Symbol(ab, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 6, 11))
+>A : Symbol(A, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 3, 19))
+>B : Symbol(B, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 4, 66))
+
+ab.f(true);
+>ab.f : Symbol(f, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 4, 13), Decl(ttttUnionSignatureLastOverloadDeclared.ts, 4, 33), Decl(ttttUnionSignatureLastOverloadDeclared.ts, 5, 13), Decl(ttttUnionSignatureLastOverloadDeclared.ts, 5, 33))
+>ab : Symbol(ab, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 6, 11))
+>f : Symbol(f, Decl(ttttUnionSignatureLastOverloadDeclared.ts, 4, 13), Decl(ttttUnionSignatureLastOverloadDeclared.ts, 4, 33), Decl(ttttUnionSignatureLastOverloadDeclared.ts, 5, 13), Decl(ttttUnionSignatureLastOverloadDeclared.ts, 5, 33))
+

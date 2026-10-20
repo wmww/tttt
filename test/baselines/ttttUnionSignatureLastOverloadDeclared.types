@@ -1,0 +1,40 @@
+//// [test/cases/ttttUnionSignatureLastOverloadDeclared.ts] ////
+
+=== ttttUnionSignatureLastOverloadDeclared.ts ===
+// A failed call of a union's combined overloads says where the last one is declared: a union signature is a clone of
+// the member signature it was made from (tsc's createUnionSignature), declared where that one is
+declare var arr: string[] | number[];
+>arr : string[] | number[]
+
+arr.splice(1, "1");
+>arr.splice(1, "1") : string[] | number[]
+>arr.splice : { (start: number, deleteCount?: number): string[]; (start: number, deleteCount: number, ...items: string[]): string[]; } | { (start: number, deleteCount?: number): number[]; (start: number, deleteCount: number, ...items: number[]): number[]; }
+>arr : string[] | number[]
+>splice : { (start: number, deleteCount?: number): string[]; (start: number, deleteCount: number, ...items: string[]): string[]; } | { (start: number, deleteCount?: number): number[]; (start: number, deleteCount: number, ...items: number[]): number[]; }
+>1 : 1
+>"1" : "1"
+
+interface A { f(x: string): void; f(x: number, y: number): void; }
+>f : { (x: string): void; (x: number, y: number): void; }
+>x : string
+>f : { (x: string): void; (x: number, y: number): void; }
+>x : number
+>y : number
+
+interface B { f(x: string): void; f(x: number, y: number): void; }
+>f : { (x: string): void; (x: number, y: number): void; }
+>x : string
+>f : { (x: string): void; (x: number, y: number): void; }
+>x : number
+>y : number
+
+declare var ab: A | B;
+>ab : A | B
+
+ab.f(true);
+>ab.f(true) : void
+>ab.f : { (x: string): void; (x: number, y: number): void; } | { (x: string): void; (x: number, y: number): void; }
+>ab : A | B
+>f : { (x: string): void; (x: number, y: number): void; } | { (x: string): void; (x: number, y: number): void; }
+>true : true
+

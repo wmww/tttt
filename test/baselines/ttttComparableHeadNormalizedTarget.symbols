@@ -1,0 +1,32 @@
+//// [test/cases/ttttComparableHeadNormalizedTarget.ts] ////
+
+=== ttttComparableHeadNormalizedTarget.ts ===
+// TS2678 and TS2352 name the pair as the relation normalized it (tsc's reportRelationError): a non-nullable source
+// against a union of null or undefined and one other type is related to that type alone
+declare const a: string | undefined;
+>a : Symbol(a, Decl(ttttComparableHeadNormalizedTarget.ts, 2, 13))
+
+switch (a) { case 1: break; }
+>a : Symbol(a, Decl(ttttComparableHeadNormalizedTarget.ts, 2, 13))
+
+declare const b: string | boolean;
+>b : Symbol(b, Decl(ttttComparableHeadNormalizedTarget.ts, 4, 13))
+
+switch (b) { case 1: break; }
+>b : Symbol(b, Decl(ttttComparableHeadNormalizedTarget.ts, 4, 13))
+
+declare const c: { x: number } | null;
+>c : Symbol(c, Decl(ttttComparableHeadNormalizedTarget.ts, 6, 13))
+>x : Symbol(x, Decl(ttttComparableHeadNormalizedTarget.ts, 6, 18))
+
+switch (c) { case 1: break; }
+>c : Symbol(c, Decl(ttttComparableHeadNormalizedTarget.ts, 6, 13))
+
+const d = 1 as string | undefined;
+>d : Symbol(d, Decl(ttttComparableHeadNormalizedTarget.ts, 8, 5))
+
+const e = { x: "" } as { x: number } | null | undefined;
+>e : Symbol(e, Decl(ttttComparableHeadNormalizedTarget.ts, 9, 5))
+>x : Symbol(x, Decl(ttttComparableHeadNormalizedTarget.ts, 9, 11))
+>x : Symbol(x, Decl(ttttComparableHeadNormalizedTarget.ts, 9, 24))
+

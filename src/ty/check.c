@@ -880,9 +880,10 @@ void ty_check_instanceof_has_instance(Checker* me, Ty const* left, Ty const* rig
 void ty_check_comparable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
     VecTyReportLine lines = {0};
     if (relate_explaining(me, TY_RELATION_COMPARABLE, source, target, 2678, &lines, errs)) return;
-    // (A literal source is shown widened unless the target could hold it: tsc's reportRelationError)
+    // (A literal source is shown widened unless the target could hold it: tsc's reportRelationError. Of the normalized
+    // pair, like TS2322's: a non-nullable source against `string | undefined` names `string`)
     cstr source_str, target_str;
-    ty_report_pair_cstr(me, source, target, &source_str, &target_str);
+    ty_report_pair_cstr(me, ty_report_source(me, source), ty_report_target(me, source, target), &source_str, &target_str);
     report_explained_with_head(errs, &lines, 2678, cstr_d(
         "Type '", source_str, "' is not comparable to type '", target_str, "'."
     ), false, span);
@@ -907,9 +908,10 @@ void ty_check_type_assertion(Checker* me, Ty const* expr_type, Ty const* target,
     if (ty_is_related(me, target, widened, TY_RELATION_COMPARABLE)) return;
     VecTyReportLine lines = {0};
     if (relate_explaining(me, TY_RELATION_COMPARABLE, source, target, 2352, &lines, errs)) return;
-    // (reportRelationError's head: two types printed alike are qualified, `import("...").Locator`)
+    // (reportRelationError's head: two types printed alike are qualified, `import("...").Locator`. Of the normalized
+    // pair: `1 as string | undefined` converts `number` to `string`)
     cstr source_str, target_str;
-    ty_report_pair_cstr(me, source, target, &source_str, &target_str);
+    ty_report_pair_cstr(me, ty_report_source(me, source), ty_report_target(me, source, target), &source_str, &target_str);
     cstr head = cstr_d("Conversion of type '", source_str, "' to type '", target_str, "' may be a mistake because neither "
         "type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.");
     report_explained_with_head(errs, &lines, 2352, head, false, span);

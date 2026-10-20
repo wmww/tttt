@@ -8043,6 +8043,8 @@ static Signature* union_signature(Checker* me, Signature const* base, Signature*
         .ret = ty_union_subtype_reduced(me, return_types, count),
         .predicate_done = true,
         .predicate = union_predicate(me, composites, count),
+        // (A clone of the base, tsc's createUnionSignature: declared where it is, its `this` parameter's)
+        .declared_by = base->declared_by ? base->declared_by : base,
     };
     free(return_types);
     return ret;

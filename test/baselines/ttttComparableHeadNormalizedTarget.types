@@ -1,0 +1,40 @@
+//// [test/cases/ttttComparableHeadNormalizedTarget.ts] ////
+
+=== ttttComparableHeadNormalizedTarget.ts ===
+// TS2678 and TS2352 name the pair as the relation normalized it (tsc's reportRelationError): a non-nullable source
+// against a union of null or undefined and one other type is related to that type alone
+declare const a: string | undefined;
+>a : string | undefined
+
+switch (a) { case 1: break; }
+>a : string | undefined
+>1 : 1
+
+declare const b: string | boolean;
+>b : string | boolean
+
+switch (b) { case 1: break; }
+>b : string | boolean
+>1 : 1
+
+declare const c: { x: number } | null;
+>c : { x: number; } | null
+>x : number
+
+switch (c) { case 1: break; }
+>c : { x: number; } | null
+>1 : 1
+
+const d = 1 as string | undefined;
+>d : string | undefined
+>1 as string | undefined : string | undefined
+>1 : 1
+
+const e = { x: "" } as { x: number } | null | undefined;
+>e : { x: number; } | null | undefined
+>{ x: "" } as { x: number } | null | undefined : { x: number; } | null | undefined
+>{ x: "" } : { x: string; }
+>x : string
+>"" : ""
+>x : number
+

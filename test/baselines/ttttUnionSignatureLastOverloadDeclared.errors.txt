@@ -1,0 +1,23 @@
+ttttUnionSignatureLastOverloadDeclared.ts(4,15): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'number'.
+ttttUnionSignatureLastOverloadDeclared.ts(8,6): error TS2345: Argument of type 'boolean' is not assignable to parameter of type 'string'.
+
+
+==== ttttUnionSignatureLastOverloadDeclared.ts (2 errors) ====
+    // A failed call of a union's combined overloads says where the last one is declared: a union signature is a clone of
+    // the member signature it was made from (tsc's createUnionSignature), declared where that one is
+    declare var arr: string[] | number[];
+    arr.splice(1, "1");
+                  ~~~
+!!! error TS2769: No overload matches this call.
+!!! error TS2769:   The last overload gave the following error.
+!!! error TS2769:     Argument of type 'string' is not assignable to parameter of type 'number'.
+!!! related TS2771 lib.es5.d.ts:--:--: The last overload is declared here.
+    interface A { f(x: string): void; f(x: number, y: number): void; }
+    interface B { f(x: string): void; f(x: number, y: number): void; }
+    declare var ab: A | B;
+    ab.f(true);
+         ~~~~
+!!! error TS2345: Argument of type 'boolean' is not assignable to parameter of type 'string'.
+    

@@ -390,3 +390,24 @@ type through the member fallback (`{ type: T }` to `Partial<X>`, `Partial<C<T>>`
 - Known families: unknownSymbolOffContextualType1 (TS7022 circularity), conditionalContextualReturnSubstitutionCache
   (TS2208 render), narrowingDestructuring (TS2700), typeGuardsAsAssertions (loop partial types), restElementWithInitializer2
   (lazy TS2304), selfReferencingSpreadInLoop (TS2488 twice).
+
+## Mutation seed 2026102102 (2026-10-20, agent C, -n 8000: 10 -> 8 / 4003 differ)
+Fixed: TS2678/TS2352 heads name the normalized pair like TS2322's (`1` against `string | undefined` is `number` to
+`string`); a union's combined signature is declared by the member signature it was made from (TS2771 "The last overload
+is declared here" for `(string[] | number[]).splice`). Left, each looked at:
+- **A const's name from its initializer when its annotation gives none** (typeGuardNarrowsIndexedAccessOfKnownProperty7
+  and unionTypeWithIndexSignature never-const: `export const key: never = Symbol()` then `[Foo.key]: string` /
+  `this[Foo.key] = ...`): tsgo's tryGetNameFromEntityNameExpression falls back to the initializer's type (a unique
+  symbol) when the annotation (never) isn't usable as a name, so `this[Foo.key]` still matches the member for
+  TS2564's flow check and `both[sym]` reads the `[sym]` property. tttt goes by the declared type only
+  (field_initialized_in_constructor()). Only with a wrong annotation; not done.
+- generatorTypeCheck46 member-typo: TS2488 twice in tsgo, once for the yield* operand typed in the context-sensitive
+  pass (`{ [x: number]: {} }`, the method skipped) and once final; tttt reports the final one (the "errors of an early
+  pass stay" family).
+- escapedIdentifiers member-typo: tsgo prints `argX\u0031` (escaped) in TS2551 only when another escaped identifier with
+  the same unescaped text appears earlier in the file (`arg\u0031 = 1` in a method); alone it prints `argX1` like tttt.
+  A tsgo text quirk, not mirrored.
+- unicodeLineSeparatorInMultilineComment never-const: tsgo's CLI reports the TS2322 like tttt; its test harness writes
+  no errors baseline for that file. Not a tttt bug.
+- Known: noCircularitySelfReferentialGetter3 (satisfies elaboration), conditionalContextualReturnSubstitutionCache
+  (TS2208), complicatedIndexedAccess... (position, seed 2026102101).

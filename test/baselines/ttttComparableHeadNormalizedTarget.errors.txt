@@ -1,0 +1,33 @@
+ttttComparableHeadNormalizedTarget.ts(4,19): error TS2678: Type 'number' is not comparable to type 'string'.
+ttttComparableHeadNormalizedTarget.ts(6,19): error TS2678: Type '1' is not comparable to type 'string | boolean'.
+ttttComparableHeadNormalizedTarget.ts(8,19): error TS2678: Type 'number' is not comparable to type '{ x: number; }'.
+ttttComparableHeadNormalizedTarget.ts(9,11): error TS2352: Conversion of type 'number' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+ttttComparableHeadNormalizedTarget.ts(10,11): error TS2352: Conversion of type '{ x: string; }' to type '{ x: number; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Types of property 'x' are incompatible.
+    Type 'string' is not comparable to type 'number'.
+
+
+==== ttttComparableHeadNormalizedTarget.ts (5 errors) ====
+    // TS2678 and TS2352 name the pair as the relation normalized it (tsc's reportRelationError): a non-nullable source
+    // against a union of null or undefined and one other type is related to that type alone
+    declare const a: string | undefined;
+    switch (a) { case 1: break; }
+                      ~
+!!! error TS2678: Type 'number' is not comparable to type 'string'.
+    declare const b: string | boolean;
+    switch (b) { case 1: break; }
+                      ~
+!!! error TS2678: Type '1' is not comparable to type 'string | boolean'.
+    declare const c: { x: number } | null;
+    switch (c) { case 1: break; }
+                      ~
+!!! error TS2678: Type 'number' is not comparable to type '{ x: number; }'.
+    const d = 1 as string | undefined;
+              ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2352: Conversion of type 'number' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+    const e = { x: "" } as { x: number } | null | undefined;
+              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2352: Conversion of type '{ x: string; }' to type '{ x: number; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+!!! error TS2352:   Types of property 'x' are incompatible.
+!!! error TS2352:     Type 'string' is not comparable to type 'number'.
+    
