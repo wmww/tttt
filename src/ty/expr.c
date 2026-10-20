@@ -1470,7 +1470,10 @@ Ty const* ty_contextual_return_type_self(Checker* me, FunctionImpl const* functi
             // (Its own: none while it is inferred, else what it was inferred as)
             if (sig->function == function && !sig->target) {
                 *self = CONTEXT_OWN;
-                if (ty_function_return_in_flight(me, function)) return nullptr;
+                if (ty_function_return_in_flight(me, function)) {
+                    if (debug_env.debug_reentry && !ty_resolving_find(me, RESOLVING_FUNCTION_RETURN, function)) ty_debug_reentry(me, "RETINFLIGHT call", span_null);
+                    return nullptr;
+                }
             }
             Ty const* ret = signature_return_type(me, sig);
             u32 ignored = function->is_async && !function->is_generator ? 0 : TYF_VOID;
@@ -1481,7 +1484,10 @@ Ty const* ty_contextual_return_type_self(Checker* me, FunctionImpl const* functi
     if (!sig) return nullptr;
     if (sig->function == function && !sig->target) {
         *self = CONTEXT_OWN;
-        if (ty_function_return_in_flight(me, function)) return nullptr;
+        if (ty_function_return_in_flight(me, function)) {
+            if (debug_env.debug_reentry && !ty_resolving_find(me, RESOLVING_FUNCTION_RETURN, function)) ty_debug_reentry(me, "RETINFLIGHT call", span_null);
+            return nullptr;
+        }
     }
     Ty const* ret = signature_return_type(me, sig);
     u32 ignored = function->is_async && !function->is_generator ? 0 : TYF_VOID;

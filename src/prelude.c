@@ -20,6 +20,7 @@ __attribute__((constructor))
 static void read_debug_env() {
     debug_env = (DebugEnv){
         .debug_cycle = getenv("TTTT_DEBUG_CYCLE") != nullptr,
+        .debug_reentry = getenv("TTTT_DEBUG_REENTRY") != nullptr,
         .dump_flow = getenv("TTTT_DUMP_FLOW") != nullptr,
         .dump_variances = getenv("TTTT_DUMP_VARIANCES") != nullptr,
         .debug_relate = getenv("TTTT_DEBUG_RELATE") != nullptr,

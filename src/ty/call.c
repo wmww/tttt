@@ -3486,6 +3486,7 @@ static Ty const* call_return_type(
     // A call asked for again while in flight is resolved again (tsc's getResolvedSignature: resolvingSignature only
     // reaches SkipGenericFunctions and contextual types)
     if (resolution) {
+        if (debug_env.debug_reentry) ty_debug_reentry(me, "NESTEDCALL", call_span);
         // Without a barrier of its own: the whole stack is visible to the nested resolution (tsc's resolutionStart is
         // set only for a call's first resolution)
         bool saved = my resolving_nested_call;

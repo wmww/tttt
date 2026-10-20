@@ -415,6 +415,9 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
             TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
             // Asked again from below a call's barrier, it isn't circular yet: it's inferred again, once, and the inner
             // result is the one remembered (tsc's getReturnTypeOfSignature, like declarations: lazy_type_evaluate_inner())
+            if (debug_env.debug_reentry && !ty_resolving_find(me, RESOLVING_FUNCTION_RETURN, function)) {
+                ty_debug_reentry(me, memo->reevaluating ? "ONCE 3 call" : "REENTER 3 call", span_null);
+            }
             if (!memo->reevaluating && !ty_resolving_find(me, RESOLVING_FUNCTION_RETURN, function)) {
                 memo->reevaluating = true;
                 break;

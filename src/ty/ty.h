@@ -2196,6 +2196,9 @@ static inline bool ty_resolving_pop(Checker* me) {
     return my resolving[--my resolving_len].circular;
 }
 void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key); // It was asked for while in flight
+// TTTT_DEBUG_REENTRY's line for `event` at the current node (scripts/reentrytrace.py; tsc's TypeSystemPropertyName numbers:
+// 0 a symbol's type, 2 an alias, 3 a return type)
+void ty_debug_reentry(Checker* me, char const* event, Span at); // (span_null: the current node)
 // The same, also below the barrier of a call resolution (resolving_start). tsc re-enters what is in flight below its
 // resolutionStart: the second round resolves the same things again, now above the barrier (the calls on the way are
 // already resolvingSignature, which doesn't move it), and finds the cycle there. For the bases of a class or interface,

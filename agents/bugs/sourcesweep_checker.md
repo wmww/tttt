@@ -207,6 +207,9 @@ read types). Left:
   'unwrapInput': the instantiation stack repeats an 8-long distill cycle to 100), nothing in tttt. Both are "tttt's
   instantiation depth doesn't follow tsc's instantiationStack". A tsgo with a stack print at the depth limit
   (instantiateTypeWithAlias, `c.instantiationStack`) shows tsc's side in seconds.
+  Plan 88 (2026-10-20): tsc re-resolves one type's members 33 deep on `r1.ts` (`scripts/reentrytrace.py`'s MEMBERS
+  event); members re-entry happens in 45 of a quarter of the source sweep's projects and on zod/webpack/vue, harmless
+  except where the depth limit is reached. Verdict there: won't fix without tsc's member resolution order (stage E).
 - better-auth,
   es-toolkit, knip, pixijs: unchanged, not looked at again (see
   the entries above). svelte-query's +TS2554 matched in this round's runs (order-dependent, entry above).

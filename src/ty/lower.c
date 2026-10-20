@@ -273,7 +273,10 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
         case LAZY_STATE_IN_FLIGHT:
             // An alias in flight below the resolution barrier (a variance measurement's, a call's) is resolved again,
             // nested, and the first to finish is its type (tsc's findResolutionCycleStartIndex looks no further down)
-            if (alias_reenters(me, symbol)) break;
+            if (alias_reenters(me, symbol)) {
+                if (debug_env.debug_reentry) ty_debug_reentry(me, "REENTER 2 variance", span_null);
+                break;
+            }
             TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
             // tsc's pushTypeResolution: every alias from this one on is part of the cycle, and fails when it finishes
             ty_resolving_cycle(me, RESOLVING_ALIAS, symbol);

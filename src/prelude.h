@@ -25,6 +25,9 @@
 // them, so nothing may cache them lazily
 typedef struct DebugEnv {
     bool debug_cycle;          // TTTT_DEBUG_CYCLE
+    // TTTT_DEBUG_REENTRY: what is asked for again while in flight below a resolution barrier, scripts/reentrytrace.py's
+    // tttt side (`TTTT EVENT KIND BARRIER file:line` on stderr)
+    bool debug_reentry;
     bool dump_flow;            // TTTT_DUMP_FLOW
     bool dump_variances;       // TTTT_DUMP_VARIANCES
     bool debug_relate;         // TTTT_DEBUG_RELATE

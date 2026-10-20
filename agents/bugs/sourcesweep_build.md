@@ -27,6 +27,9 @@ Left (2026-10-20, by project; + spurious, - missing):
   `useCallback(() => listenKeys(store as any, keys, emitChange))` with `declare function useCallback<T>(cb: T): T`.
   The same family as the apollo fix (tsc re-entering what is in flight below a barrier; tttt re-enters only aliases
   below a variance measurement, `alias_reenters()`).
+  Plan 88 (2026-10-20) has the model and a census: this RETINFLIGHT -> REENTER 3 -> NESTEDSIG chain is the one
+  re-entry real code does at volume (6% of projects), tttt never takes it (eager return contexts) and still matches
+  everywhere else; fixing it is stages B-D (pulled return contexts), deferred.
 - hono (tsconfig.build.json): +TS2769 2 (request.ts:214, a `-p` bug): `parseBody(this, options)` with `this` against
   `HonoRequest | Request`. The plain check fails in tsgo too (HonoRequest's variances [independent, bivariant],
   `I extends Input['out']` isn't `{}`); tsgo then relates getEffectiveConstraintOfIntersection's `HonoRequest<P, I> &

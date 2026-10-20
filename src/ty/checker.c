@@ -3898,6 +3898,16 @@ void ty_resolving_grow(Checker* me) {
     panic_if(!my resolving, "out of memory");
 }
 
+void ty_debug_reentry(Checker* me, char const* event, Span at) {
+    if (!span_valid(at)) at = my current_node.span;
+    if (!span_valid(at)) {
+        fprintf(stderr, "TTTT %s\n", event);
+        return;
+    }
+    cstr const* path = &span_source(at)->canonical_path;
+    fprintf(stderr, "TTTT %s %s:%u\n", event, cstr_str(path), span_line_index(at) + 1);
+}
+
 void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key) {
     for (u32 i = my resolving_len; i-- > my resolving_start;) {
         if (my resolving[i].key == key && my resolving[i].kind == kind) {
