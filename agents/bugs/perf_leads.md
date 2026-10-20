@@ -8,6 +8,25 @@ checker's arena size and type count. Memory: `scripts/memtrack.sh -p DIR` for th
 allocating function; massif's extra-heap estimate is wrong for glibc), `scripts/arenasites.sh -p DIR` for the mmapped binder
 and checker arenas by call site.
 
+## mikro-orm/packages/mongodb: IndexFilterQuery's variance measurement (perfsweep 2026-10-20, agent B)
+The only project above 1.5 in `perfsweep.py --sample 4`: **types 3.47** (1.39M against tsgo's 400k), check 2.87x.
+Almost all of it is one variance measurement: `TTTT_DEBUG_VARIANCE=1` prints `VAR< WithUsingOptions [20 16 1]
+types=1344755` around `VAR< IndexFilterQuery [16 20] types=1317037` (the next is Loaded at 11k). Inside it, ~77k
+top-level relations, the costliest `keyof ExpandProperty<FilterObjectProp<T, Extract<EntityKey<T, false>,
+IndexColumns<T, super-T>> & "$or" & K>>` -> `keyof ExpandProperty<FilterObjectProp<T, K>>` (~16k new types each, one
+per OperatorMap key). Standalone probe (3.7x): a tsconfig (strict, nodenext) with
+`import type { IndexFilterQuery } from '<sources>/mikro-orm/packages/core/src/typings.js'; export function f<A
+extends object, B extends A, U extends string>(x: IndexFilterQuery<B, U>): IndexFilterQuery<A, U> { return x; }`:
+tsgo 374k types, tttt 1.4M. Its TS2322 chain differs too: tsgo's 5 lines end at `FilterQuery<B>[]` ->
+`FilterQuery<A>` (the union member it reports), tttt's 35 go through `NonNullable<EntityProps<B> & OperatorMap<B>>`
+-> `$and` -> `ExpandQuery<B>` ... (the same chain tsgo prints when that member is related on its own, `g(x:
+NonNullable<EntityProps<B> & OperatorMap<B>>): FilterQuery<A>`): inside the bigger relation tsgo finds that member
+related (Maybe, a cycle or deeply-nested cut) where tttt explores it. Likely one mechanism for both: a recursion
+identity / maybe-stack hit tsgo gets on `FilterQuery<B>` -> `FilterQuery<A>` and tttt doesn't. Next step:
+`variancetrace.py ... --block IndexFilterQuery`, which didn't build this session: its `go build` uses the shared
+`thirdparty/typescript-gopath/cache` as GOCACHE and failed on missing cache entries ("could not import context ...
+no such file"); point GOCACHE at /tmp for it (mind the disk: the 50 GB incident).
+
 ## The types-ratio tail and K1 check ratios (perf session 2026-10-18, todo entry 5)
 **date-fns/pkgs/docs 1.62 -> 0.64** (34483 -> 13679 types, tsgo 21221; worst of the perfsweep for ten sessions, after
 round 2's 0.94 below had regressed unnoticed): `is_generic_operand()` and `is_string_index_signature_only()` expanded

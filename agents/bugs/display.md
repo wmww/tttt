@@ -223,7 +223,12 @@ diagnostics). Left:
   left, each its own mechanism): ObservableQuery.ts:680's missing `'undefined & TData' ... 'RegExp & ...'` lines fixed
   2026-10-20 (agent B: best_matching_type() for an intersection source with generic keys);
   ObservableQuery.ts:559's `{ data: ... ? TComplete : CustomMaybeMaskedImplementation<...>; ... 4 more ...; }` where
-  tttt prints the last alias argument (length counted lower before it); useFragment.ts:234's chain is two levels
+  tttt prints the last alias argument (length counted lower before it; 2026-10-20, agent B: the only `text` left of
+  the whole clidiff run. The header line matches, `{ [complete]?: infer TComplete | undefined; }` and `<...>`; the
+  three chain lines print the extends type as written, `{ [complete]?: infer TComplete; }` (reused node, 12 chars
+  shorter), and there tsgo still elides `<...>` while tttt doesn't: suspect tsgo counts the reused node's type, or the
+  optional property's `| undefined`, into approximateLength where tttt counts the shorter reused text. The
+  instrumented-tsgo method below is the way to confirm); useFragment.ts:234's chain is two levels
   shallower in tttt (the conditional's intersection target is split differently); useSuspenseFragment.ts:239's target
   `CustomMaybeMaskedImplementation<TData | null> extends ...` where tttt says `CustomMaybeMaskedImplementation<TData> |
   null extends ...` (an alias argument through an HKT application, maybe a checker difference: check first). Method that found rxjs's and mikro-orm's: a
