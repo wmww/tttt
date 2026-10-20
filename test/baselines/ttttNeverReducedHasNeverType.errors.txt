@@ -1,0 +1,22 @@
+ttttNeverReducedHasNeverType.ts(6,7): error TS2322: Type '{ variables: {}; } & BaseOptions & { variables: never; } & { variables?: undefined; }' is not assignable to type 'number'.
+ttttNeverReducedHasNeverType.ts(12,7): error TS2322: Type '{}' is not assignable to type 'never'.
+
+
+==== ttttNeverReducedHasNeverType.ts (2 errors) ====
+    // An intersection whose property conflicts between two constituents (`{}` and the optional never's `undefined`) isn't
+    // reduced when a third constituent's is never (tsc's CheckFlags.HasNeverType): apollo-client's options with
+    // `TVariables = never`, where the error is elaborated into `variables` rather than the whole argument
+    interface BaseOptions { skip?: boolean; variables?: unknown; }
+    declare const p: { variables: {} } & BaseOptions & { variables: never } & { variables?: never };
+    const n: number = p;
+          ~
+!!! error TS2322: Type '{ variables: {}; } & BaseOptions & { variables: never; } & { variables?: undefined; }' is not assignable to type 'number'.
+    declare const q: { variables: {} } & { variables?: never };
+    const m: number = q;
+    
+    declare const skipToken: unique symbol;
+    declare function use<T extends BaseOptions>(options: (T & { variables: never } & { variables?: never }) | typeof skipToken): T;
+    use({ variables: {} });
+          ~~~~~~~~~
+!!! error TS2322: Type '{}' is not assignable to type 'never'.
+    

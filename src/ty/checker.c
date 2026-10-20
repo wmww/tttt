@@ -1655,6 +1655,17 @@ static Atom const* never_reduced_literal_prop(Checker* me, Ty const* const* type
     return nullptr;
 }
 
+// Whether a known object constituent's property `name` is never (tsc's CheckFlags.HasNeverType of the intersection's
+// property): it isn't reduced then
+static bool some_prop_is_never(Checker* me, Atom const* name, Ty const* const* types, u32 len) {
+    for (u32 k = 0; k < len; k++) {
+        if (!is_known_object_for_reduction(me, types[k])) continue;
+        Prop const* prop = ty_get_prop(me, types[k], name);
+        if (prop && (prop_type(me, prop)->flags & TYF_NEVER)) return true;
+    }
+    return false;
+}
+
 static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 len, bool* private_conflict) {
     u32 objects = 0;
     for (u32 i = 0; i < len; i++) {
@@ -1689,6 +1700,9 @@ static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 l
                 if ((a_type->flags | b_type->flags) & TYF_NEVER) continue;
                 Ty const* both[2] = { a_type, b_type };
                 if (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER) {
+                    // (Nor when a third constituent's is never: HasNeverType is the whole property's, `{ a: {} } &
+                    // { a?: never } & { a: never }` stays, apollo's options with `TVariables = never`)
+                    if (some_prop_is_never(me, prop->name, types, len)) break;
                     *private_conflict = false;
                     return prop->name;
                 }

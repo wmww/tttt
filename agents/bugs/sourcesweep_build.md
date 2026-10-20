@@ -4,7 +4,7 @@ references, built by tsgo with `-b --force` in a bwrap overlay of `thirdparty/so
 `test/sourcesweep/tsc-build.jsonl.gz`, `--build --tsc[-new]`) and checked by `tttt -b --no-write`. Since plan 87
 stage 1 (2026-10-20) `-b` reads its references' emitted declarations like tsc -b (documentation.md "Project
 references"), so the old "by design" verdicts (errors inside emitted declarations, body-only imports, tsgo emit bugs
-leaking downstream) are gone: **409 / 416** (apollo cacheOverride fixed since; its solution still mismatches on signatures/modern).
+leaking downstream) are gone: **409 / 416** (apollo cacheOverride and signatures/modern fixed since).
 
 **First question for each: does `tttt -p THAT_CONFIG --noEmit` differ from tsc's over tsgo's built outputs?** Build
 in a persistent overlay and run both CLIs in it (`bwrap ... --overlay-src $C --overlay UP WORK $C -- bash script.sh`,
@@ -13,8 +13,6 @@ runs). Then a project's leftovers are plain `-p` bugs: probe with a scratch conf
 `skipLibCheck: false` shows errors *in* the emitted `.d.ts` (apollo's TS2456 was only visible that way).
 
 Left (2026-10-20, by project; + spurious, - missing):
-- apollo-client/integration-tests/type-tests signatures/modern: -TS2578 4, -TS2769 4 (useBackgroundQuery.ts:2262..),
-  +TS2322 2 (createQueryPreloader.ts:111). Not investigated.
 - atproto: +TS2554 2 (lex/lex-schema/src/schema/string.test.ts:767, 777, expect-type's
   `expectTypeOf<...>().not.toMatchObjectType<...>()`), +TS2307 1 (oauth-client's `@atproto-labs/identity-resolver`:
   the builder-window race, below). The TS2554 not looked into under the new model.

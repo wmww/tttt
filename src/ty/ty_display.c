@@ -6613,7 +6613,7 @@ static void display_union_member(Checker* me, TyDisplay d, Ty const* t) {
         !(t->composite.origin && t->composite.origin->kind == TY_KEYOF);
     bool parens = is_function_like(me, d, t) || class_literal_function_like(me, d, t) ||
         (!shows_alias(d, t) && (t->kind == TY_CONDITIONAL || t->kind == TY_INTERSECTION || union_member ||
-            displays_as_intersection(me, d, t)));
+            displays_as_intersection(me, d, t))) || mapped_as_conditional(me, d, t);
     display_parenthesized_if(me, d, t, parens);
 }
 

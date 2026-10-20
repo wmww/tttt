@@ -1,0 +1,49 @@
+//// [test/cases/ttttNeverReducedHasNeverType.ts] ////
+
+=== ttttNeverReducedHasNeverType.ts ===
+// An intersection whose property conflicts between two constituents (`{}` and the optional never's `undefined`) isn't
+// reduced when a third constituent's is never (tsc's CheckFlags.HasNeverType): apollo-client's options with
+// `TVariables = never`, where the error is elaborated into `variables` rather than the whole argument
+interface BaseOptions { skip?: boolean; variables?: unknown; }
+>BaseOptions : Symbol(BaseOptions, Decl(ttttNeverReducedHasNeverType.ts, 0, 0))
+>skip : Symbol(BaseOptions.skip, Decl(ttttNeverReducedHasNeverType.ts, 3, 23))
+>variables : Symbol(BaseOptions.variables, Decl(ttttNeverReducedHasNeverType.ts, 3, 39))
+
+declare const p: { variables: {} } & BaseOptions & { variables: never } & { variables?: never };
+>p : Symbol(p, Decl(ttttNeverReducedHasNeverType.ts, 4, 13))
+>variables : Symbol(variables, Decl(ttttNeverReducedHasNeverType.ts, 4, 18))
+>BaseOptions : Symbol(BaseOptions, Decl(ttttNeverReducedHasNeverType.ts, 0, 0))
+>variables : Symbol(variables, Decl(ttttNeverReducedHasNeverType.ts, 4, 52))
+>variables : Symbol(variables, Decl(ttttNeverReducedHasNeverType.ts, 4, 75))
+
+const n: number = p;
+>n : Symbol(n, Decl(ttttNeverReducedHasNeverType.ts, 5, 5))
+>p : Symbol(p, Decl(ttttNeverReducedHasNeverType.ts, 4, 13))
+
+declare const q: { variables: {} } & { variables?: never };
+>q : Symbol(q, Decl(ttttNeverReducedHasNeverType.ts, 6, 13))
+>variables : Symbol(variables, Decl(ttttNeverReducedHasNeverType.ts, 6, 18))
+>variables : Symbol(variables, Decl(ttttNeverReducedHasNeverType.ts, 6, 38))
+
+const m: number = q;
+>m : Symbol(m, Decl(ttttNeverReducedHasNeverType.ts, 7, 5))
+>q : Symbol(q, Decl(ttttNeverReducedHasNeverType.ts, 6, 13))
+
+declare const skipToken: unique symbol;
+>skipToken : Symbol(skipToken, Decl(ttttNeverReducedHasNeverType.ts, 9, 13))
+
+declare function use<T extends BaseOptions>(options: (T & { variables: never } & { variables?: never }) | typeof skipToken): T;
+>use : Symbol(use, Decl(ttttNeverReducedHasNeverType.ts, 9, 39))
+>T : Symbol(T, Decl(ttttNeverReducedHasNeverType.ts, 10, 21))
+>BaseOptions : Symbol(BaseOptions, Decl(ttttNeverReducedHasNeverType.ts, 0, 0))
+>options : Symbol(options, Decl(ttttNeverReducedHasNeverType.ts, 10, 44))
+>T : Symbol(T, Decl(ttttNeverReducedHasNeverType.ts, 10, 21))
+>variables : Symbol(variables, Decl(ttttNeverReducedHasNeverType.ts, 10, 59))
+>variables : Symbol(variables, Decl(ttttNeverReducedHasNeverType.ts, 10, 82))
+>skipToken : Symbol(skipToken, Decl(ttttNeverReducedHasNeverType.ts, 9, 13))
+>T : Symbol(T, Decl(ttttNeverReducedHasNeverType.ts, 10, 21))
+
+use({ variables: {} });
+>use : Symbol(use, Decl(ttttNeverReducedHasNeverType.ts, 9, 39))
+>variables : Symbol(variables, Decl(ttttNeverReducedHasNeverType.ts, 11, 5))
+

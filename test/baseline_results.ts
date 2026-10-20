@@ -1560,6 +1560,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMappedAsConditionalUnionMember': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedFilterDistributiveKeepsDeclarations': {
         errors: true,
         symbols: true,
@@ -1697,6 +1702,11 @@ const baselines = {
         types: true,
     },
     'ttttNeverReducedGenericReference': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNeverReducedHasNeverType': {
         errors: true,
         symbols: true,
         types: true,
