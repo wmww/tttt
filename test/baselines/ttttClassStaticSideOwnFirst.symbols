@@ -1,0 +1,41 @@
+//// [test/cases/ttttClassStaticSideOwnFirst.ts] ////
+
+=== base.ts ===
+export declare class Base<P> { static contextType?: number; static propTypes?: any; p: P }
+>Base : Symbol(Base, Decl(base.ts, 0, 0))
+>P : Symbol(P, Decl(base.ts, 0, 26))
+>contextType : Symbol(Base.contextType, Decl(base.ts, 0, 30))
+>propTypes : Symbol(Base.propTypes, Decl(base.ts, 0, 59))
+>p : Symbol(Base.p, Decl(base.ts, 0, 83))
+>P : Symbol(P, Decl(base.ts, 0, 26))
+
+=== a.ts ===
+import { Base } from "./base";
+>Base : Symbol(Base, Decl(a.ts, 0, 8))
+
+export const E = (() => class E extends Base<{ a: 1 }> {
+>E : Symbol(E, Decl(a.ts, 1, 12))
+>E : Symbol(E, Decl(a.ts, 1, 23))
+>Base : Symbol(Base, Decl(a.ts, 0, 8))
+>a : Symbol(a, Decl(a.ts, 1, 46))
+
+  state = { error: false }
+>state : Symbol(E.state, Decl(a.ts, 1, 56))
+>error : Symbol(error, Decl(a.ts, 2, 11))
+
+  static g = () => ({ error: true })
+>g : Symbol(E.g, Decl(a.ts, 2, 26))
+>error : Symbol(error, Decl(a.ts, 3, 21))
+
+})()
+export const F = class F extends Base<{ a: 1 }> {
+>F : Symbol(F, Decl(a.ts, 5, 12))
+>F : Symbol(F, Decl(a.ts, 5, 16))
+>Base : Symbol(Base, Decl(a.ts, 0, 8))
+>a : Symbol(a, Decl(a.ts, 5, 39))
+
+  static g = () => ({ error: true })
+>g : Symbol(F.g, Decl(a.ts, 5, 49))
+>error : Symbol(error, Decl(a.ts, 6, 21))
+}
+

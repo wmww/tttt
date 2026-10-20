@@ -1,0 +1,54 @@
+//// [test/cases/ttttClassStaticSideOwnFirst.ts] ////
+
+=== base.ts ===
+export declare class Base<P> { static contextType?: number; static propTypes?: any; p: P }
+>Base : Base<P>
+>contextType : number | undefined
+>propTypes : any
+>p : P
+
+=== a.ts ===
+import { Base } from "./base";
+>Base : typeof Base
+
+export const E = (() => class E extends Base<{ a: 1 }> {
+>E : typeof E
+>(() => class E extends Base<{ a: 1 }> {  state = { error: false }  static g = () => ({ error: true })})() : typeof E
+>(() => class E extends Base<{ a: 1 }> {  state = { error: false }  static g = () => ({ error: true })}) : () => typeof E
+>() => class E extends Base<{ a: 1 }> {  state = { error: false }  static g = () => ({ error: true })} : () => typeof E
+>class E extends Base<{ a: 1 }> {  state = { error: false }  static g = () => ({ error: true })} : typeof E
+>E : typeof E
+>Base : Base<{ a: 1; }>
+>a : 1
+
+  state = { error: false }
+>state : { error: boolean; }
+>{ error: false } : { error: boolean; }
+>error : boolean
+>false : false
+
+  static g = () => ({ error: true })
+>g : () => { error: boolean; }
+>() => ({ error: true }) : () => { error: boolean; }
+>({ error: true }) : { error: boolean; }
+>{ error: true } : { error: boolean; }
+>error : boolean
+>true : true
+
+})()
+export const F = class F extends Base<{ a: 1 }> {
+>F : typeof F
+>class F extends Base<{ a: 1 }> {  static g = () => ({ error: true })} : typeof F
+>F : typeof F
+>Base : Base<{ a: 1; }>
+>a : 1
+
+  static g = () => ({ error: true })
+>g : () => { error: boolean; }
+>() => ({ error: true }) : () => { error: boolean; }
+>({ error: true }) : { error: boolean; }
+>{ error: true } : { error: boolean; }
+>error : boolean
+>true : true
+}
+

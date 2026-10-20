@@ -317,6 +317,7 @@ static void builder_sort_stable(MembersBuilder* builder) { builder_sort_stable_f
 // member of another file whose declaration's offsets fall inside the container's is in the first group too (babel's
 // `class ESTreeParserMixin extends superClass` lists util.ts's addExtra before its own members). The own members
 // (before `own_props`) are taken as they are unless such an inherited one joins them; the rest sorted by declaration
+static void builder_sort_contained_first(MembersBuilder* builder, u32 own_props, Symbol const* container);
 static void builder_sort_class_members(MembersBuilder* builder, u32 own_props, Symbol const* container) {
     bool joins = false;
     for (u32 i = own_props; container && i < builder->props_count && !joins; i++) {
@@ -336,7 +337,12 @@ static void builder_sort_class_members(MembersBuilder* builder, u32 own_props, S
         builder_sort_stable_from(builder, own_props);
         return;
     }
-    // (Partition: the own ones and the contained inherited ones, then the others; each sorted by declaration)
+    builder_sort_contained_first(builder, own_props, container);
+}
+
+// (Partition: the props from `own_props` on contained by the container join the ones before it, then the others;
+// each group sorted by declaration)
+static void builder_sort_contained_first(MembersBuilder* builder, u32 own_props, Symbol const* container) {
     builder_unindex(builder);
     u32 n = builder->props_count - own_props;
     Prop** rest = malloc(sizeof(Prop*) * n);
@@ -3250,7 +3256,9 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 if (node->kind != SYMBOL_DECL_CLASS) continue;
                 early_static_members(me, ty, node->node);
                 builder_add_class_static_side(me, &builder, ty, node->node);
-                builder_sort_stable_from(&builder, 0);
+                // (The statics declared in the class first, then the inherited ones: getNamedMembers with the class as
+                // container, react-three-fiber's `class extends React.Component { static getDerivedStateFromError }`)
+                builder_sort_contained_first(&builder, 0, decl);
                 // `var C = class {}; C.x = 1`
                 Symbol const* host = ((ClassDecl const*)node->node)->expando_host;
                 if (host && host != decl) {
