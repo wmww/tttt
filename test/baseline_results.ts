@@ -1202,6 +1202,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInterfacePropertyThenClassAccessor': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttIntersectionAnyBeforeUnions': {
         errors: true,
         symbols: true,

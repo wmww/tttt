@@ -884,7 +884,11 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
                 Prop const* root = prop;
                 while (root && root->target && !root->decl->decl_span_count) root = root->target;
-                if (prop && root->decl->decl_span_count && !span_eq(root->decl->decl_spans[0], my declaration)) {
+                // (Or before one, a class's merged with this interface: an accessor's symbol is typed by its
+                // accessors whatever came first, tsc's getTypeOfSymbol)
+                if (prop && root->decl->decl_span_count &&
+                    ((root->flags & PROP_ACCESSOR) || !span_eq(root->decl->decl_spans[0], my declaration))
+                ) {
                     type = prop_type(checker, prop);
                 }
             }

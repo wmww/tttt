@@ -1,0 +1,25 @@
+//// [test/cases/ttttInterfacePropertyThenClassAccessor.ts] ////
+
+=== dom.d.ts ===
+interface Bd { readonly body: Array<number> | null; }
+>body : any[] | null
+
+interface Rs extends Bd { ok: boolean }
+>ok : boolean
+
+=== workers.d.ts ===
+declare abstract class Bd { get body(): Array<any> | null; }
+>Bd : Bd
+>body : any[] | null
+
+=== use.ts ===
+declare const r: Rs;
+>r : Rs
+
+const x: string = r.body!;
+>x : string
+>r.body! : any[]
+>r.body : any[] | null
+>r : Rs
+>body : any[] | null
+

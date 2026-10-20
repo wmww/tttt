@@ -1799,8 +1799,12 @@ static void builder_add_class_items(
                     Prop* prop = builder_add_class_prop_joined(me, builder, class_decl, &i->method.name_string, parent, ctx, i, &joined);
                     // An accessor after a property of its name joins the property's symbol (tsgo 7.1's binder:
                     // PropertyExcludes and the accessors' excludes allow each other), which getTypeOfSymbol then types
-                    // as accessors (getTypeOfAccessors: the property's declaration says nothing)
-                    if (!prop && joined && (joined->flags & PROP_FIELD) && !(joined->flags & (PROP_ACCESSOR | PROP_METHOD))) {
+                    // as accessors (getTypeOfAccessors: the property's declaration says nothing). A property signature of
+                    // an interface merged with the class before it too: DOM's `interface Body { readonly body: X }`
+                    // and Cloudflare's `declare abstract class Body { get body(): Y }` make `body` a Y
+                    if (!prop && joined && !(joined->flags & (PROP_ACCESSOR | PROP_METHOD)) &&
+                        !joined->decl->parameter_property && !joined->decl->function
+                    ) {
                         prop = joined;
                         prop->flags &= ~(u32)PROP_FIELD;
                         prop->decl->node = nullptr;
