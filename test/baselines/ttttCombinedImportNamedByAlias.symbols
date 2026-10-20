@@ -1,0 +1,88 @@
+//// [test/cases/ttttCombinedImportNamedByAlias.ts] ////
+
+=== /node_modules/@types/big.js/index.d.ts ===
+declare namespace Big {
+>Big : Symbol(Big, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 11, 13), Decl(index.d.ts, 11, 38))
+
+    type BigSource = number | string | Big | bigint;
+>BigSource : Symbol(BigSource, Decl(index.d.ts, 0, 23))
+>Big : Symbol(Big, Decl(index.d.ts, 6, 5))
+
+    interface BigConstructor {
+>BigConstructor : Symbol(BigConstructor, Decl(index.d.ts, 1, 52))
+
+        new(value: BigSource): Big;
+>value : Symbol(value, Decl(index.d.ts, 3, 12))
+>BigSource : Symbol(BigSource, Decl(index.d.ts, 0, 23))
+>Big : Symbol(Big, Decl(index.d.ts, 6, 5))
+
+        (value: BigSource): Big;
+>value : Symbol(value, Decl(index.d.ts, 4, 9))
+>BigSource : Symbol(BigSource, Decl(index.d.ts, 0, 23))
+>Big : Symbol(Big, Decl(index.d.ts, 6, 5))
+
+        readonly Big: BigConstructor;
+>Big : Symbol(BigConstructor.Big, Decl(index.d.ts, 4, 32))
+>BigConstructor : Symbol(BigConstructor, Decl(index.d.ts, 1, 52))
+    }
+    interface Big {
+>Big : Symbol(Big, Decl(index.d.ts, 6, 5))
+
+        plus(n: BigSource): Big;
+>plus : Symbol(Big.plus, Decl(index.d.ts, 7, 19))
+>n : Symbol(n, Decl(index.d.ts, 8, 13))
+>BigSource : Symbol(BigSource, Decl(index.d.ts, 0, 23))
+>Big : Symbol(Big, Decl(index.d.ts, 6, 5))
+    }
+}
+declare const Big: Big.BigConstructor;
+>Big : Symbol(Big, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 11, 13), Decl(index.d.ts, 11, 38))
+>Big : Symbol(Big, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 11, 13), Decl(index.d.ts, 11, 38))
+>BigConstructor : Symbol(Big.BigConstructor, Decl(index.d.ts, 1, 52))
+
+type Big = Big.Big;
+>Big : Symbol(Big, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 11, 13), Decl(index.d.ts, 11, 38))
+>Big : Symbol(Big, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 11, 13), Decl(index.d.ts, 11, 38))
+>Big : Symbol(Big.Big, Decl(index.d.ts, 6, 5))
+
+export = Big;
+>Big : Symbol(Big, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 11, 13), Decl(index.d.ts, 11, 38))
+
+export as namespace Big;
+>Big : Symbol(Big, Decl(index.d.ts, 13, 13))
+
+=== /helper.ts ===
+import { Big } from 'big.js';
+>Big : Symbol(Big, Decl(helper.ts, 0, 8))
+
+export function f(x: Big[]) { return x[0]; }
+>f : Symbol(f, Decl(helper.ts, 0, 29))
+>x : Symbol(x, Decl(helper.ts, 1, 18))
+>Big : Symbol(Big, Decl(helper.ts, 0, 8))
+>x : Symbol(x, Decl(helper.ts, 1, 18))
+
+export function g() { return new Big(0); }
+>g : Symbol(g, Decl(helper.ts, 1, 44))
+>Big : Symbol(Big, Decl(helper.ts, 0, 8))
+
+declare const v: Big;
+>v : Symbol(v, Decl(helper.ts, 3, 13))
+>Big : Symbol(Big, Decl(helper.ts, 0, 8))
+
+export const h = v;
+>h : Symbol(h, Decl(helper.ts, 4, 12))
+>v : Symbol(v, Decl(helper.ts, 3, 13))
+
+declare const arr: Big[];
+>arr : Symbol(arr, Decl(helper.ts, 5, 13))
+>Big : Symbol(Big, Decl(helper.ts, 0, 8))
+
+export const r1 = arr.reduce((a) => a, new Big(0));
+>r1 : Symbol(r1, Decl(helper.ts, 6, 12))
+>arr.reduce : Symbol(Array.reduce, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>arr : Symbol(arr, Decl(helper.ts, 5, 13))
+>reduce : Symbol(Array.reduce, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(helper.ts, 6, 30))
+>a : Symbol(a, Decl(helper.ts, 6, 30))
+>Big : Symbol(Big, Decl(helper.ts, 0, 8))
+

@@ -168,6 +168,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttCombinedImportNamedByAlias': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttCommonJsModuleObjectNoInferableIndex': {
         errors: true,
         symbols: true,

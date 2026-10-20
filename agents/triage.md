@@ -9,3 +9,18 @@ pgobuild.sh serializes builds (flock), waits out running pgo/tttt processes and 
 was already fixed (e76f67ca); its wall/CPU gap was load (nuqs docs 0.33 s wall quiet). The bwrap flake went to
 bugs/harness.md. measurements.md condensed 2139 -> 408 lines, hacks.md audited (no entry gone, many narrowed).
 
+
+- (2026-10-20, agent B, ghostfolio probe) tsc's combined import symbol (SymbolAlias.combined_type, `import { Big }
+  from "big.js"`): its members are the interface's own symbols in tsc (Members cloned), so `a.plus` is
+  `Symbol(Big.Big.plus)`; tttt's combined has its own decls and names it `Big.plus` (symbols baseline only). And the
+  union tie `c ? arr[0] : new Big(0)` keeps Big.Big in tttt (`import("big.js").Big`) where tsc keeps the combined
+  type (`Big`): Big.Big's declared type gets a lower id in tttt, likely because resolving the import's value half
+  (ty_export_equals_property_missing -> BigConstructor's members) lowers signature return types eagerly where tsc's
+  are lazy. Probe: test/cases/ttttCombinedImportNamedByAlias.ts plus `export function u(c: boolean) { return c ?
+  arr[0] : new Big(0); }`. ghostfolio itself matches.
+- (2026-10-20, agent B) Property access on an intersection whose apparent type is any (a generic member constrained
+  to any) finds the object member's symbol in tttt; tsc's getApparentTypeOfIntersectionType makes it any, no symbol
+  (symbols baseline only; see ttttMappedOverApparentlyAnyIntersection's probe with `i: InferOutput<TShape> & {
+  $type: TType }`, `i.$type`). find_prop_in() isn't the path property access takes.
+- (2026-10-20, agent B) never_reduced_literal_prop() (the type-variable path of never-reduction) may want the
+  HasNeverType rule some_prop_is_never() now gives the known-objects path.

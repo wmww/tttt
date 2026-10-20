@@ -27,8 +27,6 @@ Left (2026-10-20, by project; + spurious, - missing):
   `useCallback(() => listenKeys(store as any, keys, emitChange))` with `declare function useCallback<T>(cb: T): T`.
   The same family as the apollo fix (tsc re-entering what is in flight below a barrier; tttt re-enters only aliases
   below a variance measurement, `alias_reenters()`).
-- ghostfolio/libs/ui: +TS4058 1 (libs/common/src/lib/helper.ts:539, `Big` from an external module "cannot be named").
-  Not investigated under the new model.
 - hono (tsconfig.build.json): +TS2769 2 (request.ts:214, a `-p` bug): `parseBody(this, options)` with `this` against
   `HonoRequest | Request`. The plain check fails in tsgo too (HonoRequest's variances [independent, bivariant],
   `I extends Input['out']` isn't `{}`); tsgo then relates getEffectiveConstraintOfIntersection's `HonoRequest<P, I> &

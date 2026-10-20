@@ -255,8 +255,10 @@ static bool is_accessible(
     bool ignore_qualification
 ) {
     if (!from_table) return false;
-    // (Nor does an import that tsc combines (SymbolAlias.combined_type) name the interface: it is a symbol of its own)
-    if (from_table != symbol && current_checker && ty_alias_combined_type(current_checker, from_table)) return false;
+    // (Nor does an import that tsc combines (SymbolAlias.combined_type) name the interface: it is a symbol of its own,
+    // which it names as an alias, try_entry(), not as the name in the table)
+    Symbol const* combined = from_table != symbol && current_checker ? ty_alias_combined_type(current_checker, from_table) : nullptr;
+    if (combined && (combined != symbol || resolved != combined)) return false;
     Symbol const* named = resolved ? resolved : from_table;
     if (named != symbol && identity(me, named) != identity(me, symbol)) {
         // (tsgo's isAccessible resolves an alias that resolves to another alias on: an alias merged with a type, `type
@@ -328,7 +330,12 @@ static bool try_entry(
     if (value_target && value_target->decl_count && value_target->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY &&
         (!current_checker || !ty_export_equals_property_missing(current_checker, value_target))
     ) {
-        return false;
+        // (but the combined symbol itself, the interface type a type reference through the import makes, it names:
+        // `import { Big } from "big.js"`'s `Big`, ghostfolio)
+        Symbol const* combined = current_checker ? ty_alias_combined_type(current_checker, entry) : nullptr;
+        if (combined != symbol) return false;
+        return is_accessible(me, symbol, meaning, entry, combined, ignore_qualification) &&
+            (out->len = 0, chain_push(out, entry), true);
     }
     Symbol const* resolved = resolve_alias(entry);
     if (!resolved) return false;

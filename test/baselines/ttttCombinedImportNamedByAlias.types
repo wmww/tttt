@@ -1,0 +1,77 @@
+//// [test/cases/ttttCombinedImportNamedByAlias.ts] ////
+
+=== /node_modules/@types/big.js/index.d.ts ===
+declare namespace Big {
+    type BigSource = number | string | Big | bigint;
+>BigSource : BigSource
+
+    interface BigConstructor {
+        new(value: BigSource): Big;
+>value : BigSource
+
+        (value: BigSource): Big;
+>value : BigSource
+
+        readonly Big: BigConstructor;
+>Big : BigConstructor
+    }
+    interface Big {
+        plus(n: BigSource): Big;
+>plus : (n: BigSource) => Big
+>n : BigSource
+    }
+}
+declare const Big: Big.BigConstructor;
+>Big : import("big.js").BigConstructor
+>Big : any
+
+type Big = Big.Big;
+>Big : import("big.js").Big
+>Big : any
+
+export = Big;
+>Big : import("big.js").Big
+
+export as namespace Big;
+>Big : import("big.js").BigConstructor
+
+=== /helper.ts ===
+import { Big } from 'big.js';
+>Big : import("big.js").BigConstructor
+
+export function f(x: Big[]) { return x[0]; }
+>f : (x: Big[]) => Big
+>x : Big[]
+>x[0] : Big
+>x : Big[]
+>0 : 0
+
+export function g() { return new Big(0); }
+>g : () => import("big.js").Big
+>new Big(0) : import("big.js").Big
+>Big : import("big.js").BigConstructor
+>0 : 0
+
+declare const v: Big;
+>v : Big
+
+export const h = v;
+>h : Big
+>v : Big
+
+declare const arr: Big[];
+>arr : Big[]
+
+export const r1 = arr.reduce((a) => a, new Big(0));
+>r1 : Big
+>arr.reduce((a) => a, new Big(0)) : Big
+>arr.reduce : { (callbackfn: (previousValue: Big, currentValue: Big, currentIndex: number, array: Big[]) => Big): Big; (callbackfn: (previousValue: Big, currentValue: Big, currentIndex: number, array: Big[]) => Big, initialValue: Big): Big; <U>(callbackfn: (previousValue: U, currentValue: Big, currentIndex: number, array: Big[]) => U, initialValue: U): U; }
+>arr : Big[]
+>reduce : { (callbackfn: (previousValue: Big, currentValue: Big, currentIndex: number, array: Big[]) => Big): Big; (callbackfn: (previousValue: Big, currentValue: Big, currentIndex: number, array: Big[]) => Big, initialValue: Big): Big; <U>(callbackfn: (previousValue: U, currentValue: Big, currentIndex: number, array: Big[]) => U, initialValue: U): U; }
+>(a) => a : (a: Big) => Big
+>a : Big
+>a : Big
+>new Big(0) : import("big.js").Big
+>Big : import("big.js").BigConstructor
+>0 : 0
+
