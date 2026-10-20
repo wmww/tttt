@@ -205,3 +205,18 @@ Left:
 - **telegraf** partial reuse (below, unchanged: tsgo reuses the asserted node with only a local alias reference
   replaced, a reuse mode tttt's printer doesn't have; not cheap), **vueuse `.test/mount.d.ts`** mismatches again (also at this
   pass's base commit) after matching in the morning's full run: an order or environment effect.
+
+## 2026-10-20 agent C (real-code fan-out)
+Fixed: ts-proto's `| //` then `/** doc */` union members (lazy indentation, ttttDeclarationUnionMemberLineThenJsdoc),
+snaps-cli's `builtIns?: any` (a return-mapped contextual type that is any falls back to the parameter type),
+effect matcher's template literal map (types mapped at their starts), headlessui-vue's `$slots: Slots` (an alias
+body's twin turns back only if tsc's instance could contain type variables), react-three-fiber's class-expression
+static order (own statics first). dtsdiff in a worktree: 1326 / 1350. Verdicts:
+- **vscode terminal recordings `readonly id?: undefined`** (the "modifier" bucket, 4 files): tsgo's getUndefinedProperty
+  copies the first property it was made for (createSymbolWithType keeps CheckFlags.Readonly), cached per name per
+  checker; tttt's K1 meets a readonly `id` first, tsgo (and `--singleThreaded`, whose hashes don't match tttt either)
+  a mutable one. `TTTT_CHECK_ONLY` on the file gives yet another order. The undefinedProperties history of "Member
+  order" above; feathers generators' connection/index.d.ts and postiz orchestrator's autopost.service.d.ts are it too.
+- headlessui-vue: `--singleThreaded` writes what tsgo's default does (cached); its last file matches since the twin fix.
+- Left as before: babel-parser, mcp-sdk (checker split), slate test / postiz / ui (undefinedProperties), feathers
+  `language`, mockoon, react-three-fiber's react-native mock, vest (tsgo bug), telegraf's partial reuse map.
