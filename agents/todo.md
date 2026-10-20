@@ -49,8 +49,8 @@ on the 12-core box (put it in report.md, as 2026-10-19's ask did).
    wide again (mikro-orm's probe 258k types, tsgo 393k, chain identical; perfsweep's worst types ratio 1.40).
    never_reduction's HasNeverType through type variables fixed. Plan 86 stage 1 condensed.
 7. **Insights.** report.md: the stage 4 gate's verdict and what it means for the next windows, `-b`'s single model,
-   costliest-first's numbers. Check whether 7.1.0 stable is out (plan 58) and whether the human ran the 12-core
-   command.
+   costliest-first's numbers. Check whether 7.1.0 stable is out (plan 58). The 12-core command ran on 2026-10-20
+   (measurements.md "The 12-core box at efb91998": costliest-first a wash there, bun canary picture unchanged).
 
 Not in this window (candidates for the next, which the insights session reorders): hacks.md "IntersectionState is sticky" (an audit of relate.c's
 calls against tsc's plain isRelatedTo sites, one session; the mikro-orm bug was one); plan 88 stages A-B (one barrier

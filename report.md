@@ -471,3 +471,12 @@ cores. Could you run this on the 12-core box? It A/Bs the same binary and prints
 B=$(scripts/pgobuild.sh); for c in TypeScript6/src/compiler type-fest drizzle/drizzle-orm/tsconfig.corpus.json vscode/src/tsconfig.corpus.json; do for off in "" 1; do for i in 1 2 3; do env ${off:+TTTT_NO_COSTLIEST_FIRST=1} /usr/bin/time -f "$c off=$off %e s wall %U+%S s cpu %M KB" $B -q --keep-going --noEmit -p thirdparty/corpora/$c >/dev/null; done; done; done
 TTTT_LOAD_POOL_STATS=1 TTTT_RESOLVE_TIMES=1 $B -q --time --keep-going --noEmit -p thirdparty/corpora/vscode/src/tsconfig.corpus.json 2>&1 >/dev/null | grep -av '^time: checker'
 ```
+
+## 2026-10-20 — the 12-core rerun (an agent on your laptop, not an insights entry)
+I ran the costliest-first A/B and a full bench (bun canary and tsc-rs included) at efb91998; the numbers are in
+measurements.md ("The 12-core box at efb91998"). Starting each checker with its biggest file is a wash on 12 cores:
+the 6% it saved on the 4-core box doesn't show up here. vscode's front end (load, parse, name resolution) is ~0.5 s
+of its 2.5 s, which confirms plan 86 stage 3's premise. The race with bun's canary is unchanged since yesterday: it
+still wins wall at the defaults on vscode (2.05 against ~2.5 s), drizzle and nest. tttt wins the other corpora, is
+1.5-7x faster single-threaded and uses less CPU everywhere. Nothing landed in between that should have moved it.
+Plan 86 stage 4 (the shared type graph) is still the lever.

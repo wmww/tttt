@@ -30,6 +30,49 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## The 12-core box at efb91998 (2026-10-20, run by an agent on the human's laptop)
+AMD Ryzen AI 9 HX 370 (12 cores / 24 threads), on AC, `balanced` profile, GCC 16.2. Answers 2026-10-20's ask.
+**Costliest file first, A/B of the same pgo/tttt** (`TTTT_NO_COSTLIEST_FIRST=1`, 3 runs each at the default K12,
+wall s / CPU s): TypeScript6 0.24-0.27 / 1.1 on, 0.21-0.26 / 1.1 off; type-fest 0.21-0.25 on and off; drizzle 0.33-0.34 /
+3.2 on, 0.32-0.33 / 3.1 off; vscode 2.41-2.52 / 25.9 on, 2.46-2.49 / 25.9 off. **A wash on 12 cores**: the 4-vCPU
+box's -6% on TypeScript6 doesn't show (its wall is 0.24 s here, the front end is most of it). vscode's front end at
+K12: libs 40 ms, load+parse files 259 ms (loader waited 14 ms; it parsed 83 ms itself, 744 of 11035 files; workers
+busy 5.6 of 7.2 s), resolve names 203 ms (declare 71, link 51, walk 44), typecheck 1852 ms: **~0.5 s of vscode's
+2.5 s is the front end**, as plan 86 stage 3 assumed.
+
+**Full bench**: `scripts/bench.sh --runs 3 --checkers 24 --bun bun-canary --tscrs tsc-rs-0.7.0`, bun canary
+`1.4.3-canary.20261019.1` (1.4.4-canary.1+6bb5dc195); best wall s / CPU s (median run) / peak MB:
+| corpus | tttt K12 | tttt K24 | tttt K1 | bun canary | bun canary single | tsc-rs | tsc-rs --fast | tsgo |
+|---|---|---|---|---|---|---|---|---|
+| TypeScript6 | 0.24 / 1.13 / 426 | 0.21 / 1.48 / 518 | 0.44 / 0.44 / 225 | 0.26 / 1.76 / 284 | 0.69 / 1.07 / 168 | 0.42 / 1.22 / 335 | 0.41 / 1.24 / 329 | 0.57 / 2.97 / 498 |
+| type-fest | 0.23 / 1.32 / 625 | 0.23 / 1.93 / 859 | 0.66 / 0.66 / 430 | 0.94 / 6.34 / 1011 | 4.56 / 4.57 / 788 | 2.45 / 5.49 / 3134 | 1.48 / 4.63 / 3287 | 4.01 / 17.78 / 5452 |
+| valibot | 0.14 / 1.15 / 403 | 0.15 / 2.00 / 466 | 0.38 / 0.38 / 253 | 0.15 / 2.41 / 267 | 1.19 / 1.29 / 157 | 0.35 / 1.49 / 486 | 0.21 / 2.20 / 646 | 0.69 / 4.54 / 809 |
+| bulletproof-react | 0.13 / 0.43 / 281 | 0.11 / 1.13 / 487 | 0.19 / 0.18 / 142 | 0.17 / 0.93 / 241 | 0.51 / 0.55 / 151 | 0.22 / 0.67 / 311 | 0.24 / 0.67 / 306 | 0.39 / 2.55 / 450 |
+| nestjs-boilerplate | 0.09 / 0.54 / 279 | 0.10 / 0.78 / 359 | 0.16 / 0.17 / 135 | 0.06 / 0.63 / 196 | 0.17 / 0.29 / 120 | 0.12 / 0.54 / 220 | 0.11 / 0.56 / 237 | 0.13 / 1.31 / 257 |
+| webpack | 0.30 / 2.90 / 625 | 0.31 / 4.60 / 738 | 1.00 / 0.99 / 528 | 0.45 / 5.90 / 505 | 2.19 / 2.25 / 333 | 0.64 / 2.90 / 841 | 0.45 / 5.13 / 1209 | 1.19 / 7.76 / 1166 |
+| zod | 0.20 / 1.89 / 536 | 0.22 / 3.49 / 754 | 0.55 / 0.55 / 393 | 0.25 / 3.66 / 394 | 1.03 / 1.03 / 217 | 0.53 / 2.03 / 792 | 0.34 / 2.54 / 866 | 1.06 / 7.31 / 1346 |
+| xstate | 0.14 / 1.22 / 408 | 0.17 / 2.37 / 569 | 0.29 / 0.28 / 192 | 0.14 / 1.49 / 239 | 0.52 / 0.60 / 111 | 0.22 / 1.17 / 324 | 0.26 / 1.14 / 323 | 0.41 / 2.74 / 473 |
+| drizzle | 0.35 / 3.49 / 691 | 0.37 / 6.74 / 962 | 0.74 / 0.74 / 398 | 0.30 / 5.23 / 439 | 1.98 / 2.02 / 273 | 0.70 / 2.90 / 999 | 0.53 / 6.89 / 1684 | 1.51 / 9.96 / 1594 |
+| vue | 0.18 / 1.68 / 475 | 0.19 / 2.69 / 567 | 0.58 / 0.58 / 308 | 0.23 / 3.13 / 313 | 0.95 / 1.34 / 179 | 0.51 / 2.03 / 496 | 0.28 / 2.98 / 675 | 0.85 / 4.95 / 736 |
+| effect | 0.26 / 2.73 / 611 | 0.29 / 4.68 / 773 | 1.10 / 1.10 / 516 | 0.58 / 8.10 / 515 | 2.70 / 3.30 / 329 | 1.30 / 5.93 / 1261 | 0.81 / 9.54 / 1578 | 1.43 / 10.43 / 1555 |
+| vscode | 2.67 / 28.55 / 1595 | 2.47 / 41.40 / 1893 | 10.51 / 10.54 / 1371 | 2.05 / 44.21 / 2250 | 17.09 / 17.22 / 1651 | 5.02 / 21.61 / 5498 | 3.02 / 35.64 / 6372 | 7.81 / 56.75 / 7839 |
+| excalidraw | 0.25 / 2.47 / 556 | 0.25 / 4.12 / 726 | 0.73 / 0.73 / 367 | 0.24 / 3.52 / 382 | 1.65 / 1.75 / 255 | 0.75 / 2.96 / 614 | 0.88 / 11.05 / 948 | 1.47 / 10.34 / 1795 |
+| tanstack-router | 0.19 / 1.64 / 447 | 0.19 / 2.31 / 580 | 0.53 / 0.53 / 307 | 0.22 / 2.78 / 375 | 1.03 / 1.65 / 186 | 0.51 / 1.79 / 536 | 0.42 / 1.91 / 528 | 1.21 / 6.60 / 984 |
+
+- Against 2026-10-19's canary table: tttt K1 is unchanged (vscode 10.51 against 10.61), the canary's numbers are the
+  same within noise. tttt K12's CPU reads 5-20% higher on some corpora (vscode 28.6 against 25.1 s, drizzle 3.5
+  against 2.9) but the A/B above, minutes earlier, measured vscode at 25.4-26.6 s and drizzle 3.1 s: run-to-run frequency
+  noise on a laptop, not a code change (K1 flat). Walls equal within 0.05 s except vscode (2.67 here, 2.41-2.52 in
+  the A/B).
+- **bun canary still beats tttt's default wall on vscode (2.05 against 2.47-2.67), drizzle (0.30 / 0.35), nest (0.06
+  / 0.09) and ties excalidraw, xstate, valibot**; tttt wins the other 8 and every K1 (1.5-7x), and uses less CPU
+  everywhere at the defaults (vscode 28.6 against 44.2 s). Nothing landed since 2026-10-19 that should change this:
+  plan 86 stage 4 is the lever.
+- bun's "single-threaded" CPU exceeds its wall on several corpora (TypeScript6 0.69 s wall / 1.07 s CPU, vue,
+  tanstack) and its best and median differ widely: it isn't strictly one thread. Compare medians for bun single.
+- tsc-rs and tsgo: unchanged picture (tsc-rs --fast is the closest tsgo-exact competitor, vscode 3.02 s at 35.6 s CPU
+  and 6.4 GB).
+
 ## Costliest file first and the front end's split (2026-10-20, todo entry 4; this box, 4 vCPUs, release build)
 Each checker now starts with its share's biggest file (`deal_files()`'s `share_first`; `TTTT_NO_COSTLIEST_FIRST=1`
 turns it off). Best of 5 at the defaults (K4 T4), wall / CPU s / peak MB, before -> after: TypeScript6/src/compiler
