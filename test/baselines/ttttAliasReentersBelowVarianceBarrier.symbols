@@ -1,0 +1,66 @@
+//// [test/cases/ttttAliasReentersBelowVarianceBarrier.ts] ////
+
+=== ttttAliasReentersBelowVarianceBarrier.ts ===
+// An alias whose conditional type relates a class to its base, whose method names a generic type constrained by
+// that alias: measuring that type's variances asks for the constraint while the alias is in flight. tsgo's outermost
+// variance measurement is a resolution barrier, so that isn't a cycle (no TS2456, no TS2313): the alias is resolved
+// again, nested (apollo-client's Cache.Implementation with a TypeOverrides augmentation)
+interface TypeOverrides { cache: TestCache }
+>TypeOverrides : Symbol(TypeOverrides, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 0, 0))
+>cache : Symbol(TypeOverrides.cache, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 4, 25))
+>TestCache : Symbol(TestCache, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 12, 1))
+
+declare namespace Cache {
+>Cache : Symbol(Cache, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasReentersBelowVarianceBarrier.ts, 4, 44))
+
+  type Implementation = TypeOverrides extends { cache: infer T } ? T extends ApolloCache ? T : "bad" : ApolloCache;
+>Implementation : Symbol(Implementation, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 5, 25))
+>TypeOverrides : Symbol(TypeOverrides, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 0, 0))
+>cache : Symbol(cache, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 6, 47))
+>T : Symbol(T, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 6, 60))
+>T : Symbol(T, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 6, 60))
+>ApolloCache : Symbol(ApolloCache, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 8, 1))
+>T : Symbol(T, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 6, 60))
+>ApolloCache : Symbol(ApolloCache, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 8, 1))
+
+  interface BatchOptions<TCache extends Cache.Implementation, R = void> { update?(cache: TCache): R; }
+>BatchOptions : Symbol(BatchOptions, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 6, 115))
+>TCache : Symbol(TCache, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 7, 25))
+>Cache : Symbol(Cache, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasReentersBelowVarianceBarrier.ts, 4, 44))
+>Implementation : Symbol(Implementation, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 5, 25))
+>R : Symbol(R, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 7, 61))
+>update : Symbol(BatchOptions.update, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 7, 73))
+>cache : Symbol(cache, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 7, 82))
+>TCache : Symbol(TCache, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 7, 25))
+>R : Symbol(R, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 7, 61))
+}
+declare abstract class ApolloCache {
+>ApolloCache : Symbol(ApolloCache, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 8, 1))
+
+  batch<U>(options: Cache.BatchOptions<this, U>): U;
+>batch : Symbol(ApolloCache.batch, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 9, 36))
+>U : Symbol(U, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 10, 8))
+>options : Symbol(options, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 10, 11))
+>Cache : Symbol(Cache, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasReentersBelowVarianceBarrier.ts, 4, 44))
+>BatchOptions : Symbol(Cache.BatchOptions, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 6, 115))
+>U : Symbol(U, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 10, 8))
+>U : Symbol(U, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 10, 8))
+
+  abstract read(): void;
+>read : Symbol(ApolloCache.read, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 10, 52))
+}
+declare class TestCache extends ApolloCache { read(): void; testCacheOnly(): boolean; }
+>TestCache : Symbol(TestCache, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 12, 1))
+>ApolloCache : Symbol(ApolloCache, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 8, 1))
+>read : Symbol(TestCache.read, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 13, 45))
+>testCacheOnly : Symbol(TestCache.testCacheOnly, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 13, 59))
+
+declare const x: Cache.Implementation;
+>x : Symbol(x, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 14, 13))
+>Cache : Symbol(Cache, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasReentersBelowVarianceBarrier.ts, 4, 44))
+>Implementation : Symbol(Cache.Implementation, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 5, 25))
+
+const n: number = x;
+>n : Symbol(n, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 15, 5))
+>x : Symbol(x, Decl(ttttAliasReentersBelowVarianceBarrier.ts, 14, 13))
+

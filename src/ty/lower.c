@@ -248,6 +248,18 @@ static Symbol const* exported_alias_twin(Symbol const* symbol, SymbolDecl const*
     return nullptr;
 }
 
+// A type alias asked for while in flight that isn't being resolved above a variance measurement's resolution barrier
+// (Checker.resolving_variance_start): tsc's pushTypeResolution finds no cycle and resolves it again. (Bounded: the
+// nested resolution is above the barrier)
+static bool alias_reenters(Checker* me, Symbol const* symbol) {
+    SymbolFlags other = SYMBOL_INTERFACE | SYMBOL_CLASS | SYMBOL_ENUM | SYMBOL_ENUM_MEMBER | SYMBOL_TYPE_PARAMETER;
+    if (!(symbol->flags & SYMBOL_TYPE_ALIAS) || (symbol->flags & other) || !my variance_stack_len) return false;
+    for (u32 i = my resolving_len; i-- > my resolving_variance_start;) {
+        if (my resolving[i].key == symbol && my resolving[i].kind == RESOLVING_ALIAS) return false;
+    }
+    return true;
+}
+
 // The type a symbol stands for in a type position: the symbol must be the one that has the type meaning (what
 // identifiers keep as `target`). Everything about a placeholder is any
 Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
@@ -259,6 +271,9 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
             TAINT_READ(TK_SYMBOL_DECLARED, links);
             return links->declared_type;
         case LAZY_STATE_IN_FLIGHT:
+            // An alias in flight below the resolution barrier (a variance measurement's, a call's) is resolved again,
+            // nested, and the first to finish is its type (tsc's findResolutionCycleStartIndex looks no further down)
+            if (alias_reenters(me, symbol)) break;
             TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
             // tsc's pushTypeResolution: every alias from this one on is part of the cycle, and fails when it finishes
             ty_resolving_cycle(me, RESOLVING_ALIAS, symbol);
@@ -325,11 +340,14 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     } else {
         ret = ty_intrinsic(me, TY_ERROR); // A value used as a type, TS2749
     }
-    // symbol_links() pointers are stable (arena), the table growing in the meantime doesn't matter
-    links->declared_type = ret;
-    links->declared_state = LAZY_STATE_DONE;
-    TAINT_END(taint_frame, TK_SYMBOL_DECLARED, links, symbol, ret);
-    return ret;
+    // symbol_links() pointers are stable (arena), the table growing in the meantime doesn't matter. (A nested
+    // resolution of an alias that re-entered may have finished first: its type stays, tsc's `if links.declaredType == nil`)
+    if (links->declared_state != LAZY_STATE_DONE) {
+        links->declared_type = ret;
+        links->declared_state = LAZY_STATE_DONE;
+    }
+    TAINT_END(taint_frame, TK_SYMBOL_DECLARED, links, symbol, links->declared_type);
+    return links->declared_type;
 }
 
 // Whether a type alias's resolution reached itself (TS2456): tsc's getDeclaredTypeOfTypeAlias then never sets

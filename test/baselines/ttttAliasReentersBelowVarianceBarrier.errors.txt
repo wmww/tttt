@@ -1,0 +1,29 @@
+ttttAliasReentersBelowVarianceBarrier.ts(11,40): error TS2344: Type 'this' does not satisfy the constraint 'TestCache'.
+  Property 'testCacheOnly' is missing in type 'ApolloCache' but required in type 'TestCache'.
+ttttAliasReentersBelowVarianceBarrier.ts(16,7): error TS2322: Type 'TestCache' is not assignable to type 'number'.
+
+
+==== ttttAliasReentersBelowVarianceBarrier.ts (2 errors) ====
+    // An alias whose conditional type relates a class to its base, whose method names a generic type constrained by
+    // that alias: measuring that type's variances asks for the constraint while the alias is in flight. tsgo's outermost
+    // variance measurement is a resolution barrier, so that isn't a cycle (no TS2456, no TS2313): the alias is resolved
+    // again, nested (apollo-client's Cache.Implementation with a TypeOverrides augmentation)
+    interface TypeOverrides { cache: TestCache }
+    declare namespace Cache {
+      type Implementation = TypeOverrides extends { cache: infer T } ? T extends ApolloCache ? T : "bad" : ApolloCache;
+      interface BatchOptions<TCache extends Cache.Implementation, R = void> { update?(cache: TCache): R; }
+    }
+    declare abstract class ApolloCache {
+      batch<U>(options: Cache.BatchOptions<this, U>): U;
+                                           ~~~~
+!!! error TS2344: Type 'this' does not satisfy the constraint 'TestCache'.
+!!! error TS2344:   Property 'testCacheOnly' is missing in type 'ApolloCache' but required in type 'TestCache'.
+!!! related TS2728 ttttAliasReentersBelowVarianceBarrier.ts:14:61: 'testCacheOnly' is declared here.
+      abstract read(): void;
+    }
+    declare class TestCache extends ApolloCache { read(): void; testCacheOnly(): boolean; }
+    declare const x: Cache.Implementation;
+    const n: number = x;
+          ~
+!!! error TS2322: Type 'TestCache' is not assignable to type 'number'.
+    

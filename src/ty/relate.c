@@ -3424,6 +3424,12 @@ static VarianceSubject subject_of_frame(Checker* me, u32 i) {
 static void measure_variances(Checker* me, VarianceSubject subject, Variances* variances) {
     unsigned char saved_reports = my variance_reports;
     my variance_depth++;
+    // (The outermost measurement is a resolution barrier, tsgo's resolutionStart: an alias in flight around it isn't a
+    // cycle when the measurement reaches it, it is resolved again: an alias whose conditional type relates a class
+    // whose methods name a generic type constrained by that alias, apollo-client's Cache.Implementation)
+    bool outermost = !my variance_stack_len;
+    u32 saved_start = my resolving_variance_start;
+    if (outermost) my resolving_variance_start = my resolving_len;
     bool pushed = my variance_stack_len < c_arraylen(my variance_stack);
     if (pushed) {
         my variance_stack[my variance_stack_len++] =
@@ -3472,6 +3478,7 @@ static void measure_variances(Checker* me, VarianceSubject subject, Variances* v
         fprintf(stderr, "] stored=%s types=%u\n", variances->state == LAZY_STATE_DONE ? "false" : "true", my next_type_id - types_before);
     }
     if (pushed) my variance_stack_len--;
+    if (outermost) my resolving_variance_start = saved_start;
     my variance_depth--;
     my variance_reports = saved_reports;
     if (variances->state == LAZY_STATE_DONE) return;

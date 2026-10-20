@@ -1130,6 +1130,10 @@ struct Checker {
     u32 resolving_len;
     u32 resolving_cap;
     u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
+    // The outermost variance measurement's resolving_len (tsc's resolutionStart there): an alias in flight below it is
+    // resolved again (lower.c's alias_reenters()). Only aliases: what else is in flight there isn't re-entered by tttt,
+    // so moving resolving_start would hide its cycles (TS7022 in classVarianceResolveCircularity2)
+    u32 resolving_variance_start;
     u32 base_constructors_in_flight; // RESOLVING_BASE_CONSTRUCTOR entries on the stack (relate.c's tuple index relation)
     // The classes, interfaces and references whose members are being resolved, innermost last, with the resolving stack's
     // length and the instantiation depth when each started (see probe_eager_bases())
