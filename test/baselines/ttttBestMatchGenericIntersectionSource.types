@@ -1,0 +1,27 @@
+//// [test/cases/ttttBestMatchGenericIntersectionSource.ts] ////
+
+=== ttttBestMatchGenericIntersectionSource.ts ===
+// tsc's findMostOverlappyType for an intersection source with a type variable member: its keys are generic
+// (`keyof (undefined & T)` is `keyof T`), and `&` a union target member's keys that are a union is a union of
+// intersections, which matches with no overlap: the last such member is the one elaborated on (apollo-client's
+// `DeepPartialPrimitive & TData` against `DeepPartialPrimitive & CustomMaybeMaskedImplementation<TData>`)
+type P = number | Date | RegExp;
+>P : P
+
+function f<T, U>(x: undefined & T): P & U {
+>f : <T, U>(x: undefined & T) => P & U
+>x : undefined & T
+
+    return x;
+>x : undefined & T
+}
+function g<T, U>(x: { a: string } & T): (Date | { a: number }) & U {
+>g : <T, U>(x: { a: string; } & T) => (Date | { a: number; }) & U
+>x : { a: string; } & T
+>a : string
+>a : number
+
+    return x;
+>x : { a: string; } & T
+}
+

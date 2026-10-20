@@ -69,6 +69,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttBestMatchGenericIntersectionSource': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBestMatchIndexKeys': {
         errors: true,
         symbols: true,

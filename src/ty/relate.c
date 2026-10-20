@@ -7041,6 +7041,14 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
             for (u32 p = 0; p < prop_count; p++) props[p] = (SourceProp){ .prop = members->props[p] };
         }
         u32 best_count = 0;
+        // An intersection with a type variable among its members has generic keys (`keyof (undefined & T)` is
+        // `keyof T`): `&` a member's keys that are a union is a union of intersections, which matches with no overlap
+        // (`undefined & T` against `(number | Date | RegExp) & U` elaborates on `RegExp & U`, the last)
+        bool generic_keys = false;
+        for (u32 i = 0; source->kind == TY_INTERSECTION && i < source->composite.types.len && !generic_keys; i++) {
+            Ty const* m = source->composite.types.data[i];
+            generic_keys = m->kind == TY_TYPE_PARAM || m->kind == TY_INDEXED || m->kind == TY_CONDITIONAL || m->kind == TY_SUBSTITUTION;
+        }
         for (u32 i = 0; i < types.len; i++) {
             Ty const* t = types.data[i];
             // (`keyof NoInfer<X>` is `NoInfer<keyof X>`, X's keys: tsc's getIndexType)
@@ -7070,7 +7078,7 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
                     if (!ty_get_prop(me, source, name) && ty_applicable_index_info(me, source, ty_prop_name_literal(me, name))) count++;
                 }
             }
-            if (count && count >= best_count) {
+            if ((count || (generic_keys && ty_keyof(me, keyed)->kind == TY_UNION)) && count >= best_count) {
                 best = t;
                 best_count = count;
             }

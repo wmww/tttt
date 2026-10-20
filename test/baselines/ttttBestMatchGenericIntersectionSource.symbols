@@ -1,0 +1,39 @@
+//// [test/cases/ttttBestMatchGenericIntersectionSource.ts] ////
+
+=== ttttBestMatchGenericIntersectionSource.ts ===
+// tsc's findMostOverlappyType for an intersection source with a type variable member: its keys are generic
+// (`keyof (undefined & T)` is `keyof T`), and `&` a union target member's keys that are a union is a union of
+// intersections, which matches with no overlap: the last such member is the one elaborated on (apollo-client's
+// `DeepPartialPrimitive & TData` against `DeepPartialPrimitive & CustomMaybeMaskedImplementation<TData>`)
+type P = number | Date | RegExp;
+>P : Symbol(P, Decl(ttttBestMatchGenericIntersectionSource.ts, 0, 0))
+>Date : Symbol(Date, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.scripthost.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 1 more)
+>RegExp : Symbol(RegExp, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.regexp.d.ts, --, --) ... and 3 more)
+
+function f<T, U>(x: undefined & T): P & U {
+>f : Symbol(f, Decl(ttttBestMatchGenericIntersectionSource.ts, 4, 32))
+>T : Symbol(T, Decl(ttttBestMatchGenericIntersectionSource.ts, 5, 11))
+>U : Symbol(U, Decl(ttttBestMatchGenericIntersectionSource.ts, 5, 13))
+>x : Symbol(x, Decl(ttttBestMatchGenericIntersectionSource.ts, 5, 17))
+>T : Symbol(T, Decl(ttttBestMatchGenericIntersectionSource.ts, 5, 11))
+>P : Symbol(P, Decl(ttttBestMatchGenericIntersectionSource.ts, 0, 0))
+>U : Symbol(U, Decl(ttttBestMatchGenericIntersectionSource.ts, 5, 13))
+
+    return x;
+>x : Symbol(x, Decl(ttttBestMatchGenericIntersectionSource.ts, 5, 17))
+}
+function g<T, U>(x: { a: string } & T): (Date | { a: number }) & U {
+>g : Symbol(g, Decl(ttttBestMatchGenericIntersectionSource.ts, 7, 1))
+>T : Symbol(T, Decl(ttttBestMatchGenericIntersectionSource.ts, 8, 11))
+>U : Symbol(U, Decl(ttttBestMatchGenericIntersectionSource.ts, 8, 13))
+>x : Symbol(x, Decl(ttttBestMatchGenericIntersectionSource.ts, 8, 17))
+>a : Symbol(a, Decl(ttttBestMatchGenericIntersectionSource.ts, 8, 21))
+>T : Symbol(T, Decl(ttttBestMatchGenericIntersectionSource.ts, 8, 11))
+>Date : Symbol(Date, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.scripthost.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 1 more)
+>a : Symbol(a, Decl(ttttBestMatchGenericIntersectionSource.ts, 8, 49))
+>U : Symbol(U, Decl(ttttBestMatchGenericIntersectionSource.ts, 8, 13))
+
+    return x;
+>x : Symbol(x, Decl(ttttBestMatchGenericIntersectionSource.ts, 8, 17))
+}
+

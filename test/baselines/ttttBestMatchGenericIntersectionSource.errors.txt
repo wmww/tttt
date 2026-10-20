@@ -1,0 +1,33 @@
+ttttBestMatchGenericIntersectionSource.ts(7,5): error TS2322: Type 'undefined & T' is not assignable to type 'P & U'.
+  Type 'undefined & T' is not assignable to type 'RegExp & U'.
+    Type 'undefined & T' is not assignable to type 'RegExp'.
+ttttBestMatchGenericIntersectionSource.ts(10,5): error TS2322: Type '{ a: string; } & T' is not assignable to type '(Date | { a: number; }) & U'.
+  Type '{ a: string; } & T' is not assignable to type '{ a: number; } & U'.
+    Type '{ a: string; } & T' is not assignable to type '{ a: number; }'.
+      Types of property 'a' are incompatible.
+        Type 'string' is not assignable to type 'number'.
+
+
+==== ttttBestMatchGenericIntersectionSource.ts (2 errors) ====
+    // tsc's findMostOverlappyType for an intersection source with a type variable member: its keys are generic
+    // (`keyof (undefined & T)` is `keyof T`), and `&` a union target member's keys that are a union is a union of
+    // intersections, which matches with no overlap: the last such member is the one elaborated on (apollo-client's
+    // `DeepPartialPrimitive & TData` against `DeepPartialPrimitive & CustomMaybeMaskedImplementation<TData>`)
+    type P = number | Date | RegExp;
+    function f<T, U>(x: undefined & T): P & U {
+        return x;
+        ~~~~~~
+!!! error TS2322: Type 'undefined & T' is not assignable to type 'P & U'.
+!!! error TS2322:   Type 'undefined & T' is not assignable to type 'RegExp & U'.
+!!! error TS2322:     Type 'undefined & T' is not assignable to type 'RegExp'.
+    }
+    function g<T, U>(x: { a: string } & T): (Date | { a: number }) & U {
+        return x;
+        ~~~~~~
+!!! error TS2322: Type '{ a: string; } & T' is not assignable to type '(Date | { a: number; }) & U'.
+!!! error TS2322:   Type '{ a: string; } & T' is not assignable to type '{ a: number; } & U'.
+!!! error TS2322:     Type '{ a: string; } & T' is not assignable to type '{ a: number; }'.
+!!! error TS2322:       Types of property 'a' are incompatible.
+!!! error TS2322:         Type 'string' is not assignable to type 'number'.
+    }
+    

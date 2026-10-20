@@ -220,8 +220,8 @@ projects): 3667 match, **1 `text`** (was 54; babel-traverse and tiptap fixed by 
 Each needs a cut-down repro first (`scripts/clidiff.py -f '^PROJECT$' -v`; `-k KIND --last` lists a bucket's
 diagnostics). Left:
 - **apollo-client/integration-tests/vite** (agent C 2026-10-19 fixed its `... | ...`, `(...)` and `{}` placeholders;
-  left, each its own mechanism): ObservableQuery.ts:680's chain lacks tsc's two `'undefined & TData' is not assignable
-  to type 'RegExp & CustomMaybeMaskedImplementation<TData>'` lines three times (a relation path difference);
+  left, each its own mechanism): ObservableQuery.ts:680's missing `'undefined & TData' ... 'RegExp & ...'` lines fixed
+  2026-10-20 (agent B: best_matching_type() for an intersection source with generic keys);
   ObservableQuery.ts:559's `{ data: ... ? TComplete : CustomMaybeMaskedImplementation<...>; ... 4 more ...; }` where
   tttt prints the last alias argument (length counted lower before it); useFragment.ts:234's chain is two levels
   shallower in tttt (the conditional's intersection target is split differently); useSuspenseFragment.ts:239's target
