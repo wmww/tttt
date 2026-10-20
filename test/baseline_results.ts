@@ -1050,6 +1050,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttGlobalThisClassBase': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttGlobalTypeBaseImportBeforeAmbient': {
         errors: true,
         symbols: true,

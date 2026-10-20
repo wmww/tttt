@@ -1198,6 +1198,8 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
         namespace_decl = symbol_for_meaning(namespace_decl, SYMBOL_NAMESPACE);
         if (namespace_decl && !namespace_decl->is_placeholder) {
             decl = symbol_get_export(namespace_decl, span_sv(property_name(extends->property)));
+            // (A class is no property of `globalThis`: `extends globalThis.C` is TS2339, no base)
+            if (decl && namespace_decl->is_global_this && (decl->flags & GLOBAL_BLOCK_SCOPED)) decl = nullptr;
         }
     }
     // The name was looked up as a value, the class is the same symbol

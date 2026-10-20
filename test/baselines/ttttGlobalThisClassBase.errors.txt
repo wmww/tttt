@@ -1,0 +1,20 @@
+ttttGlobalThisClassBase.ts(4,36): error TS2339: Property 'Ev' does not exist on type 'typeof globalThis'.
+ttttGlobalThisClassBase.ts(9,5): error TS2610: 'type' is defined as an accessor in class 'Ev', but is overridden here in 'D' as an instance property.
+
+
+==== ttttGlobalThisClassBase.ts (2 errors) ====
+    // A class (block-scoped) is no property of `globalThis`: `extends globalThis.C` is TS2339 and the class has no base, so
+    // nothing is checked against C's members (tinybench's `extends globalThis.Event` where Event is a class)
+    declare class Ev { get type(): string }
+    declare class B extends globalThis.Ev {
+                                       ~~
+!!! error TS2339: Property 'Ev' does not exist on type 'typeof globalThis'.
+        type: string;
+    }
+    declare var V: typeof Ev;
+    declare class D extends globalThis.V {
+        type: string;
+        ~~~~
+!!! error TS2610: 'type' is defined as an accessor in class 'Ev', but is overridden here in 'D' as an instance property.
+    }
+    

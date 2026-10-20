@@ -1,0 +1,32 @@
+//// [test/cases/ttttGlobalThisClassBase.ts] ////
+
+=== ttttGlobalThisClassBase.ts ===
+// A class (block-scoped) is no property of `globalThis`: `extends globalThis.C` is TS2339 and the class has no base, so
+// nothing is checked against C's members (tinybench's `extends globalThis.Event` where Event is a class)
+declare class Ev { get type(): string }
+>Ev : Symbol(Ev, Decl(ttttGlobalThisClassBase.ts, 0, 0))
+>type : Symbol(Ev.type, Decl(ttttGlobalThisClassBase.ts, 2, 18))
+
+declare class B extends globalThis.Ev {
+>B : Symbol(B, Decl(ttttGlobalThisClassBase.ts, 2, 39))
+>globalThis.Ev : Symbol(Ev, Decl(ttttGlobalThisClassBase.ts, 0, 0))
+>globalThis : Symbol(globalThis)
+>Ev : Symbol(Ev, Decl(ttttGlobalThisClassBase.ts, 0, 0))
+
+    type: string;
+>type : Symbol(B.type, Decl(ttttGlobalThisClassBase.ts, 3, 39))
+}
+declare var V: typeof Ev;
+>V : Symbol(V, Decl(ttttGlobalThisClassBase.ts, 6, 11))
+>Ev : Symbol(Ev, Decl(ttttGlobalThisClassBase.ts, 0, 0))
+
+declare class D extends globalThis.V {
+>D : Symbol(D, Decl(ttttGlobalThisClassBase.ts, 6, 25))
+>globalThis.V : Symbol(V, Decl(ttttGlobalThisClassBase.ts, 6, 11))
+>globalThis : Symbol(globalThis)
+>V : Symbol(V, Decl(ttttGlobalThisClassBase.ts, 6, 11))
+
+    type: string;
+>type : Symbol(D.type, Decl(ttttGlobalThisClassBase.ts, 7, 38))
+}
+
