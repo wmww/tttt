@@ -945,6 +945,9 @@ typedef struct BuildJob {
     // The jobs (by build position) whose emitted declarations the program sees, which it waits for, and its view of them
     bool* visible;
     EmitView* view;
+    // Under Build.lock: the jobs still to finish that read this one's emitted declarations, the job itself included
+    // (emit_store_release() once none is left)
+    u32 readers;
 } BuildJob;
 
 typedef struct Build {
@@ -988,6 +991,17 @@ static void build_run(Build* me, u32 i) {
         my order[i], job->redirects, i + 1 == my count, &job->counts, !my project_opts.no_defer_bodies, &job->ret);
 }
 
+// Job i is done (under Build.lock with build threads): what nothing will read any more is freed
+static void build_job_done(Build* me, u32 i) {
+    my jobs[i].done = true;
+    if (my jobs[i].visible) {
+        for (u32 j = 0; j < i; j++) {
+            if (my jobs[i].visible[j] && !--my jobs[j].readers) emit_store_release(my store, j);
+        }
+    }
+    if (!--my jobs[i].readers) emit_store_release(my store, i);
+}
+
 static double build_epoch;
 
 static void* build_thread(void* arg) {
@@ -1020,7 +1034,7 @@ static void* build_thread(void* arg) {
                 started - build_epoch, now_ms() - build_epoch);
         }
         pthread_mutex_lock(&my lock);
-        my jobs[i].done = true;
+        build_job_done(me, i);
         pthread_cond_broadcast(&my done);
         pthread_mutex_unlock(&my lock);
     }
@@ -1090,12 +1104,16 @@ static_failable build(Options const* opts, returns int) {
     u32* stack = c_new_n(u32, count + 1);
     for (u32 i = 0; i < count; i++) {
         b.jobs[i].out.buffered = jobs > 1;
+        b.jobs[i].readers++;
         if (!project_set_at(projects, order[i])->readable) continue;
         project_set_root_files(projects, order[i]);
         u32 built = i >= window ? i - window + 1 : 0;
         b.jobs[i].redirects = project_redirects_new(projects, order[i]);
         bool* visible = b.jobs[i].visible = calloc((size_t)count + 1, sizeof(bool));
-        for (u32 j = 0; j < built; j++) visible[j] = true;
+        for (u32 j = 0; j < built; j++) {
+            visible[j] = true;
+            b.jobs[j].readers++;
+        }
         u32 depth = 0;
         stack[depth++] = order[i];
         while (depth) {
@@ -1105,6 +1123,7 @@ static_failable build(Options const* opts, returns int) {
                 u32 at = p->referenced[r] < position_count ? position[p->referenced[r]] : UINT32_MAX;
                 if (at >= i || visible[at]) continue;
                 visible[at] = true;
+                b.jobs[at].readers++;
                 if (depth < count) stack[depth++] = p->referenced[r];
             }
         }
@@ -1137,6 +1156,7 @@ static_failable build(Options const* opts, returns int) {
             output_flush(&job->out);
         } else {
             build_run(&b, i);
+            build_job_done(&b, i);
         }
         error_summary_merge(&direct.summary, &job->out.summary);
         if (job->result.error) {

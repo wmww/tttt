@@ -14,8 +14,8 @@ void emit_store_destroy(EmitStore* me);
 // A file the project at build position owner emitted (absolute path; the text is copied). Only before any view that
 // sees owner reads
 void emit_store_add(EmitStore* me, u32 owner, csview path, csview text);
-// How many files owner emitted
-u32 emit_store_count(EmitStore const* me, u32 owner);
+// Frees what owner emitted, once no view that sees it reads any more (the store's peak is the build's live frontier)
+void emit_store_release(EmitStore* me, u32 owner);
 
 // One program's file system: the inner one with the files of the owners visible[owner] says it sees on top (files and
 // the directories they're in; a directory listing shows only the inner one's). Reads through a workspace link

@@ -27,13 +27,18 @@ EmitStore* emit_store_new(u32 owner_count) {
     return ret;
 }
 
+void emit_store_release(EmitStore* me, u32 owner) {
+    check(owner < my owner_count);
+    EmitOwner* o = &my owners[owner];
+    hmap_emit_entry_drop(&o->paths);
+    for (u32 t = 0; t < o->count; t++) cstr_drop(&o->texts[t]);
+    free(o->texts);
+    *o = (EmitOwner){0};
+}
+
 void emit_store_destroy(EmitStore* me) {
     if (!me) return;
-    for (u32 i = 0; i < my owner_count; i++) {
-        hmap_emit_entry_drop(&my owners[i].paths);
-        for (u32 t = 0; t < my owners[i].count; t++) cstr_drop(&my owners[i].texts[t]);
-        free(my owners[i].texts);
-    }
+    for (u32 i = 0; i < my owner_count; i++) emit_store_release(me, i);
     free(my owners);
     free(me);
 }
@@ -60,10 +65,6 @@ void emit_store_add(EmitStore* me, u32 owner, csview path, csview text) {
         if (hmap_emit_entry_get(&o->paths, dir)) break;
         hmap_emit_entry_insert(&o->paths, cstr_from_sv(dir), -1);
     }
-}
-
-u32 emit_store_count(EmitStore const* me, u32 owner) {
-    return owner < my owner_count ? my owners[owner].count : 0;
 }
 
 struct EmitView {
