@@ -28,8 +28,7 @@ Day one, by project (+ spurious, - missing, counts):
   sees differs between referenced sources (tttt) and their emitted `.d.ts` (tsc). Not investigated further
 - astro: +TS2322 1, +TS2741 2, -TS18048 2 (agent B's verdicts below)
 - atproto: +TS2554 2, +TS2322 1, +TS2307 1 (below)
-- babel: +TS2590 1 (babel-traverse/src/visitors.ts:168; tttt `-p` against the built `.d.ts` reports it too, tsc's
-  `-p` there not checked: probably a plain checker bug, not looked into)
+- babel: matches since 2026-10-20 (the +TS2590 at babel-traverse visitors.ts:168 is gone).
 - base-ui: +TS2322 1: createItems.test.tsx's ComboboxItemCollection (a `declare class` with a private brand and an
   explicit `in out Item`, so its variance doesn't come from the private member: some other difference, not looked
   into). The docs demos' MenuHandle ones (6, variance from private members) are fixed: a reference source's private
@@ -64,10 +63,18 @@ Day one, by project (+ spurious, - missing, counts):
   getter. -TS7026 10 + -TS7016 (runtime-tests/bun, `-b` only): tsgo's builder resolves `hono/jsx/jsx-runtime` to the
   freshly emitted dist/types/jsx/jsx-runtime.js and finds no declaration; after the same build, `tsc -p` of that config
   reports nothing, like tttt. A tsgo builder quirk: verdict, not modelled
-- sunmao-ui: -TS2590 7 (chakra Button.tsx and editor's AddTraitButton.tsx at JSX elements of chakra components;
-  the `-p` sweep misses it too). Not investigated: needs chakra's types. Related: tsc queues a JSX element's deferred
-  check the first time it checks it, also inside a call's inference (a forwardRef callback's return), tttt only when
-  the walk reaches it, so which of two sites gets a once-reported TS2590 can differ
+- sunmao-ui: -TS2590 (chakra Button.tsx:85, Dialog.tsx:160, editor's AddTraitButton.tsx:59; `-p` too). Verdict
+  (agent B 2026-10-20, instrumented tsgo): inferring JSX.LibraryManagedAttributes' conditional types from chakra's
+  `ComponentWithAs` props, getReducedType -> somePropertyReducesToNever makes the intersection's `as` property, and
+  createUnionOrIntersectionProperty intersects two constituents' types eagerly (exactly two: no deferred type): `As<any>
+  & As` and `As<any>`, ElementType unions of ~394 members from two copies of @chakra-ui/system (distinct alias symbols,
+  so distinct union objects), a 155583 cross product -> TS2590. tttt's never_reduced_prop() only intersects literal-like
+  property types (a deliberate shortcut). Tried: in never_reduced_prop(), a property exactly two constituents share
+  whose types' cross product is >= 100k asks for the intersection (reports TS2590): it doesn't fire, tttt's `as` types
+  there are both one 178-member union (31684), tsc's are `As<any> & As` (an unreduced intersection of the twins) and
+  `As<any>` (177 x 879 = 155583): tttt's intersection of the two twin unions isn't tsc's shape. That is the next step. Repro: /tmp probe with a node_modules symlink to sunmao's, `import type { ComponentWithAs,
+  HTMLChakraProps } from '@chakra-ui/react'; interface P extends HTMLChakraProps<"button"> {} declare const B:
+  ComponentWithAs<'button', P>; <B />` (the alias `type P = HTMLChakraProps<"button">` doesn't).
 
 Perf: jest's `__tests__` builds (every package gated by TS5108) were fully checked for their declarations (1.5M types,
 ~10 s); now declaration-walked only (`program_set_declarations_only()`, 10K types, ~0.75 s against tsc's 0.5 s: the

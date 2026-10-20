@@ -51,13 +51,8 @@ Probes are under /tmp/d-probes (gone after a reboot; the reductions are quoted h
 Fixed this round: arktype's ark/docs (indexed-access `T & P` reduction, union base classes), react-hook-form's
 `__typetest__`, rxjs (TS2314 typeof import, `[...Mapped]`), nuxt/pinia (TS2310), openapi-typescript (cross-file
 default exports), inbox-zero (namespace suggestions), tiptap `this.parent`, the perf fix for react. Left:
-- **pixijs** `@webgpu/types` (+TS2451/-TS2709 x5): TS 7's lib.dom declares `namespace GPUBufferUsage` (and friends),
-  `@webgpu/types` declares `interface GPUBufferUsage` + `declare var GPUBufferUsage`, pixijs `declare const`. tsc merges
-  cross-file per *file symbol*: webgpu's file-local symbol (interface + var) conflicts as a whole with the lib namespace
-  (TS2300 on both webgpu declarations, the interface isn't merged), so webgpu's `: GPUBufferUsage` resolves to the
-  namespace (TS2709) and pixijs's const conflicts with the namespace (TS2451; lookupOrIssueError keeps the first
-  diagnostic at a node). tttt's binder merges declaration by declaration (declare_symbol): the interface merges into
-  the lib symbol, only the var is rejected. Architectural (the binder's cross-file merge unit); rare (conflicts only).
+- **pixijs** `@webgpu/types` against lib.dom: fixed 2026-10-20 (agent B), the binder's cross-file merge unit is the
+  file's symbol now (`declare_file_conflict()`).
 
 ## Source sweep round 2026-10-12 (agent B, second task)
 Fixed: vitest configs (starlight, feathers, react-scan, react-window: augmentations of a deduplicated package copy),
@@ -276,8 +271,16 @@ the TS2322/TS2339 that followed), skip-context-sensitive through `&&` (atproto o
   `type Simplify<T> = { [K in keyof T]: T[K] } & NonNullable<unknown>`, class `C<const TType extends string, const
   TShape extends Validator<any>>` with `build(i: Omit<InferOutput<TShape>, '$type'>): $Typed<InferOutput<TShape>,
   TType>` and implementation `build(i: Record<string, unknown>) { return $typed(i, this.$type) }`.
-- astro packages/astro/tsconfig.test.json (+TS6305/-TS7016 test-utils.ts:9: a reference's output under
-  scripts/node_modules/.cache): not looked at.
+- **better-auth e2e/smoke/.../cloudflare tsconfig.skip-lib-check-false.json**: fixed 2026-10-20 (agent B): the TS2430s
+  were the cross-file merge unit, the TS2610 `extends globalThis.Event` (a class is no globalThis property). Its TS5115
+  (zod schemas.d.cts:790, tsc's too) is also reported at miniflare index.d.ts:550 at `--threads` > 1: which checker
+  first instantiates the type decides the site (the sweep runs `--threads 1`): a kdiff-style item, not looked into.
+- babel tsconfig.tstyche.json TS6307 (index-browser.ts vs package.ts) and astro packages/astro/tsconfig.test.json
+  (+TS6305/-TS7016) fixed 2026-10-20 (agent B): import calls/types load after a file's declarations (tsc's order of
+  file.imports); an unbuilt reference's `.js` source is TS7016.
+- **discordx** (two @types/node versions in one program): 9 TS2344 left in @types/node 25 http2.d.ts:2398ff (tsc finds
+  v25's Http2ServerRequest unrelated to v26's through `addListener`'s return type, tttt relates them; the TS2300 cluster
+  is fixed). Garbage-in program, not pursued.
 
 
 ## Every-tsconfig sweep, round 2 (2026-10-20, agent A)
