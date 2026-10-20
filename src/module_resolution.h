@@ -72,19 +72,13 @@ void module_resolver_forget_resolutions(ModuleResolver* me);
 typedef cstr (*RealpathFn)(void* ctx, csview path);
 void module_resolver_set_realpath(ModuleResolver* me, RealpathFn realpath, void* ctx);
 
-// The outputs of referenced projects exist for this resolver, built or not (project.h): their declaration files and
-// directories. The caller turns an output it finds into its source. redirects must outlive the resolver
-typedef struct ProjectRedirects ProjectRedirects;
-void module_resolver_set_redirects(ModuleResolver* me, ProjectRedirects const* redirects);
-// Where path leads once symlinks are followed, for a path that may not exist (a referenced project's output that was
-// never built, through a workspace link: its nearest existing directory is followed), with redirects. Empty if the
-// resolver has no realpath or nothing could be followed
-cstr module_resolver_real_path_lenient(ModuleResolver* me, csview path);
+// Where path leads once symlinks are followed. Empty if the resolver has no realpath or nothing could be followed
+cstr module_resolver_real_path(ModuleResolver* me, csview path);
 
 // What the reverse direction (module_specifiers.c) asks of the resolver's filesystem view and caches
 // The parsed package.json in directory (absolute), null if there is none. Cached; lives as long as the resolver
 struct JsonValue const* module_resolver_package_json(ModuleResolver* me, csview directory);
-// A file exists, referenced projects' outputs included (see module_resolver_set_redirects())
+// A file exists
 bool module_resolver_file_exists(ModuleResolver* me, csview path);
 // An option's path made absolute: relative to the tsconfig it came from, else to the current directory
 cstr module_resolver_option_path(ModuleResolver* me, csview path);

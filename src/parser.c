@@ -7418,11 +7418,8 @@ static bool body_starts_with_string(char const* open) {
 }
 
 // The body at `{` isn't parsed when that's safe (its end is certain: skip_balanced_braces()), the function keeps an
-// empty body:
-// - tsc -b reads a referenced project's `.d.ts`, which has no function bodies: in a referenced project's TypeScript
-//   source the body of a function with a written return type is skipped and never resolved (function_impl_lookup_names_as())
-// - plan 78: an outermost function's body in a file that defers them (SourceFile.defer_bodies) is a DeferredBody, parsed
-//   and walked when a checker first needs it. Not where the walk of the function's parameters would see the body's
+// empty body. Plan 78: an outermost function's body in a file that defers them (SourceFile.defer_bodies) is a
+// DeferredBody, parsed and walked when a checker first needs it. Not where the walk of the function's parameters would see the body's
 //   names (an expression in a parameter), not in a `with` statement or an ambient context (errors), not an IIFE's (part
 //   of the flow around it: undefer_body() when the call shows) nor a constructor's the class's walk looks into
 //   (parse_class_decl()). Nor an expression's (`expression`) with a function in its signature (a parenthesis after
@@ -7432,8 +7429,7 @@ static bool skip_body(Parser* parent, FunctionImpl* func, bool expression) {
     ParserShared* shared = parent->shared;
     SourceFile const* source = shared->source;
     if (*parent->pos != '{') return false;
-    bool referenced = source->skip_typed_bodies && func->ret_explicit;
-    bool defer = !referenced && source->defer_bodies && !shared->materializing && shared->function_depth == 1 &&
+    bool defer = source->defer_bodies && !shared->materializing && shared->function_depth == 1 &&
         !shared->in_ambient && !shared->with_body_depth;
     for (isize i = 0; defer && i < vec_function_arg_size(&func->args); i++) {
         FunctionArg const* arg = vec_function_arg_at(&func->args, i);
@@ -7451,7 +7447,7 @@ static bool skip_body(Parser* parent, FunctionImpl* func, bool expression) {
         if (*from == '(') from++;
         defer = !memchr(from, '(', (size_t)(parent->pos - from));
     }
-    if (!referenced && !defer) return false;
+    if (!defer) return false;
     char const* end = skip_balanced_braces(shared, parent->pos);
     if (!end) return false;
     Parser p = parser(parent);
@@ -7460,14 +7456,12 @@ static bool skip_body(Parser* parent, FunctionImpl* func, bool expression) {
     expect_closing(&p, '}', open);
     func->body_ = (Block){0};
     func->has_body = true;
-    if (defer) {
-        char const* text = source_file_start(source);
-        ((SourceFile*)source)->has_deferred_bodies = true;
-        defer_stat_add(DEFER_STAT_SKIPPED, 1);
-        defer_stat_add(DEFER_STAT_SKIPPED_BYTES, end - open);
-        func->deferred = true;
-        func->body_.deferred = ast_new(DeferredBody, { .open = (u32)(open - text), .end = (u32)(end - text) });
-    }
+    char const* text = source_file_start(source);
+    ((SourceFile*)source)->has_deferred_bodies = true;
+    defer_stat_add(DEFER_STAT_SKIPPED, 1);
+    defer_stat_add(DEFER_STAT_SKIPPED_BYTES, end - open);
+    func->deferred = true;
+    func->body_.deferred = ast_new(DeferredBody, { .open = (u32)(open - text), .end = (u32)(end - text) });
     return parse_success(&p);
 }
 
@@ -14978,59 +14972,6 @@ static bool parsed_file_is_module(SourceFile const* source, ParserShared const* 
 
 static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_await, FirstPassStatement** await_statements, u32* await_count);
 
-// Compacts a vector of AST nodes, leaving out those `keep` rejects: they stay in the file's AST arena, undropped, so
-// nothing that may point into them (module names, comments) dangles
-#define STRIP_VEC(vec, Type, keep) do { \
-        isize kept_ = 0; \
-        for (isize i_ = 0; i_ < (vec)->size; i_++) { \
-            Type* item = &(vec)->data[i_]; \
-            if (keep) (vec)->data[kept_++] = *item; \
-        } \
-        (vec)->size = kept_; \
-    } while (0)
-
-// SourceFile.strip_internal: what tsc -b's `.d.ts` of the file leaves out (tsgo's shouldStripInternal): declarations,
-// class and interface members (type literals' too, nested) and enum members whose leading comments say `@internal`
-static void strip_internal_type(SourceFile const* source, TypeNode* type) {
-    if (type->tag == TYPE_INTERFACE) {
-        STRIP_VEC(&type->interface.members, InterfaceMember,
-            !span_valid(item->declaration) || !source_text_internal_before(source, item->declaration.buf));
-        for_each (i, vec_interface_member, &type->interface.members) strip_internal_type(source, &i->type);
-    } else if (type->tag == TYPE_UNION || type->tag == TYPE_INTERSECTION) {
-        for_each (i, vec_type, &type->composite) strip_internal_type(source, i);
-    }
-}
-
-static void strip_internal_statements(SourceFile const* source, VecStatement* statements) {
-    for_each (i, vec_statement, statements) {
-        Statement* s = i;
-        bool declaration = s->tag >= STATEMENT_DECL_VARIABLE && s->tag <= STATEMENT_DECL_NAMESPACE;
-        if (declaration && span_valid(s->span) && source_text_internal_before(source, s->span.buf)) {
-            *s = (Statement){ .tag = STATEMENT_NOOP, .span = s->span };
-            continue;
-        }
-        switch (s->tag) {
-            case STATEMENT_DECL_CLASS:
-                STRIP_VEC(&s->decl.class->items, ClassItem, !span_valid(item->span) || !source_text_internal_before(source, item->span.buf));
-                break;
-            case STATEMENT_DECL_INTERFACE:
-                strip_internal_type(source, &s->decl.interface->type);
-                break;
-            case STATEMENT_DECL_TYPE:
-                strip_internal_type(source, &s->decl.type->type);
-                break;
-            case STATEMENT_DECL_ENUM:
-                STRIP_VEC(&s->decl.enum_->cases, EnumCase,
-                    !span_valid(item->full_name) || !source_text_internal_before(source, item->full_name.buf));
-                break;
-            case STATEMENT_DECL_NAMESPACE:
-                strip_internal_statements(source, &s->decl.namespace->contents.statements);
-                break;
-            default: break;
-        }
-    }
-}
-
 void parse_file(SourceFile* source, ErrorCtx* errs) {
     FirstPassStatement* await_statements = nullptr;
     u32 await_count = 0;
@@ -15039,7 +14980,6 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     if (!parse_file_pass(source, errs, false, &await_statements, &await_count)) {
         parse_file_pass(source, errs, true, &await_statements, &await_count);
     }
-    if (source->strip_internal) strip_internal_statements(source, &source->ast.statements);
     ast_arena_end();
     free(await_statements);
 }

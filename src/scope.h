@@ -397,8 +397,8 @@ bool symbol_is_augmented_export_equals(Symbol const* me);
 /// tsc's isPrimitiveTypeName: the type keywords that are no symbol (`any`, `string`, `number`, `boolean`, `never`,
 /// `unknown`)
 bool is_primitive_type_name(csview name);
-// A const enum only its declaring file can inline (TS2748 under isolatedModules): declared ambient, or in a
-// referenced project's source whose `.d.ts` tsc -b would read (SourceFile.reference_const_enums_ambient)
+// A const enum only its declaring file can inline (TS2748 under isolatedModules): declared ambient, unless in a
+// referenced project's output whose project preserves const enums (SourceFile.reference_preserves_const_enums)
 bool symbol_const_enum_is_ambient(Symbol const* me);
 // The symbol whose exports are the members of a namespace, enum or module symbol
 static inline Symbol const* symbol_members(Symbol const* me) {

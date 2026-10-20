@@ -625,9 +625,8 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         StrList const* listed = project_set_root_files(projects, project);
         for (isize i = 0; i < listed->count; i++) str_list_push(&root_files, cstr_sv(&listed->items[i]));
     }
-    // (-p reads a referenced project's built outputs like tsc's command line, -b its sources: they stand for the
-    // outputs its build would have written)
-    if (project_redirects_count(redirects)) program_set_references(program, redirects, !opts->build || opts->emit_store);
+    // (A referenced project's outputs: written ones under -p, under -b the ones the build emitted, opts->emit_view)
+    if (project_redirects_count(redirects)) program_set_references(program, redirects);
     program_set_threads(program, opts->threads);
     // (Libraries' errors are dropped once they're loaded: these come after)
     bool has_inputs = opts->path_count + root_files.count > 0;
@@ -920,7 +919,7 @@ static_failable check_command_line(Options const* opts, returns int) {
     ProjectSet* projects = project_set_new(fs);
     project_set_run_external_code(projects, runs_external_code(opts));
     u32 project = cstr_size(&config) ? project_set_load(projects, cstr_sv(&config)) : 0;
-    ProjectRedirects* redirects = cstr_size(&config) ? project_redirects_new(projects, project, nullptr, 0) : nullptr;
+    ProjectRedirects* redirects = cstr_size(&config) ? project_redirects_new(projects, project) : nullptr;
     Output out = {0};
     FailableResult result =
         check_files(opts, &out, cstr_sv(&config), projects, project, redirects, true, nullptr, !opts->no_defer_bodies, _OUTPUT_PARAM);
@@ -942,9 +941,8 @@ typedef struct BuildJob {
     FailableResult result;
     int ret;
     bool done; // Under Build.lock
-    bool started; // Under Build.lock, reading emitted declarations
-    // Reading emitted declarations (Build.store): the jobs (by build position) whose files the program sees, which it
-    // waits for, and its view of them
+    bool started; // Under Build.lock
+    // The jobs (by build position) whose emitted declarations the program sees, which it waits for, and its view of them
     bool* visible;
     EmitView* view;
 } BuildJob;
@@ -956,8 +954,7 @@ typedef struct Build {
     u32 const* order;
     u32 count;
     BuildJob* jobs;
-    EmitStore* store; // Null: references read as sources
-    atomic_uint next; // The next job a build thread takes
+    EmitStore* store;
     atomic_uint end; // Nothing from here on is started (--stopBuildOnErrors)
     pthread_mutex_t lock;
     pthread_cond_t done;
@@ -984,11 +981,9 @@ static void build_run(Build* me, u32 i) {
     }
     // (The project set is complete and only read from here on: build() listed every root file up front)
     Options opts = my project_opts;
-    if (my store) {
-        opts.emit_store = my store;
-        opts.emit_owner = i;
-        opts.emit_view = job->view = emit_view_new(my store, fs, job->visible);
-    }
+    opts.emit_store = my store;
+    opts.emit_owner = i;
+    opts.emit_view = job->view = emit_view_new(my store, fs, job->visible);
     job->result = check_files(&opts, &job->out, cstr_sv(&project->config), (ProjectSet*)my projects,
         my order[i], job->redirects, i + 1 == my count, &job->counts, !my project_opts.no_defer_bodies, &job->ret);
 }
@@ -998,31 +993,26 @@ static double build_epoch;
 static void* build_thread(void* arg) {
     Build* me = arg;
     for (;;) {
+        // The first job (in build order) whose program reads only what's done: tsgo's builders wait on their
+        // references. (Some job is running whenever none is ready: the first one not started waits only on started ones)
         u32 i = UINT32_MAX;
-        if (my store) {
-            // Reading emitted declarations, the first job (in build order) whose program reads only what's done: tsgo's
-            // builders wait on their references. (Some job is running whenever none is ready: the first one not started
-            // waits only on started ones)
-            pthread_mutex_lock(&my lock);
-            for (;;) {
-                bool pending = false;
-                u32 end = atomic_load(&my end);
-                for (u32 k = 0; k < end && i == UINT32_MAX; k++) {
-                    if (my jobs[k].started) continue;
-                    pending = true;
-                    bool ready = true;
-                    for (u32 j = 0; j < k && ready && my jobs[k].visible; j++) ready = !my jobs[k].visible[j] || my jobs[j].done;
-                    if (ready) i = k;
-                }
-                if (i != UINT32_MAX || !pending) break;
-                pthread_cond_wait(&my done, &my lock);
+        pthread_mutex_lock(&my lock);
+        for (;;) {
+            bool pending = false;
+            u32 end = atomic_load(&my end);
+            for (u32 k = 0; k < end && i == UINT32_MAX; k++) {
+                if (my jobs[k].started) continue;
+                pending = true;
+                bool ready = true;
+                for (u32 j = 0; j < k && ready && my jobs[k].visible; j++) ready = !my jobs[k].visible[j] || my jobs[j].done;
+                if (ready) i = k;
             }
-            if (i != UINT32_MAX) my jobs[i].started = true;
-            pthread_mutex_unlock(&my lock);
-            if (i == UINT32_MAX) break;
-        } else if ((i = atomic_fetch_add(&my next, 1)) >= atomic_load(&my end)) {
-            break;
+            if (i != UINT32_MAX || !pending) break;
+            pthread_cond_wait(&my done, &my lock);
         }
+        if (i != UINT32_MAX) my jobs[i].started = true;
+        pthread_mutex_unlock(&my lock);
+        if (i == UINT32_MAX) break;
         double started = now_ms();
         build_run(me, i);
         if (getenv("TTTT_BUILD_TIMES")) {
@@ -1039,9 +1029,9 @@ static void* build_thread(void* arg) {
 
 // -b: every project the paths name (tsconfig.json files or their directories, `.` without any), each with what it
 // references before it (tsc's build order). Each is its own program, with its own options and the command line's, and
-// sees its references as sources. Like tsc 5.6+ goes on past a project with errors (not with --stopBuildOnErrors).
-// With sources rather than built outputs no program needs another's result: with --threads 4, two projects are checked
-// at once on two threads each (opts->build_jobs), their output printed in build order, so it doesn't depend on that
+// reads the declaration files its references emitted, in memory (plan 87: emit_store.h). Like tsc 5.6+ goes on past
+// a project with errors (not with --stopBuildOnErrors). With --threads 4, two projects are checked at once on two
+// threads each (opts->build_jobs), each once what it reads is done, their output printed in build order
 static_failable build(Options const* opts, returns int) {
     ProjectSet* projects = project_set_new(fs);
     project_set_run_external_code(projects, runs_external_code(opts));
@@ -1082,7 +1072,6 @@ static_failable build(Options const* opts, returns int) {
     // (The physical cores split between the projects checking at once like the threads)
     if (opts->checker_cap) b.project_opts.checker_cap = opts->checker_cap / jobs ? opts->checker_cap / jobs : 1;
     b.jobs = calloc((size_t)count + 1, sizeof(BuildJob));
-    atomic_init(&b.next, 0);
     atomic_init(&b.end, count);
     // Everything the programs read of the project set, made before any of them runs. A program reads the outputs of
     // the projects tsc -b built before it, references or not (an import into another package's `dist`). tsgo's
@@ -1090,9 +1079,9 @@ static_failable build(Options const* opts, returns int) {
     // project is built by the time one 4 places later starts, else it races with it, and counts as not built
     // (hacks.md). (The one way --builders changes the output, like tsgo's: `--builders 1` is tsc 5's sequential -b)
     u32 window = opts->build_jobs ? opts->build_jobs : TSGO_BUILDERS;
-    // Reading emitted declarations (plan 87): a program sees what its references (transitively) and the projects the
-    // window counts as built emitted, through its view of the store
-    if (getenv("TTTT_BUILD_EMITTED")) b.store = emit_store_new(count);
+    // A program sees what its references (transitively) and the projects the window counts as built emitted, through
+    // its view of the store
+    b.store = emit_store_new(count);
     u32 position_count = 0;
     for (u32 i = 0; i < count; i++) if (order[i] + 1 > position_count) position_count = order[i] + 1;
     u32* position = c_new_n(u32, position_count ? position_count : 1);
@@ -1104,8 +1093,7 @@ static_failable build(Options const* opts, returns int) {
         if (!project_set_at(projects, order[i])->readable) continue;
         project_set_root_files(projects, order[i]);
         u32 built = i >= window ? i - window + 1 : 0;
-        b.jobs[i].redirects = project_redirects_new(projects, order[i], order, b.store ? 0 : built);
-        if (!b.store) continue;
+        b.jobs[i].redirects = project_redirects_new(projects, order[i]);
         bool* visible = b.jobs[i].visible = calloc((size_t)count + 1, sizeof(bool));
         for (u32 j = 0; j < built; j++) visible[j] = true;
         u32 depth = 0;

@@ -7,11 +7,10 @@
 #include <cleat/filesystem.h>
 
 // Project references (tsc's `references`, `tsc -b`): the only code that knows about more than one tsconfig. A program
-// checks one project. Under -p the projects it references (transitively) are read through their built outputs like
-// tsc's command line (program_set_references()); under -b as sources, never as built `.d.ts` outputs
-// (tsc's useSourceOfProjectReferenceRedirect, what its language service does): an import that resolves to a referenced
-// project's output declaration file gets the project's source file instead, and the files of a referenced project
-// are part of the program but neither checked nor reported (documentation.md, "Project references")
+// checks one project and reads the projects it references (transitively) through their output declaration files like
+// tsc (program_set_references()): written ones under -p, under -b the ones the build emitted in memory before it
+// (main.c's build(), emit_store.h). An import of a referenced project's source is redirected to its output
+// (documentation.md, "Project references")
 
 typedef struct Project {
     cstr config; // The tsconfig file, absolute
@@ -47,17 +46,15 @@ StrList const* project_set_root_files(ProjectSet* me, u32 index);
 // `circular`. Returns how many projects *out (malloc'd) holds
 u32 project_set_build_order(ProjectSet* me, u32 const* roots, u32 root_count, u32** out, StrList* cycle_errors);
 
-// What one program sees of the projects its project references, transitively (not the project itself), and under -b
-// of the projects built before it (built: indices into set, in build order), which it may reach through their outputs
+// What one program sees of the projects its project references, transitively (not the project itself): their root
+// files and output declaration files
 typedef struct ProjectRedirects ProjectRedirects;
 
-ProjectRedirects* project_redirects_new(ProjectSet* set, u32 project, u32 const* built, u32 built_count);
+ProjectRedirects* project_redirects_new(ProjectSet* set, u32 project);
 void project_redirects_destroy(ProjectRedirects* me);
 // How many referenced projects (0: the program has no redirects)
 u32 project_redirects_count(ProjectRedirects const* me);
 CompilerOptions const* project_redirects_options(ProjectRedirects const* me, u32 index);
-// Whether that project is one built before the program rather than a reference of it
-bool project_redirects_built(ProjectRedirects const* me, u32 index);
 // 1 + the index of the referenced project that has the file at absolute (a root file of it), 0 if none
 u32 project_redirects_project_of(ProjectRedirects const* me, csview absolute);
 // The source file a referenced project's output declaration file stands for (absolute in and out), empty if absolute
@@ -66,6 +63,3 @@ csview project_redirects_source_of_output(ProjectRedirects const* me, csview abs
 // The other direction: the output declaration file of a referenced project's source (absolute in and out), empty if
 // absolute isn't one (or has no declaration output: `.d.ts`, `.json`)
 csview project_redirects_output_of_source(ProjectRedirects const* me, csview absolute);
-// Whether a directory exists as far as module resolution is concerned, though it may not on disk: a referenced
-// project's declaration directory (`declarationDir`, else `outDir`), something in it or a parent of it
-bool project_redirects_output_directory(ProjectRedirects const* me, csview absolute);

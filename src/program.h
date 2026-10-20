@@ -26,13 +26,11 @@ void program_set_file_size(Program* me, i64 (*file_size)(void* ctx, csview path)
 void program_follow_lib_references(Program* me);
 
 // The projects the program's project references (project.h), before loading anything (and before
-// program_set_threads() has a load pool start). With outputs (tsc's command line), a referenced project's source is
-// read as its output declaration file, which is a TS6305 where it hasn't been built. Without (tsc's language service,
-// what tttt's -b does), their outputs are read as their sources, their files are part of the program but unchecked and
-// unreported (program_load_automatic_types() drops their parse errors). Either way module names in them resolve with
-// their project's options. redirects must outlive the program
+// program_set_threads() has a load pool start). Like tsc's command line, a referenced project's source is read as its
+// output declaration file, which is a TS6305 where it hasn't been built (under -b: emitted, emit_store.h). Module names
+// in those resolve from their source, with their project's options. redirects must outlive the program
 typedef struct ProjectRedirects ProjectRedirects;
-void program_set_references(Program* me, ProjectRedirects const* redirects, bool outputs);
+void program_set_references(Program* me, ProjectRedirects const* redirects);
 
 // Change them before loading anything, and call compiler_options_resolve() when done. Parsing, name resolution and
 // checking of this program read them through compiler_options()

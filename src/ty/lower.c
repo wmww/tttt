@@ -1976,7 +1976,7 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
     // declaration file whose `export =` value has a `default` that a module declares (`export default`: resolveExportByName
     // finds the property, isSyntacticDefault)
     bool synthetic = !symbol_get_export(module, c_sv("__esModule"));
-    if (synthetic && has_default && (!target || source_file_reads_as_declaration(target))) {
+    if (synthetic && has_default && (!target || target->is_declaration)) {
         Prop const* found = ty_get_prop(me, apparent, checker_atom(me, c_sv("default")));
         while (found && found->target) found = found->target;
         Symbol const* declared = found && found->decl ? found->decl->symbol : nullptr;
@@ -2217,7 +2217,7 @@ static bool dynamic_import_has_synthetic_default(Symbol* module, SourceFile cons
         if (!target->is_esm && node) return true;
         if (target->is_esm) return false;
     }
-    if (!target || source_file_reads_as_declaration(target)) {
+    if (!target || target->is_declaration) {
         // (Not with a default export of its own, or an `__esModule` marker)
         return !symbol_get_export(module, c_sv("default")) && !symbol_get_export(module, c_sv("__esModule"));
     }

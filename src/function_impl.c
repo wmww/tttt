@@ -232,7 +232,7 @@ bool function_arg_decoratable(FunctionImpl const* me, isize index, bool in_class
 
 static DeferredBodies* deferred_bodies_of(SourceFile* file);
 static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow, FlowBuilder* outer, Scope* function_scope,
-    bool is_iife, bool js_constructor_candidate, bool skip_body, ErrorCtx* errs);
+    bool is_iife, bool js_constructor_candidate, ErrorCtx* errs);
 
 void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool this_is_any, Scope* names, ErrorCtx* errs) {
     // (a declaration or method too: what it returns is in the same context)
@@ -304,10 +304,6 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     bool js_constructor_candidate = names->file && names->file->is_js && !function_impl_is_arrow(me) && !my is_method &&
         !my accessor && !span_valid(function_impl_member_name(me));
     if (is_iife || ((my is_constructor || js_constructor_candidate) && my has_body)) flow.return_target = flow_new_branch_label(&flow);
-    // The body of a function with a written return type in a referenced project's source is never looked at: the
-    // file isn't checked, and nothing outside the body sees into it (tsc -b reads the project's `.d.ts`, which has no
-    // bodies at all). Not an IIFE's, which is part of the flow around it
-    bool skip_body = my has_body && my ret_explicit && !is_iife && names->file && names->file->skip_typed_bodies;
 
     unused_register(names, UNUSED_FUNCTION, me);
     // Handle generics (includes adding names)
@@ -357,7 +353,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     }
 
     // The toplevel of the function body is the same scope as the arguments
-    if (!skip_body && !my deferred) block_add_names(&my body_, function_scope);
+    if (!my deferred) block_add_names(&my body_, function_scope);
     // (A deferred body's names aren't there yet: what the signature's walk looks up through the function's scope is
     // recorded, so the materialization can tell whether one of them would have been found, scope_resolve())
     DeferredBody* deferred = my deferred ? my body_.deferred : nullptr;
@@ -460,7 +456,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         }
         return;
     }
-    function_impl_lookup_body(me, &flow, outer, function_scope, is_iife, js_constructor_candidate, skip_body, errs);
+    function_impl_lookup_body(me, &flow, outer, function_scope, is_iife, js_constructor_candidate, errs);
 }
 
 // The deferred function's file's list of them (made by its first)
@@ -476,11 +472,11 @@ static DeferredBodies* deferred_bodies_of(SourceFile* file) {
 // The end of function_impl_lookup_names_as(): the body's walk and what it leaves on the function. `outer` is null for a
 // deferred body
 static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow, FlowBuilder* outer, Scope* function_scope,
-    bool is_iife, bool js_constructor_candidate, bool skip_body, ErrorCtx* errs
+    bool is_iife, bool js_constructor_candidate, ErrorCtx* errs
 ) {
     TypeFlow const* saved_flow = type_flow_enter_statements(function_scope->generics, !my expression_body,
         binder_arena(function_scope->binder));
-    if (!skip_body) block_lookup_names_as(function_impl_body(me), function_scope, errs);
+    block_lookup_names_as(function_impl_body(me), function_scope, errs);
     type_flow_restore(saved_flow);
 
     my end_flow_ = nullptr;
@@ -597,7 +593,7 @@ bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
         fprintf(stderr, "defer: collided %s:%u: %.*s\n", cstr_str(&span_source(at)->canonical_path), span_line_index(at) + 1,
             (int)(at.size > 60 ? 60 : at.size), at.buf);
     }
-    function_impl_lookup_body(me, &flow, nullptr, function_scope, false, false, false, errs);
+    function_impl_lookup_body(me, &flow, nullptr, function_scope, false, false, errs);
     function_scope->flow = nullptr;
     if (!rare && me->rare) deferred_bodies_undo_made((void**)&me->rare, nullptr, walk_rare_drop);
     return !collides;

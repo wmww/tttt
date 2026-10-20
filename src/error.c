@@ -829,7 +829,7 @@ void error_ctx_remove_unchecked(ErrorCtx* me) {
         Error* error = vec_error_at_mut(&my errors, i);
         SourceFile const* source = span_source(error->span);
         // (The parser's grammar errors are tsc's checker's: an unchecked file has none, like skipLibCheck's .d.ts)
-        if (source && (source->from_reference || source->excluded ||
+        if (source && (source->excluded ||
             (error->unchecked_js && !source->unchecked) ||
             (source->unchecked &&
             (error->phase >= ERROR_PHASE_RESOLVE_NAMES || error->grammar) &&

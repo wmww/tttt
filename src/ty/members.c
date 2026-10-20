@@ -5230,21 +5230,6 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     return prop_type_slow(me, prop);
 }
 
-// A private or `#private` member of a class in a referenced (or built) project's source read under -b. Its `.d.ts`,
-// which tsc -b reads, declares it untyped (`private x;`, `private m;`, `private get g();`, `#private;`): whoever reads
-// the declarations relates it as any (variance, assignability: base-ui's MenuHandle<P>) and reads it as any from
-// outside (astro's `telemetry['config'] = config`). Inside the source, which infers the `.d.ts`'s other types, it
-// keeps its type
-bool ty_prop_reference_private(Checker* me, Prop const* prop) {
-    while (prop && prop->target) prop = prop->target;
-    if (!prop || prop->mapped || !prop->name) return false;
-    if (!(prop->flags & PROP_PRIVATE) && !(prop->name->len && prop->name->str[0] == '#' && ty_private_name_class(me, prop->name))) {
-        return false;
-    }
-    SourceFile const* file = span_valid(prop->decl->name_span) ? span_source(prop->decl->name_span) : nullptr;
-    return file && file->from_reference;
-}
-
 // (Out of line: the resolved case above is what nearly every call is)
 static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* prop) {
     switch (prop->type_state) {

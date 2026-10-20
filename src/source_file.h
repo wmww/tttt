@@ -63,8 +63,6 @@ typedef struct ModuleRef {
     SourceFile* file; // What the program's module resolution found, may be null
     ModuleRefFailure failure; // Without a file
     bool used_ts_extension; // The name ends in .ts/.tsx/.mts/.cts and that is the file: TS5097 without the option
-    // Resolved to a referenced or built project's output, read as its source (program_redirect_resolved())
-    bool through_output;
     // The file is another project's whose directories aren't placed like this one's: rewriting a `.ts` import path is
     // unsafe (TS2878, program_rewrite_crosses_projects())
     bool rewrite_crosses_projects;
@@ -239,33 +237,16 @@ typedef struct SourceFile {
     u32 load_child_count;
     u32 load_child_cap;
     bool collected; // program_collect_files()'s walk visited it
-    // 1 + the index of the referenced project (project.h) the file is a root file of, 0 for the program's own files.
-    // Unchecked, and none of its diagnostics are reported (not even parse errors): that project reports them
-    u32 from_reference;
-    // 1 + the index of the referenced project whose options resolve the file's module names (tsc's
-    // getRedirectReferenceForResolution): from_reference's, or the project a built output declaration file is of
+    // 1 + the index of the referenced project (project.h) whose options resolve the file's module names (tsc's
+    // getRedirectReferenceForResolution): the project an output declaration file is of
     u32 resolution_project;
-    // A referenced project's TypeScript (not TSX) file: the bodies of functions with a written return type are skipped
-    // rather than parsed where that's safe (parser.c's skip_typed_body()), and never resolved
-    bool skip_typed_bodies;
-    // A referenced project's file read under -b whose project has stripInternal: its `@internal` declarations are left
-    // out after parsing (parse_file()), as from the `.d.ts` tsc -b would read
-    bool strip_internal;
-    // A file of a project built before the program that it doesn't reference (project_redirects_new()): a reference
-    // source while every import reaches it through that project's outputs, the program's own (checked) once one
-    // reaches it by its own path (program_own_direct_built_files(); tsc has both files then). What `unchecked` and
-    // `plain_js` would be for the program's own
-    bool from_built, built_unchecked, built_plain_js;
     // A TypeScript file (not TSX, not a declaration file) whose outermost function bodies the parser skips where that is
     // safe, to parse and walk when a checker first needs them (plan 78, program_set_defer_bodies())
     bool defer_bodies;
     // What the file's resolve walk deferred, null if nothing (program_materialize_file()). Owned
     struct DeferredBodies* deferred_bodies;
     bool has_deferred_bodies; // The parser deferred some (perhaps parsing it later all the same: an IIFE's)
-    // A referenced project's file whose project doesn't preserve const enums: tsc -b reads its `.d.ts`, where they're
-    // ambient (TS2748 under isolatedModules, tsc's shouldPreserveConstEnums of the redirect)
-    bool reference_const_enums_ambient;
-    // A referenced project's file (or built output) whose project emits ES modules (`module` es2015..esnext): an ES module's import of it
+    // A referenced project's output declaration file whose project emits ES modules (`module` es2015..esnext): an ES module's import of it
     // has no synthetic default (tsc's canHaveSyntheticDefault, getRedirectFromSourceFile)
     bool reference_emits_esm;
     // A referenced project's built output declaration file whose project preserves const enums: they aren't ambient
@@ -500,12 +481,6 @@ static inline bool source_file_is_checked(SourceFile const* me) {
     return !my unchecked || my plain_js;
 }
 
-// What tsc -b would read for the file: a declaration file, a referenced project's source standing for its `.d.ts`
-// output. For what an importer may assume of it (a synthetic default), not for how the file itself is checked
-static inline bool source_file_reads_as_declaration(SourceFile const* me) {
-    return my is_declaration || my from_reference;
-}
-
 // How messages name the file: the way the test wrote it under the harness, else the canonical path
 static inline csview source_file_display_path(SourceFile const* me) {
     return my display_path_override ? csview_from(my display_path_override) : cstr_sv(&my canonical_path);
@@ -537,9 +512,6 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_e
 // tsgo's isInternalDeclaration: a leading comment of the declaration starting at `at` says `@internal` (block comments
 // and whole-line `//` comments right before it)
 bool source_text_internal_before(struct SourceFile const* me, char const* at);
-// Some program of the process has a referenced (or built) project's source file (SourceFile.from_reference): what
-// only such files need is skipped otherwise (expr.c's reference_private_access())
-extern _Atomic bool source_files_from_reference;
 void module_ref_report_resolved_import_type(ModuleRef const* me, struct ErrorCtx* errs);
 // TS1471/TS1479: a CommonJS use of an ES module under node16/node18, reported at `at`
 void module_ref_report_require_of_esm(ModuleRef const* me, Span at, struct ErrorCtx* errs);

@@ -882,7 +882,6 @@ static bool contains_internal(char const* from, char const* to) {
     return false;
 }
 
-_Atomic bool source_files_from_reference;
 
 bool source_text_internal_before(SourceFile const* me, char const* at) {
     char const* text = cstr_str(&my contents);

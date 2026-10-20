@@ -99,7 +99,6 @@ typedef struct Program {
     ModuleResolver* resolver; // Made on first use, the options are final by then
     // program_set_references(): the referenced projects, and a resolver with each one's options for its files
     ProjectRedirects const* redirects;
-    bool reference_outputs; // A referenced project's sources are read as their outputs (tsc's command line)
     u32 node_modules_depth; // How many node_modules lookups the file being loaded was reached through (tsc's currentNodeModulesDepth)
     Span include_site; // The module name or `/// <reference path>` the file being loaded is loaded for (SourceFile.included_at)
     IncludeKind include_kind; // Why the file being loaded is: its next SourceFile.include_reasons entry (with include_site)
@@ -529,7 +528,6 @@ static ModuleResolver* program_resolver(Program* me) {
     if (!my resolver) {
         my resolver = module_resolver_new(my fs, &my options);
         if (my realpath) module_resolver_set_realpath(my resolver, my realpath, my realpath_ctx);
-        if (!my reference_outputs) module_resolver_set_redirects(my resolver, my redirects);
     }
     return my resolver;
 }
@@ -547,22 +545,17 @@ static CompilerOptions const* program_options_of(Program const* me, SourceFile c
     return &my options;
 }
 
-void program_set_references(Program* me, ProjectRedirects const* redirects, bool outputs) {
+void program_set_references(Program* me, ProjectRedirects const* redirects) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     check(!my reference_count && !my pool);
     my redirects = redirects;
-    my reference_outputs = outputs;
-    // (Reading outputs, only built ones exist: tsc's command line host is the file system's)
-    if (outputs) redirects = nullptr;
-    if (my resolver) module_resolver_set_redirects(my resolver, redirects);
-    // (One per referenced project also reading outputs: their output declaration files resolve with their project's
-    // options, program_make_source())
+    // (One per referenced project: their output declaration files resolve with their project's options,
+    // program_make_source())
     my reference_count = project_redirects_count(my redirects);
     my reference_resolvers = c_new_n(ModuleResolver*, my reference_count + 1);
     for (u32 i = 0; i < my reference_count; i++) {
         ModuleResolver* resolver = module_resolver_new(my fs, project_redirects_options(my redirects, i));
         if (my realpath) module_resolver_set_realpath(resolver, my realpath, my realpath_ctx);
-        module_resolver_set_redirects(resolver, redirects);
         my reference_resolvers[i] = resolver;
     }
 }
@@ -690,23 +683,12 @@ static bool is_declaration_path(csview path) {
 
 // The source file a referenced project's output declaration file stands for (absolute), empty if path isn't one
 static csview program_source_of_output(Program const* me, csview path) {
-    if (!my redirects || my reference_outputs || !is_declaration_path(path)) return c_sv("");
-    if (path.size && path.buf[0] == '/') return project_redirects_source_of_output(my redirects, path);
-    cstr absolute = absolute_path_of(program_cwd(me), path);
-    csview ret = project_redirects_source_of_output(my redirects, cstr_sv(&absolute));
-    cstr_drop(&absolute);
-    return ret;
-}
-
-// The source file a referenced project's output declaration file stands for (absolute), empty if path isn't one,
-// reading outputs too
-static csview program_source_of_output_any(Program const* me, csview path) {
     if (!my redirects || !is_declaration_path(path)) return c_sv("");
     cstr absolute = path.size && path.buf[0] == '/' ? cstr_from_sv(path) : absolute_path_of(program_cwd(me), path);
     csview ret = project_redirects_source_of_output(my redirects, cstr_sv(&absolute));
     // (Through a link that wasn't followed: preserveSymlinks, tsgo's realpathDtsToSource)
     if (!ret.size && csview_contains(cstr_sv(&absolute), "/node_modules/") && my resolver) {
-        cstr real = module_resolver_real_path_lenient(my resolver, cstr_sv(&absolute));
+        cstr real = module_resolver_real_path(my resolver, cstr_sv(&absolute));
         if (cstr_size(&real)) ret = project_redirects_source_of_output(my redirects, cstr_sv(&real));
         cstr_drop(&real);
     }
@@ -724,11 +706,10 @@ static csview program_output_of_source(Program const* me, csview path) {
     return ret;
 }
 
-// Reading outputs, a resolution that found a referenced project's source finds its output declaration file (tsc's
-// findSourceFileWorker, getRedirectFromSourceFile). Returns the output when it hasn't been built (resolved is then
-// unchanged), empty otherwise
+// A resolution that found a referenced project's source finds its output declaration file (tsc's findSourceFileWorker,
+// getRedirectFromSourceFile). Returns the output when it hasn't been built (resolved is then unchanged), empty otherwise
 static csview program_output_of_resolved(Program const* me, ResolvedModule* resolved) {
-    if (!my reference_outputs || (resolved->kind != RESOLVED_TS && resolved->kind != RESOLVED_JS)) return c_sv("");
+    if ((resolved->kind != RESOLVED_TS && resolved->kind != RESOLVED_JS)) return c_sv("");
     csview output = program_output_of_source(me, cstr_sv(&resolved->path));
     if (!output.size) return output;
     if (!fs_is_reg_file(my fs, output)) return output;
@@ -739,27 +720,9 @@ static csview program_output_of_resolved(Program const* me, ResolvedModule* reso
     return c_sv("");
 }
 
-// A resolution that found a referenced project's output finds its source (tsc's getSourceOfProjectReferenceRedirect),
-// or reading outputs, one that found its source finds its built output (else nothing)
-static bool program_redirect_resolved(Program const* me, ResolvedModule* resolved) {
-    if (my reference_outputs) {
-        if (program_output_of_resolved(me, resolved).size) resolved->kind = RESOLVED_NONE;
-        return false;
-    }
-    if (resolved->kind != RESOLVED_DTS || !my redirects) return false;
-    csview source = program_source_of_output(me, cstr_sv(&resolved->path));
-    if (!source.size && csview_contains(cstr_sv(&resolved->path), "/node_modules/")) {
-        // Through a link that wasn't followed (preserveSymlinks)
-        cstr real = module_resolver_real_path_lenient(my resolver, cstr_sv(&resolved->path));
-        if (cstr_size(&real)) source = program_source_of_output(me, cstr_sv(&real));
-        cstr_drop(&real);
-    }
-    if (!source.size) return false;
-    cstr_assign_sv(&resolved->path, source);
-    resolved->kind = path_is_js(source) ? RESOLVED_JS : RESOLVED_TS;
-    resolved->is_external_library = false;
-    cstr_take(&resolved->package_id, cstr_null);
-    return true;
+// A resolution that found a referenced project's source finds its output, or nothing when it hasn't been built
+static void program_redirect_resolved(Program const* me, ResolvedModule* resolved) {
+    if (program_output_of_resolved(me, resolved).size) resolved->kind = RESOLVED_NONE;
 }
 
 // A resolution that followed a symlink (tsc's symlink cache, setSymlinksFromResolutions)
@@ -853,12 +816,12 @@ static bool preresolved_take(Preresolved* me, ModuleRef const* ref, ResolutionMo
     return false;
 }
 
-// Where a file's module names resolve from: reading outputs, a referenced project's output declaration file's resolve
-// from its source (tsgo's getRedirectForResolution), with its project's options (program_resolver_of())
+// Where a file's module names resolve from: a referenced project's output declaration file's resolve from its source
+// (tsgo's getRedirectForResolution), with its project's options (program_resolver_of())
 static csview program_resolution_containing(Program const* me, SourceFile const* file) {
     if (!file) return c_sv("");
-    if (my reference_outputs && file->resolution_project && file->is_declaration) {
-        csview source = program_source_of_output_any(me, cstr_sv(&file->canonical_path));
+    if (file->resolution_project && file->is_declaration) {
+        csview source = program_source_of_output(me, cstr_sv(&file->canonical_path));
         if (source.size) return source;
     }
     return cstr_sv(&file->canonical_path);
@@ -892,7 +855,6 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
         resolved_module_drop(&resolved);
         return;
     }
-    ref->through_output = program_redirect_resolved(me, &resolved);
     if (cstr_size(&resolved.ambiguous_root_package_json)) {
         cstr shown = program_path_for_message(me, cstr_sv(&resolved.ambiguous_root_package_json));
         cstr message = cstr_d(
@@ -1052,11 +1014,10 @@ static SourceFile* program_load_reference_path(
     bool extension = path_has_extension(path);
     for (isize i = extension ? 0 : 1; i < (extension ? 1 : (isize)c_arraylen(extensions)) && !ret; i++) {
         cstr candidate = cstr_d(full, extensions[i]);
-        csview source = program_source_of_output(me, cstr_sv(&candidate));
-        if (!source.size && fs_is_reg_file(my fs, cstr_sv(&candidate))) source = cstr_sv(&candidate);
-        // Reading outputs, a referenced project's source is its output; when it hasn't been built that's TS6305
-        // (tsc's getSourceFileFromReferenceWorker through processSourceFile)
-        csview output = source.size && my reference_outputs ? program_output_of_source(me, source) : c_sv("");
+        csview source = fs_is_reg_file(my fs, cstr_sv(&candidate)) ? cstr_sv(&candidate) : c_sv("");
+        // A referenced project's source is its output; when it hasn't been built that's TS6305 (tsc's
+        // getSourceFileFromReferenceWorker through processSourceFile)
+        csview output = source.size ? program_output_of_source(me, source) : c_sv("");
         if (output.size && !fs_is_reg_file(my fs, output)) {
             if (directive) {
                 cstr_take(&directive->unbuilt_output, cstr_from_sv(output));
@@ -1568,46 +1529,21 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
     if (source_file->is_json) source_file->unchecked = true;
     source_file->plain_js = source_file->is_js && !check_directive && !my options.is_set[COMPILER_OPTION_check_js] &&
         !my options.no_check;
-    // A referenced project's file is that project's to check and report. Reading outputs, a built output declaration
-    // file is the program's own, but its module names resolve with its project's options
-    if (my redirects && !is_stdlib) {
+    // A referenced project's output declaration file is the program's own, but its module names resolve with its
+    // project's options
+    if (my redirects && !is_stdlib && source_file->is_declaration) {
         cstr absolute = absolute_path_of(program_cwd(me), path);
-        if (my reference_outputs) {
-            csview source = source_file->is_declaration ?
-                program_source_of_output_any(me, cstr_sv(&absolute)) : c_sv("");
-            if (source.size) source_file->resolution_project = project_redirects_project_of(my redirects, source);
-            // (A referenced project's own declaration file, read as itself, resolves with its options too: tsgo's
-            // getRedirectForResolution)
-            else if (source_file->is_declaration) {
-                source_file->resolution_project = project_redirects_project_of(my redirects, cstr_sv(&absolute));
-            }
-        } else {
-            source_file->from_reference = project_redirects_project_of(my redirects, cstr_sv(&absolute));
-            source_file->resolution_project = source_file->from_reference;
-        }
+        csview source = program_source_of_output(me, cstr_sv(&absolute));
+        // (A referenced project's own declaration file, read as itself, resolves with its options too: tsgo's
+        // getRedirectForResolution)
+        source_file->resolution_project = project_redirects_project_of(my redirects, source.size ? source : cstr_sv(&absolute));
         cstr_drop(&absolute);
-        if (source_file->from_reference) {
-            if (!source_files_from_reference) source_files_from_reference = true;
-            // (A built project's file may turn out to be the program's own: parsed whole, nothing stripped)
-            source_file->from_built = project_redirects_built(my redirects, source_file->from_reference - 1);
-            source_file->built_unchecked = source_file->unchecked;
-            source_file->built_plain_js = source_file->plain_js;
-            source_file->unchecked = true;
-            source_file->plain_js = false;
-            source_file->skip_typed_bodies = !source_file->from_built && !source_file->is_js && !source_file->is_jsx &&
-                !source_file->is_json;
-            CompilerOptions const* options = project_redirects_options(my redirects, source_file->from_reference - 1);
-            source_file->strip_internal = !source_file->from_built && options->strip_internal &&
-                !source_file->is_declaration && !source_file->is_json;
-            source_file->reference_const_enums_ambient = !options->preserve_const_enums && !options->isolated_modules &&
-                !options->verbatim_module_syntax;
-        }
         if (source_file->resolution_project) {
             CompilerOptions const* options = project_redirects_options(my redirects, source_file->resolution_project - 1);
             source_file->reference_emits_esm = options->module >= MODULE_KIND_ES2015 && options->module <= MODULE_KIND_ESNEXT;
             // (A built output's const enums are ambient, unless its project preserves them)
-            source_file->reference_preserves_const_enums = !source_file->from_reference && (options->preserve_const_enums ||
-                options->isolated_modules || options->verbatim_module_syntax);
+            source_file->reference_preserves_const_enums = options->preserve_const_enums || options->isolated_modules ||
+                options->verbatim_module_syntax;
         }
     }
 
@@ -1649,8 +1585,7 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
 
     // (Plan 78: not in a file that isn't checked, whose bodies' syntax errors no checker would find)
     source_file->defer_bodies = my defer_bodies && !source_file->is_js && !source_file->is_json &&
-        !source_file->is_declaration && !is_stdlib && !source_file->skip_typed_bodies && !source_file->unchecked &&
-        !source_file->content_mapped && !source_file->from_reference;
+        !source_file->is_declaration && !is_stdlib && !source_file->unchecked && !source_file->content_mapped;
     parse_file(source_file, errs);
     source_collect_commonjs_candidates(source_file);
     cstr_drop(&virtual_path);
@@ -1987,11 +1922,8 @@ static void program_explain_root(Program* me, Error* error, csview path) {
 
 failable program_load(Program* me, csview path, returns SourceFile*) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
-    // A referenced project's output is its source
-    csview source_of_output = program_source_of_output(me, path);
-    if (source_of_output.size) path = source_of_output;
-    // Reading outputs, a referenced project's source is its output (tsc's getSourceFileFromReferenceWorker)
-    csview output = my reference_outputs ? program_output_of_source(me, path) : c_sv("");
+    // A referenced project's source is its output (tsc's getSourceFileFromReferenceWorker)
+    csview output = program_output_of_source(me, path);
     if (output.size && !fs_is_reg_file(my fs, output)) {
         // An unbuilt one isn't in the program (tsgo's root file redirected to an output that isn't there: nothing is
         // reported for it, an import of it is TS6305 at the import)
@@ -2207,36 +2139,6 @@ static void program_collect_files(Program* me) {
     my load_roots = (VecSourceFilePtr){0};
 }
 
-// SourceFile.from_built: a built project's file that one of the program's own files imports by its own path is the
-// program's own, checked (tsc has it as a source next to the output declaration file other imports reach); so is
-// what those import by path in turn. Decided once loading is done, whatever order the files came in
-static void program_own_direct_built_files(Program* me) {
-    if (!my redirects || my reference_outputs) return;
-    VecSourceFilePtr work = {0};
-    for (auto it = hmap_box_source_file_begin(&my source_files_map); it.ref; hmap_box_source_file_next(&it)) {
-        SourceFile* file = it.ref->second.get;
-        if (!file->from_reference) vec_source_file_ptr_push(&work, file);
-    }
-    while (vec_source_file_ptr_size(&work)) {
-        SourceFile* file = vec_source_file_ptr_pull(&work);
-        for (u32 i = 0; i < file->module_ref_count; i++) {
-            ModuleRef const* ref = file->module_refs[i];
-            SourceFile* target = ref->file;
-            if (!target || !target->from_built || !target->from_reference || ref->through_output) continue;
-            target->from_reference = 0;
-            target->unchecked = target->built_unchecked;
-            target->plain_js = target->built_plain_js;
-            target->reference_const_enums_ambient = false;
-            // (Typed with the program's options from now on: its imports stay resolved as they were)
-            target->resolution_project = 0;
-            target->reference_emits_esm = false;
-            target->reference_preserves_const_enums = false;
-            vec_source_file_ptr_push(&work, target);
-        }
-    }
-    vec_source_file_ptr_drop(&work);
-}
-
 void program_load_automatic_types(Program* me) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     set_compiler_options(&my options);
@@ -2254,7 +2156,6 @@ void program_load_automatic_types(Program* me) {
     }
     str_list_drop(&names);
     clear_compiler_options();
-    program_own_direct_built_files(me);
     program_collect_files(me);
     // (The parse errors of referenced projects' files and of what isn't in the program, and the parser's grammar errors
     // in unchecked files (tsc's checker's, a skipLibCheck declaration file's), before anyone reports them)
@@ -2661,13 +2562,12 @@ static cstr emit_output_path(Program const* me, csview path, csview out_dir, csv
 
 // tsc's sourceFileMayBeEmitted
 static bool emit_source_may_be_emitted(Program const* me, SourceFile const* source) {
-    if (source->is_declaration || source->is_stdlib || source->from_reference) return false;
+    if (source->is_declaration || source->is_stdlib) return false;
     if (source->found_searching_node_modules) return false;
     if (!source->is_json) return true;
     if (!cstr_size(&my options.out_dir)) return false;
-    // (Reading outputs, a referenced project's `.json` source is read as itself: still its project's, tsgo's
-    // GetProjectReferenceFromSource)
-    if (my reference_outputs && project_redirects_count(my redirects)) {
+    // (A referenced project's `.json` source is read as itself: still its project's, tsgo's GetProjectReferenceFromSource)
+    if (project_redirects_count(my redirects)) {
         cstr absolute = absolute_path_of(program_cwd(me), cstr_sv(&source->canonical_path));
         bool referenced = project_redirects_project_of(my redirects, cstr_sv(&absolute));
         cstr_drop(&absolute);
@@ -2840,8 +2740,8 @@ static cstr program_common_source_dir(Program* me) {
 // tsgo's TS2878 test: target is a referenced project's source (or output) whose root and output directories aren't
 // placed like this program's (a rewritten `.ts` import path would point elsewhere in the outputs)
 static bool program_rewrite_crosses_projects(Program* me, SourceFile const* target) {
-    // (tsgo's GetRedirectForResolution: a referenced project's source, or its output reading outputs)
-    u32 project = target->from_reference ? target->from_reference : target->resolution_project;
+    // (tsgo's GetRedirectForResolution: a referenced project's output)
+    u32 project = target->resolution_project;
     if (!project || !my redirects) return false;
     CompilerOptions const* other = project_redirects_options(my redirects, project - 1);
     csview cwd = program_cwd(me);
@@ -4358,7 +4258,7 @@ static void print_file_time(char const* what, struct timespec start, SourceFile 
 static bool error_surely_reported(Error const* error) {
     SourceFile const* source = span_valid(error->span) ? span_source(error->span) : nullptr;
     return source && !error->suggestion && !error->unchecked_js && !error->jsdoc && !error->once_key &&
-        !source->unchecked && !source->from_reference && !source->package_redirect &&
+        !source->unchecked && !source->package_redirect &&
         !source->comment_directive_count && !source->content_mapped;
 }
 
@@ -4592,14 +4492,14 @@ static void check_share(Program* me, u32 c, u32 count) {
     u64 held = checker_memory(checker);
     if (held > checker->peak_memory) checker->peak_memory = held;
     // Declaration emit's diagnostics don't depend on skipTypeChecking: also for files noCheck or `@ts-nocheck` leave
-    // unchecked (not a referenced project's, which that project reports)
+    // unchecked
     u32 index = 0;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
         // (A JavaScript file's only when it is emitted: its declaration diagnostics aren't reported, plan 64 stage 6.
         // Declarations only, every file's walk is here, a checked JavaScript file's as after its check)
         bool checked = source_file_is_checked(source);
-        if (source->is_stdlib || (checked && !my declarations_only) || source->from_reference ||
+        if (source->is_stdlib || (checked && !my declarations_only) ||
             (source->is_js && !checked && !my emit_declarations)) continue;
         if (index++ % count != c) continue;
         if (my declaration_errs && !declaration_walk_moot(me)) {
@@ -4959,14 +4859,11 @@ cstr program_module_specifier_ending(
     csview cwd = program_cwd(me);
     cstr importing_path = absolute_path_of(cwd, cstr_sv(&importing->canonical_path));
     cstr target_path = absolute_path_of(cwd, cstr_sv(&target->canonical_path));
-    // (tsc's command line names a referenced project's output declaration file, which it reads in its place)
-    // (tsc's command line names a referenced project's source by its output declaration file first, then by itself:
+    // (A referenced project's output declaration file is named as its source would be, the output first: tsgo's
     // GetSourceOfProjectReferenceIfOutputIncluded and GetEachFileNameOfModule's referenceRedirect)
-    csview output = target->from_reference ? project_redirects_output_of_source(my redirects, cstr_sv(&target_path)) : c_sv("");
-    // (Reading outputs, a referenced project's output declaration file is named as its source would be, the output
-    // first: tsgo's GetSourceOfProjectReferenceIfOutputIncluded)
-    if (my reference_outputs && target->resolution_project && target->is_declaration) {
-        csview source = program_source_of_output_any(me, cstr_sv(&target_path));
+    csview output = c_sv("");
+    if (target->resolution_project && target->is_declaration) {
+        csview source = program_source_of_output(me, cstr_sv(&target_path));
         if (source.size) {
             output = project_redirects_output_of_source(my redirects, source);
             cstr_assign_sv(&target_path, source);

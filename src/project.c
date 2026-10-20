@@ -161,14 +161,12 @@ u32 project_set_build_order(ProjectSet* me, u32 const* roots, u32 root_count, u3
 typedef struct ProjectRedirects {
     ProjectSet* set;
     u32* projects; // The referenced projects (indices into set)
-    bool* built; // Per entry of projects: a project built before the program, not referenced (project_redirects_new())
     u32 count;
     HMapProjectIndex source_projects; // A root file of a referenced project -> 1 + its index in projects
     HMapProjectIndex outputs; // An output declaration file -> its index in sources
     StrList sources;
     HMapProjectIndex source_outputs; // A source -> its index in output_paths
     StrList output_paths;
-    StrList declaration_dirs;
 } ProjectRedirects;
 
 static bool is_declaration_name(csview path) {
@@ -196,28 +194,19 @@ static char const* declaration_extension(csview path, isize* stem) {
     return nullptr;
 }
 
-// built: an unreferenced project built earlier (project_redirects_new()), whose outputs only stand for its sources,
-// and only for the files that aren't the program's own (own_roots)
-static void redirects_add_project(ProjectRedirects* me, u32 project_index, bool built, HMapProjectIndex const* own_roots) {
+static void redirects_add_project(ProjectRedirects* me, u32 project_index) {
     project_set_root_files(my set, project_index);
     Project const* project = &my set->projects[project_index];
     u32 slot = my count++;
     my projects[slot] = project_index;
-    my built[slot] = built;
     CompilerOptions const* o = &project->options;
     csview declaration_dir = cstr_size(&o->declaration_dir) ? cstr_sv(&o->declaration_dir) : cstr_sv(&o->out_dir);
-    if (declaration_dir.size) str_list_push(&my declaration_dirs, declaration_dir);
     cstr common = cstr_null;
     for (isize i = 0; i < project->root_files.count; i++) {
         csview file = cstr_sv(&project->root_files.items[i]);
-        // (A built project's file that a referenced one has is the reference's; one of the program's own roots is
-        // checked, reached through its output too)
-        if (built && hmap_project_index_contains(&my source_projects, file)) continue;
         // (A file of several referenced projects is the last one's, children after parents: tsgo's initMapperWorker
         // maps.Copy overwrites)
-        if (!built || !hmap_project_index_contains(own_roots, file)) {
-            hmap_project_index_insert_or_assign(&my source_projects, cstr_from_sv(file), slot + 1);
-        }
+        hmap_project_index_insert_or_assign(&my source_projects, cstr_from_sv(file), slot + 1);
         isize stem = 0;
         char const* extension = declaration_extension(file, &stem);
         if (!extension) continue;
@@ -251,35 +240,17 @@ static void redirects_collect(ProjectRedirects* me, u32 project, uint8_t* seen) 
         u32 referenced = p->referenced[i];
         if (seen[referenced]) continue;
         seen[referenced] = 1;
-        if (my set->projects[referenced].readable) redirects_add_project(me, referenced, false, nullptr);
+        if (my set->projects[referenced].readable) redirects_add_project(me, referenced);
         redirects_collect(me, referenced, seen);
     }
 }
 
-ProjectRedirects* project_redirects_new(ProjectSet* set, u32 project, u32 const* built, u32 built_count) {
+ProjectRedirects* project_redirects_new(ProjectSet* set, u32 project) {
     ProjectRedirects* me = c_new(ProjectRedirects, { .set = set });
     my projects = c_new_n(u32, set->count + 1);
-    my built = c_new_n(bool, set->count + 1);
     uint8_t* seen = calloc((size_t)(set->count + 1), 1);
     seen[project] = 1;
     redirects_collect(me, project, seen);
-    if (built_count) {
-        // tsc -b's outputs of the projects built before this one, which its program reads where an import reaches
-        // them by path (a package's `exports` into its `dist`, `../../dist/x.js`) though it doesn't reference them:
-        // read as their sources like a reference's. A file of the program's own stays its own (tsc reads both the
-        // source and the output declaration file then, two files: tttt can't, one is)
-        HMapProjectIndex own_roots = {0};
-        StrList const* roots = project_set_root_files(set, project);
-        for (isize i = 0; i < roots->count; i++) hmap_project_index_insert(&own_roots, cstr_from_sv(cstr_sv(&roots->items[i])), 1);
-        for (u32 i = 0; i < built_count; i++) {
-            Project const* p = &set->projects[built[i]];
-            bool declares = (p->options.declaration || p->options.composite) && !p->options.no_emit;
-            if (seen[built[i]] || !p->readable || !declares) continue;
-            seen[built[i]] = 1;
-            redirects_add_project(me, built[i], true, &own_roots);
-        }
-        hmap_project_index_drop(&own_roots);
-    }
     free(seen);
     if (getenv("TTTT_DEBUG_PROJECTS")) {
         eprintln("redirects of ", set->projects[project].config, " (", set->projects[project].reference_count,
@@ -289,7 +260,6 @@ ProjectRedirects* project_redirects_new(ProjectSet* set, u32 project, u32 const*
             eprintln("  ", p->config, ": ", p->root_files.count, " files",
                 p->root_files.count ? ", first " : "", p->root_files.count ? cstr_sv(&p->root_files.items[0]) : c_sv(""));
         }
-        for (isize i = 0; i < my declaration_dirs.count; i++) eprintln("  declaration dir ", my declaration_dirs.items[i]);
     }
     return me;
 }
@@ -297,19 +267,12 @@ ProjectRedirects* project_redirects_new(ProjectSet* set, u32 project, u32 const*
 void project_redirects_destroy(ProjectRedirects* me) {
     if (!me) return;
     free(my projects);
-    free(my built);
     hmap_project_index_drop(&my source_projects);
     hmap_project_index_drop(&my outputs);
     str_list_drop(&my sources);
     hmap_project_index_drop(&my source_outputs);
     str_list_drop(&my output_paths);
-    str_list_drop(&my declaration_dirs);
     free(me);
-}
-
-bool project_redirects_built(ProjectRedirects const* me, u32 index) {
-    check(index < my count);
-    return my built[index];
 }
 
 u32 project_redirects_count(ProjectRedirects const* me) {
@@ -337,19 +300,4 @@ csview project_redirects_output_of_source(ProjectRedirects const* me, csview abs
     if (!me) return c_sv("");
     auto found = hmap_project_index_get(&my source_outputs, absolute);
     return found ? cstr_sv(&my output_paths.items[found->second]) : c_sv("");
-}
-
-bool project_redirects_output_directory(ProjectRedirects const* me, csview absolute) {
-    if (!me) return false;
-    for (isize i = 0; i < my declaration_dirs.count; i++) {
-        csview dir = cstr_sv(&my declaration_dirs.items[i]);
-        csview shorter = absolute.size <= dir.size ? absolute : dir;
-        csview longer = absolute.size <= dir.size ? dir : absolute;
-        // Equal, one inside the other
-        if (memcmp(shorter.buf, longer.buf, (size_t)shorter.size)) continue;
-        if (shorter.size == longer.size || longer.buf[shorter.size] == '/' || (shorter.size == 1 && shorter.buf[0] == '/')) {
-            return true;
-        }
-    }
-    return false;
 }

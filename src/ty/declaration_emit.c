@@ -5995,9 +5995,7 @@ bool declaration_diagnostics_wanted(SourceFile const* file) {
     if (!options->declaration && !options->composite) return false;
     if (file->is_declaration || file->is_json || file->is_stdlib || file->is_config) return false;
     // (tsc's sourceFileMayBeEmitted: not a package's file that an import found through a node_modules, even where a
-    // `paths` mapping into a symlinked node_modules leads back into the workspace (isSourceFileFromExternalLibrary), nor
-    // a referenced project's)
-    if (file->from_reference) return false;
+    // `paths` mapping into a symlinked node_modules leads back into the workspace (isSourceFileFromExternalLibrary))
     // (A root file is at depth 0 wherever it is: tsgo's lowestDepth)
     if (file->is_root) return true;
     if (file->found_searching_node_modules) return false;

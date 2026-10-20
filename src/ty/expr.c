@@ -5957,19 +5957,6 @@ static void contextually_type_static_fields(Checker* me, ClassDecl const* class_
 
 static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx);
 
-// `x['p']` written outside a referenced project's source, of a private member of a class in one: any, as from the
-// `.d.ts` tsc -b reads (ty_prop_reference_private()): astro's `telemetry['config'] = config`
-static Ty const* reference_private_access(Checker* me, Expr const* expr, Ty const* object, Ty const* key, Ty const* type) {
-    if (!type || (type->flags & TYF_ANY) || !(key->flags & TYF_STRING_LITERAL)) return type;
-    SourceFile const* file = span_source(expr->inner_span);
-    if (!file || file->from_reference) return type;
-    Ty const* apparent = ty_apparent_type(me, object);
-    if (!(apparent->flags & TYF_OBJECT)) return type;
-    FoundProp found = ty_find_prop(me, apparent, ty_literal_name(me, key));
-    return found.found && found.prop && (found.flags & PROP_PRIVATE) && ty_prop_reference_private(me, found.prop) ?
-        ty_intrinsic(me, TY_ANY) : type;
-}
-
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
     // tsc's checkExpression: the current node, and the instantiation limit is per expression, not per program
     CurrentNode saved = ty_enter_expr(me, expr);
@@ -6062,9 +6049,6 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                     ty_access_element(me, object, key, expr->property->assignment_target != FLOW_TARGET_DEFINITE) :
                 expr->property->assignment_target == FLOW_TARGET_DEFINITE ? ty_access(me, object, key) :
                 ty_access_reading(me, object, key);
-            if (source_files_from_reference && expr->property->form == PROPERTY_EXPR_BRACKET) {
-                ret = reference_private_access(me, expr, object, key, ret);
-            }
             // (An element access: a property access of what an object literal lacks is TS2339, checkPropertyAccessExpression)
             if (!ret && ty_is_fresh_object(object) && !expr->property->assignment_target && expr->property->form == PROPERTY_EXPR_BRACKET) {
                 ret = object_literal_access(me, object, key);

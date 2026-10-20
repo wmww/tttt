@@ -3473,7 +3473,7 @@ static bool can_have_synthetic_default(PortItem const* item, Symbol* module, Sou
             return false;
         }
     }
-    if (!file || source_file_reads_as_declaration(file)) {
+    if (!file || file->is_declaration) {
         // Declaration files and ambient modules: unless they say they have a default or are ES modules (`__esModule`).
         // (Every default export of a declaration file is tsc's isSyntacticDefault)
         if (symbol_get_export(module, c_sv("default")) || symbol_get_export(module, c_sv("__esModule"))) return false;
@@ -4498,7 +4498,7 @@ void binder_resolve_remaining_aliases(Binder* me) {
 bool symbol_const_enum_is_ambient(Symbol const* me) {
     SourceFile const* source = span_source(my name_span);
     if (source && source->reference_preserves_const_enums) return false;
-    return my is_ambient || (source && source->reference_const_enums_ambient);
+    return my is_ambient;
 }
 
 // tsc's checkAliasSymbol under verbatimModuleSyntax: an import or export (not type-only, not ambient) of an ambient
