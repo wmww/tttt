@@ -275,6 +275,8 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         PropSymbolInfo inner = { .declarations = vec_span_init(), .strict_union = info->strict_union,
             .skip_augment = intersection || info->skip_augment };
         for (u32 i = 0; i < object->composite.types.len; i++) {
+            // (A union member whose apparent type is the error type says nothing: createUnionOrIntersectionProperty)
+            if (!intersection && ty_union_member_apparent_is_error(checker, object->composite.types.data[i])) continue;
             collect_prop_symbol(checker, object->composite.types.data[i], name, &inner, depth + 1);
         }
         if (intersection && !inner.found && !info->skip_augment) {

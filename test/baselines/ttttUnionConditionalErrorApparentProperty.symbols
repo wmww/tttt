@@ -1,0 +1,130 @@
+//// [test/cases/ttttUnionConditionalErrorApparentProperty.ts] ////
+
+=== ttttUnionConditionalErrorApparentProperty.ts ===
+// A union member that is a conditional type over a type parameter constrained to an unresolved type has the error
+// type as its apparent type, and says nothing about a property (tsc's createUnionOrIntersectionProperty skips it): a
+// union of only such members has no property at all (crawlee's `cond ? this.#inner! : await this.#select()`,
+// `Awaited<T> | NonNullable<T>` with `T extends IRequestManager` unresolved)
+import type { Nope } from "nope";
+>Nope : Symbol(Nope, Decl(ttttUnionConditionalErrorApparentProperty.ts, 4, 13))
+
+type Cond<T> = T extends string ? { foo: 1 } : { foo: 2 };
+>Cond : Symbol(Cond, Decl(ttttUnionConditionalErrorApparentProperty.ts, 4, 33))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 5, 10))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 5, 10))
+>foo : Symbol(foo, Decl(ttttUnionConditionalErrorApparentProperty.ts, 5, 35))
+>foo : Symbol(foo, Decl(ttttUnionConditionalErrorApparentProperty.ts, 5, 48))
+
+type Id<T> = T extends null ? never : T;
+>Id : Symbol(Id, Decl(ttttUnionConditionalErrorApparentProperty.ts, 5, 58))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 6, 8))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 6, 8))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 6, 8))
+
+export function f<T extends Nope>(a: Awaited<T> | NonNullable<T>, b: Cond<T> | T, c: Id<T> | T, d: Awaited<T> | { foo: 1 }, e: Awaited<T>, g: Id<T> | { foo: 1 }) {
+>f : Symbol(f, Decl(ttttUnionConditionalErrorApparentProperty.ts, 6, 40))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 18))
+>Nope : Symbol(Nope, Decl(ttttUnionConditionalErrorApparentProperty.ts, 4, 13))
+>a : Symbol(a, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 34))
+>Awaited : Symbol(Awaited, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 18))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 18))
+>b : Symbol(b, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 65))
+>Cond : Symbol(Cond, Decl(ttttUnionConditionalErrorApparentProperty.ts, 4, 33))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 18))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 18))
+>c : Symbol(c, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 81))
+>Id : Symbol(Id, Decl(ttttUnionConditionalErrorApparentProperty.ts, 5, 58))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 18))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 18))
+>d : Symbol(d, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 95))
+>Awaited : Symbol(Awaited, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 18))
+>foo : Symbol(foo, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 113))
+>e : Symbol(e, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 123))
+>Awaited : Symbol(Awaited, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 18))
+>g : Symbol(g, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 138))
+>Id : Symbol(Id, Decl(ttttUnionConditionalErrorApparentProperty.ts, 5, 58))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 18))
+>foo : Symbol(foo, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 151))
+
+    a.foo;
+>a : Symbol(a, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 34))
+
+    b.foo;
+>b : Symbol(b, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 65))
+
+    c.foo;
+>c : Symbol(c, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 81))
+
+    d.foo;
+>d.foo : Symbol(foo, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 113))
+>d : Symbol(d, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 95))
+>foo : Symbol(foo, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 113))
+
+    e.foo;
+>e : Symbol(e, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 123))
+
+    g.foo;
+>g.foo : Symbol(foo, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 151))
+>g : Symbol(g, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 138))
+>foo : Symbol(foo, Decl(ttttUnionConditionalErrorApparentProperty.ts, 7, 151))
+}
+declare function select<T>(): Promise<T>;
+>select : Symbol(select, Decl(ttttUnionConditionalErrorApparentProperty.ts, 14, 1))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 15, 24))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 15, 24))
+
+export class C<T extends Nope> {
+>C : Symbol(C, Decl(ttttUnionConditionalErrorApparentProperty.ts, 15, 41))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 16, 15))
+>Nope : Symbol(Nope, Decl(ttttUnionConditionalErrorApparentProperty.ts, 4, 13))
+
+    #inner?: T;
+>#inner : Symbol(C.#inner, Decl(ttttUnionConditionalErrorApparentProperty.ts, 16, 32))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 16, 15))
+
+    async m(cond: boolean) {
+>m : Symbol(C.m, Decl(ttttUnionConditionalErrorApparentProperty.ts, 17, 15))
+>cond : Symbol(cond, Decl(ttttUnionConditionalErrorApparentProperty.ts, 18, 12))
+
+        const manager = cond ? this.#inner! : await select<T>();
+>manager : Symbol(manager, Decl(ttttUnionConditionalErrorApparentProperty.ts, 19, 13))
+>cond : Symbol(cond, Decl(ttttUnionConditionalErrorApparentProperty.ts, 18, 12))
+>this.#inner : Symbol(C.#inner, Decl(ttttUnionConditionalErrorApparentProperty.ts, 16, 32))
+>this : Symbol(C, Decl(ttttUnionConditionalErrorApparentProperty.ts, 15, 41))
+>select : Symbol(select, Decl(ttttUnionConditionalErrorApparentProperty.ts, 14, 1))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 16, 15))
+
+        return (await manager.extend?.(1)) ?? false;
+>manager : Symbol(manager, Decl(ttttUnionConditionalErrorApparentProperty.ts, 19, 13))
+    }
+}
+// The members that have it make the property
+export function g<T extends Nope>(d: T | { foo: 1 }, e: (T & {}) | { foo: 1 }) {
+>g : Symbol(g, Decl(ttttUnionConditionalErrorApparentProperty.ts, 22, 1))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 24, 18))
+>Nope : Symbol(Nope, Decl(ttttUnionConditionalErrorApparentProperty.ts, 4, 13))
+>d : Symbol(d, Decl(ttttUnionConditionalErrorApparentProperty.ts, 24, 34))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 24, 18))
+>foo : Symbol(foo, Decl(ttttUnionConditionalErrorApparentProperty.ts, 24, 42))
+>e : Symbol(e, Decl(ttttUnionConditionalErrorApparentProperty.ts, 24, 52))
+>T : Symbol(T, Decl(ttttUnionConditionalErrorApparentProperty.ts, 24, 18))
+>foo : Symbol(foo, Decl(ttttUnionConditionalErrorApparentProperty.ts, 24, 68))
+
+    const x = d.foo;
+>x : Symbol(x, Decl(ttttUnionConditionalErrorApparentProperty.ts, 25, 9))
+>d.foo : Symbol(foo, Decl(ttttUnionConditionalErrorApparentProperty.ts, 24, 42))
+>d : Symbol(d, Decl(ttttUnionConditionalErrorApparentProperty.ts, 24, 34))
+>foo : Symbol(foo, Decl(ttttUnionConditionalErrorApparentProperty.ts, 24, 42))
+
+    const y = e.foo;
+>y : Symbol(y, Decl(ttttUnionConditionalErrorApparentProperty.ts, 26, 9))
+>e.foo : Symbol(foo, Decl(ttttUnionConditionalErrorApparentProperty.ts, 24, 68))
+>e : Symbol(e, Decl(ttttUnionConditionalErrorApparentProperty.ts, 24, 52))
+>foo : Symbol(foo, Decl(ttttUnionConditionalErrorApparentProperty.ts, 24, 68))
+}
+

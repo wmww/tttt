@@ -1871,14 +1871,16 @@ static Ty const* type_param_access_apparent(Checker* me, Ty const* param) {
 
 // A union with type parameter members has a property every member's apparent type has (tsc's getPropertyOfType of a
 // union: getUnionOrIntersectionProperty, getReducedApparentType of each member). Null if a member can't say
-// Whether a union member's apparent type is the error type: a type parameter constrained to it, or an intersection with
-// one (tsc's getApparentType of an intersection intersects its members' apparent types, and any error type in an
-// intersection makes it the error type)
-static bool apparent_is_error(Checker* me, Ty const* member) {
+// Whether a union member's apparent type is the error type: a type parameter constrained to it, a conditional type over
+// one, or an intersection with one (tsc's getApparentType of an intersection intersects its members' apparent types,
+// and any error type in an intersection makes it the error type)
+bool ty_union_member_apparent_is_error(Checker* me, Ty const* member) {
     if (member->kind == TY_TYPE_PARAM) return !member->param.state->is_this && (ty_apparent_type(me, member)->flags & TYF_ERROR);
+    // (A conditional type's is its distributive constraint's: `Awaited<T>` with T constrained to an unresolved type)
+    if (member->kind == TY_CONDITIONAL) return (ty_apparent_type(me, member)->flags & TYF_ERROR) != 0;
     if (member->kind != TY_INTERSECTION) return false;
     for (u32 i = 0; i < member->composite.types.len; i++) {
-        if (apparent_is_error(me, member->composite.types.data[i])) return true;
+        if (ty_union_member_apparent_is_error(me, member->composite.types.data[i])) return true;
     }
     return false;
 }
@@ -1896,8 +1898,12 @@ static Ty const* union_apparent_members(Checker* me, Ty const* object, bool* non
     u32 kept = 0;
     for (u32 i = 0; i < len; i++) {
         Ty const* member = object->composite.types.data[i];
+        if ((member->kind == TY_TYPE_PARAM || member->kind == TY_INTERSECTION || member->kind == TY_CONDITIONAL) &&
+            ty_union_member_apparent_is_error(me, member)
+        ) {
+            continue;
+        }
         if (member->flags & (TYF_ANY | TYF_DEFERRED)) return nullptr;
-        if ((member->kind == TY_TYPE_PARAM || member->kind == TY_INTERSECTION) && apparent_is_error(me, member)) continue;
         if (member->kind == TY_TYPE_PARAM && !member->param.state->is_this) {
             member = type_param_access_apparent(me, member);
             if (!member) return nullptr;
@@ -2015,7 +2021,7 @@ static void check_access(
                 has_undefined |= ty_can_be_undefined(me, member);
             }
             opaque |= (member->flags & (TYF_ANY | TYF_TYPE_PARAM | TYF_DEFERRED)) != 0 ||
-                (member->kind == TY_INTERSECTION && apparent_is_error(me, member));
+                (member->kind == TY_INTERSECTION && ty_union_member_apparent_is_error(me, member));
         }
         // A destructured property (no object expression) is looked up in the union as it is, undefined included
         // (tsc's getBindingElementTypeFromParentType: getIndexedAccessType, no checkNonNullType)

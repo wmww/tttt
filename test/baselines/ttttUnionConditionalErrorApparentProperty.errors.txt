@@ -1,0 +1,50 @@
+ttttUnionConditionalErrorApparentProperty.ts(5,27): error TS2307: Cannot find module 'nope' or its corresponding type declarations.
+ttttUnionConditionalErrorApparentProperty.ts(9,7): error TS2339: Property 'foo' does not exist on type 'Awaited<T> | NonNullable<T>'.
+  Property 'foo' does not exist on type 'Awaited<T>'.
+ttttUnionConditionalErrorApparentProperty.ts(11,7): error TS2339: Property 'foo' does not exist on type 'T | Id<T>'.
+  Property 'foo' does not exist on type 'T'.
+ttttUnionConditionalErrorApparentProperty.ts(21,31): error TS2339: Property 'extend' does not exist on type 'Awaited<T> | NonNullable<T>'.
+  Property 'extend' does not exist on type 'Awaited<T>'.
+
+
+==== ttttUnionConditionalErrorApparentProperty.ts (4 errors) ====
+    // A union member that is a conditional type over a type parameter constrained to an unresolved type has the error
+    // type as its apparent type, and says nothing about a property (tsc's createUnionOrIntersectionProperty skips it): a
+    // union of only such members has no property at all (crawlee's `cond ? this.#inner! : await this.#select()`,
+    // `Awaited<T> | NonNullable<T>` with `T extends IRequestManager` unresolved)
+    import type { Nope } from "nope";
+                              ~~~~~~
+!!! error TS2307: Cannot find module 'nope' or its corresponding type declarations.
+    type Cond<T> = T extends string ? { foo: 1 } : { foo: 2 };
+    type Id<T> = T extends null ? never : T;
+    export function f<T extends Nope>(a: Awaited<T> | NonNullable<T>, b: Cond<T> | T, c: Id<T> | T, d: Awaited<T> | { foo: 1 }, e: Awaited<T>, g: Id<T> | { foo: 1 }) {
+        a.foo;
+          ~~~
+!!! error TS2339: Property 'foo' does not exist on type 'Awaited<T> | NonNullable<T>'.
+!!! error TS2339:   Property 'foo' does not exist on type 'Awaited<T>'.
+        b.foo;
+        c.foo;
+          ~~~
+!!! error TS2339: Property 'foo' does not exist on type 'T | Id<T>'.
+!!! error TS2339:   Property 'foo' does not exist on type 'T'.
+        d.foo;
+        e.foo;
+        g.foo;
+    }
+    declare function select<T>(): Promise<T>;
+    export class C<T extends Nope> {
+        #inner?: T;
+        async m(cond: boolean) {
+            const manager = cond ? this.#inner! : await select<T>();
+            return (await manager.extend?.(1)) ?? false;
+                                  ~~~~~~
+!!! error TS2339: Property 'extend' does not exist on type 'Awaited<T> | NonNullable<T>'.
+!!! error TS2339:   Property 'extend' does not exist on type 'Awaited<T>'.
+        }
+    }
+    // The members that have it make the property
+    export function g<T extends Nope>(d: T | { foo: 1 }, e: (T & {}) | { foo: 1 }) {
+        const x = d.foo;
+        const y = e.foo;
+    }
+    

@@ -1,0 +1,116 @@
+//// [test/cases/ttttUnionConditionalErrorApparentProperty.ts] ////
+
+=== ttttUnionConditionalErrorApparentProperty.ts ===
+// A union member that is a conditional type over a type parameter constrained to an unresolved type has the error
+// type as its apparent type, and says nothing about a property (tsc's createUnionOrIntersectionProperty skips it): a
+// union of only such members has no property at all (crawlee's `cond ? this.#inner! : await this.#select()`,
+// `Awaited<T> | NonNullable<T>` with `T extends IRequestManager` unresolved)
+import type { Nope } from "nope";
+>Nope : any
+
+type Cond<T> = T extends string ? { foo: 1 } : { foo: 2 };
+>Cond : Cond<T>
+>foo : 1
+>foo : 2
+
+type Id<T> = T extends null ? never : T;
+>Id : Id<T>
+
+export function f<T extends Nope>(a: Awaited<T> | NonNullable<T>, b: Cond<T> | T, c: Id<T> | T, d: Awaited<T> | { foo: 1 }, e: Awaited<T>, g: Id<T> | { foo: 1 }) {
+>f : <T extends Nope>(a: Awaited<T> | NonNullable<T>, b: Cond<T> | T, c: Id<T> | T, d: Awaited<T> | { foo: 1; }, e: Awaited<T>, g: Id<T> | { foo: 1; }) => void
+>a : Awaited<T> | NonNullable<T>
+>b : T | Cond<T>
+>c : T | Id<T>
+>d : { foo: 1; } | Awaited<T>
+>foo : 1
+>e : Awaited<T>
+>g : { foo: 1; } | Id<T>
+>foo : 1
+
+    a.foo;
+>a.foo : any
+>a : Awaited<T> | NonNullable<T>
+>foo : any
+
+    b.foo;
+>b.foo : any
+>b : any
+>foo : any
+
+    c.foo;
+>c.foo : any
+>c : T | Id<T>
+>foo : any
+
+    d.foo;
+>d.foo : 1
+>d : { foo: 1; } | Awaited<T>
+>foo : 1
+
+    e.foo;
+>e.foo : any
+>e : Awaited<T>
+>foo : any
+
+    g.foo;
+>g.foo : 1
+>g : { foo: 1; } | Id<T>
+>foo : 1
+}
+declare function select<T>(): Promise<T>;
+>select : <T>() => Promise<T>
+
+export class C<T extends Nope> {
+>C : C<T>
+
+    #inner?: T;
+>#inner : T | undefined
+
+    async m(cond: boolean) {
+>m : (cond: boolean) => Promise<any>
+>cond : boolean
+
+        const manager = cond ? this.#inner! : await select<T>();
+>manager : Awaited<T> | NonNullable<T>
+>cond ? this.#inner! : await select<T>() : Awaited<T> | NonNullable<T>
+>cond : boolean
+>this.#inner! : NonNullable<T>
+>this.#inner : T | undefined
+>this : this
+>await select<T>() : Awaited<T>
+>select<T>() : Promise<T>
+>select : <T_1>() => Promise<T_1>
+
+        return (await manager.extend?.(1)) ?? false;
+>(await manager.extend?.(1)) ?? false : any
+>(await manager.extend?.(1)) : any
+>await manager.extend?.(1) : any
+>manager.extend?.(1) : any
+>manager.extend : any
+>manager : Awaited<T> | NonNullable<T>
+>extend : any
+>1 : 1
+>false : false
+    }
+}
+// The members that have it make the property
+export function g<T extends Nope>(d: T | { foo: 1 }, e: (T & {}) | { foo: 1 }) {
+>g : <T extends Nope>(d: T | { foo: 1; }, e: (T & {}) | { foo: 1; }) => void
+>d : T | { foo: 1; }
+>foo : 1
+>e : { foo: 1; } | (T & {})
+>foo : 1
+
+    const x = d.foo;
+>x : 1
+>d.foo : 1
+>d : T | { foo: 1; }
+>foo : 1
+
+    const y = e.foo;
+>y : 1
+>e.foo : 1
+>e : { foo: 1; } | (T & {})
+>foo : 1
+}
+

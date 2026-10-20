@@ -421,6 +421,9 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
             // (Nor an intersection that is never once apparent, `undefined & M` with M an object: tsc's
             // createUnionOrIntersectionProperty skips members whose apparent type is never)
             if (member->kind == TY_INTERSECTION && (ty_reduced(me, ty_apparent_type(me, member))->flags & TYF_NEVER)) continue;
+            // (Nor one whose apparent type is the error type: `T | { foo: 1 }` with T constrained to an unresolved type
+            // reads 1)
+            if (ty_union_member_apparent_is_error(me, member)) continue;
             Ty const* part = access(me, member, index, depth + 1, flags);
             // A tuple too short to have the element has undefined there when others have it (tsc's
             // createUnionOrIntersectionProperty: its index signature applies, and the rest element or undefined is read)

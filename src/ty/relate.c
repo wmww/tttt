@@ -1576,17 +1576,20 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
         Ty const** types = members.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * members.len);
         u32 flags = 0;
         bool missing = false;
+        u32 len = 0;
         for (u32 i = 0; i < members.len && !missing; i++) {
+            // (A member whose apparent type is the error type says nothing)
+            if (ty_union_member_apparent_is_error(me, members.data[i])) continue;
             FoundProp part = find_prop_in(me, apparent_type(me, members.data[i]), name, depth + 1, skip_augment);
             missing = !part.found;
             if (missing) break;
             if (!ret.prop) ret.prop = part.prop;
-            types[i] = part.type;
+            types[len++] = part.type;
             flags |= part.flags;
         }
-        if (!missing && members.len) {
+        if (!missing && len) {
             ret.found = true;
-            ret.type = ty_union(me, types, members.len, nullptr, (TyList){0});
+            ret.type = ty_union(me, types, len, nullptr, (TyList){0});
             ret.flags = flags;
         } else {
             ret.prop = nullptr;

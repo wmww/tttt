@@ -2055,6 +2055,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttUnionConditionalErrorApparentProperty': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttUnionMemberApparentErrorType': {
         errors: true,
         symbols: true,

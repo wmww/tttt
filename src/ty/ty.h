@@ -1565,6 +1565,8 @@ Prop const* ty_property_of_type(Checker* me, Ty const* ty, Atom const* name);
 Prop const* ty_namespace_type_only_prop(Checker* me, Ty const* object, Atom const* name); // members.c
 // The type whose members a value of `ty` has: `String` for a string, the constraint of a type parameter...
 Ty const* ty_apparent_type(Checker* me, Ty const* ty);
+// Whether a union member's apparent type is the error type, which says nothing about the union's properties (check.c)
+bool ty_union_member_apparent_is_error(Checker* me, Ty const* member);
 // What a generic key type is known to include at least (tsc's getLowerBoundOfKeyType, members.c)
 Ty const* ty_lower_bound_of_key_type(Checker* me, Ty const* ty);
 Ty const* ty_global_function_type(Checker* me); // Null without a lib
