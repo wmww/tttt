@@ -10088,6 +10088,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             if (arg->tag == EXPR_LITERAL && arg->literal.tag == VALUE_STRING) {
                 ModuleRef* ref = add_module_ref(&p, cstr_clone(arg->literal.string), arg->inner_span);
                 ref->syntax = MODULE_REF_REQUIRE;
+                ref->require_call = true;
                 left_and_ret->call->callable.identifier.module_ref_ = ref;
             }
         } else if (left_and_ret->call->callable.tag == EXPR_GENERIC_PARAMS && !optional_chain &&

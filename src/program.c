@@ -1929,9 +1929,12 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
         cstr_drop(&jsx_runtime);
     }
 
-    // Every module the file mentions, wherever (the parser lists them). By index: loading parses, never this file
-    for (u32 i = 0; i < source_file->module_ref_count; i++) {
+    // Every module the file mentions, wherever (the parser lists them), the declarations' first (tsc's order of
+    // file.imports, which decides the order of the program's files). By index: loading parses, never this file
+    for (u32 n = 0; n < 2 * source_file->module_ref_count; n++) {
+        u32 i = n % source_file->module_ref_count;
         ModuleRef* ref = source_file->module_refs[i];
+        if (module_ref_collected_late(ref) != (n >= source_file->module_ref_count)) continue;
         // `declare module "./a" {}` in a module augments a file. In a script it declares an ambient module, and so
         // does a name that finds no file
         if (ref->is_declaration && !source_file->is_module && !ref->nested_in_ambient_module) continue;

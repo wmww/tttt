@@ -59,6 +59,7 @@ typedef struct ModuleRef {
     uint8_t resolution_override;
     bool type_only_import; // Of an `import type` declaration (TS1541 rather than TS1479)
     bool import_type; // Of an import type `import("m")` (TS1542 rather than TS1479)
+    bool require_call; // A JavaScript file's `require("m")` call
     SourceFile* file; // What the program's module resolution found, may be null
     ModuleRefFailure failure; // Without a file
     bool used_ts_extension; // The name ends in .ts/.tsx/.mts/.cts and that is the file: TS5097 without the option
@@ -107,6 +108,10 @@ static inline ModuleRefRare const* module_ref_rare(ModuleRef const* me) {
 }
 // Allocates it if needed
 ModuleRefRare* module_ref_rare_mut(ModuleRef* me);
+// An import call, import type or `require()` call: tsc's file.imports lists them after the declarations
+static inline bool module_ref_collected_late(ModuleRef const* me) {
+    return me->import_type || me->require_call || me->syntax == MODULE_REF_DYNAMIC;
+}
 
 // A `// @ts-expect-error` or `// @ts-ignore` comment (tsc's CommentDirective): the diagnostics that start on the next
 // line (blank lines and `//` comment lines in between don't count) are not reported. An unused @ts-expect-error is
@@ -303,7 +308,10 @@ typedef struct SourceFile {
     // from the executable, so its messages name them by that URL, not relative to the working directory
     cstr bundled_path;
     const char* display_path_override; // Used for the tests
-    ModuleRef** module_refs; // Owned, in source order
+    // Owned, in source order. Loaded in tsc's order of file.imports: the import, export and import-equals declarations
+    // (and those of ambient modules) first, then import calls, import types and `require()` calls
+    // (module_ref_collected_late(), tsc's collectDynamicImportOrRequireOrJsDocImportCalls)
+    ModuleRef** module_refs;
     u32 module_ref_count;
     // While loading: what the load pool worker that parsed the file resolved its imports to, for the loader to take
     // rather than resolve again (program.c's, owned by the program until it has loaded the file)
