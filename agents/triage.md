@@ -24,3 +24,8 @@ bugs/harness.md. measurements.md condensed 2139 -> 408 lines, hacks.md audited (
   $type: TType }`, `i.$type`). find_prop_in() isn't the path property access takes.
 - (2026-10-20, agent B) never_reduced_literal_prop() (the type-variable path of never-reduction) may want the
   HasNeverType rule some_prop_is_never() now gives the known-objects path.
+- (2026-10-20, coordinator) scripts/variancetrace.py's instrumented tsgo build failed for agent B: its `go build`
+  uses the shared `thirdparty/typescript-gopath/cache`, which has missing entries ("could not import context ... no
+  such file"). reentrytrace.py has `--gocache DIR`; give variancetrace.py the same (a /tmp cache, mind the disk) or
+  repair the shared cache from the main tree (ensure-typescript.sh caps it). It blocks the mikro-orm IndexFilterQuery
+  perf lead (perf_leads.md) and apollo vite's chain truncation (display.md).
