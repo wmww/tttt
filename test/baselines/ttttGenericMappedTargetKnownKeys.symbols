@@ -1,0 +1,149 @@
+//// [test/cases/ttttGenericMappedTargetKnownKeys.ts] ////
+
+=== ttttGenericMappedTargetKnownKeys.ts ===
+// An object type with known keys and a generic property against a generic mapped type falls back to nothing (tsc's
+// structuredTypeRelatedToWorker: False unless the mapped rules relate it): not related through the members of the
+// constraint's constraint, whatever the mapped type iterates over (keyof X, keyof X & {...}, a deferred conditional's keys)
+export function g6<T extends 'email', X extends E>(s: { type: T }) {
+>g6 : Symbol(g6, Decl(ttttGenericMappedTargetKnownKeys.ts, 0, 0))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 3, 19))
+>X : Symbol(X, Decl(ttttGenericMappedTargetKnownKeys.ts, 3, 37))
+>E : Symbol(E, Decl(ttttGenericMappedTargetKnownKeys.ts, 14, 1))
+>s : Symbol(s, Decl(ttttGenericMappedTargetKnownKeys.ts, 3, 51))
+>type : Symbol(type, Decl(ttttGenericMappedTargetKnownKeys.ts, 3, 55))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 3, 19))
+
+    const x: Partial<X> = s;
+>x : Symbol(x, Decl(ttttGenericMappedTargetKnownKeys.ts, 4, 9))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>X : Symbol(X, Decl(ttttGenericMappedTargetKnownKeys.ts, 3, 37))
+>s : Symbol(s, Decl(ttttGenericMappedTargetKnownKeys.ts, 3, 51))
+}
+export function g7<T extends 'email', X extends E>(s: { type: T }) {
+>g7 : Symbol(g7, Decl(ttttGenericMappedTargetKnownKeys.ts, 5, 1))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 6, 19))
+>X : Symbol(X, Decl(ttttGenericMappedTargetKnownKeys.ts, 6, 37))
+>E : Symbol(E, Decl(ttttGenericMappedTargetKnownKeys.ts, 14, 1))
+>s : Symbol(s, Decl(ttttGenericMappedTargetKnownKeys.ts, 6, 51))
+>type : Symbol(type, Decl(ttttGenericMappedTargetKnownKeys.ts, 6, 55))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 6, 19))
+
+    const x: Partial<X & { a: 1 }> = s;
+>x : Symbol(x, Decl(ttttGenericMappedTargetKnownKeys.ts, 7, 9))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>X : Symbol(X, Decl(ttttGenericMappedTargetKnownKeys.ts, 6, 37))
+>a : Symbol(a, Decl(ttttGenericMappedTargetKnownKeys.ts, 7, 26))
+>s : Symbol(s, Decl(ttttGenericMappedTargetKnownKeys.ts, 6, 51))
+}
+export function g8<T extends 'email', X extends E>(s: { type: T }) {
+>g8 : Symbol(g8, Decl(ttttGenericMappedTargetKnownKeys.ts, 8, 1))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 9, 19))
+>X : Symbol(X, Decl(ttttGenericMappedTargetKnownKeys.ts, 9, 37))
+>E : Symbol(E, Decl(ttttGenericMappedTargetKnownKeys.ts, 14, 1))
+>s : Symbol(s, Decl(ttttGenericMappedTargetKnownKeys.ts, 9, 51))
+>type : Symbol(type, Decl(ttttGenericMappedTargetKnownKeys.ts, 9, 55))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 9, 19))
+
+    const x: Readonly<CT<T>> = s;
+>x : Symbol(x, Decl(ttttGenericMappedTargetKnownKeys.ts, 10, 9))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>CT : Symbol(CT, Decl(ttttGenericMappedTargetKnownKeys.ts, 15, 58))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 9, 19))
+>s : Symbol(s, Decl(ttttGenericMappedTargetKnownKeys.ts, 9, 51))
+}
+export function g9<T extends 'email', X extends E>(s: { type: T }) {
+>g9 : Symbol(g9, Decl(ttttGenericMappedTargetKnownKeys.ts, 11, 1))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 12, 19))
+>X : Symbol(X, Decl(ttttGenericMappedTargetKnownKeys.ts, 12, 37))
+>E : Symbol(E, Decl(ttttGenericMappedTargetKnownKeys.ts, 14, 1))
+>s : Symbol(s, Decl(ttttGenericMappedTargetKnownKeys.ts, 12, 51))
+>type : Symbol(type, Decl(ttttGenericMappedTargetKnownKeys.ts, 12, 55))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 12, 19))
+
+    const x: Partial<X["type"] extends T ? E : never> = s;
+>x : Symbol(x, Decl(ttttGenericMappedTargetKnownKeys.ts, 13, 9))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>X : Symbol(X, Decl(ttttGenericMappedTargetKnownKeys.ts, 12, 37))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 12, 19))
+>E : Symbol(E, Decl(ttttGenericMappedTargetKnownKeys.ts, 14, 1))
+>s : Symbol(s, Decl(ttttGenericMappedTargetKnownKeys.ts, 12, 51))
+}
+interface E { id: string; type: 'email'; addres: string; }
+>E : Symbol(E, Decl(ttttGenericMappedTargetKnownKeys.ts, 14, 1))
+>id : Symbol(E.id, Decl(ttttGenericMappedTargetKnownKeys.ts, 15, 13))
+>type : Symbol(E.type, Decl(ttttGenericMappedTargetKnownKeys.ts, 15, 25))
+>addres : Symbol(E.addres, Decl(ttttGenericMappedTargetKnownKeys.ts, 15, 40))
+
+type CT<T, A = E> = A extends { type: T } ? A : never;
+>CT : Symbol(CT, Decl(ttttGenericMappedTargetKnownKeys.ts, 15, 58))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 16, 8))
+>A : Symbol(A, Decl(ttttGenericMappedTargetKnownKeys.ts, 16, 10))
+>E : Symbol(E, Decl(ttttGenericMappedTargetKnownKeys.ts, 14, 1))
+>A : Symbol(A, Decl(ttttGenericMappedTargetKnownKeys.ts, 16, 10))
+>type : Symbol(type, Decl(ttttGenericMappedTargetKnownKeys.ts, 16, 31))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 16, 8))
+>A : Symbol(A, Decl(ttttGenericMappedTargetKnownKeys.ts, 16, 10))
+
+type NC2<T extends E> = Pick<T, 'type'> & Partial<Pick<T, 'addres'>> & { localChannelId: string };
+>NC2 : Symbol(NC2, Decl(ttttGenericMappedTargetKnownKeys.ts, 16, 54))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 17, 9))
+>E : Symbol(E, Decl(ttttGenericMappedTargetKnownKeys.ts, 14, 1))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 17, 9))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 17, 9))
+>localChannelId : Symbol(localChannelId, Decl(ttttGenericMappedTargetKnownKeys.ts, 17, 72))
+
+export function f2<T extends 'email'>(type: T): NC2<CT<T>> {
+>f2 : Symbol(f2, Decl(ttttGenericMappedTargetKnownKeys.ts, 17, 98))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 18, 19))
+>type : Symbol(type, Decl(ttttGenericMappedTargetKnownKeys.ts, 18, 38))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 18, 19))
+>NC2 : Symbol(NC2, Decl(ttttGenericMappedTargetKnownKeys.ts, 16, 54))
+>CT : Symbol(CT, Decl(ttttGenericMappedTargetKnownKeys.ts, 15, 58))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 18, 19))
+
+    return { type, localChannelId: "" };
+>type : Symbol(type, Decl(ttttGenericMappedTargetKnownKeys.ts, 19, 12))
+>localChannelId : Symbol(localChannelId, Decl(ttttGenericMappedTargetKnownKeys.ts, 19, 18))
+}
+type NC3<T extends E> = Pick<T, 'type'> & Partial<T> & { localChannelId: string };
+>NC3 : Symbol(NC3, Decl(ttttGenericMappedTargetKnownKeys.ts, 20, 1))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 21, 9))
+>E : Symbol(E, Decl(ttttGenericMappedTargetKnownKeys.ts, 14, 1))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 21, 9))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 21, 9))
+>localChannelId : Symbol(localChannelId, Decl(ttttGenericMappedTargetKnownKeys.ts, 21, 56))
+
+export function f3<T extends 'email'>(type: T): NC3<CT<T>> {
+>f3 : Symbol(f3, Decl(ttttGenericMappedTargetKnownKeys.ts, 21, 82))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 22, 19))
+>type : Symbol(type, Decl(ttttGenericMappedTargetKnownKeys.ts, 22, 38))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 22, 19))
+>NC3 : Symbol(NC3, Decl(ttttGenericMappedTargetKnownKeys.ts, 20, 1))
+>CT : Symbol(CT, Decl(ttttGenericMappedTargetKnownKeys.ts, 15, 58))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 22, 19))
+
+    return { type, localChannelId: "" };
+>type : Symbol(type, Decl(ttttGenericMappedTargetKnownKeys.ts, 23, 12))
+>localChannelId : Symbol(localChannelId, Decl(ttttGenericMappedTargetKnownKeys.ts, 23, 18))
+}
+export function f4<T extends 'email'>(type: T) {
+>f4 : Symbol(f4, Decl(ttttGenericMappedTargetKnownKeys.ts, 24, 1))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 25, 19))
+>type : Symbol(type, Decl(ttttGenericMappedTargetKnownKeys.ts, 25, 38))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 25, 19))
+
+    const x: Partial<CT<T>> & { localChannelId: string } = { type, localChannelId: "" };
+>x : Symbol(x, Decl(ttttGenericMappedTargetKnownKeys.ts, 26, 9))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>CT : Symbol(CT, Decl(ttttGenericMappedTargetKnownKeys.ts, 15, 58))
+>T : Symbol(T, Decl(ttttGenericMappedTargetKnownKeys.ts, 25, 19))
+>localChannelId : Symbol(localChannelId, Decl(ttttGenericMappedTargetKnownKeys.ts, 26, 31))
+>type : Symbol(type, Decl(ttttGenericMappedTargetKnownKeys.ts, 26, 60))
+>localChannelId : Symbol(localChannelId, Decl(ttttGenericMappedTargetKnownKeys.ts, 26, 66))
+}
+

@@ -780,7 +780,7 @@ static void accessor_member_compile_test_info(InterfaceMember const* me, Span sc
     // (Its own type when it is a symbol of its own: a getter with a body and no annotation, TS1183, what it returns)
     Ty const* own = my accessor_kind == 1 && my accessor && my accessor->getter_body && my accessor->getter_body_infers ?
         ty_object_literal_accessor_type(checker, my accessor->getter_body->function, true) : ty_of_node(&my type);
-    Ty const* type = mine ? optional_member_type(prop_type(checker, root), root->flags & PROP_OPTIONAL) : own;
+    Ty const* type = mine ? optional_member_type(prop_type(checker, root), (root->flags & PROP_OPTIONAL) && !ty_prop_is_accessor(root)) : own;
     baseline_test_case_add_type(ctx, my key.span, type);
     InterfaceAccessor const* accessor = my accessor;
     if (my accessor_kind == 2 && accessor && span_valid(accessor->setter_param)) {
@@ -876,7 +876,10 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             Ty const* type = merged ? optional_member_type(prop_type(current_checker, declared_member), declared_member->flags & PROP_OPTIONAL) :
                 optional_member_type(ty_of_node(&my type), my optional);
             // (Optional as its first declaration is: tsc's addOptionality of the symbol's valueDeclaration)
-            if (redeclared) type = optional_member_type(prop_type(current_checker, redeclared), redeclared->flags & PROP_OPTIONAL);
+            if (redeclared) {
+                type = optional_member_type(prop_type(current_checker, redeclared),
+                    (redeclared->flags & PROP_OPTIONAL) && !ty_prop_is_accessor(redeclared));
+            }
             // A property declared after an accessor of its name is that accessor's symbol (after a method it conflicts:
             // a symbol of its own)
             if (joined) {
@@ -892,6 +895,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                     type = prop_type(checker, prop);
                 }
             }
+            // (One with accessors is typed by them, getTypeOfAccessors: `x?: number` then `get x(): string` is a string)
+            if (shared && ty_prop_is_accessor(shared)) type = prop_type(current_checker, shared);
             bool method = my key.name_is_member_function && my type.tag == TYPE_CALLABLE;
             u32 saved = method ? baseline_test_case_enter_generic(ctx, &my type.callable->function->generic) : 0;
             baseline_test_case_add_type(ctx, my key.span, type);
@@ -1772,6 +1777,7 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
             member_declarations(me, ctx, &declarations, &written_name);
             // (add_member_symbol() takes the declarations)
             bool declared_first_elsewhere = vec_span_size(&declarations) > 1 && !span_eq(declarations.data[0], my span);
+            bool joined = vec_span_size(&declarations) > 1;
             add_member_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
                 .span = my field.name_span,
@@ -1792,12 +1798,15 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
             }
             bool prototype = my field.is_static && name && csview_equals(atom_sv(name), "prototype");
             // (Joined into a symbol something else declared first, an interface merged with the class's too)
-            if ((declared_first_elsewhere || prototype) && ctx->class_symbol && name) {
+            // (Or by accessors declared later: an accessor symbol is typed by them, getTypeOfAccessors)
+            if ((declared_first_elsewhere || prototype || joined) && ctx->class_symbol && name) {
                 Checker* checker = current_checker;
                 Ty const* owner = my field.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
                     ty_declared_type_of(checker, ctx->class_symbol);
                 Prop const* prop = ty_get_prop(checker, owner, name);
-                if (prop) type = prop_type(checker, prop);
+                Prop const* root = prop;
+                while (root && root->target && !root->decl->decl_span_count) root = root->target;
+                if (prop && (declared_first_elsewhere || prototype || ty_prop_is_accessor(root))) type = prop_type(checker, prop);
             }
             baseline_test_case_add_type(ctx, my field.name_span, type);
             if (my field.computed_key) computed_member_name_compile_test_info(my field.computed_key, ctx);

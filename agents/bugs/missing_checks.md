@@ -373,3 +373,21 @@ arguments / through exported variables. Left:
   TS7022 on a, TS7023 on self. tttt checks satisfies in the check walk, after `a` is typed. Only on failing
   satisfies of self-referencing getters.
 - arrayFrom return-void (the binding-element entry above).
+
+## Mutation seed 2026102101 (2026-10-20, agent C, -n 8000: 10 / 4102 differ)
+Fixed: a property symbol an accessor joins (merged interfaces/classes, an auto accessor after an interface property)
+typed by its accessors without the property's optionality (TS2717/TS2687/TS2564 against them; TS2687 compares with an
+accessor as the first declaration); a known-key object with a generic property no longer relates to a generic mapped
+type through the member fallback (`{ type: T }` to `Partial<X>`, `Partial<C<T>>` of a deferred conditional). Left:
+- declarationEmitNestedAnonymousMappedType extends-object: `M[k] extends Object ? M[k] : never` related to `string |
+  number | symbol` by the deep-nesting cut-off of `conditional_source_related()`'s default constraint step (hacks.md:
+  removing it costs react +82% instructions and gives largeTupleTypes a spurious TS2799).
+- complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound add-optional: the TS2322 now comes, at the `return` where
+  tsgo puts it at the shorthand `type` of the returned literal (tsgo's hasExcessProperties moves r.errorNode to the
+  excess property during a reporting pass, then a later failure reports there; not reproduced).
+- jsonRawJSON2 ann-string-number (also seed 4): TS2430 at a script's `interface RawJSON` merged with es2026.json's
+  `declare global { interface RawJSON extends RawJSONInstance {} }`: the CLI reports it (b.ts(53,11)), the harness not
+  (only with `@lib`; interface_heritage_typecheck()'s first-declaration / walked-file choice; not found why).
+- Known families: unknownSymbolOffContextualType1 (TS7022 circularity), conditionalContextualReturnSubstitutionCache
+  (TS2208 render), narrowingDestructuring (TS2700), typeGuardsAsAssertions (loop partial types), restElementWithInitializer2
+  (lazy TS2304), selfReferencingSpreadInLoop (TS2488 twice).

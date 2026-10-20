@@ -1,0 +1,136 @@
+//// [test/cases/ttttAccessorJoinsPropertySymbol.ts] ////
+
+=== ttttAccessorJoinsPropertySymbol.ts ===
+// A property symbol an accessor joins (merged interfaces and classes) is typed by the accessors, without the
+// property's optionality (tsc's getTypeOfSymbol takes getTypeOfAccessors first): TS2717 and TS2687 against them, and
+// TS2564 by the accessor's type
+interface Foo2 {
+>Foo2 : Symbol(Foo2, Decl(ttttAccessorJoinsPropertySymbol.ts, 0, 0), Decl(ttttAccessorJoinsPropertySymbol.ts, 5, 1))
+
+    x?: string
+>x : Symbol(Foo2.x, Decl(ttttAccessorJoinsPropertySymbol.ts, 3, 16), Decl(ttttAccessorJoinsPropertySymbol.ts, 6, 12))
+}
+class Foo2 {
+>Foo2 : Symbol(Foo2, Decl(ttttAccessorJoinsPropertySymbol.ts, 0, 0), Decl(ttttAccessorJoinsPropertySymbol.ts, 5, 1))
+
+    accessor x: string = "abc"
+>x : Symbol(Foo2.x, Decl(ttttAccessorJoinsPropertySymbol.ts, 3, 16), Decl(ttttAccessorJoinsPropertySymbol.ts, 6, 12))
+}
+class Foo4 {
+>Foo4 : Symbol(Foo4, Decl(ttttAccessorJoinsPropertySymbol.ts, 8, 1), Decl(ttttAccessorJoinsPropertySymbol.ts, 11, 1))
+
+    accessor z: string = "abc"
+>z : Symbol(Foo4.z, Decl(ttttAccessorJoinsPropertySymbol.ts, 9, 12), Decl(ttttAccessorJoinsPropertySymbol.ts, 12, 16))
+}
+interface Foo4 {
+>Foo4 : Symbol(Foo4, Decl(ttttAccessorJoinsPropertySymbol.ts, 8, 1), Decl(ttttAccessorJoinsPropertySymbol.ts, 11, 1))
+
+    z?: string
+>z : Symbol(Foo4.z, Decl(ttttAccessorJoinsPropertySymbol.ts, 9, 12), Decl(ttttAccessorJoinsPropertySymbol.ts, 12, 16))
+}
+interface Foo5 {
+>Foo5 : Symbol(Foo5, Decl(ttttAccessorJoinsPropertySymbol.ts, 14, 1), Decl(ttttAccessorJoinsPropertySymbol.ts, 17, 1))
+
+    w: number
+>w : Symbol(Foo5.w, Decl(ttttAccessorJoinsPropertySymbol.ts, 15, 16), Decl(ttttAccessorJoinsPropertySymbol.ts, 18, 12))
+}
+class Foo5 {
+>Foo5 : Symbol(Foo5, Decl(ttttAccessorJoinsPropertySymbol.ts, 14, 1), Decl(ttttAccessorJoinsPropertySymbol.ts, 17, 1))
+
+    accessor w: string = "abc"
+>w : Symbol(Foo5.w, Decl(ttttAccessorJoinsPropertySymbol.ts, 15, 16), Decl(ttttAccessorJoinsPropertySymbol.ts, 18, 12))
+}
+interface A {
+>A : Symbol(A, Decl(ttttAccessorJoinsPropertySymbol.ts, 20, 1), Decl(ttttAccessorJoinsPropertySymbol.ts, 23, 1))
+
+    x: number
+>x : Symbol(A.x, Decl(ttttAccessorJoinsPropertySymbol.ts, 21, 13), Decl(ttttAccessorJoinsPropertySymbol.ts, 24, 13))
+}
+interface A {
+>A : Symbol(A, Decl(ttttAccessorJoinsPropertySymbol.ts, 20, 1), Decl(ttttAccessorJoinsPropertySymbol.ts, 23, 1))
+
+    get x(): string;
+>x : Symbol(A.x, Decl(ttttAccessorJoinsPropertySymbol.ts, 21, 13), Decl(ttttAccessorJoinsPropertySymbol.ts, 24, 13))
+}
+declare const a: A;
+>a : Symbol(a, Decl(ttttAccessorJoinsPropertySymbol.ts, 27, 13))
+>A : Symbol(A, Decl(ttttAccessorJoinsPropertySymbol.ts, 20, 1), Decl(ttttAccessorJoinsPropertySymbol.ts, 23, 1))
+
+a.x = "s";
+>a.x : Symbol(A.x, Decl(ttttAccessorJoinsPropertySymbol.ts, 21, 13), Decl(ttttAccessorJoinsPropertySymbol.ts, 24, 13))
+>a : Symbol(a, Decl(ttttAccessorJoinsPropertySymbol.ts, 27, 13))
+>x : Symbol(A.x, Decl(ttttAccessorJoinsPropertySymbol.ts, 21, 13), Decl(ttttAccessorJoinsPropertySymbol.ts, 24, 13))
+
+const n: number = a.x;
+>n : Symbol(n, Decl(ttttAccessorJoinsPropertySymbol.ts, 29, 5))
+>a.x : Symbol(A.x, Decl(ttttAccessorJoinsPropertySymbol.ts, 21, 13), Decl(ttttAccessorJoinsPropertySymbol.ts, 24, 13))
+>a : Symbol(a, Decl(ttttAccessorJoinsPropertySymbol.ts, 27, 13))
+>x : Symbol(A.x, Decl(ttttAccessorJoinsPropertySymbol.ts, 21, 13), Decl(ttttAccessorJoinsPropertySymbol.ts, 24, 13))
+
+interface C {
+>C : Symbol(C, Decl(ttttAccessorJoinsPropertySymbol.ts, 29, 22), Decl(ttttAccessorJoinsPropertySymbol.ts, 33, 1))
+
+    get y(): string;
+>y : Symbol(C.y, Decl(ttttAccessorJoinsPropertySymbol.ts, 30, 13), Decl(ttttAccessorJoinsPropertySymbol.ts, 31, 20), Decl(ttttAccessorJoinsPropertySymbol.ts, 34, 13))
+
+    set y(v: string);
+>y : Symbol(C.y, Decl(ttttAccessorJoinsPropertySymbol.ts, 30, 13), Decl(ttttAccessorJoinsPropertySymbol.ts, 31, 20), Decl(ttttAccessorJoinsPropertySymbol.ts, 34, 13))
+>v : Symbol(v, Decl(ttttAccessorJoinsPropertySymbol.ts, 32, 10))
+}
+interface C {
+>C : Symbol(C, Decl(ttttAccessorJoinsPropertySymbol.ts, 29, 22), Decl(ttttAccessorJoinsPropertySymbol.ts, 33, 1))
+
+    y?: number;
+>y : Symbol(C.y, Decl(ttttAccessorJoinsPropertySymbol.ts, 30, 13), Decl(ttttAccessorJoinsPropertySymbol.ts, 31, 20), Decl(ttttAccessorJoinsPropertySymbol.ts, 34, 13))
+}
+declare const c: C;
+>c : Symbol(c, Decl(ttttAccessorJoinsPropertySymbol.ts, 37, 13))
+>C : Symbol(C, Decl(ttttAccessorJoinsPropertySymbol.ts, 29, 22), Decl(ttttAccessorJoinsPropertySymbol.ts, 33, 1))
+
+const cy: string = c.y;
+>cy : Symbol(cy, Decl(ttttAccessorJoinsPropertySymbol.ts, 38, 5))
+>c.y : Symbol(C.y, Decl(ttttAccessorJoinsPropertySymbol.ts, 30, 13), Decl(ttttAccessorJoinsPropertySymbol.ts, 31, 20), Decl(ttttAccessorJoinsPropertySymbol.ts, 34, 13))
+>c : Symbol(c, Decl(ttttAccessorJoinsPropertySymbol.ts, 37, 13))
+>y : Symbol(C.y, Decl(ttttAccessorJoinsPropertySymbol.ts, 30, 13), Decl(ttttAccessorJoinsPropertySymbol.ts, 31, 20), Decl(ttttAccessorJoinsPropertySymbol.ts, 34, 13))
+
+class D { z?: number }
+>D : Symbol(D, Decl(ttttAccessorJoinsPropertySymbol.ts, 38, 23), Decl(ttttAccessorJoinsPropertySymbol.ts, 39, 22))
+>z : Symbol(D.z, Decl(ttttAccessorJoinsPropertySymbol.ts, 39, 9), Decl(ttttAccessorJoinsPropertySymbol.ts, 40, 13))
+
+interface D { get z(): string }
+>D : Symbol(D, Decl(ttttAccessorJoinsPropertySymbol.ts, 38, 23), Decl(ttttAccessorJoinsPropertySymbol.ts, 39, 22))
+>z : Symbol(D.z, Decl(ttttAccessorJoinsPropertySymbol.ts, 39, 9), Decl(ttttAccessorJoinsPropertySymbol.ts, 40, 13))
+
+declare const d: D;
+>d : Symbol(d, Decl(ttttAccessorJoinsPropertySymbol.ts, 41, 13))
+>D : Symbol(D, Decl(ttttAccessorJoinsPropertySymbol.ts, 38, 23), Decl(ttttAccessorJoinsPropertySymbol.ts, 39, 22))
+
+const dz: string = d.z;
+>dz : Symbol(dz, Decl(ttttAccessorJoinsPropertySymbol.ts, 42, 5))
+>d.z : Symbol(D.z, Decl(ttttAccessorJoinsPropertySymbol.ts, 39, 9), Decl(ttttAccessorJoinsPropertySymbol.ts, 40, 13))
+>d : Symbol(d, Decl(ttttAccessorJoinsPropertySymbol.ts, 41, 13))
+>z : Symbol(D.z, Decl(ttttAccessorJoinsPropertySymbol.ts, 39, 9), Decl(ttttAccessorJoinsPropertySymbol.ts, 40, 13))
+
+class E { accessor w: string = "" }
+>E : Symbol(E, Decl(ttttAccessorJoinsPropertySymbol.ts, 42, 23), Decl(ttttAccessorJoinsPropertySymbol.ts, 43, 35))
+>w : Symbol(E.w, Decl(ttttAccessorJoinsPropertySymbol.ts, 43, 9), Decl(ttttAccessorJoinsPropertySymbol.ts, 44, 13))
+
+interface E { w?: number }
+>E : Symbol(E, Decl(ttttAccessorJoinsPropertySymbol.ts, 42, 23), Decl(ttttAccessorJoinsPropertySymbol.ts, 43, 35))
+>w : Symbol(E.w, Decl(ttttAccessorJoinsPropertySymbol.ts, 43, 9), Decl(ttttAccessorJoinsPropertySymbol.ts, 44, 13))
+
+declare const e: E;
+>e : Symbol(e, Decl(ttttAccessorJoinsPropertySymbol.ts, 45, 13))
+>E : Symbol(E, Decl(ttttAccessorJoinsPropertySymbol.ts, 42, 23), Decl(ttttAccessorJoinsPropertySymbol.ts, 43, 35))
+
+const ew: string = e.w;
+>ew : Symbol(ew, Decl(ttttAccessorJoinsPropertySymbol.ts, 46, 5))
+>e.w : Symbol(E.w, Decl(ttttAccessorJoinsPropertySymbol.ts, 43, 9), Decl(ttttAccessorJoinsPropertySymbol.ts, 44, 13))
+>e : Symbol(e, Decl(ttttAccessorJoinsPropertySymbol.ts, 45, 13))
+>w : Symbol(E.w, Decl(ttttAccessorJoinsPropertySymbol.ts, 43, 9), Decl(ttttAccessorJoinsPropertySymbol.ts, 44, 13))
+
+const e2: E = {} as { w: string };
+>e2 : Symbol(e2, Decl(ttttAccessorJoinsPropertySymbol.ts, 47, 5))
+>E : Symbol(E, Decl(ttttAccessorJoinsPropertySymbol.ts, 42, 23), Decl(ttttAccessorJoinsPropertySymbol.ts, 43, 35))
+>w : Symbol(w, Decl(ttttAccessorJoinsPropertySymbol.ts, 47, 21))
+

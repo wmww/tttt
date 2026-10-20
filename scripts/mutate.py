@@ -163,9 +163,11 @@ def generate(n, seed, kinds=()):
     return mutants
 
 
-def run_tsc(work, names):
+def run_tsc(work, names, retry=True):
     """tsc's (tsgo's) baselines for the mutants, one warm probe process per core (scripts/tsgoprobe.sh), merged into
-    work/t/baselines/reference/conformance"""
+    work/t/baselines/reference/conformance. A shard's probe can die midway (2026-10-20: a quarter of 8000 mutants had no
+    baselines, which read as "tsc reports nothing": hundreds of spurious keys): the mutants left without any baseline
+    are run once more"""
     jobs = min(os.cpu_count() or 1, 4, len(names))
     procs = []
     for j in range(jobs):
@@ -186,6 +188,12 @@ def run_tsc(work, names):
             if f.endswith(('.errors.txt', '.types', '.symbols')):
                 shutil.move(f'{local}/{f}', f'{ref}/{f}')
         shutil.rmtree(f'{work}/tsc{j}')
+    have = {f.split('.')[0] for f in os.listdir(ref)}
+    missing = [n for n in names if n not in have]
+    if missing:
+        print(f'tsc: {len(missing)} mutants without baselines' + (', running them again' if retry else ''), file=sys.stderr)
+        if retry:
+            run_tsc(work, missing, retry=False)
 
 
 def run_tttt(work):

@@ -686,7 +686,7 @@ static void builder_add_interface_member(
                 Prop* existing = builder_find_prop(builder, name);
                 u32 kinds = existing ? existing->decl->member_kinds : 0;
                 if (existing && i->accessor_kind && (kinds & 2u)) break; // (After a method: it conflicts, TS2300)
-                if (existing && i->accessor_kind && (kinds ? !(kinds & 1u) : i->key.tag == INTERFACE_KEY_EXPR)) {
+                if (existing && i->accessor_kind && (kinds ? !(kinds & 1u) || (kinds & 12u) : i->key.tag == INTERFACE_KEY_EXPR)) {
                     // The other accessor of the symbol: the getter's type is read, the setter's written (tsc's
                     // getTypeOfAccessors, getWriteTypeOfSymbol). One of a kind already there conflicts (TS2300)
                     if (kinds & kind) break;
@@ -723,7 +723,18 @@ static void builder_add_interface_member(
                 }
                 if (existing && i->accessor_kind) {
                     // An accessor after a property of its name joins its symbol: a declaration more (tsgo 7.1, TypeScript
-                    // issue 3613)
+                    // issue 3613), which getTypeOfSymbol then types as accessors (getTypeOfAccessors: the property's
+                    // declaration says nothing), readonly with a getter alone (isReadonlySymbol)
+                    if (!(kinds & 12u)) {
+                        existing->decl->node = &i->type;
+                        existing->decl->lazy = nullptr; // (A merged class's field, unannotated)
+                        if (i->accessor && i->accessor->getter_body && i->accessor->getter_body_infers) {
+                            prop_decl_rare_mut(me, existing->decl)->getter_body = i->accessor->getter_body->function;
+                        }
+                        if (i->accessor_kind == 2 && i->accessor) prop_decl_rare_mut(me, existing->decl)->setter_param = i->accessor->setter_param;
+                        if (i->accessor_kind == 1) existing->flags |= PROP_READONLY;
+                        existing->thisless = type_node_is_thisless(&i->type);
+                    }
                     existing->decl->member_kinds |= (uint8_t)kind;
                     { u32 n = span_valid(i->declaration); prop_add_shared_decl_spans(me, existing, &i->declaration, n); }
                     break;
@@ -1778,9 +1789,10 @@ static void builder_add_class_items(
                 if (i->field.is_static != static_side) break;
                 Prop* joined = nullptr;
                 Prop* prop = builder_add_class_prop_joined(me, builder, class_decl, &i->field.name_string, parent, ctx, i, &joined);
-                // (An auto-accessor after a property of its name: one symbol, typed by the accessor, see the methods')
-                if (!prop && joined && i->field.is_auto_accessor && (joined->flags & PROP_FIELD) &&
-                    !(joined->flags & (PROP_ACCESSOR | PROP_METHOD))
+                // (An auto-accessor after a property of its name, a field or a merged interface's property signature:
+                // one symbol, typed by the accessor, see the methods')
+                if (!prop && joined && i->field.is_auto_accessor && !(joined->flags & (PROP_ACCESSOR | PROP_METHOD)) &&
+                    !joined->decl->parameter_property && !joined->decl->function
                 ) {
                     prop = joined;
                     prop->flags &= ~(u32)PROP_FIELD;
@@ -5228,6 +5240,12 @@ static _Thread_local u32 prop_reentry_depth;
 
 static Ty const* prop_type_slow(Checker* me, Prop* prop);
 
+// A declared property whose symbol is an accessor (tsc's SymbolFlags.Accessor): a class's get/set or auto accessor, a
+// type member's
+bool ty_prop_is_accessor(Prop const* prop) {
+    return (prop->flags & PROP_ACCESSOR) || (prop->decl->member_kinds & 12u) || prop_decl_rare(prop->decl)->class_auto_accessor;
+}
+
 Ty const* prop_type(Checker* me, Prop const* const_prop) {
     Prop* prop = (Prop*)const_prop; // The lazily resolved type is the one mutable thing about a Prop
     if (prop->type_state == LAZY_STATE_DONE) {
@@ -5313,7 +5331,8 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
     // An optional property's type has undefined, the missing type under exactOptionalPropertyTypes (tsc's
     // addOptionality). An optional parameter property's is a real undefined even then (isProperty false: it's not a
     // property declaration). Not one made optional by a destructuring default (tsc only sets the flag)
-    if (!prop->target && (prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_PATTERN_OPTIONAL)) {
+    // (Not an accessor's, which only a merge makes optional: getTypeOfAccessors adds nothing)
+    if (!prop->target && (prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_PATTERN_OPTIONAL) && !ty_prop_is_accessor(prop)) {
         type = prop->decl->parameter_property ? ty_optional_param_type(me, type) : ty_optional_prop_type(me, type);
     }
     if (resolving && ty_resolving_pop(me)) prop->circular = true;

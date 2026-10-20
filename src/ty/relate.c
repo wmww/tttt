@@ -4262,16 +4262,6 @@ static bool has_variadic_element(Checker* me, Ty const* ty) {
     return false;
 }
 
-// A mapped type's constraint that is `keyof X` or a union with one (`"$type" | keyof V`, the keys of an intersection)
-static bool keyof_constraint(Ty const* constraint) {
-    if (constraint->kind == TY_KEYOF) return true;
-    if (constraint->kind != TY_UNION) return false;
-    for (u32 i = 0; i < constraint->composite.types.len; i++) {
-        if (constraint->composite.types.data[i]->kind == TY_KEYOF) return true;
-    }
-    return false;
-}
-
 static Ternary generic_mapped_target_related(
     Checker* me, RelationState* st, Ty const* source, MappedInfo const* mapped, bool report
 ) {
@@ -6029,14 +6019,13 @@ static Ternary structured_related_members(
         ) {
             return related;
         }
-        // (Nor an object type whose properties don't depend on its type variables against a mapped type over a type
-        // parameter (`Record<M, M>`): `P<M>`'s `{ values: M }` isn't related to it, its keys can't cover M's (sequelize's
-        // EnumOptions<Member> against EnumValues<Member> dropped it from a flow union by subtype reduction). Nor over
-        // `keyof X` (atproto's `{ [x: string]: unknown; $type: T }` against `Simplify<V["output"] & { $type: T }>`)
+        // (Nor an object type with known keys whatever its constraint: `P<M>`'s `{ values: M }` isn't a `Record<M, M>`
+        // (sequelize's EnumOptions<Member> against EnumValues<Member> dropped it from a flow union by subtype
+        // reduction), `{ type: T }` isn't a `Partial<X>` nor a `Partial<C<T>>` of a deferred conditional, atproto's
+        // `{ [x: string]: unknown; $type: T }` isn't a `Simplify<V["output"] & { $type: T }>`: what the fallback
+        // compares are the members of the constraint's)
         if ((source->flags & TYF_OBJECT) && source->kind != TY_INTERSECTION && !ty_members(me, source)->mapped &&
-            !ty_is_array(me, source) && !ty_is_tuple(source) &&
-            (target_mapped->constraint->kind == TY_TYPE_PARAM || keyof_constraint(target_mapped->constraint)) &&
-            !ty_is_generic_index(ty_keyof(me, source))
+            !ty_is_array(me, source) && !ty_is_tuple(source) && !ty_is_generic_index(ty_keyof(me, source))
         ) {
             return related;
         }

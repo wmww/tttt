@@ -328,7 +328,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `conditional_source_related()` relates the distributive constraint without tsc's hasNonCircularBaseConstraint(source)
   gate: computing it inside an alias's resolution gives spurious TS2456 (type-fest's `_ConditionalPickDeep`, crawlee).
   Correct: lazier alias references, or the gate after the alias resolves. Its default-constraint step also pushes the
-  target on the deep-nesting stack (tsc: RecursionFlags.Source only; tsc's way costs react +8.6%).
+  target on the deep-nesting stack (tsc: RecursionFlags.Source only). It's observable: the same target pushed at each
+  level is deeply nested by itself, so once the source is too the pair is Maybe: `function g<M extends readonly
+  string[], k extends keyof M>(x: M[k] extends Object ? M[k] : never) { const a: string | number | symbol = x }` is
+  TS2322 in tsc, nothing here (mutant declarationEmitNestedAnonymousMappedType extends-object). tsc's way (2026-10-20,
+  agent C): react 1.39 -> 2.54 G instructions, 39.5k -> 167k types (tsgo: 133k), and largeTupleTypes then gets a
+  spurious TS2799 (tttt's GrowExp chain goes deeper than tsgo's before the 10-deep conditional source cut-off: compare
+  the stacks with an instrumented tsgo before retrying).
 - `resolved_base_constraint()` simplifies indexed accesses, and conditionals only when `may_simplify_conditional()`
   sees a `T extends U ? T : never` shape as written (all conditionals: mikro-orm/seeder 2.3x types); misses a branch
   that becomes the check type through the mapper. Types without type variables are their own base constraint except
@@ -359,7 +365,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   (tsc: same symbol).
 - `generic_mapped_target_related`: a generic source failing it falls through to member comparison, which memberless
   mapped types pass (`Readonly<T>` to `T`), except memberless objects, arrays, non-variadic tuples and known-key objects
-  against a mapped type over a type parameter; tsc lets only a mapped source go on. Returning outright loses
+  (whatever the mapped type iterates over since 2026-10-20: `{ type: T }` passed `Partial<X>` through X's constraint's
+  members); tsc lets only a mapped source go on. Returning outright loses
   circularConstrainedMappedTypeNoCrash, restTypeRetainsMappyness, mappedTypeRelationships and zod's `SortItem`.
 - `is_rest_array` takes anything but a type parameter or a generic mapped type as a rest array. Correct: normalize `[...X]` when the tuple is made
   (tsc's createNormalizedTupleType).
@@ -562,7 +569,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Syntactic stand-ins: overload grouping (`statements_check_overloads`, `class_check_overloads`); TS2729
   (`initialized_in_static_blocks`: top-level `this.x =`/`C.x =`, not tsc's control flow at each block's end; mutate.py shows it); member kinds in `class_check_member_overrides()`
   (`class_instance_member()`, not symbol flags; TS2612 skips isPropertyInitializedInConstructor);
-  `check_property_modifiers` (TS2687) skips methods and accessors.
+  `check_property_modifiers` (TS2687) skips class methods (accessors are compared with, as a first declaration).
 - `ty_check_class_duplicate_members()` HACK: a late-bound name (`[k]`, `[Symbol.x]`) conflicts with the member table
   (static `prototype`) without joining it; tsc also reports an early `a` against a later `get [k]` (k = "a") at both.
 - Emit helpers (`ty_check_emit_helpers`): spans by hand (`decorator_span()`, `function_error_span()`); "ambient" per

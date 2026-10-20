@@ -1,5 +1,10 @@
 const tsCommit = "fed0bf24149fb1ed36039212648bafdafc1ea10e"
 const baselines = {
+    'ttttAccessorJoinsPropertySymbol': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAliasArgsThroughImport': {
         errors: true,
         symbols: true,
@@ -1089,6 +1094,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttGenericMappedTargetKnownKeys': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttGetterMissingBody': {
         errors: true,

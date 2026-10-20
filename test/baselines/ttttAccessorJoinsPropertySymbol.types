@@ -1,0 +1,123 @@
+//// [test/cases/ttttAccessorJoinsPropertySymbol.ts] ////
+
+=== ttttAccessorJoinsPropertySymbol.ts ===
+// A property symbol an accessor joins (merged interfaces and classes) is typed by the accessors, without the
+// property's optionality (tsc's getTypeOfSymbol takes getTypeOfAccessors first): TS2717 and TS2687 against them, and
+// TS2564 by the accessor's type
+interface Foo2 {
+    x?: string
+>x : string
+}
+class Foo2 {
+>Foo2 : Foo2
+
+    accessor x: string = "abc"
+>x : string
+>"abc" : "abc"
+}
+class Foo4 {
+>Foo4 : Foo4
+
+    accessor z: string = "abc"
+>z : string
+>"abc" : "abc"
+}
+interface Foo4 {
+    z?: string
+>z : string
+}
+interface Foo5 {
+    w: number
+>w : string
+}
+class Foo5 {
+>Foo5 : Foo5
+
+    accessor w: string = "abc"
+>w : string
+>"abc" : "abc"
+}
+interface A {
+    x: number
+>x : string
+}
+interface A {
+    get x(): string;
+>x : string
+}
+declare const a: A;
+>a : A
+
+a.x = "s";
+>a.x = "s" : "s"
+>a.x : any
+>a : A
+>x : any
+>"s" : "s"
+
+const n: number = a.x;
+>n : number
+>a.x : string
+>a : A
+>x : string
+
+interface C {
+    get y(): string;
+>y : string
+
+    set y(v: string);
+>y : string
+>v : string
+}
+interface C {
+    y?: number;
+>y : string
+}
+declare const c: C;
+>c : C
+
+const cy: string = c.y;
+>cy : string
+>c.y : string
+>c : C
+>y : string
+
+class D { z?: number }
+>D : D
+>z : string
+
+interface D { get z(): string }
+>z : string
+
+declare const d: D;
+>d : D
+
+const dz: string = d.z;
+>dz : string
+>d.z : string
+>d : D
+>z : string
+
+class E { accessor w: string = "" }
+>E : E
+>w : string
+>"" : ""
+
+interface E { w?: number }
+>w : string
+
+declare const e: E;
+>e : E
+
+const ew: string = e.w;
+>ew : string
+>e.w : string
+>e : E
+>w : string
+
+const e2: E = {} as { w: string };
+>e2 : E
+>{} as { w: string } : { w: string; }
+>{} : {}
+>w : string
+

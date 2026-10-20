@@ -4059,6 +4059,9 @@ typedef struct PropertyDeclEntry {
     // A method of the name (`m(): T` then `m?: T`): it may be the property symbol's first declaration, which the others
     // are compared with, but isn't variable-like itself (tsc's checkVariableLikeDeclaration: isVariableLike)
     bool method;
+    // An accessor (get, set, not an auto accessor): it joins the property symbol and may be its first declaration,
+    // compared with the others, but isn't variable-like itself either
+    bool accessor;
     uint8_t modifiers; // PROPERTY_MOD_*
 } PropertyDeclEntry;
 
@@ -4098,6 +4101,13 @@ static void collect_class_property_decls(Checker* me, ClassDecl const* class_dec
                 });
             }
         }
+        if (i->tag == CLASS_ITEM_METHOD && i->method.accessor && !i->method.is_static && !i->method.computed_key) {
+            vec_property_decl_entry_push(out, (PropertyDeclEntry){
+                .name = cstr_sv(&i->method.name_string), .span = i->method.name_span, .accessor = true,
+                .modifiers = access_modifier_bits(i->access) | (i->method.is_abstract ? PROPERTY_MOD_ABSTRACT : 0),
+            });
+            continue;
+        }
         if (i->tag != CLASS_ITEM_FIELD || i->field.is_static || (i->field.computed_key && !computed_key_early_name(i->field.computed_key, nullptr))) continue;
         vec_property_decl_entry_push(out, (PropertyDeclEntry){
             .name = cstr_sv(&i->field.name_string), .span = i->field.name_span, .optional = i->field.is_optional,
@@ -4127,18 +4137,18 @@ static void collect_interface_property_decls(Checker* me, VecInterfaceMember con
             });
             continue;
         }
-        // (Accessors aren't variable-like: tsc's checkVariableLikeDeclaration compares property declarations only)
-        if (i->accessor) continue;
+        // (Accessors aren't variable-like: tsc's checkVariableLikeDeclaration compares property declarations only, with
+        // the symbol's valueDeclaration, which can be an accessor)
         vec_property_decl_entry_push(out, (PropertyDeclEntry){
-            .name = cstr_sv(&i->key.name_string), .span = i->key.span, .optional = i->optional,
-            .modifiers = i->readonly ? PROPERTY_MOD_READONLY : 0,
+            .name = cstr_sv(&i->key.name_string), .span = i->key.span, .optional = i->optional, .accessor = i->accessor != nullptr,
+            .modifiers = i->readonly && !i->accessor ? PROPERTY_MOD_READONLY : 0,
         });
     }
 }
 
 // TS2687: tsc's checkVariableLikeDeclaration, for the property declarations of one member symbol: the first one
-// (the valueDeclaration) against every other one, every other one against the first. Accessors of the same name are left
-// out (HACK: they can be tsc's valueDeclaration too, but merging with them is an error already)
+// (the valueDeclaration) against every other one, every other one against the first. An accessor of the name is only
+// compared with, as the first one
 static void check_property_modifiers(VecPropertyDeclEntry const* decls, ErrorCtx* errs) {
     isize count = vec_property_decl_entry_size(decls);
     if (!count) return;
@@ -4162,14 +4172,14 @@ static void check_property_modifiers(VecPropertyDeclEntry const* decls, ErrorCtx
     for (isize i = 0; i < count; i++) {
         PropertyDeclEntry const* decl = &entries[i];
         PropertyDeclEntry const* head = &entries[first[i]];
-        if (first[i] != i && !decl->method && !(decl->optional == head->optional && decl->modifiers == head->modifiers)) {
+        if (first[i] != i && !decl->method && !decl->accessor && !(decl->optional == head->optional && decl->modifiers == head->modifiers)) {
             later_differs[first[i]] = true;
         }
     }
     for (isize i = 0; i < count; i++) {
         PropertyDeclEntry const* decl = &entries[i];
         // (A lib's declaration too when lib files are checked: tsc checks it there, the lib side of the conflict)
-        if (!span_valid(decl->span) || (span_source(decl->span)->is_stdlib && !lib_files_checked()) || decl->method) continue;
+        if (!span_valid(decl->span) || (span_source(decl->span)->is_stdlib && !lib_files_checked()) || decl->method || decl->accessor) continue;
         PropertyDeclEntry const* head = &entries[first[i]];
         if (head->method) continue;
         // The first one against every other one, every other one against the first
@@ -4276,11 +4286,18 @@ static Ty const* interface_first_declaration_type(Checker* me, Symbol const* sym
 Ty const* ty_class_field_symbol_type(Checker* me, ClassDecl const* class_decl, ClassItem const* field) {
     Ty const* own = with_optionality(me, class_item_get_type((ClassItem*)field), field->field.is_optional);
     Symbol const* symbol = class_decl->symbol;
-    if (!symbol || field->field.computed_key || field->field.is_static || span_valid(class_item_private_name(field))) return own;
+    // (An auto accessor's symbol is an accessor, typed by the accessor: see ty_check_class_interface_property_types())
+    if (!symbol || field->field.computed_key || field->field.is_static || span_valid(class_item_private_name(field)) ||
+        field->field.is_auto_accessor) {
+        return own;
+    }
     Ty const* declared = ty_declared_type_of(me, symbol);
     if (!(declared->flags & TYF_OBJECT)) return own;
     Prop const* root = declared_member_root(me, declared, checker_atom(me, cstr_sv(&field->field.name_string)));
-    if (!root || span_eq(root->decl->decl_spans[0], field->span) || !prop_declared_by(root, field->span)) return own;
+    if (!root || !prop_declared_by(root, field->span)) return own;
+    // (A symbol with accessors is typed by them, whatever came first: getTypeOfAccessors)
+    if (ty_prop_is_accessor(root)) return prop_type(me, root);
+    if (span_eq(root->decl->decl_spans[0], field->span)) return own;
     return is_class_item_span(class_decl, root->decl->decl_spans[0]) ? class_first_declaration_type(me, class_decl, root) :
         interface_first_declaration_type(me, symbol, root);
 }
@@ -4314,7 +4331,9 @@ void ty_check_class_interface_property_types(Checker* me, Symbol const* symbol, 
     }
     for_each (field, vec_class_item, &class_decl->items) {
         if (field->tag != CLASS_ITEM_FIELD || field->field.is_static || field->field.computed_key) continue;
-        if (span_valid(class_item_private_name(field))) continue;
+        // An auto accessor makes the symbol an accessor, whose type is the accessor's own (tsc's getTypeOfSymbol takes
+        // getTypeOfAccessors before the valueDeclaration's type): never different from the field's
+        if (span_valid(class_item_private_name(field)) || field->field.is_auto_accessor) continue;
         Prop const* root = declared_member_root(me, declared, checker_atom(me, cstr_sv(&field->field.name_string)));
         if (!root || is_class_item_span(class_decl, root->decl->decl_spans[0]) || !prop_declared_by(root, field->span)) continue;
         check_subsequent_property(me, field->field.name_span, interface_first_declaration_type(me, symbol, root),

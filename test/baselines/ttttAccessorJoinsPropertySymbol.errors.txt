@@ -1,0 +1,94 @@
+ttttAccessorJoinsPropertySymbol.ts(5,5): error TS2687: All declarations of 'x' must have identical modifiers.
+ttttAccessorJoinsPropertySymbol.ts(8,14): error TS2687: All declarations of 'x' must have identical modifiers.
+ttttAccessorJoinsPropertySymbol.ts(11,14): error TS2687: All declarations of 'z' must have identical modifiers.
+ttttAccessorJoinsPropertySymbol.ts(14,5): error TS2687: All declarations of 'z' must have identical modifiers.
+ttttAccessorJoinsPropertySymbol.ts(14,5): error TS2717: Subsequent property declarations must have the same type.  Property 'z' must be of type 'string', but here has type 'string | undefined'.
+ttttAccessorJoinsPropertySymbol.ts(29,3): error TS2540: Cannot assign to 'x' because it is a read-only property.
+ttttAccessorJoinsPropertySymbol.ts(30,7): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttAccessorJoinsPropertySymbol.ts(36,5): error TS2687: All declarations of 'y' must have identical modifiers.
+ttttAccessorJoinsPropertySymbol.ts(36,5): error TS2717: Subsequent property declarations must have the same type.  Property 'y' must be of type 'string', but here has type 'number | undefined'.
+ttttAccessorJoinsPropertySymbol.ts(40,11): error TS2564: Property 'z' has no initializer and is not definitely assigned in the constructor.
+ttttAccessorJoinsPropertySymbol.ts(44,20): error TS2687: All declarations of 'w' must have identical modifiers.
+ttttAccessorJoinsPropertySymbol.ts(45,15): error TS2687: All declarations of 'w' must have identical modifiers.
+ttttAccessorJoinsPropertySymbol.ts(45,15): error TS2717: Subsequent property declarations must have the same type.  Property 'w' must be of type 'string', but here has type 'number | undefined'.
+
+
+==== ttttAccessorJoinsPropertySymbol.ts (13 errors) ====
+    // A property symbol an accessor joins (merged interfaces and classes) is typed by the accessors, without the
+    // property's optionality (tsc's getTypeOfSymbol takes getTypeOfAccessors first): TS2717 and TS2687 against them, and
+    // TS2564 by the accessor's type
+    interface Foo2 {
+        x?: string
+        ~
+!!! error TS2687: All declarations of 'x' must have identical modifiers.
+    }
+    class Foo2 {
+        accessor x: string = "abc"
+                 ~
+!!! error TS2687: All declarations of 'x' must have identical modifiers.
+    }
+    class Foo4 {
+        accessor z: string = "abc"
+                 ~
+!!! error TS2687: All declarations of 'z' must have identical modifiers.
+    }
+    interface Foo4 {
+        z?: string
+        ~
+!!! error TS2687: All declarations of 'z' must have identical modifiers.
+        ~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'z' must be of type 'string', but here has type 'string | undefined'.
+!!! related TS6203 ttttAccessorJoinsPropertySymbol.ts:11:14: 'z' was also declared here.
+    }
+    interface Foo5 {
+        w: number
+    }
+    class Foo5 {
+        accessor w: string = "abc"
+    }
+    interface A {
+        x: number
+    }
+    interface A {
+        get x(): string;
+    }
+    declare const a: A;
+    a.x = "s";
+      ~
+!!! error TS2540: Cannot assign to 'x' because it is a read-only property.
+    const n: number = a.x;
+          ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    interface C {
+        get y(): string;
+        set y(v: string);
+    }
+    interface C {
+        y?: number;
+        ~
+!!! error TS2687: All declarations of 'y' must have identical modifiers.
+        ~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'y' must be of type 'string', but here has type 'number | undefined'.
+!!! related TS6203 ttttAccessorJoinsPropertySymbol.ts:32:9: 'y' was also declared here.
+    }
+    declare const c: C;
+    const cy: string = c.y;
+    class D { z?: number }
+              ~
+!!! error TS2564: Property 'z' has no initializer and is not definitely assigned in the constructor.
+    interface D { get z(): string }
+    declare const d: D;
+    const dz: string = d.z;
+    class E { accessor w: string = "" }
+                       ~
+!!! error TS2687: All declarations of 'w' must have identical modifiers.
+    interface E { w?: number }
+                  ~
+!!! error TS2687: All declarations of 'w' must have identical modifiers.
+                  ~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'w' must be of type 'string', but here has type 'number | undefined'.
+!!! related TS6203 ttttAccessorJoinsPropertySymbol.ts:44:20: 'w' was also declared here.
+    declare const e: E;
+    const ew: string = e.w;
+    const e2: E = {} as { w: string };
+    
