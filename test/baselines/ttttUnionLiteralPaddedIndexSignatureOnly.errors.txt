@@ -1,0 +1,48 @@
+ttttUnionLiteralPaddedIndexSignatureOnly.ts(5,24): error TS2307: Cannot find module 'nope' or its corresponding type declarations.
+ttttUnionLiteralPaddedIndexSignatureOnly.ts(10,9): error TS2339: Property 'c' does not exist on type '{ [k: string]: number; x: number; } | {}'.
+ttttUnionLiteralPaddedIndexSignatureOnly.ts(11,21): error TS2339: Property 'c' does not exist on type '{ [k: string]: number; x: number; } | {}'.
+  Property 'c' does not exist on type '{}'.
+ttttUnionLiteralPaddedIndexSignatureOnly.ts(15,21): error TS2339: Property 'c' does not exist on type '{} | O'.
+  Property 'c' does not exist on type '{}'.
+ttttUnionLiteralPaddedIndexSignatureOnly.ts(16,9): error TS2339: Property 'c' does not exist on type '{} | O'.
+ttttUnionLiteralPaddedIndexSignatureOnly.ts(20,21): error TS2339: Property 'c' does not exist on type '{} | M'.
+  Property 'c' does not exist on type '{}'.
+
+
+==== ttttUnionLiteralPaddedIndexSignatureOnly.ts (6 errors) ====
+    // `(p || {}).c` reads undefined from the object literal only if a member has the property itself: when the others
+    // only have index signatures, tsc's createUnionOrIntersectionProperty makes no property, and the union's index
+    // signatures, which `{}` lacks, are read: TS2339 (react-navigation's `previousDescriptor?.options || {}`, options
+    // being `Omit<Unresolved, K> & {...}`)
+    import type { D } from "nope";
+                           ~~~~~~
+!!! error TS2307: Cannot find module 'nope' or its corresponding type declarations.
+    declare const o: { [k: string]: number } | undefined;
+    const { c } = o || {};
+    const d = (o || {}).c;
+    declare const p: { [k: string]: number; x: number } | undefined;
+    const { c: e } = p || {};
+            ~
+!!! error TS2339: Property 'c' does not exist on type '{ [k: string]: number; x: number; } | {}'.
+    const f = (p || {}).c;
+                        ~
+!!! error TS2339: Property 'c' does not exist on type '{ [k: string]: number; x: number; } | {}'.
+!!! error TS2339:   Property 'c' does not exist on type '{}'.
+    const g = (p || {}).x;
+    type O = Omit<D, "a"> & { b: 1 };
+    declare const q: O | undefined;
+    const h = (q || {}).c;
+                        ~
+!!! error TS2339: Property 'c' does not exist on type '{} | O'.
+!!! error TS2339:   Property 'c' does not exist on type '{}'.
+    const { c: i } = q || {};
+            ~
+!!! error TS2339: Property 'c' does not exist on type '{} | O'.
+    const j = (q || {}).b;
+    type M = { [k: string]: number } & { b: 1 };
+    declare const m: M | undefined;
+    const k = (m || {}).c;
+                        ~
+!!! error TS2339: Property 'c' does not exist on type '{} | M'.
+!!! error TS2339:   Property 'c' does not exist on type '{}'.
+    

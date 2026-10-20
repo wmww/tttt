@@ -1,0 +1,80 @@
+//// [test/cases/ttttUnionLiteralPaddedIndexSignatureOnly.ts] ////
+
+=== ttttUnionLiteralPaddedIndexSignatureOnly.ts ===
+// `(p || {}).c` reads undefined from the object literal only if a member has the property itself: when the others
+// only have index signatures, tsc's createUnionOrIntersectionProperty makes no property, and the union's index
+// signatures, which `{}` lacks, are read: TS2339 (react-navigation's `previousDescriptor?.options || {}`, options
+// being `Omit<Unresolved, K> & {...}`)
+import type { D } from "nope";
+>D : Symbol(D, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 4, 13))
+
+declare const o: { [k: string]: number } | undefined;
+>o : Symbol(o, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 5, 13))
+>k : Symbol(k, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 5, 20))
+
+const { c } = o || {};
+>c : Symbol(c, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 6, 7))
+>o : Symbol(o, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 5, 13))
+
+const d = (o || {}).c;
+>d : Symbol(d, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 7, 5))
+>(o || {}).c : Symbol(__index, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 5, 18))
+>o : Symbol(o, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 5, 13))
+>c : Symbol(__index, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 5, 18))
+
+declare const p: { [k: string]: number; x: number } | undefined;
+>p : Symbol(p, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 8, 13))
+>k : Symbol(k, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 8, 20))
+>x : Symbol(x, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 8, 39))
+
+const { c: e } = p || {};
+>e : Symbol(e, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 9, 7))
+>p : Symbol(p, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 8, 13))
+
+const f = (p || {}).c;
+>f : Symbol(f, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 10, 5))
+>p : Symbol(p, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 8, 13))
+
+const g = (p || {}).x;
+>g : Symbol(g, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 11, 5))
+>(p || {}).x : Symbol(x, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 8, 39))
+>p : Symbol(p, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 8, 13))
+>x : Symbol(x, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 8, 39))
+
+type O = Omit<D, "a"> & { b: 1 };
+>O : Symbol(O, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 11, 22))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>D : Symbol(D, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 4, 13))
+>b : Symbol(b, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 12, 25))
+
+declare const q: O | undefined;
+>q : Symbol(q, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 13, 13))
+>O : Symbol(O, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 11, 22))
+
+const h = (q || {}).c;
+>h : Symbol(h, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 14, 5))
+>q : Symbol(q, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 13, 13))
+
+const { c: i } = q || {};
+>i : Symbol(i, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 15, 7))
+>q : Symbol(q, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 13, 13))
+
+const j = (q || {}).b;
+>j : Symbol(j, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 16, 5))
+>(q || {}).b : Symbol(b, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 12, 25))
+>q : Symbol(q, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 13, 13))
+>b : Symbol(b, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 12, 25))
+
+type M = { [k: string]: number } & { b: 1 };
+>M : Symbol(M, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 16, 22))
+>k : Symbol(k, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 17, 12))
+>b : Symbol(b, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 17, 36))
+
+declare const m: M | undefined;
+>m : Symbol(m, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 18, 13))
+>M : Symbol(M, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 16, 22))
+
+const k = (m || {}).c;
+>k : Symbol(k, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 19, 5))
+>m : Symbol(m, Decl(ttttUnionLiteralPaddedIndexSignatureOnly.ts, 18, 13))
+

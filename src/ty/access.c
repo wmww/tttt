@@ -296,8 +296,19 @@ static bool union_index_applies(Checker* me, Ty const* object, Ty const* index, 
         Ty const* member = object->composite.types.data[i];
         if (member->flags & TYF_NULLABLE) continue;
         Ty const* apparent = ty_apparent_type(me, member);
-        if (apparent->kind != TY_DECLARED && apparent->kind != TY_ANONYMOUS && apparent->kind != TY_REFERENCE) return true;
-        if (!(apparent->flags & TYF_OBJECT) || ty_tuple_shape(apparent) || reads_own_prop(me, member, index)) return true;
+        // (An intersection without type variables has its members' index signatures intersected per key:
+        // resolve_intersection_members())
+        bool intersection = apparent->kind == TY_INTERSECTION && !(apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+        if (!intersection && apparent->kind != TY_DECLARED && apparent->kind != TY_ANONYMOUS &&
+            apparent->kind != TY_REFERENCE
+        ) {
+            return true;
+        }
+        if ((!intersection && !(apparent->flags & TYF_OBJECT)) || ty_tuple_shape(apparent) ||
+            reads_own_prop(me, member, index)
+        ) {
+            return true;
+        }
         if (!first) first = apparent;
     }
     if (!first) return true;
@@ -413,7 +424,7 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
         Ty const** parts = malloc(sizeof(Ty const*) * object->composite.types.len);
         Ty const* ret = nullptr;
         u32 len = 0;
-        bool missing = false, padded = false, found_in_some = false;
+        bool missing = false, padded = false, literal_padded = false, found_in_some = false;
         u64 padded_tuples = 0; // (bit i: parts[i] is a too short tuple's undefined)
         for (u32 i = 0; i < object->composite.types.len && !missing; i++) {
             Ty const* member = object->composite.types.data[i];
@@ -439,7 +450,7 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
             ) {
                 // An object literal without it reads undefined (the same rule: `(params ?? {}).target`)
                 part = ty_intrinsic(me, TY_UNDEFINED);
-                padded = true;
+                padded = literal_padded = true;
             } else if (part) {
                 found_in_some = true;
             }
@@ -470,7 +481,10 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
         }
         missing |= padded && !found_in_some;
         if (!missing && len) ret = ty_union(me, parts, len, nullptr, (TyList){0});
-        if (ret && !padded && !union_index_applies(me, object, index, flags)) ret = nullptr;
+        // (Padded for an object literal, it still takes a member with the property itself: with only index signatures
+        // elsewhere, tsc's createUnionOrIntersectionProperty makes none, and the union's index signatures, which the
+        // literal lacks, are read: `(p || {}).c` with `p: { [k: string]: number; x: number }` is TS2339)
+        if (ret && (!padded || literal_padded) && !union_index_applies(me, object, index, flags)) ret = nullptr;
         free(parts);
         Atom const* name = ret ? ty_literal_name(me, index) : nullptr;
         if (name && ty_union_non_public_conflict(me, object, name)) ret = nullptr;

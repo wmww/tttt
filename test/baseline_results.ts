@@ -2060,6 +2060,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttUnionLiteralPaddedIndexSignatureOnly': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttUnionMemberApparentErrorType': {
         errors: true,
         symbols: true,

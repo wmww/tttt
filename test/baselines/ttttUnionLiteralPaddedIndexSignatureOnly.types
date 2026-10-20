@@ -1,0 +1,108 @@
+//// [test/cases/ttttUnionLiteralPaddedIndexSignatureOnly.ts] ////
+
+=== ttttUnionLiteralPaddedIndexSignatureOnly.ts ===
+// `(p || {}).c` reads undefined from the object literal only if a member has the property itself: when the others
+// only have index signatures, tsc's createUnionOrIntersectionProperty makes no property, and the union's index
+// signatures, which `{}` lacks, are read: TS2339 (react-navigation's `previousDescriptor?.options || {}`, options
+// being `Omit<Unresolved, K> & {...}`)
+import type { D } from "nope";
+>D : any
+
+declare const o: { [k: string]: number } | undefined;
+>o : { [k: string]: number; } | undefined
+>k : string
+
+const { c } = o || {};
+>c : number
+>o || {} : { [k: string]: number; }
+>o : { [k: string]: number; } | undefined
+>{} : {}
+
+const d = (o || {}).c;
+>d : number
+>(o || {}).c : number
+>(o || {}) : { [k: string]: number; }
+>o || {} : { [k: string]: number; }
+>o : { [k: string]: number; } | undefined
+>{} : {}
+>c : number
+
+declare const p: { [k: string]: number; x: number } | undefined;
+>p : { [k: string]: number; x: number; } | undefined
+>k : string
+>x : number
+
+const { c: e } = p || {};
+>c : any
+>e : any
+>p || {} : { [k: string]: number; x: number; } | {}
+>p : { [k: string]: number; x: number; } | undefined
+>{} : {}
+
+const f = (p || {}).c;
+>f : any
+>(p || {}).c : any
+>(p || {}) : { [k: string]: number; x: number; } | {}
+>p || {} : { [k: string]: number; x: number; } | {}
+>p : { [k: string]: number; x: number; } | undefined
+>{} : {}
+>c : any
+
+const g = (p || {}).x;
+>g : number | undefined
+>(p || {}).x : number | undefined
+>(p || {}) : { [k: string]: number; x: number; } | {}
+>p || {} : { [k: string]: number; x: number; } | {}
+>p : { [k: string]: number; x: number; } | undefined
+>{} : {}
+>x : number | undefined
+
+type O = Omit<D, "a"> & { b: 1 };
+>O : O
+>b : 1
+
+declare const q: O | undefined;
+>q : O | undefined
+
+const h = (q || {}).c;
+>h : any
+>(q || {}).c : any
+>(q || {}) : {} | O
+>q || {} : {} | O
+>q : O | undefined
+>{} : {}
+>c : any
+
+const { c: i } = q || {};
+>c : any
+>i : any
+>q || {} : {} | O
+>q : O | undefined
+>{} : {}
+
+const j = (q || {}).b;
+>j : 1 | undefined
+>(q || {}).b : 1 | undefined
+>(q || {}) : {} | O
+>q || {} : {} | O
+>q : O | undefined
+>{} : {}
+>b : 1 | undefined
+
+type M = { [k: string]: number } & { b: 1 };
+>M : M
+>k : string
+>b : 1
+
+declare const m: M | undefined;
+>m : M | undefined
+
+const k = (m || {}).c;
+>k : any
+>(m || {}).c : any
+>(m || {}) : {} | M
+>m || {} : {} | M
+>m : M | undefined
+>{} : {}
+>c : any
+
