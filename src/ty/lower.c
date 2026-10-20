@@ -255,14 +255,18 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     if (symbol->is_placeholder) return ty_intrinsic(me, TY_ERROR);
     SymbolLinks* links = symbol_links(me, symbol);
     switch (links->declared_state) {
-        case LAZY_STATE_DONE: return links->declared_type;
+        case LAZY_STATE_DONE:
+            TAINT_READ(TK_SYMBOL_DECLARED, links);
+            return links->declared_type;
         case LAZY_STATE_IN_FLIGHT:
+            TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
             // tsc's pushTypeResolution: every alias from this one on is part of the cycle, and fails when it finishes
             ty_resolving_cycle(me, RESOLVING_ALIAS, symbol);
             return ty_intrinsic(me, TY_ERROR);
         case LAZY_STATE_NOT_STARTED: break;
     }
     links->declared_state = LAZY_STATE_IN_FLIGHT;
+    TAINT_BEGIN(taint_frame);
     Ty const* ret;
     if (symbol->flags & SYMBOL_INTERFACE) {
         ret = make_declared(me, symbol, TY_DECLARED_INTERFACE);
@@ -324,6 +328,7 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     // symbol_links() pointers are stable (arena), the table growing in the meantime doesn't matter
     links->declared_type = ret;
     links->declared_state = LAZY_STATE_DONE;
+    TAINT_END(taint_frame, TK_SYMBOL_DECLARED, links, symbol, ret);
     return ret;
 }
 
@@ -1203,7 +1208,9 @@ typedef struct TyFreeParams { TyList params; bool known; } TyFreeParams;
 
 bool ty_function_free_params(Checker* me, FunctionImpl const* function, TyList* out) {
     TyFreeParams const* cached = ty_link_get(me, KEY_FUNCTION_FREE_PARAMS, function);
+    if (cached) TAINT_READ(TK_FREE_PARAMS, cached);
     if (!cached) {
+        TAINT_BEGIN(taint_frame);
         TyFreeParams* computed = arena_new(&my arena, TyFreeParams);
         bool eligible = !function->is_expression && !function->is_constructor && !function->accessor &&
             !function->is_type && !function->jsdoc_type && !function->jsdoc_callback && !function->jsdoc_typed &&
@@ -1227,6 +1234,7 @@ bool ty_function_free_params(Checker* me, FunctionImpl const* function, TyList* 
             }
         }
         ty_link_set(me, KEY_FUNCTION_FREE_PARAMS, function, computed);
+        TAINT_END(taint_frame, TK_FREE_PARAMS, computed, function, computed);
         cached = computed;
     }
     *out = cached->params;
@@ -2679,6 +2687,7 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     u32 len = reference->reference.target->declared.type_params.len;
     Ty const** args = arena_new_n(&my arena, Ty const*, len ? len : 1);
     if (deferred->state == LAZY_STATE_IN_FLIGHT) {
+        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
         // Only an illegal cycle gets here (its arguments need its arguments)
         deferred->circular = true;
         circular_reference_args(me, args, len);
@@ -3228,7 +3237,7 @@ static bool binding_in_const_declaration(Binding const* element) {
 static Ty const* binding_element_implied_type(Checker* me, Binding const* element, bool include_pattern, bool literals_only) {
     if (element->default_value) {
         // (Not remembered while the pattern is a contextual type: its sibling references are `any` then)
-        if (include_pattern) my flow_uncached++;
+        if (include_pattern) { TAINT_FLOW(); my flow_uncached++; }
         bool nested = (element->tag == BINDING_OBJECT && vec_object_binding_item_size(&element->object)) ||
             (element->tag == BINDING_ARRAY && vec_binding_size(&element->array));
         Ty const* type;
@@ -3247,7 +3256,7 @@ static Ty const* binding_element_implied_type(Checker* me, Binding const* elemen
         } else {
             type = ty_widened_for_declaration(me, type, !binding_in_const_declaration(element));
         }
-        if (include_pattern) my flow_uncached--;
+        if (include_pattern) { TAINT_FLOW(); my flow_uncached--; }
         if (!compiler_options()->strict_null_checks) return type;
         Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
         return ty_union(me, parts, 2, nullptr, (TyList){0});
@@ -4101,6 +4110,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 // An object type takes the new name when instantiated (tsc's getObjectTypeInstantiation), except a
                 // homomorphic mapped type; anything else keeps a name only if it still is what the alias names
                 SymbolLinks const* links = symbol_links(me, canonical(me, decl));
+                (void)TAINT_IF(TAINT_PEEK, links->declared_state != LAZY_STATE_DONE);
                 bool object = links->declared_state == LAZY_STATE_DONE ?
                     links->declared_type->kind == TY_ANONYMOUS : body->tag == TYPE_INTERFACE || body->tag == TYPE_CALLABLE;
                 // (The declared type's node when there is one: `{ [K in keyof T]: T[K] } & {}` is the mapped type;

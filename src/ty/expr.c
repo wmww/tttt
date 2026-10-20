@@ -4764,8 +4764,10 @@ Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* acces
         if (!accessor->ret_explicit && !my lazy_getter && getter_typed_by_resolution(me, accessor, &nested)) {
             my lazy_getter = accessor;
             my lazy_getter_nested = nested;
+            TAINT_FLOW();
             my flow_uncached++;
             Ty const* ret = signature_return_type(me, sig);
+            TAINT_FLOW();
             my flow_uncached--;
             my lazy_getter = nullptr;
             return !ty_is_unit(ret) ? ret : widen_literals(me, ret);

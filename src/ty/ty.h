@@ -6,6 +6,7 @@
 // evaluates to a `Ty`, memoised per checker through its LazyType (lazy_type.h).
 
 #include "type.h"
+#include "ty/taint.h"
 #include "lazy_type.h"
 #include "generic.h"
 
@@ -1537,7 +1538,10 @@ Members const* ty_members_resolving(Checker* me, Ty const* ty);
 // Never null. Empty for non-object types. (Resolved ones inline: drizzle asks 17M times)
 static inline Members const* ty_members(Checker* me, Ty const* ty) {
     TyObjectState const* state = ty_object_state(ty);
-    if (state && state->members_state == LAZY_STATE_DONE) return state->members;
+    if (state && state->members_state == LAZY_STATE_DONE) {
+        TAINT_READ(TK_MEMBERS, state);
+        return state->members;
+    }
     return ty_members_resolving(me, ty);
 }
 bool ty_members_done(Ty const* ty); // Its members are resolved (not in flight: what ty_members() gives is final)
@@ -2256,11 +2260,13 @@ typedef struct FlowIsolation {
 } FlowIsolation;
 static inline FlowIsolation ty_flow_isolate(Checker* me) {
     FlowIsolation saved = { my flow_uncached, my flow_loop_start, my flow_expr_generation };
+    TAINT_FLOW();
     my flow_uncached = 0;
     my flow_loop_start = my flow_loop_count;
     return saved;
 }
 static inline void ty_flow_restore(Checker* me, FlowIsolation saved) {
+    TAINT_FLOW();
     my flow_uncached = saved.uncached;
     my flow_loop_start = saved.loop_start;
     my flow_expr_generation = saved.expr_generation;

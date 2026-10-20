@@ -2753,6 +2753,7 @@ static Ternary props_related_impl(
             // (The target property's type too: TypeBox's `TSchema extends TTransform<infer I, infer O>` asks for
             // TTransform's `static`, itself that conditional type, before failing on the missing [TransformKind])
             if (prop && !unmatched_checked &&
+                // (Not a taint: which order it checks in, the answer is the same)
                 (prop->type_state != LAZY_STATE_DONE || target_prop->type_state != LAZY_STATE_DONE)
             ) {
                 unmatched_checked = true;
@@ -3544,10 +3545,23 @@ static Variances* new_variances(Checker* me, u64 const* key, u32 len) {
 static Variances const* get_variances(Checker* me, Ty const* target) {
     u64 key[2] = { KEY_VARIANCES, target->id };
     Variances* variances = (Variances*)intern_get(&my links, key, 2);
-    if (variances && variances->state == LAZY_STATE_DONE) return variances;
+    if (variances && variances->state == LAZY_STATE_DONE) {
+        TAINT_READ(TK_VARIANCES, variances);
+        return variances;
+    }
     VarianceSubject subject = { .declared = target, .params = target->declared.type_params };
-    if (variances) return measured_variances(me, subject, variances);
+    if (variances) {
+        // (TTTT_TAINT_VARIANCES_CLEAN=1: measuring again from the smallest symbol makes the result the same whichever
+        // is entered first, so what is read in flight here could be internal to the measurement; cleandiff checks it)
+#ifdef TTTT_TAINT
+        static int variances_clean = -1;
+        if (variances_clean < 0) variances_clean = getenv("TTTT_TAINT_VARIANCES_CLEAN") && *getenv("TTTT_TAINT_VARIANCES_CLEAN");
+        if (!variances_clean) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+#endif
+        return measured_variances(me, subject, variances);
+    }
 
+    TAINT_BEGIN(taint_frame);
     variances = new_variances(me, key, target->declared.type_params.len);
     if (is_array_target(me, target) || target->declared.kind == TY_DECLARED_TUPLE_TARGET ||
         target->declared.kind == TY_DECLARED_SYNTHETIC
@@ -3557,6 +3571,7 @@ static Variances const* get_variances(Checker* me, Ty const* target) {
         return variances;
     }
     measure_variances(me, subject, variances);
+    if (variances->state == LAZY_STATE_DONE) TAINT_END(taint_frame, TK_VARIANCES, variances, target, variances);
     return variances;
 }
 
@@ -4015,8 +4030,16 @@ Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing) {
     // (Itself while in flight, like tsc's circularConstraintType marker)
     void const** slot = intern_insert(me, &my links, &miss, key, 3);
     *slot = ty;
+#ifdef TTTT_TAINT
+    TaintFrame taint_frame = taint_begin();
+    taint_slot_begin(slot);
+#endif
     Ty const* ret = ty->kind == TY_CONDITIONAL ? compute_simplified_conditional(me, ty, writing) : compute_simplified(me, ty, writing);
     *slot = ret;
+#ifdef TTTT_TAINT
+    taint_slot_end(slot);
+    taint_end(taint_frame, TK_SIMPLIFIED, slot, ty, ret);
+#endif
     return ret;
 }
 
@@ -4558,7 +4581,10 @@ static Ty const* compute_base_constraint(Checker* me, Ty const* ty, ConstraintSt
             return next_base_constraint(me, indexed_or_null_flagged(me, object, index, ty->indexed.include_undefined), stack);
         }
         case TY_CONDITIONAL: {
-            if (my conditional_constraint_depth >= 100) return nullptr;
+            if (my conditional_constraint_depth >= 100) {
+                TAINT_EVENT(TAINT_LIMIT);
+                return nullptr;
+            }
             my conditional_constraint_depth++;
             Ty const* constraint = ty_conditional_constraint(me, ty);
             my conditional_constraint_depth--;
@@ -4647,6 +4673,7 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
     }
     Ty const* cached = ty_link_get(me, KEY_BASE_CONSTRAINT, ty);
     if (cached == &base_constraint_in_flight) {
+        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
         // Asked for again while computed: circular (tsc's pushTypeResolution failing), unless that was below the
         // resolution barrier, where it's computed again
         if (ty_resolving_find(me, RESOLVING_BASE_CONSTRAINT, ty)) {
@@ -4654,6 +4681,7 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
             return nullptr;
         }
     } else if (cached) {
+        TAINT_READ(TK_BASE_CONSTRAINT, ty);
         return cached == &base_constraint_circular || cached == &base_constraint_none ? nullptr : cached;
     }
     // We always explore at least 10 levels of nested constraints, then up to 50 while the type's recursion identity
@@ -4670,6 +4698,7 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
     // (tsc simplifies every type first: indexed accesses here, conditional types only where their branches as written
     // could make them simplify, see may_simplify_conditional())
     ty_link_set(me, KEY_BASE_CONSTRAINT, ty, &base_constraint_in_flight);
+    TAINT_BEGIN(taint_frame);
     ty_resolving_push(me, RESOLVING_BASE_CONSTRAINT, ty);
     Ty const* ret = deep ? nullptr : compute_base_constraint(me, ty->kind == TY_INDEXED || (ty->kind == TY_CONDITIONAL && may_simplify_conditional(ty)) ?
         ty_simplified(me, ty, false) : ty, &inner);
@@ -4677,6 +4706,7 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
     // (The first answer stays: one computed again below the barrier answered already)
     if (ty_link_get(me, KEY_BASE_CONSTRAINT, ty) == &base_constraint_in_flight) {
         ty_link_set(me, KEY_BASE_CONSTRAINT, ty, circular ? &base_constraint_circular : ret ? ret : &base_constraint_none);
+        TAINT_END(taint_frame, TK_BASE_CONSTRAINT, ty, ty, circular ? nullptr : ret);
     }
     return circular ? nullptr : ret;
 }
@@ -4693,12 +4723,16 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, ConstraintStack cons
 static bool has_non_circular_base_constraint(Checker* me, Ty const* ty) {
     if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return true;
     bool in_flight = ty_link_get(me, KEY_BASE_CONSTRAINT, ty) == &base_constraint_in_flight && ty_resolving_find(me, RESOLVING_BASE_CONSTRAINT, ty);
+    if (in_flight) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
     base_constraint(me, ty, nullptr);
     return !in_flight && ty_link_get(me, KEY_BASE_CONSTRAINT, ty) != &base_constraint_circular;
 }
 
 // Whether the base constraint is being computed (its circularity isn't known yet)
 bool ty_base_constraint_in_flight(Checker* me, Ty const* ty) {
+#ifdef TTTT_TAINT
+    if (ty_link_get(me, KEY_BASE_CONSTRAINT, ty) == &base_constraint_in_flight) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+#endif
     return ty_link_get(me, KEY_BASE_CONSTRAINT, ty) == &base_constraint_in_flight;
 }
 
@@ -7756,6 +7790,7 @@ static bool check_related(
         c_drop(cstr, &source_str, &target_str);
         // (A limit like the instantiation ones: what it cut short says nothing more)
         my instantiation_limit_hits++;
+        TAINT_EVENT(TAINT_LIMIT);
         if (complexity) my relation_complexity_hits++;
         else my relation_depth_hits++;
         result = TERNARY_FALSE;

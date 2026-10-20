@@ -900,9 +900,11 @@ static Ty const* flow_expr_type_in(Checker* me, Expr const* expr, BinaryOpExpr c
     u64 key[3] = { KEY_FLOW_EXPR, (u64)(uintptr_t)expr | (assignment != nullptr), complete ? 0 : my flow_expr_generation };
     Ty const* cached = intern_get(&my links, key, 3);
     if (cached) return cached;
+    TAINT_FLOW();
     my flow_uncached++;
     Ty const* contextual = assignment ? ty_assigned_value_context(me, assignment) : nullptr;
     Ty const* ret = contextual ? ty_check_expr(me, expr, contextual) : ty_compute_expr_without_context(me, expr);
+    TAINT_FLOW();
     my flow_uncached--;
     *intern_slot(me, &my links, key, 3) = ret;
     return ret;
@@ -919,8 +921,10 @@ static Ty const* flow_context_free_type(Checker* me, Expr const* expr) {
     u64 key[3] = { KEY_FLOW_CONTEXT_FREE_EXPR, (u64)(uintptr_t)expr, complete ? 0 : my flow_expr_generation };
     Ty const* cached = intern_get(&my links, key, 3);
     if (cached) return cached;
+    TAINT_FLOW();
     my flow_uncached++;
     Ty const* ret = ty_check_expr_skipping_sensitive(me, expr, ty_intrinsic(me, TY_ANY), false);
+    TAINT_FLOW();
     my flow_uncached--;
     *intern_slot(me, &my links, key, 3) = ret;
     return ret;
@@ -1489,8 +1493,10 @@ static CallEffects call_effects(Checker* me, Expr const* call_expr, bool is_stat
             callee = ty_non_nullable_if_needed(me, callee);
         }
     }
+    TAINT_FLOW();
     my flow_uncached++;
     CallEffects effects = ty_call_effects(me, callee, call);
+    TAINT_FLOW();
     my flow_uncached--;
     CallEffects* stored = arena_new(&my arena, CallEffects);
     *stored = effects;

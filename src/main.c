@@ -847,6 +847,9 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
 #ifdef TTTT_ARENA_SITES
             arena_sites_print();
 #endif
+#ifdef TTTT_TAINT
+            taint_print();
+#endif
         }
     }
 

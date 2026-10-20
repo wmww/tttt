@@ -23,11 +23,11 @@ on the 12-core box (put it in report.md, as 2026-10-19's ask did).
    in `86_stage4_census.md`). Duplication at K12 is 1.40-1.68x K1's check work serialized, a frozen seed can't remove
    it (only concurrent sharing can), and the id test in is_deeply_nested_as() is observable (random ids change zod,
    drizzle, effect), so it gets per-worker first-touch stamps if global ids prove observable.
-2. **Plan 86 stage 4-0: the taint prototype, gate G0** (one session; plan 86 "Stages and gates"). At K1, with nothing
-   shared and the output unchanged: the taint counter and its events, every lazy store and SHARE/HARD link write
-   marked clean or tainted, the clean share per kind (entries and time) on drizzle, excalidraw, zod, effect and
-   vscode, and cleandiff (structural fingerprints of clean results under two histories). The verdict and numbers go
-   into the plan. If no-go, the fallback (plan 86 "Order") takes stage 4's slots in the next window.
+2. ~~Plan 86 stage 4-0: the taint prototype, gate G0~~ done 2026-10-20: **go, with three conditions** (plan 86
+   "Gate G0 result"; `scripts/taintstats.sh`). Under the G0 rule the four hot kinds are 98.9-100% clean in entries and
+   90.2-100% in time (strict flow tainting would be a no-go: 39-76% of time). Cleandiff leaves two named mechanisms
+   for 4b (the distributed twin made on demand, an instance's alias missing from its key), a residue of <= 0.03% per
+   kind, and 46 drizzle prop types that only the lenient flow rule admits (root-cause before 4d).
 3. **Plan 87 stage 1**: `-b` reads emitted declarations only. Drop `TTTT_BUILD_EMITTED`, delete the sources model
    (the plan's list), rewrite documentation.md's "Project references", and hold scenarios, both `-b` corpora and the
    `-b` sweep (>= 406 / 416) at every step. Two `-b` models must not live on into another window.

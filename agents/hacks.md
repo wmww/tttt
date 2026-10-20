@@ -639,6 +639,15 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   (`SourceFile.flow_unresolved_names`).
 
 ## Harness and tools
+- **The taint prototype's hooks** (`TAINT_*` in lazy_type.c, checker.c's intern hooks, members.c, relate.c, lower.c,
+  function.c, conditional.c, instantiate.c, flow.c, expr.c, ty.h; plan 86 "Gate G0 result"): compiled out unless
+  `-DTTTT_TAINT`, but the explicit kinds' early returns are wrapped in `TAINT_IF()`, which makes them harder to read.
+  Kept so cleandiff can be rerun after each stage 4a-4c refactor. Delete them once the overlay protocol (4d) records
+  the same events for real. `instantiate.c`'s `TTTT_TAINT_EXP_TWIN` block is an experiment (G0's M1) and goes with M1's
+  fix. The intern hooks find a value's computation by matching a missed lookup's hash to the put that follows (a
+  1024-entry ring); a put with no matching miss gets an empty window, so it counts as clean (`unmatched` in the raw
+  output: mostly structural kinds whose value is its key). The one-word `node_links` table has no hooks: only its
+  explicit kinds are covered (FUNCTION_RETURN, BASE_CONSTRAINT, FUNCTION_FREE_PARAMS)
 - Deliberate simplifications (permanent, see documentation.md "baseline_tests"): `apply_setting`, the lib `Program`
   cache, `@noTypesAndSymbols`, `engine.c`, `failstats.py`'s `line_ratio`.
 - Two `-b` models in the tree until plan 87 stage 1: `TTTT_BUILD_EMITTED=1` (`build()`'s `EmitStore`, references read

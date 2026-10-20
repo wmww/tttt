@@ -152,6 +152,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     LazyMemo* state = lazy_type_state(me);
 
     if (state->evaluation_started) {
+        TAINT_EVENT(TAINT_IN_FLIGHT_LAZY);
         // Circularity is a property of declarations (that is where tsc detects and reports it): asked for again while in
         // flight, a declaration is any, and it and everything resolved since is part of the cycle (tsc's
         // pushTypeResolution failing, see ty_resolving_push()). What they reach finds out when it finishes.
@@ -199,6 +200,10 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     if (isolate) isolation = ty_flow_isolate(current_checker);
 
     bool resolving = my tag != LAZY_TYPE_EXPR;
+#ifdef TTTT_TAINT
+    TaintFrame taint_frame = taint_begin();
+    unsigned taint_kind = my tag == LAZY_TYPE_EXPR ? TK_LAZY_EXPR : TK_LAZY_DECL + my tag;
+#endif
     if (resolving) ty_resolving_push(current_checker, lazy_type_pattern_root(me) ? RESOLVING_PATTERN : RESOLVING_DECLARATION, me);
     Ty const* result = nullptr;
     switch (my tag) {
@@ -234,6 +239,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
         if (lazy_type_pattern_root(me) && !state->pattern_retried) {
             state->pattern_retried = true;
             state->evaluation_started = false;
+            TAINT_EVENT(TAINT_CYCLE);
             return ty_intrinsic(current_checker, TY_CIRCULAR);
         }
         // Part of a cycle: any, and the declaration reports it (tsc's reportCircularityError), whatever it evaluated to
@@ -251,5 +257,8 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
         state->evaluated = lazy_type_id(result);
         state->done = true;
     }
+#ifdef TTTT_TAINT
+    taint_end(taint_frame, taint_kind, me, me, lazy_memo_evaluated(state));
+#endif
     return lazy_memo_evaluated(state);
 }

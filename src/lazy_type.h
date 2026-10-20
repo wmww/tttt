@@ -1,6 +1,7 @@
 #pragma once
 
 #include "type.h"
+#include "ty/taint.h"
 
 // The memo of a LazyType: whether evaluation has started (to detect cycles) and the result. Types are held by id
 // (Ty.id, 0 for none; lazy_memo_evaluated() and lazy_memo_context() look them up): a big program has a memo for
@@ -108,5 +109,8 @@ static inline void lazy_type_bind(LazyType* me, int tag) {
 
 static inline struct Ty const* lazy_type_get(LazyType* me) {
     LazyMemo* state = my tag == LAZY_TYPE_EVALUATED ? nullptr : lazy_type_state_peek(me);
+#ifdef TTTT_TAINT
+    if (state && state->done) TAINT_READ(my tag == LAZY_TYPE_EXPR ? TK_LAZY_EXPR : TK_LAZY_DECL + my tag, me);
+#endif
     return state && state->done ? lazy_memo_evaluated(state) : lazy_type_evaluate(me);
 }

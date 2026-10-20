@@ -362,10 +362,13 @@ static bool object_literal_type_mentions(Checker* me, Ty const* ty, TyList* out)
     FunctionMentions* cached = (FunctionMentions*)intern_get(&my links, key, 2);
     if (cached) {
         *out = cached->params;
+#ifdef TTTT_TAINT
+        if (cached->in_flight) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+#endif
         return cached->known && !cached->in_flight;
     }
     TyObjectState const* state = ty->anonymous.state;
-    if (!state || state->members_state != LAZY_STATE_DONE) return false;
+    if (TAINT_IF(TAINT_PEEK, !state || state->members_state != LAZY_STATE_DONE)) return false;
     Members const* members = state->members;
     if (members->call_count || members->construct_count || members->mapped) return false;
     // (Not with a getter: one of a recursive schema, zod's `get content() { return z.array(z.tuple([Self, ...])) }`, can
@@ -373,7 +376,7 @@ static bool object_literal_type_mentions(Checker* me, Ty const* ty, TyList* out)
     // the identity instance made recursive-types.test.ts's TS2344 spurious)
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
-        if (prop->type_state != LAZY_STATE_DONE || prop->target || (prop->flags & PROP_GETTER)) return false;
+        if (TAINT_IF(TAINT_PEEK, prop->type_state != LAZY_STATE_DONE) || prop->target || (prop->flags & PROP_GETTER)) return false;
     }
     FunctionMentions* computed = arena_new(&my arena, FunctionMentions);
     computed->in_flight = true;
@@ -404,16 +407,19 @@ bool ty_function_type_mentions(Checker* me, Ty const* ty, TyList* out) {
     FunctionMentions* cached = (FunctionMentions*)intern_get(&my links, key, 2);
     if (cached) {
         *out = cached->params;
+#ifdef TTTT_TAINT
+        if (cached->in_flight) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+#endif
         return cached->known && !cached->in_flight;
     }
     TyObjectState const* state = ty->anonymous.state;
-    if (!state || state->members_state != LAZY_STATE_DONE) return false;
+    if (TAINT_IF(TAINT_PEEK, !state || state->members_state != LAZY_STATE_DONE)) return false;
     Members const* members = state->members;
     if (members->call_count != 1 || members->construct_count || members->prop_count || members->index_count || members->mapped) return false;
     Signature const* sig = members->call[0];
-    if (sig->state != LAZY_STATE_DONE || sig->target || sig->function != ty->anonymous.function) return false;
+    if (TAINT_IF(TAINT_PEEK, sig->state != LAZY_STATE_DONE) || sig->target || sig->function != ty->anonymous.function) return false;
     FunctionImpl const* function = sig->function;
-    if (sig->ret_state != LAZY_STATE_DONE && !function->ret_explicit && function->has_body && !ty_function_return_known(me, function)) return false;
+    if (TAINT_IF(TAINT_PEEK, sig->ret_state != LAZY_STATE_DONE && !function->ret_explicit && function->has_body && !ty_function_return_known(me, function))) return false;
     FunctionMentions* computed = arena_new(&my arena, FunctionMentions);
     computed->in_flight = true;
     *intern_slot(me, &my links, key, 2) = computed;

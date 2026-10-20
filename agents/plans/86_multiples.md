@@ -18,7 +18,7 @@ Stage 4 comes next, ahead of stage 2's remaining sessions, which are demoted to 
   (bun is lower on 10 / 14).
 - The gate already said go (below). What's left before the build-out is a design and a prototype, with a go/no-go.
 Sessions: **design** (done 2026-10-20: go, staged, ~25 sessions; "The design" under stage 4), then the **taint
-prototype** (4-0, one session, its gate G0), then K1 refactors (4a-4c) up to gate G1, before anything is shared. If a gate says no,
+prototype** (4-0, done 2026-10-20: G0 says go with three conditions, "Gate G0 result"), then K1 refactors (4a-4c) up to gate G1, before anything is shared. If a gate says no,
 the fallback is stage 3 (front end) plus perf_leads.md's snapshot recycle, which goes after the thrashers (supabase
 studio: `--checker-memory off` takes 2.27 -> 1.30 s). Stage 3's cheapest piece, starting the costliest file first
 (tsc and type-fest are bound by their biggest file), doesn't depend on stage 4 and can go in any perf slot.
@@ -303,7 +303,7 @@ not a half-built feature.
 
 **Stages and gates** (each holds every oracle at K1, kdiff, checkerdiff and recycle; K1 instructions within 1% per
 stage, 3% in total):
-- **4-0, taint prototype (one session, todo's entry 2)**: add the taint counter and its events at K1, and mark every
+- **4-0, taint prototype (one session; done 2026-10-20, "Gate G0 result" below)**: add the taint counter and its events at K1, and mark every
   lazy store and every SHARE / HARD link write clean or tainted. Nothing is shared and the output doesn't change.
   Report, per kind, on drizzle, excalidraw, zod, effect and vscode: the clean share of entries and of compute time. For
   time, sample with `TTTT_FILE_TIMES`-style clocks around the outermost computations or count instantiations. Then
@@ -314,8 +314,10 @@ stage, 3% in total):
   of their entries and time) and cleandiff finds no mismatch, or only mismatches with a named mechanism to fix. No-go
   otherwise, with the numbers: then the fallback (Order).
 - **4a, in-flight state into overlays** (3-5 sessions): every IN_FLIGHT, LazyMemo flag and sentinel becomes a
-  per-checker record; the shared-looking field is only ever written done. Still K1, still private checkers.
-- **4b, identity purity and diagnostics as data** (2-3 sessions).
+  per-checker record; the shared-looking field is only ever written done. Still K1, still private checkers. Variance
+  claims first (G0's condition 2), and G0's condition 3 (the 46 lenient-only drizzle prop types) before 4d.
+- **4b, identity purity and diagnostics as data** (2-3 sessions). G0's M1 (the distributed twin) and M2 (the alias in
+  the instance key) and its residue go here; cleandiff on the five corpora is the test.
 - **4c, global atoms, global ids with the id directory, first-touch stamps** (2 sessions): stamps behind a flag, and at
   K1 the output is unchanged by construction.
 - **Gate G1**: every oracle holds through 4a-4c at K1 and today's K, and K1 is within 3%.
@@ -328,6 +330,73 @@ stage, 3% in total):
   spinning-cores floor (1.62x K1 there), not against K1.
 - **4e, build-out** (4-6 sessions): the rest of the census shared, overlay recycling, pinning, perf, the default on.
 - **4f, determinism hardening at breadth** (3-5 sessions): the sweeps repeated, any run-to-run flake root-caused.
+
+### Gate G0 result (2026-10-20): go, with three conditions
+The prototype: `src/ty/taint.{h,c}` and `TAINT_*` hooks in 12 files, compiled only with `-DTTTT_TAINT`
+(`scripts/taintstats.sh` builds it in /tmp/tttt-taint; the normal build is unchanged: suite, oracles and instructions
+the same). One checker on one thread, no recycling, no deferred bodies. Intern-table results are found by their hooks
+(the missed lookup starts a frame, the key's put waits for its value); members, prop types, signature returns,
+constraints, declared types, function returns, base constraints, simplified, variances, free params and the
+declaration LazyTypes are explicit. Expression LazyTypes are counted too, but they are per worker anyway. Cleandiff:
+`--cleandiff` runs `--checker-memory 0` (a fresh checker, so a history of its own, for every file) and compares
+structural fingerprints of every clean result whose key another checker computed first.
+
+**The rule matters more than anything else.** *Strict* (taint everything that ends while `flow_uncached > 0`) leaves
+only 39% (drizzle), 63% (excalidraw), 76% (zod), 73% (effect) and 43% (vscode) of the exclusive time clean; on
+drizzle, conditional instances drop to 25%. That would be a no-go. The *G0 rule* (`--lenient`): `flow_uncached` only
+taints expressions, because types read flow only through declarations, and declarations are flow-isolated while they
+evaluate. Done-ness peeks (TAINT_PEEK) don't count. Variances read while they are being measured do taint:
+`--variances-clean` gave drizzle 92 variance mismatches. Under the G0 rule (entries clean / time clean, %):
+| corpus | ANONYMOUS_INSTANCE | CONDITIONAL_INSTANCE | members | prop types | all kinds |
+|---|---|---|---|---|---|
+| drizzle | 100.0 / 100.0 | 100.0 / 99.7 | 100.0 / 100.0 | 100.0 / 100.0 | 99.9 / 97.3 |
+| excalidraw | 100.0 / 100.0 | 99.9 / 98.4 | 100.0 / 100.0 | 100.0 / 100.0 | 99.7 / 98.8 |
+| zod | 100.0 / 100.0 | 98.9 / 90.2 | 99.9 / 99.6 | 99.7 / 95.8 | 99.3 / 84.4 |
+| effect | 100.0 / 100.0 | 99.9 / 99.8 | 99.9 / 99.5 | 100.0 / 100.0 | 99.8 / 98.5 |
+| vscode | 100.0 / 100.0 | 100.0 / 100.0 | 100.0 / 100.0 | 100.0 / 99.9 | 99.3 / 98.8 |
+Zod's tainted time is almost all variance measurements in flight (relate.c's get_variances: a few expensive calls
+reach a recursive measurement). The other first causes: in-flight intern slots, ty_function_return_in_flight(),
+in-flight members (members.c). Cycles and limits are rare (effect: 21 cycles). Time is rdtsc around each computation
+less its inner ones, under 3-7x instrumentation overhead, so the time shares are approximate; entry counts are exact.
+
+**Cleandiff.** The first run found 5-1000 mismatches per kind. Most were fingerprint artifacts, now fixed in taint.c:
+synthetic type parameters (no symbol: a mapped type's key stand-in) need their constraint; the KEY_REGULAR_UNION /
+KEY_WIDENED_OBJECTS keys hold a type's address, which a fresh checker reuses; a synthetic prop's type is in the
+fingerprint only if resolved, which is history (such members are now counted as unfingerprinted: 2.7% of effect's).
+What is left, of 10^5-10^6 compared per kind (G0 rule):
+- **M1, the distributed twin made on demand** (named, fix in 4b). instantiate_conditional() keeps an identity mapping
+  in the restricted mapper only if the type parameter already has a distributed twin (`TyParamState.distributed`,
+  made by ty_distributed_type_param() on first need). Whether it exists yet is history, so two histories build
+  different mappers and instances for one key. `--twin` taints that test, which removes every CONDITIONAL_INSTANCE
+  mismatch on drizzle (62) and zod (5), 58 of effect's 61, zod's 3 signature returns, and vscode's 142 TK_SIMPLIFIED.
+  Fix: make the test independent of history (create the twin with the parameter when it is a distributive check
+  type, or key the decision on something static). Then check the twin's tsgo semantics (plan 57) still hold.
+- **M2, an instance's alias isn't in its key** (named, fix in 4b). `type SessionMeta = Record<string, unknown>` and
+  `type MetaObject = Record<string, unknown>` share one KEY_ANONYMOUS_INSTANCE entry, named by whichever alias
+  instantiated it first (vscode: 327 / 1.19M; excalidraw's Viewport). tsgo puts the alias in the instantiation key
+  (getObjectTypeInstantiation: type list key + alias key). Do the same, or argue it can't print differently.
+- **Residue, not named yet**: drizzle 12 anonymous instances (flags: TYF_COULD_CONTAIN_TYPE_VARIABLES set in one history
+  only, free params unknown vs known), vscode 45 members, effect 3 conditional instances + 1 symbol declared type + 1
+  declaration, excalidraw 3 prop types + 1 param constraint + 1 base constraint, vscode 2 union pairs + 2 keyof props.
+  At most 0.03% of any kind.
+- **Lenient-only residue (condition 3)**: 46 drizzle prop types (createIterator, values, mapToDriverValue) mismatch
+  under the G0 rule but are tainted under strict, so they end inside a `flow_uncached` region. One history has
+  variance-marker (`sub-T`/`super-T`) instantiations in their mappers. It may be another history mechanism that just
+  happens to sit inside a loop, or a real counterexample to "types don't read flow". This decides whether the G0 rule is
+  sound.
+
+**Verdict: go.** The four hot kinds are 98.9-100% clean in entries and 90.2-100% in time on every corpus (zod's
+conditional instances are the low point), and cleandiff's mismatches are two named mechanisms plus a residue of at
+most 0.03% per kind. Conditions:
+1. M1 and M2 get fixed in 4b, with the residue classified (`taintstats.sh --cleandiff --print-types --kind K` and the
+   field traces in `--raw`), and cleandiff rerun on the five corpora after each 4a-4c stage: it must not grow.
+2. The variance measurement's in-flight reads stay tainted. Recursive measurements are where zod's tainted time is, so
+   4a moves variance claims into the overlay first.
+3. The 46 lenient-only drizzle prop types get root-caused before 4d. If flow can reach a type, the G0 rule needs an
+   exception for it (an end-condition event at that site), and the clean shares above get measured again.
+Not measured: the share of these results another checker actually reuses (the warm measurement above says it's most of
+the duplication, not which kinds). Cleandiff compares a fresh checker per file against the first one, not two
+interleaved shared histories, so the mixed derivation of census B §4 is still untested.
 
 ## Validation of the whole plan
 The 12-core table in measurements.md re-run by the human after each stage (`scripts/bench.sh --runs 3 --bun PATH

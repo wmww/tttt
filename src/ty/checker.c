@@ -254,7 +254,14 @@ static void const** intern_put(Checker* me, InternTable* table, InternEntry* ent
     entry->hash = hash;
     entry->block = (void const**)block;
     table->len++;
+#ifdef TTTT_TAINT
+    // (The hooks can intern: the entry may move, not the block)
+    void const** taint_block = entry->block;
+    taint_intern_put(table, hash, taint_block, count ? words[0] & 255 : 0);
+    return taint_block;
+#else
     return entry->block;
+#endif
 }
 
 static bool intern_needs_growth(InternTable const* table) {
@@ -270,14 +277,27 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
     u64 hash = hash_words(words, count);
     InternEntry* entry = intern_find(table, hash, words, count);
     if (!entry->hash) return intern_put(me, table, entry, hash, words, count);
+#ifdef TTTT_TAINT
+    void const** taint_block = entry->block;
+    taint_intern_hit(taint_block);
+    return taint_block;
+#else
     return entry->block;
+#endif
 }
 
 void const* intern_lookup(InternTable const* table, u64 const* words, u32 count, InternMiss* miss) {
     u64 hash = hash_words(words, count);
     InternEntry* entry = intern_find(table, hash, words, count);
     *miss = (InternMiss){ .hash = hash, .cap = table->cap, .index = entry ? (u32)(entry - table->entries) : 0 };
+#ifdef TTTT_TAINT
+    void const** taint_block = entry && entry->hash ? entry->block : nullptr;
+    if (taint_block) taint_intern_hit(taint_block);
+    if (!taint_block || !taint_block[0]) taint_intern_miss(table, hash);
+    return taint_block ? taint_block[0] : nullptr;
+#else
     return entry && entry->hash ? entry->block[0] : nullptr;
+#endif
 }
 
 void const** intern_insert(Checker* me, InternTable* table, InternMiss const* miss, u64 const* words, u32 count) {
@@ -290,7 +310,13 @@ void const** intern_insert(Checker* me, InternTable* table, InternMiss const* mi
     }
     InternEntry* entry = intern_find_from(table, miss->hash, words, count, start);
     if (!entry->hash) return intern_put(me, table, entry, miss->hash, words, count);
+#ifdef TTTT_TAINT
+    void const** taint_block = entry->block;
+    taint_intern_hit(taint_block);
+    return taint_block;
+#else
     return entry->block;
+#endif
 }
 
 // The key's words in a block intern_slot() returned
@@ -306,8 +332,17 @@ static TyList intern_key_list(void const** block, u32 count, u32 at, u32 len) {
 }
 
 void const* intern_get(InternTable const* table, u64 const* words, u32 count) {
+#ifdef TTTT_TAINT
+    u64 hash = hash_words(words, count);
+    InternEntry* entry = intern_find(table, hash, words, count);
+    void const** taint_block = entry && entry->hash ? entry->block : nullptr;
+    if (taint_block) taint_intern_hit(taint_block);
+    if (!taint_block || !taint_block[0]) taint_intern_miss(table, hash);
+    return taint_block ? taint_block[0] : nullptr;
+#else
     InternEntry* entry = intern_find(table, hash_words(words, count), words, count);
     return entry && entry->hash ? entry->block[0] : nullptr;
+#endif
 }
 
 static u64 link_key(u32 kind, void const* subject) {
@@ -522,6 +557,9 @@ Checker* checker_new(Program* program) {
     my binder = program_get_binder(program);
     my errs = program_errors(program);
     my next_type_id = 1;
+#ifdef TTTT_TAINT
+    taint_checker_new(me);
+#endif
 #ifdef TTTT_SURVIVORS
     survivors_reset(&my arena);
 #endif
@@ -628,6 +666,9 @@ void checker_defer_function_body(Checker* me, FunctionImpl const* function) {
 
 void checker_drop(Checker* me) {
     if (!me) return;
+#ifdef TTTT_TAINT
+    taint_checker_drop(me);
+#endif
 #ifdef TTTT_TY_POISON
     poison_verify(me);
 #endif
@@ -1533,7 +1574,7 @@ static Ty const* known_objects_constraint(Checker* me, Ty const* ty) {
     Ty const* constraint = nullptr;
     if (ty->kind == TY_TYPE_PARAM) {
         TyParamState const* param = ty_non_distributed(ty)->param.state;
-        if (param->constraint_state != LAZY_STATE_DONE) return nullptr;
+        if (TAINT_IF(TAINT_PEEK, param->constraint_state != LAZY_STATE_DONE)) return nullptr;
         constraint = param->constraint;
     } else if (ty->kind == TY_INDEXED) {
         constraint = ty_apparent_type(me, ty);
@@ -3762,7 +3803,10 @@ Ty const* ty_optional_prop_type(Checker* me, Ty const* ty) {
 
 Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch) {
     if ((!branch->node && !branch->source) || branch->state == LAZY_STATE_DONE) return branch->type;
-    if (branch->state == LAZY_STATE_IN_FLIGHT) return ty_intrinsic(me, TY_ERROR);
+    if (branch->state == LAZY_STATE_IN_FLIGHT) {
+        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+        return ty_intrinsic(me, TY_ERROR);
+    }
     branch->state = LAZY_STATE_IN_FLIGHT;
     Ty const* source = branch->node ? ty_from_node(me, branch->node, branch->ctx) : branch->source;
     branch->type = ty_instantiate_tail(me, source, branch->mapper);
@@ -3843,6 +3887,7 @@ void ty_resolving_grow(Checker* me) {
 void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key) {
     for (u32 i = my resolving_len; i-- > my resolving_start;) {
         if (my resolving[i].key == key && my resolving[i].kind == kind) {
+            TAINT_EVENT(TAINT_CYCLE);
             for (u32 j = i; j < my resolving_len; j++) my resolving[j].circular = true;
             return;
         }
@@ -3852,6 +3897,7 @@ void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key) {
 void ty_resolving_cycle_across_calls(Checker* me, ResolvingKind kind, void const* key) {
     for (u32 i = my resolving_len; i-- > 0;) {
         if (my resolving[i].key == key && my resolving[i].kind == kind) {
+            TAINT_EVENT(TAINT_CYCLE);
             for (u32 j = i; j < my resolving_len; j++) my resolving[j].circular = true;
             return;
         }
@@ -3868,6 +3914,7 @@ void ty_resolving_pattern_cycle(Checker* me, void const* key, Binding const* pat
             Binding const* root = my resolving[j].key;
             while (root->parent) root = root->parent;
             if (root != pattern) continue;
+            TAINT_EVENT(TAINT_CYCLE);
             for (u32 k = j; k < my resolving_len; k++) my resolving[k].circular = true;
             return;
         }

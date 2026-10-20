@@ -19,6 +19,9 @@ Span ty_current_node_span(Checker* me) {
 }
 
 void ty_error_at(Checker* me, Span span, unsigned ts_code, cstr message) {
+#ifdef TTTT_TAINT
+    taint_report();
+#endif
     ErrorCtx* errs = my errs;
     if (errs->phase != ERROR_PHASE_TYPECHECK) {
         cstr_drop(&message);
@@ -30,6 +33,7 @@ void ty_error_at(Checker* me, Span span, unsigned ts_code, cstr message) {
 }
 
 void ty_error_at_current_node(Checker* me, unsigned ts_code, cstr message) {
+    TAINT_EVENT(TAINT_CURRENT_NODE);
     ty_error_at(me, ty_current_node_span(me), ts_code, message);
 }
 
@@ -47,6 +51,7 @@ void ty_instantiation_limit_reached(Checker* me) {
 
 void ty_instantiation_limit_reached_on(Checker* me, Ty const* const* stack, u32 depth) {
     my instantiation_limit_hits++;
+    TAINT_EVENT(TAINT_LIMIT);
     // tsc's getCircularTypeNames: the types three times on the stack
     // (Counted in one pass, like tsc's typeCounts map: the depth is at most 100, the table has room for all of them)
     Symbol const* names[8];
@@ -530,12 +535,12 @@ static bool literal_instance_is_itself(Checker* me, Ty const* target, TyMapper c
         return false;
     }
     TyObjectState const* state = target->anonymous.state;
-    if (!state || state->members_state != LAZY_STATE_DONE) return false;
+    if (TAINT_IF(TAINT_PEEK, !state || state->members_state != LAZY_STATE_DONE)) return false;
     Members const* members = state->members;
     if (members->call_count || members->construct_count || members->mapped || members_rare(members)->base_count) return false;
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
-        if (prop->type_state != LAZY_STATE_DONE || !prop->type) return false;
+        if (TAINT_IF(TAINT_PEEK, prop->type_state != LAZY_STATE_DONE) || !prop->type) return false;
         if (prop->write_type_known) {
             Ty const* write = intern_get(&my links, (u64[]){ KEY_PROP_WRITE_TYPE, (u64)(uintptr_t)prop }, 2);
             if (write && write != prop->type) return false;
@@ -1053,6 +1058,7 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
         // isn't reported again: the hit was reported where it happened (from a shallower stack a report would name
         // other types, TS2589/TS5114 next to tsgo's one TS5115). Users are only told it was cut short
         my instantiation_limit_hits++;
+    TAINT_EVENT(TAINT_LIMIT);
     }
     Ty const* ret = nullptr;
     if (cached) {
@@ -1073,6 +1079,12 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
             // (Except for a type parameter with a distributed twin: mapping it to itself maps the twin back to it, as
             // tsgo's newTypeMapper of all the outer type parameters does, plan 57)
             Ty const* param = outer->params.data[i];
+#ifdef TTTT_TAINT
+            // (Whether the twin exists yet is history: plan 86 stage 4-0's experiment, TTTT_TAINT_EXP_TWIN=1)
+            static int exp_twin = -1;
+            if (exp_twin < 0) exp_twin = getenv("TTTT_TAINT_EXP_TWIN") && *getenv("TTTT_TAINT_EXP_TWIN");
+            if (exp_twin && targets[i] == param && !identity && param->kind == TY_TYPE_PARAM) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+#endif
             if (targets[i] == param && (identity || !(param->kind == TY_TYPE_PARAM && param->param.state->distributed))) continue;
             sources[kept_len] = outer->params.data[i];
             kept[kept_len++] = targets[i];

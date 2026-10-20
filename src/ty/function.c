@@ -347,6 +347,9 @@ Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol) {
 bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function) {
     if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body) return false;
     FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
+#ifdef TTTT_TAINT
+    if (memo && memo->state == LAZY_STATE_IN_FLIGHT) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+#endif
     return memo && memo->state == LAZY_STATE_IN_FLIGHT;
 }
 
@@ -356,7 +359,8 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
 Ty const* ty_function_return_known(Checker* me, FunctionImpl const* function) {
     if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body) return nullptr;
     FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
-    return memo && memo->state == LAZY_STATE_DONE ? memo->type : nullptr;
+    if (TAINT_IF(TAINT_PEEK, !(memo && memo->state == LAZY_STATE_DONE))) return nullptr;
+    return memo->type;
 }
 
 // The inferred return type depended on itself, so it's any (tsc's getReturnTypeOfSignature failing popTypeResolution)
@@ -404,9 +408,11 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     }
     switch (memo->state) {
         case LAZY_STATE_DONE:
+            TAINT_READ(TK_FUNCTION_RETURN, memo);
             report_promise_missing(me, function, memo);
             return memo->type;
         case LAZY_STATE_IN_FLIGHT:
+            TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
             // Asked again from below a call's barrier, it isn't circular yet: it's inferred again, once, and the inner
             // result is the one remembered (tsc's getReturnTypeOfSignature, like declarations: lazy_type_evaluate_inner())
             if (!memo->reevaluating && !ty_resolving_find(me, RESOLVING_FUNCTION_RETURN, function)) {
@@ -418,6 +424,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
         case LAZY_STATE_NOT_STARTED: break;
     }
     memo->state = LAZY_STATE_IN_FLIGHT;
+    TAINT_BEGIN(taint_frame);
     ty_resolving_push(me, RESOLVING_FUNCTION_RETURN, function);
     FlowIsolation isolation = ty_flow_isolate(me);
     // (An object literal getter a call's resolution types: nothing in its body is remembered, see
@@ -440,6 +447,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     my outer_inference = outer;
     ty_flow_restore(me, isolation);
     memo->state = LAZY_STATE_DONE;
+    TAINT_END(taint_frame, TK_FUNCTION_RETURN, memo, function, memo->type);
     report_promise_missing(me, function, memo);
     return memo->type;
 }
