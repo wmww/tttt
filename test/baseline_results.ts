@@ -1797,6 +1797,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttRecursiveReturnWithTypeArguments': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttRecursiveUnionInferenceDepth': {
         errors: true,
         symbols: true,

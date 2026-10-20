@@ -1,0 +1,158 @@
+//// [test/cases/ttttRecursiveReturnWithTypeArguments.ts] ////
+
+=== ttttRecursiveReturnWithTypeArguments.ts ===
+// A bare call to the function itself doesn't contribute to its inferred return type, with type arguments too (tsc's
+// checkAndAggregateReturnExpressionTypes looks at the call's expression, the identifier): `return reduce<T>(t)` isn't
+// TS7023 (mutation of declarationsWithRecursiveInternalTypesProduceUniqueTypeParams). Through an exported variable it
+// does contribute: the name resolves to the export symbol, which isn't a constant reference (isConstantVariable)
+export const f = <T>(t: T) => {
+>f : <T>(t: T) => <U>(u: U) => { u: U; }
+><T>(t: T) => {    const reduce = <U>(u: U) => {        if (Math.random()) return { u };        return reduce<T>(t);    };    return reduce;} : <T>(t: T) => <U>(u: U) => { u: U; }
+>t : T
+
+    const reduce = <U>(u: U) => {
+>reduce : <U>(u: U) => { u: U; }
+><U>(u: U) => {        if (Math.random()) return { u };        return reduce<T>(t);    } : <U>(u: U) => { u: U; }
+>u : U
+
+        if (Math.random()) return { u };
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>{ u } : { u: U; }
+>u : U
+
+        return reduce<T>(t);
+>reduce<T>(t) : { u: T; }
+>reduce : <U>(u: U) => { u: U; }
+>t : T
+
+    };
+    return reduce;
+>reduce : <U>(u: U) => { u: U; }
+
+};
+const k = <U>(u: U) => {
+>k : <U>(u: U) => U[]
+><U>(u: U) => {    if (Math.random()) return [u];    return k<U>(u);} : <U>(u: U) => U[]
+>u : U
+
+    if (Math.random()) return [u];
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>[u] : U[]
+>u : U
+
+    return k<U>(u);
+>k<U>(u) : U[]
+>k : <U>(u: U) => U[]
+>u : U
+
+};
+const k2 = (u: number) => {
+>k2 : (u: number) => number[]
+>(u: number) => {    if (Math.random()) return [u];    return k2(u);} : (u: number) => number[]
+>u : number
+
+    if (Math.random()) return [u];
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>[u] : number[]
+>u : number
+
+    return k2(u);
+>k2(u) : number[]
+>k2 : (u: number) => number[]
+>u : number
+
+};
+export { k, k2 };
+>k : <U>(u: U) => U[]
+>k2 : (u: number) => number[]
+
+export const g = <U>(u: U) => {
+>g : <U>(u: U) => any
+><U>(u: U) => {    if (Math.random()) return [u];    return g<U>(u);} : <U>(u: U) => any
+>u : U
+
+    if (Math.random()) return [u];
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>[u] : U[]
+>u : U
+
+    return g<U>(u);
+>g<U>(u) : any
+>g : <U>(u: U) => any
+>u : U
+
+};
+export const h = (u: number) => {
+>h : (u: number) => any
+>(u: number) => {    if (Math.random()) return [u];    return h(u);} : (u: number) => any
+>u : number
+
+    if (Math.random()) return [u];
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>[u] : number[]
+>u : number
+
+    return h(u);
+>h(u) : any
+>h : (u: number) => any
+>u : number
+
+};
+export const h2 = function (u: number) {
+>h2 : (u: number) => any
+>function (u: number) {    if (Math.random()) return [u];    return h2(u);} : (u: number) => any
+>u : number
+
+    if (Math.random()) return [u];
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>[u] : number[]
+>u : number
+
+    return h2(u);
+>h2(u) : any
+>h2 : (u: number) => any
+>u : number
+
+};
+export namespace N {
+>N : typeof N
+
+    export const n = (u: number) => {
+>n : (u: number) => any
+>(u: number) => {        if (Math.random()) return [u];        return n(u);    } : (u: number) => any
+>u : number
+
+        if (Math.random()) return [u];
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>[u] : number[]
+>u : number
+
+        return n(u);
+>n(u) : any
+>n : (u: number) => any
+>u : number
+
+    };
+}
+

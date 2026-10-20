@@ -223,12 +223,16 @@ bool ty_is_recursive_return(Checker* me, Expr const* returned) {
     if (function->is_async && expr->tag == EXPR_UNARY_OP && expr->unary_op->op == UNARY_OP_AWAIT) expr = &expr->unary_op->expr;
     if (expr->tag != EXPR_CALL || expr->call->uses_new || expr->call->optional_chain) return false;
     Expr const* callee = &expr->call->callable;
+    // (With type arguments too: tsc's call keeps them apart from its identifier callee, `return reduce<T>(t)`)
+    if (callee->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(callee)) callee = &callee->generic_params->expr;
     if (callee->tag != EXPR_IDENTIFIER || callee->identifier.keyword || !callee->identifier.target) return false;
     Symbol const* symbol = callee->identifier.target;
     // (tsc's isConstantReference: a const, or a local `let` never assigned again. Parameters count too, left out)
     // (Or the name of a function expression, valueDeclaration a FunctionExpression: `function f() { return f(); }`)
-    if (function->is_expression && !symbol->is_const &&
-        !(symbol->is_local && !symbol_assignments(symbol)->is_assigned && (symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE)) &&
+    // (Not an exported variable: tsc resolves the name to its export symbol, which isConstantVariable doesn't take,
+    // `export const g = () => { ...; return g(); }` is TS7023)
+    if (function->is_expression && (symbol->exported || (!symbol->is_const &&
+        !(symbol->is_local && !symbol_assignments(symbol)->is_assigned && (symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE)))) &&
         !(function->symbol && symbol == function->symbol)
     ) {
         return false;

@@ -1,0 +1,140 @@
+//// [test/cases/ttttRecursiveReturnWithTypeArguments.ts] ////
+
+=== ttttRecursiveReturnWithTypeArguments.ts ===
+// A bare call to the function itself doesn't contribute to its inferred return type, with type arguments too (tsc's
+// checkAndAggregateReturnExpressionTypes looks at the call's expression, the identifier): `return reduce<T>(t)` isn't
+// TS7023 (mutation of declarationsWithRecursiveInternalTypesProduceUniqueTypeParams). Through an exported variable it
+// does contribute: the name resolves to the export symbol, which isn't a constant reference (isConstantVariable)
+export const f = <T>(t: T) => {
+>f : Symbol(f, Decl(ttttRecursiveReturnWithTypeArguments.ts, 4, 12))
+>T : Symbol(T, Decl(ttttRecursiveReturnWithTypeArguments.ts, 4, 18))
+>t : Symbol(t, Decl(ttttRecursiveReturnWithTypeArguments.ts, 4, 21))
+>T : Symbol(T, Decl(ttttRecursiveReturnWithTypeArguments.ts, 4, 18))
+
+    const reduce = <U>(u: U) => {
+>reduce : Symbol(reduce, Decl(ttttRecursiveReturnWithTypeArguments.ts, 5, 9))
+>U : Symbol(U, Decl(ttttRecursiveReturnWithTypeArguments.ts, 5, 20))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 5, 23))
+>U : Symbol(U, Decl(ttttRecursiveReturnWithTypeArguments.ts, 5, 20))
+
+        if (Math.random()) return { u };
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.float16.d.ts, --, --) ... and 1 more)
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 6, 35))
+
+        return reduce<T>(t);
+>reduce : Symbol(reduce, Decl(ttttRecursiveReturnWithTypeArguments.ts, 5, 9))
+>T : Symbol(T, Decl(ttttRecursiveReturnWithTypeArguments.ts, 4, 18))
+>t : Symbol(t, Decl(ttttRecursiveReturnWithTypeArguments.ts, 4, 21))
+
+    };
+    return reduce;
+>reduce : Symbol(reduce, Decl(ttttRecursiveReturnWithTypeArguments.ts, 5, 9))
+
+};
+const k = <U>(u: U) => {
+>k : Symbol(k, Decl(ttttRecursiveReturnWithTypeArguments.ts, 11, 5))
+>U : Symbol(U, Decl(ttttRecursiveReturnWithTypeArguments.ts, 11, 11))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 11, 14))
+>U : Symbol(U, Decl(ttttRecursiveReturnWithTypeArguments.ts, 11, 11))
+
+    if (Math.random()) return [u];
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.float16.d.ts, --, --) ... and 1 more)
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 11, 14))
+
+    return k<U>(u);
+>k : Symbol(k, Decl(ttttRecursiveReturnWithTypeArguments.ts, 11, 5))
+>U : Symbol(U, Decl(ttttRecursiveReturnWithTypeArguments.ts, 11, 11))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 11, 14))
+
+};
+const k2 = (u: number) => {
+>k2 : Symbol(k2, Decl(ttttRecursiveReturnWithTypeArguments.ts, 15, 5))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 15, 12))
+
+    if (Math.random()) return [u];
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.float16.d.ts, --, --) ... and 1 more)
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 15, 12))
+
+    return k2(u);
+>k2 : Symbol(k2, Decl(ttttRecursiveReturnWithTypeArguments.ts, 15, 5))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 15, 12))
+
+};
+export { k, k2 };
+>k : Symbol(k, Decl(ttttRecursiveReturnWithTypeArguments.ts, 19, 8))
+>k2 : Symbol(k2, Decl(ttttRecursiveReturnWithTypeArguments.ts, 19, 11))
+
+export const g = <U>(u: U) => {
+>g : Symbol(g, Decl(ttttRecursiveReturnWithTypeArguments.ts, 20, 12))
+>U : Symbol(U, Decl(ttttRecursiveReturnWithTypeArguments.ts, 20, 18))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 20, 21))
+>U : Symbol(U, Decl(ttttRecursiveReturnWithTypeArguments.ts, 20, 18))
+
+    if (Math.random()) return [u];
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.float16.d.ts, --, --) ... and 1 more)
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 20, 21))
+
+    return g<U>(u);
+>g : Symbol(g, Decl(ttttRecursiveReturnWithTypeArguments.ts, 20, 12))
+>U : Symbol(U, Decl(ttttRecursiveReturnWithTypeArguments.ts, 20, 18))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 20, 21))
+
+};
+export const h = (u: number) => {
+>h : Symbol(h, Decl(ttttRecursiveReturnWithTypeArguments.ts, 24, 12))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 24, 18))
+
+    if (Math.random()) return [u];
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.float16.d.ts, --, --) ... and 1 more)
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 24, 18))
+
+    return h(u);
+>h : Symbol(h, Decl(ttttRecursiveReturnWithTypeArguments.ts, 24, 12))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 24, 18))
+
+};
+export const h2 = function (u: number) {
+>h2 : Symbol(h2, Decl(ttttRecursiveReturnWithTypeArguments.ts, 28, 12))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 28, 28))
+
+    if (Math.random()) return [u];
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.float16.d.ts, --, --) ... and 1 more)
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 28, 28))
+
+    return h2(u);
+>h2 : Symbol(h2, Decl(ttttRecursiveReturnWithTypeArguments.ts, 28, 12))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 28, 28))
+
+};
+export namespace N {
+>N : Symbol(N, Decl(ttttRecursiveReturnWithTypeArguments.ts, 31, 2))
+
+    export const n = (u: number) => {
+>n : Symbol(n, Decl(ttttRecursiveReturnWithTypeArguments.ts, 33, 16))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 33, 22))
+
+        if (Math.random()) return [u];
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.float16.d.ts, --, --) ... and 1 more)
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 33, 22))
+
+        return n(u);
+>n : Symbol(n, Decl(ttttRecursiveReturnWithTypeArguments.ts, 33, 16))
+>u : Symbol(u, Decl(ttttRecursiveReturnWithTypeArguments.ts, 33, 22))
+
+    };
+}
+
