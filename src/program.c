@@ -876,6 +876,15 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     }
     program_learn_symlink(me, &resolved);
     csview unbuilt = program_output_of_resolved(me, &resolved);
+    if (unbuilt.size && resolved.kind == RESOLVED_JS) {
+        // (A referenced project's JavaScript source: tsc's resolveExternalModule says TS7016 for any resolution to
+        // something other than TypeScript or JSON before it looks for a project reference redirect)
+        ref->failure = MODULE_REF_IS_JS;
+        cstr_take(&module_ref_rare_mut(ref)->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
+        if (!module_name_is_relative(cstr_sv(&ref->path))) module_ref_rare_mut(ref)->package_name = cstr_clone(resolved.package_name);
+        resolved_module_drop(&resolved);
+        return;
+    }
     if (unbuilt.size) {
         ref->failure = MODULE_REF_NOT_BUILT;
         cstr_take(&module_ref_rare_mut(ref)->unbuilt_output, cstr_from_sv(unbuilt));
