@@ -45,22 +45,21 @@ size on real code, each with an example:
     `getShadowStyle` `?: never` too): tsgo's getUndefinedProperty caches one symbol per name per checker, declared
     where the first property it was made for is, so the order depends on which file that checker checked first (tsgo
     runs 4 checkers). tttt emulates the cache (KEY_UNDEFINED_PROPERTY) but its checking order/distribution differs.
-    A single-checker case where tttt's order differs (triage C, 2026-10-19): `test/cases/
-    ttttPseudoInferredUnionOfLiterals.ts` with `e: [safe ? { a: 1 } : { b: '' }]` added to `m` prints `{ a: number;
-    b?: undefined; }` where tsgo has `{ b?: undefined; a: number; }`; dropping almost any other function of the file
-    makes tttt agree (a structurally interned widened literal reused from an earlier widening, with its order?). Look
-    whether this is the part of the bucket `--tsc-single` doesn't explain.
+    The single-checker repro triage C found (`ttttPseudoInferredUnionOfLiterals.ts` with `e: [safe ? { a: 1 } : { b:
+    '' }]` added to `m`) is the harness's: tsgo's CLI on that file (`--declaration --emitDeclarationOnly`, single-threaded
+    or not) writes `{ a: number; b?: undefined; }` like tttt; only tsgo's baseline harness has `b` first (2026-10-20).
     Plan-sized: needs tsgo's file-to-checker assignment and check order. tttt's K>1 emit follows its own history the
     same way (`dtsdiff.py --kdiff 4` on the bucket: 5 / 18 projects write other files at K4, the same 5 twice; at the
     defaults work stealing makes that timing-dependent), accepted as tsgo's split (2026-10-18, todo entry 1(d));
-    dtsdiff runs tttt at one checker and is deterministic (five runs byte-identical per project). **One that isn't
-    the split**: ui `apps/v4/registry/config.d.ts:241` (`parseRegistryBaseParts`), tsgo writes `error?: undefined`
-    last at `--singleThreaded` and at 4 checkers, tttt K1 first; tttt K4 and `TTTT_CHECK_ONLY=apps/v4/registry/config.ts`
-    match tsgo. Bisected (TTTT_CHECK_ONLY over the files before it): checking `apps/v4/app/(app)/(create)/lib/
-    parse-config.test.ts` first is enough (its `result.error` on parse-config.ts's `{ success, error } | { success,
-    data: DesignSystemConfig }` makes tttt's undefinedProperties `error` symbol there, which sorts before config.ts).
-    So tsgo's single checker doesn't make the cached `error` while checking that test, or makes it from a later file;
-    a three-file repro of that shape (also with `data` typed from the later file) matches tsgo.
+    dtsdiff runs tttt at one checker and is deterministic (five runs byte-identical per project). ui
+    `apps/v4/registry/config.d.ts:241` (`parseRegistryBaseParts`' `error?: undefined`) **is the split after all**
+    (2026-10-20, an instrumented tsgo): ui is gated (TS5108), so nothing is checked and the emit types everything. tsgo
+    `--singleThreaded`'s emit runs the files last first (core.singleThreadedWorkGroup pops its queue), so config.ts (2022nd
+    file) makes the undefinedProperties `error` before parse-config.ts (159th); tsgo's default runs the emits in
+    parallel on its 4 checkers, config.ts's checker never sees parse-config.ts's. tttt walks in program order.
+    Walking a gated project's files last first in tttt (tried) makes ui and discord.js match `--singleThreaded`
+    byte for byte but loses discord.js, postiz-app/apps/commands and 6 slate test files against the default: not kept.
+    Non-gated projects check first (program order) in both, then emit.
   - qwik mcp `page.d.ts`: union order, checker-side. `inc ? { ...signal, value } : signal` with `signal` a parameter's
     rest binding (`({ value, ...signal }: T)`) is `{ name; hookType } | { name; hookType; value }` in tsgo (the rest
     type made first) and the other way in tttt (filetest repro; a declared `signal` matches). tttt's rest type
@@ -76,12 +75,6 @@ size on real code, each with an example:
   (tsc's Block rule makes it possibly referenced; the Block marker carries only OuterGenerics, which a class without
   type parameters has none of, and the deferred body walk doesn't see the class's marker), and a context-sensitive
   function's inferred signature type parameters (tsc's getOuterTypeParameters adds them).
-- **react-three-fiber `__mocks__/react-native.d.ts`** (uninvestigated): `render()` returns `React.createElement('view',
-  props)` with `props` the rest of `this.props` (`Readonly<Omit<ViewProps, 'children'> & {...}>`); tsgo reuses each
-  property's annotation (`accessibilityActions?: ReadonlyArray<AccessibilityActionInfo> | undefined`, `'none' |
-  'polite' | 'assertive'` in single quotes, `style?: StyleProp<ViewStyle> | undefined`), tttt prints the types (the
-  alias `AccessibilityActionInfo` lost, literal unions sorted, `style` without `| undefined`): the rest of a
-  homomorphic mapped type over interface properties should keep their declarations for reuse.
 - **`typeof this` in an object literal, types baseline** (agent C 2026-10-16 fixed the declaration side: headlessui's
   TS5088 matches). Printing a cyclic object literal whose methods mention `typeof this`, tsgo expands one level more
   than tttt: its `this` there is the fresh object literal type (getContextualThisParameterType without a contextual
@@ -123,6 +116,11 @@ size on real code, each with an example:
     inference, not reduced. headlessui's use-controllable matched in 2026-10-18 runs (an order effect, may come back). effect's and excalidraw's others: see "Checker types, uninvestigated"
     (effect ExecutionPlan and fiberRuntime fixed 2026-10-16).
   - `export default undefined`: tsgo writes it as an identifier export, tttt as `declare const _default: undefined`.
+- **Fixed 2026-10-20 (agent A)**: react-three-fiber's react-native mock: the rest of a mapped type over a mapped type
+  (`Readonly<Omit<ViewProps, 'children'>>`) reuses the annotations of the properties the inner one maps
+  (lower.c's mapped_prop_annotation(), ttttRestOfNestedMappedReusesAnnotation). The "map: its .d.ts differs" bucket is
+  the maps of files whose .d.ts are in other buckets (babel-parser, mcp-sdk, slate). telegraf's map and vscode's
+  modifier unchanged (entries below and above).
 - **Painting gaps** (dtsdiff "import"; agent A 2026-10-15 fixed inferred predicates, late bound members, readonly enum
   fields, enum-valued keys, every statement of a painted merged name, private constructors' parameter properties,
   painted destructurings' types; agent C 2026-10-16 fixed unresolved-import names reused across files, export lists
@@ -219,4 +217,4 @@ static order (own statics first). dtsdiff in a worktree: 1326 / 1350. Verdicts:
   order" above; feathers generators' connection/index.d.ts and postiz orchestrator's autopost.service.d.ts are it too.
 - headlessui-vue: `--singleThreaded` writes what tsgo's default does (cached); its last file matches since the twin fix.
 - Left as before: babel-parser, mcp-sdk (checker split), slate test / postiz / ui (undefinedProperties), feathers
-  `language`, mockoon, react-three-fiber's react-native mock, vest (tsgo bug), telegraf's partial reuse map.
+  `language`, mockoon, vest (tsgo bug), telegraf's partial reuse map (react-three-fiber's mock fixed since).

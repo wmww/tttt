@@ -2976,6 +2976,19 @@ static bool prop_has_numeric_name(Prop const* prop) {
 }
 
 static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern, Symbol const* symbol);
+
+// The annotation a mapped type's property reuses: the one of the property it maps, through mapped modifiers types
+// (`Readonly<Pick<P, K>>`: P's, tsc's mapped symbol copying its modifiers property's declarations all the way down,
+// like ty_display's mapped members), null if none
+static TypeNode const* mapped_prop_annotation(Prop const* prop) {
+    Prop const* mapped_from = prop_decl_rare(prop->decl)->mapped_from;
+    for (int depth = 0; depth < 16 && mapped_from && mapped_from->mapped && prop_decl_rare(mapped_from->decl)->mapped_from; depth++) {
+        mapped_from = prop_decl_rare(mapped_from->decl)->mapped_from;
+    }
+    if (!mapped_from) return nullptr;
+    while (mapped_from->target) mapped_from = mapped_from->target;
+    return ty_prop_annotation(mapped_from);
+}
 Ty const* ty_object_rest_type(Checker* me, Ty const* source, TyList keys) { return object_rest_type(me, source, keys, nullptr); }
 
 // tsc's getRestType makes an anonymous type whose symbol is the rest element's (a binding's): a type of its own, whose
@@ -3085,11 +3098,7 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pa
             Prop const* origin = found.prop;
             while (origin && origin->target && !origin->decl->decl_span_count) origin = origin->target;
             TypeNode const* annotation = origin ? ty_prop_annotation(origin) : nullptr;
-            Prop const* mapped_from = found.prop ? prop_decl_rare(found.prop->decl)->mapped_from : nullptr;
-            if (!annotation && mapped_from) {
-                while (mapped_from->target) mapped_from = mapped_from->target;
-                annotation = ty_prop_annotation(mapped_from);
-            }
+            if (!annotation && found.prop) annotation = mapped_prop_annotation(found.prop);
             props = realloc(props, sizeof(ObjectLiteralProp) * (count + 1));
             panic_if(!props, "out of memory");
             props[count++] = (ObjectLiteralProp){
@@ -3194,11 +3203,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern,
         while (declared->target && !declared->decl->decl_span_count) declared = declared->target;
         // (A mapped type's property is declared where the property it maps is: tsc's mapped symbol's declarations)
         TypeNode const* annotation = ty_prop_annotation(declared);
-        Prop const* mapped_from = prop_decl_rare(prop->decl)->mapped_from;
-        if (!annotation && mapped_from) {
-            while (mapped_from->target) mapped_from = mapped_from->target;
-            annotation = ty_prop_annotation(mapped_from);
-        }
+        if (!annotation) annotation = mapped_prop_annotation(prop);
         props[count++] = (ObjectLiteralProp){
             .name = prop->name,
             .flags = (prop->flags & (u32)~(PROP_READONLY | PROP_GETTER | PROP_SETTER | PROP_ACCESSOR | PROP_CLASS_GETTER)) | PROP_NO_VALUE_DECLARATION,

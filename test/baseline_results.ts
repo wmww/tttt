@@ -1874,6 +1874,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttRestOfNestedMappedReusesAnnotation': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttRestTypeUnionOrder': {
         errors: true,
         symbols: true,

@@ -1,0 +1,74 @@
+//// [test/cases/ttttRestOfNestedMappedReusesAnnotation.ts] ////
+
+=== rn.d.ts ===
+export interface Info { name: string; label?: string }
+>name : string
+>label : string | undefined
+
+export interface P {
+    a?: ReadonlyArray<Info> | undefined;
+>a : readonly Info[] | undefined
+
+    live?: 'none' | 'polite' | undefined;
+>live : "none" | "polite" | undefined
+
+    onLayout?: () => void;
+>onLayout : (() => void) | undefined
+}
+=== main.ts ===
+import { P } from './rn';
+>P : any
+
+declare const pk: Pick<P, 'a' | 'live' | 'onLayout'>;
+>pk : Pick<P, "a" | "live" | "onLayout">
+
+const { onLayout: l1, ...rest1 } = pk;
+>onLayout : any
+>l1 : (() => void) | undefined
+>rest1 : { a?: ReadonlyArray<import("./rn").Info> | undefined; live?: 'none' | 'polite' | undefined; }
+>pk : Pick<P, "a" | "live" | "onLayout">
+
+export const v1 = rest1;
+>v1 : { a?: ReadonlyArray<import("./rn").Info> | undefined; live?: 'none' | 'polite' | undefined; }
+>rest1 : { a?: ReadonlyArray<import("./rn").Info> | undefined; live?: 'none' | 'polite' | undefined; }
+
+declare const rp: Readonly<Pick<P, 'a' | 'live' | 'onLayout'>>;
+>rp : Readonly<Pick<P, "a" | "live" | "onLayout">>
+
+const { onLayout: l2, ...rest2 } = rp;
+>onLayout : any
+>l2 : (() => void) | undefined
+>rest2 : { a?: ReadonlyArray<import("./rn").Info> | undefined; live?: 'none' | 'polite' | undefined; }
+>rp : Readonly<Pick<P, "a" | "live" | "onLayout">>
+
+export const v2 = rest2;
+>v2 : { a?: ReadonlyArray<import("./rn").Info> | undefined; live?: 'none' | 'polite' | undefined; }
+>rest2 : { a?: ReadonlyArray<import("./rn").Info> | undefined; live?: 'none' | 'polite' | undefined; }
+
+declare const pr: Partial<Readonly<P>>;
+>pr : Partial<Readonly<P>>
+
+const { onLayout: l3, ...rest3 } = pr;
+>onLayout : any
+>l3 : (() => void) | undefined
+>rest3 : { a?: ReadonlyArray<import("./rn").Info> | undefined; live?: 'none' | 'polite' | undefined; }
+>pr : Partial<Readonly<P>>
+
+export const v3 = rest3;
+>v3 : { a?: ReadonlyArray<import("./rn").Info> | undefined; live?: 'none' | 'polite' | undefined; }
+>rest3 : { a?: ReadonlyArray<import("./rn").Info> | undefined; live?: 'none' | 'polite' | undefined; }
+
+declare const ro: Readonly<Omit<P, 'x'>> & { children: string };
+>ro : Readonly<Omit<P, "x">> & { children: string; }
+>children : string
+
+const { onLayout: l4, ...rest4 } = ro;
+>onLayout : any
+>l4 : (() => void) | undefined
+>rest4 : { a?: ReadonlyArray<import("./rn").Info> | undefined; live?: 'none' | 'polite' | undefined; children: string; }
+>ro : Readonly<Omit<P, "x">> & { children: string; }
+
+export const v4 = rest4;
+>v4 : { a?: ReadonlyArray<import("./rn").Info> | undefined; live?: 'none' | 'polite' | undefined; children: string; }
+>rest4 : { a?: ReadonlyArray<import("./rn").Info> | undefined; live?: 'none' | 'polite' | undefined; children: string; }
+

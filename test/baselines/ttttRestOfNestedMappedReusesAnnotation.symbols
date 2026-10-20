@@ -1,0 +1,90 @@
+//// [test/cases/ttttRestOfNestedMappedReusesAnnotation.ts] ////
+
+=== rn.d.ts ===
+export interface Info { name: string; label?: string }
+>Info : Symbol(Info, Decl(rn.d.ts, 0, 0))
+>name : Symbol(Info.name, Decl(rn.d.ts, 0, 23))
+>label : Symbol(Info.label, Decl(rn.d.ts, 0, 37))
+
+export interface P {
+>P : Symbol(P, Decl(rn.d.ts, 0, 54))
+
+    a?: ReadonlyArray<Info> | undefined;
+>a : Symbol(P.a, Decl(rn.d.ts, 1, 20))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>Info : Symbol(Info, Decl(rn.d.ts, 0, 0))
+
+    live?: 'none' | 'polite' | undefined;
+>live : Symbol(P.live, Decl(rn.d.ts, 2, 40))
+
+    onLayout?: () => void;
+>onLayout : Symbol(P.onLayout, Decl(rn.d.ts, 3, 41))
+}
+=== main.ts ===
+import { P } from './rn';
+>P : Symbol(P, Decl(main.ts, 0, 8))
+
+declare const pk: Pick<P, 'a' | 'live' | 'onLayout'>;
+>pk : Symbol(pk, Decl(main.ts, 1, 13))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>P : Symbol(P, Decl(main.ts, 0, 8))
+
+const { onLayout: l1, ...rest1 } = pk;
+>onLayout : Symbol(onLayout, Decl(rn.d.ts, 3, 41))
+>l1 : Symbol(l1, Decl(main.ts, 2, 7))
+>rest1 : Symbol(rest1, Decl(main.ts, 2, 21))
+>pk : Symbol(pk, Decl(main.ts, 1, 13))
+
+export const v1 = rest1;
+>v1 : Symbol(v1, Decl(main.ts, 3, 12))
+>rest1 : Symbol(rest1, Decl(main.ts, 2, 21))
+
+declare const rp: Readonly<Pick<P, 'a' | 'live' | 'onLayout'>>;
+>rp : Symbol(rp, Decl(main.ts, 4, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>P : Symbol(P, Decl(main.ts, 0, 8))
+
+const { onLayout: l2, ...rest2 } = rp;
+>onLayout : Symbol(onLayout, Decl(rn.d.ts, 3, 41))
+>l2 : Symbol(l2, Decl(main.ts, 5, 7))
+>rest2 : Symbol(rest2, Decl(main.ts, 5, 21))
+>rp : Symbol(rp, Decl(main.ts, 4, 13))
+
+export const v2 = rest2;
+>v2 : Symbol(v2, Decl(main.ts, 6, 12))
+>rest2 : Symbol(rest2, Decl(main.ts, 5, 21))
+
+declare const pr: Partial<Readonly<P>>;
+>pr : Symbol(pr, Decl(main.ts, 7, 13))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>P : Symbol(P, Decl(main.ts, 0, 8))
+
+const { onLayout: l3, ...rest3 } = pr;
+>onLayout : Symbol(onLayout, Decl(rn.d.ts, 3, 41))
+>l3 : Symbol(l3, Decl(main.ts, 8, 7))
+>rest3 : Symbol(rest3, Decl(main.ts, 8, 21))
+>pr : Symbol(pr, Decl(main.ts, 7, 13))
+
+export const v3 = rest3;
+>v3 : Symbol(v3, Decl(main.ts, 9, 12))
+>rest3 : Symbol(rest3, Decl(main.ts, 8, 21))
+
+declare const ro: Readonly<Omit<P, 'x'>> & { children: string };
+>ro : Symbol(ro, Decl(main.ts, 10, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>P : Symbol(P, Decl(main.ts, 0, 8))
+>children : Symbol(children, Decl(main.ts, 10, 44))
+
+const { onLayout: l4, ...rest4 } = ro;
+>onLayout : Symbol(onLayout, Decl(rn.d.ts, 3, 41))
+>l4 : Symbol(l4, Decl(main.ts, 11, 7))
+>rest4 : Symbol(rest4, Decl(main.ts, 11, 21))
+>ro : Symbol(ro, Decl(main.ts, 10, 13))
+
+export const v4 = rest4;
+>v4 : Symbol(v4, Decl(main.ts, 12, 12))
+>rest4 : Symbol(rest4, Decl(main.ts, 11, 21))
+
