@@ -19,23 +19,23 @@ claim at the defaults reports wall, CPU (user + sys) and peak RSS. **This box ha
 priced by per-file time sums (`TTTT_FILE_TIMES=1`) under real parallel runs at K4, plus a command the human can run
 on the 12-core box (put it in report.md, as 2026-10-19's ask did).
 
-1. **Plan 86 stage 4: design session** (planning; plan 86 "Order" and stage 4). The shared concurrent type graph:
-   the lazily written state census (`Ty` fields, `Checker` tables, LazySlots) split into publish-once and scratch,
-   which re-estimates the build-out; what bun #45800 shares between workers and how; the table design (lock-free open
-   addressing, resize); the replacement for is_deeply_nested_as()'s "newer id" test (gate condition 2); the memory
-   story (no recycling, or shared graph plus scratch recycling); how diagnostics stay K-independent. It writes the
-   prototype's scope and its go/no-go into the plan. It may say no: then the plan says why, and entry 2 becomes the
-   fallback (plan 86 "Order").
-2. **Plan 86 stage 4: prototype + gate** (one session, a second only if the first shows the gate is in reach). The
-   prototype is drizzle at K4 here, measured against today's duplication by per-file sums, with kdiff and
-   checkerdiff byte-identical. It can be behind a flag and incomplete, but not wrong. The result goes into the plan
-   with numbers. If go, the next insights schedules the build-out window. If no-go, the prototype is deleted.
+1. ~~Plan 86 stage 4: design session~~ done 2026-10-20: **go, staged, ~25 sessions** (plan 86 "The design"; census
+   in `86_stage4_census.md`). Duplication at K12 is 1.40-1.68x K1's check work serialized, a frozen seed can't remove
+   it (only concurrent sharing can), and the id test in is_deeply_nested_as() is observable (random ids change zod,
+   drizzle, effect), so it gets per-worker first-touch stamps if global ids prove observable.
+2. **Plan 86 stage 4-0: the taint prototype, gate G0** (one session; plan 86 "Stages and gates"). At K1, with nothing
+   shared and the output unchanged: the taint counter and its events, every lazy store and SHARE/HARD link write
+   marked clean or tainted, the clean share per kind (entries and time) on drizzle, excalidraw, zod, effect and
+   vscode, and cleandiff (structural fingerprints of clean results under two histories). The verdict and numbers go
+   into the plan. If no-go, the fallback (plan 86 "Order") takes stage 4's slots in the next window.
 3. **Plan 87 stage 1**: `-b` reads emitted declarations only. Drop `TTTT_BUILD_EMITTED`, delete the sources model
    (the plan's list), rewrite documentation.md's "Project references", and hold scenarios, both `-b` corpora and the
    `-b` sweep (>= 406 / 416) at every step. Two `-b` models must not live on into another window.
 4. **Perf: costliest file first, then the front end measured** (plan 86 "Order", stage 3). Start each checker's
    share with its costliest file (tsc's checker.ts and type-fest's biggest file are the critical path; bun canary's
-   heavy-first queue is the same idea). Size is the first cost model to try; the output must not change. Then
+   heavy-first queue is the same idea). Size is the first cost model to try, bun's the second (identifiers in
+   expressions plus type nodes: within 1.1x of measured time where size was 1.8x, plan 86's census part C §6); the
+   output must not change. Then
    `tttt --time` and `TTTT_LOAD_POOL_STATS=1` on vscode, webpack and effect at `--threads 4` and 1, to say which
    stage 3 piece (loader pre-scan, parallel declare/link, parser) comes first. Write the 12-core command for the
    human.
@@ -47,8 +47,8 @@ on the 12-core box (put it in report.md, as 2026-10-19's ask did).
    costliest-first's numbers. Check whether 7.1.0 stable is out (plan 58) and whether the human ran the 12-core
    command.
 
-Not in this window (candidates for the next, which the insights session reorders): plan 86 stage 4's build-out (if
-go); stage 3's chosen piece; plan 87 stage 2 (share declaration files across `-b` programs); stage 2's leftovers in
+Not in this window (candidates for the next, which the insights session reorders): plan 86 stages 4a-4c up to gate
+G1 (if G0 says go); stage 3's chosen piece; plan 87 stage 2 (share declaration files across `-b` programs); stage 2's leftovers in
 perf slots (outlining instantiate_inner's and the relation switch's cold arms, the big-union walks, the intern table
 footprint); the snapshot recycle (perf_leads.md "Shared warm state") if stage 4 is no-go; a fourth refresh chosen by
 a new rule (monorepos with `paths`-heavy configs, `allowImportingTsExtensions` projects, Vue/Svelte tooling); plan 58

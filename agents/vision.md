@@ -56,7 +56,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   at the defaults K-fold, our other weak axis. It's the riskiest change since the type core (every lazily written
   field becomes publish-once or scratch), so it gets a design session with a census and a prototype with a go/no-go
   before any build-out window. Its fallback, if no, is stage 3 (front end) plus the snapshot recycle for the
-  thrashers. The rule "faster than bun on every corpus at the defaults" stays the target; it is currently broken,
+  thrashers. **The design session (2026-10-20) said go, staged, ~25 sessions**: K12 rebuilds 1.4-1.7x K1's check
+  work, only concurrent sharing removes it, and correctness rests on one rule (publish only results computed clean;
+  each worker keeps the rest private), proved first at K1 by a taint prototype (gate G0) and K1 refactors (G1). The rule "faster than bun on every corpus at the defaults" stays the target; it is currently broken,
   and this is the plan to restore it, not a reason to tune the defaults' policy again (five policies were already
   declined along one frontier).
 - **Single-threaded speed is the multiplier, but its cheap part is spent.** With hardware counters unavailable here,

@@ -17,7 +17,8 @@ Stage 4 comes next, ahead of stage 2's remaining sessions, which are demoted to 
   a shared graph makes the SMT half of the machine useful, and it is also the only lever on memory at the defaults
   (bun is lower on 10 / 14).
 - The gate already said go (below). What's left before the build-out is a design and a prototype, with a go/no-go.
-Sessions: **design** (one), **prototype + gate** (one or two), then a build-out window if go. If the gate says no,
+Sessions: **design** (done 2026-10-20: go, staged, ~25 sessions; "The design" under stage 4), then the **taint
+prototype** (4-0, one session, its gate G0), then K1 refactors (4a-4c) up to gate G1, before anything is shared. If a gate says no,
 the fallback is stage 3 (front end) plus perf_leads.md's snapshot recycle, which goes after the thrashers (supabase
 studio: `--checker-memory off` takes 2.27 -> 1.30 s). Stage 3's cheapest piece, starting the costliest file first
 (tsc and type-fest are bound by their biggest file), doesn't depend on stage 4 and can go in any perf slot.
@@ -158,7 +159,7 @@ Validation: `scripts/threadcheck.sh`, scenarios, the source sweep (name resoluti
 declarations, TS2300/TS2451 order), `tttt --time`'s phase lines on vscode, webpack, effect at `--threads 1` and the
 defaults.
 
-## Stage 4: a shared concurrent type graph (its own window, 10-20 sessions, with a gate)
+## Stage 4: a shared concurrent type graph (~25 sessions over several windows, gates G0-G2: "The design" below)
 The paste's "declarations first, bodies second" idea, built where the duplication actually is: **one hash-consed
 intern table for every kind of type, grown concurrently by all checkers**, instantiations included; once-published
 lazy fields (resolved members, signatures, base constraints, variances) with a publish-once protocol; relation
@@ -199,20 +200,134 @@ vscode in 1.4 GB), and determinism.
     earlier is "older" where a private checker would have just made it, so the recursion cutoff would depend on the
     schedule. The design session must replace "newer" with something schedule-independent (a per-worker creation
     stamp for the types this relation made, say) and show it holds on the suite. flow.c's key_entry_cmp() sorts
-    by id only for a binary search, which can't be observed. Other `->id` uses are hash keys.
-- **The design session also answers** (insights 2026-10-20): what bun #45800's "shared results in small commits"
-  shares between its workers, and how it keeps the output deterministic (read the PR; bun's output isn't tsc's,
-  so its rules aren't ours, but its mechanism is a data point). It also lists every lazily written field on
-  `Ty` and in `Checker` with whether it is per-type (it must publish once) or per-query (it stays scratch); this
-  census is what the 10-20 session estimate rests on, so re-estimate from it. And it decides the memory story:
-  no recycling with a shared graph (K1 holds vscode in 1.4 GB) against a shared graph plus per-worker scratch
-  recycling.
-- Then a design session pricing: the table (lock-free open addressing, resize), the publish-once fields, what
-  `Checker.links` becomes (per-symbol state shared, per-expression state not), how diagnostics stay K-independent
-  (they do today by sorting; "whoever asks first" slots for inferred return types match tsc and tsgo's own
-  K-dependence), and a prototype on drizzle at K12 against today's 1.4x duplication, measured by per-file sums.
-- Go/no-go for the build-out: drizzle's per-file sum at K12 within 1.15x of K1's, K1 within 3% wall, kdiff and
-  checkerdiff byte-identical, peak at the defaults no higher than K1's today.
+    by id only for a binary search, which can't be observed. Other `->id` uses are hash keys. Answered below
+    (measurement 2): observable under random ids; first-touch stamps if global ids prove observable.
+
+### The design (session of 2026-10-20): go, staged, ~25 sessions
+Inputs: two read-only censuses and bun's design (`86_stage4_census.md`, the appendix), and two measurements made
+here (scratch builds, reverted).
+
+**Measurement 1: what duplication costs, and what a warm start buys.** Each checker silently checks a seed first:
+the first W% of checked source in program order, minus its own share's files. The table gives the per-file check-time
+sums of the real checks, serialized (`--threads 1`, so this is work, not SMT or clock inflation), no recycling
+(`--checker-memory off`), no stealing (s):
+| corpus | K1 | K4 cold | W 10 | W 25 | W 50 | W 100 | K12 cold | W 10 | W 25 | W 50 | W 100 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| drizzle | 1.14 | 1.54 | 1.51 | 1.52 | 1.21 | 0.94 | 1.91 | 1.75 | 1.72 | 1.16 | 0.85 |
+| excalidraw | 1.18 | 1.45 | 1.41 | 1.28 | 1.11 | 1.07 | 1.70 | 1.46 | 1.30 | 1.17 | 1.09 |
+| zod | 0.94 | 1.05 | 1.08 | 1.05 | 0.99 | 0.93 | 1.32 | 1.28 | 1.23 | 0.97 | 0.92 |
+- **The duplication is real and grows with K**: at K12, check work is 1.40x (zod), 1.44x (excalidraw) and 1.68x
+  (drizzle) K1's. That is more than plan 85's whole-CPU census showed (its front end diluted it). A perfectly shared
+  graph brings the sum back to about K1 (W 100 is K1 minus the first-use costs that someone has to pay once).
+- **A frozen seed doesn't get it**: a 10-25% program-order prefix removes little, and only 50% removes most of it. Each
+  region of the program builds types the others need too. So the "fork every checker from one frozen K1 prefix" design
+  (no concurrency at all) is dead: half the check would have to run serially first. Only concurrent sharing pays.
+- Real K4 runs (4 threads, same box) say the same through noise: drizzle cold 2.9 s of per-file sum, W 100 1.4-1.9, K1
+  1.1-1.2.
+
+**Measurement 2: gate condition 2 (is_deeply_nested_as()'s "newer id" test).** The rule (tsgo's isDeeplyNestedType)
+counts a stack entry only if its id is at least the last counted one's. Instrumented: on the suite it decides the
+answer **2689 times** (the result with and without the test differs), on the corpora 5 (nest) to 6926 (vue) times.
+With ids permuted at random for this test alone, the suite moves 3 tests (complexRecursiveCollections,
+inferFromNestedSameShapeTuple, ttttDeferredReferenceNormalizedInRelation) and **zod, drizzle and effect change their
+output**. With the test dropped, the suite moves 8. So id order is observable here, unlike in union ties.
+- But a random permutation is not what a shared graph gives. Under sharing, a type's id says when *some* worker
+  first made it, and type arguments are always made before what holds them. Today's private ids already depend on
+  history: the checker count, recycling and timing-dependent stealing all change it, and kdiff (K16 against K1: 2
+  projects of 5242, both shared with tsgo), the recycle oracle (4) and every corpus stay byte-identical. Expect a shared
+  graph's global order to behave like another history, not like a permutation. That is unproven.
+- **The replacement, if global ids turn out to be observable: per-worker first-touch stamps.** Each worker keeps a
+  dense `u32` array indexed by global id and stamps a type the first time it creates it or finds it in the intern
+  table. Only the kinds with a recursion identity need stamps: references, anonymous instantiations, conditional,
+  indexed and mapped types. is_deeply_nested_as() compares the stamps. At K1 the stamps equal today's ids exactly, so
+  the rule is unchanged where we can test it, and under sharing each worker sees a history of its own. Cost: one load
+  per intern hit of those kinds, measured at K1 before anything is shared. bun replaced the id test with a type's
+  height and then push order, and lost some cases as false TS2322s on recursive generics (part C §4). Don't copy that.
+
+**The architecture: a shared graph under a private overlay.**
+- **Shared**: the interned types, signatures, mappers, Members, Props and type parameters; one global atom table
+  (atoms are compared by pointer, so this is a prerequisite); global ids (an atomic counter handing out blocks of 1024
+  ids, so condition 1 holds: a worker's creations stay in order) and a global id -> `Ty` directory (a chunked array
+  with CAS-allocated chunks) so `LazyMemo`s keep 4-byte ids; the 85 SHARE kinds of `links`/`types` and the 7 SHARE
+  `node_links` kinds; declaration-level LazyType memos (class fields and accessors, module-level bindings); and the lib
+  singletons (intrinsics, `array_target`, `global_types`, `iteration`, `disposable_targets`, `unknown_signature`,
+  `tuple_params`, `typeof_type`), all made before the workers start so their ids are fixed.
+- **Per worker (the overlay)**: everything that is in flight (every LazyState IN_FLIGHT, the LazyMemo flags,
+  KEY_SIMPLIFIED's placeholder, KEY_BASE_CONSTRAINT's sentinels, the variance claims, early and partial members); every
+  *tainted* result (below); the 40 SCRATCH kinds; relation caches; expression memos; flow, inference and contextual
+  state; the stacks; `errs`. A read goes to the shared value when it is done (one acquire load, the same fast path
+  as today's `state == DONE` test), then to the overlay, then computes with an in-flight record in the overlay.
+- **The publish rule** (both censuses reached it independently): a result is published only if its computation was
+  *clean*. That means it popped no cycle, read no in-flight state, overlay value or TY_CIRCULAR, moved no limit
+  counter (`instantiation_limit_hits`, `relation_complexity_hits`, `relation_depth_hits`, the constraint depth 50, the
+  conditional epoch), ran with `flow_uncached == 0`, reported nothing at the current node, and ran in the typecheck
+  phase. Mechanism: a per-worker taint counter that every tainting event bumps; a computation records it at start and
+  compares at the end, so an inner tainted result taints everything around it for free. A tainted result goes to the
+  overlay, which is exactly what that worker would have computed alone today. Publication is CAS, first one wins. A
+  loser drops its own value and uses the winner's; its types stay in the graph unreferenced, as dead slots, like bun's.
+- **Why the output stays byte-identical**: a worker sees either its own computation (overlay, as today) or a clean
+  result that any worker would compute the same way, whoever computed it first. That is the same class of histories
+  K, recycling and stealing already produce. What is new: (a) the history is now timing-dependent within one run, so
+  any residual history dependence becomes run-to-run flakiness, not K-dependence; (b) mixed derivations: a shared
+  declaration type derived from worker A's expression memos while B's walk derives the same body's expressions again
+  in its scratch (census B §4). Both are measured, not argued: kdiff, checkerdiff and threadcheck repeated 20 times.
+- **Diagnostics**: a clean computation that reports at a fixed span (TS7022, TS2502, TS2577, TS2456, TS2313, TS2705 /
+  TS2468, TS7031, TS4109 with a span, report_iterator_methods) stores what it reported on the memo, the way
+  `CallResolutionRare.errs` does today. The owning file's walk reports it, so who published can't matter. Anything
+  that reports at the current node taints. Merging, sorting and `once_key` don't change.
+- **Identity purity** (census A §4, B rows marked H): `from_type_node` (tsgo keeps whoever made an instance first, so
+  first publisher wins is tsgo's own semantics), the conditional instance key that reads whether the root's branch is
+  done, TYX_CONSTRAINED_TYPE_VARIABLE OR'd into an existing intersection, `empty_symbol` on a structurally interned
+  object, `rest_binding` written after interning, `conditional.outer`/`root_aliased` written after interning,
+  `ty_pattern_clone()`'s memcpy sharing one TyObjectState, `TyParamState.item`, KEY_INSTANTIATION_QUERY /
+  UNDEFINED_PROPERTY / EXTENDED_CONTAINERS. Each moves into its constructor or key, or gets a written reason why it is
+  history-like.
+- **The table**: sharded open addressing (64 shards by hash, as bun has). Lookups take no lock: they read an atomically
+  swapped table pointer, and entries are written key first, value last with release. An insert locks its shard. On a
+  resize, readers may still be on the old array, so it stays allocated until the check ends: at most 2x the table
+  footprint, which the memory budget has to price. Keys live in the arena and never move (`intern_key_list()`'s TyLists
+  point into them). At K1, a lock that is never contended costs ~20 cycles per insert, and lookups don't change: measure
+  it.
+- **Memory**: the shared graph is never recycled. Each worker allocates from its own chunks of one shared arena, freed
+  at the program's end. The shared graph is about K1's size (vscode K1 peaks at 1.4 GB). Overlays recycle when a worker's
+  scratch exceeds its budget, which is cheap now that the expensive graph stays. Deferred-body materializations that a
+  shared type points into are pinned until the end: plan 78's vscode win is at stake, so measure the peak. Expected at
+  the defaults: about K1's peak plus K small overlays, against today's K full graphs.
+
+**Re-estimate from the census: ~25 sessions** (the earlier 10-20 had no census): ~25 IN_FLIGHT sites and 16 HARD keys
+to move into overlays, ~40 publication stores in ~22 functions, 6 mutations of published types to move into
+constructors, ~10 identity fixes, two global prerequisites (atoms, ids), the diagnostics-as-data conversions, the
+table, the arena and overlay recycling, then determinism hardening and perf. Every stage before 4e is a refactor at K1
+that holds every oracle. So a no-go at G1 or G2 costs the sessions spent, and leaves code that is better structured,
+not a half-built feature.
+
+**Stages and gates** (each holds every oracle at K1, kdiff, checkerdiff and recycle; K1 instructions within 1% per
+stage, 3% in total):
+- **4-0, taint prototype (one session, todo's entry 2)**: add the taint counter and its events at K1, and mark every
+  lazy store and every SHARE / HARD link write clean or tainted. Nothing is shared and the output doesn't change.
+  Report, per kind, on drizzle, excalidraw, zod, effect and vscode: the clean share of entries and of compute time. For
+  time, sample with `TTTT_FILE_TIMES`-style clocks around the outermost computations or count instantiations. Then
+  **cleandiff**: fingerprint every clean result and compare two histories of the same program, K1 in program order
+  against K1 with the share order reversed (or `--checker-memory 0`). The fingerprint is a structural hash with ids
+  replaced by the referents' hashes, memoized per type; printing is too slow. Clean results whose key is shared must
+  have equal fingerprints. **Gate G0**: go if ANONYMOUS_INSTANCE, CONDITIONAL_INSTANCE, members and props are mostly clean (>= 90%
+  of their entries and time) and cleandiff finds no mismatch, or only mismatches with a named mechanism to fix. No-go
+  otherwise, with the numbers: then the fallback (Order).
+- **4a, in-flight state into overlays** (3-5 sessions): every IN_FLIGHT, LazyMemo flag and sentinel becomes a
+  per-checker record; the shared-looking field is only ever written done. Still K1, still private checkers.
+- **4b, identity purity and diagnostics as data** (2-3 sessions).
+- **4c, global atoms, global ids with the id directory, first-touch stamps** (2 sessions): stamps behind a flag, and at
+  K1 the output is unchanged by construction.
+- **Gate G1**: every oracle holds through 4a-4c at K1 and today's K, and K1 is within 3%.
+- **4d, the shared graph behind `--shared-graph`** (3-4 sessions): the table, arena chunks, publish/CAS, overlays
+  layered on it, workers on one graph.
+- **Gate G2 (the old go/no-go, made measurable)**: drizzle, excalidraw and zod, per-file sums serialized at K12 within
+  1.15x of K1 (today 1.40-1.68x); real K4 wall and CPU better than today's defaults on every corpus; kdiff, checkerdiff
+  and threadcheck byte-identical in 20 repeated runs on the corpora and the source sweep's `--sample 4`; peak at the
+  defaults no higher than K1's +25%. On the 12-core box (the human's command): per-file sums at K12 against the
+  spinning-cores floor (1.62x K1 there), not against K1.
+- **4e, build-out** (4-6 sessions): the rest of the census shared, overlay recycling, pinning, perf, the default on.
+- **4f, determinism hardening at breadth** (3-5 sessions): the sweeps repeated, any run-to-run flake root-caused.
 
 ## Validation of the whole plan
 The 12-core table in measurements.md re-run by the human after each stage (`scripts/bench.sh --runs 3 --bun PATH
