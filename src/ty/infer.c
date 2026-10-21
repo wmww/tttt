@@ -2142,7 +2142,7 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
 // intersection is flattened into its members, so one by an alias is the same intersection without it, `Ctx` printing
 // as `Base & { deps: string[] }`)
 static Ty const* contra_intersection(Checker* me, Ty const* const* types, u32 len) {
-    if (len == 1) return (types[0]->flags & TYF_ANY) ? ty_intersection_of_any(me, types[0]) : ty_intersection_unaliased(me, types[0]);
+    if (len == 1) return ty_intersection_unaliased(me, types[0]);
     return ty_intersection(me, types, len, nullptr, (TyList){0});
 }
 
