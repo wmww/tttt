@@ -6240,6 +6240,9 @@ typedef struct WideningCtx {
     Prop const** props; // The properties of the siblings, the last of each name, in order of first appearance
     u32 prop_count;
     bool props_done;
+    // Where the siblings' first property is declared (prop_order_pos()'s file << 32 | offset, UINT64_MAX without one):
+    // the order tsc widens contexts in, which undefined_choice() follows
+    u64 first_pos;
 } WideningCtx;
 
 static void push_members(TyBuf* out, Ty const* ty) {
@@ -6275,12 +6278,15 @@ static TyBuf const* context_siblings(Checker* me, WideningCtx* ctx) {
 static void context_props(Checker* me, WideningCtx* ctx) {
     if (ctx->props_done) return;
     ctx->props_done = true;
+    ctx->first_pos = UINT64_MAX;
     TyBuf const* siblings = context_siblings(me, ctx);
     for (u32 i = 0; i < siblings->len; i++) {
         if (!ty_is_object_literal_without_spread(me, siblings->data[i])) continue;
         Members const* members = ty_members(me, siblings->data[i]);
         for (u32 j = 0; j < members->prop_count; j++) {
             Prop const* prop = members->props[j];
+            u32 file = 0, offset = 0;
+            if (prop_order_pos(prop, &file, &offset) && ((u64)file << 32 | offset) < ctx->first_pos) ctx->first_pos = (u64)file << 32 | offset;
             u32 k = 0;
             while (k < ctx->prop_count && ctx->props[k]->name != prop->name) k++;
             if (k == ctx->prop_count) {
@@ -6297,7 +6303,10 @@ static void context_props(Checker* me, WideningCtx* ctx) {
 // current choice, replaced (never changed) when a candidate declared earlier shows; choices live as long as the
 // program (the types made with one hold its spans)
 typedef struct UndefinedChoice {
-    u64 pos; // prop_order_pos()'s file << 32 | offset of the candidate, UINT64_MAX without one
+    // Where the context it was a candidate in starts (WideningCtx.first_pos), then where it's declared (prop_order_pos()'s
+    // file << 32 | offset, UINT64_MAX without one): see undefined_choice_first()
+    u64 context_pos;
+    u64 pos;
     // Met only outside the files' checks (declaration emit, its diagnostics walk): any candidate a check meets comes
     // first (see undefined_choice())
     bool after_checks;
@@ -6412,28 +6421,33 @@ static void undefined_pin_body(Span at) {
     pthread_mutex_unlock(&list->lock);
 }
 
-// Whether the choice stays first before a candidate at `pos`. tsc's first need in one checker that checks the files in
-// program order and then emits them: the candidates the checks meet in declaration order, then those only the emit
-// does (an unchecked file's walk, a type only a declaration needs). Which candidates some file's check meets doesn't
-// depend on the checker's history (what it skips another check made before it, which met it: an incarnation emits only
-// after its checks), so neither does the choice
-static bool undefined_choice_first(UndefinedChoice const* choice, bool after_checks, u64 pos) {
+// Whether the choice stays first before a candidate at `pos` met in a widening context starting at `context_pos`.
+// tsc's first need in one checker that checks the files in program order and then emits them: the candidates the
+// checks meet, then those only the emit does (an unchecked file's walk, a type only a declaration needs); among them
+// the one of the context declared first (tsc widens a literal's contexts in about source order), whose candidate is its
+// last sibling with the name (getPropertiesOfContext keeps the last: hoppscotch's mock-server example, where an
+// earlier context's earlier candidate would sort `grantTypeInfo?` first), then the candidate declared first. Which
+// candidates some file's check meets doesn't depend on the checker's history (what it skips another check made before
+// it, which met it: an incarnation emits only after its checks), nor do the contexts: neither does the choice
+static bool undefined_choice_first(UndefinedChoice const* choice, bool after_checks, u64 context_pos, u64 pos) {
     if (choice->after_checks != after_checks) return after_checks;
+    if (choice->context_pos != context_pos) return choice->context_pos < context_pos;
     return choice->pos <= pos;
 }
 
 // The choice for `prop`'s name once `prop` is a candidate
-static UndefinedChoice const* undefined_choice(Checker* me, Prop const* prop) {
+static UndefinedChoice const* undefined_choice(Checker* me, Prop const* prop, u64 context_pos) {
     UndefinedEntry* entry = undefined_entry(me, prop->name);
     u32 file = 0, offset = 0;
     u64 pos = prop_order_pos(prop, &file, &offset) ? (u64)file << 32 | offset : UINT64_MAX;
     bool after_checks = !my checking_file;
     UndefinedChoice* current = atomic_load_explicit(&entry->choice, memory_order_acquire);
-    if (current && undefined_choice_first(current, after_checks, pos)) return current;
+    if (current && undefined_choice_first(current, after_checks, context_pos, pos)) return current;
     // (Made outside the lock: the pseudo type asks the checker)
     u32 count = prop->decl->decl_span_count;
     UndefinedChoice* choice = calloc(1, sizeof(UndefinedChoice) + sizeof(Span) * (count ? count : 1));
     panic_if(!choice, "out of memory");
+    choice->context_pos = context_pos;
     choice->pos = pos;
     choice->after_checks = after_checks;
     choice->readonly = (prop->flags & PROP_READONLY) != 0;
@@ -6450,7 +6464,7 @@ static UndefinedChoice const* undefined_choice(Checker* me, Prop const* prop) {
     UndefinedProps* table = program_undefined_props(my program);
     pthread_mutex_lock(&table->lock);
     current = atomic_load_explicit(&entry->choice, memory_order_acquire);
-    if (current && undefined_choice_first(current, after_checks, pos)) {
+    if (current && undefined_choice_first(current, after_checks, context_pos, pos)) {
         pthread_mutex_unlock(&table->lock);
         free(choice);
         return current;
@@ -6578,7 +6592,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
         // value which getNonMissingTypeOfSymbol drops, so `x?: never` is how it prints. Declared by the program-wide
         // choice of the name, undefined_choice(): only its declaration shows, in the member order, the symbols baseline
         // and declaration emit)
-        UndefinedChoice const* choice = undefined_choice(me, prop);
+        UndefinedChoice const* choice = undefined_choice(me, prop, ctx->first_pos);
         props[count++] = (ObjectLiteralProp){
             .name = prop->name,
             .flags = PROP_OPTIONAL | PROP_NORMALIZED_UNDEFINED | (choice->readonly ? PROP_READONLY : 0),

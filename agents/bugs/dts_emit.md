@@ -52,7 +52,16 @@ size on real code, each with an example:
     (`recheck_stale_undefined_props()`, `TTTT_DEBUG_UNDEFINED_PROPS=1` lists them, `=all` rechecks every file that
     printed one: its own oracle). vscode at the defaults 9929 / 9929 (was 9925: recycling reset the old per-checker
     first-need cache, the terminal xterm recordings), byte-identical at K1, `-m 0`, K4, K12 and `--shared-graph` K1/K12;
-    a quarter sample (`--sample 4`) as before. What's left is where tsgo's first need isn't declaration order: a
+    a quarter sample (`--sample 4`) as before. The full run (2026-10-21, after the merge) lost hoppscotch-backend
+    and vitest/packages/ui against the first-need emulation: candidates are now ordered by where their widening
+    context starts first (`WideningCtx.first_pos`: tsc's getPropertiesOfContext takes the *last* sibling with the name,
+    so an earlier context's candidate can sit after a later one's; hoppscotch's mock-server example, a big literal of
+    nested arrays, printed `grantTypeInfo?` first), which brought hoppscotch back: dtsdiff 1327 / 1350, files 105143.
+    vitest/packages/ui `client/composables/explorer/{state,search}.d.ts` stays lost: a `computed(() => ...)` arrow
+    whose returns `{ matcher }` / `{ matcher, error }` / `{ matcher }` (state.ts:58-73) call createSafeFilter(), a
+    function declared after it whose own return union (`{ matcher, error }` at :83) tsgo widens first, while checking
+    the arrow's body before widening the arrow's returns, so tsgo's `error?` is :83's and sorts last; tttt's is the
+    arrow's (:68). What's left is where tsgo's first need isn't declaration order: a
     literal union in a deferred function body (an arrow's) declared before a top-level one tsgo checks first (filetest
     shape: `const run = (): number => { const v = [{ x: 1 }, { y: 1 }]; return v.length; };` then `export const b =
     [{ y: 1, z: 1 }, { x: 1 }];`: tsgo `x?` last, tttt first), and tsgo's own split (postiz, slate tests, ui, whose
