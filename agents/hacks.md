@@ -405,6 +405,14 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   clear both by default on entering structured comparison and pass them on only where tsc does.
 
 ## Type core (`src/ty/`)
+- `--shared-graph` (ty/graph.c, plan 86 track S) is sequential only: atoms, the type id counter, the id -> Ty table's
+  chunk directory and the lib singletons are handed to whichever checker is current (graph_enter() from
+  checker_make_current(), a 512 KB memcpy each way), which is only right while one checker at a time allocates.
+  Publication is batched at a share's end (graph_publish()), equivalent only sequentially. graph_kind_class() puts
+  KEY_FLOW_NARROWED / KEY_FLOW_DISCRIMINANT (census: SHARE) with the scratch kinds, and treats identity records
+  (SymbolLinks, FunctionReturn) as published whatever their contents' taint. Its cheap taint compiles only with
+  -DTTTT_GRAPH_TAINT and doesn't count reads of tainted private intern entries or of Ty-resident results other than
+  at TAINT_READ sites (members only on the slow path).
 - Re-entry below resolution barriers (plan 88): tsc re-enters anything in flight below `resolutionStart` (a call's
   first resolution, the outermost variance measurement) and stops only when a request is above a barrier; tttt
   approximates per site: declarations and inferred return types re-enter below the call barrier every time, as tsc

@@ -61,3 +61,9 @@ needed on these corpora), then taint, then measure both.
   "another history" assumption gets its first real test.
 - Mixed derivations (census B §4): a shared declaration type next to the checker's own derivation of its
   initializer's expressions.
+
+## Result (2026-10-21)
+Plan 86 "Track S" has the numbers. In short: without taint the output is byte-identical at K4 and K12 on every
+corpus and K12's check work is ~1.08x K1 (drizzle, zod; base 1.5-1.9x), peak memory K1 + 10%. With the G0 taint
+rule (`-DTTTT_GRAPH_TAINT`) drizzle's output changes: withheld tainted variances are measured again in the warm graph
+and come out other than any cold history measures them. The taint now builds only with that define.

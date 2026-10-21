@@ -476,6 +476,60 @@ checker.** At K1 nothing is shared, so 4a is a pure refactor (byte-identical out
   - Per-expression scratch with in-flight markers, per worker by design: CallResolution.in_flight, KEY_FLOW_EXHAUSTIVE's
     2, KEY_BINDING_COMPUTED_KEY's `{}`.
 
+### Track S: `--shared-graph` sequentially (2026-10-21, ahead of 4d)
+`--shared-graph` (src/ty/graph.{h,c}, APPROACH.md): K checkers run one after another (`--threads 1`, no recycling)
+on one graph: atoms, ids, the id table and the lib singletons handed to the current checker; `types`, `links`,
+`intersection_props` and `node_links` with a shared table each, looked up after the private one on a miss
+(`InternTable.shared`, `ty_link_get()`); declaration memos in a shared store by slot (`graph_memo_take()`); a share's
+private entries published at its end (`graph_publish()`): identity kinds always, memo kinds when clean, scratch never
+(`graph_kind_class()`). Ty-resident lazy fields (members, prop types, signatures...) are shared as they are. The cheap
+taint (G0's lenient rule as a counter) builds only with `-DTTTT_GRAPH_TAINT`.
+
+**Work** (callgrind instructions inside program_typecheck, as a multiple of the normal build's K1; base K4/K12 from
+4eadfcc74, the rest at e3b90d42c + track S):
+| corpus | base K4 | base K12 | shared K1 | shared K4 | shared K12 | shared K12, taint on |
+|---|---|---|---|---|---|---|
+| drizzle | 1.435 | 1.923 | 0.996 | 1.056 | 1.084 | 1.151 |
+| zod | 1.192 | 1.510 | 0.996 | 1.059 | 1.081 | 1.246 |
+| excalidraw | 1.180 | 1.377 | 0.989 | 1.057 | 0.9892 | 1.128 |
+What K12 still does twice is relations (relation caches are per checker: check_related +0.7 G of zod's taint-on K12
+excess) and, with taint on, variance measurements: tainted variances are withheld and every checker measures them again
+(zod's get_variances 0.33 -> 0.89 G). Wall per-file sums (loaded machine, min of 2) agree: drizzle K12 1107 ms base,
+769 shared, K1 841.
+
+**Correctness**: without taint (or with every tainted kind published, `TTTT_GRAPH_PUBLISH_TAINTED=all`), byte-identical
+to K1 at K4 and K12 on all 14 `-p` corpora (vscode included). With
+taint, drizzle differs (K4: 298 lines against 308, K12: 288): two TS2416 elaborations go. Only KEY_VARIANCES does it
+(`TTTT_GRAPH_PUBLISH_TAINTED=52` restores it). Mechanism: MySqlUpdateBase and MySqlUpdateWithout (and the Pg/Gel/
+SingleStore twins) are a variance cycle; from a cold checker the restart-from-the-smallest-symbol rule measures
+MySqlUpdateBase nested in MySqlUpdateWithout's measurement, [1 0 1 1 1], tainted (it read a claim in flight), and
+every private checker at K12 gets the same. A later checker of the shared graph measures it again warm: its marker
+instances are shared with their members resolved, so the measurement doesn't enter MySqlUpdateWithout, finds itself
+circular directly and gets [17 16 17 17 16] (VARIANCE_UNRELIABLE everywhere). So a tainted result is not "what a
+private checker would compute": recomputed in a warm graph it can be what *no* cold history computes. For 4d: a
+variance cycle's results must be published as a group with their cold values (first finisher wins, which is what
+publishing them gives), not withheld; the publish rule needs a "cycle-internal in-flight read" exception for
+variances, the case G0's `--variances-clean` probed. The other tainted kinds (conditional instances, simplified,
+base constraints, declaration memos) changed nothing withheld.
+
+**The share** (`TTTT_GRAPH_STATS=1`, K12): shared hits 1.18 M drizzle, 1.02 M zod, 1.85 M excalidraw lookups
+(literals, SymbolLinks, references, anonymous and conditional instances, intersection props, union pairs); taint marks
+only ~0.03-0.1% of entries (292 / 658 / 412 withheld).
+
+**Memory** (peak RSS, `--threads 1`): K12 shared 524 / 461 / 411 MB against K1 473 / 429 / 373 and base K12 877 /
+661 / 580 (drizzle / zod / excalidraw); vscode K12 4.35 GB against K1 4.11, base K12 4.83.
+
+**Cost at K1**: flag on, -0.4% (the last checker doesn't publish; publication is ~2.5% of a checker's work: reading
+every private block's kind). Flag off: flat (the taint is out of the default build).
+
+**What isn't shared, and what 4b/4d must do with it**: relation caches (the biggest remaining duplication;
+KEY_GENERIC_RELATION numbers relations per checker), every scratch kind, the hand-overs (atoms, ids, id table,
+singletons: sequential only, 4c's global atoms and ids), Ty-resident results (shared as computed, tainted or not:
+`graph: tainted members ... (on an earlier checker's type: N)` counts the ones another checker then reads: 2-6),
+identity records with tainted contents (SymbolLinks, FunctionReturn: withholding them would split a symbol's declared
+type), and peeks at memo done-ness (`lazy_type_state_peek()`) that don't see a shared memo. Locks/CAS would go in
+`graph_publish()`'s per-entry insert (to become per computation) and `intern_shared_find()`/`graph_link_get()`'s probes.
+
 ## Validation of the whole plan
 The 12-core table in measurements.md re-run by the human after each stage (`scripts/bench.sh --runs 3 --bun PATH
 --tscrs PATH`, the CPU column included), per-file sums at K1 / K1-with-spinning-cores / K12 on vscode and drizzle
