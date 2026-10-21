@@ -264,6 +264,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttContravariantInferenceOfUnresolvedName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttConversionHeadQualified': {
         errors: true,
         symbols: true,

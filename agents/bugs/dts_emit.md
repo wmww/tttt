@@ -116,11 +116,8 @@ size on real code, each with an example:
   - react-scan `Component<P>` vs `Component<Attributes, {}>`: fixed (a local function with expandos is an anonymous
     type now, instantiated: is_local_expando_function()). The `Readonly<{...}>` reprinted where tsc
     no longer reuses an alias body's annotation: hacks.md "An alias body's homomorphic mapped instance".
-    react-three-fiber `ReadonlyArray<...>` reuse: see agent A's note. mockoon
-    `deploy.service.d.ts` `Observable<any>` (tttt `Observable<DeployInstance>`): only under the root `mockoon`
-    config (`scripts/tsctypeat.sh` says `instance: any` in the `tap` after `switchMap` there, DeployInstance under
-    packages/app's); `forkJoin([any, any])` is `Observable<[any]>` in both and an rxjs probe with a local `post<T>`
-    matches, so it's in Angular's `HttpClient.post<T>` overloads or the unresolved services, not reduced. vueuse
+    react-three-fiber `ReadonlyArray<...>` reuse: see agent A's note. (mockoon's `Observable<any>` fixed
+    2026-10-21: ttttContravariantInferenceOfUnresolvedName.) vueuse
     `.test/mount.d.ts`: `defineComponent({ components: Comp, ... })` where tsgo prints Comp's `DefineComponent<...>`
     expanded (its constructor type & ComponentOptionsBase...) and tttt keeps the alias: alias lost somewhere in Vue's
     inference, not reduced. headlessui's use-controllable matched in 2026-10-18 runs (an order effect, may come back). effect's and excalidraw's others: see "Checker types, uninvestigated"
@@ -228,4 +225,4 @@ static order (own statics first). dtsdiff in a worktree: 1326 / 1350. Verdicts:
   (vscode's matched at the defaults since the program-wide choice, 2026-10-21; the others not rechecked)
 - headlessui-vue: `--singleThreaded` writes what tsgo's default does (cached); its last file matches since the twin fix.
 - Left as before: babel-parser, mcp-sdk (checker split), slate test / postiz / ui (undefinedProperties), feathers
-  `language`, mockoon, vest (tsgo bug), telegraf's partial reuse map (react-three-fiber's mock fixed since).
+  `language`, vest (tsgo bug), telegraf's partial reuse map (react-three-fiber's mock fixed since).

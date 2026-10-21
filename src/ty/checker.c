@@ -2403,10 +2403,18 @@ static bool any_intersection_never(Checker* me, TyBuf const* buf) {
     return (domains & named) && (domains & (domains - 1));
 }
 
+// What an intersection of one any is: tsc's getIntersectionType never adds an any to its set, it returns the wildcard,
+// the plain error type (for an unresolved name's aliased any too, isErrorType) or the plain any instead, before its
+// one-member shortcut (`Obs<DI>` through a contravariant inference is `Obs<any>`)
+Ty const* ty_intersection_of_any(Checker* me, Ty const* any) {
+    if (any == my intrinsics[TY_WILDCARD]) return any;
+    return my intrinsics[(any->flags & TYF_ERROR) ? TY_ERROR : TY_ANY];
+}
+
 static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, u32 opts) {
     bool keep_empty_object = opts & INTERSECT_KEEP_EMPTY_OBJECT;
     u32 inherited = opts & INTERSECT_NO_CONSTRAINT_REDUCTION;
-    if (len == 1) return types[0];
+    if (len == 1) return (types[0]->flags & TYF_ANY) ? ty_intersection_of_any(me, types[0]) : types[0];
     for (u32 i = 0; i < len; i++) {
         if (types[i] == my intrinsics[TY_WILDCARD]) return types[i];
     }
@@ -2439,6 +2447,7 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
     if (!decided) intersect_unions_of_primitives(me, &buf);
     if (buf.len == 1) {
         Ty const* only = buf.data[0] == my intrinsics[TY_UNDEFINED] && has_missing ? my intrinsics[TY_MISSING] : buf.data[0];
+        if (only->flags & TYF_ANY) only = ty_intersection_of_any(me, only);
         ty_buf_drop(&buf);
         return only;
     }
