@@ -1538,8 +1538,15 @@ in parallel only where the file sets are disjoint):
       mapper) is published at creation, so whoever made it first fixed it for every worker. The two history-free
       choices change output (always from the node: a spurious TS2344 at type-fest object-merge.d.ts(173,48); always
       lowering the root first: 3 suite tests). Option B (the instance keeps the root's branch; the choice is made at
-      pick time, ty_cond_branch_compute(), the not-lowered case a taint event) is byte-identical on the suite and 12
-      corpora; landed after the side-data commit with its sharing numbers.
+      pick time, the not-lowered case a taint event; patch kept out of the tree) is byte-identical on the suite and 12
+      corpora at K1 but not landed: with the flag cgtc K12/K1 work drizzle 1.191 -> 1.263, zod 1.217 -> 1.274, K1 with
+      the flag +1.9% (the poisoned words' Overlay), and zod differs in 5/5 K12 runs (a TS2345 at function.test.ts
+      (257,38)): the two paths aren't equivalent, and a worker's view of "the root is lowered" mixes its history with
+      others' publications. **The fix is to make the two paths agree** (why lowering from the node differs from
+      instantiating the root's lowered type: type-fest object-merge.d.ts(173,48), ttttTemplatePlaceholderCurrentNode,
+      distributiveConditionalTypeConstraints, recursiveConditionalCrash4); then the choice and the hole vanish. P3's
+      fingerprint divergence (1) (zod `$replace`'s distributive constraint) starts at a conditional branch: probably
+      this.
   - **P3, relate.c + graph.c + lazy_type.c + shared_table.c** (variance groups without waiting, declaration memos as
     words, memo kinds publishing only clean entries in graph_memo_flush(), the shared relation cache's deeply-nested
     rule). ~1-2 sessions. The tooling worker's hooks in graph.c and shared_table.c are its neighbours: rebase often.
