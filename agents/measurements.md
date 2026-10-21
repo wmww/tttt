@@ -342,6 +342,44 @@ done; `--threads 4` K4 is this box's default (2 cores x 2 SMT). `off` is `--chec
   project's own `.ts` code instantiating its libraries (dokploy's trpc router of zod schemas, drizzle's own sources),
   which no up-front layer can hold. Plan 85 closed on this (vision.md).
 
+## Plan 86 gate G2: `--shared-graph` on threads (2026-10-21, b97b6f4ac, this box: 16 vCPUs shared with other agents)
+Release build (not PGO), `-q --keep-going --noEmit`, best of 3 by wall; load 4.8-6.8 (other agents). Columns: wall s,
+CPU s (user+sys), peak RSS MB. K1 = `--threads 1 --checkers 1`; def = no flags; defK / shK = `--threads K --checkers K`
+without / with `--shared-graph` (which turns recycling off).
+| corpus | K1 | def | def4 | sh4 | def12 | sh12 |
+|---|---|---|---|---|---|---|
+| TypeScript6 | 0.74 .73 221 | 0.22 .84 354 | 0.22 .67 253 | 0.23 .72 264 | 0.21 .99 335 | 0.24 .94 320 |
+| type-fest | 0.90 .90 427 | 0.44 1.56 590 | 0.38 1.02 414 | 0.44 1.19 638 | 0.26 1.41 566 | 0.39 1.68 693 |
+| valibot | 0.48 .47 251 | 0.14 .92 296 | 0.19 .68 152 | 0.20 .70 298 | 0.12 1.04 296 | 0.13 .96 367 |
+| bulletproof-react | 0.18 .18 141 | 0.13 .38 226 | 0.09 .30 197 | 0.08 .24 178 | 0.15 .56 320 | 0.09 .39 250 |
+| nest | 0.19 .18 128 | 0.12 .37 212 | 0.08 .25 162 | 0.08 .25 160 | 0.08 .40 232 | 0.08 .37 237 |
+| webpack | 1.35 1.34 542 | 0.40 2.73 546 | 0.48 1.82 437 | 0.48 1.77 613 | 0.32 2.85 560 | 0.30 2.43 665 |
+| zod | 0.72 .72 377 | 0.21 1.46 449 | 0.27 1.03 268 | 0.27 .96 494 | 0.20 1.90 440 | 0.19 1.38 564 |
+| xstate | 0.34 .33 188 | 0.12 .75 310 | 0.15 .54 199 | 0.14 .43 234 | 0.12 1.06 335 | 0.11 .66 285 |
+| drizzle | 0.96 .95 394 | 0.31 2.13 494 | 0.44 1.65 357 | 0.48 1.21 556 | 0.28 2.73 575 | 0.43 1.60 631 |
+| vue | 0.77 .77 301 | 0.16 1.18 370 | 0.24 .91 216 | 0.24 .91 349 | 0.15 1.44 383 | 0.16 1.36 409 |
+| effect | 1.43 1.43 573 | 0.26 2.05 569 | 0.44 1.71 391 | 0.49 1.83 764 | 0.24 2.38 580 | 0.28 2.56 826 |
+| excalidraw | 0.93 .93 365 | 0.24 1.76 425 | 0.38 1.44 270 | 0.30 1.12 417 | 0.22 2.10 445 | 0.18 1.62 492 |
+| tanstack-router | 0.64 .63 300 | 0.17 1.04 367 | 0.22 .84 240 | 0.23 .83 371 | 0.16 1.27 391 | 0.16 1.15 424 |
+| vscode | 13.26 13.25 1407 | 2.45 18.35 1410 | 4.19 16.11 1158 | 4.08 15.52 4384 | 2.21 22.44 1469 | 2.14 21.12 4467 |
+- **CPU**: the shared graph saves CPU at K12 on 10 of 14 (drizzle 1.60 against 2.73, zod 1.38 / 1.90, excalidraw
+  1.62 / 2.10, xstate 0.66 / 1.06, vscode 21.1 / 22.4); more on type-fest (1.68 / 1.41) and effect (2.56 / 2.38).
+- **Wall**: equal or better at K12 on 11 of 14 (excalidraw 0.18 / 0.22, webpack 0.30 / 0.32, vscode 2.14 / 2.21); worse
+  on drizzle (0.43 / 0.28: the variance lock, one measurement at a time, and a third of drizzle's work is under
+  measurements; 3.0 s of its K12 workers' time is waiting, 0.7 s without the lock), type-fest (0.39 / 0.26) and effect
+  (0.28 / 0.24).
+- **Memory**: peak RSS is higher everywhere, since nothing is recycled with the flag: vscode 4.4-4.6 GB against 1.4 at
+  the defaults (K1 1.4 with recycling, 4.1 without), effect 826 / 580 MB.
+- **Work** (callgrind Ir in program_typecheck and the worker threads, `--checker-memory off`, K12 / K1 with the flag):
+  zod 4.808 / 4.384 G = 1.097, drizzle 5.796 / 5.276 = 1.099, excalidraw 7.418 / 6.544 = 1.134 (the G2 target, 1.15,
+  holds). Before memo publication at the computation's end (7b20a147d): 1.26, 2.63, 1.17.
+- **Per-file check-time sums** (TTTT_FILE_TIMES, best of 3; wall per file, waits included): drizzle K1 801 ms, sh12
+  3918, def12 2289; excalidraw 805 / 1400 / 1814; zod 661 / 1575 / 1699. At 12 threads every file runs ~2x slower
+  per instruction (def12 is 2.2-2.9x K1 for 1.4-1.9x the work); drizzle's sh12 is mostly waiting (2968 ms summed).
+- **Determinism** (K12 T12 against K1's output): 20 runs each on drizzle, zod, effect, excalidraw, nest all K1's;
+  drizzle 300 loaded runs (an effect K12 loop beside it) all K1's; vscode 5 / 5 (2.16-2.26 s, 4.56-4.58 GB, no redo),
+  TypeScript6's compiler 5 / 5; all 13 other `-p` corpora at K4 and K12 twice each K1's output.
+
 ## Oracle totals (2026-10-20, b93fd63f3: the twenty-third window's triage)
 Suite 13957 / 13991 (dts 1887 / 1909; `scripts/passcount.py`), every corpus 0/0 but vue 0/2, DT 8595 / 8595,
 `$ExpectType` 68640 / 68640, flagflip 18 / 3 / 2 (missing / spurious / other code; flagflip.py runs at `--checkers 1`),

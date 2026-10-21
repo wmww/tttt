@@ -873,6 +873,48 @@ at the computation's end**, and makes every field another worker can read safe t
   again. K1 default path: drizzle -0.12%, zod -0.04%, nest -0.01% instructions (shorter keys), one type fewer on
   drizzle (171 989), suite and corpora unchanged; K12 T12 20 runs each on drizzle, zod, effect, excalidraw, nest: K1's.
 
+  **Gate G2 (task 4, b97b6f4ac; the table is measurements.md "Plan 86 gate G2")**: work holds (callgrind K12 / K1
+  with the flag: zod 1.097, drizzle 1.099, excalidraw 1.134, target 1.15) and so does determinism (every `-p` corpus
+  at K4 and K12 K1's output; 20 / 20 on the five, drizzle 300 / 300 under load, vscode 5 / 5, TypeScript6 5 / 5). CPU at
+  K12 falls on 10 of 14 corpora (drizzle -41%, zod -27%, excalidraw -23%), wall is equal or better on 11 of 14 but
+  worse on drizzle (+54%: the variance lock), type-fest (+50%) and effect (+17%). Memory fails: nothing is recycled,
+  vscode peaks at 4.4-4.6 GB against 1.4 at the defaults. Per-file wall sums at 12 threads are 2-5x K1's (12 threads
+  on this box run each file ~2x slower per instruction, and drizzle's are mostly waiting), so they don't measure work
+  here. Next: 4e below.
+
+### Stage 4e: making `--shared-graph` the default (plan, 2026-10-21; ~9-13 sessions)
+In order; each item its own commit, gated like 4d (K1 byte-identical and flat with the flag, K4/K12 K1's output on
+every `-p` corpus, 20-run tables on the four, no default-path cost until the flag flips).
+1. **Narrow the variance lock (1-2 sessions).** The lock serializes all measurements (drizzle +54% wall at K12). First
+   find what one measurement takes from another in flight: two workers' TTTT_DEBUG_VARIANCE logs (worker-tagged, as in
+   task 3's scratch patch) in differing lock-off runs, and TTTT_DEBUG_RELATE_NESTED around the measurement whose
+   result differs; the candidates are Ty-resident results finished under another worker's measurement (members and
+   prop types of instances whose relation used an Unknown variance) and variances_known()'s foreign-in-flight answer.
+   Then either fix that read (keep such results private to the measuring worker: a measurement-scoped overlay) or lock
+   per connected group (a worker that would wait on another's slot joins its lock instead of claiming its own).
+   Gate: drizzle 300 loaded runs K1's output with drizzle's K12 wall back at or below the defaults'.
+2. **Shared relation cache (2 sessions)**, as designed below. Gate as there; excalidraw's K12 pairs within 5% of K1.
+3. **Memory: per-worker private state recycled, the shared graph kept (3-4 sessions).** With the flag nothing is
+   freed: a worker's arena holds both what it published and its private state (relation caches, scratch kinds,
+   expression memos, flow and inference results, private memo entries). Split each checker's arena into a published
+   part (what intern_set()/graph_memo_flush()/LAZY_DONE publish: blocks other workers can point to) and a private
+   part freed at the same budget points as today's recycling (the private tables and caches reset, the published
+   ones kept); a recycled worker keeps its worker number and the graph. Needs: allocation sites told which arena
+   (identities and Ty-resident results to the published one, scratch to the private one; the census in
+   86_stage4_census.md lists the kinds), and no private pointer from a published block (TTTT_DEBUG_IDS-style check).
+   Target: vscode K12 peak within ~1.3x of today's defaults (1.4 GB), drizzle/effect within 1.2x.
+4. **The redo's gaps (1 session).** A break while the thread materializes deferred bodies (none seen) leaves the AST
+   thread state set; malloc'd temporaries of the abandoned stack leak (bounded by redos: drizzle 0-4 a run); a retired
+   checker's memory stays to the end (fold into item 3: a retired worker's private part freed at once).
+5. **Default on (2-3 sessions).** Flip the flag where it wins: threads > 1 and a program big enough (the per-checker
+   source bytes rule, or the sh12 / def12 table above). Before flipping: the whole oracle set (sweep, source sweep,
+   kdiff -k 1 vs 16, expecttypes, flagflip, clidiff, dtsdiff, scenarios -b) with the flag, since only the suite and the
+   corpora ran with it so far; checker recycling's oracle (kdiff -m 0) replaced by item 3's; type-fest and effect,
+   where the flag costs CPU today, looked at (likely relation duplication, item 2).
+6. **Open questions**: whether tsgo's own output depends on checker count where tttt's shared graph now does what K1
+   does (task 3's other half, not measured); whether TTTT_GRAPH_WAIT_YIELDS' 50 suits a quiet many-core box (tuned on
+   a loaded 16-vCPU one).
+
 ### 4e's first item: a shared relation cache (measured and designed 2026-10-21, not built)
 **Measurement** (`agents/plans/86_relation_share_probe.patch`, a scratch patch to relate.c's recursive_related():
 `TTTT_RS=1` keeps a program-wide map of every clean definitive cache put, keyed by relation, intersection-state bits
