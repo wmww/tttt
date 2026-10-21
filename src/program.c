@@ -2197,7 +2197,7 @@ failable program_load_stdlib(Program* me, csview name, returns SourceFile*) {
     return ok(source);
 }
 
-void program_load_ahead(Program* me, csview const* libs, isize lib_count, csview const* roots, isize root_count) {
+void program_load_ahead_libs(Program* me, csview const* libs, isize lib_count) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     LoadPool* pool = program_pool(me);
     if (!pool) return;
@@ -2210,7 +2210,13 @@ void program_load_ahead(Program* me, csview const* libs, isize lib_count, csview
         c_drop(cstr, &path, &replacement);
     }
     program_queue_batch(pool, &batch);
-    // (Under one lock: the workers are already taking the libs)
+}
+
+void program_load_ahead_roots(Program* me, csview const* roots, isize root_count) {
+    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+    LoadPool* pool = program_pool(me);
+    if (!pool || !root_count) return;
+    // (Under one lock)
     csview* canonical = c_new_n(csview, root_count + 1);
     cstr* storage = c_new_n(cstr, root_count + 1);
     for (isize i = 0; i < root_count; i++) storage[i] = cstr_null;
@@ -2219,6 +2225,16 @@ void program_load_ahead(Program* me, csview const* libs, isize lib_count, csview
     for (isize i = 0; i < root_count; i++) cstr_drop(&storage[i]);
     c_free_n(storage, root_count + 1);
     c_free_n(canonical, root_count + 1);
+}
+
+void program_load_ahead(Program* me, csview const* libs, isize lib_count, csview const* roots, isize root_count) {
+    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+    LoadPool* pool = program_pool(me);
+    if (!pool) return;
+    program_load_ahead_libs(me, libs, lib_count);
+    // (The workers are already taking the libs)
+    program_load_ahead_roots(me, roots, root_count);
+    QueueBatch batch = {0};
     // The automatic types (program_load_automatic_types() resolves them again)
     StrList names = module_resolver_automatic_types(my resolver);
     for (isize i = 0; i < names.count; i++) {

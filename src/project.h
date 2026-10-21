@@ -40,6 +40,9 @@ Project const* project_set_at(ProjectSet const* me, u32 index);
 // The project's root files (tsc's fileNames), listed on first use: walking `include` is a measurable part of a small
 // project's time, so each project does it once
 StrList const* project_set_root_files(ProjectSet* me, u32 index);
+// project_set_root_files(), with found called for each file as the walk finds it (tsconfig_load_streamed()), unless
+// they were listed already
+StrList const* project_set_root_files_streamed(ProjectSet* me, u32 index, TsconfigFoundHook found, void* found_ctx);
 
 // tsc's build order of `-b` for the given projects: depth-first, references before what references them, in written
 // order. A cycle is reported in *cycle_errors (one message each, tsc's TS6202) unless a reference on the way is

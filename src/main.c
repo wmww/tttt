@@ -584,6 +584,40 @@ static bool count_gating_diagnostics(ErrorCtx* errs, Options const* opts) {
 // tsgo -b's builders (its default --builders)
 #define TSGO_BUILDERS 4
 
+// compiler_options_lib_files()'s comma separated names, views of it (c_free_n(ret, libs.size + 1))
+static csview* lib_names_of(csview libs, isize* count) {
+    csview* ret = c_new_n(csview, libs.size + 1);
+    *count = 0;
+    for (csview rest = libs; rest.size;) {
+        intptr_t end = csview_find_sv(rest, c_sv(","));
+        ret[(*count)++] = csview_slice(rest, 0, end);
+        if (end == c_NPOS) break;
+        rest = csview_slice(rest, end + 1, INTPTR_MAX);
+    }
+    return ret;
+}
+
+// The include walk's files for the load pool as it finds them, a batch at a time (program_load_ahead_roots())
+typedef struct EarlyRoots {
+    Program* program;
+    cstr paths[64];
+    isize count;
+} EarlyRoots;
+
+static void early_roots_flush(EarlyRoots* me) {
+    csview views[c_arraylen(my paths)];
+    for (isize i = 0; i < my count; i++) views[i] = cstr_sv(&my paths[i]);
+    program_load_ahead_roots(my program, views, my count);
+    for (isize i = 0; i < my count; i++) cstr_drop(&my paths[i]);
+    my count = 0;
+}
+
+static void early_root_found(void* ctx, csview path) {
+    EarlyRoots* me = ctx;
+    my paths[my count++] = cstr_from_sv(path);
+    if (my count == (isize)c_arraylen(my paths)) early_roots_flush(me);
+}
+
 static_failable check_files(Options const* opts, Output* out, csview config, ProjectSet* projects, u32 project,
     ProjectRedirects const* redirects, bool last, CheckCounts* counts, bool defer, returns int
 ) {
@@ -625,14 +659,27 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         out->pretty = pretty >= 0 ? pretty : isatty(STDOUT_FILENO) && !getenv("NO_COLOR");
     }
     VecError shown = {0}; // What's printed at the end
-    // The config's root files, unless there are files on the command line
-    if (config.size && !opts->path_count) {
-        StrList const* listed = project_set_root_files(projects, project);
-        for (isize i = 0; i < listed->count; i++) str_list_push(&root_files, cstr_sv(&listed->items[i]));
-    }
     // (A referenced project's outputs: written ones under -p, under -b the ones the build emitted, opts->emit_view)
     if (project_redirects_count(redirects)) program_set_references(program, redirects);
     program_set_threads(program, opts->threads);
+    // The config's root files, unless there are files on the command line. The options are final: the load pool
+    // starts on the libs and on each file as the include walk finds it (vscode: 29 ms of walk, lib.dom's parse 13).
+    // Not for a config with references, which may be a solution (no files: nothing would be loaded)
+    if (config.size && !opts->path_count) {
+        bool early = !project_set_at(projects, project)->has_references && !project_set_at(projects, project)->root_files_listed;
+        EarlyRoots early_roots = { .program = program };
+        if (early) {
+            cstr libs = opts->no_lib ? cstr_null : compiler_options_lib_files(program_options(program));
+            isize lib_count = 0;
+            csview* lib_names = lib_names_of(cstr_sv(&libs), &lib_count);
+            program_load_ahead_libs(program, lib_names, lib_count);
+            c_free_n(lib_names, cstr_size(&libs) + 1);
+            cstr_drop(&libs);
+        }
+        StrList const* listed = project_set_root_files_streamed(projects, project, early ? early_root_found : nullptr, &early_roots);
+        early_roots_flush(&early_roots);
+        for (isize i = 0; i < listed->count; i++) str_list_push(&root_files, cstr_sv(&listed->items[i]));
+    }
     // (Libraries' errors are dropped once they're loaded: these come after)
     bool has_inputs = opts->path_count + root_files.count > 0;
     if (!has_inputs) {
@@ -669,13 +716,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         // Parsing on the side: what the loader will want, as far as that's known now
         cstr libs = opts->no_lib ? cstr_null : compiler_options_lib_files(program_options(program));
         isize lib_count = 0, root_count = opts->path_count + root_files.count;
-        csview* lib_names = c_new_n(csview, cstr_size(&libs) + 1);
-        for (csview rest = cstr_sv(&libs); rest.size;) {
-            intptr_t end = csview_find_sv(rest, c_sv(","));
-            lib_names[lib_count++] = csview_slice(rest, 0, end);
-            if (end == c_NPOS) break;
-            rest = csview_slice(rest, end + 1, INTPTR_MAX);
-        }
+        csview* lib_names = lib_names_of(cstr_sv(&libs), &lib_count);
         csview* roots = c_new_n(csview, root_count + 1);
         for (isize i = 0; i < root_count; i++) {
             roots[i] = i < opts->path_count ? csview_from(opts->paths[i]) : cstr_sv(&root_files.items[i - opts->path_count]);

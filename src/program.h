@@ -67,6 +67,11 @@ failable program_load(Program* me, csview path, returns SourceFile*);
 // program_load_automatic_types(), which still decide everything: the libs by name (`es5`), the root files by path,
 // and the automatic types. Only makes loading faster
 void program_load_ahead(Program* me, csview const* libs, isize lib_count, csview const* roots, isize root_count);
+// program_load_ahead()'s parts, for a caller that knows the libs before the root files (the config's options before
+// its include glob, whose files it queues as the walk finds them): program_load_ahead() later queues them again, which
+// changes nothing. Each needs the threads and references set (they start the pool)
+void program_load_ahead_libs(Program* me, csview const* libs, isize lib_count);
+void program_load_ahead_roots(Program* me, csview const* roots, isize root_count);
 
 // The packages that are part of every program: the `types` option, else everything in the type roots (`typeRoots`,
 // else node_modules/@types from the config's or the current directory upwards). Call it after the root files

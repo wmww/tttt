@@ -45,12 +45,16 @@ Project const* project_set_at(ProjectSet const* me, u32 index) {
 }
 
 StrList const* project_set_root_files(ProjectSet* me, u32 index) {
+    return project_set_root_files_streamed(me, index, nullptr, nullptr);
+}
+
+StrList const* project_set_root_files_streamed(ProjectSet* me, u32 index, TsconfigFoundHook found, void* found_ctx) {
     check(index < my count);
     Project* project = &my projects[index];
     if (!project->root_files_listed && project->readable) {
         CompilerOptions scratch = compiler_options_init();
         scratch.run_external_code = my run_external_code;
-        try (tsconfig_load(my fs, cstr_sv(&project->config), &scratch, &project->root_files)) if_err (e) {
+        try (tsconfig_load_streamed(my fs, cstr_sv(&project->config), &scratch, &project->root_files, found, found_ctx)) if_err (e) {
             ignore e;
             current_error_destroy();
         }

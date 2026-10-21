@@ -194,6 +194,22 @@ is cache misses (every alias, its module's export table entry, the target), not 
 - Module refs (~15 ms) are per-ref lookups that only write the ref (`program_link_module_refs()` runs them on threads
   unless a pattern has augmentations, whose lookup sets a parent table).
 
+**Stage 3 decided (2026-10-21, worker "fe", 16-vCPU box at load 10-25; front-end walls only as interleaved minimums)**:
+- *The import pre-scan: not built.* `TTTT_LOAD_POOL_INLINE=1` (now with when each file's rank last improved), vscode
+  T16: the loader parses ~400 files (4.6 MB) itself; ~35% had their rank improved < 1 ms before it needed them (found
+  just in time, what a pre-scan helps), the rest were queued 1-500 ms earlier and passed over. That bounds the
+  pre-scan at ~15 ms of a ~160 ms load. The loader's other CPU (~80 ms: include reasons, path hashing, malloc, misses
+  on the workers' ASTs) is diffuse, ~50 M instructions under callgrind: no hot spot.
+- *Link's two-phase alias resolution: not built.* Link is ~50 ms (aliases 43 serial) of ~0.4 s of front end at T16;
+  the design's best case is 43 -> ~25 ms for the riskiest ordering code in the binder (TS2303 cycles, placeholders,
+  report order). Revisit only if the rest of the front end goes well below it.
+- Done instead: the pool starts on the libs and on each file the include glob finds before the glob ends
+  (`project_set_root_files_streamed()`, `program_load_ahead_libs()`/`_roots()`: vscode config + libs + load+parse
+  221 -> 189 ms best, inline parses 400 -> 156), and the end of resolve's frees run on a thread (`program_release_run()`).
+- Left: the costliest file's deferred bodies (TypeScript6's checker.ts: ~40 ms of materialization, ~15 parse + 25
+  walk, at the head of a 205 ms critical checker while the others end at ~70) and the config glob itself (29 ms,
+  250 M instructions serial; slower, ~70 ms, while the workers parse next to it on a loaded box).
+
 ## Stage 4: a shared concurrent type graph (~25 sessions over several windows, gates G0-G2: "The design" below)
 The paste's "declarations first, bodies second" idea, built where the duplication actually is: **one hash-consed
 intern table for every kind of type, grown concurrently by all checkers**, instantiations included; once-published

@@ -32,6 +32,8 @@ typedef struct ConfigLoad {
     JsonValue* documents[32];
     isize document_count;
     TsconfigDiagnostics* diagnostics; // Null: not wanted
+    TsconfigFoundHook found; // tsconfig_load_streamed()
+    void* found_ctx;
 } ConfigLoad;
 
 static void config_diagnostic(ConfigLoad* me, unsigned code, cstr message, csview config, u32 start, u32 end) {
@@ -990,6 +992,7 @@ static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrLis
             for (isize i = 0; i < patterns->include.count; i++) {
                 if (glob_matches(cstr_sv(&patterns->include.items[i]), cstr_sv(&path), false)) {
                     str_list_push(&buckets[i], cstr_sv(&path));
+                    if (my found) my found(my found_ctx, cstr_sv(&path));
                     break;
                 }
             }
@@ -1293,10 +1296,25 @@ failable tsconfig_load(Fs const* fs, csview path, CompilerOptions* options, StrL
     return tsconfig_load_diagnosed(fs, path, options, root_files, nullptr);
 }
 
+static_failable tsconfig_load_hooked(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files,
+    TsconfigDiagnostics* diagnostics, TsconfigFoundHook found, void* found_ctx);
+
+failable tsconfig_load_streamed(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files,
+    TsconfigFoundHook found, void* found_ctx
+) {
+    return tsconfig_load_hooked(fs, path, options, root_files, nullptr, found, found_ctx);
+}
+
 failable tsconfig_load_diagnosed(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files,
     TsconfigDiagnostics* diagnostics
 ) {
-    ConfigLoad load = { .fs = fs, .options = options, .diagnostics = diagnostics };
+    return tsconfig_load_hooked(fs, path, options, root_files, diagnostics, nullptr, nullptr);
+}
+
+static_failable tsconfig_load_hooked(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files,
+    TsconfigDiagnostics* diagnostics, TsconfigFoundHook found, void* found_ctx
+) {
+    ConfigLoad load = { .fs = fs, .options = options, .diagnostics = diagnostics, .found = found, .found_ctx = found_ctx };
     try (fs_get_cwd(fs, &load.cwd)) bubble;
     cstr absolute = absolute_path_of(cstr_sv(&load.cwd), path);
     if (fs_is_directory(fs, cstr_sv(&absolute))) cstr_append_lit(&absolute, "/tsconfig.json");

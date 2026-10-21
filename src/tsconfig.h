@@ -13,6 +13,12 @@
 // root files are appended to root_files as absolute paths, in tsc's order (`files`, then what `include` matches
 // directory by directory, files before subdirectories, both sorted)
 failable tsconfig_load(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files);
+// Each file `include` matches as the walk finds it (absolute), before the final list's order and its filters (a
+// lower priority extension's sibling): what a caller may start reading early
+typedef void (*TsconfigFoundHook)(void* ctx, csview path);
+// tsconfig_load(), with found called for each file the walk matches
+failable tsconfig_load_streamed(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files,
+    TsconfigFoundHook found, void* found_ctx);
 
 // What's wrong with an `extends` (tsc's config parsing diagnostics: reported, and the config goes on without it): TS5083
 // for a config that can't be read (no location, config empty), TS6053/TS18051 at the name in `config` (absolute path;
