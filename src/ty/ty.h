@@ -2145,11 +2145,6 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
 TyList ty_reference_args(Checker* me, Ty const* reference);
 Ty const* ty_param_constraint(Checker* me, Ty const* param); // null if unconstrained (or circularly constrained)
 enum { PARAM_NOT_CIRCULAR = 3, PARAM_CIRCULAR = 4 }; // TyParamState.circular's values
-// A word's value for a pointer (SW_VAL() evaluating its argument once; the constraint words', next to the signature
-// words' sw_v(), one of them to go at step D)
-static inline uintptr_t sw_ptr_value(void const* p) {
-    return p ? (uintptr_t)p : (uintptr_t)SW_NONE;
-}
 // A fresh type parameter's constraint (null: unconstrained), known from the start; `circular` false or not known
 static inline void ty_param_constraint_init(TyParamState* state, Ty const* constraint, bool not_circular) {
     __atomic_store_n(&state->constraint.v, constraint ? (uintptr_t)constraint : (uintptr_t)SW_NONE, __ATOMIC_RELAXED);

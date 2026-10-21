@@ -448,9 +448,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   0.2-0.6% of K1 instructions (zod -0.6% without it) for 0-1 shadowed words a K12 run. The alternative, a shadowed
   worker giving its file up at once to a fresh worker, needs a mid-file abort (the redo's longjmp, its leaks, a
   per-file error context), deleted at plan 86 4f D; kept as a future lever. sw_look_fast() & co (ty.h) inline the default path of overlay.c's functions.
-- sw_v() (ty.h, with the signature words) and sw_ptr_value() (ty.h, with the type parameter words) are the same
-  helper twice, so that each P1 commit applies without the other (the signature return commit is held). One goes at
-  step D.
 - TyParamState.circular (members.c ty_param_constraint_is_circular()) is a word with no in-flight state: a re-entry
   computes it again and the first answer stays. Without a graph that is a first-wins CAS, as before.
 - signature_copied() (members.c): a copy of a signature whose resolution is in flight here gets a snapshot record

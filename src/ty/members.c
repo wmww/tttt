@@ -1481,7 +1481,7 @@ Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol) {
         }
     }
     if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_BASE_VARIABLE, class_symbol, class_symbol, variable);
-    return SW_PTR(sw_finish_fast(me, &links->base_variable, &links->base_variable_flight, sw_ptr_value(variable), taint));
+    return SW_PTR(sw_finish_fast(me, &links->base_variable, &links->base_variable_flight, SW_VAL(variable), taint));
 }
 
 // Whether a class or interface declaration adds members to what it inherits: anything but statics (tsc's
@@ -6983,7 +6983,7 @@ static Ty const* declared_param_constraint(Checker* me, Ty const* param) {
         if (!node && state->is_infer) constraint = ty_implied_infer_constraint(me, param, false);
     }
     if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_PARAM_CONSTRAINT, state, param, constraint);
-    return SW_PTR(sw_finish_fast(me, &state->constraint, &state->constraint_flight, sw_ptr_value(constraint), taint));
+    return SW_PTR(sw_finish_fast(me, &state->constraint, &state->constraint_flight, SW_VAL(constraint), taint));
 }
 
 // TyParamState.circular as this worker knows it (SW_EMPTY: not yet)
@@ -7093,7 +7093,7 @@ static uintptr_t param_default_word(Checker* me, Ty const* param) {
         Ty const* fallback = ty_param_default(me, state->clone_of);
         fallback = fallback ? ty_instantiate(me, fallback, state->clone_mapper) : nullptr;
         if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_PARAM_DEFAULT, param, param, fallback);
-        value = sw_ptr_value(fallback);
+        value = SW_VAL(fallback);
     } else {
         ParamDefaultClaim claim = {0};
         ty_claim_push(me, CLAIM_PARAM_DEFAULT, &claim.claim, state, 0);
@@ -7102,7 +7102,7 @@ static uintptr_t param_default_word(Checker* me, Ty const* param) {
         ty_claim_pop(me, CLAIM_PARAM_DEFAULT, &claim.claim);
         // (tsc's getResolvedTypeParameterDefault: asked for while being resolved, it's circularConstraintType)
         if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_PARAM_DEFAULT, param, param, claim.circular ? nullptr : fallback);
-        value = claim.circular ? (uintptr_t)&ty_param_default_circular_marker : sw_ptr_value(fallback);
+        value = claim.circular ? (uintptr_t)&ty_param_default_circular_marker : SW_VAL(fallback);
     }
     return sw_finish_fast(me, &state->fallback, &state->fallback_flight, value, taint);
 }
@@ -7152,5 +7152,5 @@ Ty const* ty_mapped_template(Checker* me, MappedInfo const* mapped) {
     TAINT_BEGIN(taint_frame);
     Ty const* template = compute_mapped_template(me, mapped);
     if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_MAPPED_TEMPLATE, mapped, mapped, template);
-    return SW_PTR(sw_finish_fast(me, &state->template_, &state->template_flight, sw_ptr_value(template), taint));
+    return SW_PTR(sw_finish_fast(me, &state->template_, &state->template_flight, SW_VAL(template), taint));
 }
