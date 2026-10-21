@@ -647,6 +647,12 @@ at the computation's end**, and makes every field another worker can read safe t
   immediate publication of identities (still at one thread: output must not move); the owner-tagged states and the
   wait protocol (`lazy_claim()` / `lazy_publish()` helpers per state); memo publication at computation end; the late
   writes; singletons; then threads on, and the measurements.
+- **Status** (update at each step). Coordinator's adjustment: a foreign in-flight state means *compute privately into
+  the overlay* (no waiting); count how often it happens (TTTT_GRAPH_STATS) and add the wait protocol later only if
+  that says it matters. Step 1 done: src/ty/shared_table.{h,c} (SharedTable for word keys, SharedLinks for node links,
+  first insert wins) replaces the graph's InternTables and LinkTable; the declaration memo store makes its pages by CAS
+  and writes a memo flags-last under a mutex. Still --threads 1, publication at share end: K4/K12 byte-identical on
+  drizzle, zod, effect, excalidraw.
 
 ## Validation of the whole plan
 The 12-core table in measurements.md re-run by the human after each stage (`scripts/bench.sh --runs 3 --bun PATH

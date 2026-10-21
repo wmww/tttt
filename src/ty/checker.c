@@ -11,6 +11,7 @@
 #include "source_file.h"
 #include "ty/graph.h"
 #include "ty/atom_table.h"
+#include "ty/shared_table.h"
 
 // Arena
 
@@ -285,8 +286,8 @@ static bool intern_needs_growth(InternTable const* table) {
 
 // --shared-graph: a key the checker's own table doesn't have, in the graph's (ty/graph.h). Null if none
 [[gnu::noinline]] static void const** intern_shared_find(InternTable const* table, u64 hash, u64 const* words, u32 count) {
-    InternEntry* entry = intern_find(table->shared, hash, words, count);
-    if (!entry || !entry->hash) {
+    void const** block = shared_table_find(table->shared, hash, words, count);
+    if (!block) {
         // (Its value's computation may start here: graph_taint_put() takes the counter from then)
 #ifdef TTTT_GRAPH_TAINT
         graph_taint_miss(table, hash);
@@ -299,10 +300,10 @@ static bool intern_needs_growth(InternTable const* table) {
     if (checker && checker->stamps && table == &checker->types && count) {
         u64 kind = words[0] & 255;
         if (kind == KEY_REFERENCE || kind == KEY_ANONYMOUS_INSTANCE || kind == KEY_CONDITIONAL || kind == KEY_INDEXED) {
-            ty_stamp(checker, entry->block[0]);
+            ty_stamp(checker, block[0]);
         }
     }
-    return entry->block;
+    return block;
 }
 
 // The returned slot is null if the key is new. It is in the key's arena block, so it stays valid (callers that intern
@@ -363,48 +364,7 @@ void const** intern_insert(Checker* me, InternTable* table, InternMiss const* mi
 #endif
 }
 
-// --shared-graph's publication (graph.c): whether a table has a private table's entry's key, and putting the entry (its
-// block, which stays where it is) into one that doesn't
-bool intern_table_has(InternTable const* table, InternEntry const* entry, u32 count) {
-    u64 const* words = (u64 const*)(entry->block + 1) + (count >= INTERN_LONG_KEY);
-    InternEntry const* found = intern_find(table, entry->hash, words, count);
-    return found && found->hash;
-}
 
-// Grows the table so that `more` keys go in without growing again: publishing walks a private table in the order of
-// its slots, which is the order of the keys' hashes, and growing on the way would cluster them (every key put past the
-// growing run of the ones before it, quadratic: zod 30 s)
-void intern_table_reserve(InternTable* table, u32 more) {
-    while ((u64)(table->len + more + 1) * 4 > (u64)table->cap * 3) intern_grow(table);
-}
-
-static u32 link_index(u64 key, u32 cap);
-
-void link_table_reserve(LinkTable* table, u32 more) {
-    while ((u64)(table->len + more + 1) * 4 > (u64)table->cap * 3) {
-        LinkTable bigger = { .cap = table_grown(table->cap, 1024), .len = table->len };
-        bigger.entries = zeroed_table(bigger.cap, sizeof(LinkEntry));
-        panic_if(!bigger.entries, "out of memory");
-        for (u32 i = 0; i < table->cap; i++) {
-            LinkEntry entry = table->entries[i];
-            if (!entry.key) continue;
-            u32 j = link_index(entry.key, bigger.cap);
-            while (bigger.entries[j].key) j = table_next(j, bigger.cap);
-            bigger.entries[j] = entry;
-        }
-        free(table->entries);
-        *table = bigger;
-    }
-}
-
-void intern_table_publish(InternTable* shared, InternEntry const* entry, u32 count) {
-    (void)count;
-    if (intern_needs_growth(shared)) intern_grow(shared);
-    u32 i = table_index(entry->hash, shared->cap);
-    while (shared->entries[i].hash) i = table_next(i, shared->cap);
-    shared->entries[i] = *entry;
-    shared->len++;
-}
 
 // The key's words in a block intern_slot() returned
 static u64 const* intern_key_words(void const** block, u32 count) {
@@ -463,25 +423,11 @@ void link_table_each(LinkTable const* table, void (*each)(void* arg, u32 kind, v
     }
 }
 
-// The shared table's lookup (graph.c)
-void const* link_table_get(LinkTable const* table, u32 kind, void const* subject) {
-    if (!table->cap) return nullptr;
-    u64 key = link_key(kind, subject);
-    for (u32 i = link_index(key, table->cap);; i = table_next(i, table->cap)) {
-        LinkEntry const* entry = &table->entries[i];
-        if (entry->key == key) return entry->value;
-        if (!entry->key) return nullptr;
-    }
-}
 
 static inline void link_set(LinkTable* table, u32 kind, void const* subject, void const* value);
 
 void ty_link_set(Checker* me, u32 kind, void const* subject, void const* value) {
     link_set(&my node_links, kind, subject, value);
-}
-
-void link_table_set(LinkTable* table, u32 kind, void const* subject, void const* value) {
-    link_set(table, kind, subject, value);
 }
 
 static inline void link_set(LinkTable* table, u32 kind, void const* subject, void const* value) {

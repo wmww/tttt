@@ -1,0 +1,224 @@
+// The shared graph's tables, see shared_table.h
+#include "ty/shared_table.h"
+#include <pthread.h>
+#include <stdatomic.h>
+
+enum { SHARDS = 64, INTERN_LONG = 0xffffu };
+
+// (The slot within a shard by the hash's lowest bits: a private table is walked in the order of its high bits, and
+// filling a growing table in that order would cluster)
+static u32 slot_of(u64 hash, u32 cap) { return (u32)hash & (cap - 1); }
+static u32 shard_of(u64 hash) { return (u32)(hash >> 41) & (SHARDS - 1); }
+
+typedef struct Slot {
+    _Atomic u64 hash; // 0: empty. Written last
+    void const** _Atomic block;
+} Slot;
+
+typedef struct Slots {
+    u32 cap;
+    struct Slots* older;
+    Slot slot[];
+} Slots;
+
+typedef struct Shard {
+    Slots* _Atomic slots;
+    pthread_mutex_t lock;
+    u32 len;
+    char pad[40];
+} Shard;
+
+struct SharedTable {
+    Shard shards[SHARDS];
+};
+
+static Slots* slots_new(u32 cap, Slots* older, size_t slot_size) {
+    Slots* ret = zeroed_table(1, sizeof(Slots) + slot_size * cap);
+    panic_if(!ret, "out of memory");
+    ret->cap = cap;
+    ret->older = older;
+    return ret;
+}
+
+static void shards_init(Shard* shards, size_t slot_size) {
+    for (u32 i = 0; i < SHARDS; i++) {
+        pthread_mutex_init(&shards[i].lock, nullptr);
+        atomic_init(&shards[i].slots, slots_new(64, nullptr, slot_size));
+    }
+}
+
+static void shards_drop(Shard* shards) {
+    for (u32 i = 0; i < SHARDS; i++) {
+        for (Slots* s = atomic_load(&shards[i].slots); s;) {
+            Slots* older = s->older;
+            free(s);
+            s = older;
+        }
+        pthread_mutex_destroy(&shards[i].lock);
+    }
+}
+
+static u64 shards_len(Shard const* shards) {
+    u64 ret = 0;
+    for (u32 i = 0; i < SHARDS; i++) ret += shards[i].len;
+    return ret;
+}
+
+SharedTable* shared_table_new(void) {
+    SharedTable* me = calloc(1, sizeof(SharedTable));
+    panic_if(!me, "out of memory");
+    shards_init(my shards, sizeof(Slot));
+    return me;
+}
+
+void shared_table_drop(SharedTable* me) {
+    if (!me) return;
+    shards_drop(my shards);
+    free(me);
+}
+
+u64 shared_table_len(SharedTable const* me) { return shards_len(my shards); }
+
+static bool key_is(void const* const* block, u64 const* words, u32 count) {
+    u64 const* key = (u64 const*)(block + 1);
+    if (count >= INTERN_LONG && *key++ != count) return false;
+    for (u32 k = 0; k < count; k++) if (key[k] != words[k]) return false;
+    return true;
+}
+
+// The slot of the key, or the empty one where it would go
+static Slot* probe(Slots* slots, u64 hash, u64 const* words, u32 count) {
+    for (u32 i = slot_of(hash, slots->cap);; i = (i + 1) & (slots->cap - 1)) {
+        Slot* slot = &slots->slot[i];
+        u64 h = atomic_load_explicit(&slot->hash, memory_order_acquire);
+        if (!h) return slot;
+        if (h == hash && key_is(atomic_load_explicit(&slot->block, memory_order_relaxed), words, count)) return slot;
+    }
+}
+
+void const** shared_table_find(SharedTable const* me, u64 hash, u64 const* words, u32 count) {
+    Shard const* shard = &my shards[shard_of(hash)];
+    Slot* slot = probe(atomic_load_explicit(&((Shard*)shard)->slots, memory_order_acquire), hash, words, count);
+    return atomic_load_explicit(&slot->hash, memory_order_relaxed) ? atomic_load_explicit(&slot->block, memory_order_relaxed) : nullptr;
+}
+
+static u64 const* block_words(void const** block, u32 count) {
+    return (u64 const*)(block + 1) + (count >= INTERN_LONG);
+}
+
+u64 shared_table_insert(SharedTable* me, u64 hash, void const** block, u32 count, void const*** out) {
+    Shard* shard = &my shards[shard_of(hash)];
+    u64 const* words = block_words(block, count);
+    pthread_mutex_lock(&shard->lock);
+    Slots* slots = atomic_load_explicit(&shard->slots, memory_order_relaxed);
+    Slot* slot = probe(slots, hash, words, count);
+    if (atomic_load_explicit(&slot->hash, memory_order_relaxed)) {
+        *out = atomic_load_explicit(&slot->block, memory_order_relaxed);
+        pthread_mutex_unlock(&shard->lock);
+        return 0;
+    }
+    if ((shard->len + 1) * 4 > slots->cap * 3) {
+        Slots* bigger = slots_new(slots->cap * 2, slots, sizeof(Slot));
+        for (u32 i = 0; i < slots->cap; i++) {
+            u64 h = atomic_load_explicit(&slots->slot[i].hash, memory_order_relaxed);
+            if (!h) continue;
+            u32 j = slot_of(h, bigger->cap);
+            while (atomic_load_explicit(&bigger->slot[j].hash, memory_order_relaxed)) j = (j + 1) & (bigger->cap - 1);
+            atomic_store_explicit(&bigger->slot[j].block, atomic_load_explicit(&slots->slot[i].block, memory_order_relaxed), memory_order_relaxed);
+            atomic_store_explicit(&bigger->slot[j].hash, h, memory_order_relaxed);
+        }
+        atomic_store_explicit(&shard->slots, bigger, memory_order_release);
+        slot = probe(bigger, hash, words, count);
+    }
+    atomic_store_explicit(&slot->block, block, memory_order_relaxed);
+    atomic_store_explicit(&slot->hash, hash, memory_order_release);
+    shard->len++;
+    pthread_mutex_unlock(&shard->lock);
+    *out = block;
+    return 1;
+}
+
+// Node links
+
+typedef struct LinkSlot {
+    _Atomic u64 key; // 0: empty. Written last
+    void const* _Atomic value;
+} LinkSlot;
+
+typedef struct LinkSlots {
+    u32 cap;
+    struct LinkSlots* older;
+    LinkSlot slot[];
+} LinkSlots;
+
+struct SharedLinks {
+    Shard shards[SHARDS];
+};
+
+static u64 link_hash(u64 key) {
+    key ^= key >> 33;
+    key *= 0xff51afd7ed558ccdull;
+    key ^= key >> 33;
+    return key;
+}
+
+SharedLinks* shared_links_new(void) {
+    SharedLinks* me = calloc(1, sizeof(SharedLinks));
+    panic_if(!me, "out of memory");
+    shards_init(my shards, sizeof(LinkSlot));
+    return me;
+}
+
+void shared_links_drop(SharedLinks* me) {
+    if (!me) return;
+    shards_drop(my shards);
+    free(me);
+}
+
+u64 shared_links_len(SharedLinks const* me) { return shards_len(my shards); }
+
+static LinkSlot* link_probe(LinkSlots* slots, u64 hash, u64 key) {
+    for (u32 i = slot_of(hash, slots->cap);; i = (i + 1) & (slots->cap - 1)) {
+        LinkSlot* slot = &slots->slot[i];
+        u64 k = atomic_load_explicit(&slot->key, memory_order_acquire);
+        if (!k || k == key) return slot;
+    }
+}
+
+void const* shared_links_get(SharedLinks const* me, u64 key) {
+    u64 hash = link_hash(key);
+    Shard* shard = (Shard*)&my shards[shard_of(hash)];
+    LinkSlot* slot = link_probe((LinkSlots*)atomic_load_explicit(&shard->slots, memory_order_acquire), hash, key);
+    return atomic_load_explicit(&slot->key, memory_order_relaxed) ? atomic_load_explicit(&slot->value, memory_order_relaxed) : nullptr;
+}
+
+void const* shared_links_insert(SharedLinks* me, u64 key, void const* value) {
+    u64 hash = link_hash(key);
+    Shard* shard = &my shards[shard_of(hash)];
+    pthread_mutex_lock(&shard->lock);
+    LinkSlots* slots = (LinkSlots*)atomic_load_explicit(&shard->slots, memory_order_relaxed);
+    LinkSlot* slot = link_probe(slots, hash, key);
+    if (atomic_load_explicit(&slot->key, memory_order_relaxed)) {
+        void const* there = atomic_load_explicit(&slot->value, memory_order_relaxed);
+        pthread_mutex_unlock(&shard->lock);
+        return there;
+    }
+    if ((shard->len + 1) * 4 > slots->cap * 3) {
+        LinkSlots* bigger = (LinkSlots*)slots_new(slots->cap * 2, (Slots*)slots, sizeof(LinkSlot));
+        for (u32 i = 0; i < slots->cap; i++) {
+            u64 k = atomic_load_explicit(&slots->slot[i].key, memory_order_relaxed);
+            if (!k) continue;
+            u32 j = slot_of(link_hash(k), bigger->cap);
+            while (atomic_load_explicit(&bigger->slot[j].key, memory_order_relaxed)) j = (j + 1) & (bigger->cap - 1);
+            atomic_store_explicit(&bigger->slot[j].value, atomic_load_explicit(&slots->slot[i].value, memory_order_relaxed), memory_order_relaxed);
+            atomic_store_explicit(&bigger->slot[j].key, k, memory_order_relaxed);
+        }
+        atomic_store_explicit(&shard->slots, (Slots*)bigger, memory_order_release);
+        slot = link_probe(bigger, hash, key);
+    }
+    atomic_store_explicit(&slot->value, value, memory_order_relaxed);
+    atomic_store_explicit(&slot->key, key, memory_order_release);
+    shard->len++;
+    pthread_mutex_unlock(&shard->lock);
+    return value;
+}

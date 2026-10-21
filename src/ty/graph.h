@@ -53,13 +53,7 @@ void graph_memo_done(Checker* checker, u32 slot, bool tainted);
 
 void graph_print_stats(TyGraph const* me);
 // The shared tables' insertion and node_links' (checker.c)
-void intern_table_reserve(InternTable* table, u32 more);
-void link_table_reserve(LinkTable* table, u32 more);
-void intern_table_publish(InternTable* shared, InternEntry const* entry, u32 count);
-bool intern_table_has(InternTable const* table, InternEntry const* entry, u32 count);
 void link_table_each(LinkTable const* table, void (*each)(void* arg, u32 kind, void const* subject, void const* value), void* arg);
-void const* link_table_get(LinkTable const* table, u32 kind, void const* subject);
-void link_table_set(LinkTable* table, u32 kind, void const* subject, void const* value);
 // The cheap taint's intern hooks (checker.c, only for tables with a shared counterpart): a private miss that may start
 // a computation, a put (clean if no event since the miss, else marked; pending until the next event if its value isn't
 // there yet), a hit of a private entry (tainted: an event)

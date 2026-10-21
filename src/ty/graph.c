@@ -3,6 +3,9 @@
 #include "ty/ty_internal.h"
 #include "lazy_type.h"
 #include "program.h"
+#include "ty/shared_table.h"
+#include <pthread.h>
+#include <stdatomic.h>
 #include <time.h>
 
 // The state handed to whichever checker is current (graph_enter()): sequentially one checker at a time makes atoms and
@@ -41,11 +44,13 @@ struct TyGraph {
     struct Atom const* atom_prototype;
     struct Atom const* atom_bind;
     // The shared tables
-    InternTable types;
-    InternTable links;
-    InternTable intersection_props;
-    LinkTable node_links;
-    LazyMemo** memos[1 << LAZY_TOP_BITS]; // Declaration memos by slot, like LazySlots.top
+    SharedTable* types;
+    SharedTable* links;
+    SharedTable* intersection_props;
+    SharedLinks* node_links;
+    // Declaration memos by slot, like LazySlots.top (pages made by CAS, a memo written flags last under memo_lock)
+    LazyMemo** _Atomic memos[1 << LAZY_TOP_BITS];
+    pthread_mutex_t memo_lock;
     u64 memo_hits;
     KindStats stats[GRAPH_STAT_KINDS];
     u32 checkers;
@@ -120,14 +125,19 @@ static void held_give(GraphHeld const* held, Checker* to) {
 
 static void graph_link_tables(TyGraph* me, Checker* checker) {
     checker->graph = me;
-    checker->types.shared = &my types;
-    checker->links.shared = &my links;
-    checker->intersection_props.shared = &my intersection_props;
+    checker->types.shared = my types;
+    checker->links.shared = my links;
+    checker->intersection_props.shared = my intersection_props;
 }
 
 TyGraph* graph_new(Checker* first) {
     TyGraph* me = calloc(1, sizeof(TyGraph));
     panic_if(!me, "out of memory");
+    my types = shared_table_new();
+    my links = shared_table_new();
+    my intersection_props = shared_table_new();
+    my node_links = shared_links_new();
+    pthread_mutex_init(&my memo_lock, nullptr);
     memcpy(my intrinsics, first->intrinsics, sizeof(my intrinsics));
     my typeof_type = first->typeof_type;
     my atom_constructor = first->atom_constructor;
@@ -168,10 +178,11 @@ void graph_release(TyGraph* me, Checker* checker) {
 void graph_drop(TyGraph* me) {
     if (!me) return;
     if (my owner) graph_release(me, my owner);
-    free(my types.entries);
-    free(my links.entries);
-    free(my intersection_props.entries);
-    free(my node_links.entries);
+    shared_table_drop(my types);
+    shared_table_drop(my links);
+    shared_table_drop(my intersection_props);
+    shared_links_drop(my node_links);
+    pthread_mutex_destroy(&my memo_lock);
     for (size_t i = 0; i < c_arraylen(my memos); i++) {
         if (!my memos[i]) continue;
         for (size_t j = 0; j < (1 << LAZY_DIR_BITS); j++) free(my memos[i][j]);
@@ -411,6 +422,10 @@ static bool link_tainted(u32 kind, void const* subject, void const* value) {
 
 // Publication
 
+static u64 graph_link_key(u32 kind, void const* subject) {
+    return (u64)(kind + 1) << 56 | (u64)(uintptr_t)subject;
+}
+
 static u32 block_kind(InternTable const* table, Checker const* checker, InternEntry const* entry, u32* count) {
     u32 n = (u32)(entry->hash >> 48);
     u64 const* key = (u64 const*)(entry->block + 1);
@@ -420,8 +435,7 @@ static u32 block_kind(InternTable const* table, Checker const* checker, InternEn
     return n ? (u32)(key[0] & 255) : 0;
 }
 
-static void publish_table(TyGraph* me, Checker* checker, InternTable* private_table, InternTable* shared) {
-    intern_table_reserve(shared, private_table->len);
+static void publish_table(TyGraph* me, Checker* checker, InternTable* private_table, SharedTable* shared) {
     for (u32 i = 0; i < private_table->cap; i++) {
         InternEntry const* entry = &private_table->entries[i];
         if (!entry->hash) continue;
@@ -441,9 +455,8 @@ static void publish_table(TyGraph* me, Checker* checker, InternTable* private_ta
             stats->tainted++;
             continue;
         }
-        if (intern_table_has(shared, entry, count)) continue;
-        intern_table_publish(shared, entry, count);
-        stats->published++;
+        void const** there;
+        if (shared_table_insert(shared, entry->hash, entry->block, count, &there)) stats->published++;
     }
 }
 
@@ -466,25 +479,30 @@ static void publish_link(void* arg, u32 kind, void const* subject, void const* v
         stats->tainted++;
         return;
     }
-    if (link_table_get(&my node_links, kind, subject)) return;
-    link_table_set(&my node_links, kind, subject, value);
-    stats->published++;
+    if (shared_links_insert(my node_links, graph_link_key(kind, subject), value) == value) stats->published++;
 }
 
+// (Pages are made by CAS: a loser frees its own)
 static LazyMemo* memo_at(TyGraph* me, u32 slot, bool create) {
-    LazyMemo*** dir = &my memos[slot >> (LAZY_PAGE_BITS + LAZY_DIR_BITS)];
-    if (!*dir) {
+    LazyMemo** _Atomic* dir = &my memos[slot >> (LAZY_PAGE_BITS + LAZY_DIR_BITS)];
+    LazyMemo** d = atomic_load_explicit(dir, memory_order_acquire);
+    if (!d) {
         if (!create) return nullptr;
-        *dir = calloc(1 << LAZY_DIR_BITS, sizeof(LazyMemo*));
-        panic_if(!*dir, "out of memory");
+        LazyMemo** fresh = calloc(1 << LAZY_DIR_BITS, sizeof(LazyMemo*));
+        panic_if(!fresh, "out of memory");
+        if (atomic_compare_exchange_strong(dir, &d, fresh)) d = fresh;
+        else free(fresh);
     }
-    LazyMemo** page = &(*dir)[(slot >> LAZY_PAGE_BITS) & ((1 << LAZY_DIR_BITS) - 1)];
-    if (!*page) {
+    LazyMemo* _Atomic* page = (LazyMemo* _Atomic*)&d[(slot >> LAZY_PAGE_BITS) & ((1 << LAZY_DIR_BITS) - 1)];
+    LazyMemo* p = atomic_load_explicit(page, memory_order_acquire);
+    if (!p) {
         if (!create) return nullptr;
-        *page = calloc(1 << LAZY_PAGE_BITS, sizeof(LazyMemo));
-        panic_if(!*page, "out of memory");
+        LazyMemo* fresh = calloc(1 << LAZY_PAGE_BITS, sizeof(LazyMemo));
+        panic_if(!fresh, "out of memory");
+        if (atomic_compare_exchange_strong(page, &p, fresh)) p = fresh;
+        else free(fresh);
     }
-    return &(*page)[slot & ((1 << LAZY_PAGE_BITS) - 1)];
+    return &p[slot & ((1 << LAZY_PAGE_BITS) - 1)];
 }
 
 static double now_ms(void) {
@@ -495,14 +513,13 @@ static double now_ms(void) {
 
 void graph_publish(TyGraph* me, Checker* checker) {
     double t0 = now_ms();
-    publish_table(me, checker, &checker->types, &my types);
+    publish_table(me, checker, &checker->types, my types);
     double t1 = now_ms();
-    publish_table(me, checker, &checker->links, &my links);
+    publish_table(me, checker, &checker->links, my links);
     double t2 = now_ms();
-    publish_table(me, checker, &checker->intersection_props, &my intersection_props);
+    publish_table(me, checker, &checker->intersection_props, my intersection_props);
     double t3 = now_ms();
     LinkPublish arg = { me };
-    link_table_reserve(&my node_links, checker->node_links.len);
     link_table_each(&checker->node_links, publish_link, &arg);
     double t4 = now_ms();
     if (getenv("TTTT_GRAPH_STATS")) eprintln("graph: publish types ", t1 - t0, " links ", t2 - t1, " iprops ", t3 - t2, " node links ", t4 - t3);
@@ -523,16 +540,24 @@ void graph_publish(TyGraph* me, Checker* checker) {
             continue;
         }
         LazyMemo* shared = memo_at(me, slot, true);
-        if (shared->done) continue;
-        *shared = *memo;
-        shared->hits = 0;
-        stats->published++;
+        // (Written done last, read done first: a reader sees a whole memo or none)
+        pthread_mutex_lock(&my memo_lock);
+        if (!shared->done) {
+            LazyMemo copy = *memo;
+            copy.hits = 0;
+            copy.done = false;
+            *shared = copy;
+            atomic_thread_fence(memory_order_release);
+            shared->done = true;
+            stats->published++;
+        }
+        pthread_mutex_unlock(&my memo_lock);
     }
     checker->graph_memo_len = 0;
 }
 
 void const* graph_link_get(TyGraph const* me, u32 kind, void const* subject) {
-    void const* ret = link_table_get(&my node_links, kind, subject);
+    void const* ret = shared_links_get(my node_links, graph_link_key(kind, subject));
     if (ret) ((TyGraph*)me)->stats[256 + (kind & 255)].shared_hits++;
     return ret;
 }
@@ -540,6 +565,7 @@ void const* graph_link_get(TyGraph const* me, u32 kind, void const* subject) {
 bool graph_memo_take(TyGraph* me, u32 slot, LazyMemo* memo) {
     LazyMemo const* shared = memo_at(me, slot, false);
     if (!shared || !shared->done) return false;
+    atomic_thread_fence(memory_order_acquire);
     *memo = *shared;
     my stats[GRAPH_STAT_MEMOS].shared_hits++;
     return true;
@@ -585,8 +611,9 @@ static char const* kind_name(u32 kind) {
 
 // TTTT_GRAPH_STATS=1 (at the end of the typecheck): by kind, what was published, kept private and found shared
 void graph_print_stats(TyGraph const* me) {
-    eprintln("graph: ", my checkers, " checkers, ", (i64)my types.len, " types entries, ", (i64)my links.len, " links, ",
-        (i64)my intersection_props.len, " intersection props, ", (i64)my node_links.len, " node links shared");
+    eprintln("graph: ", my checkers, " checkers, ", shared_table_len(my types), " types entries, ", shared_table_len(my links),
+        " links, ", shared_table_len(my intersection_props), " intersection props, ", shared_links_len(my node_links),
+        " node links shared");
     eprintln("graph: kind  shared-hits  published  tainted  scratch  unfinished");
     KindStats total = {0};
     for (u32 k = 0; k < GRAPH_STAT_KINDS; k++) {

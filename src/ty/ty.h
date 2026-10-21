@@ -56,7 +56,7 @@ typedef struct InternTable {
     u32 cap; // power of two or 0
     u32 len;
     // With --shared-graph (ty/graph.h): the graph's table of the same keys, looked up when this one misses. Null otherwise
-    struct InternTable const* shared;
+    struct SharedTable* shared;
 } InternTable;
 
 // The commonest two-word keys of Checker.links, (kind, AST node or other address) -> value, with the key in the entry
