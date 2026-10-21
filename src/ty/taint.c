@@ -524,7 +524,8 @@ static u64 fp_key(Checker* c, u32 kind, u64 const* words, u32 count) {
             Ty const* target = key_type(c, words[1]);
             if (!target) return 0;
             h = fp_mix(h, fp_ty(target));
-            if (count >= 4 && words[2] == UINT64_MAX - 2) {
+            // (ty_alias_body_mapped_instance()'s and ty_realias()'s keys: a marker word and the alias Symbol)
+            if (count >= 4 && (words[2] == UINT64_MAX - 2 || words[2] == UINT64_MAX - 1)) {
                 h = fp_mix(fp_mix(h, words[2]), words[3]);
                 for (u32 i = 4; i < count; i++) h = fp_mix(h, fp_ty(key_type(c, words[i])));
                 return h;
