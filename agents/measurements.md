@@ -380,6 +380,17 @@ without / with `--shared-graph` (which turns recycling off).
   drizzle 300 loaded runs (an effect K12 loop beside it) all K1's; vscode 5 / 5 (2.16-2.26 s, 4.56-4.58 GB, no redo),
   TypeScript6's compiler 5 / 5; all 13 other `-p` corpora at K4 and K12 twice each K1's output.
 
+## Plan 86 stage 4f: the end state (2026-10-22, wt-d c60fa6257 on 22d3ce85a; plan 86 "Stage 4f: done")
+`TTTT_SHARED_GRAPH=1`, this box (16 vCPUs shared, load 5-18). No waits, no redos (deleted). 20-run K12 tables 20/20 on
+drizzle, zod, effect, excalidraw, nest; 300 loaded drizzle runs 0 differ, 100 loaded effect 1 (Schema.tst.ts(2936,39));
+vscode 5/5; seeds drizzle 191/200 (the query.ts(139,3) TS2322), effect 300/300, zod, excalidraw, nest 100/100; TSan 28
+runs (vscode aside) one group, fixed. Work (cgtc.sh) K12/K1 drizzle 1.305 (6.714 / 5.145 G), zod 1.285 (5.602 / 4.360),
+effect 1.134 (9.324 / 8.220); against plain K1 1.36x, 1.35x. Wall best of 7, K12 T12 shared / defaults: drizzle 0.239
+/ 0.309 s, zod 0.211 / 0.241, effect 0.355 / 0.336. kdiff with the flag: 8 / 3814 (plain 3). Before wt-perf's PERF 1/2,
+the flag's K1 cost was drizzle +14.6%, zod +12.9%, nest +10.4%, effect +10.2% instructions over plain (callgrind,
+typecheck only; by function in plan 86's D progress). Default path over the stage (plain release, db9ca5304 to the head
+before the deletions): drizzle -1.6%, zod, nest, effect within 0.1%, tsc +0.8% (other tracks' commits included).
+
 ## Plan 86 4f PERF: the flag's K1 overhead (2026-10-22, wt-perf)
 Callgrind whole process, K1 T1 `--checker-memory off`, `TTTT_SHARED_GRAPH=1` over the plain path (base 3fb334159):
 drizzle +11.66% -> +4.06%, zod +11.30% -> +4.25%, nest +2.19% -> +0.71%. By group (drizzle / zod, % of plain): Overlay

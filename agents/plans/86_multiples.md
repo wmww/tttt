@@ -2024,6 +2024,68 @@ in parallel only where the file sets are disjoint):
     ~34.7k words against ~30.8k and the fingerprint is bimodal (4 / 952 differences; the 952-runs' first is the
     declared type `Known` seen from JSONSchema.test.ts, then deferred reference arguments): held for wt-ident's words;
     drizzle's bimodal fingerprint (1 / 604): the same; react's one broken wait cycle: the signature return site.
+  **Stage 4f: done (2026-10-22, wt-d; the deletions 59961f304 on IDENT's 22d3ce85a).** Deleted: the wait protocol
+  (lazy_wait_slow(), the wait-for graph and its lock, yields and sleeps, graph_fallback_hook(), fb.gdb), the
+  owner-tagged lazy states (lazy_claim_slow(), the LAZY_* macros, `IN_FLIGHT | worker << 2`, the x86 plain-load
+  hack), the redo (check_file_or_give_up(), give_up_file(), Checker.redo_jmp, the per-file ErrorCtx, MAX_FILE_REDOS,
+  TTTT_GRAPH_REDO, graph_retire() and TyGraph.retired[]/.redos, program_thread_materializing()), the lib warm-up, the
+  -DTTTT_GRAPH_TAINT build with TTTT_GRAPH_WITHHOLD, TTTT_GRAPH_PUBLISH_TAINTED, TTTT_GRAPH_MEMO_EAGER/_LATE and the
+  share-end publication, the memo log's variance branch, the duplicate sw_ptr_value(). Kept: the default path's state
+  bytes (padding, under 0.1%), the per-read shadow test with the file-boundary hand-over (graph_fresh_worker(),
+  graph_can_retire()). Rule holes D fixed on the way: a tainted private declaration memo read without an event; memo
+  slots holding in-flight placeholders that a flush published (KEY_IN_FLIGHT); a flag written later on a hash-consed
+  type (OBJECT_MODULE_CLONE); `*copy = *sig` reading words plainly (signature_copy()); checker.c's selecting peeks
+  (TY_PEEK_FAILED(), and ty_is_generic_tuple() computing instead of peeking).
+  End-state gates (with TTTT_SHARED_GRAPH=1 unless said; c60fa6257 on 22d3ce85a; load 5-18):
+  - Default path: suite unchanged (13962/13996), K1 byte-identical on 13 -p corpora, checkerdiff -k 12 and
+    threadcheck (T1 vs T4 x3) identical on drizzle, zod, effect, excalidraw, nest (both with the flag). Instructions,
+    plain release callgrind, from S0's base db9ca5304 to the head before the deletions (the whole stage plus the
+    other tracks' commits): drizzle 6.734 -> 6.629 G (-1.6%), zod 5.001 -> 5.002, nest 1.144 -> 1.142, effect 9.627 ->
+    9.636 (+0.1%), tsc 4.460 -> 4.497 (+0.8%): the stage cost the default path nothing measurable. PGO against
+    test/instrcount.txt (3fb334159): drizzle +1.58%, zod +0.52%, effect +0.87%, tsc +0.02%, nest +6.77% (the plain
+    build shows nest flat: a PGO layout swing to recheck at the next --save).
+  - TSan: all 14 -p corpora but vscode at T4 and T12, 28 runs: one group (sw_finish() vs
+    ty_implementation_compatible_with_overload()'s struct copy, valibot T4), fixed by c60fa6257; valibot, drizzle,
+    effect at T4 and T12 after it: clean. The merger's 6 runs at 22d3ce85a: 0 pairs. vscode skipped (time; 48 GB were
+    free).
+  - 20-run K12 tables: drizzle, zod, effect, excalidraw, nest 20/20 each. Per run (means): words published / adopted
+    / poisoned drizzle 908k / 1.5k / 26k, zod 767k / 9.8k / 21k, effect 1036k / 0.1k / 55k, excalidraw 228k / 0.6k /
+    8.0k, nest 23k / 1.0k / 0.3k; shadow hand-overs in 20 runs: drizzle 11, zod 0, effect 0, excalidraw 12, nest 11.
+    No waits, no redos (there are none to count).
+  - Loaded: 300 drizzle K12 runs with an effect K12 loop beside: 0 differ; 100 effect runs with a drizzle loop: 1
+    differs (run 25: the Schema.tst.ts(2936,39) TS2345 cascade). vscode K12: 5/5.
+  - Seeds: drizzle 191/200 (96, 98, 123, 137, 158, 175, 176, 179, 180: the spurious TS2322 at
+    singlestore-core/query-builders/query.ts(139,3); also once in a TSan drizzle T12 run), effect 300/300, zod,
+    excalidraw, nest 100/100 each.
+  - Fingerprint (2 runs each): zod 0/0, effect 0/0, nest 0/0, excalidraw 0/1 (members of IteratorConstructor,
+    interactivity.test.tsx), drizzle 1/1 (KEY_UNION_PAIR of query.ts' Promise unions: the id tie-break of union order,
+    not observable, an oracle false positive). The merger's 5 runs at 22d3ce85a: zod 0 x5, drizzle 1/1/6/1/1, effect
+    0/0/907/0/0, the one bimodal run with the old profile (members 305, signature return 273, signature resolution 62,
+    property type 45, conditional branch 12, constraints ~10; outputs matched;
+    scratchpad/merger/sg/fp.22d3ce85a.effect.3.log): the contextual-return / C+V family.
+  - Recheck (K12): drizzle 3 of 519 files differ (singlestore/session.ts and two more: the warm-words-cold-variances
+    history, D progress above), zod 0 of 334, effect 0 of 958.
+  - Work (cgtc.sh): K1 with the flag drizzle 5.145 G, zod 4.360, effect 8.220; K12 6.714, 5.602, 9.324: K12/K1 1.305,
+    1.285, 1.134. Over the 1.25 gate on drizzle and zod: PERF 2 made a one-checker graph cheaper (it publishes nothing),
+    so K1 fell, not K12 (6.79 -> 6.71 G on drizzle); against plain K1 (4.948, 4.164) K12 is 1.36x and 1.35x.
+  - Wall, best of 7 interleaved, load ~5-10, K12 T12 shared against the defaults: drizzle 0.239 / 0.309 s, zod 0.211
+    / 0.241, effect 0.355 / 0.336 (effect: the critical path, Schema.ts, under per-instruction cost; D progress).
+  - kdiff with the flag, the source sweep: 8 of 3814 against plain's 3 (rxjs/packages/rxjs, sequelize,
+    sequelize/packages/core): flag-only mikro-orm, mikro-orm/tests, mikro-orm/tests/features/decorators/es (C),
+    trpc/examples/nuxt and folo/apps/desktop/layer/renderer (W). With the signature return words, V (the trpc group,
+    dokploy) is gone, and so are renovate, react-navigation x2 (IDENT: the object-literal half of divergence (2) was
+    recorded), folo/apps/ssr; redux-toolkit went with da8787eeb.
+  **Residues (the next window's items).** C: conditional and alias instances (mikro-orm x3; the instance object an
+  identity published at creation, its resolution a word published only when clean); the drizzle seeds' TS2322 is
+  the same family per IDENT's fingerprint of seed 96 (the first tainted difference a base constraint of
+  `Assume<TPreparedQueryHKT["type"], ...>` after a tainted KEY_VARIANCES hit; the clean leaks reaching the graph are
+  conditional instances flushed from inside a variance measurement: C, with V's side state). V: variance groups'
+  side state (no project left in kdiff; keep the rule for when one comes back). W: trpc/examples/nuxt (Ty-resident,
+  open), folo's renderer. Effect's Schema.tst.ts(2936,39) cascade (~1% loaded, 0-15% at load 40+; bimodal
+  fingerprint; contextual-return / C+V family). The recheck's 3 drizzle files (warm words with cold variances: an
+  entry-point dependence of variance measurement). The flag's K1 cost (+10-15%, D progress's table; wt-perf's PERF
+  1/2 took part of it). **Release criterion**: the flag stays off by default until C (and V's rule) are done and
+  plain and flagged oracles agree in full (plan 89 section 3 item 4).
 
 **Gates** (regression gates, not the proof):
 - the default path byte-identical on every oracle and within 1% K1 instructions in total;

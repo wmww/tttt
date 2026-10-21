@@ -453,9 +453,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - signature_copied() (members.c): a copy of a signature whose resolution is in flight here gets a snapshot record
   published as resolved; before the words the copy's state stayed in flight forever with the snapshot, so a done-ness
   peek of the copy now says resolved. No oracle shows it.
-- `--shared-graph` (ty/graph.c, plan 86 stage 4d) runs its checkers on threads but isn't deterministic yet (plan 86's
-  4d status). Identities go out at creation (intern_set()), memo kinds only at a share's end (graph_publish()), so
-  what a checker finds of another's depends on the schedule. A side table entry that describes a shared object (a
+- `--shared-graph` (ty/graph.c, plan 86 stage 4f) is deterministic by construction except for the open items in plan 86's
+  "Stage 4f: done" (kdiff groups C and W, seeds' drizzle TS2322, effect's Schema.tst.ts one-off). Identities go out at creation (intern_set()), memo kinds as their computation ends (graph_memo_flush()). A
+  memo kind's slot must never hold an in-flight placeholder (a flush would publish it: KEY_IN_FLIGHT is the marker,
+  plan 86 4f D), nor a flag be set later on a hash-consed type (OBJECT_MODULE_CLONE). A side table entry that describes a shared object (a
   property's write type, its synthetic parts) must be an identity kind, published before the
   object is reachable: graph_kind_class() lists the ones found so far (KEY_PROP_WRITE_TYPE, KEY_SYNTHETIC_PROP_PARTS,
   KEY_PROP_MAPPED_TYPE), more may hide behind a flag on a shared struct (KEY_ALIAS_MARKER is history: published
@@ -805,10 +806,5 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   files (unchecked since tttt emits declarations, plan 64), `-b`'s tsbuildinfo `contentMapperIdentities`.
 - `node_in_mapped_file()` (ty_display.c, declaration maps): a reused TypeNode doesn't know its file; found from one of
   its spans, a keyword by comparing the text at its offset. Correct: TypeNodes knowing their file. Shown by: dtsdiff.py.
-- `lazy_wait_slow()` (graph.c): 64 pauses, then 50 sched_yield()s, then doubling sleeps; the 50 was tuned on a loaded
-  16-vCPU box against a convoy of waiters (TTTT_GRAPH_WAIT_YIELDS).
-- `check_file_or_give_up()` (program.c), `--shared-graph` redo: the longjmp out of `lazy_wait_slow()` leaks the
-  malloc'd temporaries of the abandoned stack (TyBufs, long keys: KBs per redo, drizzle 0-4 redos a run with the
-  variance lock) and the retired checker stays allocated until the program ends (its arena holds published types).
-  A break while materializing deferred bodies falls back to computing through the cycle instead of the redo
-  (`program_thread_materializing()`; never seen: materialization doesn't reach lazy type fields).
+- `graph_fresh_worker()` (program.c), `--shared-graph`'s shadowed-worker hand-over: the retired checker stays allocated
+  until the program ends or a graph-wide recycle (its arena holds published types); 0-12 a 20-run table.
