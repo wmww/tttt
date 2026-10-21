@@ -3604,6 +3604,8 @@ static Variances const* get_variances(Checker* me, Ty const* target) {
         static int variances_clean = -1;
         if (variances_clean < 0) variances_clean = getenv("TTTT_TAINT_VARIANCES_CLEAN") && *getenv("TTTT_TAINT_VARIANCES_CLEAN");
         if (!variances_clean) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+#else
+        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
 #endif
         return measured_variances(me, claim);
     }
@@ -4076,15 +4078,15 @@ Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing) {
     // (Itself while in flight, like tsc's circularConstraintType marker: the computation's claim says so, the links
     // only ever hold the answer)
     if (ty_claim_find(me, CLAIM_SIMPLIFIED, ty, writing)) {
-#ifdef TTTT_TAINT
-        taint_event(TAINT_IN_FLIGHT_SLOT);
-#endif
+        TAINT_EVENT(TAINT_IN_FLIGHT_SLOT);
         return ty;
     }
     Claim claim;
     ty_claim_push(me, CLAIM_SIMPLIFIED, &claim, ty, writing);
 #ifdef TTTT_TAINT
     TaintFrame taint_frame = taint_begin();
+#else
+    TAINT_BEGIN(taint_frame);
 #endif
     Ty const* ret = ty->kind == TY_CONDITIONAL ? compute_simplified_conditional(me, ty, writing) : compute_simplified(me, ty, writing);
     ty_claim_pop(me, CLAIM_SIMPLIFIED, &claim);
@@ -4092,6 +4094,8 @@ Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing) {
     *slot = ret;
 #ifdef TTTT_TAINT
     taint_end(taint_frame, TK_SIMPLIFIED, slot, ty, ret);
+#else
+    TAINT_END(taint_frame, TK_SIMPLIFIED, slot, ty, ret);
 #endif
     return ret;
 }

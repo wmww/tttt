@@ -88,11 +88,30 @@ void taint_flow_change(void); // flow_uncached is about to change: what is done 
 
 #else
 
-#define TAINT_EVENT(reason) ((void)0)
+// --shared-graph's cheap taint (plan 86 stage 4 track S, ty/graph.c): the G0 rule's events (TTTT_TAINT_LENIENT's:
+// done-ness peeks don't count) bump a counter, a computation compares it at its end, and what ended tainted is marked
+// so that reading it is an event too. Always on and cheap: an increment per event (rare: cycles, in-flight reads,
+// limits), a load at each frame's start and end, and a test of graph_taint_marks where tracked results are read.
+// Without --shared-graph nothing is ever marked or pending
+extern thread_local uint64_t graph_taint_now;
+extern thread_local uint32_t graph_taint_pending; // intern entries put before their value (graph.c)
+extern bool graph_taint_marks; // Anything marked tainted (any checker)
+void graph_taint_sweep(void);
+void graph_taint_end(unsigned kind, void const* object, void const* subject);
+void graph_taint_read(unsigned kind, void const* object);
+static inline void graph_taint_tick(void) {
+    graph_taint_now++;
+    if (graph_taint_pending) graph_taint_sweep();
+}
+typedef struct TaintFrame { uint64_t taint; } TaintFrame;
+
+#define TAINT_EVENT(reason) graph_taint_tick()
 #define TAINT_FLOW() ((void)0)
-#define TAINT_IF(reason, condition) (condition)
-#define TAINT_BEGIN(name) ((void)0)
-#define TAINT_END(name, kind, object, subject, result) ((void)0)
-#define TAINT_READ(kind, object) ((void)0)
+// (The lenient rule: a peek is no event)
+#define TAINT_IF(reason, condition) ((reason) == TAINT_PEEK ? (condition) : (condition) ? (graph_taint_tick(), true) : false)
+#define TAINT_BEGIN(name) TaintFrame name = { graph_taint_now }
+#define TAINT_END(name, kind, object, subject, result) \
+    (graph_taint_now != (name).taint ? graph_taint_end(kind, object, subject) : (void)0)
+#define TAINT_READ(kind, object) (graph_taint_marks ? graph_taint_read(kind, object) : (void)0)
 
 #endif

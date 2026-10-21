@@ -94,6 +94,7 @@ void lazy_type_set(LazyType* me, Ty const* result, Ty const* context) {
     state->context = lazy_type_id(context);
     state->evaluation_started = true;
     state->done = true;
+    state->tainted = false;
 }
 
 // TTTT_DEBUG_CYCLE=1: when a declaration's evaluation reaches itself again (the TS7022 kind of cycle), print the
@@ -158,6 +159,11 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     LazyMemo* state = lazy_type_state(me);
     DeclarationRecord own = {0};
     DeclarationRecord* record = &own;
+    // (--shared-graph: a tainted declaration, read)
+    if (state->done) {
+        TAINT_EVENT(TAINT_READ_TAINTED);
+        return lazy_memo_evaluated(state);
+    }
     // (--shared-graph: a declaration another checker evaluated, cleanly)
     if (!state->evaluation_started && current_checker->graph && my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FOR_EACH_LOOP_VAR &&
         graph_memo_take(current_checker->graph, my slot, state)) {
@@ -222,6 +228,8 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 #ifdef TTTT_TAINT
     TaintFrame taint_frame = taint_begin();
     unsigned taint_kind = my tag == LAZY_TYPE_EXPR ? TK_LAZY_EXPR : TK_LAZY_DECL + my tag;
+#else
+    TAINT_BEGIN(taint_frame);
 #endif
     if (resolving && lazy_type_pattern_root(me)) ty_resolving_push(current_checker, RESOLVING_PATTERN, me);
     else if (resolving) ty_resolving_push_record(current_checker, RESOLVING_DECLARATION, me, record);
@@ -280,8 +288,12 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 #ifdef TTTT_TAINT
     taint_end(taint_frame, taint_kind, me, me, lazy_memo_evaluated(state));
 #endif
+#ifndef TTTT_TAINT
     if (current_checker->graph && my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FOR_EACH_LOOP_VAR) {
-        graph_memo_done(current_checker, my slot, false);
+        bool tainted = graph_taint_now != taint_frame.taint;
+        if (tainted) state->tainted = true;
+        graph_memo_done(current_checker, my slot, tainted);
     }
+#endif
     return lazy_memo_evaluated(state);
 }

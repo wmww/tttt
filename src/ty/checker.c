@@ -261,8 +261,19 @@ static void const** intern_put(Checker* me, InternTable* table, InternEntry* ent
     taint_intern_put(table, hash, taint_block, count ? words[0] & 255 : 0);
     return taint_block;
 #else
-    return entry->block;
+    void const** ret = entry->block;
+    // (--shared-graph: whether its computation is clean, see graph.c)
+    if (table->shared) graph_taint_put(table, hash, ret, count ? (u32)(words[0] & 255) : 0);
+    return ret;
 #endif
+}
+
+// A private entry hit: with --shared-graph reading a tainted one is a taint event (graph.c)
+static inline void const** intern_hit(InternTable const* table, void const** block) {
+#ifndef TTTT_TAINT
+    if (table->shared && graph_taint_marks) graph_taint_read_block(block);
+#endif
+    return block;
 }
 
 static bool intern_needs_growth(InternTable const* table) {
@@ -272,7 +283,11 @@ static bool intern_needs_growth(InternTable const* table) {
 // --shared-graph: a key the checker's own table doesn't have, in the graph's (ty/graph.h). Null if none
 [[gnu::noinline]] static void const** intern_shared_find(InternTable const* table, u64 hash, u64 const* words, u32 count) {
     InternEntry* entry = intern_find(table->shared, hash, words, count);
-    if (!entry || !entry->hash) return nullptr;
+    if (!entry || !entry->hash) {
+        // (Its value's computation may start here: graph_taint_put() takes the counter from then)
+        graph_taint_miss(table, hash);
+        return nullptr;
+    }
     graph_count_shared_hit(table, words, count);
     return entry->block;
 }
@@ -294,7 +309,7 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
     taint_intern_hit(taint_block);
     return taint_block;
 #else
-    return entry->block;
+    return intern_hit(table, entry->block);
 #endif
 }
 
@@ -312,7 +327,7 @@ void const* intern_lookup(InternTable const* table, u64 const* words, u32 count,
     if (!taint_block || !taint_block[0]) taint_intern_miss(table, hash);
     return taint_block ? taint_block[0] : nullptr;
 #else
-    return entry && entry->hash ? entry->block[0] : nullptr;
+    return entry && entry->hash ? intern_hit(table, entry->block)[0] : nullptr;
 #endif
 }
 
@@ -331,7 +346,7 @@ void const** intern_insert(Checker* me, InternTable* table, InternMiss const* mi
     taint_intern_hit(taint_block);
     return taint_block;
 #else
-    return entry->block;
+    return intern_hit(table, entry->block);
 #endif
 }
 
@@ -375,7 +390,7 @@ void const* intern_get(InternTable const* table, u64 const* words, u32 count) {
 #else
     u64 hash = hash_words(words, count);
     InternEntry* entry = intern_find(table, hash, words, count);
-    if (entry && entry->hash) return entry->block[0];
+    if (entry && entry->hash) return intern_hit(table, entry->block)[0];
     void const** shared = table->shared ? intern_shared_find(table, hash, words, count) : nullptr;
     return shared ? shared[0] : nullptr;
 #endif

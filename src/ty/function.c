@@ -346,9 +346,7 @@ Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol) {
 bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function) {
     if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body) return false;
     FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
-#ifdef TTTT_TAINT
     if (memo && memo->state == LAZY_STATE_IN_FLIGHT) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-#endif
     return memo && memo->state == LAZY_STATE_IN_FLIGHT;
 }
 

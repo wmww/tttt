@@ -58,4 +58,10 @@ bool intern_table_has(InternTable const* table, InternEntry const* entry, u32 co
 void link_table_each(LinkTable const* table, void (*each)(void* arg, u32 kind, void const* subject, void const* value), void* arg);
 void const* link_table_get(LinkTable const* table, u32 kind, void const* subject);
 void link_table_set(LinkTable* table, u32 kind, void const* subject, void const* value);
+// The cheap taint's intern hooks (checker.c, only for tables with a shared counterpart): a private miss that may start
+// a computation, a put (clean if no event since the miss, else marked; pending until the next event if its value isn't
+// there yet), a hit of a private entry (tainted: an event)
+void graph_taint_miss(InternTable const* table, u64 hash);
+void graph_taint_put(InternTable const* table, u64 hash, void const** block, u32 kind);
+void graph_taint_read_block(void const* const* block);
 void graph_count_shared_hit(InternTable const* table, u64 const* words, u32 count); // (checker.c)

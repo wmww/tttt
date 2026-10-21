@@ -49,6 +49,7 @@ struct TyGraph {
     LinkTable node_links;
     LazyMemo** memos[1 << LAZY_TOP_BITS]; // Declaration memos by slot, like LazySlots.top
     u64 memo_hits;
+    u32 first_id; // The current checker's first type id: what it makes from there on is its own
     KindStats stats[GRAPH_STAT_KINDS];
     u32 checkers;
 };
@@ -162,6 +163,7 @@ void graph_enter(TyGraph* me, Checker* checker) {
     if (my owner) held_take(&my held, my owner);
     if (checker) held_give(&my held, checker);
     my owner = checker;
+    if (checker) my first_id = checker->next_type_id;
 }
 
 void graph_release(TyGraph* me, Checker* checker) {
@@ -199,6 +201,204 @@ void graph_count_shared_hit(InternTable const* table, u64 const* words, u32 coun
     checker->graph->stats[kind].shared_hits++;
 }
 
+// The cheap taint (taint.h's non-TTTT_TAINT macros): one thread, so plain statics besides the counter
+
+thread_local u64 graph_taint_now;
+thread_local u32 graph_taint_pending;
+bool graph_taint_marks;
+
+// Tainted results: intern blocks by address, other results by (kind, object) as taint.c keys them. A bitmap in front
+// keeps the reads cheap
+typedef struct MarkSet {
+    u64* keys;
+    u32 cap, len;
+} MarkSet;
+static MarkSet marks;
+static u64 mark_bits[1 << 14]; // 2^20 bits
+
+static u64 mix_key(u64 h) {
+    h ^= h >> 33;
+    h *= 0xff51afd7ed558ccdull;
+    h ^= h >> 33;
+    return h;
+}
+
+static u64 object_key(unsigned kind, void const* object) {
+    return (u64)(uintptr_t)object ^ (u64)kind << 48;
+}
+
+static bool mark_has(u64 key) {
+    u64 h = mix_key(key);
+    if (!(mark_bits[(h >> 6) & (c_arraylen(mark_bits) - 1)] >> (h & 63) & 1)) return false;
+    for (u32 i = (u32)(h >> 20) & (marks.cap - 1);; i = (i + 1) & (marks.cap - 1)) {
+        if (marks.keys[i] == key) return true;
+        if (!marks.keys[i]) return false;
+    }
+}
+
+static void mark_add(u64 key) {
+    if (!key || mark_has(key)) return;
+    if ((marks.len + 1) * 2 > marks.cap) {
+        MarkSet bigger = { .cap = marks.cap ? marks.cap * 2 : 1024, .len = marks.len };
+        bigger.keys = calloc(bigger.cap, sizeof(u64));
+        panic_if(!bigger.keys, "out of memory");
+        for (u32 i = 0; i < marks.cap; i++) {
+            if (!marks.keys[i]) continue;
+            u32 j = (u32)(mix_key(marks.keys[i]) >> 20) & (bigger.cap - 1);
+            while (bigger.keys[j]) j = (j + 1) & (bigger.cap - 1);
+            bigger.keys[j] = marks.keys[i];
+        }
+        free(marks.keys);
+        marks = bigger;
+    }
+    u64 h = mix_key(key);
+    u32 i = (u32)(h >> 20) & (marks.cap - 1);
+    while (marks.keys[i]) i = (i + 1) & (marks.cap - 1);
+    marks.keys[i] = key;
+    marks.len++;
+    mark_bits[(h >> 6) & (c_arraylen(mark_bits) - 1)] |= 1ull << (h & 63);
+    graph_taint_marks = true;
+}
+
+// Tainted results by TK_* / KEY_* kind (taint.h), and those on a type an earlier checker made (shared Ty-resident
+// results the next checker reads as they are: what 4a's overlays would keep apart)
+static u64 tainted_by_kind[TK_COUNT];
+static u64 tainted_shared_by_kind[TK_COUNT];
+static u64 taint_events_seen;
+
+// A private miss: where a computation of its value may start
+typedef struct MissRecord {
+    void const* table;
+    u64 hash;
+    u64 start;
+} MissRecord;
+#define MISS_RING 64
+static MissRecord miss_ring[MISS_RING];
+static u32 miss_next;
+
+void graph_taint_miss(InternTable const* table, u64 hash) {
+    miss_ring[miss_next++ % MISS_RING] = (MissRecord){ table, hash, graph_taint_now };
+}
+
+// The memo kinds whose own frames decide (TAINT_END), or that hold a placeholder while computed
+static bool explicit_kind(u32 kind) {
+    switch (kind) {
+    case KEY_SIMPLIFIED: case KEY_VARIANCES: case KEY_ALIAS_VARIANCES: case KEY_FUNCTION_TYPE_MENTIONS:
+        return true;
+    default:
+        return false;
+    }
+}
+
+typedef struct PendingPut {
+    void const* const* block;
+} PendingPut;
+static PendingPut* pending;
+static u32 pending_cap;
+
+void graph_taint_put(InternTable const* table, u64 hash, void const** block, u32 kind) {
+    Checker* checker = current_checker;
+    if (checker && table == &checker->intersection_props) kind = GRAPH_KIND_INTERSECTION_PROPS;
+    if (graph_kind_class(kind) != GRAPH_MEMO || explicit_kind(kind)) return;
+    u64 start = graph_taint_now;
+    for (u32 i = 0; i < MISS_RING; i++) {
+        MissRecord* m = &miss_ring[(miss_next - 1 - i) % MISS_RING];
+        if (m->hash == hash && m->table == table) {
+            start = m->start;
+            m->hash = 0;
+            break;
+        }
+    }
+    if (start != graph_taint_now) {
+        mark_add((u64)(uintptr_t)block);
+        tainted_by_kind[kind]++;
+        return;
+    }
+    if (graph_taint_pending == pending_cap) {
+        // (The ones with their value are done, before any event since: clean)
+        u32 kept = 0;
+        for (u32 i = 0; i < graph_taint_pending; i++) {
+            if (!pending[i].block[0]) pending[kept++] = pending[i];
+        }
+        graph_taint_pending = kept;
+        if (!pending_cap || kept * 2 > pending_cap) {
+            pending_cap = pending_cap ? pending_cap * 2 : 4096;
+            pending = realloc(pending, sizeof(PendingPut) * pending_cap);
+            panic_if(!pending, "out of memory");
+        }
+    }
+    pending[graph_taint_pending++] = (PendingPut){ block };
+}
+
+// An event: the entries put that still have no value were in flight across it
+void graph_taint_sweep(void) {
+    taint_events_seen++;
+    for (u32 i = 0; i < graph_taint_pending; i++) {
+        if (!pending[i].block[0]) mark_add((u64)(uintptr_t)pending[i].block);
+    }
+    graph_taint_pending = 0;
+}
+
+void graph_taint_read_block(void const* const* block) {
+    if (mark_has((u64)(uintptr_t)block)) graph_taint_tick();
+}
+
+static u64 result_key(unsigned kind, void const* object) {
+    // (KEY_SIMPLIFIED's frame names its intern block, which the hit check looks for)
+    return kind == TK_SIMPLIFIED ? (u64)(uintptr_t)object : object_key(kind, object);
+}
+
+void graph_taint_end(unsigned kind, void const* object, void const* subject) {
+    Checker* checker = current_checker;
+    if (!checker || !checker->graph) return;
+    mark_add(result_key(kind, object));
+    tainted_by_kind[kind < TK_COUNT ? kind : 0]++;
+    // (Results kept on a type: is it one an earlier checker made, which the next ones get as it is?)
+    bool on_type = kind == TK_MEMBERS || kind == TK_DECLARED_RAW || kind == TK_PARAM_CONSTRAINT;
+    if (on_type && subject && ((Ty const*)subject)->id < checker->graph->first_id) tainted_shared_by_kind[kind]++;
+}
+
+void graph_taint_read(unsigned kind, void const* object) {
+    if (mark_has(result_key(kind, object))) graph_taint_tick();
+}
+
+// TTTT_GRAPH_PUBLISH_TAINTED=kind,kind... (KEY_* numbers, node_links' as 256 + kind, 500 the declaration memos; `all`):
+// publish those kinds' tainted results all the same (to find which kind's withholding changes the output)
+static bool publish_tainted(u32 kind) {
+    static int all = -1;
+    static bool kinds[512];
+    if (all < 0) {
+        char const* list = getenv("TTTT_GRAPH_PUBLISH_TAINTED");
+        all = list && !strcmp(list, "all");
+        for (char const* p = list; p && *p && !all;) {
+            u32 k = (u32)strtoul(p, (char**)&p, 10);
+            if (k < 512) kinds[k] = true;
+            if (*p == ',') p++;
+            else break;
+        }
+    }
+    return all || (kind < 512 && kinds[kind]);
+}
+
+// Whether a private entry may be published: an identity always, a memo if its computation was clean
+static bool entry_tainted(u32 kind, void const* const* block) {
+    if (!graph_taint_marks || publish_tainted(kind)) return false;
+    if (mark_has((u64)(uintptr_t)block)) return true;
+    switch (kind) {
+    case KEY_VARIANCES: case KEY_ALIAS_VARIANCES: return mark_has(object_key(TK_VARIANCES, block[0]));
+    default: return false;
+    }
+}
+
+static bool link_tainted(u32 kind, void const* subject, void const* value) {
+    if (!graph_taint_marks || publish_tainted(256 + kind)) return false;
+    switch (kind) {
+    case KEY_BASE_CONSTRAINT: return mark_has(object_key(TK_BASE_CONSTRAINT, subject));
+    case KEY_FUNCTION_FREE_PARAMS: return mark_has(object_key(TK_FREE_PARAMS, value));
+    default: return false;
+    }
+}
+
 // Publication
 
 static u32 block_kind(InternTable const* table, Checker const* checker, InternEntry const* entry, u32* count) {
@@ -226,6 +426,10 @@ static void publish_table(TyGraph* me, Checker* checker, InternTable* private_ta
             stats->unfinished++;
             continue;
         }
+        if (class == GRAPH_MEMO && entry_tainted(kind, entry->block)) {
+            stats->tainted++;
+            continue;
+        }
         if (intern_table_has(shared, entry, count)) continue;
         intern_table_publish(shared, entry, count);
         stats->published++;
@@ -245,6 +449,10 @@ static void publish_link(void* arg, u32 kind, void const* subject, void const* v
     }
     if (!value) {
         stats->unfinished++;
+        return;
+    }
+    if (graph_kind_class(kind) == GRAPH_MEMO && link_tainted(kind, subject, value)) {
+        stats->tainted++;
         return;
     }
     if (link_table_get(&my node_links, kind, subject)) return;
@@ -277,7 +485,7 @@ void graph_publish(TyGraph* me, Checker* checker) {
     KindStats* stats = &my stats[GRAPH_STAT_MEMOS];
     for (u32 i = 0; i < checker->graph_memo_len; i++) {
         u32 slot = checker->graph_memo_slots[i] & ~(1u << 31);
-        if (checker->graph_memo_slots[i] >> 31) {
+        if (checker->graph_memo_slots[i] >> 31 && !publish_tainted(GRAPH_STAT_MEMOS)) {
             stats->tainted++;
             continue;
         }
@@ -376,4 +584,14 @@ void graph_print_stats(TyGraph const* me) {
     }
     eprintln("graph: total ", total.shared_hits, " ", total.published, " ", total.tainted, " ", total.scratch, " ",
         total.unfinished);
+    eprintln("graph: taint events ", (i64)graph_taint_now, ", sweeps ", taint_events_seen, ", marked ", (i64)marks.len);
+    static char const* const tk_names[] = { "members", "declared raw", "prop type", "signature return", "param constraint",
+        "symbol declared", "function return", "base constraint", "simplified", "variances", "free params" };
+    for (u32 k = 0; k < TK_COUNT; k++) {
+        if (!tainted_by_kind[k]) continue;
+        char const* name = k >= TK_MEMBERS && k <= TK_FREE_PARAMS ? tk_names[k - TK_MEMBERS] :
+            k >= TK_LAZY_DECL && k < TK_LAZY_EXPR ? "declaration memo" : kind_name(k);
+        eprintln("graph: tainted ", name ? name : "?", " ", tainted_by_kind[k], " (on an earlier checker's type: ",
+            tainted_shared_by_kind[k], ")");
+    }
 }
