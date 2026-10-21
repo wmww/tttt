@@ -1606,6 +1606,19 @@ in parallel only where the file sets are disjoint):
       KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT: K1 a 4-member union, K12 an aliased 2-member one) is this hole: with
       instantiate_branch() forced to the node path (a throwaway knob) `fingerprint.sh 2 zod` has 0 differences (9 per
       run otherwise). The paths-agree fix is its fix.
+      **Closed (worker CONDP, 2026-10-22).** The two paths' disagreement was two bugs, neither in the branch code:
+      type-fest's TS2344 under always-node was intersection identity (NoConstraintReduction intersections shared with
+      the reducing path's, which OR'd TYX_CONSTRAINED_TYPE_VARIABLE into them late: now keyed apart like tsgo's
+      getIntersectionKey '*', the flag set at creation only; ttttEffectiveConstraintKeepsConstrainedVariables); the 3
+      suite tests under "lower the root first" were that experiment lowering at instance creation, re-entering the
+      root's in-flight branch (the error type: recursiveConditionalCrash4's TS5114 lost). Now one path: an instance's
+      branch is {root's node, ctx, composed mapper, root = the root's branch} and picking it instantiates the root's
+      lowered branch, lowered into the root's word if nobody has (root_branch_lowered(): in flight on its own stack,
+      lowered again). ty_cond_branch_known() is gone; relate.c's guesses read ty_cond_branch_root_lowered(). Default
+      path byte-identical (suite, 14 corpora), callgrind drizzle -2.3%, zod -1.5%, type-fest -8.1% (instances share the
+      root's lowering). Fingerprint divergence (1) (zod registries.ts, 9 per run) is 0 at the branch-path commit.
+      rep3 K12 20 runs: zod 20/20, drizzle 20/20, effect 19/20 (its TS2345 at dtslint/Schema.tst.ts(2936,39), 2/20 at
+      the base too: not this); drizzle seeds 100/100.
   - **P3, relate.c + graph.c + lazy_type.c + shared_table.c** (variance groups without waiting, declaration memos as
     words, memo kinds publishing only clean entries in graph_memo_flush(), the shared relation cache's deeply-nested
     rule). ~1-2 sessions. The tooling worker's hooks in graph.c and shared_table.c are its neighbours: rebase often.
