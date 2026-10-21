@@ -1788,16 +1788,17 @@ Ty const* ty_rest_element_type(Checker* me, Ty const* rest) {
 // The type of parameter i, null if there's none. A rest parameter stands for every position from its own on. An
 // optional parameter holds undefined too (tsc's getTypeAtPosition)
 static Ty const* param_type_at(Checker* me, Signature const* sig, u32 i) {
-    if (i < sig_res(sig)->param_count && !sig_res(sig)->params[i].rest) {
-        return sig_res(sig)->params[i].type;
+    SigResolved const* sig_r = sig_res(me, sig);
+    if (i < sig_r->param_count && !sig_r->params[i].rest) {
+        return sig_r->params[i].type;
     }
-    if (sig_res(sig)->param_count && sig_res(sig)->params[sig_res(sig)->param_count - 1].rest && i + 1 >= sig_res(sig)->param_count) {
-        Ty const* rest = sig_res(sig)->params[sig_res(sig)->param_count - 1].type;
+    if (sig_r->param_count && sig_r->params[sig_r->param_count - 1].rest && i + 1 >= sig_r->param_count) {
+        Ty const* rest = sig_r->params[sig_r->param_count - 1].type;
         TupleShape const* shape = ty_tuple_shape(rest); // (`[]` too, which is no reference)
         if (shape) {
             // `...args: [a: A, b?: B, ...c: C[]]` is parameters of their own
             TyList elements = shape->arity ? ty_reference_args(me, rest) : (TyList){0};
-            u32 j = i + 1 - sig_res(sig)->param_count;
+            u32 j = i + 1 - sig_r->param_count;
             bool ends_in_rest = shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
             if (j >= shape->arity) return ends_in_rest ? rest_element_type(me, elements.data[shape->arity - 1]) : nullptr;
             if (shape->flags[j] & TUPLE_ELEMENT_REST) return rest_element_type(me, elements.data[j]);
@@ -1806,7 +1807,7 @@ static Ty const* param_type_at(Checker* me, Signature const* sig, u32 i) {
         // (A union of tuples, `...[value]: [] | [V]` of Generator's next, is indexed at the position: tsc's
         // tryGetTypeAtPosition's getIndexedAccessType, not any)
         if (rest->kind == TY_UNION) {
-            Ty const* element = ty_access(me, rest, ty_literal(me, &(Value){ .tag = VALUE_NUMBER, .number = i + 1 - sig_res(sig)->param_count }));
+            Ty const* element = ty_access(me, rest, ty_literal(me, &(Value){ .tag = VALUE_NUMBER, .number = i + 1 - sig_r->param_count }));
             if (element) return element;
         }
         return rest_element_type(me, rest);
@@ -1817,39 +1818,43 @@ static Ty const* param_type_at(Checker* me, Signature const* sig, u32 i) {
 Ty const* ty_signature_param_type_at(Checker* me, Signature const* sig, u32 i) { return param_type_at(me, sig, i); }
 
 // Whether position i is the rest parameter of a signature whose rest parameter is `[]`
-static bool past_empty_rest(Signature const* sig, u32 i) {
-    if (!sig_res(sig)->param_count || i + 1 < sig_res(sig)->param_count || !sig_res(sig)->params[sig_res(sig)->param_count - 1].rest) return false;
-    Ty const* rest = sig_res(sig)->params[sig_res(sig)->param_count - 1].type;
+static bool past_empty_rest(Checker* me, Signature const* sig, u32 i) {
+    SigResolved const* sig_r = sig_res(me, sig);
+    if (!sig_r->param_count || i + 1 < sig_r->param_count || !sig_r->params[sig_r->param_count - 1].rest) return false;
+    Ty const* rest = sig_r->params[sig_r->param_count - 1].type;
     return rest->kind == TY_DECLARED && rest->declared.kind == TY_DECLARED_TUPLE_TARGET && !rest->declared.tuple->arity;
 }
 
 // How many parameters a signature has, with a rest tuple of fixed length counted as its elements
-u32 ty_signature_param_count(Signature const* sig) {
-    if (!sig_res(sig)->param_count || !sig_res(sig)->params[sig_res(sig)->param_count - 1].rest) return sig_res(sig)->param_count;
-    TupleShape const* shape = ty_tuple_shape(sig_res(sig)->params[sig_res(sig)->param_count - 1].type);
-    if (!shape) return sig_res(sig)->param_count;
+u32 ty_signature_param_count(Checker* me, Signature const* sig) {
+    SigResolved const* sig_r = sig_res(me, sig);
+    if (!sig_r->param_count || !sig_r->params[sig_r->param_count - 1].rest) return sig_r->param_count;
+    TupleShape const* shape = ty_tuple_shape(sig_r->params[sig_r->param_count - 1].type);
+    if (!shape) return sig_r->param_count;
     // (Of a tuple with a rest or variadic element, the elements before the first of those and one for the rest: tsc's
     // getParameterCount with fixedLength)
     u32 leading = 0;
     while (leading < shape->arity && !(shape->flags[leading] & TUPLE_ELEMENT_REST)) leading++;
-    return sig_res(sig)->param_count - 1 + (leading < shape->arity ? leading + 1 : shape->arity);
+    return sig_r->param_count - 1 + (leading < shape->arity ? leading + 1 : shape->arity);
 }
 
 // The arguments a signature needs, the required elements of a rest tuple included (tsc's getMinArgumentCount, less
 // its trailing void parameters)
-static u32 signature_min_args(Signature const* sig) {
-    if (!sig_res(sig)->param_count || !sig_res(sig)->params[sig_res(sig)->param_count - 1].rest) return sig_res(sig)->min_args;
-    TupleShape const* shape = ty_tuple_shape(sig_res(sig)->params[sig_res(sig)->param_count - 1].type);
-    if (!shape) return sig_res(sig)->min_args;
+static u32 signature_min_args(Checker* me, Signature const* sig) {
+    SigResolved const* sig_r = sig_res(me, sig);
+    if (!sig_r->param_count || !sig_r->params[sig_r->param_count - 1].rest) return sig_r->min_args;
+    TupleShape const* shape = ty_tuple_shape(sig_r->params[sig_r->param_count - 1].type);
+    if (!shape) return sig_r->min_args;
     u32 required = 0;
     while (required < shape->arity && !(shape->flags[required] & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST))) required++;
-    return required ? sig_res(sig)->param_count - 1 + required : sig_res(sig)->min_args;
+    return required ? sig_r->param_count - 1 + required : sig_r->min_args;
 }
 
 // Takes any number of arguments: a rest parameter that isn't a tuple of fixed length
-bool ty_signature_has_rest(Signature const* sig) {
-    if (!sig_res(sig)->param_count || !sig_res(sig)->params[sig_res(sig)->param_count - 1].rest) return false;
-    TupleShape const* shape = ty_tuple_shape(sig_res(sig)->params[sig_res(sig)->param_count - 1].type);
+bool ty_signature_has_rest(Checker* me, Signature const* sig) {
+    SigResolved const* sig_r = sig_res(me, sig);
+    if (!sig_r->param_count || !sig_r->params[sig_r->param_count - 1].rest) return false;
+    TupleShape const* shape = ty_tuple_shape(sig_r->params[sig_r->param_count - 1].type);
     if (!shape) return true;
     // (Any rest or variadic element, `[...T, ctx: C]` too: tsc's hasEffectiveRestParameter, target.hasRestElement)
     for (u32 i = shape->arity; i-- > 0;) {
@@ -1867,9 +1872,9 @@ typedef enum CallbackMode {
 
 // tsc's isInstantiatedGenericParameter: the parameter was generic before the signature was instantiated
 static bool is_instantiated_generic_param(Checker* me, Signature const* sig, u32 i) {
-    if (!sig_target(sig)) return false;
-    signature_resolve(me, sig_target(sig));
-    Ty const* type = param_type_at(me, sig_target(sig), i);
+    if (!sig_target(me, sig)) return false;
+    signature_resolve(me, sig_target(me, sig));
+    Ty const* type = param_type_at(me, sig_target(me, sig), i);
     if (!type) return false;
     if (ty_is_generic_index(type)) return true;
     return (type->flags & TYF_OBJECT) && (type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_generic_mapped(me, type);
@@ -1897,20 +1902,21 @@ static u32 min_argument_count_from(Checker* me, Signature const* sig, u32 min) {
 }
 
 static u32 min_argument_count(Checker* me, Signature const* sig) {
-    return min_argument_count_from(me, sig, sig_res(sig)->min_args);
+    return min_argument_count_from(me, sig, sig_res(me, sig)->min_args);
 }
 
 u32 ty_min_argument_count(Checker* me, Signature const* sig) { return min_argument_count(me, sig); }
 
 // tsc's getMinArgumentCount with the required elements of a rest tuple (`(...args: [a: A]) => R` takes one)
 static u32 tuple_min_argument_count(Checker* me, Signature const* sig) {
+    SigResolved const* sig_r = sig_res(me, sig);
     u32 min = min_argument_count(me, sig);
-    if (!sig_res(sig)->param_count || !sig_res(sig)->params[sig_res(sig)->param_count - 1].rest) return min;
-    TupleShape const* shape = ty_tuple_shape(sig_res(sig)->params[sig_res(sig)->param_count - 1].type);
+    if (!sig_r->param_count || !sig_r->params[sig_r->param_count - 1].rest) return min;
+    TupleShape const* shape = ty_tuple_shape(sig_r->params[sig_r->param_count - 1].type);
     if (!shape) return min;
     u32 required = 0;
     while (required < shape->arity && !(shape->flags[required] & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST))) required++;
-    u32 with_rest = sig_res(sig)->param_count - 1 + required;
+    u32 with_rest = sig_r->param_count - 1 + required;
     return required && with_rest > min ? with_rest : min;
 }
 
@@ -1918,8 +1924,9 @@ static u32 tuple_min_argument_count(Checker* me, Signature const* sig) {
 // report_return_types_marker()
 // tsc's getNonArrayRestType
 static Ty const* non_array_rest_type(Checker* me, Signature const* sig) {
-    if (!sig_res(sig)->param_count || !sig_res(sig)->params[sig_res(sig)->param_count - 1].rest) return nullptr;
-    Ty const* rest = sig_res(sig)->params[sig_res(sig)->param_count - 1].type;
+    SigResolved const* sig_r = sig_res(me, sig);
+    if (!sig_r->param_count || !sig_r->params[sig_r->param_count - 1].rest) return nullptr;
+    Ty const* rest = sig_r->params[sig_r->param_count - 1].type;
     if ((rest->flags & TYF_ANY) || (rest->kind == TY_REFERENCE && is_array_target(me, rest->reference.target))) return nullptr;
     return rest;
 }
@@ -1927,12 +1934,12 @@ static Ty const* non_array_rest_type(Checker* me, Signature const* sig) {
 // A parameter's name as tsc's getParameterNameAtPosition gives it: its symbol's, which is `__<index>` for a binding
 // pattern; past the others, a rest parameter of a tuple type's element label (`args_0`)
 [[gnu::cold]] static cstr message_param_name(Checker* me, Signature const* sig, u32 pos) {
-    if (!sig_res(sig)->param_count) return cstr_lit("");
-    bool rest = sig_res(sig)->params[sig_res(sig)->param_count - 1].rest;
-    u32 fixed = sig_res(sig)->param_count - (rest ? 1 : 0);
-    u32 index = pos < sig_res(sig)->param_count ? pos : sig_res(sig)->param_count - 1;
+    if (!sig_res(me, sig)->param_count) return cstr_lit("");
+    bool rest = sig_res(me, sig)->params[sig_res(me, sig)->param_count - 1].rest;
+    u32 fixed = sig_res(me, sig)->param_count - (rest ? 1 : 0);
+    u32 index = pos < sig_res(me, sig)->param_count ? pos : sig_res(me, sig)->param_count - 1;
     if (rest && pos >= fixed) {
-        SigParam const* rest_param = &sig_res(sig)->params[fixed];
+        SigParam const* rest_param = &sig_res(me, sig)->params[fixed];
         TupleShape const* shape = rest_param->type->kind == TY_REFERENCE ? ty_tuple_shape(rest_param->type) : nullptr;
         u32 element = pos - fixed;
         if (shape && element < shape->arity) {
@@ -1941,15 +1948,16 @@ static Ty const* non_array_rest_type(Checker* me, Signature const* sig) {
         }
         index = fixed;
     }
-    FunctionArg const* decl = sig_res(sig)->params[index].decl;
+    FunctionArg const* decl = sig_res(me, sig)->params[index].decl;
     if (decl && decl->initializer.binding.tag != BINDING_IDENTIFIER) return cstr_d("__", index);
-    return cstr_from_sv(atom_sv(sig_res(sig)->params[index].name));
+    return cstr_from_sv(atom_sv(sig_res(me, sig)->params[index].name));
 }
 
 // tsc's getEffectiveRestType: a rest parameter that isn't a tuple (any as any[]), else what the tuple has from its first
 // rest or variadic element on (`...X[]` is X[], `...T` is T), null if it has none
 static Ty const* effective_rest_type(Checker* me, Signature const* sig) {
-    Ty const* rest_param = sig_res(sig)->param_count && sig_res(sig)->params[sig_res(sig)->param_count - 1].rest ? sig_res(sig)->params[sig_res(sig)->param_count - 1].type : nullptr;
+    SigResolved const* sig_r = sig_res(me, sig);
+    Ty const* rest_param = sig_r->param_count && sig_r->params[sig_r->param_count - 1].rest ? sig_r->params[sig_r->param_count - 1].type : nullptr;
     if (!rest_param) return nullptr;
     TupleShape const* rest_shape = ty_tuple_shape(rest_param);
     Ty const* effective = rest_shape ? nullptr : rest_param;
@@ -1977,7 +1985,8 @@ static Ty const* effective_rest_type(Checker* me, Signature const* sig) {
 
 // tsc's getNonArrayRestType
 static Ty const* non_array_effective_rest(Checker* me, Signature const* sig) {
-    if (!sig_res(sig)->param_count || !sig_res(sig)->params[sig_res(sig)->param_count - 1].rest) return nullptr;
+    SigResolved const* sig_r = sig_res(me, sig);
+    if (!sig_r->param_count || !sig_r->params[sig_r->param_count - 1].rest) return nullptr;
     Ty const* rest = effective_rest_type(me, sig);
     return rest && !ty_is_array(me, rest) && !(rest->flags & TYF_ANY) ? rest : nullptr;
 }
@@ -1985,30 +1994,30 @@ static Ty const* non_array_effective_rest(Checker* me, Signature const* sig) {
 // The parameters from `i` on as one type (tsc's getRestTypeAtPosition: a rest parameter there as it is, else the tuple
 // of them), any if that's an array of any (getRestOrAnyTypeAtPosition)
 [[gnu::noinline]] static Ty const* rest_or_any_type_at(Checker* me, Signature const* sig, u32 pos) {
-    Ty const* rest_param = sig_res(sig)->param_count && sig_res(sig)->params[sig_res(sig)->param_count - 1].rest ? sig_res(sig)->params[sig_res(sig)->param_count - 1].type : nullptr;
+    Ty const* rest_param = sig_res(me, sig)->param_count && sig_res(me, sig)->params[sig_res(me, sig)->param_count - 1].rest ? sig_res(me, sig)->params[sig_res(me, sig)->param_count - 1].type : nullptr;
     TupleShape const* rest_shape = rest_param ? ty_tuple_shape(rest_param) : nullptr;
     Ty const* effective = effective_rest_type(me, sig);
-    u32 count = ty_signature_param_count(sig);
+    u32 count = ty_signature_param_count(me, sig);
     Ty const* ret;
     if (effective && pos + 1 >= count) {
         ret = pos + 1 == count ? effective : ty_array(me, ty_indexed(me, effective, ty_intrinsic(me, TY_NUMBER)), false);
     } else {
         // (The tuple of the positions from here on, the effective rest last: tsc's createTupleType there)
         u32 len = count > pos ? count - pos : 0;
-        u32 min = signature_min_args(sig);
+        u32 min = signature_min_args(me, sig);
         Ty const** elements = arena_new_n(&my arena, Ty const*, len ? len : 1);
         unsigned char* flags = arena_new_n(&my arena, unsigned char, len ? len : 1);
         Atom const** names = arena_new_n(&my arena, Atom const*, len ? len : 1);
         void const** labels = arena_new_n(&my arena, void const*, len ? len : 1);
         bool named = false;
-        u32 own = sig_res(sig)->param_count - (rest_param ? 1 : 0);
+        u32 own = sig_res(me, sig)->param_count - (rest_param ? 1 : 0);
         for (u32 i = pos; i < pos + len; i++) {
             bool last = effective && i + 1 == count;
             elements[i - pos] = last ? effective : param_type_at(me, sig, i);
             flags[i - pos] = last ? TUPLE_ELEMENT_REST : i < min ? 0 : TUPLE_ELEMENT_OPTIONAL;
             if (!elements[i - pos]) elements[i - pos] = ty_intrinsic(me, TY_UNKNOWN_);
             // (Labelled like the parameters or tuple elements they are: tsc's getNameableDeclarationAtPosition)
-            SigParam const* param = i < own ? &sig_res(sig)->params[i] : rest_param && !rest_shape ? &sig_res(sig)->params[own] : nullptr;
+            SigParam const* param = i < own ? &sig_res(me, sig)->params[i] : rest_param && !rest_shape ? &sig_res(me, sig)->params[own] : nullptr;
             names[i - pos] = param ? (param->decl && param->decl->initializer.binding.tag == BINDING_IDENTIFIER ? param->name : nullptr) :
                 rest_shape && rest_shape->names && i - own < rest_shape->arity ? rest_shape->names[i - own] : nullptr;
             labels[i - pos] = !names[i - pos] ? nullptr : param ? (void const*)param->decl :
@@ -2027,12 +2036,13 @@ static Ty const* non_array_effective_rest(Checker* me, Signature const* sig) {
 // tsc's isTopSignature: `(...args: any) => any`, `(...args: never) => unknown` and the like, which every signature is
 // assignable to
 static bool is_top_signature(Checker* me, Signature const* sig) {
-    if (sig_res(sig)->type_params.len || (sig_res(sig)->this_type && !(sig_res(sig)->this_type->flags & TYF_ANY)) || sig_res(sig)->param_count != 1 ||
-        !sig_res(sig)->params[0].rest
+    SigResolved const* sig_r = sig_res(me, sig);
+    if (sig_r->type_params.len || (sig_r->this_type && !(sig_r->this_type->flags & TYF_ANY)) || sig_r->param_count != 1 ||
+        !sig_r->params[0].rest
     ) {
         return false;
     }
-    Ty const* rest = sig_res(sig)->params[0].type;
+    Ty const* rest = sig_r->params[0].type;
     if (ty_is_array(me, rest)) rest = ty_reference_args(me, rest).data[0];
     return (rest->flags & (TYF_ANY | TYF_NEVER)) && (signature_return_type(me, sig)->flags & (TYF_ANY | TYF_UNKNOWN));
 }
@@ -2060,17 +2070,17 @@ static Ternary compare_signatures(
     bool target_top = is_top_signature(me, target);
     if (!source_top && target_top) return TERNARY_TRUE;
     if (source_top && !target_top) return TERNARY_FALSE;
-    u32 target_count = ty_signature_param_count(target);
+    u32 target_count = ty_signature_param_count(me, target);
     // (The required elements of a rest tuple count: `(...args: [string]) => R` isn't a `() => R`, tsc's
     // getMinArgumentCount)
-    u32 source_min = signature_min_args(source);
+    u32 source_min = signature_min_args(me, source);
     if (source_min > target_count) source_min = min_argument_count_from(me, source, source_min);
     // The strict subtype relation counts optional parameters too (tsc's SignatureCheckMode.StrictArity): of `() => void`
     // and `(b?: string) => void`, only the first is a strict subtype of the other
-    bool strict_arity = st->relation == TY_RELATION_STRICT_SUBTYPE && !ty_signature_has_rest(target) &&
-        (ty_signature_has_rest(source) || ty_signature_param_count(source) > target_count);
+    bool strict_arity = st->relation == TY_RELATION_STRICT_SUBTYPE && !ty_signature_has_rest(me, target) &&
+        (ty_signature_has_rest(me, source) || ty_signature_param_count(me, source) > target_count);
     if (strict_arity) return TERNARY_FALSE;
-    if (!ty_signature_has_rest(target) && source_min > target_count) {
+    if (!ty_signature_has_rest(me, target) && source_min > target_count) {
         if (report) {
             report_line(st, 2849, cstr_d(
                 "Target signature provides too few arguments. Expected ", source_min, " or more, but got ",
@@ -2099,17 +2109,17 @@ static Ternary compare_signatures(
         !is_constructor_declaration(target);
     Ternary result = TERNARY_TRUE;
     // A source that says what `this` is needs a target that agrees (a `void` one is called any way)
-    if (sig_res(source)->this_type && !(sig_res(source)->this_type->flags & TYF_VOID) && sig_res(target)->this_type) {
+    if (sig_res(me, source)->this_type && !(sig_res(me, source)->this_type->flags & TYF_VOID) && sig_res(me, target)->this_type) {
         Ternary related = TERNARY_FALSE;
-        if (!strict) related = is_related_to(me, st, sig_res(source)->this_type, sig_res(target)->this_type, false);
-        if (!related) related = is_related_to(me, st, sig_res(target)->this_type, sig_res(source)->this_type, report);
+        if (!strict) related = is_related_to(me, st, sig_res(me, source)->this_type, sig_res(me, target)->this_type, false);
+        if (!related) related = is_related_to(me, st, sig_res(me, target)->this_type, sig_res(me, source)->this_type, report);
         if (!related) {
             if (report) report_line(st, 2685, cstr_d("The 'this' types of each signature are incompatible."));
             return TERNARY_FALSE;
         }
         result &= related;
     }
-    u32 source_count = ty_signature_param_count(source);
+    u32 source_count = ty_signature_param_count(me, source);
     u32 count = source_count > target_count ? source_count : target_count;
     // With a rest parameter that isn't an array on either side, the positions both have, the last of them relating
     // what's left of each as a whole (tsc's compareSignaturesRelated: restIndex, getRestOrAnyTypeAtPosition)
@@ -2119,7 +2129,7 @@ static Ternary compare_signatures(
     if (whole_rest) count = source_count < target_count ? source_count : target_count;
     for (u32 i = 0; i < count; i++) {
         // (A position past a rest `[]` has no type: tsc's tryGetTypeAtPosition)
-        if (past_empty_rest(source, i) || past_empty_rest(target, i)) break;
+        if (past_empty_rest(me, source, i) || past_empty_rest(me, target, i)) break;
         bool rest_index = whole_rest && i + 1 == count;
         Ty const* source_type = rest_index ? rest_or_any_type_at(me, source, i) : param_type_at(me, source, i);
         Ty const* target_type = rest_index ? rest_or_any_type_at(me, target, i) : param_type_at(me, target, i);
@@ -2236,8 +2246,10 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
     // clone_type_params(), and this erases from what it had while not started)
     TyMapper const* unresolved_mapper = sig->mapper;
     Signature const* target = sig->target;
-    if (LAZY_LOAD(sig->state) == LAZY_STATE_NOT_STARTED && target && unresolved_mapper && !sig->function && !sig->instantiates_own_params &&
-        !sig->drops_mapped_type_params && !sig->fresh_type_params && !sig->class_instance && !(sig->flags & SIGNATURE_CONSTRUCT)
+    // (Not resolved, nor in flight here: tested last, the cheap tests first)
+    if (target && unresolved_mapper && !sig->function && !sig->instantiates_own_params &&
+        !sig->drops_mapped_type_params && !sig->fresh_type_params && !sig->class_instance && !(sig->flags & SIGNATURE_CONSTRUCT) &&
+        !sig_resolved(me, sig) && !sw_mine_in_flight(me, &sig->res, &sig->res_flight)
     ) {
         SigResolved const* target_res = signature_resolve(me, target);
         u32 own = target_res->type_params.len;
@@ -2273,24 +2285,23 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
                 .flags = sig->flags,
                 .target = target,
                 .mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len }),
-                .res = &sig_resolved_none,
+               
                 .instantiates_own_params = true,
             };
             // (Its own until resolved: published with --shared-graph once it is)
             *slot = ret;
-            signature_resolve(me, ret);
-            sig_resolved_mut(ret)->type_params = (TyList){0};
+            signature_resolve(me, ret); // (Without type parameters, see signature_resolve_slow())
             *slot = nullptr;
             return intern_set(me, &my links, slot, ret);
         }
     }
-    signature_resolve(me, sig);
-    if (!sig_res(sig)->type_params.len) return sig;
+    SigResolved const* sig_rs = signature_resolve(me, sig);
+    if (!sig_rs->type_params.len) return sig;
     Ty const* stack_anys[16];
-    Ty const** anys = sig_res(sig)->type_params.len <= c_arraylen(stack_anys) ? stack_anys : malloc(sizeof(Ty const*) * sig_res(sig)->type_params.len);
+    Ty const** anys = sig_rs->type_params.len <= c_arraylen(stack_anys) ? stack_anys : malloc(sizeof(Ty const*) * sig_rs->type_params.len);
     panic_if(!anys, "out of memory");
-    for (u32 i = 0; i < sig_res(sig)->type_params.len; i++) anys[i] = ty_intrinsic(me, TY_ANY);
-    Signature const* ret = ty_signature_instantiation(me, sig, (TyList){ .data = anys, .len = sig_res(sig)->type_params.len });
+    for (u32 i = 0; i < sig_rs->type_params.len; i++) anys[i] = ty_intrinsic(me, TY_ANY);
+    Signature const* ret = ty_signature_instantiation(me, sig, (TyList){ .data = anys, .len = sig_rs->type_params.len });
     if (anys != stack_anys) free(anys);
     return ret;
 }
@@ -2310,7 +2321,7 @@ static Signature const* erase_constructor_class_params(Checker* me, Signature co
         .flags = sig->flags,
         .target = sig,
         .mapper = ty_mapper_new(me, params, (TyList){ .data = anys, .len = params.len }),
-        .res = &sig_resolved_none,
+       
     };
     signature_resolve(me, ret);
     return ret;
@@ -2329,7 +2340,7 @@ bool ty_implementation_compatible_with_overload(Checker* me, Signature const* im
     // isSignatureAssignableTo with IgnoreReturnTypes: the target returning any compares nothing more
     Signature* copy = arena_new(&my arena, Signature);
     *copy = *target;
-    signature_copied(me, copy);
+    signature_copied(me, copy, target);
     copy->ret = ty_intrinsic(me, TY_ANY);
     copy->ret_state = LAZY_STATE_DONE;
     copy->predicate = nullptr;
@@ -2340,7 +2351,7 @@ bool ty_implementation_compatible_with_overload(Checker* me, Signature const* im
     if (source->flags & SIGNATURE_CONSTRUCT) {
         Signature* source_copy = arena_new(&my arena, Signature);
         *source_copy = *source;
-        signature_copied(me, source_copy);
+        signature_copied(me, source_copy, source);
         LAZY_COPIED(me, source_copy->ret_state);
         source_copy->flags &= ~(u32)SIGNATURE_CONSTRUCT;
         source = source_copy;
@@ -2368,19 +2379,20 @@ static int constructor_access(Signature const* sig) {
 // clones its methods' type parameters, so comparing against those would make new types at every level of a recursive
 // structural comparison (immutable.d.ts's collections: `OrderedMap<string | KM, any>` for each clone of KM)
 static Signature const* canonical_signature(Checker* me, Signature const* sig) {
+    SigResolved const* sig_r = sig_res(me, sig);
     // (Only one with a clone among its type parameters has another canonical form)
     bool cloned = false;
-    for (u32 i = 0; i < sig_res(sig)->type_params.len && !cloned; i++) cloned = sig_res(sig)->type_params.data[i]->param.state->clone_of != nullptr;
+    for (u32 i = 0; i < sig_r->type_params.len && !cloned; i++) cloned = sig_r->type_params.data[i]->param.state->clone_of != nullptr;
     if (!cloned) return sig;
     u64 key[2] = { KEY_CANONICAL_SIGNATURE, (u64)(uintptr_t)sig };
     Signature const* cached = intern_get(&my links, key, 2);
     if (cached) return cached;
     Ty const* stack_args[16];
-    Ty const** args = sig_res(sig)->type_params.len <= c_arraylen(stack_args) ? stack_args : malloc(sizeof(Ty const*) * sig_res(sig)->type_params.len);
+    Ty const** args = sig_r->type_params.len <= c_arraylen(stack_args) ? stack_args : malloc(sizeof(Ty const*) * sig_r->type_params.len);
     panic_if(!args, "out of memory");
     bool changed = false;
-    for (u32 i = 0; i < sig_res(sig)->type_params.len; i++) {
-        Ty const* param = sig_res(sig)->type_params.data[i];
+    for (u32 i = 0; i < sig_r->type_params.len; i++) {
+        Ty const* param = sig_r->type_params.data[i];
         Ty const* original = param->param.state->clone_of;
         args[i] = original && !ty_param_constraint(me, original) ? original : param;
         changed |= args[i] != param;
@@ -2388,7 +2400,7 @@ static Signature const* canonical_signature(Checker* me, Signature const* sig) {
     // (Unlike tsc, not when nothing changes: an instantiation with its own type parameters would no longer be generic,
     // and inference treats a generic contextual signature's type parameters as its own; vue's toHandlerKey
     // `<T extends string>(str: T) => T extends '' ? ...` against its annotation relies on that for tsc's TS2322)
-    Signature const* ret = changed ? ty_signature_instantiation(me, sig, (TyList){ .data = args, .len = sig_res(sig)->type_params.len }) : sig;
+    Signature const* ret = changed ? ty_signature_instantiation(me, sig, (TyList){ .data = args, .len = sig_r->type_params.len }) : sig;
     if (args != stack_args) free(args);
     *intern_slot(me, &my links, key, 2) = ret;
     return ret;
@@ -2873,7 +2885,7 @@ static Ternary props_related_impl(
             // TTransform's `static`, itself that conditional type, before failing on the missing [TransformKind])
             if (prop && !unmatched_checked &&
                 // (Not a taint: which order it checks in, the answer is the same)
-                (LAZY_LOAD(prop->type_state) != LAZY_STATE_DONE || LAZY_LOAD(target_prop->type_state) != LAZY_STATE_DONE)
+                (!prop_type_peek(me, prop) || !prop_type_peek(me, target_prop))
             ) {
                 unmatched_checked = true;
                 if (has_unmatched_target_prop(me, source, target_members, i + 1, require_optional)) {
@@ -8243,13 +8255,14 @@ static Ternary sig_types_compare(Checker* me, RelationState* st, Ty const* t, Ty
 }
 
 static Ty const* type_at_position(Checker* me, Signature const* sig, u32 i) {
+    SigResolved const* sig_r = sig_res(me, sig);
     // (A generic rest parameter is indexed at the position, `T[0]` for `...p: T`: tsc's tryGetTypeAtPosition's
     // getIndexedAccessType, where param_type_at() says any. So `(...p: T)` doesn't match `(...p: [U, ...unknown[]])`
     // in a union's signatures, which are combined instead)
-    if (sig_res(sig)->param_count && sig_res(sig)->params[sig_res(sig)->param_count - 1].rest && i + 1 >= sig_res(sig)->param_count) {
-        Ty const* rest = sig_res(sig)->params[sig_res(sig)->param_count - 1].type;
+    if (sig_r->param_count && sig_r->params[sig_r->param_count - 1].rest && i + 1 >= sig_r->param_count) {
+        Ty const* rest = sig_r->params[sig_r->param_count - 1].type;
         if (rest->kind == TY_TYPE_PARAM || ((rest->flags & TYF_DEFERRED) && rest->kind != TY_UNION)) {
-            Value index = value_number((double)(i + 1 - sig_res(sig)->param_count));
+            Value index = value_number((double)(i + 1 - sig_r->param_count));
             Ty const* element = ty_indexed_or_null(me, rest, ty_literal(me, &index), false);
             if (element) return element;
         }
@@ -8268,8 +8281,8 @@ static Ternary signatures_identical_in(
     SigResolved const* target_res = signature_resolve(me, target);
     // (tsc's isMatchingSignature counts by getMinArgumentCount: trailing parameters that accept void are optional)
     u32 source_min = tuple_min_argument_count(me, source), target_min = tuple_min_argument_count(me, target);
-    bool same_shape = ty_signature_param_count(source) == ty_signature_param_count(target) && source_min == target_min &&
-        ty_signature_has_rest(source) == ty_signature_has_rest(target);
+    bool same_shape = ty_signature_param_count(me, source) == ty_signature_param_count(me, target) && source_min == target_min &&
+        ty_signature_has_rest(me, source) == ty_signature_has_rest(me, target);
     if (!same_shape && !(partial && source_min <= target_min)) return TERNARY_FALSE;
     if (source_res->type_params.len != target_res->type_params.len) return TERNARY_FALSE;
     if (target_res->type_params.len && source_res->type_params.data != target_res->type_params.data) {
@@ -8294,11 +8307,11 @@ static Ternary signatures_identical_in(
         source = ty_signature_instantiation(me, source, target_res->type_params);
     }
     Ternary result = TERNARY_TRUE;
-    if (sig_res(source)->this_type && target_res->this_type) {
-        result &= sig_types_compare(me, st, sig_res(source)->this_type, target_res->this_type, partial);
+    if (sig_res(me, source)->this_type && target_res->this_type) {
+        result &= sig_types_compare(me, st, sig_res(me, source)->this_type, target_res->this_type, partial);
         if (!result) return TERNARY_FALSE;
     }
-    u32 target_len = ty_signature_param_count(target);
+    u32 target_len = ty_signature_param_count(me, target);
     for (u32 i = 0; i < target_len; i++) {
         result &= sig_types_compare(me, st, type_at_position(me, target, i), type_at_position(me, source, i), partial);
         if (!result) return TERNARY_FALSE;
@@ -8371,13 +8384,14 @@ static Ty const* union_this_type(Checker* me, Signature* const* composites, u32 
     Ty const* stack_buf[16];
     u32 len = 0;
     for (u32 i = 0; i < count && len < c_arraylen(stack_buf); i++) {
-        if (sig_res(composites[i])->this_type) stack_buf[len++] = sig_res(composites[i])->this_type;
+        if (sig_res(me, composites[i])->this_type) stack_buf[len++] = sig_res(me, composites[i])->this_type;
     }
     return len ? ty_intersection(me, stack_buf, len, nullptr, (TyList){0}) : nullptr;
 }
 
 // A signature with the parameters of `base` returning what any of `composites` returns (tsc's createUnionSignature)
 static Signature* union_signature(Checker* me, Signature const* base, Signature* const* composites, u32 count) {
+    SigResolved const* base_r = sig_res(me, base);
     Ty const** return_types = malloc(sizeof(Ty const*) * count);
     panic_if(!return_types, "out of memory");
     for (u32 i = 0; i < count; i++) return_types[i] = signature_return_type(me, composites[i]);
@@ -8390,14 +8404,13 @@ static Signature* union_signature(Checker* me, Signature const* base, Signature*
         .flags = base->flags | some_abstract,
         .name_span = base->name_span,
         .decl_span = base->decl_span,
-        .state = LAZY_STATE_DONE,
-        .res = sig_resolved_new(me, (SigResolved){
-            .type_params = sig_res(base)->type_params,
-            .params = sig_res(base)->params,
-            .param_count = sig_res(base)->param_count,
-            .min_args = sig_res(base)->min_args,
+        .res = { (uintptr_t)sig_resolved_new(me, (SigResolved){
+            .type_params = base_r->type_params,
+            .params = base_r->params,
+            .param_count = base_r->param_count,
+            .min_args = base_r->min_args,
             .this_type = union_this_type(me, composites, count),
-        }),
+        }) },
         .ret_state = LAZY_STATE_DONE,
         .ret = ty_union_subtype_reduced(me, return_types, count),
         .predicate_done = true,
@@ -8413,7 +8426,7 @@ static Signature* union_signature(Checker* me, Signature const* base, Signature*
 static u32 find_matching_signatures(
     Checker* me, SignatureList const* lists, u32 list_count, Signature* sig, u32 index, Signature** out
 ) {
-    if (sig_res(sig)->type_params.len) {
+    if (sig_res(me, sig)->type_params.len) {
         // Generic signatures have to match exactly, and only the first list's are looked at
         if (index > 0) return 0;
         for (u32 i = 1; i < list_count; i++) {
@@ -8442,13 +8455,13 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
     SigResolved const* right_res = signature_resolve(me, right);
     TyMapper const* mapper = left_res->type_params.len && right_res->type_params.len ?
         ty_mapper_new(me, right_res->type_params, left_res->type_params) : nullptr;
-    u32 left_count = ty_signature_param_count(left);
-    u32 right_count = ty_signature_param_count(right);
+    u32 left_count = ty_signature_param_count(me, left);
+    u32 right_count = ty_signature_param_count(me, right);
     Signature const* longest = left_count >= right_count ? left : right;
     Signature const* shorter = longest == left ? right : left;
     u32 longest_count = longest == left ? left_count : right_count;
-    bool either_rest = ty_signature_has_rest(left) || ty_signature_has_rest(right);
-    bool extra_rest = either_rest && !ty_signature_has_rest(longest);
+    bool either_rest = ty_signature_has_rest(me, left) || ty_signature_has_rest(me, right);
+    bool extra_rest = either_rest && !ty_signature_has_rest(me, longest);
     u32 count = longest_count + (extra_rest ? 1 : 0);
     SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
     Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
@@ -8460,7 +8473,7 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
         Ty const* both[2] = { longest_type, shorter_type };
         Ty const* type = intersection ? ty_union(me, both, 2, nullptr, (TyList){0}) : ty_intersection(me, both, 2, nullptr, (TyList){0});
         bool is_rest = either_rest && !extra_rest && i == longest_count - 1;
-        bool optional = i >= signature_min_args(longest) && i >= signature_min_args(shorter); // (tsc's getMinArgumentCount)
+        bool optional = i >= signature_min_args(me, longest) && i >= signature_min_args(me, shorter); // (tsc's getMinArgumentCount)
         Atom const* left_name = i < left_res->param_count && !left_res->params[i].rest ? left_res->params[i].name : nullptr;
         Atom const* right_name = i < right_res->param_count && !right_res->params[i].rest ? right_res->params[i].name : nullptr;
         Atom const* name = left_name == right_name || !right_name ? left_name : !left_name ? right_name : nullptr;
@@ -8498,14 +8511,13 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
         .name_span = left->name_span,
         .decl_span = left->decl_span,
         .declared_by = left->declared_by ? left->declared_by : left,
-        .state = LAZY_STATE_DONE,
-        .res = sig_resolved_new(me, (SigResolved){
+        .res = { (uintptr_t)sig_resolved_new(me, (SigResolved){
             .type_params = left_res->type_params.len ? left_res->type_params : right_res->type_params,
             .params = params,
             .param_count = count,
             .min_args = left_res->min_args > right_res->min_args ? left_res->min_args : right_res->min_args,
             .this_type = this_type,
-        }),
+        }) },
         .ret_state = LAZY_STATE_DONE,
         .ret = intersection ? ty_intersection(me, return_types, 2, nullptr, (TyList){0}) :
             ty_instantiate(me, ty_union_subtype_reduced(me, return_types, 2), mapper),
@@ -8526,7 +8538,9 @@ bool ty_signatures_identical(Checker* me, Signature const* source, Signature con
 // of every member's (that is getUnionSignatures' doing, createUnionSignature clones the first's)
 Signature const* ty_union_signature(Checker* me, Signature const* base, Signature* const* composites, u32 count) {
     Signature* ret = union_signature(me, base, composites, count);
-    sig_resolved_mut(ret)->this_type = sig_res(base)->this_type;
+    SigResolved with_this = *sig_res(me, ret);
+    with_this.this_type = sig_res(me, base)->this_type;
+    sig_res_init(ret, sig_resolved_new(me, with_this));
     // (Whose `this` parameter that is: the clone's thisParameter is the base's symbol)
     ret->declared_by = base->declared_by ? base->declared_by : base;
     return ret;
@@ -8565,7 +8579,7 @@ Signature* const* ty_union_signatures(Checker* me, TyList members, bool construc
             if (!my unknown_signature) {
                 Signature* unknown = arena_new(&my arena, Signature);
                 *unknown = (Signature){
-                    .state = LAZY_STATE_DONE, .res = &sig_resolved_none, .ret_state = LAZY_STATE_DONE, .ret = ty_intrinsic(me, TY_ERROR), .predicate_done = true,
+                    .res = { (uintptr_t)&sig_resolved_none }, .ret_state = LAZY_STATE_DONE, .ret = ty_intrinsic(me, TY_ERROR), .predicate_done = true,
                 };
                 Signature** list = arena_new_n(&my arena, Signature*, 1);
                 list[0] = unknown;
@@ -8627,11 +8641,11 @@ Signature* const* ty_union_signature_lists(Checker* me, Signature* const* const*
         for (u32 i = 0; i < member_count && compatible; i++) {
             if (lists[i].data == master.data) continue;
             Signature* sig = lists[i].data[0];
-            signature_resolve(me, sig);
+            SigResolved const* sig_rs = signature_resolve(me, sig);
             for (u32 j = 0; j < master.len && compatible; j++) {
                 signature_resolve(me, combined[j]);
-                if (sig_res(sig)->type_params.len && sig_res(combined[j])->type_params.len &&
-                    !ty_type_params_identical(me, sig_res(sig)->type_params, sig_res(combined[j])->type_params)
+                if (sig_rs->type_params.len && sig_res(me, combined[j])->type_params.len &&
+                    !ty_type_params_identical(me, sig_rs->type_params, sig_res(me, combined[j])->type_params)
                 ) {
                     compatible = false;
                 }

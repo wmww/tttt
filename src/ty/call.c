@@ -150,7 +150,7 @@ bool ty_calls_generic_function_returning_function(Checker* me, Expr const* expr)
     Members const* members = ty_members(me, callee);
     for (u32 i = 0; i < members->call_count; i++) {
         signature_resolve(me, members->call[i]);
-        if (!sig_res(members->call[i])->type_params.len) continue;
+        if (!sig_res(me, members->call[i])->type_params.len) continue;
         Ty const* ret = signature_return_type(me, members->call[i]);
         if ((ret->flags & TYF_OBJECT) && ty_members(me, ret)->call_count) return true;
     }
@@ -235,13 +235,13 @@ static bool accepts_void(Ty const* ty) {
 }
 
 static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const* mapper) {
-    signature_resolve(me, sig);
-    ParamShape shape = { .min = sig_res(sig)->min_args };
-    u32 cap = sig_res(sig)->param_count + 1;
+    SigResolved const* sig_rs = signature_resolve(me, sig);
+    ParamShape shape = { .min = sig_rs->min_args };
+    u32 cap = sig_rs->param_count + 1;
     shape.types = malloc(sizeof(Ty const*) * cap);
     panic_if(!shape.types, "out of memory");
-    for (u32 i = 0; i < sig_res(sig)->param_count; i++) {
-        SigParam const* param = &sig_res(sig)->params[i];
+    for (u32 i = 0; i < sig_rs->param_count; i++) {
+        SigParam const* param = &sig_rs->params[i];
         Ty const* type = ty_instantiate(me, param->type, mapper);
         if (!param->rest) {
             shape.types[shape.count++] = type;
@@ -601,7 +601,7 @@ Ty const* ty_instantiate_contextual_type_for(Checker* me, Ty const* contextual, 
     // (An instantiation that is any or unknown says nothing: the contextual type stays, tsc 6.0)
     bool any = false;
     for (u32 j = 0; signature && j < outer->inf->len && !any; j++) {
-        any = has_candidates_or_fixed(&outer->inf->params[j]) || ty_param_default(me, sig_res(outer->sig)->type_params.data[j]);
+        any = has_candidates_or_fixed(&outer->inf->params[j]) || ty_param_default(me, sig_res(me, outer->sig)->type_params.data[j]);
     }
     if (any) {
         Ty const* ret = instantiate_instantiable(me, contextual, non_fixing_mapper(me, outer));
@@ -635,7 +635,7 @@ static TyMapper const* outer_return_mapper(Checker* me, OuterInference* outer) {
     if (outer->outer_return_mapper) return outer->outer_return_mapper;
     TyMapper const* inferred = non_fixing_mapper(me, outer); // (Cached: what a fixing mapper of a clone gives)
     if (!outer->return_mapper) return outer->outer_return_mapper = inferred;
-    TyList params = sig_res(outer->sig)->type_params;
+    TyList params = sig_res(me, outer->sig)->type_params;
     Ty const** targets = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
     for (u32 i = 0; i < params.len; i++) {
         Ty const* returned = ty_instantiate(me, params.data[i], outer->return_mapper);
@@ -648,7 +648,7 @@ static TyMapper const* outer_return_mapper(Checker* me, OuterInference* outer) {
 // cloneInferredPartOfContext): the ones it says nothing about stay themselves. Null if it says nothing
 // `fallback`, if set: for the type parameters `inf` has nothing on
 static TyMapper const* return_inference_mapper(Checker* me, Signature const* sig, Inference* inf, Inference* fallback) {
-    TyList params = sig_res(sig)->type_params;
+    TyList params = sig_res(me, sig)->type_params;
     Ty const** results = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
     bool any = false;
     for (u32 i = 0; i < params.len; i++) {
@@ -764,7 +764,7 @@ static void infer_from_arg(Checker* me, Inference* inf, ParamShape const* shape,
 // no different: tsgo's reparsed `@template` is the function's type parameter, isTypeParameterPossiblyReferenced finds
 // it like TypeScript's, unlike Strada's that counted every type parameter as referenced by a JSDoc node)
 static bool assignment_mentions(Checker* me, FunctionImpl const* function, Signature const* sig, Ty const* param) {
-    signature_resolve(me, sig);
+    SigResolved const* sig_rs = signature_resolve(me, sig);
     u32 index = 0;
     bool this_declared = false;
     for_each (i, vec_function_arg, &function->args) {
@@ -778,7 +778,7 @@ static bool assignment_mentions(Checker* me, FunctionImpl const* function, Signa
         Ty const* type = ty_contextual_signature_type_at(me, sig, at, i->rest);
         if (type && ty_mentions_any(me, type, &param, 1)) return true;
     }
-    return !this_declared && sig_res(sig)->this_type && ty_mentions_any(me, sig_res(sig)->this_type, &param, 1);
+    return !this_declared && sig_rs->this_type && ty_mentions_any(me, sig_rs->this_type, &param, 1);
 }
 
 void ty_add_intra_expression_site(Checker* me, Ty const* type, Ty const* contextual) {
@@ -830,7 +830,7 @@ Ty const* ty_instantiate_fixing(Checker* me, Ty const* type, u64 serial) {
     Inference* inf = outer->inf;
     TyMapper const* so_far = nullptr;
     for (u32 j = 0; j < inf->len; j++) {
-        if (!inf->params[j].fixed && ty_mentions_any(me, type, &sig_res(outer->sig)->type_params.data[j], 1)) {
+        if (!inf->params[j].fixed && ty_mentions_any(me, type, &sig_res(me, outer->sig)->type_params.data[j], 1)) {
             if (!so_far) so_far = fixing_mapper(me, outer);
             inf->params[j].fixed = so_far->targets[j];
         }
@@ -852,24 +852,24 @@ Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, 
         // see assign_contextual_signature_as()): `testRest((t1: D) => {})` against `(t: T, t1: T, ...ts: T[]) =>
         // void` infers D covariantly; a function nested in a literal argument too, `{ fn: (a: string) => {} }`
         // against `{ fn: (a: A, b: B) => void }` infers A
-        signature_resolve(me, sig);
-        if (generic_empty(&function->generic) && sig_res(sig)->param_count > (u32)vec_function_arg_size(&function->args)) {
+        SigResolved const* sig_rs = signature_resolve(me, sig);
+        if (generic_empty(&function->generic) && sig_rs->param_count > (u32)vec_function_arg_size(&function->args)) {
             // (Nothing to infer unless a parameter or the return type could mention a type parameter)
             bool could = signature_return_type(me, sig)->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
-            for (u32 i = 0; i < sig_res(sig)->param_count && !could; i++) could = sig_res(sig)->params[i].type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
+            for (u32 i = 0; i < sig_rs->param_count && !could; i++) could = sig_rs->params[i].type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
             if (could) infer_from_annotated_params_of(me, outer->inf, function, sig);
         }
         return sig;
     }
     if (!outer->fixing) return sig;
-    signature_resolve(me, sig);
+    SigResolved const* sig_rs = signature_resolve(me, sig);
     Inference* inf = outer->inf;
     // (A rest parameter of type parameter type fixes nothing: the signature is instantiated with the non-fixing mapper,
     // tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod)
-    if (sig_res(sig)->param_count && sig_res(sig)->params[sig_res(sig)->param_count - 1].rest && sig_res(sig)->params[sig_res(sig)->param_count - 1].type->kind == TY_TYPE_PARAM) {
+    if (sig_rs->param_count && sig_rs->params[sig_rs->param_count - 1].rest && sig_rs->params[sig_rs->param_count - 1].type->kind == TY_TYPE_PARAM) {
         Signature* instantiated = arena_new(&my arena, Signature);
         *instantiated = (Signature){ .flags = sig->flags, .target = sig, .mapper = inference_mapper(me, outer->sig, inf, true),
-            .res = &sig_resolved_none, .fresh_type_params = true };
+            .fresh_type_params = true };
         signature_resolve(me, instantiated);
         return instantiated;
     }
@@ -878,14 +878,14 @@ Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, 
     infer_from_annotated_params_of(me, inf, function, sig);
     TyMapper const* so_far = nullptr;
     for (u32 j = 0; j < inf->len; j++) {
-        if (!inf->params[j].fixed && assignment_mentions(me, function, sig, sig_res(outer->sig)->type_params.data[j])) {
+        if (!inf->params[j].fixed && assignment_mentions(me, function, sig, sig_res(me, outer->sig)->type_params.data[j])) {
             if (!so_far) so_far = fixing_mapper(me, outer);
             inf->params[j].fixed = so_far->targets[j];
         }
     }
     TyMapper const* mapper = inference_mapper(me, outer->sig, inf, true);
     Signature* fixed = arena_new(&my arena, Signature);
-    *fixed = (Signature){ .flags = sig->flags, .target = sig, .mapper = mapper, .res = &sig_resolved_none, .fresh_type_params = true };
+    *fixed = (Signature){ .flags = sig->flags, .target = sig, .mapper = mapper, .fresh_type_params = true };
     signature_resolve(me, fixed);
     return fixed;
 }
@@ -927,8 +927,8 @@ static Signature const* generic_function_argument(Checker* me, Ty const* arg_typ
     for (u32 construct = 0; construct < 2; construct++) {
         Signature const* sig = ty_single_signature(me, arg_type, construct, true);
         if (!sig) continue;
-        signature_resolve(me, sig);
-        if (!sig_res(sig)->type_params.len) return nullptr;
+        SigResolved const* sig_rs = signature_resolve(me, sig);
+        if (!sig_rs->type_params.len) return nullptr;
         Signature const* wanted = ty_single_signature_non_nullable(me, param_type, construct, false);
         if (!wanted) return nullptr;
         SigResolved const* wanted_res = signature_resolve(me, wanted);
@@ -941,9 +941,10 @@ static Signature const* generic_function_argument(Checker* me, Ty const* arg_typ
 
 // Whether the contextual signature of a generic function argument leaves the type parameters its parameters mention
 // unfixed: a rest parameter of type parameter type (tsc's nonFixingMapper)
-static bool contextual_rest_is_variadic(Signature const* contextual) {
-    return sig_res(contextual)->param_count && sig_res(contextual)->params[sig_res(contextual)->param_count - 1].rest &&
-        sig_res(contextual)->params[sig_res(contextual)->param_count - 1].type->kind == TY_TYPE_PARAM;
+static bool contextual_rest_is_variadic(Checker* me, Signature const* contextual) {
+    SigResolved const* contextual_r = sig_res(me, contextual);
+    return contextual_r->param_count && contextual_r->params[contextual_r->param_count - 1].rest &&
+        contextual_r->params[contextual_r->param_count - 1].type->kind == TY_TYPE_PARAM;
 }
 
 // A generic function argument instantiated in the context of signature `contextual` fixes the call's type parameters
@@ -954,11 +955,11 @@ static TyMapper const* fix_for_generic_function(Checker* me, Signature const* si
     SigResolved const* contextual_res = signature_resolve(me, contextual);
     // (The literal's members before this one are inferred from first, see fixing_mapper())
     if (my outer_inference && my outer_inference->inf == inf) fixing_mapper(me, my outer_inference);
-    if (!contextual_rest_is_variadic(contextual)) {
+    if (!contextual_rest_is_variadic(me, contextual)) {
         TyMapper const* so_far = inference_mapper(me, sig, inf, true);
         for (u32 j = 0; j < inf->len; j++) {
             if (inf->params[j].fixed) continue;
-            Ty const* param = sig_res(sig)->type_params.data[j];
+            Ty const* param = sig_res(me, sig)->type_params.data[j];
             bool mentioned = contextual_res->this_type && ty_mentions_any(me, contextual_res->this_type, &param, 1);
             for (u32 i = 0; i < contextual_res->param_count && !mentioned; i++) {
                 mentioned = ty_mentions_any(me, contextual_res->params[i].type, &param, 1);
@@ -1261,7 +1262,7 @@ static TyMapper const* infer_type_arguments(
     Ty const* contextual = info->contextual;
     Ty const* this_arg = info->this_arg;
     Inference inf;
-    inference_init(&inf, sig_res(sig)->type_params);
+    inference_init(&inf, sig_res(me, sig)->type_params);
     SourceFile const* file = info->call ? span_source(info->call->callable.inner_span) : span_source(info->call_span);
     inf.any_default = file && file->is_js;
     ParamShape shape = call_param_shape(me, info, sig, nullptr);
@@ -1295,7 +1296,7 @@ static TyMapper const* infer_type_arguments(
     bool from_pattern = contextual && (contextual->flags & TYF_BINDING_PATTERN);
     if (from_pattern) {
         bool all_defaults = true;
-        for (u32 i = 0; i < sig_res(sig)->type_params.len && all_defaults; i++) all_defaults = ty_param_default(me, sig_res(sig)->type_params.data[i]) != nullptr;
+        for (u32 i = 0; i < sig_res(me, sig)->type_params.len && all_defaults; i++) all_defaults = ty_param_default(me, sig_res(me, sig)->type_params.data[i]) != nullptr;
         if (all_defaults) contextual = nullptr;
     }
     TyMapper const* return_mapper = nullptr;
@@ -1303,7 +1304,7 @@ static TyMapper const* infer_type_arguments(
         Ty const* return_type = signature_return_type(me, sig);
         if (return_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
             Inference pattern_inf;
-            inference_init(&pattern_inf, sig_res(sig)->type_params);
+            inference_init(&pattern_inf, sig_res(me, sig)->type_params);
             infer_types(me, &pattern_inf, contextual, return_type, INFER_PRIORITY_NORMAL);
             return_mapper = return_inference_mapper(me, sig, &pattern_inf, nullptr);
             inference_drop(&pattern_inf);
@@ -1366,7 +1367,7 @@ static TyMapper const* infer_type_arguments(
                 return_mapper = return_inference_mapper(me, sig, &inf, nullptr);
             } else {
                 Inference return_inf;
-                inference_init(&return_inf, sig_res(sig)->type_params);
+                inference_init(&return_inf, sig_res(me, sig)->type_params);
                 infer_types(me, &return_inf, return_source, return_type, INFER_PRIORITY_NORMAL);
                 return_mapper = return_inference_mapper(me, sig, &return_inf, nullptr);
                 inference_drop(&return_inf);
@@ -1375,7 +1376,7 @@ static TyMapper const* infer_type_arguments(
     }
     self.return_mapper = return_mapper;
 
-    if (sig_res(sig)->this_type && this_arg) infer_types(me, &inf, this_arg, sig_res(sig)->this_type, INFER_PRIORITY_NORMAL);
+    if (sig_res(me, sig)->this_type && this_arg) infer_types(me, &inf, this_arg, sig_res(me, sig)->this_type, INFER_PRIORITY_NORMAL);
 
     // First pass: everything that isn't context sensitive
     bool any_sensitive = false;
@@ -1710,8 +1711,8 @@ static i32 first_unfit_argument(
 // signature takes (tsc's hasCorrectArity: a class's argumentless constructor too), as the props of the signature
 static ParamShape call_param_shape(Checker* me, CallInfo const* info, Signature const* sig, TyMapper const* mapper) {
     if (!info->jsx) return param_shape(me, sig, mapper);
-    signature_resolve(me, sig);
-    ParamShape shape = { .count = 1, .min = sig_res(sig)->min_args ? 1 : 0 };
+    SigResolved const* sig_rs = signature_resolve(me, sig);
+    ParamShape shape = { .count = 1, .min = sig_rs->min_args ? 1 : 0 };
     shape.types = malloc(sizeof(Ty const*));
     panic_if(!shape.types, "out of memory");
     shape.types[0] = ty_jsx_signature_props(me, info->jsx, sig, mapper, info->jsx_class);
@@ -1920,11 +1921,11 @@ static void report_arity(
             error = error_ctx_error_d(errs, span, 2554, "Expected ", min, "-", max, " arguments, but got ", args->len, ".");
         }
         // The first parameter without an argument of the signature that needs the fewest
-        SigParam const* missing = args->len < min && closest && args->len < sig_res(closest)->param_count ?
-            &sig_res(closest)->params[args->len] : nullptr;
+        SigParam const* missing = args->len < min && closest && args->len < sig_res(me, closest)->param_count ?
+            &sig_res(me, closest)->params[args->len] : nullptr;
         // (A combined signature's are synthesized: tsc looks at its declaration's parameters)
         Signature const* declared_by = missing && !missing->decl ? closest->declared_by : nullptr;
-        if (declared_by && args->len < sig_res(declared_by)->param_count) missing = &sig_res(declared_by)->params[args->len];
+        if (declared_by && args->len < sig_res(me, declared_by)->param_count) missing = &sig_res(me, declared_by)->params[args->len];
         if (missing && missing->decl) {
             Binding const* binding = &missing->decl->initializer.binding;
             Span at = missing->decl->jsdoc_span ? *missing->decl->jsdoc_span : missing->decl->span;
@@ -1947,7 +1948,7 @@ static void report_arity(
 
 // Whether what `this` is in the call fits the `this` parameter of the candidate
 static bool this_fits(Checker* me, Candidate const* candidate, CallInfo const* info, TyRelation relation) {
-    Ty const* this_type = sig_res(candidate->sig)->this_type;
+    Ty const* this_type = sig_res(me, candidate->sig)->this_type;
     // (tsc's checkApplicableSignature: a declared `this: void` isn't checked, `ns.f()` calls it)
     if (!this_type || (this_type->flags & TYF_VOID) || !info->this_arg || (info->this_arg->flags & TYF_ANY) ||
         info->this_unchecked
@@ -1962,7 +1963,7 @@ static Span report_unfit_argument(
     Checker* me, Candidate const* candidate, Args* args, CallInfo const* info, Span call_span, ErrorCtx* errs
 ) {
     if (!this_fits(me, candidate, info, TY_RELATION_ASSIGNABLE)) {
-        Ty const* target = ty_instantiate(me, sig_res(candidate->sig)->this_type, candidate->mapper);
+        Ty const* target = ty_instantiate(me, sig_res(me, candidate->sig)->this_type, candidate->mapper);
         ty_report_unfit_this(me, info->this_arg, target, info->this_span, errs);
         return info->this_span;
     }
@@ -2018,7 +2019,7 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
     Span call_span, Error* error
 ) {
     Signature const* failed = candidate->sig;
-    while (sig_target(failed)) failed = sig_target(failed);
+    while (sig_target(me, failed)) failed = sig_target(me, failed);
     if (!error || !failed->function) return;
     Symbol const* symbol = failed->function->symbol;
     FunctionImpl const* impl = function_impl_rare(failed->function)->overload_implementation;
@@ -2050,12 +2051,12 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
 }
 
 // Where a signature is declared, as tsc's createDiagnosticForNode(signature.declaration) points at it
-static Span signature_decl_span(Signature const* sig) {
-    while (sig_target(sig)) sig = sig_target(sig);
+static Span signature_decl_span(Checker* me, Signature const* sig) {
+    while (sig_target(me, sig)) sig = sig_target(me, sig);
     // (A union's signature is declared by the one it was made from: tsc's createUnionSignature clones it)
     while (!sig->function && sig->declared_by && sig->declared_by != sig) {
         sig = sig->declared_by;
-        while (sig_target(sig)) sig = sig_target(sig);
+        while (sig_target(me, sig)) sig = sig_target(me, sig);
     }
     // (A JSDoc `@overload`: its tag name, where tsgo's reparsed declaration is)
     if (sig->function && sig->function->jsdoc_callback && span_valid(sig->function->full_span) &&
@@ -2101,7 +2102,7 @@ static void report_no_match(
             for_each (r, vec_error, &related) vec_error_push(&error.sub_errors, *r);
             related.size = 0;
             vec_error_drop(&related);
-            error_add_related_s(&error, signature_decl_span(last->sig), 2771, cstr_lit("The last overload is declared here."));
+            error_add_related_s(&error, signature_decl_span(me, last->sig), 2771, cstr_lit("The last overload is declared here."));
         }
         add_implementation_success(me, last, args, info, call_span, &error);
         error_ctx_append_error(errs, error);
@@ -2111,19 +2112,20 @@ static void report_no_match(
 }
 
 static u32 min_type_arguments(Checker* me, Signature const* sig) {
-    u32 min = sig_res(sig)->type_params.len;
-    while (min && ty_param_default(me, sig_res(sig)->type_params.data[min - 1])) min--;
+    SigResolved const* sig_r = sig_res(me, sig);
+    u32 min = sig_r->type_params.len;
+    while (min && ty_param_default(me, sig_r->type_params.data[min - 1])) min--;
     return min;
 }
 
 static bool has_correct_type_argument_arity(Checker* me, Signature const* sig, CallInfo const* info) {
     if (!info->type_arg_nodes) return true;
-    return info->type_args.len >= min_type_arguments(me, sig) && info->type_args.len <= sig_res(sig)->type_params.len;
+    return info->type_args.len >= min_type_arguments(me, sig) && info->type_args.len <= sig_res(me, sig)->type_params.len;
 }
 
 // The mapper explicit type arguments make, defaults filled in
 static TyMapper const* explicit_type_arguments(Checker* me, Signature const* sig, CallInfo const* info) {
-    TyList params = sig_res(sig)->type_params;
+    TyList params = sig_res(me, sig)->type_params;
     if (!params.len) return nullptr;
     Ty const** results = arena_new_n(&my arena, Ty const*, params.len);
     // (A default that mentions a later type parameter gets the error type for it: tsc's fillMissingTypeArguments)
@@ -2147,12 +2149,12 @@ static Signature const* overload_failure_union_signature(Checker* me, Signature*
     u32 min_args = UINT32_MAX, max_params = 0;
     bool some_rest = false, some_this = false;
     for (u32 i = 0; i < count; i++) {
-        bool rest = sig_res(signatures[i])->param_count && sig_res(signatures[i])->params[sig_res(signatures[i])->param_count - 1].rest;
+        bool rest = sig_res(me, signatures[i])->param_count && sig_res(me, signatures[i])->params[sig_res(me, signatures[i])->param_count - 1].rest;
         some_rest |= rest;
-        some_this |= sig_res(signatures[i])->this_type != nullptr;
-        u32 non_rest = sig_res(signatures[i])->param_count - (rest ? 1 : 0);
+        some_this |= sig_res(me, signatures[i])->this_type != nullptr;
+        u32 non_rest = sig_res(me, signatures[i])->param_count - (rest ? 1 : 0);
         if (non_rest > max_params) max_params = non_rest;
-        if (sig_res(signatures[i])->min_args < min_args) min_args = sig_res(signatures[i])->min_args;
+        if (sig_res(me, signatures[i])->min_args < min_args) min_args = sig_res(me, signatures[i])->min_args;
     }
     SigParam* params = arena_new_n(&my arena, SigParam, max_params + 1);
     Ty const** types = malloc(sizeof(Ty const*) * (count + 1));
@@ -2163,7 +2165,7 @@ static Signature const* overload_failure_union_signature(Checker* me, Signature*
         for (u32 i = 0; i < count; i++) {
             Ty const* type = ty_signature_param_type_at(me, signatures[i], p);
             if (!type) continue;
-            if (!name) name = sig_res(signatures[i])->params[p < sig_res(signatures[i])->param_count ? p : sig_res(signatures[i])->param_count - 1].name;
+            if (!name) name = sig_res(me, signatures[i])->params[p < sig_res(me, signatures[i])->param_count ? p : sig_res(me, signatures[i])->param_count - 1].name;
             types[len++] = type;
         }
         params[p] = (SigParam){ .name = name, .type = ty_union_subtype_reduced(me, types, len), .optional = p >= min_args };
@@ -2174,9 +2176,9 @@ static Signature const* overload_failure_union_signature(Checker* me, Signature*
         Atom const* name = nullptr;
         for (u32 i = 0; i < count; i++) {
             Signature const* sig = signatures[i];
-            if (!sig_res(sig)->param_count || !sig_res(sig)->params[sig_res(sig)->param_count - 1].rest) continue;
-            if (!name) name = sig_res(sig)->params[sig_res(sig)->param_count - 1].name;
-            types[len++] = ty_rest_element_type(me, sig_res(sig)->params[sig_res(sig)->param_count - 1].type);
+            if (!sig_res(me, sig)->param_count || !sig_res(me, sig)->params[sig_res(me, sig)->param_count - 1].rest) continue;
+            if (!name) name = sig_res(me, sig)->params[sig_res(me, sig)->param_count - 1].name;
+            types[len++] = ty_rest_element_type(me, sig_res(me, sig)->params[sig_res(me, sig)->param_count - 1].type);
         }
         params[param_count++] = (SigParam){
             .name = name, .type = ty_array(me, ty_union_subtype_reduced(me, types, len), false), .rest = true,
@@ -2186,7 +2188,7 @@ static Signature const* overload_failure_union_signature(Checker* me, Signature*
     if (some_this) {
         u32 len = 0;
         for (u32 i = 0; i < count; i++) {
-            if (sig_res(signatures[i])->this_type) types[len++] = sig_res(signatures[i])->this_type;
+            if (sig_res(me, signatures[i])->this_type) types[len++] = sig_res(me, signatures[i])->this_type;
         }
         this_type = ty_union(me, types, len, nullptr, (TyList){0});
     }
@@ -2198,13 +2200,12 @@ static Signature const* overload_failure_union_signature(Checker* me, Signature*
     free(types);
     Signature* sig = arena_new(&my arena, Signature);
     *sig = (Signature){
-        .state = LAZY_STATE_DONE,
-        .res = sig_resolved_new(me, (SigResolved){
+        .res = { (uintptr_t)sig_resolved_new(me, (SigResolved){
             .params = params,
             .param_count = param_count,
             .min_args = min_args,
             .this_type = this_type,
-        }),
+        }) },
         .ret_state = LAZY_STATE_DONE,
         .ret = ret,
         .predicate_done = true,
@@ -2216,7 +2217,7 @@ static Signature const* overload_failure_union_signature(Checker* me, Signature*
 // unlike explicit_type_arguments(), a missing one is its default as written, not instantiated: `f<A>(bad)` of
 // `f<T, F = G<T>>` returns its `F` as `G<T>`
 static TyMapper const* failure_type_arguments(Checker* me, Signature const* sig, CallInfo const* info) {
-    TyList params = sig_res(sig)->type_params;
+    TyList params = sig_res(me, sig)->type_params;
     if (!params.len) return nullptr;
     Ty const** results = arena_new_n(&my arena, Ty const*, params.len);
     for (u32 i = 0; i < params.len; i++) {
@@ -2237,7 +2238,7 @@ static bool is_super_call(CallExpr const* call);
 // takes none: resolve_call_inner() drops the others like getConstructorsForTypeArguments): tsc's
 // fillMissingTypeArguments, each type parameter its default (any in JavaScript for a default of unknown or `{}`)
 static TyMapper const* super_filled_type_arguments(Checker* me, Signature const* sig, CallInfo const* info) {
-    TyList params = sig_res(sig)->type_params;
+    TyList params = sig_res(me, sig)->type_params;
     if (!info->super_fill || !params.len) return nullptr;
     SourceFile const* file = span_source(info->call_span);
     bool js = file && file->is_js;
@@ -2269,7 +2270,7 @@ static void report_type_argument_arity(
     if (count == 1) {
         signature_resolve(me, signatures[0]);
         u32 min = min_type_arguments(me, signatures[0]);
-        u32 max = sig_res(signatures[0])->type_params.len;
+        u32 max = sig_res(me, signatures[0])->type_params.len;
         if (min < max) {
             error_ctx_error_d(errs, span, 2558, "Expected ", min, "-", max, " type arguments, but got ", arg_count, ".");
         } else {
@@ -2282,7 +2283,7 @@ static void report_type_argument_arity(
     for (u32 i = 0; i < count; i++) {
         signature_resolve(me, signatures[i]);
         u32 min = min_type_arguments(me, signatures[i]);
-        u32 max = sig_res(signatures[i])->type_params.len;
+        u32 max = sig_res(me, signatures[i])->type_params.len;
         if (min > arg_count) {
             if (above < 0 || min < above) above = min;
         } else if (max < arg_count) {
@@ -2304,8 +2305,9 @@ static void report_type_argument_arity(
 static bool check_type_argument_constraints(
     Checker* me, Signature const* sig, TyMapper const* mapper, CallInfo const* info, ErrorCtx* errs
 ) {
-    for (u32 i = 0; i < info->type_args.len && i < sig_res(sig)->type_params.len; i++) {
-        Ty const* constraint = ty_param_constraint(me, sig_res(sig)->type_params.data[i]);
+    SigResolved const* sig_r = sig_res(me, sig);
+    for (u32 i = 0; i < info->type_args.len && i < sig_r->type_params.len; i++) {
+        Ty const* constraint = ty_param_constraint(me, sig_r->type_params.data[i]);
         if (!constraint) continue;
         Ty const* arg = info->type_args.data[i];
         constraint = ty_with_this_arg(me, ty_instantiate(me, constraint, mapper), arg);
@@ -2329,7 +2331,7 @@ static Candidate make_candidate_skipping(
     bool skip_generic_functions
 ) {
     Candidate ret = { .sig = sig };
-    if (!sig_res(sig)->type_params.len) return ret;
+    if (!sig_res(me, sig)->type_params.len) return ret;
     ret.mapper = super_filled_type_arguments(me, sig, info);
     if (ret.mapper) return ret;
     ret.mapper = info->type_arg_nodes ? explicit_type_arguments(me, sig, info) :
@@ -2381,7 +2383,7 @@ static Resolution resolve_with_signatures_inner(
     // checked (and typed for good) against the first candidate the rest fit (tsc's argCheckMode)
     bool skip_sensitive = false;
     if (count == 1) signature_resolve(me, signatures[0]);
-    if (count > 1 || (count == 1 && sig_res(signatures[0])->type_params.len)) {
+    if (count > 1 || (count == 1 && sig_res(me, signatures[0])->type_params.len)) {
         for (u32 i = 0; i < args->len; i++) skip_sensitive |= args->data[i].context_sensitive;
     }
     for (u32 round = count > 1 ? 0 : 1; round < 2 && !ret.chosen.sig; round++) {
@@ -2390,7 +2392,7 @@ static Resolution resolve_with_signatures_inner(
         type_arg_candidate = nullptr;
         for (u32 i = 0; i < count && !ret.chosen.sig; i++) {
             Signature const* sig = signatures[i];
-            signature_resolve(me, sig);
+            SigResolved const* sig_rs = signature_resolve(me, sig);
             if (!has_correct_type_argument_arity(me, sig, info)) continue;
             type_argument_arity_ok = true;
             // (A `super(...)` of a base without type arguments checks the instantiated constructor)
@@ -2404,7 +2406,7 @@ static Resolution resolve_with_signatures_inner(
             // inference has it, before a generic function argument's type parameters could flow into it
             Candidate candidate = make_candidate_skipping(me, sig, args, info, skip_sensitive, false, true);
             bool skipped_generic = false;
-            if (sig_res(sig)->type_params.len && !info->type_arg_nodes) {
+            if (sig_rs->type_params.len && !info->type_arg_nodes) {
                 // (A call of a generic function that returns a function is left out too: tsc's resolveCallExpression
                 // under SkipGenericFunctions)
                 for (u32 a = 0; a < args->len; a++) {
@@ -2504,7 +2506,7 @@ static Resolution resolve_with_signatures_inner(
         bool some_generic = false;
         for (u32 i = 0; i < count; i++) {
             signature_resolve(me, signatures[i]);
-            some_generic |= sig_res(signatures[i])->type_params.len > 0;
+            some_generic |= sig_res(me, signatures[i])->type_params.len > 0;
         }
         if (count > 1 && !some_generic) {
             // (The arguments are checked against it: a callback's parameters get the union of what each overload
@@ -2522,7 +2524,7 @@ static Resolution resolve_with_signatures_inner(
             u32 picked = unfit_count - 1;
             Signature const* longest = nullptr;
             for (u32 i = 0; i < count; i++) {
-                if (!ty_signature_has_rest(signatures[i]) && ty_signature_param_count(signatures[i]) < args->len) continue;
+                if (!ty_signature_has_rest(me, signatures[i]) && ty_signature_param_count(me, signatures[i]) < args->len) continue;
                 longest = signatures[i];
                 for (u32 u = 0; u < unfit_count; u++) {
                     if (unfit[u].sig == signatures[i]) picked = u;
@@ -2532,10 +2534,10 @@ static Resolution resolve_with_signatures_inner(
             // (A non-generic one that wasn't checked, its type argument count being wrong: `f<T>(...)` of `f(s:
             // string, n: number): number; f<T>(n: number, t: T): T` returns number)
             // (So is a generic one with explicit type arguments, which are cut or filled in for it: getTypeArgumentsFromNodes)
-            bool longest_unchecked = longest && unfit[picked].sig != longest && (!sig_res(longest)->type_params.len || info->type_arg_nodes);
+            bool longest_unchecked = longest && unfit[picked].sig != longest && (!sig_res(me, longest)->type_params.len || info->type_arg_nodes);
             Candidate fallback = longest_unchecked ? (Candidate){ .sig = longest } : unfit[picked];
-            if (info->type_arg_nodes && sig_res(fallback.sig)->type_params.len &&
-                (info->type_args.len < sig_res(fallback.sig)->type_params.len || longest_unchecked)
+            if (info->type_arg_nodes && sig_res(me, fallback.sig)->type_params.len &&
+                (info->type_args.len < sig_res(me, fallback.sig)->type_params.len || longest_unchecked)
             ) {
                 fallback.mapper = failure_type_arguments(me, fallback.sig, info);
                 // (The arguments are checked against it again: an arrow's literal returns see its contextual type)
@@ -2543,17 +2545,17 @@ static Resolution resolve_with_signatures_inner(
                 check_args(me, &shape, args, false);
                 free(shape.types);
             }
-            if (longest && sig_res(longest)->type_params.len && unfit[picked].sig != longest && !info->type_arg_nodes) {
+            if (longest && sig_res(me, longest)->type_params.len && unfit[picked].sig != longest && !info->type_arg_nodes) {
                 // A generic one that wasn't checked (too many parameters for the arguments: vitest's `spyOn(o, k,
                 // accessor)` before `spyOn(o, k)`) is still the one, inferred from the arguments
                 fallback = make_candidate(me, longest, args, info, true, true);
-            } else if (sig_res(fallback.sig)->type_params.len && !info->type_arg_nodes) {
+            } else if (sig_res(me, fallback.sig)->type_params.len && !info->type_arg_nodes) {
                 fallback = make_candidate(me, fallback.sig, args, info, true, true);
                 // (The arguments are left as checked against the candidate, which is what the types baseline shows)
                 ParamShape shape = call_param_shape(me, info, unfit[picked].sig, unfit[picked].mapper);
                 check_args(me, &shape, args, false);
                 free(shape.types);
-            } else if (!sig_res(fallback.sig)->type_params.len && fallback.sig != unfit[unfit_count - 1].sig) {
+            } else if (!sig_res(me, fallback.sig)->type_params.len && fallback.sig != unfit[unfit_count - 1].sig) {
                 // (A non-generic one checked before the last candidate: the arguments are typed by it again, tsc's
                 // getContextualTypeForArgument going by the resolved failure signature)
                 ParamShape shape = call_param_shape(me, info, fallback.sig, nullptr);
@@ -2566,7 +2568,7 @@ static Resolution resolve_with_signatures_inner(
             free(shape.types);
             ret.ret = resolved_return_type(me, &fallback);
             ret.failure = fallback;
-        } else if (count == 1 && !sig_res(signatures[0])->type_params.len) {
+        } else if (count == 1 && !sig_res(me, signatures[0])->type_params.len) {
             // (The arguments are checked against it: an arrow's parameters get its types, tsc's
             // getContextualTypeForArgument going by the resolved failure signature)
             ParamShape shape = call_param_shape(me, info, signatures[0], nullptr);
@@ -2582,8 +2584,8 @@ static Resolution resolve_with_signatures_inner(
             u32 best = 0;
             u32 most = 0;
             for (u32 i = 0; i < count; i++) {
-                u32 params = ty_signature_param_count(signatures[i]);
-                if (ty_signature_has_rest(signatures[i]) || params >= args->len) {
+                u32 params = ty_signature_param_count(me, signatures[i]);
+                if (ty_signature_has_rest(me, signatures[i]) || params >= args->len) {
                     best = i;
                     break;
                 }
@@ -2591,14 +2593,14 @@ static Resolution resolve_with_signatures_inner(
             }
             Signature const* sig = signatures[best];
             Candidate candidate = info->type_arg_nodes ? (Candidate){ .sig = sig, .mapper = explicit_type_arguments(me, sig, info) } :
-                sig_res(sig)->type_params.len ? make_candidate(me, sig, args, info, true, true) : (Candidate){ .sig = sig };
+                sig_res(me, sig)->type_params.len ? make_candidate(me, sig, args, info, true, true) : (Candidate){ .sig = sig };
             // (The arguments are checked against it: an arrow's parameters get its types, tsc's
             // getContextualTypeForArgument going by the resolved failure signature)
             ParamShape shape = call_param_shape(me, info, candidate.sig, candidate.mapper);
             check_args(me, &shape, args, false);
             free(shape.types);
             ret.ret = info->type_arg_nodes ? candidate_return_type(me, &candidate) :
-                sig_res(sig)->type_params.len ? resolved_return_type(me, &candidate) : signature_return_type(me, sig);
+                sig_res(me, sig)->type_params.len ? resolved_return_type(me, &candidate) : signature_return_type(me, sig);
             ret.failure = candidate; // (What control flow goes by too: tsc's getEffectsSignature, a type predicate's)
         }
     }
@@ -2675,8 +2677,8 @@ static bool is_super_call(CallExpr const* call) {
 }
 
 // A parameter of the declaration is written as a literal type (`method: "stop"`, tsc's SignatureFlags.HasLiteralTypes)
-static bool signature_has_literal_types(Signature const* sig) {
-    while (sig_target(sig)) sig = sig_target(sig);
+static bool signature_has_literal_types(Checker* me, Signature const* sig) {
+    while (sig_target(me, sig)) sig = sig_target(me, sig);
     if (!sig->function) return false;
     for_each (arg, vec_function_arg, &sig->function->args) {
         Binding const* binding = &arg->initializer.binding;
@@ -2692,7 +2694,7 @@ static bool signature_has_literal_types(Signature const* sig) {
 // The (merged symbol, declaration block) group of a signature, which reorder_candidates() orders by (tsc's
 // reorderCandidates)
 static TyDeclGroup const* signature_decl_group(Checker* me, Signature const* sig) {
-    while (sig_target(sig)) sig = sig_target(sig);
+    while (sig_target(me, sig)) sig = sig_target(me, sig);
     return sig->function ? ty_decl_group(me, sig->function) : nullptr;
 }
 
@@ -2724,7 +2726,7 @@ static void reorder_candidates(Checker* me, Signature** signatures, u32 count) {
         }
         last_symbol = symbol;
         u32 splice;
-        if (signature_has_literal_types(signatures[i])) {
+        if (signature_has_literal_types(me, signatures[i])) {
             splice = (u32)++specialized;
             cutoff++;
         } else {
@@ -2980,7 +2982,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
                     error_ctx_error_d(errs, call_span, 2350, "Only a void function can be called with the 'new' keyword.");
                 }
                 if (chosen.sig) signature_resolve(me, chosen.sig);
-                if (chosen.sig && sig_res(chosen.sig)->this_type && sig_res(chosen.sig)->this_type == ty_intrinsic(me, TY_VOID)) {
+                if (chosen.sig && sig_res(me, chosen.sig)->this_type && sig_res(me, chosen.sig)->this_type == ty_intrinsic(me, TY_VOID)) {
                     error_ctx_error_d(errs, call_span, 2679,
                         "A function that is called with the 'new' keyword cannot have a 'this' type that is 'void'.");
                 }
@@ -3056,7 +3058,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         u32 kept = 0;
         for (u32 i = 0; i < count; i++) {
             signature_resolve(me, signatures[i]);
-            u32 len = sig_res(signatures[i])->type_params.len;
+            u32 len = sig_res(me, signatures[i])->type_params.len;
             if (info->type_args.len >= min_type_arguments(me, signatures[i]) && info->type_args.len <= len) {
                 signatures[kept++] = signatures[i];
             }
@@ -3074,7 +3076,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         bool any_this = false;
         for (u32 i = 0; i < count && !any_this; i++) {
             Signature const* sig = signatures[i];
-            any_this = LAZY_LOAD(sig->state) == LAZY_STATE_DONE ? sig_res(sig)->this_type != nullptr : ty_signature_has_this(me, sig);
+            any_this = sig_resolved(me, sig) ? sig_res(me, sig)->this_type != nullptr : ty_signature_has_this(me, sig);
         }
         if (any_this) {
             with_this.this_arg = this_argument(me, call, call_span, &with_this.this_span);
@@ -3116,8 +3118,7 @@ static Signature* jsx_synthetic_signature(Checker* me, Ty const* param, Ty const
     }
     Signature* sig = arena_new(&my arena, Signature);
     *sig = (Signature){
-        .state = LAZY_STATE_DONE,
-        .res = sig_resolved_new(me, (SigResolved){ .params = params, .param_count = param ? 1 : 0, .min_args = param ? 1 : 0 }),
+        .res = { (uintptr_t)sig_resolved_new(me, (SigResolved){ .params = params, .param_count = param ? 1 : 0, .min_args = param ? 1 : 0 }) },
         .ret_state = LAZY_STATE_DONE,
         .ret = ret,
         .predicate_done = true,
@@ -3283,14 +3284,14 @@ static Ty const* resolve_into(
 
 
 static bool has_predicate_or_declared_never(Checker* me, Signature const* sig) {
-    return signature_predicate(me, sig) || signature_declared_never(sig);
+    return signature_predicate(me, sig) || signature_declared_never(me, sig);
 }
 
 // The effects of the signature a call resolved to, its predicate instantiated
 static CallEffects chosen_effects(Checker* me, Candidate const* chosen) {
     CallEffects none = {0};
     if (!chosen->sig || !has_predicate_or_declared_never(me, chosen->sig)) return none;
-    CallEffects ret = { .returns_never = signature_declared_never(chosen->sig) };
+    CallEffects ret = { .returns_never = signature_declared_never(me, chosen->sig) };
     TyPredicate const* predicate = signature_predicate(me, chosen->sig);
     if (predicate) {
         ret.predicate = *predicate;
@@ -3317,8 +3318,8 @@ static CallEffects union_call_effects(Checker* me, Ty const* callee) {
         Members const* members = ty_members(me, member);
         if (members->call_count != 1) goto fail;
         Signature const* sig = members->call[0];
-        signature_resolve(me, sig);
-        if (sig_res(sig)->type_params.len) goto fail;
+        SigResolved const* sig_rs = signature_resolve(me, sig);
+        if (sig_rs->type_params.len) goto fail;
         TyPredicate const* predicate = signature_predicate(me, sig);
         if (!predicate) {
             Ty const* ret = ty_regular(me, signature_return_type(me, sig));
@@ -3365,7 +3366,7 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
         // its predicate instantiated (tsc's getEffectsSignature: getResolvedSignature)
         Candidate chosen = {0};
         signature_resolve(me, union_sigs[0]);
-        if (count == 1 && !sig_res(union_sigs[0])->type_params.len) {
+        if (count == 1 && !sig_res(me, union_sigs[0])->type_params.len) {
             chosen.sig = union_sigs[0];
             return chosen_effects(me, &chosen);
         }
@@ -3384,7 +3385,7 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
     if (!members->call_count) return none;
     Candidate chosen = {0};
     signature_resolve(me, members->call[0]);
-    if (members->call_count == 1 && !sig_res(members->call[0])->type_params.len) {
+    if (members->call_count == 1 && !sig_res(me, members->call[0])->type_params.len) {
         chosen.sig = members->call[0];
     } else {
         bool some = false;
@@ -3715,7 +3716,7 @@ static Ty const* first_params_union(Checker* me, Signature* const* sigs, u32 cou
     Ty const** types = malloc(sizeof(Ty const*) * count);
     for (u32 i = 0; i < count; i++) {
         signature_resolve(me, sigs[i]);
-        Ty const* param = sig_res(sigs[i])->param_count ? ty_signature_param_type_at(me, sigs[i], 0) : nullptr;
+        Ty const* param = sig_res(me, sigs[i])->param_count ? ty_signature_param_type_at(me, sigs[i], 0) : nullptr;
         types[i] = param ? param : ty_intrinsic(me, TY_NEVER);
     }
     Ty const* ret = subtype ? ty_union_subtype_reduced(me, types, count) : ty_union(me, types, count, nullptr, (TyList){0});
@@ -3737,7 +3738,7 @@ static Ty const* promised_type_of(Checker* me, Ty const* ty) {
     u32 candidate_count = 0;
     for (u32 i = 0; i < count; i++) {
         signature_resolve(me, sigs[i]);
-        Ty const* this_type = sig_res(sigs[i])->this_type;
+        Ty const* this_type = sig_res(me, sigs[i])->this_type;
         if (this_type && !(this_type->flags & TYF_VOID) && !ty_is_related(me, ty, this_type, TY_RELATION_SUBTYPE)) continue;
         candidates[candidate_count++] = sigs[i];
     }
@@ -3771,7 +3772,7 @@ static Ty const* then_this_type_for_error(Checker* me, Ty const* ty) {
     Ty const* ret = nullptr;
     for (u32 i = 0; i < count; i++) {
         signature_resolve(me, sigs[i]);
-        Ty const* this_type = sig_res(sigs[i])->this_type;
+        Ty const* this_type = sig_res(me, sigs[i])->this_type;
         if (this_type && !(this_type->flags & TYF_VOID) && !ty_is_related(me, ty, this_type, TY_RELATION_SUBTYPE)) ret = this_type;
         else return nullptr;
     }
@@ -3998,8 +3999,7 @@ static Signature* decorator_signature(Checker* me, Ty const* const* params, char
     for (u32 i = 0; i < count; i++) sig_params[i] = (SigParam){ .name = checker_atom(me, csview_from(names[i])), .type = params[i] };
     Signature* sig = arena_new(&my arena, Signature);
     *sig = (Signature){
-        .state = LAZY_STATE_DONE,
-        .res = sig_resolved_new(me, (SigResolved){ .params = sig_params, .param_count = count, .min_args = count }),
+        .res = { (uintptr_t)sig_resolved_new(me, (SigResolved){ .params = sig_params, .param_count = count, .min_args = count }) },
         .ret_state = LAZY_STATE_DONE, .ret = ret, .predicate_done = true,
     };
     return sig;
@@ -4079,7 +4079,9 @@ static bool decorator_call(Checker* me, DecoratorSite site, DecoratorCall* out, 
                 } else {
                     // (this: This, value: Value) => Value
                     Signature* mutator = decorator_signature(me, &value, (char const*[]){ "value" }, 1, value);
-                    sig_resolved_mut(mutator)->this_type = this_type;
+                    SigResolved with_this = *sig_res(me, mutator);
+                    with_this.this_type = this_type;
+                    sig_res_init(mutator, sig_resolved_new(me, with_this));
                     ret = ty_signature_type(me, mutator);
                 }
             } else if (item->method.accessor == CLASS_ACCESSOR_GET) {

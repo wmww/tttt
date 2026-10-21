@@ -220,8 +220,8 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
                 // it again from below the barrier, where tsc's permissive instantiation doesn't look at properties)
                 Prop const* prop = members->props[i];
                 Prop const* root = prop;
-                while (root->type_state != LAZY_STATE_DONE && root->target && !root->mapped) root = root->target;
-                if (root->type_state != LAZY_STATE_DONE && (root->flags & PROP_GETTER) && !root->target &&
+                while (!prop_type_peek(me, root) && root->target && !root->mapped) root = root->target;
+                if (!prop_type_peek(me, root) && (root->flags & PROP_GETTER) && !root->target &&
                     !root->decl->function->ret_explicit && ty_function_return_in_flight(me, root->decl->function)
                 ) {
                     return true;
@@ -237,16 +237,16 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
                 u32 count = kind ? members->construct_count : members->call_count;
                 for (u32 i = 0; i < count; i++) {
                     Signature const* sig = list[i];
-                    signature_resolve(me, sig);
+                    SigResolved const* sig_rs = signature_resolve(me, sig);
                     if (ty_signature_return_in_flight(me, sig)) return true;
                     u32 saved = walk->bound.len;
-                    for (u32 j = 0; j < sig_res(sig)->type_params.len; j++) ty_buf_push(&walk->bound, sig_res(sig)->type_params.data[j]);
-                    bool found = sig_res(sig)->this_type && mentions_type_variables(me, sig_res(sig)->this_type, walk, depth + 1);
-                    for (u32 j = 0; !found && j < sig_res(sig)->param_count; j++) {
-                        found = mentions_type_variables(me, sig_res(sig)->params[j].type, walk, depth + 1);
+                    for (u32 j = 0; j < sig_rs->type_params.len; j++) ty_buf_push(&walk->bound, sig_rs->type_params.data[j]);
+                    bool found = sig_rs->this_type && mentions_type_variables(me, sig_rs->this_type, walk, depth + 1);
+                    for (u32 j = 0; !found && j < sig_rs->param_count; j++) {
+                        found = mentions_type_variables(me, sig_rs->params[j].type, walk, depth + 1);
                     }
-                    for (u32 j = 0; !found && j < sig_res(sig)->type_params.len; j++) {
-                        Ty const* constraint = ty_param_constraint(me, sig_res(sig)->type_params.data[j]);
+                    for (u32 j = 0; !found && j < sig_rs->type_params.len; j++) {
+                        Ty const* constraint = ty_param_constraint(me, sig_rs->type_params.data[j]);
                         found = constraint && mentions_type_variables(me, constraint, walk, depth + 1);
                     }
                     found = found || mentions_type_variables(me, signature_return_type(me, sig), walk, depth + 1);
@@ -397,7 +397,7 @@ static bool object_literal_type_mentions(Checker* me, Ty const* ty, TyList* out)
     // the identity instance made recursive-types.test.ts's TS2344 spurious)
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
-        if (TAINT_IF(TAINT_PEEK, prop->type_state != LAZY_STATE_DONE) || prop->target || (prop->flags & PROP_GETTER)) return false;
+        if (TAINT_IF(TAINT_PEEK, !prop_type_peek(me, prop)) || prop->target || (prop->flags & PROP_GETTER)) return false;
     }
     return compute_mentions(me, ty, key, out);
 }
@@ -428,7 +428,7 @@ bool ty_function_type_mentions(Checker* me, Ty const* ty, TyList* out) {
     Members const* members = state->members;
     if (members->call_count != 1 || members->construct_count || members->prop_count || members->index_count || members->mapped) return false;
     Signature const* sig = members->call[0];
-    if (TAINT_IF(TAINT_PEEK, sig->state != LAZY_STATE_DONE) || sig_target(sig) || sig->function != ty->anonymous.function) return false;
+    if (TAINT_IF(TAINT_PEEK, !sig_resolved(me, sig)) || sig_target(me, sig) || sig->function != ty->anonymous.function) return false;
     FunctionImpl const* function = sig->function;
     if (TAINT_IF(TAINT_PEEK, sig->ret_state != LAZY_STATE_DONE && !function->ret_explicit && function->has_body && !ty_function_return_known(me, function))) return false;
     return compute_mentions(me, ty, key, out);
@@ -585,12 +585,12 @@ static bool callable_definitely_related(Checker* me, Ty const* check_type, Ty co
             return false;
         }
         Signature const* sig = target->call[0];
-        signature_resolve(me, sig);
-        if (sig_res(sig)->type_params.len || sig_res(sig)->this_type || !(signature_return_type(me, sig)->flags & TYF_ANY)) return false;
-        if (!sig_res(sig)->param_count || !sig_res(sig)->params[sig_res(sig)->param_count - 1].rest) return false;
-        for (u32 i = 0; i < sig_res(sig)->param_count; i++) {
-            Ty const* type = sig_res(sig)->params[i].type;
-            if (sig_res(sig)->params[i].rest && !(type->flags & TYF_ANY)) type = ty_is_array(me, type) ? ty_rest_element_type(me, type) : nullptr;
+        SigResolved const* sig_rs = signature_resolve(me, sig);
+        if (sig_rs->type_params.len || sig_rs->this_type || !(signature_return_type(me, sig)->flags & TYF_ANY)) return false;
+        if (!sig_rs->param_count || !sig_rs->params[sig_rs->param_count - 1].rest) return false;
+        for (u32 i = 0; i < sig_rs->param_count; i++) {
+            Ty const* type = sig_rs->params[i].type;
+            if (sig_rs->params[i].rest && !(type->flags & TYF_ANY)) type = ty_is_array(me, type) ? ty_rest_element_type(me, type) : nullptr;
             if (!type || !(type->flags & TYF_ANY)) return false;
         }
         any_function = true;

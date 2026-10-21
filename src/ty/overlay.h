@@ -79,6 +79,9 @@ void graph_fp_result(unsigned kind, void const* subject, void const* result, boo
 #define SW_FP(kind, subject, result, taint) ((void)0)
 #endif
 
+// A copy of a word in flight here (`*to = *from` of its holder): in flight here too, for good (nothing finishes it: a
+// read of it is a cycle, as a copied LazyState byte was)
+void sw_copy_in_flight(struct Checker* me, SharedWord* to, uint8_t* to_state);
 // TTTT_DEBUG_PUBLISH=1: aborts if `ref`, held by a value being published, was made by a computation whose result stayed
 // private (overlay.c). For the kinds whose values hold non-identity objects (Props, Signatures, Members: P1's walks)
 void sw_debug_check_ref(void const* ref, char const* what);

@@ -54,7 +54,7 @@ enum {
     KEY_NORMALIZED_INTERSECTION, // (intersection type id, writing) -> normalized_intersection() of it (relate.c)
     KEY_MAPPED_FILTERING, // declared mapped type's key parameter -> 1 remapping, 2 filtering, by relation (members.c)
     KEY_PROP_MAPPED_TYPE, // Prop with .mapped -> the mapped type it's a property of (members.c)
-    KEY_PROP_WRITE_TYPE, // Prop with .write_type_known -> prop_write_type() of it, null for none (members.c)
+    KEY_PROP_WRITE_TYPE, // Prop -> prop_write_type() of it, null for none; present once known (members.c)
     KEY_UNION_ACCESS, // (union type id, index type id, flags) -> access() of it at depth 0, a sentinel for none (access.c)
     KEY_BASE_CONSTRAINT, // type (node_links) -> base_constraint() of it, the type itself for none, sentinels while computed and for circular (relate.c)
     KEY_INFERRED_TRUE_BRANCH, // (conditional type id) -> inferred_true_branch() of it (relate.c, tsc's resolvedInferredTrueType)
@@ -180,6 +180,9 @@ TyConditionalOuter const* ty_conditional_outer(Checker* me, Ty const* root); // 
 
 // Doesn't insert, unlike intern_slot()
 void const* intern_get(InternTable const* table, u64 const* words, u32 count);
+// intern_get() that tells a key whose value is null from a missing one (P1: KEY_PROP_WRITE_TYPE's presence is what
+// was Prop.write_type_known)
+bool intern_has(InternTable const* table, u64 const* words, u32 count, void const** value);
 
 // Checker.node_links: what `kind` (a KEY_ of Checker.links) says about `subject`, null if nothing. The value is held
 // in the table, which moves: no slot to write later, unlike intern_slot(); set again to change it. Only for the kinds

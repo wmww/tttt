@@ -168,7 +168,7 @@ Ty const* class_item_accessor_evaluate_type(ClassItem* me) {
     Members const* members = ty_members(checker, ty_function_type(checker, &my method.func));
     if (members->call_count != 1) return ty_intrinsic(checker, TY_ANY);
     Signature const* sig = members->call[0];
-    signature_resolve(checker, sig);
+    SigResolved const* sig_rs = signature_resolve(checker, sig);
     if (my method.accessor == CLASS_ACCESSOR_GET) {
         // (A unit type only, like tsc's getReturnTypeFromBody without a contextual type: a union of literals stays)
         Ty const* ret = signature_return_type(checker, sig);
@@ -182,7 +182,7 @@ Ty const* class_item_accessor_evaluate_type(ClassItem* me) {
         if (!binding->has_explicit_type) return ty_intrinsic(checker, TY_ANY);
         break;
     }
-    return sig_res(sig)->param_count ? ty_sig_param_declared_type(checker, &sig_res(sig)->params[0]) : ty_intrinsic(checker, TY_ANY);
+    return sig_rs->param_count ? ty_sig_param_declared_type(checker, &sig_rs->params[0]) : ty_intrinsic(checker, TY_ANY);
 }
 
 Ty const* class_item_get_type(ClassItem* me) {
@@ -1324,11 +1324,11 @@ static bool is_mixin_constructor_type(Checker* checker, Ty const* type) {
     Members const* members = ty_members(checker, type);
     if (members->construct_count != 1) return false;
     Signature const* sig = members->construct[0];
-    signature_resolve(checker, sig);
-    if (sig_res(sig)->type_params.len || sig_res(sig)->param_count != 1 || !sig_res(sig)->params[0].rest) return false;
-    Ty const* param = sig_res(sig)->params[0].type;
+    SigResolved const* sig_rs = signature_resolve(checker, sig);
+    if (sig_rs->type_params.len || sig_rs->param_count != 1 || !sig_rs->params[0].rest) return false;
+    Ty const* param = sig_rs->params[0].type;
     if (param->flags & TYF_ANY) return true;
-    if (ty_sig_param_adds_undefined(&sig_res(sig)->params[0])) return false;
+    if (ty_sig_param_adds_undefined(&sig_rs->params[0])) return false;
     return ty_is_array(checker, param) && (ty_reference_args(checker, param).data[0]->flags & TYF_ANY) &&
         !(ty_reference_args(checker, param).data[0]->flags & TYF_ERROR);
 }

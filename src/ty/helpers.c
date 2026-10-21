@@ -49,7 +49,7 @@ static bool has_signature_with_more_params(Checker* me, Symbol const* symbol, u3
     Members const* members = ty_members(me, ty_type_of_symbol(me, symbol));
     for (u32 i = 0; i < members->call_count; i++) {
         signature_resolve(me, members->call[i]);
-        if (sig_res(members->call[i])->param_count > than) return true;
+        if (sig_res(me, members->call[i])->param_count > than) return true;
     }
     return false;
 }

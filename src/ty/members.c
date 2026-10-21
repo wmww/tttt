@@ -81,18 +81,15 @@ static PropDeclRare* prop_decl_rare_mut(Checker* me, PropDecl* decl) {
 }
 
 // `*to = *from`, with a declaration of its own to add to
-static void prop_copy_into(Checker* me, Prop* to, Prop const* from) {
-    // (With --shared-graph `from` may be another checker's, its type in flight there: the copy's type is its own to
-    // resolve, unless it was done before the copy)
-    unsigned state = LAZY_LOAD(from->type_state);
+static void prop_copy_into(Checker* me, Prop* to, Prop const* from, bool keep_in_flight) {
+    // (Its type if known here, else the copy computes its own; one in flight here is in flight in the copy too, for good:
+    // a cycle when read, as when the copy took the state byte)
+    uintptr_t known = sw_peek(me, &from->type);
+    bool in_flight = keep_in_flight && !known && sw_mine_in_flight(me, &from->type, &from->type_flight);
     *to = *from;
-    to->type_state = (uint8_t)state;
-    if (state == LAZY_STATE_DONE) {
-        to->type = from->type;
-    } else if (LAZY_IN_FLIGHT(state) && !LAZY_MINE_IN_FLIGHT(me, state)) {
-        to->type_state = LAZY_STATE_NOT_STARTED;
-        to->type = nullptr;
-    }
+    __atomic_store_n(&to->type.v, known, __ATOMIC_RELAXED);
+    to->type_flight = LAZY_STATE_NOT_STARTED;
+    if (in_flight) sw_copy_in_flight(me, &to->type, &to->type_flight);
     if (prop_decl_shared(from->decl)) return;
     to->decl = arena_new(&my arena, PropDecl);
     *to->decl = *from->decl;
@@ -580,7 +577,6 @@ typedef struct BasesFrame {
 
 static Signature* signature_from_function(Checker* me, FunctionImpl const* function, LowerCtx ctx) {
     Signature* ret = arena_new(&my arena, Signature);
-    ret->res = &sig_resolved_none;
     ret->function = function;
     ret->ctx = ctx;
     if (function->is_constructor) ret->flags |= SIGNATURE_CONSTRUCT;
@@ -1096,7 +1092,7 @@ static void builder_add_parts_members(Checker* me, MembersBuilder* builder, Ty c
                 Prop* merged = arena_new(&my arena, Prop);
                 *merged = (Prop){
                     .name = prop->name, .flags = found.flags, .parent = prop->parent, .target = prop,
-                    .type = found.type, .type_state = LAZY_STATE_DONE, .decl = prop_decl_none(), .synthetic = true,
+                    .type = { SW_VAL(found.type) }, .decl = prop_decl_none(), .synthetic = true,
                 };
                 SyntheticParts* parts = arena_alloc(&my arena, sizeof(SyntheticParts) + sizeof(Prop const*) * found_len);
                 parts->len = found_len;
@@ -1240,8 +1236,8 @@ bool ty_base_constructors_fit(Checker* me, Ty const* constructor, u32 count, boo
     if (!members->construct_count) return true;
     for (u32 i = 0; i < members->construct_count; i++) {
         Signature const* sig = members->construct[i];
-        signature_resolve(me, sig);
-        TyList params = sig_res(sig)->type_params;
+        SigResolved const* sig_rs = signature_resolve(me, sig);
+        TyList params = sig_rs->type_params;
         u32 min = 0;
         for (u32 j = 0; j < params.len; j++) {
             if (!ty_param_default(me, params.data[j])) min = j + 1;
@@ -2159,7 +2155,6 @@ static void builder_add_class_items(
 
 static Signature* class_construct_signature(Checker* me, ClassDecl const* class_decl, Ty const* instance_declared) {
     Signature* sig = arena_new(&my arena, Signature);
-    sig->res = &sig_resolved_none;
     sig->flags = SIGNATURE_CONSTRUCT | (class_decl->is_abstract ? SIGNATURE_ABSTRACT : 0);
     // (The outer type parameters of a local class aren't the signature's: the static side instantiates them)
     sig->class_type_params = ty_local_type_params(instance_declared);
@@ -2196,11 +2191,10 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
         u32 len = instance->declared.type_params.len;
         Ty const** args = arena_new_n(&my arena, Ty const*, len);
         for (u32 i = 0; i < len; i++) args[i] = ty_intrinsic(me, TY_ANY);
-        prototype->type = ty_reference(me, instance, (TyList){ .data = args, .len = len });
+        prop_type_init(prototype, ty_reference(me, instance, (TyList){ .data = args, .len = len }));
     } else {
-        prototype->type = instance;
+        prop_type_init(prototype, instance);
     }
-    prototype->type_state = LAZY_STATE_DONE;
     // (First, so that it wins over a declared `static prototype`; builder_prototype_last() moves it)
     builder_push(builder, props, prototype);
 
@@ -2518,7 +2512,7 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty co
             for (u32 k = 0; existing && k < shared.len && !is_shared; k++) is_shared = (Prop const*)(void const*)shared.data[k] == existing;
             if (is_shared) {
                 Prop* copy = arena_new(&my arena, Prop);
-                prop_copy_into(me, copy, existing);
+                prop_copy_into(me, copy, existing, true);
                 for (u32 k = 0; k < builder->props_count; k++) if (builder->props[k] == existing) builder->props[k] = copy;
                 existing = copy;
             }
@@ -2530,8 +2524,7 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty co
             if (existing && existing->parent && existing->parent != decl && members->props[j]->parent == decl) {
                 // The symbol's own export (a JavaScript class's expando `C.x = v`) hides a static the class inherits
                 // (tsc: the class's exports come before the base constructor's members). The props here are copies
-                prop_copy_into(me, existing, members->props[j]);
-                if (existing->type_state != LAZY_STATE_DONE) existing->type_state = LAZY_STATE_NOT_STARTED;
+                prop_copy_into(me, existing, members->props[j], false); // (Its type resolved again unless known)
             } else if (existing) {
                 prop_add_shared_decl_spans(me, existing, members->props[j]->decl->decl_spans, members->props[j]->decl->decl_span_count);
             } else {
@@ -2579,8 +2572,7 @@ static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDe
         prop->name = name;
         prop->parent = enum_decl->symbol;
         prop->flags = PROP_READONLY;
-        prop->type = ty_declared_type_of(me, i->symbol);
-        prop->type_state = LAZY_STATE_DONE;
+        prop_type_init(prop, ty_declared_type_of(me, i->symbol));
         prop->decl->name_span = i->full_name;
         prop->decl->name_is_value = i->name_is_value;
         prop->decl->symbol = i->symbol;
@@ -2592,7 +2584,7 @@ static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDe
         } else {
             prop_add_shared_decl_spans(me, prop, &i->full_name, 1);
         }
-        any_numeric |= !(prop->type->flags & TYF_STRING_LITERAL);
+        any_numeric |= !(prop_type_known(prop)->flags & TYF_STRING_LITERAL);
         builder_push(builder, props, prop);
     }
     // The reverse mapping of numeric members
@@ -3419,8 +3411,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 Atom const* name = checker_atom(me, c_sv("undefined"));
                 if (!builder_find_prop(&builder, name)) {
                     Prop* prop = arena_new(&my arena, Prop);
-                    *prop = (Prop){ .name = name, .type = ty_intrinsic(me, TY_UNDEFINED_WIDENING),
-                        .type_state = LAZY_STATE_DONE, .decl = prop_decl_none() };
+                    *prop = (Prop){ .name = name, .decl = prop_decl_none() };
+                    prop_type_init(prop, ty_intrinsic(me, TY_UNDEFINED_WIDENING));
                     builder_push(&builder, props, prop);
                 }
             }
@@ -3536,7 +3528,7 @@ static Members const* instantiate_members(
             }
             Signature* sig = arena_new(&my arena, Signature);
             *sig = (Signature){
-                .flags = sigs[i]->flags, .target = sigs[i], .mapper = mapper, .res = &sig_resolved_none,
+                .flags = sigs[i]->flags, .target = sigs[i], .mapper = mapper,
                 .drops_mapped_type_params = applies_type_args,
                 .name_span = sigs[i]->name_span, .decl_span = sigs[i]->decl_span,
             };
@@ -3896,8 +3888,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
         return ret;
     }
     Prop* template = prop_new(me);
-    template->type = ty_mapped_template(me, mapped);
-    template->type_state = LAZY_STATE_DONE;
+    prop_type_init(template, ty_mapped_template(me, mapped));
     template->is_template = true;
     MembersBuilder builder = { .mapped = mapped };
     for (u32 i = 0; i < source->prop_count; i++) {
@@ -4027,8 +4018,7 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
                 if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
                 if (!template) {
                     template = prop_new(me);
-                    template->type = ty_mapped_template(me, mapped);
-                    template->type_state = LAZY_STATE_DONE;
+                    prop_type_init(template, ty_mapped_template(me, mapped));
                     template->is_template = true;
                 }
                 Ty const* key = ty_prop_key_literal(me, from);
@@ -4757,8 +4747,7 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
         prop->decl = (PropDecl*)&ty_prop_decl_value_name; // (Named by a number, nothing else to say: shared)
         prop->name = ty_index_atom(me, i);
         prop->flags = (optional ? PROP_OPTIONAL : 0) | (shape->readonly ? PROP_READONLY : 0);
-        prop->type = elements.data[i];
-        prop->type_state = LAZY_STATE_DONE;
+        prop_type_init(prop, elements.data[i]);
         builder.props[builder.props_count++] = prop;
     }
     Ty const* length;
@@ -4778,8 +4767,7 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
     Prop* length_prop = prop_new(me);
     length_prop->name = checker_atom(me, c_sv("length"));
     length_prop->flags = shape->readonly ? PROP_READONLY : 0; // Like tsc's, a mutable tuple's length can be assigned
-    length_prop->type = length;
-    length_prop->type_state = LAZY_STATE_DONE;
+    prop_type_init(length_prop, length);
     builder_push(&builder, props, length_prop);
     Ty const* array = ty_tuple_as_array(me, tuple);
     if (array) {
@@ -4863,7 +4851,6 @@ static Members const* resolve_reverse_mapped_members(Checker* me, Ty const* ty) 
         Prop* prop = prop_new_declared(me);
         prop->name = props[i].name;
         prop->flags = flags;
-        prop->type_state = LAZY_STATE_NOT_STARTED;
         prop->decl->name_span = props[i].name_span;
         prop->decl->name_is_value = props[i].name_is_value;
         prop->decl->name_form = props[i].name_form;
@@ -5076,12 +5063,12 @@ bool ty_sig_param_adds_undefined(SigParam const* param) {
 static bool is_mixin_constructor(Checker* me, Members const* members) {
     if (members->construct_count != 1) return false;
     Signature const* sig = members->construct[0];
-    signature_resolve(me, sig);
-    if (sig_res(sig)->type_params.len || sig_res(sig)->param_count != 1 || !sig_res(sig)->params[0].rest) return false;
-    Ty const* type = sig_res(sig)->params[0].type;
+    SigResolved const* sig_rs = signature_resolve(me, sig);
+    if (sig_rs->type_params.len || sig_rs->param_count != 1 || !sig_rs->params[0].rest) return false;
+    Ty const* type = sig_rs->params[0].type;
     if (type->flags & TYF_ANY) return true;
     // (`...args?: any[]` is `any[] | undefined`, no array type: tsc's getElementTypeOfArrayType)
-    if (ty_sig_param_adds_undefined(&sig_res(sig)->params[0])) return false;
+    if (ty_sig_param_adds_undefined(&sig_rs->params[0])) return false;
     return ty_is_array(me, type) && (ty_reference_args(me, type).data[0]->flags & TYF_ANY);
 }
 
@@ -5152,7 +5139,7 @@ static Members const* resolve_intersection_members(Checker* me, Ty const* ty) {
                     Signature* clone = arena_new(&my arena, Signature);
                     signature_resolve(me, sig);
                     *clone = *sig;
-                    signature_copied(me, clone);
+                    signature_copied(me, clone, sig);
                     clone->ret = ty_intersection(me, mixed, mixed_len, nullptr, (TyList){0});
                     clone->ret_state = LAZY_STATE_DONE;
                     free(mixed);
@@ -5369,22 +5356,23 @@ bool ty_prop_is_accessor(Prop const* prop) {
 }
 
 Ty const* prop_type(Checker* me, Prop const* const_prop) {
-    Prop* prop = (Prop*)const_prop; // The lazily resolved type is the one mutable thing about a Prop
-    if (LAZY_FAST_LOAD(prop->type_state) == LAZY_STATE_DONE) {
+    Prop* prop = (Prop*)const_prop; // The lazily resolved type is the one mutable thing about a Prop: a shared word
+    // (sw_get(), but a type is never NONE on the fast path: null goes to the slow path's sw_look())
+    uintptr_t v = sw_load(&prop->type);
+    if (__builtin_expect(v > SW_NONE && !my graph_shadowed, 1)) {
         TAINT_READ(TK_PROP_TYPE, prop);
-        return prop->type;
+        return (Ty const*)v;
     }
     return prop_type_slow(me, prop);
 }
 
 // (Out of line: the resolved case above is what nearly every call is)
 static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* prop) {
-    again:;
-    LAZY_SNAP(me, prop->type_state, seen, again);
-    switch (LAZY_STATE_OF(seen)) {
-        case LAZY_STATE_DONE: return prop->type;
-        case LAZY_STATE_IN_FLIGHT:
-            TAINT_EVENT(TAINT_IN_FLIGHT_PROP);
+    uintptr_t v;
+    switch (sw_look_fast(me, &prop->type, &prop->type_flight, &v)) {
+        case SW_LOOK_DONE: return SW_PTR(v);
+        case SW_LOOK_MINE:
+            // (sw_look() counted the taint event)
             // An instantiated property asked again while instantiated is instantiated again (tsc's
             // getTypeOfInstantiatedSymbol has no guard): `{ "true": Foo<T, Foo<T, B>> }[T]` recurses until the
             // instantiation depth (TS2589), not a circularity
@@ -5415,9 +5403,9 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
                 }
             }
             return ty_intrinsic(me, TY_CIRCULAR);
-        case LAZY_STATE_NOT_STARTED: break;
+        case SW_LOOK_COMPUTE: break;
     }
-    if (!LAZY_CLAIM(me, prop->type_state)) goto again;
+    u64 taint = sw_claim_fast(me, &prop->type, &prop->type_flight);
     TAINT_BEGIN(taint_frame);
     bool resolving = !prop->target || prop->mapped;
     if (resolving) ty_resolving_push(me, RESOLVING_PROP, prop);
@@ -5466,9 +5454,8 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
     bool circular = resolving && ty_resolving_pop(me);
     if (circular && prop->mapped) {
         // tsc's getTypeOfMappedSymbol when popTypeResolution fails
-        prop->type = ty_intrinsic(me, TY_ERROR);
-        LAZY_DONE_CLEAN(prop->type_state, taint_frame, TK_PROP_TYPE);
-        TAINT_END(taint_frame, TK_PROP_TYPE, prop, prop, prop->type);
+        Ty const* error = SW_PTR(sw_finish_fast(me, &prop->type, &prop->type_flight, SW_VAL(ty_intrinsic(me, TY_ERROR)), taint));
+        if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_PROP_TYPE, prop, prop, error);
         cstr name = ty_prop_written_name(me, prop);
         Ty const* mapped_type = intern_get(&my links, (u64[]){ KEY_PROP_MAPPED_TYPE, (u64)(uintptr_t)prop }, 2);
         // (tsc's getTypeOfMappedSymbol sets containsError where pushTypeResolution fails, before it reports)
@@ -5484,7 +5471,7 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
         ty_error_at_current_node_d(me, 2615, "Type of property '", name, "' circularly references itself in mapped type '",
             mapped, "'.");
         c_drop(cstr, &name, &mapped);
-        return prop->type;
+        return error;
     }
     // A declared property (or accessor) whose annotation needs its own type (tsc's getTypeOfVariableOrParameterOrProperty
     // / getTypeOfAccessors when popTypeResolution fails). (What the annotation lowered to is already any-like)
@@ -5492,16 +5479,16 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
         Span name = prop_annotation_circularity_span(prop);
         ty_error_at(me, name, 2502, cstr_d("'", span_sv(name), "' is referenced directly or indirectly in its own type annotation."));
     }
-    prop->type = type;
-    LAZY_DONE_CLEAN(prop->type_state, taint_frame, TK_PROP_TYPE);
-    TAINT_END(taint_frame, TK_PROP_TYPE, prop, prop, type);
+    type = SW_PTR(sw_finish_fast(me, &prop->type, &prop->type_flight, SW_VAL(type), taint));
+    if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_PROP_TYPE, prop, prop, type);
     return type;
 }
 
 Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
     Prop* prop = (Prop*)const_prop; // Resolved lazily like the type
     u64 key[2] = { KEY_PROP_WRITE_TYPE, (u64)(uintptr_t)prop };
-    if (prop->write_type_known) return intern_get(&my links, key, 2);
+    void const* known;
+    if (intern_has(&my links, key, 2, &known)) return known;
     Ty const* type = nullptr;
     if (prop_decl_rare(prop->decl)->write_node) {
         type = ty_from_node(me, prop_decl_rare(prop->decl)->write_node, prop->decl->ctx);
@@ -5511,11 +5498,9 @@ Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
         type = prop_write_type(me, prop->target);
         if (type) type = ty_instantiate(me, type, prop->mapper);
     }
-    // (An identity of the property, published before the flag goes on: with --shared-graph another checker's
-    // property may be this one, and the flag says where to look. Who computes it first doesn't matter, it's the same)
-    type = intern_set(me, &my links, intern_slot(me, &my links, key, 2), type);
-    prop->write_type_known = true;
-    return type;
+    // (An identity of the property: with --shared-graph another checker's property may be this one, and the entry's
+    // presence says it is known, null for none. Who computes it first doesn't matter, it's the same)
+    return intern_set(me, &my links, intern_slot(me, &my links, key, 2), type);
 }
 
 // A generic signature instantiated by an outer mapper (a method of `Box<number>`) gets fresh type parameters whose
@@ -5609,7 +5594,7 @@ static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl con
     Members const* members = ty_members(me, type);
     if (members->call_count != 1 || members->construct_count || members->index_count || members->prop_count) return nullptr;
     // (Not the function's own signature: `@type {MyClass}` on `function MyClass`, which is TS8030)
-    for (Signature const* i = members->call[0]; i; i = sig_target(i)) {
+    for (Signature const* i = members->call[0]; i; i = sig_target(me, i)) {
         if (i->function == function) {
             *self = true;
             return nullptr;
@@ -5648,29 +5633,63 @@ SigResolved const* sig_resolved_new(Checker* me, SigResolved init) {
     return r;
 }
 
-void signature_copied(Checker* me, Signature* copy) {
-    unsigned before = copy->state;
-    LAZY_COPIED(me, copy->state);
-    if (before == LAZY_STATE_DONE || copy->res == &sig_resolved_none) return;
-    copy->res = copy->state == LAZY_STATE_NOT_STARTED ? &sig_resolved_none : sig_resolved_new(me, *copy->res);
+// The record of a signature_resolve() in flight in this worker, null if none
+static SigResolved const* sig_resolving_record(Checker* me, Signature const* sig) {
+    for (SigResolving const* i = my sig_resolving; i; i = i->outer) {
+        if (i->sig == sig) return i->res;
+    }
+    return nullptr;
+}
+
+SigResolved const* sig_res_slow(Checker* me, Signature const* sig) {
+    if (!my graph) {
+        // (Without a graph: not resolved yet, or in flight here)
+        if (sig->res_flight != LAZY_STATE_IN_FLIGHT) return &sig_resolved_none;
+        SigResolved const* partial = sig_resolving_record(me, sig);
+        return partial ? partial : &sig_resolved_none;
+    }
+    uintptr_t v = sw_peek(me, &sig->res);
+    if (v) return (SigResolved const*)v;
+    if (sw_mine_in_flight(me, &sig->res, &sig->res_flight)) {
+        SigResolved const* partial = sig_resolving_record(me, sig);
+        if (partial) return partial;
+    }
+    return &sig_resolved_none;
+}
+
+void signature_copied(Checker* me, Signature* copy, Signature const* original) {
+    copy->res_flight = LAZY_STATE_NOT_STARTED;
+    uintptr_t v = me->graph ? sw_peek(me, &original->res) : __atomic_load_n(&original->res.v, __ATOMIC_RELAXED);
+    if (!v && sw_mine_in_flight(me, &original->res, &original->res_flight)) {
+        // (In flight here: a snapshot of what is resolved so far, which the copy keeps, resolved)
+        SigResolved const* partial = sig_resolving_record(me, original);
+        if (partial) v = (uintptr_t)sig_resolved_new(me, *partial);
+    }
+    __atomic_store_n(&copy->res.v, v, __ATOMIC_RELAXED);
 }
 
 SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
-    again:
-    if (LAZY_LOAD(sig->state) == LAZY_STATE_DONE) return sig->res;
-    LAZY_SNAP(me, sig->state, seen, again);
-    // (Done, or in flight here: what is resolved so far)
-    if (seen != LAZY_STATE_NOT_STARTED) return sig_res(sig);
-    if (!LAZY_CLAIM(me, sig->state)) goto again;
+    uintptr_t v;
+    switch (sw_look_fast(me, &sig->res, &sig->res_flight, &v)) {
+        case SW_LOOK_DONE: return (SigResolved const*)v;
+        case SW_LOOK_MINE: {
+            // (In flight here, a cycle: what is resolved so far)
+            SigResolved const* partial = sig_resolving_record(me, sig);
+            return partial ? partial : &sig_resolved_none;
+        }
+        case SW_LOOK_COMPUTE: break;
+    }
+    u64 taint = sw_claim_fast(me, &sig->res, &sig->res_flight);
     TAINT_BEGIN(taint_frame);
-    // (Allocated first and filled in place: a re-entry while in flight reads what is resolved so far)
+    // (Filled privately: this worker's re-entries while it is in flight read what is resolved so far through its frame)
     SigResolved* r = arena_new(&my arena, SigResolved);
     r->target = sig->target;
     r->mapper = sig->mapper;
-    sig->res = r;
+    SigResolving frame = { .sig = sig, .res = r, .outer = my sig_resolving };
+    my sig_resolving = &frame;
     if (!r->target && sig->function) {
-        // (A JSDoc `@type` tag's signature: the function's target from now on, sig_target())
+        // (A JSDoc `@type` tag's signature: the function's target from now on, sig_target(me, ))
         Signature const* tagged = jsdoc_tag_signature(me, sig->function);
         if (tagged) r->target = tagged;
     }
@@ -5706,7 +5725,7 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
             // A function expression typed by a generic contextual signature is generic in its type parameters, which
             // its parameters were typed with (tsc's assignContextualParameterTypes): `x => x` for `<S>(x: S) => T`
             Signature const* contextual = ty_function_assigned_contextual_signature(me, function);
-            if (contextual) r->type_params = sig_res(contextual)->type_params;
+            if (contextual) r->type_params = sig_res(me, contextual)->type_params;
         }
         LowerCtx ctx = sig->ctx;
         // A function can be anywhere, a function type is lowered knowing whether some type parameter is in scope
@@ -5784,9 +5803,11 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
         sig->ret = ty_instantiate(me, r->target->class_instance, r->mapper);
         LAZY_DONE(sig->ret_state);
     }
-    TAINT_END(taint_frame, TK_SIG_RESOLVED, sig, sig, r);
-    LAZY_DONE(sig->state);
-    return r;
+    // (An instantiation of its own type parameters has none left: ty_signature_instantiation())
+    if (sig->instantiates_own_params) r->type_params = (TyList){0};
+    my sig_resolving = frame.outer;
+    if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_SIG_RESOLVED, sig, sig, r);
+    return (SigResolved const*)sw_finish_fast(me, &sig->res, &sig->res_flight, (uintptr_t)r, taint);
 }
 
 // Whether the signature has a `this` type (Signature.this_type), read off its declaration while it isn't resolved: an
@@ -5795,13 +5816,13 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
 // whose instantiated signatures have lazily typed parameters, never looks at
 bool ty_signature_has_this(Checker* me, Signature const* sig) {
     Signature const* root = sig;
-    while (LAZY_LOAD(root->state) != LAZY_STATE_DONE && sig_target(root)) root = sig_target(root);
-    if (LAZY_LOAD(root->state) == LAZY_STATE_DONE) return sig_res(root)->this_type != nullptr;
+    while (!sig_resolved(me, root) && sig_target(me, root)) root = sig_target(me, root);
+    if (sig_resolved(me, root)) return sig_res(me, root)->this_type != nullptr;
     // (A function expression can take its contextual signature's, a JavaScript one its `@type` tag's)
     FunctionImpl const* function = root->function;
     if (!function || function->is_expression || !span_source(function->full_span) || span_source(function->full_span)->is_js) {
-        signature_resolve(me, sig);
-        return sig_res(sig)->this_type != nullptr;
+        SigResolved const* sig_rs = signature_resolve(me, sig);
+        return sig_rs->this_type != nullptr;
     }
     if (!vec_function_arg_size(&function->args)) return false;
     // (The name as written, like signature_resolve()'s atom of it)
@@ -5809,9 +5830,21 @@ bool ty_signature_has_this(Checker* me, Signature const* sig) {
     return name.size == 4 && memcmp(name.buf, "this", 4) == 0;
 }
 
+static Ty const* signature_return_type_slow(Checker* me, Signature* sig);
+
 Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
-    signature_resolve(me, sig);
+    // (Resolved and its return type known: what nearly every call is)
+    uintptr_t res = sw_load(&sig->res);
+    if (__builtin_expect(res > SW_NONE && !my graph_shadowed && LAZY_LOAD(sig->ret_state) == LAZY_STATE_DONE, 1)) {
+        TAINT_READ(TK_SIGNATURE_RETURN, sig);
+        return sig->ret;
+    }
+    return signature_return_type_slow(me, sig);
+}
+
+static __attribute__((noinline)) Ty const* signature_return_type_slow(Checker* me, Signature* sig) {
+    SigResolved const* sig_rs = signature_resolve(me, sig);
     again:
     if (__builtin_expect(LAZY_LOAD(sig->ret_state) == LAZY_STATE_DONE, 1)) {
         TAINT_READ(TK_SIGNATURE_RETURN, sig);
@@ -5825,7 +5858,7 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
         case LAZY_STATE_IN_FLIGHT:
             TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
             // An inferred return type in progress: asking it says so, it becomes any (see ty_function_return_type())
-            if (!sig_target(sig) && sig->function && !sig->function->is_type) ty_function_return_type(me, sig->function);
+            if (!sig_target(me, sig) && sig->function && !sig->function->is_type) ty_function_return_type(me, sig->function);
             ty_resolving_cycle(me, RESOLVING_SIGNATURE_RETURN, sig);
             return ty_intrinsic(me, TY_CIRCULAR);
         case LAZY_STATE_NOT_STARTED: break;
@@ -5834,11 +5867,11 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
     TAINT_BEGIN(taint_frame);
     ty_resolving_push(me, RESOLVING_SIGNATURE_RETURN, sig);
     Ty const* ret;
-    if (sig_target(sig)) {
-        ret = ty_instantiate(me, signature_return_type(me, sig_target(sig)), sig_mapper(sig));
+    if (sig_target(me, sig)) {
+        ret = ty_instantiate(me, signature_return_type(me, sig_target(me, sig)), sig_mapper(me, sig));
     } else if (sig->function && sig->function->is_type) {
         LowerCtx ctx = sig->ctx;
-        ctx.generic |= sig_res(sig)->type_params.len > 0;
+        ctx.generic |= sig_rs->type_params.len > 0;
         ctx.method = false;
         ret = ty_from_node(me, &sig->function->ret, ctx);
     } else if (sig->function) {
@@ -5851,7 +5884,7 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
         // one's TS7023 is ty_function_return_type()'s, an accessor's TS2502 prop_type()'s)
         ret = ty_intrinsic(me, TY_ANY);
         FunctionImpl const* function = sig->function;
-        if (!sig_target(sig) && function && !function->accessor && (function->is_type || function->ret_explicit) &&
+        if (!sig_target(me, sig) && function && !function->accessor && (function->is_type || function->ret_explicit) &&
             span_valid(function_impl_ret_span(function))
         ) {
             ty_error_at(me, function_impl_ret_span(function), 2577, cstr_from("Return type annotation circularly references itself."));
@@ -5871,12 +5904,13 @@ static bool signature_return_in_flight(Checker* me, Signature const* sig, bool a
             TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
             return true;
         }
-        if (!sig_target(sig)) {
+        Signature const* target = sig_target(me, sig);
+        if (!target) {
             if (!sig->function || sig->function->is_type) return false;
             return above_barrier ? ty_resolving_find(me, RESOLVING_FUNCTION_RETURN, sig->function) :
                 ty_function_return_in_flight(me, sig->function);
         }
-        sig = sig_target(sig);
+        sig = target;
     }
     return false;
 }
@@ -5891,9 +5925,9 @@ bool ty_signature_return_resolving(Checker* me, Signature const* sig) {
 
 // Only ever from an annotation, so asking doesn't infer a return type (TODO: tsc 5.5 infers `x is T` for functions
 // that return a narrowing expression)
-static LowerCtx predicate_ctx(Signature const* sig) {
+static LowerCtx predicate_ctx(Checker* me, Signature const* sig) {
     LowerCtx ctx = sig->ctx;
-    ctx.generic |= !sig->function->is_type || sig_res(sig)->type_params.len > 0;
+    ctx.generic |= !sig->function->is_type || sig_res(me, sig)->type_params.len > 0;
     ctx.method = false;
     return ctx;
 }
@@ -5907,12 +5941,12 @@ typedef struct PredicateClaim {
 
 static TyPredicate const* compute_signature_predicate(Checker* me, Signature* sig, PredicateClaim* claim) {
     if (sig->class_instance) return nullptr;
-    if (sig_target(sig)) {
-        TyPredicate const* target_predicate = signature_predicate(me, sig_target(sig));
-        if (target_predicate && target_predicate->type && sig_mapper(sig)) {
+    if (sig_target(me, sig)) {
+        TyPredicate const* target_predicate = signature_predicate(me, sig_target(me, sig));
+        if (target_predicate && target_predicate->type && sig_mapper(me, sig)) {
             TyPredicate* predicate = arena_new(&my arena, TyPredicate);
             *predicate = *target_predicate;
-            predicate->type = ty_instantiate(me, target_predicate->type, sig_mapper(sig));
+            predicate->type = ty_instantiate(me, target_predicate->type, sig_mapper(me, sig));
             claim->predicate = predicate;
         } else {
             claim->predicate = target_predicate;
@@ -5928,10 +5962,10 @@ static TyPredicate const* compute_signature_predicate(Checker* me, Signature* si
         };
         // (`this: T` isn't among the parameters of the signature)
         u32 arg_count = (u32)vec_function_arg_size(&sig->function->args);
-        if (predicate->param_index >= 0 && sig_res(sig)->param_count < arg_count) predicate->param_index--;
+        if (predicate->param_index >= 0 && sig_res(me, sig)->param_count < arg_count) predicate->param_index--;
         if (node->has_type) {
             claim->lowering = true;
-            predicate->type = ty_from_node(me, &node->type, predicate_ctx(sig));
+            predicate->type = ty_from_node(me, &node->type, predicate_ctx(me, sig));
             claim->lowering = false;
         }
         claim->predicate = predicate;
@@ -5945,14 +5979,14 @@ static TyPredicate const* compute_signature_predicate(Checker* me, Signature* si
         // asks `!signature.resolvedReturnType || boolean`. A function expression's is resolved by its first check with a
         // contextual signature, which tttt leaves for later outside inference, so it's asked for now)
         Ty const* known = nullptr;
-        if (!claim->predicate && sig_res(sig)->param_count) {
+        if (!claim->predicate && sig_res(me, sig)->param_count) {
             known = sig->ret_state == LAZY_STATE_DONE ? sig->ret : ty_function_return_known(me, sig->function);
             if (!known && ty_function_assigned_contextual_signature(me, sig->function) &&
                 !ty_function_return_in_flight(me, sig->function)) {
                 known = ty_function_return_type(me, sig->function);
             }
         }
-        if (!claim->predicate && sig_res(sig)->param_count && (!known || (known->flags & TYF_BOOLEAN))) {
+        if (!claim->predicate && sig_res(me, sig)->param_count && (!known || (known->flags & TYF_BOOLEAN))) {
             claim->predicate = ty_infer_type_predicate(me, sig->function);
         }
     }
@@ -5973,9 +6007,16 @@ static TyPredicate const* publish_signature_predicate(Signature* sig, TyPredicat
     return predicate;
 }
 
+static TyPredicate const* signature_predicate_slow(Checker* me, Signature* sig);
+
 TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
     if (__atomic_load_n(&sig->predicate_done, __ATOMIC_ACQUIRE)) return sig->predicate;
+    return signature_predicate_slow(me, sig);
+}
+
+// (Out of line: the done case above is what nearly every call is)
+static __attribute__((noinline)) TyPredicate const* signature_predicate_slow(Checker* me, Signature* sig) {
     Claim* in_flight = ty_claim_find(me, CLAIM_PREDICATE, sig, 0);
     if (in_flight) {
         PredicateClaim* claim = c_container_of(in_flight, PredicateClaim, claim);
@@ -5983,7 +6024,7 @@ TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) 
             // tsc's getTypePredicateOfSignature has no guard: asked again while its type is lowered, it lowers it
             // again, which is where an alias in the middle of resolving finds itself (TS2456). Once
             claim->lowering = false;
-            ty_from_node(me, &sig->function->predicate->type, predicate_ctx(sig));
+            ty_from_node(me, &sig->function->predicate->type, predicate_ctx(me, sig));
         }
         return claim->predicate;
     }
@@ -5996,8 +6037,8 @@ TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) 
 }
 
 // Declared to return `never` (an inferred never doesn't count for control flow)
-bool signature_declared_never(Signature const* sig) {
-    while (sig_target(sig)) sig = sig_target(sig);
+bool signature_declared_never(Checker* me, Signature const* sig) {
+    while (sig_target(me, sig)) sig = sig_target(me, sig);
     return sig->function && sig->function->ret_explicit && !sig->function->predicate && sig->function->ret.tag == TYPE_NEVER;
 }
 
@@ -6095,8 +6136,7 @@ Ty const* ty_object_literal_alternative(
             Prop* prop = prop_new_declared(me);
             prop->name = props[i].name;
             prop->flags = props[i].flags;
-            prop->type = props[i].type;
-            prop->type_state = props[i].type ? LAZY_STATE_DONE : LAZY_STATE_NOT_STARTED;
+            if (props[i].type) prop_type_init(prop, props[i].type);
             prop->decl->function = props[i].accessor;
             if (props[i].setter) prop_decl_rare_mut(me, prop->decl)->setter = props[i].setter;
             prop->decl->name_span = props[i].name_span;

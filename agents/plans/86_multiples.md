@@ -1434,6 +1434,42 @@ in parallel only where the file sets are disjoint):
   - **P1, members.c** (members, raw, unexpanded, equivalent base, prop types and write types, signature resolution
     and return and predicate, param constraint, default and circularity, mapped templates and MappedInfo copies, class
     base variable, Members.rare, ty_function_type_mentions()). One worker, the biggest share, ~2 sessions.
+    **P1 progress (wt-s1).** Done, as shared words with the default path's byte next to each:
+    - **Prop types**: `Prop.type` (a Ty, NONE for null) with `type_flight`. prop_type()'s re-entry and cycle answers
+      are as before, on SW_LOOK_MINE. Peeks go through prop_type_peek() (sw_peek) or prop_type_known() (published
+      only, for the fingerprint oracle and fresh props). prop_copy_into() copies the known value, and a copy of one in
+      flight here stays in flight (sw_copy_in_flight()), as the copied state byte did. **write_type_known is gone**: a
+      KEY_PROP_WRITE_TYPE entry's presence is it (intern_has(), checker.c). TSan B for Prop is removed.
+    - **Signature resolution**: `Signature.res` (a SigResolved) with `res_flight`. The record is filled privately and
+      published once, complete. While it is in flight, this worker's re-entries find it on Checker.sig_resolving (a
+      stack of frames) through sig_res()'s and signature_resolve()'s slow paths. ty_quick_expr_type() and
+      applies_to_signature() (S1's two partial-record re-entries) still see their worker's partial record and never
+      another's. sig_resolved_mut() is gone: an instantiation of its own type parameters loses them inside its
+      resolution, and ty_union_signature() and the decorator mutator build a new record. A copy of a signature in
+      flight here gets a snapshot record, published as resolved (before, the copy's state stayed in flight forever:
+      the one semantic difference, no oracle shows it). sig_res(), sig_target() and sig_mapper() take `me`.
+    - Helpers in ty.h: sw_look_fast()/sw_claim_fast()/sw_finish_fast(), sw_look/claim/finish with the default path
+      inline (out of line they cost ~1% of drizzle), and sw_copy_in_flight() in overlay.c.
+    - Gates (K12 T12 with the flag unless said): the default path is byte-identical (suite; drizzle, zod, effect, nest
+      and excalidraw at K1 and the defaults); the 20-run tables are 20/20 on drizzle, zod, effect, excalidraw and nest;
+      seeds 100/100 on effect and drizzle; recheck 0 files differ on drizzle. Counters per run (published / adopted /
+      poisoned / shadowed): drizzle 534k / 426k / 0.9k / 0, effect 503k / 260k / 20k / 0, zod 398k / 245k / 6.7k / 0,
+      excalidraw 136k / 88k / 2.9k / 2 in 20 runs, nest 13k / 7.7k / 60 / 1 in 20 runs. The adoptions are 12 workers
+      racing on the same lib members at the start.
+    - **Cost**: callgrind K1 default path against 2732ae1d3: drizzle +0.45%, zod +0.68%, nest +0.09%. That is an
+      acquire load plus the shadow-byte test per read: gcc doesn't merge repeated atomic loads in one function as it
+      did the plain loads. The record is hoisted into locals at ~60 sites, the slow paths are out of line, and the
+      default path is inline. prop_type_slow's +17 instructions a call (480k calls on drizzle) are the claim and
+      finish word pointers kept live across the computation (spilled around its calls) and the graph test made three
+      times; the checks are ordered cheapest first. The coordinator accepted this for the P steps, with the recovery at
+      step D: (1) the default-path state bytes (type_flight, res_flight and the others) go once the plain path is
+      retired, and (2) the per-read shadow test can be replaced by the design's alternative (a shadowed worker ends its
+      file at once and a fresh worker rechecks it) if the natural shadow count stays near zero. So far it is 0 on
+      drizzle, effect and zod, 2 on excalidraw and 1 on nest in 20 runs each.
+    - Fingerprint: divergence (2), method property types (effect Match.ts tagStartsWith, excalidraw App.tsx clearHover,
+      drizzle select.ts createIterator, dialect.ts mapToDriverValue), persists. It isn't prop_type()'s word: it comes
+      through ty_function_type_mentions()'s instantiation identity, a later group. The fingerprint build segfaulted on
+      effect in graph_debug's describe() of KEY reference args (fixed on ai-main by 04c1f100b).
   - **P2, checker.c + lower.c + function.c + instantiate.c** (reduced, cond branches, declared types, reference args,
     implied constraints, function returns, ty_alloc and the directory's chunk slots (lazy_type.c's lazy_slots_*),
     order keys, literal twins: TSan C). ~1-2 sessions.

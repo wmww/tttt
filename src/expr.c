@@ -961,8 +961,9 @@ static void instantiation_scan_type(Checker* checker, InstantiationScan* scan, T
 
 // The first type argument that doesn't satisfy its constraint in `sig` (tsc's checkTypeArguments with reportErrors)
 static bool check_type_argument_constraints(Checker* checker, GenericParamsExpr const* me, Signature const* sig, ErrorCtx* errs) {
-    for (u32 i = 0; i < sig_res(sig)->type_params.len && (isize_t)i < vec_spanned_type_size(&my params); i++) {
-        Ty const* constraint = ty_type_argument_constraint(checker, sig_res(sig)->type_params, &my params, i);
+    SigResolved const* sig_r = sig_res(checker, sig);
+    for (u32 i = 0; i < sig_r->type_params.len && (isize_t)i < vec_spanned_type_size(&my params); i++) {
+        Ty const* constraint = ty_type_argument_constraint(checker, sig_r->type_params, &my params, i);
         if (!constraint) continue;
         SpannedType const* arg = vec_spanned_type_at(&my params, i);
         // (Explained like any unassignable pair: tsc's checkTypeArgumentConstraints -> checkTypeAssignableTo, one run)
@@ -992,12 +993,12 @@ static void instantiation_scan_part(Checker* checker, InstantiationScan* scan, T
         for (u32 i = 0; i < members->call_count + members->construct_count; i++) {
             Signature const* sig = i < members->call_count ? members->call[i] : members->construct[i - members->call_count];
             scan->has_signatures = true;
-            signature_resolve(checker, sig);
+            SigResolved const* sig_rs = signature_resolve(checker, sig);
             u32 min = 0;
-            for (u32 j = 0; j < sig_res(sig)->type_params.len; j++) {
-                if (!ty_param_default(checker, sig_res(sig)->type_params.data[j])) min = j + 1;
+            for (u32 j = 0; j < sig_rs->type_params.len; j++) {
+                if (!ty_param_default(checker, sig_rs->type_params.data[j])) min = j + 1;
             }
-            if (sig_res(sig)->type_params.len && scan->written >= min && scan->written <= sig_res(sig)->type_params.len) {
+            if (sig_rs->type_params.len && scan->written >= min && scan->written <= sig_rs->type_params.len) {
                 scan->has_applicable = true;
                 if (scan->expr) check_type_argument_constraints(checker, scan->expr, sig, scan->errs);
             }

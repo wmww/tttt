@@ -1702,8 +1702,8 @@ static Ty const* parameter_type(Walk* me, FunctionImpl const* fn, FunctionArg co
     // (Resolved: a function with a written return type may not have needed its parameters yet)
     Signature const* sig = ty_function_signature(my checker, fn);
     if (sig) signature_resolve(my checker, sig);
-    for (u32 i = 0; sig && i < sig_res(sig)->param_count; i++) {
-        if (sig_res(sig)->params[i].decl == arg) return ty_sig_param_symbol_type(my checker, &sig_res(sig)->params[i]);
+    for (u32 i = 0; sig && i < sig_res(my checker, sig)->param_count; i++) {
+        if (sig_res(my checker, sig)->params[i].decl == arg) return ty_sig_param_symbol_type(my checker, &sig_res(my checker, sig)->params[i]);
     }
     return nullptr;
 }
@@ -3807,8 +3807,8 @@ static void w_return(Walk* me, FunctionImpl const* fn, bool getter_pair) {
     TyDisplayParams outer_params = my return_params;
     bool outer_in_return = my in_return;
     if (own) {
-        signature_resolve(my checker, own);
-        my return_params = (TyDisplayParams){ .params = sig_res(own)->params, .count = sig_res(own)->param_count, .function = fn };
+        SigResolved const* own_res = signature_resolve(my checker, own);
+        my return_params = (TyDisplayParams){ .params = own_res->params, .count = own_res->param_count, .function = fn };
         my in_return = true;
     }
     serialize_return(me, fn, pseudo);
@@ -3829,7 +3829,7 @@ static void w_signature(Walk* me, FunctionImpl const* fn, bool private_member) {
     // CreateTypeParametersOfSignatureDeclaration of the FullSignature, so the whole signature is printed)
     if (my file->is_js && generic_empty(&fn->generic) && fn->rare && function_impl_rare(fn)->jsdoc_signature_type) {
         Signature const* sig = ty_function_signature(my checker, fn);
-        if (sig && sig_res(sig)->type_params.len) {
+        if (sig && sig_res(my checker, sig)->type_params.len) {
             // (Its type parameter list, cut from the printed signature: the parameters are the function's own)
             SINKS_OFF;
             cstr printed = cstr_init();

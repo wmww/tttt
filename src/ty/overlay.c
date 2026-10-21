@@ -213,6 +213,11 @@ SwLook sw_look(Checker* me, SharedWord const* w, uint8_t const* state, uintptr_t
     return SW_LOOK_COMPUTE;
 }
 
+void sw_copy_in_flight(Checker* me, SharedWord* to, uint8_t* to_state) {
+    if (!my graph) *to_state = LAZY_STATE_IN_FLIGHT;
+    else overlay_put(me, (uintptr_t)to, SW_EMPTY);
+}
+
 uint64_t sw_claim(Checker* me, SharedWord* w, uint8_t* state) {
     if (!my graph) *state = LAZY_STATE_IN_FLIGHT;
     else {

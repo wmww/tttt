@@ -652,14 +652,14 @@ extern PropDecl const ty_prop_decl_value_name;
 struct Prop {
     Atom const* name;
     u32 flags;
-    uint8_t type_state; // LazyState
+    // Without --shared-graph: NOT_STARTED, or IN_FLIGHT while prop_type() computes `type` (the shared word's default-path
+    // byte, overlay.h)
+    uint8_t type_flight;
     // Its declaration can't mention `this` (tsc's isThisless*): instantiating only `this` leaves it as it is
     bool thisless : 1;
     // A property of a mapped type: the (resolved) mapped type is in the checker's links (KEY_PROP_MAPPED_TYPE), for
     // TS2615, see prop_type()
     bool mapped : 1;
-    // prop_write_type() is known: in the checker's links (KEY_PROP_WRITE_TYPE), null there for none
-    bool write_type_known : 1;
     // An intersection's property several of its members have (tsc's synthetic property): what they are is in the
     // checker's links, see ty_synthetic_prop_parts()
     bool synthetic : 1;
@@ -668,11 +668,22 @@ struct Prop {
     Symbol const* parent; // the declared type it was declared in, may be null
     Prop const* target;
     TyMapper const* mapper;
-    Ty const* type;
+    // Its type, a shared word (plan 86 stage 4f): read it with prop_type() (computes it), prop_type_known() (what is
+    // published, a done-ness peek), set a fresh property's with prop_type_init()
+    SharedWord type;
     PropDecl* decl; // Never null (ty_prop_decl_none)
 };
 // (Millions of instantiated ones: zod's are 86 MB at 80 bytes)
 static_assert(sizeof(Prop) == 56);
+// The type as published, null if it isn't (not computed, in flight, or poisoned with --shared-graph)
+static inline Ty const* prop_type_known(Prop const* prop) {
+    uintptr_t v = sw_load(&prop->type);
+    return v > SW_POISON ? (Ty const*)SW_PTR(v) : nullptr;
+}
+// A property being made, before anyone else can see it: its type is `type`, known (prop_type() doesn't compute it)
+static inline void prop_type_init(Prop* prop, Ty const* type) {
+    __atomic_store_n(&prop->type.v, SW_VAL(type), __ATOMIC_RELAXED);
+}
 
 typedef enum SignatureFlags {
     SIGNATURE_CONSTRUCT = 1 << 0,
@@ -707,11 +718,10 @@ typedef struct TyPredicate {
     Ty const* type; // Null: `asserts x`
 } TyPredicate;
 
-// A signature's resolved parameters (tsc's resolved signature fields), one record behind Signature.res: the step
-// towards a write-once shared word (plan 86 stage 4f, S1). signature_resolve_slow() allocates it when it claims the
-// signature and fills it in place while in flight (a re-entry, a cycle, sees what is resolved so far, as when these were
-// Signature's own fields); once the signature is done nothing writes it, but for a fresh, unpublished signature's
-// maker (sig_resolved_mut())
+// A signature's resolved parameters (tsc's resolved signature fields), one record behind Signature.res, a shared word
+// (plan 86 stage 4f). signature_resolve_slow() fills it privately and publishes it once, complete. While it is in flight
+// the worker's own re-entries (a cycle) see what is resolved so far: the record of its frame on Checker.sig_resolving,
+// found by sig_res()'s slow path. Immutable once it is the word's value
 struct SigResolved {
     TyList type_params;
     SigParam const* params;
@@ -728,8 +738,9 @@ static_assert(sizeof(SigResolved) == 56);
 
 struct Signature {
     u32 flags;
-    // Resolved lazily by signature_resolve()
-    uint8_t state; // LazyState
+    // Without --shared-graph: NOT_STARTED, or IN_FLIGHT while signature_resolve() fills `res` (the word's default-path
+    // byte, overlay.h)
+    uint8_t res_flight;
     // The return type is lazier than the rest, use signature_return_type(): it's often inferred from a function body
     // that is in the middle of being checked
     uint8_t ret_state; // LazyState
@@ -760,10 +771,10 @@ struct Signature {
     // writes them after it is made
     Signature const* target;
     TyMapper const* mapper;
-    // What signature_resolve() made of it, &sig_resolved_none before (a signature made resolved has its own from the
-    // start; every maker sets it). Read it through signature_resolve(), or sig_res() where the signature is known resolved
-    // or the zeros of an unresolved one are what the reader wants
-    SigResolved const* res;
+    // What signature_resolve() made of it (a SigResolved const*), a shared word: empty before (a signature made resolved
+    // has its record from the start, sig_res_init()). Read it through signature_resolve(), or sig_res() where the
+    // signature is known resolved or the zeros of an unresolved one are what the reader wants
+    SharedWord res;
     Ty const* ret;
     TyPredicate const* predicate; // Use signature_predicate()
 };
@@ -1343,6 +1354,8 @@ struct Checker {
     // takes the slow path, Overlay first, until its file ends)
     struct Overlay* overlay;
     bool graph_shadowed;
+    // The signature_resolve() calls in flight in this worker, innermost first (members.c): their records so far
+    struct SigResolving* sig_resolving;
     u64 deep_cuts; // Relations cut short by deep nesting (a taint event, TTTT_GRAPH_STATS)
     bool relation_deep_seen; // The relation in progress went through a deep-nesting cut (relate.c CACHE_DEEP)
     u64 relation_pairs; // Pairs recursive_related() computed (TTTT_GRAPH_STATS: plan 86 4e's relation sharing)
@@ -1406,6 +1419,41 @@ struct Checker {
 static inline uintptr_t sw_get(Checker const* me, SharedWord const* w) {
     uintptr_t v = sw_load(w);
     return __builtin_expect(v > SW_POISON && !my graph_shadowed, 1) ? v : SW_EMPTY;
+}
+// A done-ness peek (sw_peek(): no event but for its own private value): its type if this worker knows it (published, or its own private value), else null
+static inline Ty const* prop_type_peek(Checker* me, Prop const* prop) {
+    uintptr_t v = me->graph ? sw_peek(me, &prop->type) : __atomic_load_n(&prop->type.v, __ATOMIC_RELAXED);
+    return v ? (Ty const*)SW_PTR(v) : nullptr;
+}
+// sw_look(), sw_claim() and sw_finish() with the default path (no graph: the word and its state byte) inline: they are
+// what every computation of a hot kind pays (a property type, a signature), ~1% of drizzle's instructions out of line
+static inline SwLook sw_look_fast(Checker* me, SharedWord const* w, uint8_t const* state, uintptr_t* out) {
+    if (__builtin_expect(my graph != nullptr, 0)) return sw_look(me, w, state, out);
+    uintptr_t v = __atomic_load_n(&w->v, __ATOMIC_RELAXED);
+    if (v) {
+        *out = v;
+        return SW_LOOK_DONE;
+    }
+    if (*state == LAZY_STATE_IN_FLIGHT) {
+        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+        return SW_LOOK_MINE;
+    }
+    return SW_LOOK_COMPUTE;
+}
+static inline uint64_t sw_claim_fast(Checker* me, SharedWord* w, uint8_t* state) {
+    if (__builtin_expect(my graph != nullptr, 0)) return sw_claim(me, w, state);
+    *state = LAZY_STATE_IN_FLIGHT;
+#ifdef TTTT_GRAPH_FINGERPRINT
+    return graph_taint_now; // (The oracle's SW_FP() compares it)
+#else
+    return 0; // (Unused without a graph: sw_finish() publishes whatever the taint, SW_CLEAN() is true)
+#endif
+}
+static inline uintptr_t sw_finish_fast(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value, uint64_t taint) {
+    if (__builtin_expect(my graph != nullptr, 0)) return sw_finish(me, w, state, value, taint);
+    __atomic_store_n(&w->v, value, __ATOMIC_RELEASE);
+    *state = LAZY_STATE_NOT_STARTED;
+    return value;
 }
 bool lazy_wait_slow(Checker* me, void* field, size_t size); // (graph.c) false: break the cycle, don't wait
 bool lazy_claim_slow(Checker* me, void* field, size_t size);
@@ -1828,34 +1876,67 @@ Ty const* ty_non_augmenting_base(Checker* me, Ty const* ty);
 // (tsc's getBaseTypeVariableOfClass). Null for any other class
 Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol);
 extern SigResolved const sig_resolved_none; // An unresolved signature's: zeros
+// A signature_resolve() in flight in this worker: its record so far (Checker.sig_resolving, innermost first)
+typedef struct SigResolving {
+    Signature const* sig;
+    SigResolved const* res;
+    struct SigResolving* outer;
+} SigResolving;
 SigResolved const* signature_resolve_slow(Checker* me, Signature const* sig);
+SigResolved const* sig_res_slow(Checker* me, Signature const* sig);
 // Resolves the signature and returns its record: in flight here (a cycle), what is resolved so far
-// (Resolved ones inline: the done test is what nearly every call is)
+// (Resolved ones inline: the done test is what nearly every call is. A record is never NONE)
 static inline SigResolved const* signature_resolve(Checker* me, Signature const* sig) {
-    if (__builtin_expect(LAZY_LOAD(sig->state) == LAZY_STATE_DONE, 1)) return sig->res;
+    uintptr_t v = sw_load(&sig->res);
+    if (__builtin_expect(v > SW_NONE && !my graph_shadowed, 1)) return (SigResolved const*)v;
     return signature_resolve_slow(me, sig);
 }
-// The record as it is, without resolving: an unresolved signature's is zeros (sig_resolved_none)
-static inline SigResolved const* sig_res(Signature const* sig) {
-    return sig->res;
+// The record as this worker knows it, without resolving: in flight here what is resolved so far, an unresolved
+// signature's zeros (sig_resolved_none)
+static inline SigResolved const* sig_res(Checker* me, Signature const* sig) {
+    uintptr_t v = sw_load(&sig->res);
+    if (__builtin_expect(v > SW_NONE && !my graph_shadowed, 1)) return (SigResolved const*)v;
+    return sig_res_slow(me, sig);
 }
 // Its target and mapper as of now: as made until resolution starts, then the record's (see SigResolved.target)
-static inline Signature const* sig_target(Signature const* sig) {
-    return sig->res != &sig_resolved_none ? sig->res->target : sig->target;
+// (Walked in loops, often on unresolved signatures: without a graph one not in flight is answered inline)
+static inline Signature const* sig_target(Checker* me, Signature const* sig) {
+    uintptr_t v = sw_load(&sig->res);
+    if (__builtin_expect(v > SW_NONE && !my graph_shadowed, 1)) return ((SigResolved const*)v)->target;
+    if (!my graph && sig->res_flight != LAZY_STATE_IN_FLIGHT) return sig->target;
+    SigResolved const* r = sig_res_slow(me, sig);
+    return r != &sig_resolved_none ? r->target : sig->target;
 }
-static inline TyMapper const* sig_mapper(Signature const* sig) {
-    return sig->res != &sig_resolved_none ? sig->res->mapper : sig->mapper;
+static inline TyMapper const* sig_mapper(Checker* me, Signature const* sig) {
+    uintptr_t v = sw_load(&sig->res);
+    if (__builtin_expect(v > SW_NONE && !my graph_shadowed, 1)) return ((SigResolved const*)v)->mapper;
+    if (!my graph && sig->res_flight != LAZY_STATE_IN_FLIGHT) return sig->mapper;
+    SigResolved const* r = sig_res_slow(me, sig);
+    return r != &sig_resolved_none ? r->mapper : sig->mapper;
 }
-// After `*copy = *original`: its state as LAZY_COPIED() leaves it, and a record of its own if the original's is still
-// being written (in flight here: the copy keeps what is resolved so far, as when it copied the fields; in flight
-// elsewhere: the copy resolves itself)
-void signature_copied(Checker* me, Signature* copy);
-// A record for a signature made resolved (`.state = LAZY_STATE_DONE, .res = sig_resolved_new(me, ...)`)
+// The record as published, else sig_resolved_none (the fingerprint oracle's, which has no worker)
+static inline SigResolved const* sig_res_published(Signature const* sig) {
+    uintptr_t v = sw_load(&sig->res);
+    return v > SW_NONE ? (SigResolved const*)v : &sig_resolved_none;
+}
+// The mapper as published (the fingerprint oracle's, which has no worker): the record's, else as made
+static inline TyMapper const* sig_mapper_published(Signature const* sig) {
+    uintptr_t v = sw_load(&sig->res);
+    return v > SW_NONE ? ((SigResolved const*)v)->mapper : sig->mapper;
+}
+// Resolved, as this worker knows it (published, or its own private record; not in flight here): a done-ness peek
+static inline bool sig_resolved(Checker* me, Signature const* sig) {
+    uintptr_t v = sw_load(&sig->res);
+    if (__builtin_expect(v > SW_NONE && !my graph_shadowed, 1)) return true;
+    return my graph && sw_peek(me, &sig->res) != SW_EMPTY;
+}
+// After `*copy = *original`: a copy of a resolved signature shares its record; one in flight here gets a snapshot of
+// what is resolved so far (as when it copied the fields); an unresolved one, or one in flight elsewhere, resolves itself
+void signature_copied(Checker* me, Signature* copy, Signature const* original);
+// A record for a signature made resolved, before anyone else can see it
 SigResolved const* sig_resolved_new(Checker* me, SigResolved init);
-// The record of a fresh signature its maker resolved itself (so the record is its own, not a copy's) and changes before
-// anyone else sees it
-static inline SigResolved* sig_resolved_mut(Signature* sig) {
-    return (SigResolved*)sig->res;
+static inline void sig_res_init(Signature* sig, SigResolved const* res) {
+    __atomic_store_n(&sig->res.v, (uintptr_t)res, __ATOMIC_RELAXED);
 }
 Ty const* signature_return_type(Checker* me, Signature const* sig);
 bool ty_signature_return_in_flight(Checker* me, Signature const* sig); // Its return type is being inferred up the stack
@@ -1863,16 +1944,16 @@ bool ty_signature_return_in_flight(Checker* me, Signature const* sig); // Its re
 // infers it again (tsc's isResolvingReturnTypeOfSignature, findResolutionCycleStartIndex)
 bool ty_signature_return_resolving(Checker* me, Signature const* sig);
 TyPredicate const* signature_predicate(Checker* me, Signature const* sig);
-bool signature_declared_never(Signature const* sig);
+bool signature_declared_never(Checker* me, Signature const* sig);
 TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* function); // flow.c, null if none
 Ty const* ty_tuple_as_array(Checker* me, Ty const* tuple);
 // The type of parameter i (a rest parameter stands for every position from its own on), null if there's none
 Ty const* ty_signature_param_type_at(Checker* me, Signature const* sig, u32 i);
 Ty const* ty_rest_element_type(Checker* me, Ty const* rest); // The element type of a rest parameter's type
 // How many parameters a signature has, a rest tuple of fixed length counted as its elements (tsc's getParameterCount)
-u32 ty_signature_param_count(Signature const* sig);
+u32 ty_signature_param_count(Checker* me, Signature const* sig);
 // Takes any number of arguments: a rest parameter that isn't a tuple of fixed length (tsc's hasEffectiveRestParameter)
-bool ty_signature_has_rest(Signature const* sig);
+bool ty_signature_has_rest(Checker* me, Signature const* sig);
 // The signature a function expression gets its parameter types from, given its contextual type, null if none
 Signature const* ty_function_contextual_signature(Checker* me, FunctionImpl const* function, Ty const* contextual);
 Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow); // tsc's getQuickTypeOfExpression, null if none // The array a tuple also is

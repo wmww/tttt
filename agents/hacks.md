@@ -423,12 +423,17 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   mappedTypeRelationships and zod's SortItem<output<T>> (generic keys) against `{ [K in keyof A | keyof B]: (A & B)[K] }`.
 
 ## Type core (`src/ty/`)
-- `--shared-graph` on threads relies on x86's store and load ordering in two places: ty_members()'s and prop_type()'s
-  done tests read the state with a plain load (LAZY_FAST_LOAD(), an acquire only in a ThreadSanitizer build), while
-  the writer publishes the value and then the state with a release store (LAZY_DONE()). An acquire there cost the
-  default path ~1% of its instructions (it stops the compiler combining the loads around it). Formally a data race; on
-  a weakly ordered CPU those two need the acquire back. Plan 86 stage 4f replaces both with one acquire load of a
-  write-once value word (measured +0.1% over the plain load on drizzle/zod, 2026-10-22).
+- `--shared-graph` on threads relies on x86's store and load ordering in one place: ty_members()'s done test reads
+  the state with a plain load (LAZY_FAST_LOAD(), an acquire only in a ThreadSanitizer build), while the writer
+  publishes the value and then the state with a release store (LAZY_DONE()). Formally a data race; on a weakly
+  ordered CPU it needs the acquire back. Plan 86 stage 4f replaces it with one acquire load of a write-once value word,
+  as P1 already did for prop_type() (Prop.type) and the signature words.
+- Plan 86 4f's converted words keep a default-path state byte next to each (Prop.type_flight, Signature.res_flight,
+  ret_flight, predicate_flight): without --shared-graph in flight is that byte, with it the worker's Overlay. Step D
+  deletes them with the plain path. sw_look_fast() & co (ty.h) inline the default path of overlay.c's functions.
+- signature_copied() (members.c): a copy of a signature whose resolution is in flight here gets a snapshot record
+  published as resolved; before the words the copy's state stayed in flight forever with the snapshot, so a done-ness
+  peek of the copy now says resolved. No oracle shows it.
 - `--shared-graph` (ty/graph.c, plan 86 stage 4d) runs its checkers on threads but isn't deterministic yet (plan 86's
   4d status). Identities go out at creation (intern_set()), memo kinds only at a share's end (graph_publish()), so
   what a checker finds of another's depends on the schedule. A side table entry that describes a shared object (a

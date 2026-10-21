@@ -521,6 +521,25 @@ void const* intern_get(InternTable const* table, u64 const* words, u32 count) {
 #endif
 }
 
+bool intern_has(InternTable const* table, u64 const* words, u32 count, void const** value) {
+    DEBUG_OWN_TABLE(table);
+    u64 hash = hash_words(words, count);
+    InternEntry* entry = intern_find(table, hash, words, count);
+    if (entry && entry->hash) {
+#ifdef TTTT_TAINT
+        taint_intern_hit(entry->block);
+        *value = entry->block[0];
+#else
+        *value = intern_hit(table, entry->block)[0];
+#endif
+        return true;
+    }
+    void const** shared = table->shared ? intern_shared_find(table, hash, words, count) : nullptr;
+    if (!shared) return false;
+    *value = __atomic_load_n(shared, __ATOMIC_ACQUIRE);
+    return true;
+}
+
 static u64 link_key(u32 kind, void const* subject) {
     // (User space addresses are below 2^47)
     return (u64)(kind + 1) << 56 | (u64)(uintptr_t)subject;

@@ -332,7 +332,7 @@ static u64 fp_prop(Prop const* prop, u32 depth) {
         // (By its owner if it has one: whether its type is resolved yet by the time it is fingerprinted is history, and
         // the type is compared on its own, TK_PROP_TYPE)
         if (owner) h = M(h, owner);
-        else if (FP_LAZY_PARTS && prop->type_state == LAZY_STATE_DONE) h = M(h, fp_ty(prop->type));
+        else if (FP_LAZY_PARTS && prop_type_known(prop)) h = M(h, fp_ty(prop_type_known(prop)));
         else return 0;
     }
     return h;
@@ -348,7 +348,7 @@ static u64 fp_signature(Signature const* sig, u32 depth) {
     if (!sig->function && sig->target && depth < 32) h = M(h, fp_signature(sig->target, depth + 1));
     // (Resolving a generic one adds its own type parameters' clones to the mapper, clone_type_params(): not those)
     // (Its key is what it is made of: the resolved mapper (sig_mapper()) is only there once it is resolved)
-    TyMapper const* mapper = FP_LAZY_PARTS ? sig_mapper(sig) : sig->mapper;
+    TyMapper const* mapper = FP_LAZY_PARTS ? sig_mapper_published(sig) : sig->mapper;
     for (u32 i = 0; mapper && i < mapper->len; i++) {
         Ty const* target = mapper->targets[i];
         if (target->kind == TY_TYPE_PARAM && target->param.state->clone_mapper == mapper) continue;
@@ -362,7 +362,7 @@ static u64 fp_signature(Signature const* sig, u32 depth) {
         h = M(h, fp_ty(target));
     }
     if (!sig->function && !sig->target) {
-        SigResolved const* r = sig_res(sig);
+        SigResolved const* r = sig_res_published(sig);
         h = M(h, r->param_count | (u64)r->min_args << 32);
         h = fp_list(h, r->type_params);
         for (u32 i = 0; i < r->param_count; i++) {
