@@ -158,5 +158,7 @@ static inline struct Ty const* lazy_type_get(LazyType* me) {
 #ifdef TTTT_TAINT
     if (state && state->done) TAINT_READ(my tag == LAZY_TYPE_EXPR ? TK_LAZY_EXPR : TK_LAZY_DECL + my tag, me);
 #endif
-    return state && state->done ? lazy_memo_evaluated(state) : lazy_type_evaluate(me);
+    // (--shared-graph: a declaration whose evaluation was tainted is this worker's own, reading it is a taint event,
+    // lazy_type_evaluate_inner(); the bit is never set without a graph)
+    return state && state->done && !state->tainted ? lazy_memo_evaluated(state) : lazy_type_evaluate(me);
 }
