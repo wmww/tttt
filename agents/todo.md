@@ -25,7 +25,8 @@ economically. Its order:
 2. **Release criterion** (plan 89 section 3 item 4, restated in plan 90 section 3 item 2): full `scripts/oracles.py`
    plain and with the flag identical, seeded runs (`scripts/sharedgraph/seeds.sh`), 300 loaded drizzle + 100 effect
    runs, TSan zero groups at T4/T12, then **the human's laptop bench** (`scripts/bench.sh --runs 3 --bun PATH --tscrs
-   PATH`, with and without `TTTT_SHARED_GRAPH=1`) decides the flip and the defaults' policy (checkers per core,
+   PATH`, with and without `TTTT_SHARED_GRAPH=1`) decides the flip and the defaults' policy (**measured 2026-10-21**, measurements.md "at 5f2cd699": the flag ties or
+   loses wall at K12 except drizzle/excalidraw, vue 2x slower with it, vscode +1.3 GB) (checkers per core,
    `TTTT_GRAPH_BUDGET_MB`, memory up to ~3x bun for a clear win).
 3. **After the flip**: delete the plain path (its state bytes, <0.1%), re-measure `test/instrcount.txt`, rewrite
    vision.md's perf bullet.

@@ -30,6 +30,43 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## The 12-core box at 5f2cd699: the flag's laptop bench (2026-10-21, run by an agent on the human's laptop)
+Plan 90 section 3 item 2's ask. Same machine as below (on AC, `balanced`), pgo/tttt at 5f2cd699 (plan 86 stage 4f
+done). `scripts/bench.sh --runs 3 --checkers 24 --bun bun-canary --tscrs tsc-rs-0.7.0`, run twice back to back: plain,
+then with `TTTT_SHARED_GRAPH=1` ("flag"; it also reran bun/tsc-rs/tsgo, which agree with the first pass within
+noise). bun canary `1.4.3-canary.20261019.1` (the same as below). Best wall s / CPU s (median run) / peak MB:
+
+| corpus | tttt K12 | tttt K12 flag | K24 | K24 flag | K1 | K1 flag | bun | bun single | tsc-rs --fast | tsgo |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TypeScript6 | 0.22 / 1.1 / 438 | 0.23 / 1.2 / 403 | 0.24 / 1.5 / 500 | 0.25 / 1.5 / 431 | 0.53 / 0.5 / 228 | 0.54 / 0.5 / 230 | 0.29 / 1.6 / 282 | 1.01 / 1.2 / 163 | 0.51 / 1.4 / 328 | 0.61 / 3.1 / 498 |
+| type-fest | 0.23 / 1.3 / 680 | 0.31 / 1.7 / 761 | 0.22 / 2.0 / 863 | 0.31 / 2.4 / 791 | 0.72 / 0.7 / 432 | 0.77 / 0.8 / 567 | 0.98 / 6.0 / 980 | 3.62 / 4.1 / 783 | 1.78 / 5.1 / 3287 | 4.46 / 19.6 / 5473 |
+| valibot | 0.14 / 1.3 / 387 | 0.17 / 1.4 / 444 | 0.14 / 1.9 / 447 | 0.16 / 2.0 / 472 | 0.44 / 0.4 / 255 | 0.47 / 0.5 / 264 | 0.14 / 2.4 / 263 | 1.19 / 1.2 / 158 | 0.23 / 2.2 / 644 | 0.71 / 4.7 / 810 |
+| bulletproof-react | 0.13 / 0.4 / 277 | 0.11 / 0.4 / 282 | 0.10 / 1.1 / 493 | 0.09 / 0.8 / 396 | 0.18 / 0.2 / 145 | 0.18 / 0.2 / 149 | 0.18 / 0.9 / 241 | 0.35 / 0.3 / 153 | 0.27 / 0.7 / 306 | 0.43 / 2.5 / 448 |
+| nestjs-boilerplate | 0.08 / 0.4 / 265 | 0.08 / 0.5 / 274 | 0.09 / 0.6 / 349 | 0.08 / 0.6 / 355 | 0.18 / 0.2 / 131 | 0.17 / 0.2 / 133 | 0.06 / 0.6 / 195 | 0.27 / 0.3 / 117 | 0.12 / 0.6 / 240 | 0.12 / 1.2 / 258 |
+| webpack | 0.29 / 2.9 / 631 | 0.31 / 2.9 / 739 | 0.28 / 4.1 / 741 | 0.31 / 4.0 / 767 | 1.16 / 1.2 / 533 | 1.22 / 1.2 / 541 | 0.48 / 4.8 / 502 | 1.82 / 1.8 / 336 | 0.50 / 4.9 / 1209 | 1.18 / 7.6 / 1160 |
+| zod | 0.23 / 2.2 / 556 | 0.22 / 2.0 / 662 | 0.23 / 3.4 / 755 | 0.24 / 3.0 / 697 | 0.68 / 0.7 / 388 | 0.67 / 0.7 / 442 | 0.22 / 3.2 / 386 | 1.83 / 1.8 / 210 | 0.30 / 2.5 / 864 | 1.08 / 7.4 / 1340 |
+| xstate | 0.13 / 1.2 / 420 | 0.14 / 1.1 / 382 | 0.16 / 2.2 / 574 | 0.15 / 1.6 / 458 | 0.33 / 0.3 / 194 | 0.34 / 0.4 / 199 | 0.13 / 1.4 / 237 | 0.73 / 1.0 / 110 | 0.22 / 1.0 / 322 | 0.41 / 3.1 / 465 |
+| drizzle | 0.32 / 3.1 / 670 | 0.28 / 2.6 / 715 | 0.35 / 5.8 / 941 | 0.24 / 3.6 / 802 | 0.84 / 0.8 / 393 | 0.83 / 0.8 / 479 | 0.27 / 4.5 / 440 | 1.74 / 2.4 / 270 | 0.55 / 5.7 / 1684 | 1.42 / 8.7 / 1633 |
+| vue | 0.17 / 1.6 / 471 | 0.35 / 2.1 / 526 | 0.18 / 2.5 / 515 | 0.44 / 3.0 / 560 | 0.68 / 0.7 / 305 | 0.71 / 0.7 / 307 | 0.22 / 2.7 / 315 | 1.32 / 1.4 / 180 | 0.31 / 2.7 / 679 | 0.89 / 5.2 / 745 |
+| effect | 0.26 / 2.8 / 634 | 0.34 / 3.4 / 856 | 0.25 / 4.1 / 751 | 0.33 / 4.8 / 901 | 1.27 / 1.3 / 509 | 1.35 / 1.3 / 622 | 0.55 / 6.2 / 513 | 2.69 / 2.8 / 336 | 0.88 / 9.1 / 1580 | 1.41 / 11.1 / 1537 |
+| vscode | 2.45 / 27.4 / 1581 | 2.45 / 25.8 / 2924 | 2.03 / 36.7 / 1990 | 2.15 / 36.1 / 3012 | 12.44 / 12.5 / 1400 | 12.41 / 12.3 / 2400 | 1.74 / 36.4 / 2241 | 15.62 / 16.6 / 1664 | 3.20 / 33.5 / 6376 | 8.24 / 57.1 / 7889 |
+| excalidraw | 0.22 / 2.4 / 544 | 0.20 / 1.9 / 575 | 0.24 / 3.5 / 712 | 0.21 / 2.8 / 646 | 0.84 / 0.8 / 370 | 0.87 / 0.9 / 374 | 0.26 / 3.2 / 379 | 1.36 / 1.5 / 256 | 0.76 / 9.4 / 948 | 1.47 / 11.9 / 1830 |
+| tanstack-router | 0.20 / 1.6 / 455 | 0.22 / 1.8 / 512 | 0.22 / 2.7 / 618 | 0.22 / 2.3 / 576 | 0.61 / 0.6 / 309 | 0.65 / 0.6 / 317 | 0.24 / 3.3 / 367 | 1.14 / 1.2 / 187 | 0.48 / 2.4 / 525 | 1.21 / 6.9 / 892 |
+| TS6 -b | 0.58 / 2.9 / 539 | 0.59 / 3.0 / 548 | - | - | - | - | - | - | - | 1.38 / 7.5 / 562 |
+
+- **The flag does not win wall at the defaults.** K12: drizzle 0.32 -> 0.28 and excalidraw 0.22 -> 0.20 gain, vscode
+  ties (2.45), zod/xstate/tanstack/webpack/TypeScript6 tie within 0.02; it loses on **vue 0.17 -> 0.35 (2x, medians
+  0.17 / 0.37; K24 0.18 -> 0.44)**, type-fest 0.23 -> 0.31, effect 0.26 -> 0.34, valibot 0.14 -> 0.17. K1 is unchanged
+  on vue (0.68 / 0.71), so vue's loss is contention or waiting between workers, not extra work: uninvestigated.
+- At K24 the flag helps where K24 used to hurt: drizzle 0.35 -> 0.24 (CPU 5.8 -> 3.6), xstate CPU 2.2 -> 1.6,
+  excalidraw 3.5 -> 2.8 s CPU; vscode K24 2.03 plain / 2.15 flag (K24 now beats K12 on vscode in both).
+- **Memory**: vscode 1581 -> 2924 MB at K12 with the flag (1.3x bun's 2241, inside the ~3x budget), K1 1400 -> 2400;
+  effect 634 -> 856, type-fest 432 -> 567 at K1. Smaller corpora +5-20%.
+- K1 cost of the flag: +3-7% on type-fest, effect, tanstack, webpack; flat elsewhere (vscode 12.44 / 12.41).
+- **bun canary still has the best vscode wall** (1.74 against tttt's 2.45 K12 / 2.03 K24); at K12 plain tttt leads bun on 8 of
+  14, ties valibot/zod/xstate, loses nest (0.08 / 0.06), drizzle (0.32 / 0.27; the flag's K24 0.24 wins) and vscode. Single-threaded tttt is fastest everywhere (vscode 12.4 against bun 15.6 and tsc-rs 16.1).
+- Raw outputs were scratch (not kept); rerun the command above to reproduce.
+
 ## The 12-core box at efb91998 (2026-10-20, run by an agent on the human's laptop)
 AMD Ryzen AI 9 HX 370 (12 cores / 24 threads), on AC, `balanced` profile, GCC 16.2. Answers 2026-10-20's ask.
 **Costliest file first, A/B of the same pgo/tttt** (`TTTT_NO_COSTLIEST_FIRST=1`, 3 runs each at the default K12,
