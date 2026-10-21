@@ -141,6 +141,7 @@ static Ty const* narrow_type(FlowQuery* q, Ty const* type, Expr const* expr, boo
 static bool is_type_subset_of(Ty const* source, Ty const* target);
 
 static bool is_matching_reference(Checker* me, Expr const* source, Expr const* target);
+static bool query_matches(FlowQuery const* q, Expr const* target);
 static Expr const* reference_candidate(Expr const* expr);
 
 // Evolving arrays (tsc's EvolvingArrayType, TY_EVOLVING_ARRAY): what an auto-typed variable (`let x = []`, `let x;`
@@ -262,7 +263,7 @@ static bool type_at_array_mutation(FlowQuery* q, FlowNode const* flow, FlowType*
     } else {
         object = &node->binary_op->left.property->expr;
     }
-    if (!is_matching_reference(me, q->reference, reference_candidate(object))) return false;
+    if (!query_matches(q, reference_candidate(object))) return false;
     FlowType before = type_at_flow_node(q, flow->antecedent);
     Ty const* evolved = before.type;
     if (evolved->kind == TY_EVOLVING_ARRAY) {
@@ -734,6 +735,21 @@ static bool is_matching_reference(Checker* me, Expr const* source, Expr const* t
     }
 }
 
+// is_matching_reference(q->reference, target): an identifier reference's side is known (FlowQuery.identifier)
+static bool query_matches(FlowQuery const* q, Expr const* target) {
+    if (!q->identifier) return is_matching_reference(q->me, q->reference, target);
+    while (true) {
+        target = skip_reference_wrappers(target);
+        if (target->tag != EXPR_BINARY_OP) break;
+        // `(x = e)` and `(a, x)` match what x matches
+        BinaryOp op = target->binary_op->op;
+        if (op == BINARY_OP_EQUAL) target = &target->binary_op->left;
+        else if (op == BINARY_OP_COMMA) target = &target->binary_op->right;
+        else return false;
+    }
+    return target->tag == EXPR_IDENTIFIER && !target->identifier.keyword && q->symbol && target->identifier.target == q->symbol;
+}
+
 static bool symbol_matches_reference(Expr const* reference, Symbol const* symbol) {
     reference = skip_reference_wrappers(reference);
     return reference->tag == EXPR_IDENTIFIER && !reference->identifier.keyword && reference->identifier.target == symbol;
@@ -1183,7 +1199,7 @@ static bool assign_matches(FlowQuery* q, FlowAssign const* assign) {
         // (symbol_matches_reference(), worked out once per query)
         return assign->binding->tag == BINDING_IDENTIFIER && q->identifier && q->symbol == assign->binding->symbol;
     }
-    return assign->target && is_matching_reference(q->me, q->reference, assign->target);
+    return assign->target && query_matches(q, assign->target);
 }
 
 static bool assign_contains(FlowQuery* q, FlowAssign const* assign) {
@@ -1294,7 +1310,7 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
     // `for (const k in ref)` acts as a non-null on ref (tsc's getTypeAtFlowAssignment: getNonNullableTypeIfNeeded)
     if (assign->kind == FLOW_ASSIGN_DECLARATION && assign->for_each) {
         Expr const* object = &assign->for_each->iterable;
-        if (is_matching_reference(me, q->reference, object) || optional_chain_contains_reference(me, object, q->reference)) {
+        if (query_matches(q, object) || optional_chain_contains_reference(me, object, q->reference)) {
             FlowType before = type_at_flow_node(q, flow->antecedent);
             Ty const* type = final_array_type(me, before.type);
             type = ty_non_nullable_if_needed(me, type);
@@ -1955,7 +1971,7 @@ static Atom const* destructured_alias_name(FlowQuery* q, Expr const* expr) {
     InitializedBinding const* initialized = c_container_of(pattern->source, InitializedBinding, lazy_type);
     Expr const* init = initialized_binding_value(initialized);
     if (init->tag != EXPR_IDENTIFIER && init->tag != EXPR_PROPERTY) return nullptr;
-    if (!is_matching_reference(me, q->reference, init)) return nullptr;
+    if (!query_matches(q, init)) return nullptr;
     return checker_atom(me, cstr_sv(&item->source.string));
 }
 
@@ -1987,7 +2003,7 @@ static DiscriminantAccess discriminant_access(FlowQuery* q, Expr const* expr, Ty
     if (destructured) {
         return is_discriminant_property(me, type, destructured) ? (DiscriminantAccess){ nullptr, destructured } : none;
     }
-    if (expr->tag != EXPR_PROPERTY || !is_matching_reference(me, q->reference, &expr->property->expr)) return none;
+    if (expr->tag != EXPR_PROPERTY || !query_matches(q, &expr->property->expr)) return none;
     Atom const* name = access_name(me, expr->property);
     if (!name) return none;
     return is_discriminant_property(me, type, name) ? (DiscriminantAccess){ expr->property, name } : none;
@@ -2090,7 +2106,7 @@ static Ty const* narrow_prop_by_facts(FlowQuery* q, Ty const* prop_type, void co
 
 static Ty const* narrow_by_truthiness(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true) {
     Checker* me = q->me;
-    if (is_matching_reference(me, q->reference, expr)) {
+    if (query_matches(q, expr)) {
         return adjusted_type_with_facts(me, type, assume_true ? TF_TRUTHY : TF_FALSY);
     }
     if (compiler_options()->strict_null_checks && assume_true && optional_chain_contains_reference(me, expr, q->reference)) {
@@ -2106,7 +2122,7 @@ static Ty const* narrow_by_truthiness(FlowQuery* q, Ty const* type, Expr const* 
 
 static Ty const* narrow_by_optionality(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_present) {
     Checker* me = q->me;
-    if (is_matching_reference(me, q->reference, expr)) {
+    if (query_matches(q, expr)) {
         return adjusted_type_with_facts(me, type, assume_present ? TF_NE_UNDEFINED_OR_NULL : TF_EQ_UNDEFINED_OR_NULL);
     }
     DiscriminantAccess access = discriminant_access(q, expr, type);
@@ -2383,7 +2399,7 @@ static Ty const* narrow_by_typeof(FlowQuery* q, Ty const* type, Expr const* type
     if (op == BINARY_OP_NOT_EQUAL || op == BINARY_OP_TRIPLE_NOT_EQUAL) assume_true = !assume_true;
     Expr const* target = reference_candidate(&typeof_expr->unary_op->expr);
     csview name = cstr_sv(&literal->literal.string);
-    if (!is_matching_reference(me, q->reference, target)) {
+    if (!query_matches(q, target)) {
         if (compiler_options()->strict_null_checks && optional_chain_contains_reference(me, target, q->reference) &&
             assume_true == !csview_equals(name, "undefined")
         ) {
@@ -2495,7 +2511,7 @@ static Ty const* has_instance_predicate_type(Checker* me, Ty const* right_type, 
 static Ty const* narrow_by_instanceof(FlowQuery* q, Ty const* type, BinaryOpExpr const* binary, bool assume_true) {
     Checker* me = q->me;
     Expr const* left = reference_candidate(&binary->left);
-    if (!is_matching_reference(me, q->reference, left)) {
+    if (!query_matches(q, left)) {
         if (assume_true && compiler_options()->strict_null_checks && optional_chain_contains_reference(me, left, q->reference)) {
             return adjusted_type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
         }
@@ -2573,7 +2589,7 @@ static Ty const* narrow_by_in(FlowQuery* q, Ty const* type, BinaryOpExpr const* 
         Ty const* narrowed = narrow_missing_by_presence(q, type, target, name, assume_true);
         if (narrowed != type) return narrowed;
     }
-    if (!is_matching_reference(me, q->reference, target)) return type;
+    if (!query_matches(q, target)) return type;
     if (binary->left.tag == EXPR_PRIVATE_NAME) {
         // `#x in obj` says obj is an instance of the class that declares `#x` (its constructor for a static `#x`: tsc's
         // narrowTypeByPrivateIdentifierInInExpression)
@@ -2616,7 +2632,7 @@ static bool is_matching_constructor_reference(FlowQuery* q, Expr const* expr) {
     bool named = (access->form != PROPERTY_EXPR_BRACKET ||
         (access->index.tag == EXPR_LITERAL && access->index.literal.tag == VALUE_STRING)) &&
         access_name(me, access) == my atoms.constructor;
-    return named && is_matching_reference(me, q->reference, &access->expr);
+    return named && query_matches(q, &access->expr);
 }
 
 static bool is_constructed_by(Checker* me, Ty const* source, void const* arg) {
@@ -2675,8 +2691,8 @@ static Ty const* narrow_by_binary(FlowQuery* q, Ty const* type, Expr const* expr
             Expr const* right = reference_candidate(&binary->right);
             if (is_typeof_expr(left) && is_string_literal_expr(right)) return narrow_by_typeof(q, type, left, binary->op, right, assume_true);
             if (is_typeof_expr(right) && is_string_literal_expr(left)) return narrow_by_typeof(q, type, right, binary->op, left, assume_true);
-            if (is_matching_reference(me, q->reference, left)) return narrow_by_equality(q, type, binary->op, right, assume_true);
-            if (is_matching_reference(me, q->reference, right)) return narrow_by_equality(q, type, binary->op, left, assume_true);
+            if (query_matches(q, left)) return narrow_by_equality(q, type, binary->op, right, assume_true);
+            if (query_matches(q, right)) return narrow_by_equality(q, type, binary->op, left, assume_true);
             if (compiler_options()->strict_null_checks) {
                 if (optional_chain_contains_reference(me, left, q->reference)) {
                     type = narrow_by_optional_chain_containment(q, type, binary->op, right, assume_true);
@@ -2759,7 +2775,7 @@ static Ty const* narrow_by_predicate(FlowQuery* q, Ty const* type, TyPredicate c
     Expr const* argument = predicate_argument(predicate, call);
     if (!argument) return type;
     if (argument->tag == EXPR_SPREAD) return type;
-    if (is_matching_reference(me, q->reference, argument)) return narrowed_type(me, type, candidate, assume_true, false);
+    if (query_matches(q, argument)) return narrowed_type(me, type, candidate, assume_true, false);
     if (compiler_options()->strict_null_checks && optional_chain_contains_reference(me, argument, q->reference) &&
         (assume_true ? !has_type_facts(me, candidate, TF_EQ_UNDEFINED) : every_member_is_nullable(candidate))
     ) {
@@ -2777,7 +2793,7 @@ static Ty const* narrow_by_predicate(FlowQuery* q, Ty const* type, TyPredicate c
 static bool has_matching_argument(FlowQuery* q, CallExpr const* call) {
     Checker* me = q->me;
     for_each (i, vec_expr, &call->args) {
-        if (is_matching_reference(me, q->reference, i) || contains_matching_reference(me, q->reference, i) ||
+        if (query_matches(q, i) || contains_matching_reference(me, q->reference, i) ||
             optional_chain_contains_reference(me, i, q->reference)
         ) {
             return true;
@@ -2789,7 +2805,7 @@ static bool has_matching_argument(FlowQuery* q, CallExpr const* call) {
     // `expression.expression.kind === SyntaxKind.PropertyAccessExpression`)
     if (callee->tag != EXPR_PROPERTY || callee->property->form != PROPERTY_EXPR_DOT) return false;
     Expr const* object = &callee->property->expr;
-    return is_matching_reference(me, q->reference, object) || contains_matching_reference(me, q->reference, object);
+    return query_matches(q, object) || contains_matching_reference(me, q->reference, object);
 }
 
 static Ty const* narrow_by_call(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true) {
@@ -2879,7 +2895,7 @@ static bool is_constant_reference(Checker* me, Expr const* reference) {
 // `const ok = typeof x === "string"; if (ok) x`: the initializer of a const variable without a type annotation that
 // a condition consists of, if the reference can be narrowed through it (tsc inlines up to five levels)
 static Expr const* aliased_condition(FlowQuery* q, Expr const* condition) {
-    if (q->me->flow_inline_level >= 5 || is_matching_reference(q->me, q->reference, condition)) return nullptr;
+    if (q->me->flow_inline_level >= 5 || query_matches(q, condition)) return nullptr;
     Symbol const* symbol = condition->identifier.target;
     if (!symbol || !symbol->is_const || symbol->decl_count != 1 || symbol->decls[0].kind != SYMBOL_DECL_VARIABLE) return nullptr;
     Binding const* binding = symbol->decls[0].node;
@@ -3127,9 +3143,9 @@ static FlowType type_at_switch_clause(FlowQuery* q, FlowNode const* flow) {
     // (tsc narrows an evolving array as it is, an object type without members: as its final array type here, and
     // what isn't narrowed stays evolving)
     Ty const* type = final_array_type(me, before.type);
-    if (is_matching_reference(me, q->reference, needle)) {
+    if (query_matches(q, needle)) {
         type = narrow_by_switch_on_discriminant(q, type, clause);
-    } else if (is_typeof_expr(needle) && is_matching_reference(me, q->reference, &needle->unary_op->expr)) {
+    } else if (is_typeof_expr(needle) && query_matches(q, &needle->unary_op->expr)) {
         type = narrow_by_switch_on_typeof(q, type, clause);
     } else if (needle->tag == EXPR_LITERAL && needle->literal.tag == VALUE_BOOLEAN && needle->literal.boolean) {
         type = narrow_by_switch_on_true(q, type, clause);
