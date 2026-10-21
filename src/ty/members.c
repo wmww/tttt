@@ -92,6 +92,51 @@ static void prop_copy_into(Checker* me, Prop* to, Prop const* from) {
 
 static TyObjectState* object_state(Ty const* ty);
 
+// Members being resolved (CLAIM_MEMBERS, keyed by the TyObjectState whose members_state is IN_FLIGHT): the early or
+// partial members published meanwhile (tsc's early-bound symbols, a class's static side before its base...), which
+// the shared state never holds: it only ever gets the finished members (publish_members())
+typedef struct MembersClaim {
+    Claim claim;
+    Members const* early;
+} MembersClaim;
+
+static MembersClaim* members_claim_of(Checker* me, TyObjectState const* state) {
+    Claim* claim = ty_claim_find(me, CLAIM_MEMBERS, state, 0);
+    return claim ? c_container_of(claim, MembersClaim, claim) : nullptr;
+}
+
+// What a state in flight has published so far (null: nothing, or not in flight here)
+static Members const* early_members(Checker* me, TyObjectState const* state) {
+    if (state->members_state != LAZY_STATE_IN_FLIGHT) return nullptr;
+    MembersClaim* claim = members_claim_of(me, state);
+    return claim ? claim->early : nullptr;
+}
+
+// Whether the state is in flight here with nothing published yet
+static bool early_members_wanted(Checker* me, TyObjectState const* state) {
+    if (!state || state->members_state != LAZY_STATE_IN_FLIGHT) return false;
+    MembersClaim* claim = members_claim_of(me, state);
+    return claim && !claim->early;
+}
+
+static void set_early_members(Checker* me, TyObjectState const* state, Members const* members) {
+    MembersClaim* claim = members_claim_of(me, state);
+    if (claim) claim->early = members;
+}
+
+static void members_claim_push(Checker* me, MembersClaim* claim, TyObjectState const* state) {
+    *claim = (MembersClaim){0};
+    ty_claim_push(me, CLAIM_MEMBERS, &claim->claim, state, 0);
+}
+
+// The members are resolved
+static Members const* publish_members(Checker* me, MembersClaim* claim, TyObjectState* state, Members const* members) {
+    ty_claim_pop(me, CLAIM_MEMBERS, &claim->claim);
+    state->members = members;
+    state->members_state = LAZY_STATE_DONE;
+    return members;
+}
+
 // The signatures among a class's or interface's raw members that its bases give it without a this-argument
 typedef struct ThislessSignatures {
     Signature const* const* sigs;
@@ -2175,15 +2220,13 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     // The base's type arguments can mention the static side (`class S extends B<typeof S.Base>`): tsc has published
     // its properties by then (resolveAnonymousTypeMembers sets them before the default construct signatures)
     TyObjectState* state = object_state(ty);
-    if (class_decl->extends.tag == EXPR_GENERIC_PARAMS && state && state->members_state == LAZY_STATE_IN_FLIGHT &&
-        !state->members
-    ) {
+    if (class_decl->extends.tag == EXPR_GENERIC_PARAMS && early_members_wanted(me, state)) {
         Members* partial = arena_new(&my arena, Members);
         Prop** props = arena_new_n(&my arena, Prop*, builder->props_count ? builder->props_count : 1);
         memcpy(props, builder->props, sizeof(Prop*) * builder->props_count);
         partial->props = props;
         partial->prop_count = builder->props_count;
-        state->members = partial;
+        set_early_members(me, state, partial);
     }
     Ty const* base_instance = nullptr;
     Symbol const* base_decl = nullptr;
@@ -2284,10 +2327,10 @@ static void early_static_members(Checker* me, Ty const* ty, ClassDecl const* cla
         if (i->tag == CLASS_ITEM_METHOD && i->method.is_static && i->method.computed_key) computed = true;
     }
     TyObjectState* state = object_state(ty);
-    if (!computed || !state || state->members_state != LAZY_STATE_IN_FLIGHT || state->members) return;
+    if (!computed || !early_members_wanted(me, state)) return;
     MembersBuilder early = { .skip_computed = true };
     builder_add_class_static_side(me, &early, ty, class_decl);
-    state->members = builder_finish(me, &early);
+    set_early_members(me, state, builder_finish(me, &early));
 }
 
 static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry);
@@ -2389,7 +2432,7 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty co
     // S { export const Base }`): its namespace's exports are already there for them (tsc's class symbol has them among
     // its exports, published before the base is resolved)
     TyObjectState* state = object_state(ty);
-    if (state && state->members_state == LAZY_STATE_IN_FLIGHT && !state->members && entry_count > 1) {
+    if (entry_count > 1 && early_members_wanted(me, state)) {
         bool generic_base = false;
         for (u32 i = 0; i < decl->decl_count; i++) {
             if (decl->decls[i].kind != SYMBOL_DECL_CLASS) continue;
@@ -2403,7 +2446,7 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty co
                 Members const* members = ty_members(me, entry);
                 for (u32 j = 0; j < members->prop_count; j++) builder_push(&early, props, (Prop*)members->props[j]);
             }
-            state->members = builder_finish(me, &early);
+            set_early_members(me, state, builder_finish(me, &early));
         }
     }
     // A property only one entry has is that entry's own (an inherited static stays the base's, whose private and
@@ -2951,7 +2994,7 @@ static void early_declared_members(Checker* me, Ty const* ty) {
     }
     TyObjectState* states[2] = { ty->declared.raw, object_state(ty) };
     bool wanted = false;
-    for (u32 k = 0; k < 2; k++) wanted |= states[k] && states[k]->members_state == LAZY_STATE_IN_FLIGHT && !states[k]->members;
+    for (u32 k = 0; k < 2; k++) wanted |= early_members_wanted(me, states[k]);
     if (!wanted) return;
     // While its bases are lowered: its own members, and the bases are circular (tsc's resolveObjectTypeMembers with
     // getBaseTypes in flight; getBaseTypes resets the type's members once its bases are known)
@@ -2959,7 +3002,7 @@ static void early_declared_members(Checker* me, Ty const* ty) {
         if (frame->ty != ty) continue;
         Members const* members = builder_snapshot(me, frame->builder);
         for (u32 k = 0; k < 2; k++) {
-            if (states[k] && states[k]->members_state == LAZY_STATE_IN_FLIGHT && !states[k]->members) states[k]->members = members;
+            if (early_members_wanted(me, states[k])) set_early_members(me, states[k], members);
         }
         ty_resolving_cycle_across_calls(me, RESOLVING_BASES, ty);
         return;
@@ -2991,7 +3034,7 @@ static void early_declared_members(Checker* me, Ty const* ty) {
     }
     Members const* members = builder_finish(me, &early);
     for (u32 k = 0; k < 2; k++) {
-        if (states[k] && states[k]->members_state == LAZY_STATE_IN_FLIGHT && !states[k]->members) states[k]->members = members;
+        if (early_members_wanted(me, states[k])) set_early_members(me, states[k], members);
     }
 }
 
@@ -3118,13 +3161,13 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             builder.skip_computed = builder.only_late = false;
             if (index_signatures) {
                 TyObjectState* state = object_state(ty);
-                if (state && state->members_state == LAZY_STATE_IN_FLIGHT) {
+                if (state && state->members_state == LAZY_STATE_IN_FLIGHT && members_claim_of(me, state)) {
                     Members* partial = arena_new(&my arena, Members);
                     Prop** props = arena_new_n(&my arena, Prop*, builder.props_count ? builder.props_count : 1);
                     memcpy(props, builder.props, sizeof(Prop*) * builder.props_count);
                     partial->props = props;
                     partial->prop_count = builder.props_count;
-                    state->members = partial;
+                    set_early_members(me, state, partial);
                 }
                 builder.index_pass = 2;
                 for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
@@ -3636,20 +3679,22 @@ static Members const* declared_raw_members(Checker* me, Ty const* declared) {
         case LAZY_STATE_IN_FLIGHT: // `interface A extends A`
             TAINT_EVENT(TAINT_IN_FLIGHT_MEMBERS);
             if (my eager_probe_depth) members_reentered_unguarded(me, declared);
-            if (!state->members) early_declared_members(me, declared);
-            if (state->members) return state->members; // (The early members, see early_declared_members())
+            if (!early_members(me, state)) early_declared_members(me, declared);
+            if (early_members(me, state)) return early_members(me, state); // (See early_declared_members())
             members_reentered(me, declared);
             return &empty_members;
         case LAZY_STATE_NOT_STARTED: break;
     }
+    MembersClaim claim;
+    members_claim_push(me, &claim, state);
     state->members_state = LAZY_STATE_IN_FLIGHT;
     TAINT_BEGIN(taint_frame);
     members_in_flight_push(me, declared);
-    state->members = resolve_declared_members(me, declared);
+    Members const* members = resolve_declared_members(me, declared);
     my members_in_flight_len--;
-    state->members_state = LAZY_STATE_DONE;
-    TAINT_END(taint_frame, TK_DECLARED_RAW, state, declared, state->members);
-    return state->members;
+    publish_members(me, &claim, state, members);
+    TAINT_END(taint_frame, TK_DECLARED_RAW, state, declared, members);
+    return members;
 }
 
 // The members of `target` (a declared type with a `this` type) applied to type arguments and a this-argument (tsc's
@@ -4830,9 +4875,14 @@ MappedInfo const* ty_mapped_info_unexpanded(Checker* me, Ty const* ty) {
         return nullptr;
     }
     if (!state->unexpanded) {
+        // (In flight meanwhile: the members are asked for as they would be while they are resolved, with nothing early)
+        MembersClaim claim;
+        members_claim_push(me, &claim, state);
         state->members_state = LAZY_STATE_IN_FLIGHT;
-        state->unexpanded = resolve_members_inner(me, ty);
+        Members const* unexpanded = resolve_members_inner(me, ty);
+        ty_claim_pop(me, CLAIM_MEMBERS, &claim.claim);
         state->members_state = LAZY_STATE_NOT_STARTED;
+        state->unexpanded = unexpanded;
     }
     return state->unexpanded->mapped;
 }
@@ -5088,18 +5138,19 @@ Members const* ty_members_resolving(Checker* me, Ty const* ty) {
             // An interface's properties while its index signatures are lowered (see resolve_declared_members())
             if (ty->kind == TY_DECLARED) early_declared_members(me, ty);
             if (ty->kind == TY_REFERENCE && ty->reference.target->kind == TY_DECLARED && ty->reference.target->declared.raw &&
-                ty->reference.target->declared.raw->members_state == LAZY_STATE_IN_FLIGHT && !ty->reference.target->declared.raw->members
+                early_members_wanted(me, ty->reference.target->declared.raw)
             ) {
                 early_declared_members(me, ty->reference.target);
             }
-            if (state->members) return state->members;
+            if (early_members(me, state)) return early_members(me, state);
             // A reference to a declared type whose early members are published: those, instantiated (see
             // early_declared_members())
             if (ty->kind == TY_REFERENCE && ty->reference.target->kind == TY_DECLARED && ty->reference.target->declared.raw &&
-                ty->reference.target->declared.raw->members_state == LAZY_STATE_IN_FLIGHT && ty->reference.target->declared.raw->members
+                early_members(me, ty->reference.target->declared.raw)
             ) {
-                state->members = resolve_members(me, ty);
-                return state->members;
+                Members const* members = resolve_members(me, ty);
+                set_early_members(me, state, members);
+                return members;
             }
             // Only a type whose own members depend on its own members gets here (`interface A extends A`)
             members_reentered(me, ty);
@@ -5114,20 +5165,24 @@ Members const* ty_members_resolving(Checker* me, Ty const* ty) {
                 if (state->members_state != LAZY_STATE_NOT_STARTED) return ty_members(me, ty);
             }
             if (my eager_probe_depth && ty->kind == TY_REFERENCE && !ty->reference.deferred) members_reentered_unguarded(me, ty);
+            MembersClaim claim;
+            members_claim_push(me, &claim, state);
             state->members_state = LAZY_STATE_IN_FLIGHT;
             TAINT_BEGIN(taint_frame);
+            Members const* members;
             if (ty->kind == TY_DECLARED || ty->kind == TY_REFERENCE) {
                 members_in_flight_push(me, ty);
-                state->members = resolve_members(me, ty);
+                members = resolve_members(me, ty);
                 // (After the members: asked for again meanwhile, they are what a second round of tsc's would give)
+                claim.early = members;
                 if (ty->kind == TY_REFERENCE && !my eager_probe_depth) probe_reference(me, ty, 0);
                 my members_in_flight_len--;
             } else {
-                state->members = resolve_members(me, ty);
+                members = resolve_members(me, ty);
             }
-            state->members_state = LAZY_STATE_DONE;
-            TAINT_END(taint_frame, TK_MEMBERS, state, ty, state->members);
-            return state->members;
+            publish_members(me, &claim, state, members);
+            TAINT_END(taint_frame, TK_MEMBERS, state, ty, members);
+            return members;
     }
     impossible;
 }
