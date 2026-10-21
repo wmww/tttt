@@ -8,8 +8,6 @@
 // The state handed to whichever checker is current (graph_enter()): sequentially one checker at a time makes atoms and
 // types. In 4d: shared structures of their own (4c's global atoms and ids)
 typedef struct GraphHeld {
-    u32 next_type_id;
-    Ty const** types[1 << LAZY_TYPE_DIR_BITS]; // The id -> Ty table's chunks (LazySlots.types)
     Ty const* array_target;
     Ty const* auto_array;
     Ty const* readonly_array_target;
@@ -49,7 +47,6 @@ struct TyGraph {
     LinkTable node_links;
     LazyMemo** memos[1 << LAZY_TOP_BITS]; // Declaration memos by slot, like LazySlots.top
     u64 memo_hits;
-    u32 first_id; // The current checker's first type id: what it makes from there on is its own
     KindStats stats[GRAPH_STAT_KINDS];
     u32 checkers;
 };
@@ -94,8 +91,6 @@ GraphClass graph_kind_class(u32 kind) {
 }
 
 static void held_take(GraphHeld* held, Checker const* from) {
-    held->next_type_id = from->next_type_id;
-    memcpy(held->types, from->lazy.types, sizeof(held->types));
     held->array_target = from->array_target;
     held->auto_array = from->auto_array;
     held->readonly_array_target = from->readonly_array_target;
@@ -109,8 +104,8 @@ static void held_take(GraphHeld* held, Checker const* from) {
 }
 
 static void held_give(GraphHeld const* held, Checker* to) {
-    to->next_type_id = held->next_type_id;
-    memcpy(to->lazy.types, held->types, sizeof(held->types));
+    // (The other checkers' types it may read: the directory's chunks, in its own table)
+    lazy_slots_sync(&to->lazy);
     to->array_target = held->array_target;
     to->auto_array = held->auto_array;
     to->readonly_array_target = held->readonly_array_target;
@@ -161,13 +156,11 @@ void graph_enter(TyGraph* me, Checker* checker) {
     if (my owner) held_take(&my held, my owner);
     if (checker) held_give(&my held, checker);
     my owner = checker;
-    if (checker) my first_id = checker->next_type_id;
 }
 
 void graph_release(TyGraph* me, Checker* checker) {
     if (my owner == checker) graph_enter(me, nullptr);
     // (The graph's: freed by graph_drop())
-    memset(checker->lazy.types, 0, sizeof(checker->lazy.types));
     free(checker->graph_memo_slots);
     checker->graph_memo_slots = nullptr;
 }
@@ -175,7 +168,6 @@ void graph_release(TyGraph* me, Checker* checker) {
 void graph_drop(TyGraph* me) {
     if (!me) return;
     if (my owner) graph_release(me, my owner);
-    for (size_t i = 0; i < c_arraylen(my held.types); i++) free(my held.types[i]);
     free(my types.entries);
     free(my links.entries);
     free(my intersection_props.entries);
@@ -356,7 +348,12 @@ void graph_taint_end(unsigned kind, void const* object, void const* subject) {
     tainted_by_kind[kind < TK_COUNT ? kind : 0]++;
     // (Results kept on a type: is it one an earlier checker made, which the next ones get as it is?)
     bool on_type = kind == TK_MEMBERS || kind == TK_DECLARED_RAW || kind == TK_PARAM_CONSTRAINT;
-    if (on_type && subject && ((Ty const*)subject)->id < checker->graph->first_id) tainted_shared_by_kind[kind]++;
+    if (on_type && subject) {
+        u32 chunk = ((Ty const*)subject)->id >> LAZY_TYPE_CHUNK_BITS;
+        bool own = false;
+        for (u32 i = 0; i < checker->lazy.own_len && !own; i++) own = checker->lazy.own[i] == chunk;
+        if (!own) tainted_shared_by_kind[kind]++;
+    }
 }
 
 void graph_taint_read(unsigned kind, void const* object) {

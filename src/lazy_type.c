@@ -49,13 +49,48 @@ static LazyMemo* lazy_type_state(LazyType* me) {
     return &(*page)[my slot & ((1 << LAZY_PAGE_BITS) - 1)];
 }
 
+TypeDirectory* type_directory_new(void) {
+    TypeDirectory* me = zeroed_table(1, sizeof(TypeDirectory));
+    panic_if(!me, "out of memory");
+    return me;
+}
+
+void type_directory_drop(TypeDirectory* me) {
+    if (!me) return;
+    for (size_t i = 0; i < c_arraylen(my chunks); i++) free((void*)atomic_load_explicit(&my chunks[i], memory_order_relaxed));
+    free(me);
+}
+
+u32 type_directory_block(TypeDirectory* me) {
+    u32 block = atomic_fetch_add_explicit(&my next_block, 1, memory_order_relaxed);
+    panic_if(block >= (1u << LAZY_TYPE_DIR_BITS), "out of type ids");
+    // (Id 0 is none)
+    return block ? block << LAZY_TYPE_CHUNK_BITS : 1;
+}
+
 void lazy_slots_add_type(LazySlots* me, Ty const* ty) {
-    Ty const*** chunk = &my types[ty->id >> LAZY_TYPE_CHUNK_BITS];
+    u32 index = ty->id >> LAZY_TYPE_CHUNK_BITS;
+    Ty const*** chunk = &my types[index];
     if (!*chunk) {
+        // (Its own block's: nobody else writes this chunk)
         *chunk = malloc(sizeof(Ty const*) << LAZY_TYPE_CHUNK_BITS);
         panic_if(!*chunk, "out of memory");
+        if (my own_len == my own_cap) {
+            my own_cap = my own_cap ? my own_cap * 2 : 16;
+            my own = realloc(my own, sizeof(u32) * my own_cap);
+            panic_if(!my own, "out of memory");
+        }
+        my own[my own_len++] = index;
+        if (my directory) atomic_store_explicit(&my directory->chunks[index], *chunk, memory_order_release);
     }
     (*chunk)[ty->id & ((1 << LAZY_TYPE_CHUNK_BITS) - 1)] = ty;
+}
+
+void lazy_slots_sync(LazySlots* me) {
+    if (!my directory) return;
+    for (size_t i = 0; i < c_arraylen(my types); i++) {
+        if (!my types[i]) my types[i] = (Ty const**)atomic_load_explicit(&my directory->chunks[i], memory_order_acquire);
+    }
 }
 
 static u32 lazy_type_id(Ty const* ty) {
@@ -73,10 +108,15 @@ void lazy_slots_drop(LazySlots* me) {
         free(my top[i]);
         my top[i] = nullptr;
     }
-    for (size_t i = 0; i < c_arraylen(my types); i++) {
-        free(my types[i]);
-        my types[i] = nullptr;
+    // (Its own chunks: the others' are theirs)
+    for (u32 i = 0; i < my own_len; i++) {
+        free(my types[my own[i]]);
+        if (my directory) atomic_store_explicit(&my directory->chunks[my own[i]], nullptr, memory_order_relaxed);
     }
+    free(my own);
+    my own = nullptr;
+    my own_len = my own_cap = 0;
+    memset(my types, 0, sizeof(my types));
 }
 
 void lazy_type_drop(LazyType* me) {

@@ -2,6 +2,7 @@
 
 #include "type.h"
 #include "ty/taint.h"
+#include <stdatomic.h>
 
 // The memo of a LazyType: whether evaluation has started (to detect cycles) and the result. Types are held by id
 // (Ty.id, 0 for none; lazy_memo_evaluated() and lazy_memo_context() look them up): a big program has a memo for
@@ -57,11 +58,32 @@ void lazy_slots_new_block(void);
 #define LAZY_TYPE_DIR_BITS 16
 typedef struct LazySlots {
     LazyMemo** top[1 << LAZY_TOP_BITS];
+    // The chunks of the program's TypeDirectory this checker reads: its own (it makes their types) and, with
+    // --shared-graph, the other checkers' (lazy_slots_sync()). A copy of the directory's pointers, so that reading an
+    // id costs what it did when the table was the checker's own
     struct Ty const** types[1 << LAZY_TYPE_DIR_BITS];
+    struct TypeDirectory* directory;
+    u32* own; // The chunks it owns (its id blocks), freed with it
+    u32 own_len, own_cap;
 } LazySlots;
+
+// The program's types by id (plan 86 stage 4c): ids come in blocks of a chunk (65536) from one atomic counter, so the
+// types one checker makes stay in creation order and every id is the program's; a block's chunk belongs to the checker
+// that took it (freed when it is dropped, like the per-checker table this replaces)
+typedef struct TypeDirectory {
+    _Atomic u32 next_block;
+    struct Ty const** _Atomic chunks[1 << LAZY_TYPE_DIR_BITS];
+} TypeDirectory;
+
+TypeDirectory* type_directory_new(void);
+void type_directory_drop(TypeDirectory* me); // After its checkers
+// The first id of a fresh block
+u32 type_directory_block(TypeDirectory* me);
 
 // Every type the checker makes is added, by its id
 void lazy_slots_add_type(LazySlots* me, struct Ty const* ty);
+// Copies the directory's chunks it doesn't have yet (--shared-graph: another checker's types are read)
+void lazy_slots_sync(LazySlots* me);
 
 static inline struct Ty const* lazy_slots_type(LazySlots const* me, u32 id) {
     return id ? my types[id >> LAZY_TYPE_CHUNK_BITS][id & ((1 << LAZY_TYPE_CHUNK_BITS) - 1)] : nullptr;

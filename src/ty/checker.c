@@ -594,6 +594,10 @@ Ty* ty_alloc(Checker* me, TyKind kind, u32 flags) {
     Ty* ret = arena_alloc(&my arena, ty_size_of_kind(kind));
 #endif
     ret->id = my next_type_id++;
+    // (Its id block is used up: the next one, higher than every id it gave out)
+    if (__builtin_expect(!(my next_type_id & ((1u << LAZY_TYPE_CHUNK_BITS) - 1)), 0)) {
+        my next_type_id = type_directory_block(my lazy.directory);
+    }
     lazy_slots_add_type(&my lazy, ret);
     ret->kind = kind;
     ret->flags = flags;
@@ -625,8 +629,9 @@ Checker* checker_new(Program* program) {
     my program = program;
     my binder = program_get_binder(program);
     my errs = program_errors(program);
-    my next_type_id = 1;
     my atom_table = program_atoms(program);
+    my lazy.directory = program_type_directory(program);
+    my next_type_id = type_directory_block(my lazy.directory);
     // (--shared-graph: the graph's first checker made the intrinsics, the rest share them)
     TyGraph* graph = program_graph(program);
     if (graph) {
@@ -781,6 +786,12 @@ void checker_drop(Checker* me) {
     free(me);
 }
 
+// How many types it made (its id blocks are full but the last; block 0 starts at 1)
+u32 checker_type_count(Checker const* me) {
+    if (!my lazy.own_len) return 0;
+    return (my lazy.own_len - 1) << LAZY_TYPE_CHUNK_BITS | (my next_type_id & ((1u << LAZY_TYPE_CHUNK_BITS) - 1));
+}
+
 u64 checker_memory(Checker const* me) {
     u64 bytes = my arena.total;
     bytes += ((u64)my types.cap + my intersection_props.cap + my links.cap) * sizeof(InternEntry);
@@ -788,7 +799,7 @@ u64 checker_memory(Checker const* me) {
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) bytes += (u64)my relations[i].cap * (sizeof(u64) + 1);
     // (lazy_slots_add_type()'s chunks)
     u64 chunk = sizeof(Ty const*) << LAZY_TYPE_CHUNK_BITS;
-    return bytes + ((u64)my next_type_id + chunk / sizeof(Ty const*) - 1) / (chunk / sizeof(Ty const*)) * chunk;
+    return bytes + (u64)my lazy.own_len * chunk;
 }
 
 // A bigint keyed by its decimal text, which the type keeps (the value's text may not live as long): an atom's.

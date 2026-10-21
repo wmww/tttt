@@ -107,6 +107,7 @@ void program_set_checkers(Program* me, u32 count);
 void program_set_shared_graph(Program* me, bool shared);
 struct TyGraph* program_graph(Program const* me); // Null without
 struct AtomTable* program_atoms(Program const* me); // Its checkers' atoms (ty/atom_table.h)
+struct TypeDirectory* program_type_directory(Program const* me); // Its checkers' types by id (lazy_type.h)
 // The default checker count's ceiling below the threads (0, the default: the threads): the CLI's checkers per physical
 // core on a machine with many (main.c's default_checker_cap()). Call it while loading
 void program_set_checker_cap(Program* me, u32 count);

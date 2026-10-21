@@ -1287,6 +1287,7 @@ void ty_check_destructured_member(
     Checker* me, Ty const* object, Ty const* key, Span span, bool from_this, AccessSite const* site, ErrorCtx* errs
 );
 Atom const* checker_atom(Checker* me, csview sv);
+u32 checker_type_count(Checker const* me); // How many types it made (tttt --time)
 Atom const* ty_index_atom(Checker* me, u32 index); // "0", "1"... (an index's property name)
 static inline Ty const* ty_intrinsic(Checker const* me, TyIntrinsic i) { return my intrinsics[i]; }
 

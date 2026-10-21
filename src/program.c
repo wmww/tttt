@@ -151,6 +151,7 @@ typedef struct Program {
     bool shared_graph; // program_set_shared_graph()
     struct TyGraph* graph; // Its checkers', while they share one (ty/graph.h)
     struct AtomTable* atoms; // Every checker's atoms (ty/atom_table.h)
+    struct TypeDirectory* type_directory; // Every checker's types by id (lazy_type.h)
     u32 checker_cap; // program_set_checker_cap(), 0: the threads
     u64 checker_memory; // program_set_checker_memory(), bytes: UINT64_MAX never recycles
     u64 checker_memory_cap; // program_set_checker_memory_cap(), bytes: UINT64_MAX none
@@ -235,6 +236,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
         .symlinks = symlink_cache_new(),
         .checker_memory = UINT64_MAX,
         .atoms = atom_table_new(),
+        .type_directory = type_directory_new(),
         .checker_memory_cap = UINT64_MAX,
         .checker_memory_shared = UINT64_MAX,
     });
@@ -296,6 +298,7 @@ static void program_drop(Program* me) {
     checker_drop(my checker);
     graph_drop(my graph);
     atom_table_drop(my atoms);
+    type_directory_drop(my type_directory);
     drop_source_files(me);
     hmap_box_source_file_drop(&my source_files_map);
     hmap_source_file_ptr_drop(&my files_by_package_id);
@@ -3733,6 +3736,10 @@ enum { CHECKER_BYTES = 64 << 10 };
 
 void program_set_shared_graph(Program* me, bool shared) {
     my shared_graph = shared;
+}
+
+struct TypeDirectory* program_type_directory(Program const* me) {
+    return my type_directory;
 }
 
 struct AtomTable* program_atoms(Program const* me) {
