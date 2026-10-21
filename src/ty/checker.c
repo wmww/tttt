@@ -871,6 +871,7 @@ void checker_drop(Checker* me) {
     free(my held_files);
     free(my cross_files);
     lazy_slots_drop(&my lazy);
+    overlay_drop(me);
     if (my stamps) {
         for (u32 i = 0; i < (1u << LAZY_TYPE_DIR_BITS); i++) free(my stamps[i]);
         free(my stamps);

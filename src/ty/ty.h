@@ -7,6 +7,7 @@
 
 #include "type.h"
 #include "ty/taint.h"
+#include "ty/overlay.h"
 #include "lazy_type.h"
 #include "generic.h"
 
@@ -243,11 +244,11 @@ typedef struct LowerCtx {
 // The mutable, lazily resolved part of an object type. Everything else about a Ty is immutable once published.
 typedef struct TyObjectState {
     LazyState members_state;
-    uint8_t base_state; // LazyState of equivalent_base
+    uint8_t base_state; // equivalent_base in flight (NOT_STARTED / IN_FLIGHT, without --shared-graph: overlay.h)
     uint8_t reduced_state; // Intersections: whether ty_reduced() is never (REDUCED_*, checker.c)
     Members const* members;
     Members const* unexpanded; // resolve_members_inner()'s result before expand_mapped(), see ty_mapped_info_unexpanded()
-    Ty const* equivalent_base; // See ty_non_augmenting_base()
+    SharedWord equivalent_base; // A Ty, see ty_non_augmenting_base() (plan 86 stage 4f's worked example)
 } TyObjectState;
 
 typedef struct TyParamState {
@@ -1336,6 +1337,13 @@ struct Checker {
     u32 graph_variance_claims_len, graph_variance_claims_cap;
     // Its worker number on the graph (1..63, the tag of what it has in flight: LAZY_FOREIGN()), 0 without one
     uint8_t graph_worker;
+    // Plan 86 stage 4f (overlay.h): its words in flight and the values it keeps privately (tainted, or computed after
+    // a poison); and whether one of them is a word another worker published meanwhile (then every word's fast path
+    // takes the slow path, Overlay first, until its file ends)
+    struct Overlay* overlay;
+    bool graph_shadowed;
+    u64 deep_cuts; // Relations cut short by deep nesting (a taint event, TTTT_GRAPH_STATS)
+    bool relation_deep_seen; // The relation in progress went through a deep-nesting cut (relate.c CACHE_DEEP)
     u64 relation_pairs; // Pairs recursive_related() computed (TTTT_GRAPH_STATS: plan 86 4e's relation sharing)
     bool graph_memo_on; // --shared-graph with another checker to read them: memo kinds published as they finish
     u64 graph_waits, graph_wait_ns, graph_fallbacks; // lazy_wait_slow() (TTTT_GRAPH_STATS)
@@ -1392,6 +1400,12 @@ struct Checker {
 #else
 #define LAZY_DONE_CLEAN(field, frame, kind) LAZY_DONE(field)
 #endif
+// A shared word's fast path (overlay.h): its value if published and this worker isn't shadowed, else SW_EMPTY (then
+// sw_look())
+static inline uintptr_t sw_get(Checker const* me, SharedWord const* w) {
+    uintptr_t v = sw_load(w);
+    return __builtin_expect(v > SW_POISON && !my graph_shadowed, 1) ? v : SW_EMPTY;
+}
 bool lazy_wait_slow(Checker* me, void* field, size_t size); // (graph.c) false: break the cycle, don't wait
 bool lazy_claim_slow(Checker* me, void* field, size_t size);
 

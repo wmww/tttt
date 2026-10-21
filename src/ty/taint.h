@@ -146,9 +146,17 @@ static inline bool graph_mark_maybe(unsigned kind, void const* object) {
 
 #else
 
-#define TAINT_EVENT(reason) ((void)0)
+// Plan 86 stage 4f: the counter alone, always compiled (overlay.c). An event bumps it (rare: cycles, in-flight reads,
+// limits); the sites converted to shared words (overlay.h) compare it at their computation's start and end, and the
+// rest's frames are empty
+// (Out of line and cold: an increment of a thread-local inline changed the inlining of hot callers, +0.37% of
+// drizzle's instructions for 33k events)
+extern thread_local uint64_t graph_taint_now;
+[[gnu::cold, gnu::noinline]] void graph_taint_bump(void);
+#define TAINT_EVENT(reason) graph_taint_bump()
 #define TAINT_FLOW() ((void)0)
-#define TAINT_IF(reason, condition) (condition)
+// (The lenient rule: a peek is no event)
+#define TAINT_IF(reason, condition) ((reason) == TAINT_PEEK ? (condition) : (condition) ? (graph_taint_bump(), true) : false)
 #define TAINT_BEGIN(name) ((void)0)
 #define TAINT_END(name, kind, object, subject, result) ((void)0)
 #define TAINT_READ(kind, object) ((void)0)

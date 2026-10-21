@@ -4666,18 +4666,10 @@ static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
 // Null when the file was checked
 enum { MAX_FILE_REDOS = 3 };
 static pthread_mutex_t retired_lock = PTHREAD_MUTEX_INITIALIZER;
-// A file check_file_or_give_up() gave up (its setjmp returned): the checker is retired and a fresh one returned.
-// (A function of its own: its locals and the compound literals of its messages aren't live across the setjmp,
-// -Wclobbered)
-static Checker* give_up_file(Program* me, Checker* checker, SourceFile const* source) {
-    // (Given up: the stack is gone, what it reported for this file too)
-    checker->redo_jmp = nullptr;
-    ErrorCtx* given_up = checker->errs;
-    checker->errs = given_up->parent;
-    error_ctx_drop(given_up);
-    free(given_up);
+// --shared-graph: the checker retired (kept until the program ends: the graph holds what it made) and a fresh one, a
+// new worker on the same graph, made current in its place. At a file boundary nothing of the old one is in flight
+static Checker* graph_fresh_worker(Program* me, Checker* checker) {
     graph_retire(checker->graph, checker);
-    if (getenv("TTTT_GRAPH_STATS")) eprintln("graph: redo of ", source->canonical_path, " (worker ", (u32)checker->graph_worker, ")");
     pthread_mutex_lock(&retired_lock);
     if (my retired_count == my retired_cap) {
         my retired_cap = my retired_cap ? my retired_cap * 2 : 8;
@@ -4693,6 +4685,20 @@ static Checker* give_up_file(Program* me, Checker* checker, SourceFile const* so
     checker_make_current(fresh);
     ty_init_global_types(fresh);
     return fresh;
+}
+
+// A file check_file_or_give_up() gave up (its setjmp returned): the checker is retired and a fresh one returned.
+// (A function of its own: its locals and the compound literals of its messages aren't live across the setjmp,
+// -Wclobbered)
+static Checker* give_up_file(Program* me, Checker* checker, SourceFile const* source) {
+    // (Given up: the stack is gone, what it reported for this file too)
+    checker->redo_jmp = nullptr;
+    ErrorCtx* given_up = checker->errs;
+    checker->errs = given_up->parent;
+    error_ctx_drop(given_up);
+    free(given_up);
+    if (getenv("TTTT_GRAPH_STATS")) eprintln("graph: redo of ", source->canonical_path, " (worker ", (u32)checker->graph_worker, ")");
+    return graph_fresh_worker(me, checker);
 }
 
 static Checker* check_file_or_give_up(Program* me, Checker* checker, SourceFile* source, u32 at, bool may_give_up) {
@@ -4979,6 +4985,16 @@ static void check_share(Program* me, u32 c, u32 count) {
             segment[0] = at;
             segment_count = 1;
             checker = redoing;
+            my checkers[c] = checker;
+        }
+        // (Plan 86 stage 4f: a worker that kept a tainted value of a word another worker published meanwhile goes by its
+        // Overlay first, on every fast path. Its file is done: it hands over to a fresh worker, whose history starts
+        // here, like a recycle's)
+        if (checker->graph_shadowed && graph_can_redo(checker->graph)) {
+            check_segment_after(me, checker, c, segment, segment_count);
+            segment_count = 0;
+            if (getenv("TTTT_GRAPH_STATS")) eprintln("graph: shadowed worker ", (u32)checker->graph_worker, " retired after ", source->canonical_path);
+            checker = graph_fresh_worker(me, checker);
             my checkers[c] = checker;
         }
         if (debug_env.file_times) {

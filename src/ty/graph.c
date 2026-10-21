@@ -257,8 +257,7 @@ void graph_count_shared_hit(InternTable const* table, u64 const* words, u32 coun
 #ifdef TTTT_GRAPH_TAINT
 // The cheap taint (taint.h's non-TTTT_TAINT macros): the counter and the pending puts per thread, the marks under a lock
 
-thread_local u64 graph_taint_now;
-thread_local u32 graph_taint_pending;
+thread_local u32 graph_taint_pending; // (graph_taint_now is overlay.c's)
 bool graph_taint_marks;
 #ifdef TTTT_TAINT
 // (The -DTTTT_TAINT prototype, taint.c, has its own events: this one's only have to compile there)
@@ -1176,6 +1175,10 @@ void graph_print_stats(TyGraph const* me) {
     u64 pairs = 0;
     for (u32 w = 1; w <= my checkers && w < 64; w++) if (my workers[w]) pairs += my workers[w]->relation_pairs;
     eprintln("graph: relation pairs computed ", pairs);
+    u64 deep = 0;
+    for (u32 w = 1; w <= my checkers && w < 64; w++) if (my workers[w]) deep += my workers[w]->deep_cuts;
+    eprintln("graph: deep-nesting cuts ", deep, " (taint events, plan 86 stage 4f)");
+    overlay_print_stats();
     eprintln("graph: relations shared ", (u64)atomic_load(&((TyGraph*)me)->relation_puts), ", hits ", (u64)atomic_load(&((TyGraph*)me)->relation_hits));
     eprintln("graph: ", my checkers, " checkers, ", shared_table_len(my types), " types entries, ", shared_table_len(my links),
         " links, ", shared_table_len(my intersection_props), " intersection props, ", shared_links_len(my node_links),

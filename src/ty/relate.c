@@ -75,6 +75,9 @@ enum {
     // Succeeded through an inferable index signature (an object literal type's properties against an index signature),
     // which a member of an intersection source has none of: the pair may not hold under IntersectionState.Source
     CACHE_INDEX_INFERRED = 32,
+    // Concluded while something below it was cut short by deep nesting (is_deeply_nested_as(), which decides by this
+    // checker's history): a hit is a taint event, and it isn't shared (plan 86 stage 4f, rule 3 of "clean")
+    CACHE_DEEP = 64,
 };
 
 #define MAX_RELATION_DEPTH 100
@@ -6808,6 +6811,15 @@ static bool is_deeply_nested_max(Checker* me, Ty const* ty, uintptr_t entry, Ty 
     return entry && is_deeply_nested_as(me, (Ty const*)entry, ty, stack, entries, depth, max);
 }
 
+// A deep-nesting decision cut something short: what it decides is this checker's history (by its first-touch stamps
+// under --shared-graph), so whatever depends on it is tainted (plan 86 stage 4f) and the relations concluded around it
+// are cached CACHE_DEEP
+static void relation_deep_cut(Checker* me) {
+    my relation_deep_seen = true;
+    my deep_cuts++;
+    TAINT_EVENT(TAINT_LIMIT);
+}
+
 // A relation's stacks: the entries below `depth` not up to date yet are worked out first (`valid` of them are)
 static bool relation_deeply_nested(
     Checker* me, Ty const* ty, Ty const* const* stack, uintptr_t* entries, u32* valid, u32 depth, u32 max, bool pushing
@@ -6822,13 +6834,17 @@ static bool relation_deeply_nested(
     } else if (*valid < depth) {
         *valid = depth;
     }
-    return is_deeply_nested_max(me, ty, entry, stack, entries, depth, max);
+    if (!is_deeply_nested_max(me, ty, entry, stack, entries, depth, max)) return false;
+    relation_deep_cut(me);
+    return true;
 }
 
 // (Inference's stacks are short: their entries are worked out as they're scanned)
 bool ty_is_deeply_nested(Checker* me, Ty const* ty, Ty const* const* stack, u32 depth, u32 max) {
     if (depth + 1 < max) return false;
-    return is_deeply_nested_max(me, ty, ty_recursion_entry(me, ty), stack, nullptr, depth, max);
+    if (!is_deeply_nested_max(me, ty, ty_recursion_entry(me, ty), stack, nullptr, depth, max)) return false;
+    relation_deep_cut(me);
+    return true;
 }
 
 // The weak type check of tsc's isRelatedTo, reported. Done once a pair isn't cached (the answer only depends on it)
@@ -6956,13 +6972,17 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
         }
     }
     if (cached & CACHE_INDEX_INFERRED) st->index_inferred = true;
+    if (__builtin_expect(cached & CACHE_DEEP, 0)) {
+        my relation_deep_seen = true;
+        TAINT_EVENT(TAINT_READ_TAINTED);
+    }
     // A measurement of variances that goes through the pair again is as unreliable as the first one was
     if (cached & CACHE_UNRELIABLE) report_variance(me, source, VARIANCE_UNRELIABLE);
     if (cached & CACHE_UNMEASURABLE) report_variance(me, source, VARIANCE_UNMEASURABLE);
     if (debug_env.debug_variance && my variance_depth && cached) {
         variance_debug_log(me, st->source_depth, "CACHE", source, target, (cached & CACHE_SUCCEEDED) ? " = T" : " = F");
     }
-    cached &= ~(CACHE_UNRELIABLE | CACHE_UNMEASURABLE | CACHE_INDEX_INFERRED);
+    cached &= ~(CACHE_UNRELIABLE | CACHE_UNMEASURABLE | CACHE_INDEX_INFERRED | CACHE_DEEP);
     if (cached == CACHE_SUCCEEDED) return TERNARY_TRUE;
     // Explaining a pair that ran out of budget runs out again (TS2859), without the work
     if (cached & CACHE_OVERFLOW) {
@@ -7045,6 +7065,10 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
 
     unsigned char saved_reports = my variance_reports;
     my variance_reports = 0;
+    bool saved_deep = my relation_deep_seen;
+    my relation_deep_seen = false;
+    // (A cut of its own, just decided above: this pair's comparison is the one it shortens)
+    if (st->expanding != saved_expanding) my relation_deep_seen = true;
     bool saved_inferred = st->index_inferred, saved_twin = st->twin_assumed;
     st->index_inferred = st->twin_assumed = false;
     if (debug_env.debug_variance && my variance_depth && st->expanding != 3) {
@@ -7066,6 +7090,8 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     unsigned unreliable = (my variance_reports & VARIANCE_UNRELIABLE ? CACHE_UNRELIABLE : 0) |
         (my variance_reports & VARIANCE_UNMEASURABLE ? CACHE_UNMEASURABLE : 0);
     unsigned inferred = st->index_inferred ? CACHE_INDEX_INFERRED : 0;
+    unsigned deep = my relation_deep_seen ? CACHE_DEEP : 0;
+    my relation_deep_seen |= saved_deep;
     st->index_inferred |= saved_inferred;
     if (debug_env.debug_relate_nested) {
         cstr source_str = ty_to_cstr(me, source);
@@ -7092,16 +7118,16 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
             // tsgo's resetMaybeStack never records Ternary.Unknown)
             if (result != TERNARY_UNKNOWN) {
                 for (u32 i = maybe_start; i < st->maybe_count; i++) {
-                    relation_cache_put(cache, st->maybe_keys[i], CACHE_SUCCEEDED | unreliable | inferred);
-                    if (!unreliable && !inferred) relation_publish(me, st, st->maybe_keys[i], CACHE_SUCCEEDED);
+                    relation_cache_put(cache, st->maybe_keys[i], CACHE_SUCCEEDED | unreliable | inferred | deep);
+                    if (!unreliable && !inferred && !deep) relation_publish(me, st, st->maybe_keys[i], CACHE_SUCCEEDED);
                 }
                 st->relation_count -= st->maybe_count - maybe_start;
             }
             maybe_truncate(st, maybe_start);
         }
     } else {
-        relation_cache_put(cache, key, CACHE_FAILED | unreliable);
-        if (!unreliable) relation_publish(me, st, key, CACHE_FAILED);
+        relation_cache_put(cache, key, CACHE_FAILED | unreliable | deep);
+        if (!unreliable && !deep) relation_publish(me, st, key, CACHE_FAILED);
         st->relation_count--;
         maybe_truncate(st, maybe_start);
     }
@@ -8091,8 +8117,12 @@ static bool check_related(
     // unreliable again lets every later failed comparison of QueryBuilder fall back to structure (4x the types)
     if (!st->reporting && (source->flags & TYF_OBJECT) && (target->flags & TYF_OBJECT)) {
         bool constrained;
-        unsigned cached = relation_cache_get(&my relations[relation], relation_key_of(me, source, target, &constrained)) &
-            (CACHE_SUCCEEDED | CACHE_FAILED);
+        unsigned cached = relation_cache_get(&my relations[relation], relation_key_of(me, source, target, &constrained));
+        if (__builtin_expect(cached & CACHE_DEEP, 0)) {
+            my relation_deep_seen = true;
+            TAINT_EVENT(TAINT_READ_TAINTED);
+        }
+        cached &= CACHE_SUCCEEDED | CACHE_FAILED;
         if (cached) return cached == CACHE_SUCCEEDED;
     }
     if (relation != TY_RELATION_IDENTITY && !st->reporting && !is_structured(source) && !is_structured(target)) {

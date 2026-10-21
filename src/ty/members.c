@@ -1526,18 +1526,17 @@ Ty const* ty_non_augmenting_base(Checker* me, Ty const* ty) {
         return nullptr;
     }
     if (!state) return nullptr;
-    again:;
-    LAZY_SNAP(me, state->base_state, seen, again);
-    if (seen == LAZY_STATE_DONE) return state->equivalent_base;
-    if (LAZY_IN_FLIGHT(seen)) {
-        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-        return nullptr;
+    // (Plan 86 stage 4f's worked example of a shared word, overlay.h)
+    uintptr_t v = sw_get(me, &state->equivalent_base);
+    if (v) return SW_PTR(v);
+    switch (sw_look(me, &state->equivalent_base, &state->base_state, &v)) {
+        case SW_LOOK_DONE: return SW_PTR(v);
+        case SW_LOOK_MINE: return nullptr; // (Its own cycle: none, a taint event)
+        case SW_LOOK_COMPUTE: break;
     }
-    if (!LAZY_CLAIM(me, state->base_state)) goto again;
+    u64 taint = sw_claim(me, &state->equivalent_base, &state->base_state);
     Ty const* base = non_augmenting_base_uncached(me, ty);
-    state->equivalent_base = base;
-    LAZY_DONE(state->base_state);
-    return base;
+    return SW_PTR(sw_finish(me, &state->equivalent_base, &state->base_state, SW_VAL(base), taint));
 }
 
 static u32 access_prop_flags(AccessModifier access) {
