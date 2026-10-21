@@ -394,15 +394,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   (2026-10-20) any object source with non-generic keys (atproto's `$Typed`, mikro-orm's `OperatorMap<T>` against
   `EntityProps<T>`). Returning outright loses circularConstrainedMappedTypeNoCrash, restTypeRetainsMappyness,
   mappedTypeRelationships and zod's SortItem<output<T>> (generic keys) against `{ [K in keyof A | keyof B]: (A & B)[K] }`.
-- **IntersectionState is sticky** (relate.c, `RelationState.intersection_target`/`intersection_source`): once set (an
-  intersection target's members, an intersection source's), every nested comparison below inherits it, where tsc
-  passes intersectionState only through recursiveTypeRelatedTo, union/intersection decomposition, constraints and
-  property/index types, and resets it (plain isRelatedTo) for type arguments of identical-kind pairs, keyof, indexed
-  access, conditional branches, string mappings, mapped types, signatures... tttt clears it at the few sites a bug
-  was found (conditional sources, generic mapped targets and mappedTypeRelatedTo since 2026-10-20: mikro-orm's
-  `string[]` passed `OperatorMap<T> & FilterObject<T>` because `() => string` skipped the weak type check against a
-  template's `OperatorMap<...>`, which kept IndexFilterQuery's variance measurement going to 1.3M types). Correct:
-  clear both by default on entering structured comparison and pass them on only where tsc does.
 
 ## Type core (`src/ty/`)
 - `--shared-graph` (ty/graph.c, plan 86 track S) is sequential only: atoms, the type id counter, the id -> Ty table's

@@ -39,6 +39,10 @@ excalidraw, zod, effect and vscode after each session, and its mismatch counts m
    states on entering structured comparison and pass them on only at tsc's sites (relater.go's isRelatedTo vs
    recursiveTypeRelatedTo calls); mikro-orm's IndexFilterQuery stays fixed, perfsweep's types ratios don't rise. With
    time left, bugs/sourcesweep_checker.md's cheapest item.
+   **Done 2026-10-21** (worker isect): structured_related_impl() clears both states, passing() hands them on at tsc's
+   sites. Suite +1 (its own test), 9 corpora clean, flagflip xstate/zod unchanged, types within 0.1% without
+   recycling (mikro-orm 239.9k as before), instructions nest +0.0%, drizzle -0.0%, zod +1.2% (a recycle that moved,
+   -0.6% without recycling). bugs/sourcesweep_checker.md's item not started.
 5. **Triage.**
 6. **Insights.** report.md: 4a's state and cost, whether G1 is in reach next window. Check plan 58 (7.1.0 stable).
 

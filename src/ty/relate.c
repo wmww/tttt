@@ -63,6 +63,11 @@ typedef enum GlobalType {
     GLOBAL_EMPTY_TYPE_LITERAL, // Not a global: tsc's emptyTypeLiteralType, every `{}` written without an alias
 } GlobalType;
 
+// tsc's IntersectionState: what the comparison in progress was given (relater.go's intersectionState argument)
+typedef struct IState {
+    bool target, source;
+} IState;
+
 typedef struct RelationState {
     TyRelation relation;
     bool reporting;
@@ -74,13 +79,17 @@ typedef struct RelationState {
     Ty const* alias_fallback_source;
     Ty const* alias_fallback_target;
     VecTyReportLine lines; // innermost first while being collected
-    // Relating to the members of an intersection target (tsc's IntersectionState.Target): no excess property checks,
-    // the intersection as a whole had them
+    // The IntersectionState the next is_related_to() is given (tsc's isRelatedToEx argument). Relating to the members of an
+    // intersection target (IntersectionState.Target): no excess property or weak type checks, the intersection as a
+    // whole has them
     bool intersection_target;
-    // Relating the members of an intersection source (tsc's IntersectionState.Source): a member has no inferable index
-    // signature, the intersection as a whole is related afterwards. Part of the cache key, and kept down into the
-    // members' structure (their properties, signatures, type arguments...) like tsc's intersectionState
+    // Relating the members of an intersection source (IntersectionState.Source): a member has no inferable index
+    // signature, the intersection as a whole is related afterwards. Part of the cache key, like Target
     bool intersection_source;
+    // The IntersectionState of the structured comparison in progress (structured_related_impl()). Its own comparisons
+    // see none (tsc's plain isRelatedTo) unless they are among those tsc passes it on to: a union or intersection's
+    // members, constraints, type arguments by variance, properties, signatures and index signatures (passing())
+    IState passed;
     // The relation being computed went through an inferable index signature (CACHE_INDEX_INFERRED): it is the only
     // thing intersection_source changes, so a pair that holds without it holds under it too, and one that fails
     // without it fails under it (recursive_related() looks the pair up under the other key before computing it)
@@ -129,8 +138,26 @@ typedef struct RelationState {
 } RelationState;
 
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report);
+
+// Sets the IntersectionState the next comparisons are given, returning the one before
+static inline IState istate_swap(RelationState* st, IState to) {
+    IState old = { .target = st->intersection_target, .source = st->intersection_source };
+    st->intersection_target = to.target;
+    st->intersection_source = to.source;
+    return old;
+}
+// The comparisons tsc passes its intersectionState on to (isRelatedToEx(..., intersectionState)): between this and
+// istate_swap(st, saved) they see the structured comparison's own
+static inline IState passing(RelationState* st) { return istate_swap(st, st->passed); }
+// And those that see none (tsc's plain isRelatedTo) inside a helper that runs with it passed
+static Ternary plain_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
+    IState saved = istate_swap(st, (IState){0});
+    Ternary ret = is_related_to(me, st, source, target, report);
+    istate_swap(st, saved);
+    return ret;
+}
 static bool template_related(Checker* me, void* st, Ty const* source, Ty const* target) {
-    return is_related_to(me, st, source, target, false) != TERNARY_FALSE;
+    return plain_related(me, st, source, target, false) != TERNARY_FALSE;
 }
 static void report_variance(Checker* me, Ty const* ty, unsigned flag);
 // The recursion identities of the types whose base constraints are being computed, innermost first (tsc's stack in
@@ -3038,7 +3065,7 @@ static Ternary index_signatures_related(
                 Ty const* parts[2] = { template, ty_intrinsic(me, TY_UNDEFINED) };
                 template = ty_union(me, parts, 2, nullptr, (TyList){0});
             }
-            Ternary related = is_related_to(me, st, template, target_info->value, report);
+            Ternary related = plain_related(me, st, template, target_info->value, report); // (tsc's plain isRelatedTo)
             if (!related) return TERNARY_FALSE;
             result &= related;
             continue;
@@ -3170,8 +3197,12 @@ static Ternary tuples_related_excluding(
     return tuple_shapes_related(me, st, source_shape, source_args, target, report, excluded, excluded_len);
 }
 
+// (As the structured comparison was given: tsc's propertiesRelatedTo relates tuples' elements)
 static Ternary tuples_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
-    return tuples_related_excluding(me, st, source, target, report, nullptr, 0);
+    IState saved_istate = passing(st);
+    Ternary ret = tuples_related_excluding(me, st, source, target, report, nullptr, 0);
+    istate_swap(st, saved_istate);
+    return ret;
 }
 
 // (An array source is one rest element: tsc's propertiesRelatedTo for isArrayOrTupleType(source))
@@ -3679,6 +3710,9 @@ static Ternary type_args_related(
     for (u32 i = 0; i < variances->len; i++) {
         if (variances->data[i] & (VARIANCE_UNRELIABLE | VARIANCE_UNMEASURABLE)) *unreliable = true;
     }
+    // (As the structured comparison was given, but for the contravariant try of a bivariant argument: tsc's
+    // typeArgumentsRelatedTo)
+    IState saved_istate = passing(st);
     for (u32 i = 0; i < source_args.len && i < target_args.len; i++) {
         unsigned variance = i < variances->len ? variances->data[i] : VARIANCE_COVARIANT;
         unsigned kind = variance & (VARIANCE_BIVARIANT | VARIANCE_INDEPENDENT);
@@ -3688,7 +3722,7 @@ static Ternary type_args_related(
         Ternary related;
         if (variance & VARIANCE_UNMEASURABLE) {
             // Even so identical arguments make identical instantiations
-            related = st->relation == TY_RELATION_IDENTITY ? is_related_to(me, st, s, t, false) :
+            related = st->relation == TY_RELATION_IDENTITY ? plain_related(me, st, s, t, false) :
                 ty_is_related(me, s, t, TY_RELATION_IDENTITY) ? TERNARY_TRUE : TERNARY_FALSE;
         } else {
             // A measurement going through an unreliable variance is unreliable too (tsc 6.0's typeArgumentsRelatedTo)
@@ -3698,16 +3732,20 @@ static Ternary type_args_related(
             } else if (kind == VARIANCE_CONTRAVARIANT) {
                 related = is_related_to(me, st, t, s, report);
             } else if (kind == VARIANCE_BIVARIANT) {
-                related = is_related_to(me, st, t, s, false);
+                related = plain_related(me, st, t, s, false);
                 if (!related) related = is_related_to(me, st, s, t, report);
             } else {
                 related = is_related_to(me, st, s, t, report);
                 if (related) related &= is_related_to(me, st, t, s, report);
             }
         }
-        if (!related) return TERNARY_FALSE;
+        if (!related) {
+            result = TERNARY_FALSE;
+            break;
+        }
         result &= related;
     }
+    istate_swap(st, saved_istate);
     return result;
 }
 
@@ -3847,12 +3885,15 @@ static Ternary object_related(
 ) {
     // (A primitive's apparent type explains nothing: tsc's reportStructuralErrors)
     if (source_is_apparent) report = false;
+    // (Members as the structured comparison was given: tsc's propertiesRelatedTo, signaturesRelatedTo...)
+    IState saved_istate = passing(st);
     Ternary result = props_related(me, st, source, target, report, source_is_apparent);
     if (result) result &= signatures_related(me, st, source, target, false, report);
     if (result) result &= signatures_related(me, st, source, target, true, report);
     bool primitive = source_is_apparent && !(original->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_UNION | TYF_TYPE_PARAM |
         TYF_DEFERRED | TYF_NON_PRIMITIVE | TYF_ANY | TYF_UNKNOWN | TYF_NEVER));
     if (result) result &= index_signatures_related(me, st, source, target, primitive, report);
+    istate_swap(st, saved_istate);
     return result;
 }
 
@@ -4310,16 +4351,6 @@ static Ternary mapped_related(Checker* me, RelationState* st, MappedInfo const* 
     Ty const* target_template = ty_mapped_template(me, target);
     if (target->optional > 0) target_template = ty_optional_prop_type(me, target_template);
     return result & is_related_to(me, st, ty_instantiate(me, source_template, mapper), target_template, report);
-}
-
-// (Without IntersectionState, tsc's plain isRelatedTo in mappedTypeRelatedTo)
-static Ternary mapped_related_plain(Checker* me, RelationState* st, MappedInfo const* source, MappedInfo const* target, bool report) {
-    bool saved_target = st->intersection_target, saved_source = st->intersection_source;
-    st->intersection_target = st->intersection_source = false;
-    Ternary related = mapped_related(me, st, source, target, report);
-    st->intersection_target = saved_target;
-    st->intersection_source = saved_source;
-    return related;
 }
 
 // A tuple with a variadic element (a rest element that isn't an array: tsc's ElementFlags.Variadic)
@@ -4847,13 +4878,13 @@ Ty const* ty_conditional_constraint(Checker* me, Ty const* conditional) {
 
 static Ternary target_each_related(Checker* me, RelationState* st, Ty const* source, TyList targets, bool report) {
     Ternary result = TERNARY_TRUE;
-    bool saved = st->intersection_target;
-    st->intersection_target = true;
+    // (IntersectionState.Target alone: tsc's typeRelatedToEachType(..., IntersectionStateTarget))
+    IState saved = istate_swap(st, (IState){ .target = true });
     for (u32 i = 0; i < targets.len && result; i++) {
         Ternary related = is_related_to_side(me, st, source, targets.data[i], report, 1);
         result = related ? result & related : TERNARY_FALSE;
     }
-    st->intersection_target = saved;
+    istate_swap(st, saved);
     return result;
 }
 
@@ -5454,20 +5485,10 @@ static bool intersection_apparent_is_union(Checker* me, Ty const* source) {
     return false;
 }
 
-// A conditional source: through its default constraint, then its distributive one (tsc's structuredTypeRelatedToWorker)
-static Ternary conditional_source_related_impl(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report);
-
-// (Its constraints are related without IntersectionState.Source: tsc's plain isRelatedTo, so a conditional member of an
-// intersection source is as related as the conditional alone)
+// A conditional source: through its default constraint, then its distributive one (tsc's structuredTypeRelatedToWorker).
+// (Without IntersectionState: tsc's plain isRelatedTo, so a conditional member of an intersection source is as related
+// as the conditional alone, and one related to an intersection target's member meets its weak type check)
 static Ternary conditional_source_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
-    bool saved_source = st->intersection_source;
-    st->intersection_source = false;
-    Ternary ret = conditional_source_related_impl(me, st, source, target, report);
-    st->intersection_source = saved_source;
-    return ret;
-}
-
-static Ternary conditional_source_related_impl(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     // Already checking this conditional type as a source further up: don't recurse (tsc's
     // isDeeplyNestedType(source, sourceStack, sourceDepth, 10); it is on the stack already)
     if (st->source_depth && relation_deeply_nested(me, source, st->source_stack, st->source_entries, &st->source_entries_valid, st->source_depth - 1, 10, false)) return TERNARY_MAYBE;
@@ -5531,6 +5552,17 @@ static Ternary structured_related_members(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
 );
 
+// The structured comparison again, of the same pair or another for it, as it was given (tsc goes on in the same
+// structuredTypeRelatedToWorker)
+static Ternary structured_related_passing(
+    Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
+) {
+    IState saved_istate = passing(st);
+    Ternary ret = structured_related_impl(me, st, source, target, report, use_variances);
+    istate_swap(st, saved_istate);
+    return ret;
+}
+
 // An intersection with its instantiable members replaced by their base constraints (unknown if none), null if it has none
 [[gnu::cold]] static Ty const* hoisted_constraints(Checker* me, Ty const* intersection) {
     TyList types = intersection->composite.types;
@@ -5563,15 +5595,62 @@ static bool alias_variance_applies(Checker* me, RelationState const* st, Ty cons
         !(st->alias_fallback_source == source && st->alias_fallback_target == target);
 }
 
+// A type parameter source: through its constraint, as the structured comparison was given (tsc's
+// structuredTypeRelatedToWorker passes its intersectionState on)
+static Ternary type_param_source_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
+    Ty const* constraint = ty_param_constraint(me, source);
+    if (!constraint || constraint == source) {
+        // (Comparable to a deferred type, as unknown is: `T` and `GetDecoderResult<D>`; to another type parameter
+        // not, the carve-out of tsc's structuredTypeRelatedToWorker for type parameter targets)
+        if (target->kind == TY_TYPE_PARAM ||
+            ((target->flags & TYF_DEFERRED) && st->relation != TY_RELATION_COMPARABLE)
+        ) {
+            return TERNARY_FALSE;
+        }
+        // As `unknown` (tsc's getConstraintOfType(source) || unknownType): comparable to anything, and without
+        // strictNullChecks its apparent type `{}` against object types (apparent_type()), though not as a `{}`
+        // that any mapped type with `?` takes
+        return is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false);
+    }
+    // The constraint as it is first, then with the type parameter as its `this` (tsc: raw `this` types from
+    // base classes need it, subclassWithPolymorphicThisIsAssignable). From one type parameter to another, or from
+    // an `unknown` one, the constraint's failure doesn't explain anything
+    bool report_constraint = report && target->kind != TY_TYPE_PARAM && constraint != ty_intrinsic(me, TY_UNKNOWN_);
+    Ty const* with_this = ty_with_this_arg(me, constraint, source);
+    // (Against the target as tsc's isRelatedTo normalized it: a deferred reference without its alias, so the
+    // lines below print `[unknown, ...unknown[]]` where the head said `AnyTuple`)
+    if (report_constraint) target = normalized_reference(me, target);
+    if (target->kind == TY_UNION) {
+        // Against a union, the constraint hoisted into an intersection with the type parameter too, which can
+        // then match its own intersections in the target (tsc's structuredTypeRelatedTo,
+        // getEffectiveConstraintOfIntersection): `V extends A | B` to `(A & V) | (B & V)`
+        Ternary related = is_related_to_side(me, st, constraint, target, false, 2);
+        if (!related && with_this != constraint) related = is_related_to_side(me, st, with_this, target, false, 2);
+        if (related) return related;
+        // (Only a definite answer: tttt relates a generic intersection to a union by its members, so `string & T`
+        // finds this very relation of T in flight, a Maybe tsc's whole-intersection comparison never sees)
+        Ty const* effective = effective_constraint_of_members(me, source, (TyList){ .data = &source, .len = 1 }, true);
+        if (effective && is_related_to_side(me, st, effective, target, false, 2) == TERNARY_TRUE) return TERNARY_TRUE;
+        if (!report_constraint) return TERNARY_FALSE;
+    }
+    if (with_this == constraint) return is_related_to_side(me, st, constraint, target, report_constraint, 2);
+    Ternary related = is_related_to_side(me, st, constraint, target, false, 2);
+    if (related) return related;
+    return is_related_to_side(me, st, with_this, target, report_constraint, 2);
+}
+
 // `use_variances` false: two instantiations of the same generic are compared by their members, as for an explanation
 static Ternary structured_related_impl(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
 ) {
-    bool saved_source = st->intersection_source;
+    // (What it was given is passed on only where tsc does, see passing(): every other comparison below sees none)
+    IState saved_passed = st->passed;
+    st->passed = istate_swap(st, (IState){0});
     Ty const* saved_array = st->tuple_array_source;
     Ty const* saved_tuple = st->tuple_source;
     Ternary ret = structured_related_members(me, st, source, target, report, use_variances);
-    st->intersection_source = saved_source;
+    istate_swap(st, st->passed);
+    st->passed = saved_passed;
     st->tuple_array_source = saved_array;
     st->tuple_source = saved_tuple;
     return ret;
@@ -5597,13 +5676,18 @@ static Ternary structured_related_members(
                 for (u32 i = 0; i < to->composite.types.len; i++) if (to->composite.types.data[i] == source) return TERNARY_TRUE;
             }
         }
+        // (The members as the union was given: tsc's eachTypeRelatedToType and someTypeRelatedToType pass it on)
+        IState saved_istate = passing(st);
+        Ternary related;
         if (comparable) {
-            if (union_has_member(source, target)) return TERNARY_TRUE; // (tsc's someTypeRelatedToType)
-            return some_related(me, st, source->composite.types, target,
-                report && !(source->flags & TYF_BOOLEAN) && !ty_is_enum_union(source));
+            related = union_has_member(source, target) ? TERNARY_TRUE : // (tsc's someTypeRelatedToType)
+                some_related(me, st, source->composite.types, target, report && !(source->flags & TYF_BOOLEAN) && !ty_is_enum_union(source));
+        } else {
+            // (Not about the members of `boolean` or an enum, primitives: tsc's unionOrIntersectionRelatedTo)
+            related = each_related(me, st, source->composite.types, target, report && !(source->flags & TYF_BOOLEAN) && !ty_is_enum_union(source));
         }
-        // (Not about the members of `boolean` or an enum, primitives: tsc's unionOrIntersectionRelatedTo)
-        return each_related(me, st, source->composite.types, target, report && !(source->flags & TYF_BOOLEAN) && !ty_is_enum_union(source));
+        istate_swap(st, saved_istate);
+        return related;
     }
     bool source_is_generic = source->kind == TY_TYPE_PARAM || (source->flags & TYF_DEFERRED) != 0;
     // A fresh empty object literal is never a subtype target of something non-empty, so `c || {}` reduces to c's type
@@ -5628,7 +5712,9 @@ static Ternary structured_related_members(
         isize_t saved = vec_ty_report_line_size(&st->lines);
         // (A member of an intersection source relates to the union's members as one still: tsc's typeRelatedToSomeType
         // passes the intersectionState on, so `{}` of `{ a: number } & {}` has no inferable index signature there either)
+        IState saved_istate = passing(st);
         Ternary related = related_to_some(me, st, ty_regular_object_literal(me, source), target, report);
+        istate_swap(st, saved_istate);
         if (!related && ((source->flags & TYF_OBJECT) || source->kind == TY_INTERSECTION)) {
             related = related_to_discriminated(me, st, source, target);
             if (related) report_truncate(st, saved);
@@ -5666,10 +5752,7 @@ static Ternary structured_related_members(
         // { type: T })`; vue's `shallowRef(r)`, whose branches are each a ShallowRef<T> but not the weak
         // `{ [ShallowRefMarker]?: true }` alone
         if (!result && source->kind == TY_CONDITIONAL) {
-            bool saved_target = st->intersection_target;
-            st->intersection_target = false;
             Ternary related = conditional_source_related(me, st, source, target, false);
-            st->intersection_target = saved_target;
             if (related) {
                 report_truncate(st, saved);
                 return related;
@@ -5683,7 +5766,7 @@ static Ternary structured_related_members(
             generic |= member->kind == TY_TYPE_PARAM || (member->flags & TYF_DEFERRED) || !(member->flags & TYF_OBJECT) ||
                 ty_members(me, member)->mapped;
         }
-        if (result && !st->intersection_target && !generic && (source->flags & TYF_OBJECT || source->kind == TY_INTERSECTION)) {
+        if (result && !st->passed.target && !generic && (source->flags & TYF_OBJECT || source->kind == TY_INTERSECTION)) {
             result &= intersection_props_related(me, st, source, target, report);
             // (And a fresh object literal's properties against the index signatures they combine to)
             if (result && ty_is_fresh_object(source) && source->kind == TY_ANONYMOUS && source->anonymous.object_literal) {
@@ -5710,7 +5793,7 @@ static Ternary structured_related_members(
         }
     }
     if (source->kind == TY_INTERSECTION) {
-        bool saved_source = st->intersection_source;
+        // (Its members under IntersectionState.Source alone: tsc's someTypeRelatedToType(..., IntersectionStateSource))
         st->intersection_source = true;
         // (Not an intersection of object types against a union, which related_to_some() above tried member by member
         // with the whole intersection: tsc's unionOrIntersectionRelatedTo never relates the source's members alone to a
@@ -5731,15 +5814,19 @@ static Ternary structured_related_members(
             if (target->kind == TY_UNION && member->kind == TY_TYPE_PARAM) continue;
             related = is_related_to_side(me, st, member, target, false, 2);
         }
-        st->intersection_source = saved_source;
+        st->intersection_source = false;
         // The members' constraints together may be related (tsc's getEffectiveConstraintOfIntersection): `T & {}` with
         // `T extends Node | undefined` is a Node
         // (tsc relates the intersection normalized, its members simplified, in the first place: `Partial<T>[K] & {}` is
         // `T[K] & {}`. Only once the members as they are failed here, which keeps the common case cheap)
+        // (Both as the intersection was given: tsc's isRelatedToEx normalizes before it gets here, and
+        // structuredTypeRelatedTo passes it on to the effective constraint)
+        IState saved_istate = passing(st);
         Ty const* normalized = related ? source : normalized_intersection(me, source, false);
         if (normalized != source) related = is_related_to_side(me, st, normalized, target, false, 2);
         Ty const* constraint = related ? nullptr : effective_intersection_constraint(me, source, target->kind == TY_UNION);
         if (constraint) related = is_related_to_side(me, st, constraint, target, false, 2);
+        istate_swap(st, saved_istate);
         if (related) {
             // A member being related isn't enough for the target's optional properties, which the intersection as a
             // whole may have with another type: `{ a: null } & { b: string }` to `{ a?: number, b: string }` (tsc's
@@ -5754,7 +5841,9 @@ static Ternary structured_related_members(
             if (!member_is_target && (target->flags & TYF_OBJECT) && !ty_is_generic_object(me, target) &&
                 !(target->kind == TY_REFERENCE && is_array_target(me, target->reference.target)) && !is_tuple(target)
             ) {
+                IState saved_props = passing(st);
                 related &= props_related_impl(me, st, apparent_type(me, source), target, report, false, true);
+                istate_swap(st, saved_props);
             }
             return related;
         }
@@ -5791,7 +5880,7 @@ static Ternary structured_related_members(
                 Ty const* saved_source = st->alias_fallback_source, *saved_target = st->alias_fallback_target;
                 st->alias_fallback_source = source;
                 st->alias_fallback_target = target;
-                related = structured_related_impl(me, st, source, target, true, true);
+                related = structured_related_passing(me, st, source, target, true, true);
                 st->alias_fallback_source = saved_source;
                 st->alias_fallback_target = saved_target;
                 return related;
@@ -5802,7 +5891,7 @@ static Ternary structured_related_members(
                 while (vec_ty_report_line_size(&st->lines) > saved) {
                     vec_ty_report_line_push(&variance_lines, vec_ty_report_line_pull(&st->lines));
                 }
-                if (structured_related_impl(me, st, source, target, true, false)) {
+                if (structured_related_passing(me, st, source, target, true, false)) {
                     restore_variance_lines(st, saved, &variance_lines);
                 }
                 vec_ty_report_line_drop(&variance_lines);
@@ -5958,7 +6047,10 @@ static Ternary structured_related_members(
             // (tsc: only for assignability and comparability, not the subtype relations)
             Ty const* constraint = is_subtype_relation(st->relation) ? nullptr : write_constraint_of_indexed(me, target);
             if (constraint) {
+                // (As the structured comparison was given, unlike the parts above: tsc's isRelatedToEx)
+                IState saved_istate = passing(st);
                 Ternary related = is_related_to(me, st, source, constraint, report);
+                istate_swap(st, saved_istate);
                 if (related) {
                     vec_ty_report_line_drop(&original);
                     return related;
@@ -6032,7 +6124,9 @@ static Ternary structured_related_members(
                 }
                 Ty const* extends = target->conditional.extends;
                 bool skip_true = ty_definitely_unassignable(me, check, extends);
-                // (Only the target is pushed on the deep nesting stacks: tsc's RecursionFlags.Target)
+                // (Only the target is pushed on the deep nesting stacks: tsc's RecursionFlags.Target. As the structured
+                // comparison was given, unlike two conditional types' parts above)
+                IState saved_istate = passing(st);
                 Ternary related = skip_true ? TERNARY_TRUE :
                     is_related_to_side(me, st, source, ty_conditional_branch(me, target, true), false, 1);
                 if (related) {
@@ -6040,6 +6134,7 @@ static Ternary structured_related_members(
                     if (!related_false && !skip_true && ty_definitely_assignable(me, check, extends)) related_false = TERNARY_TRUE;
                     related &= related_false;
                 }
+                istate_swap(st, saved_istate);
                 if (related) return related;
             }
         }   break;
@@ -6074,18 +6169,15 @@ static Ternary structured_related_members(
     }
     if (target_mapped && source->kind == TY_ANONYMOUS && (source->flags & TYF_OBJECT) && ty_members(me, source)->mapped) {
         // Two mapped types whose keys aren't known yet: by constraint and template (tsc's mappedTypeRelatedTo)
-        return mapped_related_plain(me, st, ty_members(me, source)->mapped, target_mapped, report);
+        return mapped_related(me, st, ty_members(me, source)->mapped, target_mapped, report);
     }
     bool quiet_members = false;
     if (target_mapped) {
         isize_t saved = vec_ty_report_line_size(&st->lines);
-        // (Without IntersectionState: tsc's plain isRelatedTo, so `S[P]` meets a weak template member's common property
-        // check even inside an intersection target, mikro-orm's `string[]` isn't an `OperatorMap<T> & FilterObject<T>`)
-        bool saved_target = st->intersection_target, saved_source = st->intersection_source;
-        st->intersection_target = st->intersection_source = false;
+        // (Without IntersectionState, like everything not passing() it: tsc's plain isRelatedTo, so `S[P]` meets a weak
+        // template member's common property check even inside an intersection target, mikro-orm's `string[]` isn't an
+        // `OperatorMap<T> & FilterObject<T>`)
         Ternary related = generic_mapped_target_related(me, st, source, target_mapped, report);
-        st->intersection_target = saved_target;
-        st->intersection_source = saved_source;
         // (Why S[K] isn't the template says nothing: tsc resets the error info, resetErrorInfo(saveErrorInfo))
         if (!related) report_truncate(st, saved);
         // HACK: a generic source falls through to the member-by-member comparison, which a mapped type without
@@ -6121,45 +6213,10 @@ static Ternary structured_related_members(
     // Generic sources
     switch ((TyKind)source->kind) {
         case TY_TYPE_PARAM: {
-            Ty const* constraint = ty_param_constraint(me, source);
-            if (!constraint || constraint == source) {
-                // (Comparable to a deferred type, as unknown is: `T` and `GetDecoderResult<D>`; to another type parameter
-                // not, the carve-out of tsc's structuredTypeRelatedToWorker for type parameter targets)
-                if (target->kind == TY_TYPE_PARAM ||
-                    ((target->flags & TYF_DEFERRED) && st->relation != TY_RELATION_COMPARABLE)
-                ) {
-                    return TERNARY_FALSE;
-                }
-                // As `unknown` (tsc's getConstraintOfType(source) || unknownType): comparable to anything, and without
-                // strictNullChecks its apparent type `{}` against object types (apparent_type()), though not as a `{}`
-                // that any mapped type with `?` takes
-                return is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false);
-            }
-            // The constraint as it is first, then with the type parameter as its `this` (tsc: raw `this` types from
-            // base classes need it, subclassWithPolymorphicThisIsAssignable). From one type parameter to another, or from
-            // an `unknown` one, the constraint's failure doesn't explain anything
-            bool report_constraint = report && target->kind != TY_TYPE_PARAM && constraint != ty_intrinsic(me, TY_UNKNOWN_);
-            Ty const* with_this = ty_with_this_arg(me, constraint, source);
-            // (Against the target as tsc's isRelatedTo normalized it: a deferred reference without its alias, so the
-            // lines below print `[unknown, ...unknown[]]` where the head said `AnyTuple`)
-            if (report_constraint) target = normalized_reference(me, target);
-            if (target->kind == TY_UNION) {
-                // Against a union, the constraint hoisted into an intersection with the type parameter too, which can
-                // then match its own intersections in the target (tsc's structuredTypeRelatedTo,
-                // getEffectiveConstraintOfIntersection): `V extends A | B` to `(A & V) | (B & V)`
-                Ternary related = is_related_to_side(me, st, constraint, target, false, 2);
-                if (!related && with_this != constraint) related = is_related_to_side(me, st, with_this, target, false, 2);
-                if (related) return related;
-                // (Only a definite answer: tttt relates a generic intersection to a union by its members, so `string & T`
-                // finds this very relation of T in flight, a Maybe tsc's whole-intersection comparison never sees)
-                Ty const* effective = effective_constraint_of_members(me, source, (TyList){ .data = &source, .len = 1 }, true);
-                if (effective && is_related_to_side(me, st, effective, target, false, 2) == TERNARY_TRUE) return TERNARY_TRUE;
-                if (!report_constraint) return TERNARY_FALSE;
-            }
-            if (with_this == constraint) return is_related_to_side(me, st, constraint, target, report_constraint, 2);
-            Ternary related = is_related_to_side(me, st, constraint, target, false, 2);
-            if (related) return related;
-            return is_related_to_side(me, st, with_this, target, report_constraint, 2);
+            IState saved_istate = passing(st);
+            Ternary related = type_param_source_related(me, st, source, target, report);
+            istate_swap(st, saved_istate);
+            return related;
         }
 
         case TY_KEYOF: {
@@ -6183,14 +6240,16 @@ static Ternary structured_related_members(
             // Two indexed access types relate by their parts only (the target's case above), not through the source's
             // constraint: `S[K]` isn't `U[K]` because `S[keyof T]` happens to be (tsc's structuredTypeRelatedToWorker)
             if (target->kind == TY_INDEXED) break;
+            // (Its constraint as the structured comparison was given, tsc's TypeVariable case)
+            IState saved_istate = passing(st);
             // (tsc: `getConstraintOfType(source) || unknownType`, which is comparable to anything; not elaborated)
             Ty const* constraint = constraint_of_type(me, source);
-            if (!constraint) return is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false);
+            Ternary related = !constraint ? is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false) :
+                is_related_to_side(me, st, constraint, target, report && !mapped_generic_indexed_access(me, source), 2);
+            istate_swap(st, saved_istate);
             // `{ [P in K]: E }[X]` was E with X for P; `{ [P in K]: E }[C]`, with C the constraint of X, may be related
             // where that isn't (tsc's isMappedTypeGenericIndexedAccess branch)
-            if (!mapped_generic_indexed_access(me, source)) return is_related_to_side(me, st, constraint, target, report, 2);
-            Ternary related = is_related_to_side(me, st, constraint, target, false, 2);
-            if (related) return related;
+            if (!constraint || related || !mapped_generic_indexed_access(me, source)) return related;
             Ty const* index_constraint = constraint_of_type(me, source->indexed.index);
             Ty const* whole = index_constraint && index_constraint != source->indexed.index ?
                 indexed_or_null(me, source->indexed.object, index_constraint) : nullptr;
@@ -6198,18 +6257,15 @@ static Ternary structured_related_members(
                 related = is_related_to_side(me, st, whole, target, false, 2);
                 if (related) return related;
             }
-            return is_related_to_side(me, st, constraint, target, report, 2);
-        }
-
-        case TY_CONDITIONAL: {
-            // (Its constraints relate to an intersection target's member without IntersectionState.Target: tsc passes
-            // no intersectionState there, so a weak member is checked for common properties)
-            bool saved = st->intersection_target;
-            st->intersection_target = false;
-            Ternary related = conditional_source_related(me, st, source, target, report);
-            st->intersection_target = saved;
+            // (Explained by the constraint)
+            if (!report) return TERNARY_FALSE;
+            saved_istate = passing(st);
+            related = is_related_to_side(me, st, constraint, target, report, 2);
+            istate_swap(st, saved_istate);
             return related;
         }
+
+        case TY_CONDITIONAL: return conditional_source_related(me, st, source, target, report);
 
         case TY_TEMPLATE_LITERAL:
             if (!(target->flags & (TYF_OBJECT | TYF_TEMPLATE_LITERAL))) {
@@ -6265,7 +6321,11 @@ static Ternary structured_related_members(
             Ty const* number = ty_intrinsic(me, TY_NUMBER);
             IndexInfo const* ti = ty_applicable_index_info(me, apparent_type(me, target), number);
             IndexInfo const* si = ti ? ty_applicable_index_info(me, apparent_type(me, source), number) : nullptr;
-            if (si) elements &= is_related_to(me, st, si->value, ti->value, false);
+            if (si) {
+                IState saved_istate = passing(st);
+                elements &= is_related_to(me, st, si->value, ti->value, false);
+                istate_swap(st, saved_istate);
+            }
         }
         return elements;
     }
@@ -6286,7 +6346,10 @@ static Ternary structured_related_members(
             if (has_rest) {
                 unsigned char rest_flag = TUPLE_ELEMENT_REST;
                 TupleShape as_tuple = { .arity = 1, .flags = &rest_flag, .readonly = source->reference.target == my readonly_array_target };
-                return tuple_shapes_related(me, st, &as_tuple, (TyList){ .data = &source, .len = 1 }, target, report, nullptr, 0);
+                IState saved_istate = passing(st);
+                Ternary related = tuple_shapes_related(me, st, &as_tuple, (TyList){ .data = &source, .len = 1 }, target, report, nullptr, 0);
+                istate_swap(st, saved_istate);
+                return related;
             }
             u32 min = 0;
             for (u32 i = 0; i < shape->arity; i++) {
@@ -6380,7 +6443,7 @@ static Ternary structured_related_members(
                         while (vec_ty_report_line_size(&st->lines) > args_saved) {
                             vec_ty_report_line_push(&variance_lines, vec_ty_report_line_pull(&st->lines));
                         }
-                        if (structured_related_impl(me, st, source, target, true, false)) {
+                        if (structured_related_passing(me, st, source, target, true, false)) {
                             restore_variance_lines(st, args_saved, &variance_lines);
                         }
                         vec_ty_report_line_drop(&variance_lines);
@@ -6395,7 +6458,9 @@ static Ternary structured_related_members(
                 if (related && source_target->declared.this_param && source_this && target_this &&
                     (source_this != source || target_this != target) && source_this != target_this
                 ) {
+                    IState saved_istate = passing(st);
                     related &= is_related_to(me, st, source_this, target_this, report);
+                    istate_swap(st, saved_istate);
                 }
                 if (related || (!unreliable && !void_fallback)) return related;
                 report_truncate(st, saved);
@@ -6469,15 +6534,17 @@ static Ternary structured_related_members(
     if (apparent != source && (source->kind == TY_ANONYMOUS || source->kind == TY_INTERSECTION) && apparent->kind == TY_REFERENCE &&
         target->kind == TY_REFERENCE && apparent->reference.target == target->reference.target && !is_tuple(apparent)
     ) {
-        return structured_related_impl(me, st, apparent, target, report, true);
+        return structured_related_passing(me, st, apparent, target, report, true);
     }
     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return TERNARY_FALSE;
     if (apparent->kind == TY_INTERSECTION) {
         // As a whole: its signatures and index infos are those of its members together (resolve_intersection_members())
+        IState saved_istate = passing(st);
         Ternary result = props_related(me, st, apparent, target, report, false);
         if (result) result &= signatures_related(me, st, apparent, target, false, report);
         if (result) result &= signatures_related(me, st, apparent, target, true, report);
         if (result) result &= index_signatures_related(me, st, apparent, target, false, report);
+        istate_swap(st, saved_istate);
         return result;
     }
     // Only a primitive's apparent type is kept quiet about (tsc's sourceIsPrimitive): `object` and `unknown` relate and
@@ -6667,7 +6734,7 @@ static bool fails_common_properties(Checker* me, RelationState* st, Ty const* so
             Members const* members = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_members(me, apparent) : nullptr;
             Signature const* sig = members && members->call_count ? members->call[0] :
                 members && members->construct_count ? members->construct[0] : nullptr;
-            if (sig && is_related_to(me, st, signature_return_type(me, sig), target, false)) {
+            if (sig && plain_related(me, st, signature_return_type(me, sig), target, false)) {
                 report_line(st, 2560, cstr_d("Value of type '", source_str, "' has no properties in common with type '",
                     target_str, "'. Did you mean to call it?"));
             } else {
@@ -7038,7 +7105,7 @@ static Ty const* prop_or_index_type(Checker* me, Ty const* ty, Atom const* name)
 }
 
 static bool related_for_matching(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
-    if (st) return is_related_to(me, st, source, target, false) != TERNARY_FALSE;
+    if (st) return plain_related(me, st, source, target, false) != TERNARY_FALSE;
     return ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE);
 }
 
@@ -7436,7 +7503,7 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
             }
             Ty const* expected = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
             ty_buf_drop(&parts);
-            if (!is_related_to(me, st, prop_type(me, prop), expected, report)) {
+            if (!plain_related(me, st, prop_type(me, prop), expected, report)) {
                 if (report) {
                     cstr name = ty_prop_written_name(me, prop);
                     report_property_incompatible(st, cstr_sv(&name));
@@ -7848,6 +7915,7 @@ static bool check_related(
     st->lines = (VecTyReportLine){0};
     st->intersection_target = false;
     st->intersection_source = false;
+    st->passed = (IState){0};
     st->index_inferred = st->twin_assumed = st->no_twin = false;
     st->tuple_array_source = st->tuple_source = nullptr;
     st->maybe_keys = nullptr;
