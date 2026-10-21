@@ -30,6 +30,28 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## Stage 2 session 2 (2026-10-22, worker k1; this box, 4 vCPUs shared with other agents)
+Single-threaded checker speed, base ee9501eb8 -> 859a7a6a2 (plan 86 stage 2). **Callgrind K1 instructions, PGO + LTO
+builds of both** (`pgobuild.sh` without ensure-corpora): vscode 77.79 -> 73.69 G (-5.3%), excalidraw 6.51 -> 5.80
+(-10.9%), drizzle 5.60 -> 5.28 (-5.7%), effect 8.14 -> 7.68 (-5.6%), zod 4.22 -> 3.99 (-5.4%), tsc 3.87 -> 3.74
+(-3.3%), nest 1.007 -> 0.993 (-1.4%). Release (-O3) vscode at 934908c76: 91.56 -> 88.62 G.
+**Wall at K1**, best of N interleaved base/new, s: quiet (load 5-6): tsc 0.50 / 0.50 (7 runs), drizzle 0.86 / 0.82
+(7); at abf151c0d (four commits earlier) vscode 12.87 / 12.00 (3, load ~5). Under load 19-21 (relative only): zod
+0.92 / 1.01, effect 2.36 / 2.25, excalidraw 1.48 / 1.39, vscode 20.59 / 17.98. Needs the laptop's numbers.
+What gave what (release, callgrind, against the commit before): a type parameter's instantiation out of
+instantiate_structured()'s frame (drizzle -2.5%); allocation-free temporaries in call resolution, relations,
+inference, members (zod -2.0%; the malloc family was 5.6% of vscode's instructions, ~3% after, most of the rest the
+loader's paths: push_path_to_absolute, relative_path_of, module_resolver_resolve_shared); a name filter for member
+tables of at most 8 props (excalidraw -2.5%); subtype reduction's discriminating key remembered per type
+(excalidraw -5.8%); node links, intern tables and relation caches at most 5/8 full (-0.3 to -0.6%); template text
+appended in runs (excalidraw -1.3%); hot functions' rare cases (with a local buffer: a frame and a stack protector
+check for every call) out of line (apparent_type_inner, find_prop_in, apparent_type_of_mapped_at,
+resolved_base_constraint: -0.2 to -0.9%). **Declined**: the distribution's hardening flags (-fno-stack-protector etc.:
+-4 to -5.5% instructions, 0-3% wall, a security-posture change: kept); LazySlots as two levels (-0.1% instructions,
+D1 read misses up 2.07 -> 2.13% on tsc); splitting is_related_to(), recursive_related() or check_related() at their
+caches (instructions up or flat). The parser is ~12% of vscode's instructions with no hot site (74M child Parser
+creations for 138 MB of source, the top site 10%): structural.
+
 ## The 12-core box at 5f2cd699: the flag's laptop bench (2026-10-21, run by an agent on the human's laptop)
 Plan 90 section 3 item 2's ask. Same machine as below (on AC, `balanced`), pgo/tttt at 5f2cd699 (plan 86 stage 4f
 done). `scripts/bench.sh --runs 3 --checkers 24 --bun bun-canary --tscrs tsc-rs-0.7.0`, run twice back to back: plain,
