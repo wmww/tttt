@@ -222,3 +222,12 @@ places that trade an acquire load for ~1% ("formally a race, x86 saves us": `ty_
 3. Write a small memory note for yourself if your harness has one; the first coordinator's notes are in
    `~/.claude/projects/-home-ai-tttt/memory/` (coordinator-workflow-preferences.md, parallel-subagent-merging.md).
 4. Then go idle and let the reports come to you.
+
+## Outcome (2026-10-23)
+- Stage 4f was designed, built and its deletions landed (~70 picks, `git log de94e1179..`): write-once shared words,
+  private overlays, no waiting; plan 86 "Stage 4f: done" is the write-up, with the residues (C, V, W).
+- The numbers are in measurements.md "Plan 86 stage 4f: the end state" and "Oracle totals (2026-10-23)"; vision.md
+  "Course correction (2026-10-23)" has the decisions.
+- The flag stays off by default: the release criterion of section 3 item 4 is not met (residues C/V/W, the human's
+  laptop bench). Section 1's workflow and section 4's lessons held; the sections on stage 4f's design are history.
+- **Superseded by `agents/plans/90_next_coordinator.md`**, the next coordinator's briefing.

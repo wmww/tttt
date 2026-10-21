@@ -342,7 +342,7 @@ done; `--threads 4` K4 is this box's default (2 cores x 2 SMT). `off` is `--chec
   project's own `.ts` code instantiating its libraries (dokploy's trpc router of zod schemas, drizzle's own sources),
   which no up-front layer can hold. Plan 85 closed on this (vision.md).
 
-## Plan 86 gate G2: `--shared-graph` on threads (2026-10-21, b97b6f4ac, this box: 16 vCPUs shared with other agents)
+## Plan 86 gate G2: `--shared-graph` on threads (2026-10-21; history: the lock, waits and redo it measures are deleted, see "Plan 86 stage 4f: the end state"; b97b6f4ac, this box: 16 vCPUs shared with other agents)
 Release build (not PGO), `-q --keep-going --noEmit`, best of 3 by wall; load 4.8-6.8 (other agents). Columns: wall s,
 CPU s (user+sys), peak RSS MB. K1 = `--threads 1 --checkers 1`; def = no flags; defK / shK = `--threads K --checkers K`
 without / with `--shared-graph` (which turns recycling off).
@@ -416,18 +416,20 @@ claim_and_measure() is gone (not just off). Base = de94e1179 (lock on, stamps of
   (lock) 0.417 / 0.439: the lock's +54% is gone and the flag now beats the defaults. Effect defaults 0.267 / 0.271,
   flag 0.293 / 0.297, base flag 0.281 / 0.286: effect is still +10% over the defaults (it was +17% at G2).
 
-## Oracle totals (2026-10-21: gate G1's `scripts/oracles.py` run after stage 4c, and the merger's suite at b3a67c3e5)
-Suite 13958 / 13992 (dts 1887 / 1909; `scripts/passcount.py`; the +1 is the IntersectionState audit's own test),
-`--no-defer-bodies` and `--checker-memory 0` unchanged, every corpus 0/0 but vue 0/2 (tsc-src and typescript-eslint
-crashed in that run under the scripts' old address-space cap: `-b` reserves 12-28 GB on 16 cores, `--mem-gb 48` since,
-triage.md), DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 18 / 3 / 2 (missing / spurious / other code;
-flagflip.py runs at `--checkers 1`), source sweep `--sample 4` 1272 / 1274 (full: 5235 / 5242 on 2026-10-20), `-b`
-sweep 411 / 416, clidiff 3823 / 3831 plus typescript-eslint's cap crash (3824 without it), dtsdiff 1327 / 1350
-projects (+7 as tsgo `--singleThreaded`; 1330 on 2026-10-20, the difference not looked at), kdiff 4 and recycle 4 (all
-tsgo-shared dependences), perfsweep worst types ratio 1.40 (lit tsserver-plugin). None of this ran with
-`--shared-graph` (only the suite and the corpora have: "Plan 86 gate G2"). Instructions: `test/instrcount.txt`.
-`scripts/oracles.py` reprints all of these (over 25 minutes when the box is loaded: a generous background timeout);
-compare against its output, not this paragraph, once it's stale.
+## Oracle totals (2026-10-23: the merger's last full `scripts/oracles.py` runs, 2026-10-21/22, plain at 9032ae214 and 8d693aeb5)
+Suite 13962 / 13996 (dts 1887 / 1909; `scripts/passcount.py`), `--no-defer-bodies` and `--checker-memory 0` unchanged,
+every corpus 0/0 but vue 0/2, DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 18 / 3 / 2, source sweep `--sample
+4` 1272 / 1274 (1271 at 9032ae214: CONDP's angular-cli regression, fixed at the cause by cff135035; full: 5235 / 5242
+on 2026-10-20), `-b` sweep 411 / 416, clidiff 3824 / 3831, dtsdiff 1327 / 1350 projects (+7 as tsgo
+`--singleThreaded`; the history dependence fixed: vscode 9929 / 9929, vitest/ui a tsgo check-order artifact), kdiff 3
+and recycle 3 (rxjs/packages/rxjs, sequelize, sequelize/packages/core: tsgo-shared), perfsweep worst types ratio 1.40
+(lit tsserver-plugin). **With `TTTT_SHARED_GRAPH=1`** (the merger's double run at 9032ae214): the same everywhere but
+kdiff 16 / 3814 at that commit (flag-only: mikro-orm x3 (C), trpc x3 and dokploy (V), folo renderer, trpc/examples/nuxt
+(W), renovate, react-navigation x2, folo ssr, redux-toolkit), 8 / 3814 at the end state (plan 86 "Stage 4f: done");
+the release criterion wants them equal. The full plain and flagged runs at the final head are the next coordinator's
+first measurement (plan 90 section 3 item 2). Instructions: `test/instrcount.txt`. `scripts/oracles.py` reprints all
+of these (20-30 minutes when the box is loaded: a generous background timeout); compare against its output, not this
+paragraph, once it's stale.
 
 ## Past conclusions
 Condensed from the per-session sections (2026-09-28 .. 2026-10-19); `git log -S'<heading>' -- agents/measurements.md`
