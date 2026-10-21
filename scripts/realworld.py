@@ -160,7 +160,7 @@ def main():
     ap.add_argument('--code', help='list every place this code is reported')
     ap.add_argument('--no-build', action='store_true')
     ap.add_argument('--timeout', type=int, default=300)
-    ap.add_argument('--mem-gb', type=int, default=12)
+    ap.add_argument('--mem-gb', type=int, default=24, help='RLIMIT_AS cap in GB: virtual address space reserved, not memory used (tttt -b on 16 cores reserves ~12 GB)')
     ap.add_argument('--tsc', action='store_true', help="regenerate tsc's cached diagnostics for the corpus (test/corpora.tsc.jsonl)")
     args = ap.parse_args()
     corpus_run = args.options is None
