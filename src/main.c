@@ -37,9 +37,6 @@
 enum { MAX_COMPILER_OPTION_ARGS = 64 };
 // --checker-memory's default (plan 67 stage 1)
 #define DEFAULT_CHECKER_MEMORY_MB 256
-// Unless --checker-memory is given: what each of several checkers holds before its first recycle, growing towards the
-// split default when its recycles come every few files (plan 81 stage 1: below bun's peak on most corpora, still faster)
-#define SHARED_CHECKER_MEMORY_MB 16
 // Unless --checker-memory is given: what the checkers hold together at most, each at least 64 MB (plan 75: 128 MB
 // each up to 12 checkers, 64 MB each at 24)
 #define CHECKER_MEMORY_CAP_MB 1536
@@ -609,10 +606,9 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     program_set_checker_cap(program, opts->checker_cap);
     // (--expect-types reads each file's types in the checker that checked it)
     if (!opts->expect_types) program_set_checker_memory(program, opts->checker_memory);
-    if (!opts->expect_types && !opts->checker_memory_given) {
-        program_set_checker_memory_cap(program, (u64)CHECKER_MEMORY_CAP_MB << 20);
-        program_set_checker_memory_shared(program, (u64)SHARED_CHECKER_MEMORY_MB << 20);
-    }
+    // (No growing start, program_set_checker_memory_shared(): plan 81 stage 1's 16 MB start held vscode's peak at
+    // 1.6 GB against 3.0 without it, for 6-20% more CPU; the human takes speed over memory, 2026-10-21)
+    if (!opts->expect_types && !opts->checker_memory_given) program_set_checker_memory_cap(program, (u64)CHECKER_MEMORY_CAP_MB << 20);
     set_lib_dir(program);
     program_follow_lib_references(program);
     StrList root_files = {0};
@@ -1285,8 +1281,7 @@ static void print_help(void) {
         "  --singleThreaded  one checker on one thread, one project at a time\n"
         "  --checker-memory MB  what the checkers may hold together before each drops its types and goes on\n"
         "                fresh (default: " STRINGIFY(DEFAULT_CHECKER_MEMORY_MB) ", each at least 96, together at most\n"
-        "                " STRINGIFY(CHECKER_MEMORY_CAP_MB) " but each at least 64; several checkers start at " STRINGIFY(SHARED_CHECKER_MEMORY_MB) " each\n"
-        "                and grow when they recycle every few files; 0: a fresh checker per file, off: never).\n"
+        "                " STRINGIFY(CHECKER_MEMORY_CAP_MB) " but each at least 64; 0: a fresh checker per file, off: never)\n"
         "  --shared-graph  the checkers share one type graph, never recycled (plan 86 stage 4; also\n"
         "                TTTT_SHARED_GRAPH=1)\n"
         "  --first-touch-stamps  deep nesting orders types by when each checker met them first, not by id\n"

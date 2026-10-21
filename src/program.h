@@ -126,7 +126,7 @@ void program_set_checker_memory(Program* me, u64 bytes);
 void program_set_checker_memory_cap(Program* me, u64 bytes);
 // With more than one checker, what each holds before its first recycle (bytes, below program_set_checker_memory()'s
 // share): a checker whose segments come out shorter than CHECKER_MEMORY_BACKOFF_FILES files doubles it, up to that
-// share (check_share()). UINT64_MAX, the default: the share from the start. The CLI's default (plan 81). Call it while
+// share (check_share()). UINT64_MAX, the default: the share from the start (the CLI's since 2026-10-21). Call it while
 // loading
 void program_set_checker_memory_shared(Program* me, u64 bytes);
 // The bytes of the files the checkers check, the default library's aside (what the default checker count follows)
