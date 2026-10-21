@@ -130,6 +130,10 @@ typedef struct FlowQuery {
     u32 key; // 0: none (not computed, or the reference has none)
     bool key_set;
     u32 shared_start;
+    // query_matches(): access_name() of the reference's dot accesses by depth (`a.b.c`: c, b), bit i of ref_names_set
+    // when ref_names[i] is
+    Atom const* ref_names[4];
+    uint8_t ref_names_set;
     // query_subset_of()'s last answers for a big union target (q->declared, q->initial): asked at every discriminant
     // and every branch label, mostly about the same few types
     struct { Ty const* source; Ty const* target; bool result; } subset_memo[2];
@@ -145,7 +149,7 @@ static bool is_type_subset_of(Ty const* source, Ty const* target);
 static bool query_subset_of(FlowQuery* q, Ty const* source, Ty const* target);
 
 static bool is_matching_reference(Checker* me, Expr const* source, Expr const* target);
-static bool query_matches(FlowQuery const* q, Expr const* target);
+static bool query_matches(FlowQuery* q, Expr const* target);
 static Expr const* reference_candidate(Expr const* expr);
 
 // Evolving arrays (tsc's EvolvingArrayType, TY_EVOLVING_ARRAY): what an auto-typed variable (`let x = []`, `let x;`
@@ -768,9 +772,41 @@ static bool is_matching_reference(Checker* me, Expr const* source, Expr const* t
     }
 }
 
+// is_matching_reference(source, target) with source the query's reference `level` property accesses down: the names
+// of its dot accesses (no type is asked for them) are remembered in the query
+[[gnu::noinline]] static bool query_matches_at(FlowQuery* q, Expr const* source, Expr const* target, u32 level) {
+    Checker* me = q->me;
+    source = skip_reference_wrappers(source);
+    target = skip_reference_wrappers(target);
+    if (target->tag == EXPR_BINARY_OP) {
+        BinaryOp op = target->binary_op->op;
+        if (op == BINARY_OP_EQUAL) return query_matches_at(q, source, &target->binary_op->left, level);
+        if (op == BINARY_OP_COMMA) return query_matches_at(q, source, &target->binary_op->right, level);
+        return false;
+    }
+    if (source->tag != EXPR_PROPERTY || target->tag != EXPR_PROPERTY) return is_matching_reference(me, source, target);
+    Atom const* source_name;
+    if (level < c_arraylen(q->ref_names) && source->property->form == PROPERTY_EXPR_DOT) {
+        if (!(q->ref_names_set & (1u << level))) {
+            q->ref_names[level] = access_name(me, source->property);
+            q->ref_names_set |= (uint8_t)(1u << level);
+        }
+        source_name = q->ref_names[level];
+    } else {
+        source_name = access_name(me, source->property);
+    }
+    if (source_name) {
+        if (source_name != access_name(me, target->property)) return false;
+    } else {
+        Symbol const* key = access_key_symbol(source->property);
+        if (!key || key != access_key_symbol(target->property)) return false;
+    }
+    return query_matches_at(q, &source->property->expr, &target->property->expr, level + 1);
+}
+
 // is_matching_reference(q->reference, target): an identifier reference's side is known (FlowQuery.identifier)
-static bool query_matches(FlowQuery const* q, Expr const* target) {
-    if (!q->identifier) return is_matching_reference(q->me, q->reference, target);
+static bool query_matches(FlowQuery* q, Expr const* target) {
+    if (!q->identifier) return query_matches_at(q, q->reference, target, 0);
     while (true) {
         target = skip_reference_wrappers(target);
         if (target->tag != EXPR_BINARY_OP) break;
@@ -2662,6 +2698,8 @@ static bool is_matching_constructor_reference(FlowQuery* q, Expr const* expr) {
     if (expr->tag != EXPR_PROPERTY) return false;
     PropertyExpr const* access = expr->property;
     if (property_private_class(access)) return false;
+    // (An identifier reference's match asks for no type: first, it's cheaper than the name)
+    if (q->identifier && !query_matches(q, &access->expr)) return false;
     bool named = (access->form != PROPERTY_EXPR_BRACKET ||
         (access->index.tag == EXPR_LITERAL && access->index.literal.tag == VALUE_STRING)) &&
         access_name(me, access) == my atoms.constructor;
