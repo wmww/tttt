@@ -602,7 +602,8 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     }
     program_set_checkers(program, opts->checkers);
     program_set_shared_graph(program, opts->shared_graph);
-    program_set_first_touch_stamps(program, opts->first_touch_stamps);
+    // (Or TTTT_FIRST_TOUCH_STAMPS=1, which program_new() reads)
+    if (opts->first_touch_stamps) program_set_first_touch_stamps(program, true);
     program_set_checker_cap(program, opts->checker_cap);
     // (--expect-types reads each file's types in the checker that checked it)
     if (!opts->expect_types) program_set_checker_memory(program, opts->checker_memory);

@@ -550,6 +550,35 @@ identity records with tainted contents (SymbolLinks, FunctionReturn: withholding
 type), and peeks at memo done-ness (`lazy_type_state_peek()`) that don't see a shared memo. Locks/CAS would go in
 `graph_publish()`'s per-entry insert (to become per computation) and `intern_shared_find()`/`graph_link_get()`'s probes.
 
+### Stage 4c: global atoms, global ids, first-touch stamps (2026-10-21, track S's worktree)
+- **Atoms** (src/ty/atom_table.{h,c}): one table per program that every checker shares. It has 64 shards by the hash's top
+  bits. Lookups take no lock: each shard's slot array is swapped whole when it grows (the old one lives until the table
+  goes), and a slot is written atom first and hash last (release/acquire). A miss locks its shard. Atoms are allocated
+  in 64 KB blocks per shard. Atoms are only made by checkers (the binder and parser don't intern), so loading is
+  untouched. Atom addresses only order lookup tables (props_by_name, index_atoms_by_name): no output depends on them.
+- **Ids** (lazy_type.h's TypeDirectory): one atomic counter per program hands out blocks of one id chunk (65536, not
+  1024: a chunk then belongs to one checker and is freed when it is dropped, so recycling's memory is unchanged). A
+  checker's ids stay in its creation order (gate condition 1). The program's directory holds every chunk.
+  LazySlots.types stays the read path as a copy of the directory's pointers (own chunks, plus the others' via
+  lazy_slots_sync() under --shared-graph), so memo reads cost what they did. 4d's concurrent readers need either the
+  directory on the read path (one more load) or a fill when a chunk is null. The lib singletons are still made on
+  first use and handed over under --shared-graph: making iteration/disposable/global types before the workers start
+  can report TS2318s a lazy run doesn't, so 4d needs them published once (CAS, first wins) rather than made eagerly.
+- **First-touch stamps** (`--first-touch-stamps`, TTTT_FIRST_TOUCH_STAMPS=1; Checker.stamps, ty_stamp(),
+  is_deeply_nested_stamped()): each checker has a dense stamp per type, taken when it makes the type, when it first
+  finds a reference/anonymous instance/conditional/indexed type in the shared tables, or else at the first comparison.
+- **Gates**: byte-identical to K1 at K1, K4 and K16 (16 threads, recycling at the defaults) and with --shared-graph at
+  K4/K12, on all 14 `-p` corpora but vscode (run on drizzle, zod and effect with stamps on and off). The suite is
+  unchanged, stamps on or off. K1 instructions (callgrind, whole process) against ai-main be0af5b37:
+  atoms + ids nest +0.1%, drizzle +0.2%, zod +0.3%; + the stamps' test in ty_alloc() (off) +0.09 / +0.27 / +0.35%;
+  stamps on on top of that drizzle +0.69%, zod +0.84% (a chunked store per type made, a load per comparison).
+- **Id order observability** (the design's "another history" hope): at one checker the stamps are the id order (0
+  decisions differ, K1 and K16). Under --shared-graph, where ids say when *some* checker made a type, ids and stamps
+  disagree on 0.06-0.6% of deep-nesting decisions (drizzle 461 / 289k at K12, zod 187 / 372k, effect 2878 / 486k), and
+  the output is byte-identical with either. So on these corpora a shared monotone counter behaves like another history:
+  the decisions it changes aren't observable. Stamps are the safe choice for 4d at their cost; ids alone held the gate
+  here, so 4d can start without them and keep `--first-touch-stamps` as the oracle for a divergence.
+
 ## Validation of the whole plan
 The 12-core table in measurements.md re-run by the human after each stage (`scripts/bench.sh --runs 3 --bun PATH
 --tscrs PATH`, the CPU column included), per-file sums at K1 / K1-with-spinning-cores / K12 on vscode and drizzle
