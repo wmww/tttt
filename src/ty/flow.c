@@ -130,6 +130,9 @@ typedef struct FlowQuery {
     u32 key; // 0: none (not computed, or the reference has none)
     bool key_set;
     u32 shared_start;
+    // query_subset_of()'s last answers for a big union target (q->declared, q->initial): asked at every discriminant
+    // and every branch label, mostly about the same few types
+    struct { Ty const* source; Ty const* target; bool result; } subset_memo[2];
     u32 depth;
     bool left_container; // The walk continued outside of the function the reference is in
     FlowLabelOverride const* overrides;
@@ -139,6 +142,7 @@ typedef struct FlowQuery {
 static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow);
 static Ty const* narrow_type(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true, bool nullish);
 static bool is_type_subset_of(Ty const* source, Ty const* target);
+static bool query_subset_of(FlowQuery* q, Ty const* source, Ty const* target);
 
 static bool is_matching_reference(Checker* me, Expr const* source, Expr const* target);
 static bool query_matches(FlowQuery const* q, Expr const* target);
@@ -1999,7 +2003,7 @@ static DiscriminantAccess discriminant_access(FlowQuery* q, Expr const* expr, Ty
     Expr const* aliased = aliased_access(expr);
     Atom const* destructured = aliased ? nullptr : destructured_alias_name(q, expr);
     if (aliased) expr = aliased;
-    Ty const* type = q->declared->kind == TY_UNION && is_type_subset_of(computed, q->declared) ? q->declared : computed;
+    Ty const* type = q->declared->kind == TY_UNION && query_subset_of(q, computed, q->declared) ? q->declared : computed;
     if (destructured) {
         return is_discriminant_property(me, type, destructured) ? (DiscriminantAccess){ nullptr, destructured } : none;
     }
@@ -3277,6 +3281,20 @@ static bool is_type_subset_of(Ty const* source, Ty const* target) {
     return false;
 }
 
+// is_type_subset_of() for the query's own types, remembered when the target union is big
+static bool query_subset_of(FlowQuery* q, Ty const* source, Ty const* target) {
+    if (source == target || target->kind != TY_UNION || target->composite.types.len < 16 || source->kind != TY_UNION) {
+        return is_type_subset_of(source, target);
+    }
+    u32 slot = target == q->initial;
+    if (q->subset_memo[slot].source == source && q->subset_memo[slot].target == target) return q->subset_memo[slot].result;
+    bool result = is_type_subset_of(source, target);
+    q->subset_memo[slot].source = source;
+    q->subset_memo[slot].target = target;
+    q->subset_memo[slot].result = result;
+    return result;
+}
+
 static void push_if_unique(TyBuf* buf, Ty const* ty) {
     for (u32 i = 0; i < buf->len; i++) {
         if (buf->data[i] == ty) return;
@@ -3323,7 +3341,7 @@ static FlowType type_at_branch_label(FlowQuery* q, FlowList const* antecedents) 
             return (FlowType){ branch.type, false };
         }
         push_if_unique(&types, branch.type);
-        if (!is_type_subset_of(branch.type, q->initial)) subtype_reduction = true;
+        if (!query_subset_of(q, branch.type, q->initial)) subtype_reduction = true;
         seen_incomplete |= branch.incomplete;
     }
     if (bypass) {
@@ -3335,7 +3353,7 @@ static FlowType type_at_branch_label(FlowQuery* q, FlowList const* antecedents) 
                 return (FlowType){ branch.type, false };
             }
             ty_buf_push(&types, branch.type);
-            if (!is_type_subset_of(branch.type, q->initial)) subtype_reduction = true;
+            if (!query_subset_of(q, branch.type, q->initial)) subtype_reduction = true;
             seen_incomplete |= branch.incomplete;
         }
     }
@@ -3395,7 +3413,7 @@ static FlowType type_at_loop_label(FlowQuery* q, FlowNode const* flow, FlowList 
             }
         }
         push_if_unique(&types, branch.type);
-        if (!is_type_subset_of(branch.type, q->initial)) subtype_reduction = true;
+        if (!query_subset_of(q, branch.type, q->initial)) subtype_reduction = true;
         if (branch.type == q->declared) break; // It can't get any wider
     }
     Ty const* result = union_at_label(q, &types, subtype_reduction);
