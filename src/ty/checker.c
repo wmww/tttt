@@ -1991,8 +1991,11 @@ static Ty const* primitive_constraint_of(Checker* me, Ty const* variable) {
     u64 key[3] = { KEY_TYPE_VARIABLE_REDUCTION, variable->id, 0 };
     void const* known = intern_get(&my links, key, 3);
     if (known) return (uintptr_t)known == 1 ? nullptr : known;
-    // (Re-entered while its base constraint is computed: none, like tsc's circular base constraint)
-    *intern_slot(me, &my links, key, 3) = (void const*)(uintptr_t)1;
+    // (Re-entered while its base constraint is computed: none, like tsc's circular base constraint. The claim says it's
+    // in flight, the links only ever hold the answer)
+    if (ty_claim_find(me, CLAIM_PRIMITIVE_CONSTRAINT, variable, 0)) return nullptr;
+    Claim claim;
+    ty_claim_push(me, CLAIM_PRIMITIVE_CONSTRAINT, &claim, variable, 0);
     Ty const* ret = nullptr;
     // (The declared constraint tells first, cheaply: an object type in it is the end of it. An indexed access has
     // none: its base constraint is all there is)
@@ -2028,6 +2031,7 @@ static Ty const* primitive_constraint_of(Checker* me, Ty const* variable) {
         for (u32 i = 0; i < parts.len && all; i++) all = is_primitive_or_empty_object(me, parts.data[i]);
         if (all) ret = constraint;
     }
+    ty_claim_pop(me, CLAIM_PRIMITIVE_CONSTRAINT, &claim);
     *intern_slot(me, &my links, key, 3) = ret ? (void const*)ret : (void const*)(uintptr_t)1;
     return ret;
 }
