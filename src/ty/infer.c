@@ -384,14 +384,14 @@ static void infer_from_returns(
 
 static void infer_from_signatures(Checker* me, Inference* inf, Signature const* source, Signature const* target) {
     signature_resolve(me, source);
-    signature_resolve(me, target);
-    if (sig_res(target)->type_params.len) {
+    SigResolved const* target_res = signature_resolve(me, target);
+    if (target_res->type_params.len) {
         // The target's own type parameters are any (tsc's getErasedSignature): they aren't what is being inferred, and
         // walking into them would infer to them (`map<M>` of `N1<X>` compared with itself)
         Ty const* stack_anys[16];
-        Ty const** anys = sig_res(target)->type_params.len <= c_arraylen(stack_anys) ? stack_anys : malloc(sizeof(Ty const*) * sig_res(target)->type_params.len);
+        Ty const** anys = target_res->type_params.len <= c_arraylen(stack_anys) ? stack_anys : malloc(sizeof(Ty const*) * target_res->type_params.len);
         panic_if(!anys, "out of memory");
-        for (u32 i = 0; i < sig_res(target)->type_params.len; i++) anys[i] = ty_intrinsic(me, TY_ANY);
+        for (u32 i = 0; i < target_res->type_params.len; i++) anys[i] = ty_intrinsic(me, TY_ANY);
         target = ty_signature_instantiation(me, target, (TyList){ .data = anys, .len = sig_res(target)->type_params.len });
         if (anys != stack_anys) free(anys);
         signature_resolve(me, target);

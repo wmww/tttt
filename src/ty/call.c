@@ -931,8 +931,8 @@ static Signature const* generic_function_argument(Checker* me, Ty const* arg_typ
         if (!sig_res(sig)->type_params.len) return nullptr;
         Signature const* wanted = ty_single_signature_non_nullable(me, param_type, construct, false);
         if (!wanted) return nullptr;
-        signature_resolve(me, wanted);
-        if (sig_res(wanted)->type_params.len) return nullptr;
+        SigResolved const* wanted_res = signature_resolve(me, wanted);
+        if (wanted_res->type_params.len) return nullptr;
         *contextual = wanted;
         return sig;
     }
@@ -951,7 +951,7 @@ static bool contextual_rest_is_variadic(Signature const* contextual) {
 // fixing mapper, and applyToParameterTypes asks for every parameter type. (A rest parameter of type parameter type
 // isn't fixed: tsc's nonFixingMapper.) Returns the mapper of what is inferred so far
 static TyMapper const* fix_for_generic_function(Checker* me, Signature const* sig, Inference* inf, Signature const* contextual) {
-    signature_resolve(me, contextual);
+    SigResolved const* contextual_res = signature_resolve(me, contextual);
     // (The literal's members before this one are inferred from first, see fixing_mapper())
     if (my outer_inference && my outer_inference->inf == inf) fixing_mapper(me, my outer_inference);
     if (!contextual_rest_is_variadic(contextual)) {
@@ -959,9 +959,9 @@ static TyMapper const* fix_for_generic_function(Checker* me, Signature const* si
         for (u32 j = 0; j < inf->len; j++) {
             if (inf->params[j].fixed) continue;
             Ty const* param = sig_res(sig)->type_params.data[j];
-            bool mentioned = sig_res(contextual)->this_type && ty_mentions_any(me, sig_res(contextual)->this_type, &param, 1);
-            for (u32 i = 0; i < sig_res(contextual)->param_count && !mentioned; i++) {
-                mentioned = ty_mentions_any(me, sig_res(contextual)->params[i].type, &param, 1);
+            bool mentioned = contextual_res->this_type && ty_mentions_any(me, contextual_res->this_type, &param, 1);
+            for (u32 i = 0; i < contextual_res->param_count && !mentioned; i++) {
+                mentioned = ty_mentions_any(me, contextual_res->params[i].type, &param, 1);
             }
             if (mentioned) inf->params[j].fixed = so_far->targets[j];
         }
@@ -1048,8 +1048,8 @@ static Signature const* single_call_or_construct(Checker* me, Ty const* ty) {
 static bool returns_single_signature(Checker* me, Signature const* sig) {
     Signature const* ret = single_call_or_construct(me, signature_return_type(me, sig));
     if (!ret) return false;
-    signature_resolve(me, ret);
-    return !sig_res(ret)->type_params.len;
+    SigResolved const* ret_res = signature_resolve(me, ret);
+    return !ret_res->type_params.len;
 }
 
 // A context-sensitive function argument's annotated parameters say something about the type parameters before the
@@ -1347,9 +1347,9 @@ static TyMapper const* infer_type_arguments(
             Signature const* contextual_sig = ty_single_signature(me, contextual, false, false);
             Ty const* source = contextual;
             if (contextual_sig) {
-                signature_resolve(me, contextual_sig);
-                if (sig_res(contextual_sig)->type_params.len) {
-                    source = ty_signature_type(me, ty_signature_instantiation(me, contextual_sig, sig_res(contextual_sig)->type_params));
+                SigResolved const* contextual_sig_res = signature_resolve(me, contextual_sig);
+                if (contextual_sig_res->type_params.len) {
+                    source = ty_signature_type(me, ty_signature_instantiation(me, contextual_sig, contextual_sig_res->type_params));
                 }
             }
             infer_types(me, &inf, source, return_type, INFER_PRIORITY_RETURN_TYPE);
@@ -4141,11 +4141,11 @@ void ty_check_decorator(Checker* me, Expr const* decorator, DecoratorSite site, 
         bool uncalled = members->call_count > 0;
         for (u32 i = 0; i < members->call_count && uncalled; i++) {
             Signature const* s = members->call[i];
-            signature_resolve(me, s);
+            SigResolved const* s_res = signature_resolve(me, s);
             // (signatureHasRestParameter: any rest parameter, a tuple's too)
-            bool has_rest = sig_res(s)->param_count && sig_res(s)->params[sig_res(s)->param_count - 1].rest;
-            uncalled = sig_res(s)->min_args == 0 && !has_rest &&
-                sig_res(s)->param_count < decorator_arg_count(dc.arity, dc.count, sig_res(s)->param_count);
+            bool has_rest = s_res->param_count && s_res->params[s_res->param_count - 1].rest;
+            uncalled = s_res->min_args == 0 && !has_rest &&
+                s_res->param_count < decorator_arg_count(dc.arity, dc.count, s_res->param_count);
         }
         if (uncalled) {
             error_ctx_error_d(errs, site.at, 1329, "'", span_sv(decorator->inner_span),

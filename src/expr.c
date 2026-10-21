@@ -1047,12 +1047,12 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
     bool fits = false;
     for (u32 i = 0; i < total; i++) {
         Signature const* each = i < members->call_count ? members->call[i] : members->construct[i - members->call_count];
-        signature_resolve(checker, each);
+        SigResolved const* each_res = signature_resolve(checker, each);
         u32 min = 0;
-        for (u32 j = 0; j < sig_res(each)->type_params.len; j++) {
-            if (!ty_param_default(checker, sig_res(each)->type_params.data[j])) min = j + 1;
+        for (u32 j = 0; j < each_res->type_params.len; j++) {
+            if (!ty_param_default(checker, each_res->type_params.data[j])) min = j + 1;
         }
-        if (!sig_res(each)->type_params.len || written < min || written > sig_res(each)->type_params.len) continue;
+        if (!each_res->type_params.len || written < min || written > each_res->type_params.len) continue;
         fits = true;
         if (!check_type_argument_constraints(checker, me, each, errs)) break;
     }

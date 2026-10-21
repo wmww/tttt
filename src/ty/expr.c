@@ -1180,9 +1180,9 @@ static Signature const* contextual_call_signature(Checker* me, Ty const* type, F
         signature_resolve(me, ret);
         for (u32 i = 1; i < count && ret; i++) {
             Signature const* right = applicable[i];
-            signature_resolve(me, right);
+            SigResolved const* right_res = signature_resolve(me, right);
             if (right == ret) continue;
-            ret = ty_type_params_identical(me, sig_res(ret)->type_params, sig_res(right)->type_params) ?
+            ret = ty_type_params_identical(me, sig_res(ret)->type_params, right_res->type_params) ?
                 ty_combine_intersection_signatures(me, ret, right) : nullptr;
         }
     }

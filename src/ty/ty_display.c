@@ -4095,11 +4095,11 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
             this_only &= source->kind == TY_TYPE_PARAM && source->param.state->is_this;
         }
     }
-    signature_resolve(me, root);
+    SigResolved const* root_res = signature_resolve(me, root);
     bool sibling_mapped = d.sibling_mentions_mapped;
     d.sibling_mentions_mapped = false;
     // (Unless its own type parameters were instantiated away: a call's candidate with what was inferred)
-    bool own_instantiated = sig_res(root)->type_params.len && !sig_res(sig)->type_params.len;
+    bool own_instantiated = root_res->type_params.len && !sig_res(sig)->type_params.len;
     // (A merged declaration's type parameter may be referenced anywhere: tsc instantiates the whole member)
     bool merged_mapped = root != sig && maps_merged_type_param(me, sig, root);
     if (root != sig && !this_only && !class_default && !own_instantiated && !sibling_mapped && !merged_mapped &&
@@ -4112,28 +4112,28 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     bool own_params_fresh = d.own_params_fresh && (!instantiated || this_only) &&
         !(instantiated && (sibling_mapped || merged_mapped || mentions_mapped(me, sig, root)));
     d.own_params_fresh = false;
-    if (own_params_fresh && sig_res(root)->type_params.len) {
+    if (own_params_fresh && root_res->type_params.len) {
         if (d.fresh_params.len) {
-            Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + sig_res(root)->type_params.len);
+            Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + root_res->type_params.len);
             memcpy(both, d.fresh_params.data, sizeof(Ty const*) * d.fresh_params.len);
-            memcpy(both + d.fresh_params.len, sig_res(root)->type_params.data, sizeof(Ty const*) * sig_res(root)->type_params.len);
-            d.fresh_params = (TyList){ .data = both, .len = d.fresh_params.len + sig_res(root)->type_params.len };
+            memcpy(both + d.fresh_params.len, root_res->type_params.data, sizeof(Ty const*) * root_res->type_params.len);
+            d.fresh_params = (TyList){ .data = both, .len = d.fresh_params.len + root_res->type_params.len };
         } else {
-            d.fresh_params = sig_res(root)->type_params;
+            d.fresh_params = root_res->type_params;
         }
     }
     // (Added to an enclosing signature's: a function type in a parameter of `then<U>` of `P<number>` doesn't reuse a
     // `U` it mentions either)
     // (Instantiated for `this` only, it's the same: tsc instantiates a member that mentions `this` (a class or interface
     // reference's members are instantiated with `this` as the reference), with fresh type parameters)
-    if (instantiated && sig_res(root)->type_params.len && (!this_only || sibling_mapped || merged_mapped || mentions_mapped(me, sig, root))) {
+    if (instantiated && root_res->type_params.len && (!this_only || sibling_mapped || merged_mapped || mentions_mapped(me, sig, root))) {
         if (d.fresh_params.len) {
-            Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + sig_res(root)->type_params.len);
+            Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + root_res->type_params.len);
             memcpy(both, d.fresh_params.data, sizeof(Ty const*) * d.fresh_params.len);
-            memcpy(both + d.fresh_params.len, sig_res(root)->type_params.data, sizeof(Ty const*) * sig_res(root)->type_params.len);
-            d.fresh_params = (TyList){ .data = both, .len = d.fresh_params.len + sig_res(root)->type_params.len };
+            memcpy(both + d.fresh_params.len, root_res->type_params.data, sizeof(Ty const*) * root_res->type_params.len);
+            d.fresh_params = (TyList){ .data = both, .len = d.fresh_params.len + root_res->type_params.len };
         } else {
-            d.fresh_params = sig_res(root)->type_params;
+            d.fresh_params = root_res->type_params;
         }
     }
     // (A class's constructor has its parameters reused, but it returns the class)
@@ -4148,14 +4148,14 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     SigParam* copies = nullptr;
     u32 copy_count = 0;
     if (instantiated && sig_res(sig)->type_params.len && d.param_names && !d.param_names->value_param_count) {
-        for (u32 i = 0; i < sig_res(root)->param_count && i < sig_res(sig)->param_count; i++) {
+        for (u32 i = 0; i < root_res->param_count && i < sig_res(sig)->param_count; i++) {
             bool named_like = false;
             for (u32 j = 0; j < sig_res(sig)->type_params.len && !named_like; j++) {
-                named_like = sig_res(sig)->type_params.data[j]->param.name == sig_res(root)->params[i].name;
+                named_like = sig_res(sig)->type_params.data[j]->param.name == root_res->params[i].name;
             }
-            if (!named_like || !mentions(me, sig_res(root)->params[i].type, sig_res(root)->type_params)) continue;
-            if (!copies) copies = arena_new_n(&my arena, SigParam, sig_res(root)->param_count);
-            copies[copy_count++] = sig_res(root)->params[i];
+            if (!named_like || !mentions(me, root_res->params[i].type, root_res->type_params)) continue;
+            if (!copies) copies = arena_new_n(&my arena, SigParam, root_res->param_count);
+            copies[copy_count++] = root_res->params[i];
         }
         d.param_names->value_params = copies;
         d.param_names->value_param_count = copy_count;
@@ -4218,10 +4218,10 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         mapped_param_d.mapped_by = sig;
         // (Its type without the undefined its optionality added: what its annotation says)
         Ty const* declared = ty_sig_param_declared_type(me, param);
-        bool mapped_same = instantiated && binding && binding->has_explicit_type && param->type != sig_res(root)->params[i].type &&
+        bool mapped_same = instantiated && binding && binding->has_explicit_type && param->type != root_res->params[i].type &&
             node_names_no_type_params(binding_type(binding), 0) && node_type(me, mapped_param_d, binding_type(binding)) == declared;
         bool reused = reusable && binding && binding->has_explicit_type && !contextual_jsdoc &&
-            (mapped_same || (!mentions(me, param->type, d.fresh_params) && (!instantiated || param->type == sig_res(root)->params[i].type))) &&
+            (mapped_same || (!mentions(me, param->type, d.fresh_params) && (!instantiated || param->type == root_res->params[i].type))) &&
             !(fresh_anonymous && declared->kind == TY_ANONYMOUS) &&
             // (A `@param {T} [x]` tag of a JSDoc signature (`@overload`, `@callback`) declares x without a `?` that
             // would say the undefined its type has: tsc doesn't reuse `T` there)

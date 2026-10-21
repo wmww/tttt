@@ -1208,8 +1208,8 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
 static bool base_signature_type_args(
     Checker* me, Signature const* base_sig, VecSpannedType const* written, LowerCtx ctx, TyMapper const** mapper
 ) {
-    signature_resolve(me, base_sig);
-    TyList params = sig_res(base_sig)->type_params;
+    SigResolved const* base_sig_res = signature_resolve(me, base_sig);
+    TyList params = base_sig_res->type_params;
     u32 count = written ? (u32)vec_spanned_type_size(written) : 0;
     *mapper = nullptr;
     if (count > params.len) return false;

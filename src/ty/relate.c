@@ -2047,8 +2047,8 @@ static Ternary compare_signatures(
     Checker* me, RelationState* st, Signature const* source, Signature const* target, CallbackMode callback, bool report,
     unsigned return_code
 ) {
-    signature_resolve(me, source);
-    signature_resolve(me, target);
+    SigResolved const* source_res = signature_resolve(me, source);
+    SigResolved const* target_res = signature_resolve(me, target);
     if (source == target) return TERNARY_TRUE;
     // A top signature target takes anything; under the subtype relations a top source only takes another one
     // (SignatureCheckMode.StrictTopSignature, which callbacks don't pass on)
@@ -2079,7 +2079,7 @@ static Ternary compare_signatures(
 
     // A generic source is instantiated in the context of the target's canonical signature, after the arity check,
     // which goes by the declared parameters (a conditional rest type takes any count, tsc's compareSignaturesRelated)
-    if (sig_res(source)->type_params.len && sig_res(source)->type_params.data != sig_res(target)->type_params.data) {
+    if (source_res->type_params.len && source_res->type_params.data != target_res->type_params.data) {
         target = canonical_signature(me, target);
         source = ty_instantiate_signature_in_context_of(me, source, target, nullptr);
     }
@@ -2217,9 +2217,9 @@ static Ternary compare_signatures(
 static unsigned signature_return_code(Checker* me, Signature const* source, Signature const* target, bool construct) {
     // (Resolved first: an unresolved signature has no parameters yet, which made the message depend on what was
     // checked before. Only reports pay for it: resolving every compared instantiation costs drizzle 16%)
-    signature_resolve(me, source);
-    signature_resolve(me, target);
-    bool no_params = !sig_res(source)->param_count && !sig_res(target)->param_count;
+    SigResolved const* source_res = signature_resolve(me, source);
+    SigResolved const* target_res = signature_resolve(me, target);
+    bool no_params = !source_res->param_count && !target_res->param_count;
     return construct ? (no_params ? 2205 : 2203) : (no_params ? 2204 : 2202);
 }
 
@@ -2236,8 +2236,8 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
     if (LAZY_LOAD(sig->state) == LAZY_STATE_NOT_STARTED && target && unresolved_mapper && !sig->function && !sig->instantiates_own_params &&
         !sig->drops_mapped_type_params && !sig->fresh_type_params && !sig->class_instance && !(sig->flags & SIGNATURE_CONSTRUCT)
     ) {
-        signature_resolve(me, target);
-        u32 own = sig_res(target)->type_params.len;
+        SigResolved const* target_res = signature_resolve(me, target);
+        u32 own = target_res->type_params.len;
         if (own) {
             u64 stack_key[18];
             u32 key_len = 2 + own;
@@ -2256,13 +2256,13 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
             u32 len = 0;
             for (u32 j = 0; j < outer->len; j++) {
                 bool is_own = false;
-                for (u32 i = 0; i < own && !is_own; i++) is_own = outer->sources[j] == sig_res(target)->type_params.data[i];
+                for (u32 i = 0; i < own && !is_own; i++) is_own = outer->sources[j] == target_res->type_params.data[i];
                 if (is_own) continue;
                 sources[len] = outer->sources[j];
                 targets[len++] = outer->targets[j];
             }
             for (u32 i = 0; i < own; i++) {
-                sources[len] = sig_res(target)->type_params.data[i];
+                sources[len] = target_res->type_params.data[i];
                 targets[len++] = any;
             }
             Signature* ret = arena_new(&my arena, Signature);
@@ -8230,20 +8230,20 @@ static Ternary signatures_identical_in(
     Checker* me, RelationState* st, Signature const* source, Signature const* target, bool partial, bool ignore_return
 ) {
     if (source == target) return TERNARY_TRUE;
-    signature_resolve(me, source);
-    signature_resolve(me, target);
+    SigResolved const* source_res = signature_resolve(me, source);
+    SigResolved const* target_res = signature_resolve(me, target);
     // (tsc's isMatchingSignature counts by getMinArgumentCount: trailing parameters that accept void are optional)
     u32 source_min = tuple_min_argument_count(me, source), target_min = tuple_min_argument_count(me, target);
     bool same_shape = ty_signature_param_count(source) == ty_signature_param_count(target) && source_min == target_min &&
         ty_signature_has_rest(source) == ty_signature_has_rest(target);
     if (!same_shape && !(partial && source_min <= target_min)) return TERNARY_FALSE;
-    if (sig_res(source)->type_params.len != sig_res(target)->type_params.len) return TERNARY_FALSE;
-    if (sig_res(target)->type_params.len && sig_res(source)->type_params.data != sig_res(target)->type_params.data) {
-        TyMapper const* mapper = ty_mapper_new(me, sig_res(source)->type_params, sig_res(target)->type_params);
+    if (source_res->type_params.len != target_res->type_params.len) return TERNARY_FALSE;
+    if (target_res->type_params.len && source_res->type_params.data != target_res->type_params.data) {
+        TyMapper const* mapper = ty_mapper_new(me, source_res->type_params, target_res->type_params);
         Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
-        for (u32 i = 0; i < sig_res(target)->type_params.len; i++) {
-            Ty const* s = sig_res(source)->type_params.data[i];
-            Ty const* t = sig_res(target)->type_params.data[i];
+        for (u32 i = 0; i < target_res->type_params.len; i++) {
+            Ty const* s = source_res->type_params.data[i];
+            Ty const* t = target_res->type_params.data[i];
             if (s == t) continue;
             Ty const* s_constraint = ty_param_constraint(me, s);
             Ty const* t_constraint = ty_param_constraint(me, t);
@@ -8257,11 +8257,11 @@ static Ternary signatures_identical_in(
                 return TERNARY_FALSE;
             }
         }
-        source = ty_signature_instantiation(me, source, sig_res(target)->type_params);
+        source = ty_signature_instantiation(me, source, target_res->type_params);
     }
     Ternary result = TERNARY_TRUE;
-    if (sig_res(source)->this_type && sig_res(target)->this_type) {
-        result &= sig_types_compare(me, st, sig_res(source)->this_type, sig_res(target)->this_type, partial);
+    if (sig_res(source)->this_type && target_res->this_type) {
+        result &= sig_types_compare(me, st, sig_res(source)->this_type, target_res->this_type, partial);
         if (!result) return TERNARY_FALSE;
     }
     u32 target_len = ty_signature_param_count(target);
@@ -8404,10 +8404,10 @@ static u32 find_matching_signatures(
 // parameter list), returning what either returns. `intersection`: combineSignaturesOfIntersectionMembers, the other
 // way around (parameter types united, the return types intersected), for contextual signatures
 static Signature* combine_signatures(Checker* me, Signature const* left, Signature const* right, bool intersection) {
-    signature_resolve(me, left);
-    signature_resolve(me, right);
-    TyMapper const* mapper = sig_res(left)->type_params.len && sig_res(right)->type_params.len ?
-        ty_mapper_new(me, sig_res(right)->type_params, sig_res(left)->type_params) : nullptr;
+    SigResolved const* left_res = signature_resolve(me, left);
+    SigResolved const* right_res = signature_resolve(me, right);
+    TyMapper const* mapper = left_res->type_params.len && right_res->type_params.len ?
+        ty_mapper_new(me, right_res->type_params, left_res->type_params) : nullptr;
     u32 left_count = ty_signature_param_count(left);
     u32 right_count = ty_signature_param_count(right);
     Signature const* longest = left_count >= right_count ? left : right;
@@ -8427,8 +8427,8 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
         Ty const* type = intersection ? ty_union(me, both, 2, nullptr, (TyList){0}) : ty_intersection(me, both, 2, nullptr, (TyList){0});
         bool is_rest = either_rest && !extra_rest && i == longest_count - 1;
         bool optional = i >= signature_min_args(longest) && i >= signature_min_args(shorter); // (tsc's getMinArgumentCount)
-        Atom const* left_name = i < sig_res(left)->param_count && !sig_res(left)->params[i].rest ? sig_res(left)->params[i].name : nullptr;
-        Atom const* right_name = i < sig_res(right)->param_count && !sig_res(right)->params[i].rest ? sig_res(right)->params[i].name : nullptr;
+        Atom const* left_name = i < left_res->param_count && !left_res->params[i].rest ? left_res->params[i].name : nullptr;
+        Atom const* right_name = i < right_res->param_count && !right_res->params[i].rest ? right_res->params[i].name : nullptr;
         Atom const* name = left_name == right_name || !right_name ? left_name : !left_name ? right_name : nullptr;
         if (!name) {
             char buf[16];
@@ -8452,9 +8452,9 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
     // stays both, each written in its own signature's type parameters when reduced)
     Ty const* return_types[2] = { signature_return_type(me, left), intersection ? ty_instantiate(me, signature_return_type(me, right), mapper) : signature_return_type(me, right) };
     // The `this` types are combined like parameters (combineUnionThisParam, combineIntersectionThisParam)
-    Ty const* this_type = sig_res(left)->this_type ? sig_res(left)->this_type : sig_res(right)->this_type ? ty_instantiate(me, sig_res(right)->this_type, mapper) : nullptr;
-    if (sig_res(left)->this_type && sig_res(right)->this_type) {
-        Ty const* both[2] = { sig_res(left)->this_type, ty_instantiate(me, sig_res(right)->this_type, mapper) };
+    Ty const* this_type = left_res->this_type ? left_res->this_type : right_res->this_type ? ty_instantiate(me, right_res->this_type, mapper) : nullptr;
+    if (left_res->this_type && right_res->this_type) {
+        Ty const* both[2] = { left_res->this_type, ty_instantiate(me, right_res->this_type, mapper) };
         this_type = intersection ? ty_union(me, both, 2, nullptr, (TyList){0}) : ty_intersection(me, both, 2, nullptr, (TyList){0});
     }
     Signature* ret = arena_new(&my arena, Signature);
@@ -8466,10 +8466,10 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
         .declared_by = left->declared_by ? left->declared_by : left,
         .state = LAZY_STATE_DONE,
         .res = sig_resolved_new(me, (SigResolved){
-            .type_params = sig_res(left)->type_params.len ? sig_res(left)->type_params : sig_res(right)->type_params,
+            .type_params = left_res->type_params.len ? left_res->type_params : right_res->type_params,
             .params = params,
             .param_count = count,
-            .min_args = sig_res(left)->min_args > sig_res(right)->min_args ? sig_res(left)->min_args : sig_res(right)->min_args,
+            .min_args = left_res->min_args > right_res->min_args ? left_res->min_args : right_res->min_args,
             .this_type = this_type,
         }),
         .ret_state = LAZY_STATE_DONE,
