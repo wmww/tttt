@@ -882,7 +882,13 @@ struct Members {
     Prop* const* props; // declaration order
     u32 prop_count;
     u32 call_count;
-    Prop* const* props_by_name; // sorted by name atom address, for lookup. Null for small tables
+    union {
+        // More than 8 props: sorted by name atom address, for lookup (null in a partial table: early members)
+        Prop* const* props_by_name;
+        // At most 8: a bit per name (ty_prop_filter_bit()), 0 if not computed, for the lookups that miss (most of a
+        // small table's: an object's lookups of Object's and Function's members, union members without it)
+        u64 props_filter;
+    };
     Signature* const* call;
     Signature* const* construct;
     u32 construct_count;
@@ -894,6 +900,10 @@ struct Members {
     // Arena-allocated, null if all of it is: read through members_rare() (there are a million Members on vscode)
     struct MembersRare const* rare;
 };
+
+static inline u64 ty_prop_filter_bit(Atom const* name) {
+    return 1ull << (((uintptr_t)name * 0x9E3779B97F4A7C15ull) >> 58);
+}
 
 // What few Members have: mapped types' expansions, generic bases
 typedef struct MembersRare {

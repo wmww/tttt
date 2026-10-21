@@ -574,7 +574,7 @@ static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
     } else if (builder->props_count > 8) {
         Prop** sorted = arena_new_n(&my arena, Prop*, builder->props_count);
         Members const* same = builder->same_names;
-        bool placed = same && same->props_by_name && same->prop_count == builder->props_count;
+        bool placed = same && same->prop_count == builder->props_count && same->props_by_name;
         // Each prop goes where its name is in the source's sorted table (unless a name is there twice)
         u32 const* order = placed ? members_by_name_order(me, same) : nullptr;
         placed = order;
@@ -587,6 +587,10 @@ static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
             sort_props_by_name(sorted, builder->props_count);
         }
         ret->props_by_name = sorted;
+    } else {
+        u64 filter = 0;
+        for (u32 i = 0; i < builder->props_count; i++) filter |= ty_prop_filter_bit(builder->props[i]->name);
+        ret->props_filter = filter;
     }
 #define FINISH(field, count_field, T) \
     if (builder->field##_count) { \
@@ -5393,7 +5397,10 @@ bool ty_members_done(Checker* me, Ty const* ty) {
 
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name) {
     Members const* members = ty_members(me, ty);
-    if (members->props_by_name) {
+    if (members->prop_count <= 8) {
+        u64 filter = members->props_filter;
+        if (filter && !(filter & ty_prop_filter_bit(name))) return nullptr;
+    } else if (members->props_by_name) {
         u32 lo = 0, hi = members->prop_count;
         while (lo < hi) {
             u32 mid = lo + (hi - lo) / 2;
