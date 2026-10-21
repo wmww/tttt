@@ -29,13 +29,33 @@ static void report_misspelled_or(
 #define SYMBOL_TABLE_SCAN_MAX 8
 
 // Tables are keyed by cooked names (name_cooked(): `\u0061` is `a`), the entries hold them cooked
+// Word at a time (it was byte-at-a-time FNV, 14% of name resolution's instructions on vscode). Only lookups depend on
+// it: tables iterate in insertion order, their index and NameIndex just find things
+static inline u64 hash_mix(u64 h, u64 w) {
+    h = (h ^ w) * 0xbf58476d1ce4e5b9ull;
+    return h ^ (h >> 31);
+}
+
 u64 symbol_name_hash(csview name) {
     name = name_cooked(name);
-    u64 h = 0xcbf29ce484222325ull;
-    for (isize i = 0; i < name.size; i++) {
-        h ^= (unsigned char)name.buf[i];
-        h *= 0x100000001b3ull;
+    unsigned char const* p = (unsigned char const*)name.buf;
+    isize n = name.size;
+    u64 h = 0x9e3779b97f4a7c15ull ^ (u64)n;
+    for (; n >= 8; p += 8, n -= 8) {
+        u64 w;
+        memcpy(&w, p, 8);
+        h = hash_mix(h, w);
     }
+    if (n >= 4) {
+        // (The last 1-7 bytes as two 4-byte reads that may overlap)
+        uint32_t a, b;
+        memcpy(&a, p, 4);
+        memcpy(&b, p + n - 4, 4);
+        h = hash_mix(h, (u64)a << 32 | b);
+    } else if (n > 0) {
+        h = hash_mix(h, (u64)p[0] << 16 | (u64)p[n >> 1] << 8 | p[n - 1]);
+    }
+    h *= 0x94d049bb133111ebull;
     return h ^ (h >> 32);
 }
 
