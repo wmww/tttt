@@ -587,6 +587,7 @@ static bool count_gating_diagnostics(ErrorCtx* errs, Options const* opts) {
 static_failable check_files(Options const* opts, Output* out, csview config, ProjectSet* projects, u32 project,
     ProjectRedirects const* redirects, bool last, CheckCounts* counts, bool defer, returns int
 ) {
+    double last_time = now_ms();
     ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
     Program* program = program_new(errs, opts->emit_view ? emit_view_fs(opts->emit_view) : fs);
     program_set_defer_bodies(program, defer);
@@ -661,7 +662,8 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         if (solution || no_inputs || built) return ok(config_errors ? (skipped ? 1 : 2) : 0);
         return err_d("No input files: none on the command line and none from a tsconfig.json");
     }
-    double last_time = now_ms();
+    // (The config's parsing and its files' glob)
+    phase_done(opts, out, "config", &last_time);
 
     {
         // Parsing on the side: what the loader will want, as far as that's known now
@@ -773,6 +775,8 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         names.errors = errs->errors;
         errs->errors = (VecError){0};
         phase_done(opts, out, "resolve names", &last_time);
+        // (TTTT_EXIT_AFTER_RESOLVE=1: the front end's phases alone, timed with --time; nothing checked or reported)
+        if (getenv("TTTT_EXIT_AFTER_RESOLVE")) exit(0);
 
         if (opts->print_ast && source) {
             out_println(out, color_good, "Parsed:", color_normal);

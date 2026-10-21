@@ -196,6 +196,9 @@ void module_resolver_forget_resolutions(ModuleResolver* me) {
     if (!me) return;
     for (int i = 0; i < RESOLVER_SHARDS; i++) {
         ResolverShard* shard = &my shards[i];
+        // (Under the lock: the package.json cache next to them stays in use, program_resolve_names() forgets on a
+        // thread of its own while the checkers start)
+        pthread_rwlock_wrlock(&shard->lock);
         hmap_resolved_module_ptr_drop(&shard->resolutions);
         shard->resolutions = (HMapResolvedModulePtr){0};
         for (isize j = 0; j < shard->box_count; j++) {
@@ -205,6 +208,7 @@ void module_resolver_forget_resolutions(ModuleResolver* me) {
         free(shard->boxes);
         shard->boxes = nullptr;
         shard->box_count = shard->box_cap = 0;
+        pthread_rwlock_unlock(&shard->lock);
     }
 }
 

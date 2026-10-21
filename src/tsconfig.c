@@ -795,10 +795,23 @@ static bool segment_matches(csview pattern, csview name) {
 }
 
 static csview next_segment(csview* path) {
-    isize end = csview_find_sv(*path, c_sv("/"));
-    csview segment = csview_slice(*path, 0, end);
-    *path = end == c_NPOS ? c_sv("") : csview_slice(*path, end + 1, path->size);
+    char const* slash = path->size ? memchr(path->buf, '/', (size_t)path->size) : nullptr;
+    if (!slash) {
+        csview segment = *path;
+        *path = c_sv("");
+        return segment;
+    }
+    csview segment = csview_from_n(path->buf, slash - path->buf);
+    *path = csview_from_n(slash + 1, path->buf + path->size - slash - 1);
     return segment;
+}
+
+// Whether a glob segment has a wildcard
+static bool segment_is_wild(csview segment) {
+    for (isize i = 0; i < segment.size; i++) {
+        if (segment.buf[i] == '*' || segment.buf[i] == '?') return true;
+    }
+    return false;
 }
 
 static bool is_implicitly_excluded(csview segment) {
@@ -830,7 +843,7 @@ static bool glob_matches(csview pattern, csview path, bool prefix) {
     }
     csview path_rest = path;
     csview name = next_segment(&path_rest);
-    bool has_wildcard = csview_find_sv(segment, c_sv("*")) != c_NPOS || csview_find_sv(segment, c_sv("?")) != c_NPOS;
+    bool has_wildcard = segment_is_wild(segment);
     if (has_wildcard && name.size && name.buf[0] == '.' && segment.buf[0] != '.') return false;
     if (!segment_matches(segment, name)) return false;
     return glob_matches(pattern_rest, path_rest, prefix);
@@ -851,7 +864,7 @@ static bool glob_may_match_inside(csview pattern, csview dir) {
         return glob_may_match_inside(pattern, dir_rest);
     }
     csview name = next_segment(&dir_rest);
-    bool has_wildcard = csview_find_sv(segment, c_sv("*")) != c_NPOS || csview_find_sv(segment, c_sv("?")) != c_NPOS;
+    bool has_wildcard = segment_is_wild(segment);
     if (has_wildcard && name.size && name.buf[0] == '.' && segment.buf[0] != '.') return false;
     if (!segment_matches(segment, name)) return false;
     return glob_may_match_inside(pattern_rest, dir_rest);

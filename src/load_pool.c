@@ -40,7 +40,7 @@ typedef struct LoadEntry {
     isize order; // Queue order, between equal ranks
     bool is_helped; // Parsed by the loader while it waited for another
     LoadState state;
-    double queued_at; // (TTTT_LOAD_POOL_INLINE)
+    double queued_at, ranked_at; // (TTTT_LOAD_POOL_INLINE: when it was queued, and its rank last improved)
     SourceFile* file; // LOAD_DONE: the worker's file, null if unreadable
     ErrorCtx errs; // LOAD_DONE: the file's parse errors
 } LoadEntry;
@@ -90,7 +90,7 @@ typedef struct LoadPool {
     u32 thread_count;
     // TTTT_LOAD_POOL_STATS (TTTT_LOAD_POOL_WAITS: each wait over 2 ms)
     isize taken, inline_parses, inline_unqueued; // (Parsed by the loader: of those, never queued)
-    double wait_ms, busy_ms, started_at, helped_ms, inline_ms;
+    double wait_ms, busy_ms, busy_cpu_ms, started_at, helped_ms, inline_ms;
     double loader_cpu_at; // The loader's CPU time when the pool started (it makes and destroys it)
 } LoadPool;
 
@@ -200,6 +200,7 @@ static void load_pool_run(LoadPool* me, LoadEntry* entry) {
     // (Nobody else touches the entry's path, errs or file while it's parsing)
     struct timespec start, end;
     timespec_get(&start, TIME_UTC);
+    double cpu_start = thread_cpu_ms();
     Rank outer_rank = current_rank;
     u32 outer_children = current_children;
     current_rank = entry->rank;
@@ -208,7 +209,9 @@ static void load_pool_run(LoadPool* me, LoadEntry* entry) {
     current_rank = outer_rank;
     current_children = outer_children;
     timespec_get(&end, TIME_UTC);
+    double cpu = thread_cpu_ms() - cpu_start;
     pthread_mutex_lock(&my lock);
+    my busy_cpu_ms += cpu;
     my busy_ms += (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
     if (entry->is_helped) my helped_ms += (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
     entry->file = file;
@@ -300,12 +303,13 @@ static void load_pool_queue_locked(LoadPool* me, csview path, bool is_stdlib) {
         Rank rank = next_rank(entry->order);
         if (entry->state == LOAD_QUEUED && rank_compare(&rank, &entry->rank) < 0) {
             entry->rank = rank;
+            entry->ranked_at = pool_now_ms();
             if (entry->sized && entry->size < BIG_FILE) heap_push(&my ranked, entry);
         }
         return;
     }
     LoadEntry* entry = load_pool_add(me, path, is_stdlib, 0, LOAD_QUEUED);
-    entry->queued_at = pool_now_ms();
+    entry->queued_at = entry->ranked_at = pool_now_ms();
     if (my size) vec_load_entry_ptr_push(&my unsized, entry);
     else load_pool_schedule(me, entry);
     pthread_cond_signal(&my work);
@@ -365,7 +369,8 @@ SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* 
             cstr rank = cstr_null;
             for (u32 i = 0; i < entry->rank.depth; i++) cstr_append_d(&rank, DEFAULT_DISPLAY, i ? "." : "", (i64)entry->rank.at[i]);
             eprintln("load pool: the loader parses ", path, " (rank ", rank, " of ", vec_load_entry_ptr_size(&my entries),
-                ", ", entry->size, " bytes, queued ", pool_now_ms() - entry->queued_at, " ms ago, ",
+                ", ", entry->size, " bytes, queued ", pool_now_ms() - entry->queued_at, " ms ago, ranked ",
+                pool_now_ms() - entry->ranked_at, " ms ago, ",
                 entry->state == LOAD_QUEUED ? entry->sized ? "waiting" : "unsized" : "parsed as the other kind", ")");
             cstr_drop(&rank);
         }
@@ -412,7 +417,7 @@ void load_pool_destroy(LoadPool* me) {
             " preparsed files taken, ", my inline_parses, " parsed by the loader (", my inline_unqueued, " never queued), ", wasted, " parsed for nothing, ", never,
             " never started");
         eprintln("load pool: the loader waited ", my wait_ms, " ms (parsing queued files for ", my helped_ms,
-            " ms of it); workers busy ", my busy_ms, " ms of ", lifetime * my thread_count);
+            " ms of it); workers busy ", my busy_ms, " ms of ", lifetime * my thread_count, " (on a CPU for ", my busy_cpu_ms, " ms of it)");
         eprintln("load pool: the loader parsed ", my inline_ms, " ms itself; its own work the rest of the pool's ",
             lifetime, " ms: ", lifetime - my wait_ms - my inline_ms);
         // (CPU time, which a loaded machine's preemption and lock waits don't inflate: what the loader did)

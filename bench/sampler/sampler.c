@@ -1,6 +1,6 @@
 // A wall-clock sampler of the main thread for machines without perf (perf_event_paranoid): LD_PRELOAD it, every
 // SAMPLER_US microseconds (default 100) of wall time the main thread's backtrace is recorded, written at exit to
-// SAMPLER_OUT (default sampler.out) with /proc/self/maps. bench/sampler/report.py symbolizes and ranks it.
+// SAMPLER_OUT (default sampler.out) with /proc/self/maps (SAMPLER_CPU=1: of its CPU time). bench/sampler/report.py symbolizes and ranks it.
 // Build: gcc -O2 -shared -fPIC -o /tmp/sampler.so bench/sampler/sampler.c
 #define _GNU_SOURCE
 #include <execinfo.h>
@@ -11,6 +11,7 @@
 #include <sys/syscall.h>
 #include <time.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #define DEPTH 1024
 #define MAX_SAMPLES 20000
@@ -36,7 +37,11 @@ __attribute__((constructor)) static void sampler_start(void) {
     sigaction(SIGPROF, &action, NULL);
     struct sigevent event = { .sigev_notify = SIGEV_THREAD_ID, .sigev_signo = SIGPROF };
     event._sigev_un._tid = (pid_t)syscall(SYS_gettid);
-    if (timer_create(CLOCK_MONOTONIC, &event, &timer)) return;
+    // (SAMPLER_CPU=1: every SAMPLER_US of the main thread's CPU time instead, what it does when it runs: a loaded
+    // machine's preemption and lock waits drop out)
+    clockid_t clock = CLOCK_MONOTONIC;
+    if (getenv("SAMPLER_CPU") && *getenv("SAMPLER_CPU") == '1') pthread_getcpuclockid(pthread_self(), &clock);
+    if (timer_create(clock, &event, &timer)) return;
     long us = getenv("SAMPLER_US") ? atol(getenv("SAMPLER_US")) : 100;
     struct itimerspec spec = { .it_interval = { 0, us * 1000 }, .it_value = { 0, us * 1000 } };
     timer_settime(timer, 0, &spec, NULL);

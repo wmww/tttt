@@ -98,6 +98,9 @@ typedef struct Program {
     CachedFs* cached_fs;
     struct Preresolved** preresolved_garbage; // Taken from loaded files, freed when loading is over
     u32 preresolved_garbage_count, preresolved_garbage_cap;
+    // program_resolve_names()'s releases (program_release_run()), off the critical path: joined by program_drop()
+    pthread_t release_thread;
+    bool release_started;
     double loader_parse_ms; // TTTT_LOAD_POOL_STATS without a pool: program_make_source()'s time
     cstr cwd; // program_cwd()
     Binder* binder;
@@ -319,6 +322,7 @@ static void program_free_preresolved(Program* me) {
 }
 
 static void program_drop(Program* me) {
+    if (my release_started) pthread_join(my release_thread, nullptr);
     load_pool_destroy(my pool);
     program_free_preresolved(me);
     content_mapper_host_drop(atomic_load(&my content_mapper_host));
@@ -3789,7 +3793,20 @@ static void program_link_module_refs(Program* me) {
     free(workers);
 }
 
+// What loading kept and nothing needs once names are resolved: the module resolutions, the workers' preresolved
+// imports, the source texts' pages (vscode: ~25 ms at the end of the front end, serial, run next to the check instead)
+static void* program_release_run(void* arg) {
+    Program* me = arg;
+    program_free_preresolved(me);
+    module_resolver_forget_resolutions(my resolver);
+    for (u32 i = 0; i < my reference_count && my reference_resolvers; i++) module_resolver_forget_resolutions(my reference_resolvers[i]);
+    source_texts_release();
+    return nullptr;
+}
+
 void program_resolve_names(Program* me) {
+    double last = 0;
+    resolve_step_done("", &last);
     program_report_content_mapper_options(me);
     program_collect_files(me);
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
@@ -3797,13 +3814,11 @@ void program_resolve_names(Program* me) {
     if (!my pool && getenv("TTTT_LOAD_POOL_STATS")) eprintln("load: no pool, the loader read and parsed for ", my loader_parse_ms, " ms");
     load_pool_destroy(my pool);
     my pool = nullptr;
-    program_free_preresolved(me);
     program_verify_options(me);
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
     set_compiler_options(&my options);
     program_order_stdlib_first(me);
-    double last = 0;
-    resolve_step_done("", &last);
+    resolve_step_done("collect files, the load pool's end, options", &last);
 
     // Declare: symbols, the scopes of files and namespaces, exports
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
@@ -3890,10 +3905,10 @@ void program_resolve_names(Program* me) {
     program_apply_comment_directives(me, ERROR_PHASE_RESOLVE_NAMES);
     resolve_step_done("comment directives", &last);
 
-    // (Nothing resolves module names any more)
-    module_resolver_forget_resolutions(my resolver);
-    for (u32 i = 0; i < my reference_count && my reference_resolvers; i++) module_resolver_forget_resolutions(my reference_resolvers[i]);
-    source_texts_release();
+    // (Nothing resolves module names any more: what loading kept goes, on a thread of its own)
+    my release_started = !pthread_create(&my release_thread, nullptr, program_release_run, me);
+    if (!my release_started) program_release_run(me);
+    resolve_step_done("releases started", &last);
     clear_compiler_options();
     my errs->phase = ERROR_PHASE_UNKOWN;
     CHANGE_PHASE(PROGRAM_PHASE_RESOLVING_NAMES, PROGRAM_PHASE_NAMES_RESOLVED);
