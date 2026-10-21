@@ -96,3 +96,9 @@ this file, then CLAUDE.md, then plan 89 §1 (the workflow: it still holds, verba
 4. Perf items only after the flip, and only the ones with a measured payoff: effect's per-instruction critical path
    (Schema.ts 2x slower with the flag), the remaining 2% of the flag's K1 cost, memory at the defaults.
 
+
+## Outcome (2026-10-22)
+Superseded by plan 91. The human withdrew the mandate (the shared graph on by default) on 2026-10-21 after the laptop
+bench (measurements.md "at 5f2cd699") showed no wall win on the corpora. Of its items: the residues (C, V, W) were not
+worked; the release criterion was not met; the flip was not done (the graph stays parked behind `TTTT_SHARED_GRAPH=1`,
+plan 86 "Stage 4f: the perf accounting"); the bench was done. The workflow lessons in section 4 still hold.

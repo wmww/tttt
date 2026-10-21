@@ -52,6 +52,19 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **Absent or approximated**: pseudo-type builder gaps (plan 55's list), namespace-import clones
   (cloneTypeAsModuleType), member identity (members aren't Symbols), the CLI modes above.
 
+## Course correction (2026-10-22, after the third coordinator session)
+- **The shared graph is parked** (in the tree behind `TTTT_SHARED_GRAPH=1`, off): at K12 each instruction costs 1.2-1.6x
+  plain's, which outweighs the duplicated work it saves on ordinary projects, and its output is nondeterministic
+  under load (plan 86 "Stage 4f: the perf accounting"; reopen only with hardware counters). The human withdrew plan
+  90's mandate on 2026-10-21 after the laptop bench; the mandate is a correct, faster checker (1.5x on vscode would be big).
+- **Defaults changed**: checkers go past the physical cores for big programs (one per 4 MB of checked source, up to the
+  threads), no growing start, `--checker-memory` a quarter of RAM (256 MB..8 GB): recycles are zero on everything
+  measured, vscode peaks ~5 GB. The laptop bench of these is pending.
+- **Numbers**: K1 instructions -1.4..-5.6% (vscode -5.3%, excalidraw -10.9%) from structural commits; suite 13962 ->
+  13972 / 14006 with 10 regression-tested fixes; confirmed tsgo artifacts recorded in bugs/tsgo_divergences.md.
+- **The parser is the next structural lever**: ~12% of vscode's K1 instructions, no hot site (a Parser copy per
+  speculative attempt, no token stream); plan 91 section 2. The checker profile is flat and the front end is near its floor.
+
 ## Course correction (2026-10-23, after the second coordinator session)
 - **Stage 4f replaced 4e's plan.** The human ruled (2026-10-21) for correctness by construction: the lock/wait/redo
   machinery (4d-4e) was deleted, not narrowed. A hybrid of plan 89's two designs won (plan 86 "Stage 4f"; the

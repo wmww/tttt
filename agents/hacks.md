@@ -808,3 +808,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   its spans, a keyword by comparing the text at its offset. Correct: TypeNodes knowing their file. Shown by: dtsdiff.py.
 - `graph_fresh_worker()` (program.c), `--shared-graph`'s shadowed-worker hand-over: the retired checker stays allocated
   until the program ends or a graph-wide recycle (its arena holds published types); 0-12 a 20-run table.
+- `program_set_checker_memory_shared()` (program.c, program.h): unused by the CLI since the memory default changed
+  (2026-10-22: no growing start, `default_checker_memory()` in main.c). Delete it and its `checker_memory_shared`
+  field after the laptop bench confirms the defaults.
+- `KEY_REDUCTION_KEY`'s memo in subtype reduction (each member's discriminating property): could keep a transient
+  answer if a property type is read mid-cycle (circular resolution); no test or oracle shows it.

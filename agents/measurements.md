@@ -30,6 +30,17 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## The thrashers with the flag (2026-10-21, this box)
+Coordinator, pgo/tttt at ee9501eb8, quiet box, best of 3, wall s / CPU s / peak MB, plain -> `TTTT_SHARED_GRAPH=1`:
+
+| project | defaults | K12 T12 |
+|---|---|---|
+| dokploy/apps/dokploy | 1.87 / 13.1 / 1900 -> 0.86 / 6.3 / 1700 | 1.85 / 18.7 / 2700 -> 0.84 / 8.1 / 1800 |
+| monkeytype/frontend | 0.72 / 5.2 / 800 -> 0.31 / 2.1 / 600 | 0.71 / 7.0 / 1000 -> 0.29 / 2.8 / 700 |
+
+2 of 9 dokploy flag K12 runs took 2.42 s / 23 CPU s: the lockstep recycle sg found (plan 86 "Stage 4f: the perf
+accounting"). These are the only projects measured where the flag wins big (recycling thrash in plain).
+
 ## Stage 2 session 2 (2026-10-22, worker k1; this box, 4 vCPUs shared with other agents)
 Single-threaded checker speed, base ee9501eb8 -> 859a7a6a2 (plan 86 stage 2). **Callgrind K1 instructions, PGO + LTO
 builds of both** (`pgobuild.sh` without ensure-corpora): vscode 77.79 -> 73.69 G (-5.3%), excalidraw 6.51 -> 5.80
