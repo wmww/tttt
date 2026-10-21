@@ -55,6 +55,15 @@ static inline Symbol const* canonical(Checker* me, Symbol const* symbol) {
     return binder_redirect(my binder, symbol);
 }
 
+// A type parameter's declaring item (TyParamState.item), for the ones whose constructor didn't know it: a synthetic one
+// made just now, not published yet. A symbol's parameter gets its first declaration from ty_type_param(), which never
+// left it null on the suite or the corpora; if one ever does, the first item to get here is it, by a CAS (another
+// worker may be setting it from another of the merged declarations)
+static void set_param_item(Ty const* param, GenericItem const* item) {
+    GenericItem const* expected = nullptr;
+    __atomic_compare_exchange_n(&param->param.state->item, &expected, item, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+}
+
 TyList ty_type_params_of(Checker* me, Generic const* generic) {
     if (generic_empty(generic)) return (TyList){0};
     u64 key[2] = { KEY_GENERIC_PARAMS, (u64)(uintptr_t)generic };
@@ -67,7 +76,7 @@ TyList ty_type_params_of(Checker* me, Generic const* generic) {
         Ty const* param = i->symbol_ref ?
             ty_type_param(me, i->symbol_ref) :
             ty_synthetic_type_param(me, span_sv(i->name));
-        if (!param->param.state->item) param->param.state->item = i;
+        set_param_item(param, i);
         // (Two of the same name are one symbol, one type parameter: tsc's appendIfUnique in
         // getTypeParametersFromDeclaration)
         bool seen = false;
@@ -104,7 +113,7 @@ static TyList merged_local_type_params(Checker* me, Symbol const* symbol, Generi
                 continue;
             }
             Ty const* param = ty_type_param(me, i->symbol_ref);
-            if (!param->param.state->item) param->param.state->item = i;
+            set_param_item(param, i);
             Ty const** data = arena_new_n(&my arena, Ty const*, local.len + 1);
             if (local.len) memcpy(data, local.data, local.len * sizeof(*data));
             data[local.len] = param;
