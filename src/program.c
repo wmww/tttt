@@ -706,6 +706,33 @@ static thread_local struct { Program const* program; char const* buf; isize size
 typedef struct SourceFile SourceFile;
 static SourceFile* program_lookup_canonical(Program const* me, csview canonical);
 
+// relative_path_of(cwd, path) for a normalized absolute path and working directory other than `/`, in one allocation:
+// what a file outside the working directory costs every lookup (a worktree's symlinked corpora, a package's real
+// path), ~3000 instructions in relative_path_of()'s copies and appends
+static cstr relative_normalized(csview cwd, csview path) {
+    char const* c = cwd.buf + 1;
+    char const* c_end = cwd.buf + cwd.size;
+    char const* p = path.buf + 1;
+    char const* p_end = path.buf + path.size;
+    while (c < c_end && p < p_end) {
+        char const* c_slash = memchr(c, '/', (size_t)(c_end - c));
+        char const* p_slash = memchr(p, '/', (size_t)(p_end - p));
+        isize c_len = (c_slash ? c_slash : c_end) - c, p_len = (p_slash ? p_slash : p_end) - p;
+        if (c_len != p_len || memcmp(c, p, (size_t)c_len)) break;
+        c = c_slash ? c_slash + 1 : c_end;
+        p = p_slash ? p_slash + 1 : p_end;
+    }
+    isize ups = 0;
+    for (char const* i = c; i < c_end; ups++) {
+        char const* slash = memchr(i, '/', (size_t)(c_end - i));
+        i = slash ? slash + 1 : c_end;
+    }
+    cstr ret = cstr_with_capacity(3 * ups + (p_end - p));
+    for (isize i = 0; i < ups; i++) cstr_append_lit(&ret, "../");
+    cstr_append_n(&ret, p, p_end - p);
+    return ret;
+}
+
 static csview program_canonical_view(Program const* me, csview path, cstr* storage) {
     if (path.buf == canonical_hint.buf && path.size == canonical_hint.size && path.buf) return canonical_hint.canonical;
     csview cwd = program_cwd(me);
@@ -713,6 +740,10 @@ static csview program_canonical_view(Program const* me, csview path, cstr* stora
         if (path.buf[0] != '/') return path;
         if (cwd.size > 1 && path.size > cwd.size + 1 && path.buf[cwd.size] == '/' && !memcmp(path.buf, cwd.buf, cwd.size))
             return csview_slice(path, cwd.size + 1, path.size);
+        if (cwd.size > 1 && cwd.buf[0] == '/' && path_is_normalized(cwd)) {
+            *storage = relative_normalized(cwd, path);
+            return cstr_sv(storage);
+        }
     }
     *storage = relative_path_of(cwd, path);
     return cstr_sv(storage);
