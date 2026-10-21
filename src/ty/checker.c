@@ -4230,15 +4230,23 @@ Ty const* ty_conditional(
     my for_constraint_root = saved_constraint_root;
     if (resolved) return resolved;
     u64 stack_key[64];
-    u32 key_len = 3 + cond_branch_key_len(if_true) + cond_branch_key_len(if_false);
+    // An instance (a root and its mapper) is keyed by the mapper, not by its branches: the root's branches are the
+    // root's, and how an instance's branch is held depends on whether the root's was lowered yet (instantiate_branch()),
+    // which is history: with --shared-graph two workers made two instances of one conditional type (plan 86 4d)
+    u32 key_len = root ? 4 + (mapper ? mapper->len : 0) : 3 + cond_branch_key_len(if_true) + cond_branch_key_len(if_false);
     u64* key = key_len <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * key_len);
     panic_if(!key, "out of memory");
     key[0] = KEY_CONDITIONAL;
     key[1] = ty_id_pair(check_type, extends);
     key[2] = (u64)(root ? root->id : 0) << 2 | (u64)check_tuples << 1 | distributive;
     u32 count = 3;
-    count += cond_branch_key(key + count, if_true);
-    count += cond_branch_key(key + count, if_false);
+    if (root) {
+        key[count++] = mapper ? mapper->len : 0;
+        for (u32 i = 0; mapper && i < mapper->len; i++) key[count++] = ty_id_pair(mapper->sources[i], mapper->targets[i]);
+    } else {
+        count += cond_branch_key(key + count, if_true);
+        count += cond_branch_key(key + count, if_false);
+    }
     u32 flags = check_type->flags | extends->flags | TYF_COULD_CONTAIN_TYPE_VARIABLES;
     Ty* fresh;
     void const** slot;

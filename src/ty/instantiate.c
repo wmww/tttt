@@ -194,9 +194,9 @@ TyMapper const* ty_mapper_with(Checker* me, TyMapper const* mapper, Ty const* so
     return ret;
 }
 
-// (Whether the root's branch is lowered yet is history, and the instance's key is made of it, cond_branch_key(): with
-// --shared-graph two checkers can make two instances of one conditional type. Keying every instance by the node instead
-// cost drizzle 10% more instructions at K1 (each instance lowers its branch again): a known split, plan 86 4d)
+// (Whether the root's branch is lowered yet is history: an instance's key is its root and mapper, not this, see
+// ty_conditional(). Instantiating every branch from the node instead cost drizzle 10% more instructions at K1, each
+// instance lowering its branch again)
 static TyCondBranch instantiate_branch(Checker* me, TyCondBranch const* branch, TyMapper const* mapper) {
     unsigned state = LAZY_LOAD(branch->state);
     // (Field by field: with --shared-graph another checker may be lowering the branch, writing its type)

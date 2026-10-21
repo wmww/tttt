@@ -867,6 +867,11 @@ at the computation's end**, and makes every field another worker can read safe t
   (per strongly connected group of subjects, or only while another measurement is in flight on a type this one
   reaches) is 4e work; TTTT_GRAPH_VARIANCE_LOCK=0 is the old behaviour. tsgo's dependence on checker count (task 3's
   other question) was not measured: its checkers share nothing, so its variance is per checker.
+  **Task 2 done: a conditional instance is keyed by its root and mapper** (ty_conditional(): key[2]'s root id, then
+  the mapper's pairs) instead of by its branches, whose form depends on whether the root's branch was lowered yet
+  (instantiate_branch()); roots keep the branch key. The instances' branches are made as before, so nothing lowers
+  again. K1 default path: drizzle -0.12%, zod -0.04%, nest -0.01% instructions (shorter keys), one type fewer on
+  drizzle (171 989), suite and corpora unchanged; K12 T12 20 runs each on drizzle, zod, effect, excalidraw, nest: K1's.
 
 ### 4e's first item: a shared relation cache (measured and designed 2026-10-21, not built)
 **Measurement** (`agents/plans/86_relation_share_probe.patch`, a scratch patch to relate.c's recursive_related():
