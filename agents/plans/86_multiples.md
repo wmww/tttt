@@ -949,6 +949,23 @@ every `-p` corpus, 20-run tables on the four, no default-path cost until the fla
    (ty_graph_warm_up()). Today's per-checker recycle semantics for the whole graph at once; the barrier costs up to the
    slowest worker's current file per recycle. Estimate 2-3 sessions (the barrier with stealing and finished shares,
    graph teardown/rebuild, the id directory's chunks, retired checkers dropped with it, the recycle oracle).
+   **Built (2026-10-21): the graph-wide recycle** (program.c graph_epoch_due() / graph_epoch_arrive() /
+   graph_epoch_leave() / graph_epoch_rebuild()). After each file a worker publishes its checker_memory(); when the sum
+   passes the budget, every worker runs its segment's after-check pass and parks at its next file boundary; the last
+   to arrive (or the last worker leaving its share, so finished shares never hold the barrier) drops every checker
+   (deferred bodies go with their holds), the redo's retired ones and the graph, resets the type directory's readers,
+   makes a fresh graph and checkers (errs, recycle counts and peaks carried over), runs ty_graph_warm_up() and wakes
+   the others, who make their new checker current. Budget 800 MB (GRAPH_BUDGET_MB; TTTT_GRAPH_BUDGET_MB overrides,
+   `--checker-memory 0` recycles after every file, `off` never): vscode recycles twice, none of the other 13 `-p`
+   corpora, dokploy or monkeytype do (300 MB would recycle type-fest, zod, drizzle, effect once). vscode K12 T12 5 runs
+   each, interleaved: with the recycle 2.73-2.78 GB peak, without 4.56-4.58 GB, wall the same within noise (load 5:
+   2.34-2.40 s against 2.27-2.29; load 17: 4.10-4.16 against 3.98-4.20), all 10 K1's output; the defaults without the
+   flag 1.55 GB. Budgets on vscode: 1000 MB 1 recycle 3.14 GB +2% wall, 600 3 recycles 2.36 GB +4%, 400 5 recycles
+   1.92 GB +6.5%. Recycle oracle (`TTTT_SHARED_GRAPH=1 scripts/kdiff.py -k 1 -m 0`: a graph recycled after every file
+   against one never recycled, checkers one after another): 4 / 3814 differ, inbox-zero/apps/web, rxjs/packages/rxjs,
+   sequelize and sequelize/packages/core, the plain recycle oracle's four. Storms on threads (K12 T12, budget 1 MB:
+   13-72 recycles a run): drizzle, zod, excalidraw, nest K1's output; effect 1 of 43 runs lost a TS2769 (stream.ts),
+   at 20 MB 0 of 10 on each of the four: the shared graph's residual concurrency, met far more often from a cold graph.
    **Where the flag already wins on memory, the thrashers**: K12 T12 (load 3.5) dokploy/apps/dokploy 0.77 s, 4.2 s CPU,
    1.22 GB against the defaults' 3.40 s, 34.5 s, 2.98 GB (K1: 3.77 s, 0.81 GB); monkeytype/frontend 0.30 s, 2.1 s, 564 MB
    against 0.89 s, 8.9 s, 1056 MB (K1 0.79 s, 395 MB); both 5 / 5 K1's output. vscode 2.12 s / 21.5 / 4.56 GB against

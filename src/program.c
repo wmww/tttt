@@ -157,6 +157,14 @@ typedef struct Program {
     bool shared_graph; // program_set_shared_graph()
     bool first_touch_stamps; // program_set_first_touch_stamps()
     struct TyGraph* graph; // Its checkers', while they share one (ty/graph.h)
+    // --shared-graph on threads: the graph-wide recycle (graph_epoch_arrive()). What each share's checker holds
+    // (checker_memory(), after each file), the sum's budget (UINT64_MAX: never), the barrier
+    _Atomic u64* graph_held;
+    u64 graph_budget;
+    pthread_mutex_t graph_epoch_lock;
+    pthread_cond_t graph_epoch_cond;
+    u32 graph_active, graph_arrived, graph_epoch, graph_recycles;
+    _Atomic bool graph_epoch_due;
     struct AtomTable* atoms; // Every checker's atoms (ty/atom_table.h)
     struct TypeDirectory* type_directory; // Every checker's types by id (lazy_type.h)
     u32 checker_cap; // program_set_checker_cap(), 0: the threads
@@ -4760,10 +4768,117 @@ static u32 steal_file(Program* me, u32 c, u32 count) {
 // builds the global and library types its files use again: a few milliseconds on vscode, ~100 ms where the files share
 // one big type graph (type-fest, drizzle). Nothing cheap predicts that cost (what the segment's first file held
 // doesn't: those are the default library's declarations), so the budget alone decides
+// --shared-graph on threads: the graph-wide recycle (plan 86 4e item 3). When what the checkers hold together passes
+// the budget, every worker stops at its next file boundary, where nothing of its is in flight; the last to arrive drops
+// every checker (their deferred bodies go with their holds), the retired ones and the graph, makes a fresh graph and
+// checkers, warms the lib up again and lets the others go on. A worker that runs out of files leaves the barrier's
+// count instead (graph_epoch_leave()), so finished shares never hold it up. Today's per-checker recycle, for the
+// whole graph at once
+enum { GRAPH_BUDGET_MB = 800 };
+
+static void graph_epoch_rebuild(Program* me, u32 count) {
+    ErrorCtx* errs[64];
+    u32 recycles[64];
+    u64 peaks[64];
+    check(count <= 64);
+    for (u32 c = 0; c < count; c++) {
+        errs[c] = my checkers[c]->errs;
+        recycles[c] = my checkers[c]->recycles;
+        peaks[c] = my checkers[c]->peak_memory;
+    }
+    for (u32 c = 0; c < count; c++) {
+        checker_drop(my checkers[c]);
+        my checkers[c] = nullptr;
+    }
+    for (u32 i = 0; i < my retired_count; i++) checker_drop(my retired[i]);
+    my retired_count = 0;
+    graph_drop(my graph);
+    my graph = nullptr;
+    atomic_store(&my type_directory->reader_count, 0);
+    Checker* first = checker_new(me);
+    my graph = graph_new(first);
+    graph_set_concurrent(my graph, (my threads ? my threads : 1) > 1);
+    my checkers[0] = first;
+    for (u32 c = 1; c < count; c++) my checkers[c] = checker_new(me);
+    for (u32 c = 0; c < count; c++) {
+        my checkers[c]->errs = errs[c];
+        my checkers[c]->recycles = recycles[c] + 1;
+        my checkers[c]->peak_memory = peaks[c];
+        atomic_store(&my graph_held[c], 0);
+    }
+    my checker = first;
+    char const* warm = getenv("TTTT_GRAPH_WARM_UP");
+    if (!warm || strcmp(warm, "0")) {
+        checker_make_current(first);
+        ty_graph_warm_up(first);
+        checker_make_current(nullptr);
+    }
+    my graph_recycles++;
+}
+
+// After a file: whether the graph is due, and if so the barrier. Returns the share's checker to go on with
+static bool graph_epoch_due(Program* me, Checker* checker, u32 c, u32 count) {
+    if (my graph_budget == UINT64_MAX) return false;
+    atomic_store_explicit(&my graph_held[c], checker_memory(checker), memory_order_relaxed);
+    if (atomic_load_explicit(&my graph_epoch_due, memory_order_relaxed)) return true;
+    u64 sum = 0;
+    for (u32 i = 0; i < count; i++) sum += atomic_load_explicit(&my graph_held[i], memory_order_relaxed);
+    if (sum <= my graph_budget) return false;
+    bool expected = false;
+    if (atomic_compare_exchange_strong(&my graph_epoch_due, &expected, true) && (debug_env.file_times || getenv("TTTT_GRAPH_STATS"))) {
+        eprintln("graph: recycle due, the checkers hold ", sum >> 20, " MB (budget ", my graph_budget >> 20, ")");
+    }
+    return true;
+}
+
+static Checker* graph_epoch_arrive(Program* me, Checker* checker, u32 c, u32 count) {
+    graph_memo_flush(checker);
+    checker_make_current(nullptr);
+    pthread_mutex_lock(&my graph_epoch_lock);
+    u32 epoch = my graph_epoch;
+    if (++my graph_arrived == my graph_active) {
+        graph_epoch_rebuild(me, count);
+        my graph_arrived = 0;
+        atomic_store(&my graph_epoch_due, false);
+        my graph_epoch++;
+        pthread_cond_broadcast(&my graph_epoch_cond);
+    } else {
+        while (my graph_epoch == epoch) pthread_cond_wait(&my graph_epoch_cond, &my graph_epoch_lock);
+    }
+    pthread_mutex_unlock(&my graph_epoch_lock);
+    checker = my checkers[c];
+    checker_make_current(checker);
+    ty_init_global_types(checker);
+    return checker;
+}
+
+// A worker done with its share: out of the barrier's count (the last of the others to arrive may be waiting for it)
+static void graph_epoch_leave(Program* me, u32 count) {
+    if (my graph_budget == UINT64_MAX) return;
+    pthread_mutex_lock(&my graph_epoch_lock);
+    my graph_active--;
+    if (my graph_active && my graph_arrived == my graph_active && atomic_load(&my graph_epoch_due)) {
+        graph_epoch_rebuild(me, count);
+        my graph_arrived = 0;
+        atomic_store(&my graph_epoch_due, false);
+        my graph_epoch++;
+        pthread_cond_broadcast(&my graph_epoch_cond);
+    }
+    pthread_mutex_unlock(&my graph_epoch_lock);
+}
+
+static void graph_epoch_join(Program* me) {
+    if (my graph_budget == UINT64_MAX) return;
+    pthread_mutex_lock(&my graph_epoch_lock);
+    my graph_active++;
+    pthread_mutex_unlock(&my graph_epoch_lock);
+}
+
 static void check_share(Program* me, u32 c, u32 count) {
     struct timespec start, end;
     timespec_get(&start, TIME_UTC);
     atomic_store_explicit(&my share_states[c], 1, memory_order_release);
+    graph_epoch_join(me);
     Checker* checker = my checkers[c];
     checker_make_current(checker);
     ty_init_global_types(checker);
@@ -4842,6 +4957,14 @@ static void check_share(Program* me, u32 c, u32 count) {
             atomic_store_explicit(&my declaration_diagnostics_moot, true, memory_order_relaxed);
             moot_watch = false;
         }
+        // (--shared-graph on threads: the graph-wide recycle, at this file boundary. The segment's after-check pass
+        // first, with the types it needs)
+        if (graph_epoch_due(me, checker, c, count)) {
+            check_segment_after(me, checker, c, segment, segment_count);
+            segment_count = 0;
+            checker = graph_epoch_arrive(me, checker, c, count);
+            source_texts_release();
+        }
         if (my checker_budget == UINT64_MAX) continue;
         u64 held = checker_memory(checker);
         if (held > checker->peak_memory) checker->peak_memory = held;
@@ -4886,6 +5009,7 @@ static void check_share(Program* me, u32 c, u32 count) {
     if (checker->graph && graph_memo_eager()) graph_memo_flush(checker);
     else if (checker->graph && c + 1 < count && !getenv("TTTT_NO_SHARE_END_PUBLISH")) graph_publish(checker->graph, checker);
     checker_make_current(nullptr);
+    graph_epoch_leave(me, count);
     timespec_get(&end, TIME_UTC);
     checker->check_ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
     checker->files_taken = stolen;
@@ -5080,6 +5204,22 @@ void program_typecheck(Program* me) {
             checker_make_current(nullptr);
         }
     }
+    // (--shared-graph: the graph-wide recycle's budget, what the checkers hold together (their arenas and
+    // tables; the deferred bodies they hold come on top, about as much again on vscode). 800 MB recycles vscode twice
+    // and none of the other corpora, dokploy or monkeytype (plan 86 4e item 3). TTTT_GRAPH_BUDGET_MB overrides; off
+    // with --checker-memory off)
+    // `--checker-memory 0` recycles the graph after every file, the recycle oracle's fresh start per file
+    my graph_budget = UINT64_MAX;
+    if (my graph && my checker_memory != UINT64_MAX) {
+        char const* budget = getenv("TTTT_GRAPH_BUDGET_MB");
+        my graph_budget = budget ? strtoull(budget, nullptr, 10) << 20 : my checker_memory ? (u64)GRAPH_BUDGET_MB << 20 : 0;
+        my graph_held = c_new_n(_Atomic u64, count);
+        for (u32 c = 0; c < count; c++) atomic_init(&my graph_held[c], 0);
+        pthread_mutex_init(&my graph_epoch_lock, nullptr);
+        pthread_cond_init(&my graph_epoch_cond, nullptr);
+        my graph_active = my graph_arrived = my graph_epoch = 0;
+        atomic_store(&my graph_epoch_due, false);
+    }
     my steal_files = !getenv("TTTT_NO_STEAL");
     my share_states = c_new_n(_Atomic u32, count);
     my share_left = c_new_n(_Atomic u64, count);
@@ -5153,6 +5293,13 @@ void program_typecheck(Program* me) {
         my checkers[c]->errs = my errs;
     }
     free(checker_errs);
+    if (my graph_held) {
+        if (getenv("TTTT_GRAPH_STATS")) eprintln("graph: ", my graph_recycles, " graph-wide recycles");
+        free(my graph_held);
+        my graph_held = nullptr;
+        pthread_mutex_destroy(&my graph_epoch_lock);
+        pthread_cond_destroy(&my graph_epoch_cond);
+    }
     free(my share_states);
     free(my share_left);
     free(my share_first);
