@@ -6184,7 +6184,11 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
         // (tsc's getUndefinedProperty: undefinedOrMissingType, missing under exactOptionalPropertyTypes, an absent
         // value which getNonMissingTypeOfSymbol drops, so `x?: never` is how it prints)
         // (One symbol per name for the whole program, made of the first property it was needed for: tsc's
-        // undefinedProperties cache. Only its declarations show, in the symbols baseline)
+        // undefinedProperties cache. Only its declarations show, in the symbols baseline and declaration emit.
+        // History-like by design, tsc's own first-need semantics; but candidates do differ (decl spans and item: 24
+        // times on the suite, vscode 2199, excalidraw 100, zod 6, effect 2, drizzle 0), so a shared first-wins entry
+        // would make it schedule-dependent under 4d: the kind belongs to each worker (scratch), and so would the widened
+        // literal it ends up in, whose KEY_STRUCTURAL key doesn't hold the first property's spans or item)
         void const** cached = intern_slot(me, &my links, (u64[]){ KEY_UNDEFINED_PROPERTY, (u64)(uintptr_t)prop->name }, 2);
         if (!*cached) intern_set(me, &my links, cached, prop);
         Prop const* first = *cached;
