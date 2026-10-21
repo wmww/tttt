@@ -206,9 +206,15 @@ is cache misses (every alias, its module's export table entry, the target), not 
 - Done instead: the pool starts on the libs and on each file the include glob finds before the glob ends
   (`project_set_root_files_streamed()`, `program_load_ahead_libs()`/`_roots()`: vscode config + libs + load+parse
   221 -> 189 ms best, inline parses 400 -> 156), and the end of resolve's frees run on a thread (`program_release_run()`).
-- Left: the costliest file's deferred bodies (TypeScript6's checker.ts: ~40 ms of materialization, ~15 parse + 25
-  walk, at the head of a 205 ms critical checker while the others end at ~70) and the config glob itself (29 ms,
-  250 M instructions serial; slower, ~70 ms, while the workers parse next to it on a loaded box).
+- *The costliest file's bodies on several threads: tried, dropped.* TypeScript6's checker.ts materializes in ~70 ms
+  (~35 parse, ~35 walk) at the head of the critical checker (205 ms; the others end at ~70), but its 25 deferred
+  bodies are nearly all createTypeChecker's one 2.9 MB body: a team of 7 threads parsing chunks of bodies into arenas
+  of their own (merged with an `ast_arena_absorb()`) parsed it in 31-33 ms against 35. Only deferring nested function
+  bodies inside a deferred one (plan 78's design, not this plan) would split it; parsing it ahead in the load pool
+  saves at most the ~15 ms the front end lasts there. `TTTT_DEFER_STATS=1` now prints every materialization over
+  10 ms with its parse time and body count.
+- Left: the config glob itself (29 ms, 250 M instructions serial; slower, ~70 ms, while the workers parse next to it
+  on a loaded box).
 
 ## Stage 4: a shared concurrent type graph (~25 sessions over several windows, gates G0-G2: "The design" below)
 The paste's "declarations first, bodies second" idea, built where the duplication actually is: **one hash-consed

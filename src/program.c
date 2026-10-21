@@ -4325,6 +4325,7 @@ static ResolveShard* program_materialize_locked(Program* me, SourceFile* file, b
         same &= parsed;
         walking++;
     }
+    u64 parsed_at = defer_stats_now();
     if (state == DEFERRED_BODIES_PENDING) defer_stat_add(first ? DEFER_STAT_FILES : DEFER_STAT_REMATERIALIZED, 1);
     if (only) defer_stat_add(DEFER_STAT_SINGLY, 1);
     else if (state == DEFERRED_BODIES_PARTIAL) defer_stat_add(DEFER_STAT_SINGLY_COMPLETED, 1);
@@ -4425,6 +4426,12 @@ static ResolveShard* program_materialize_locked(Program* me, SourceFile* file, b
         if (!same) atomic_store(&my defer_failed, true);
     }
     error_ctx_drop(&scratch);
+    // (TTTT_DEFER_STATS: the slow ones, which a run's critical path may start with: TypeScript6's checker.ts, ~35 ms
+    // of parse and ~35 of walk, nearly all of it createTypeChecker's one body)
+    if (start && defer_stats_now() - start > 10000) {
+        eprintln("defer: ", file->canonical_path, " materialized in ", (i64)(defer_stats_now() - start), " us (parsed in ",
+            (i64)(parsed_at - start), ", ", walking, " bodies)");
+    }
     if (start) defer_stat_add(first ? DEFER_STAT_MATERIALIZE_US : DEFER_STAT_REMATERIALIZE_US, (i64)(defer_stats_now() - start));
     atomic_store_explicit(&list->state, !same ? DEFERRED_BODIES_FAILED : all ? DEFERRED_BODIES_READY : DEFERRED_BODIES_PARTIAL,
         memory_order_release);
