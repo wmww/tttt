@@ -1851,10 +1851,17 @@ Atom const* ty_union_key_property(Checker* me, Ty const* ty) {
     u64 key[2] = { KEY_UNION_KEY_NAME, ty->id };
     void const* cached = intern_get(&my links, key, 2);
     if (cached) return cached == ty ? nullptr : cached;
-    // (While it is worked out, the union has none)
-    *intern_slot(me, &my links, key, 2) = ty;
+    // (While it is worked out, the union has none: a marker of its own, KEY_IN_FLIGHT, not a placeholder in the memo's
+    // slot, which a memo flush could publish)
+    u64 flight_key[3] = { KEY_IN_FLIGHT, KEY_UNION_KEY_NAME, ty->id };
+    if (__builtin_expect(intern_get(&my links, flight_key, 3) != nullptr, 0)) {
+        TAINT_EVENT(TAINT_IN_FLIGHT_SLOT);
+        return nullptr;
+    }
+    *intern_slot(me, &my links, flight_key, 3) = ty;
     Atom const* name = key_property_uncached(me, ty);
-    if (name) *intern_slot(me, &my links, key, 2) = name;
+    *intern_slot(me, &my links, flight_key, 3) = nullptr;
+    *intern_slot(me, &my links, key, 2) = name ? (void const*)name : (void const*)ty;
     return name;
 }
 

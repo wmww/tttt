@@ -401,8 +401,8 @@ static TyIterationTypes const* iterable_types_with(Checker* me, Ty const* ty, bo
     // In flight: an iterable whose iterator is itself (`[Symbol.iterator](): this` on an IterableIterator) has none.
     // (Its marker is a scratch kind of its own: a placeholder in the memo's slot could be published by a memo flush
     // while the computation runs, and then written again, plan 86 4f; a hit is a read of in-flight state)
-    u64 flight_key[3] = { KEY_ITERATION_IN_FLIGHT, ty->id, which };
-    if (__builtin_expect(intern_get(&my links, flight_key, 3) != nullptr, 0)) {
+    u64 flight_key[4] = { KEY_IN_FLIGHT, KEY_ITERATION_TYPES, ty->id, which };
+    if (__builtin_expect(intern_get(&my links, flight_key, 4) != nullptr, 0)) {
         TAINT_EVENT(TAINT_IN_FLIGHT_SLOT);
         return &no_iteration_types;
     }
@@ -441,11 +441,11 @@ static TyIterationTypes const* iterable_types_with(Checker* me, Ty const* ty, bo
         ty_buf_drop(&iterators);
         return remember(me, ty, which, &no_iteration_types);
     }
-    *intern_slot(me, &my links, flight_key, 3) = &no_iteration_types;
+    *intern_slot(me, &my links, flight_key, 4) = &no_iteration_types;
     Ty const* iterator = ty_intersection(me, iterators.data, iterators.len, nullptr, (TyList){0});
     ty_buf_drop(&iterators);
     TyIterationTypes const* types = ty_iteration_types_of_iterator(me, iterator, async);
-    *intern_slot(me, &my links, flight_key, 3) = nullptr;
+    *intern_slot(me, &my links, flight_key, 4) = nullptr;
     return remember(me, ty, which, types ? types : &no_iteration_types);
 }
 
