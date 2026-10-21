@@ -5279,7 +5279,10 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
                 prop_reentry_depth--;
                 return again;
             }
-            prop->circular = true;
+            // (Its own computation is circular, wherever the barrier is: the entry's record. An instantiated property
+            // that isn't mapped has none, nor anything to report)
+            Resolving* own = ty_in_flight_entry(me, RESOLVING_PROP, prop);
+            if (own) own->circular = true;
             // (An instantiated property isn't resolved on its own: tsc's getTypeOfInstantiatedSymbol asks its target)
             for (Prop const* p = prop; ; p = p->target) {
                 if (!p->target || p->mapped) {
@@ -5336,8 +5339,8 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
     if (!prop->target && (prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_PATTERN_OPTIONAL) && !ty_prop_is_accessor(prop)) {
         type = prop->decl->parameter_property ? ty_optional_param_type(me, type) : ty_optional_prop_type(me, type);
     }
-    if (resolving && ty_resolving_pop(me)) prop->circular = true;
-    if (prop->circular && prop->mapped) {
+    bool circular = resolving && ty_resolving_pop(me);
+    if (circular && prop->mapped) {
         // tsc's getTypeOfMappedSymbol when popTypeResolution fails
         prop->type = ty_intrinsic(me, TY_ERROR);
         prop->type_state = LAZY_STATE_DONE;
@@ -5357,7 +5360,7 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
     }
     // A declared property (or accessor) whose annotation needs its own type (tsc's getTypeOfVariableOrParameterOrProperty
     // / getTypeOfAccessors when popTypeResolution fails). (What the annotation lowered to is already any-like)
-    if (prop->circular && !prop->target && !prop->mapped && span_valid(prop_annotation_circularity_span(prop))) {
+    if (circular && !prop->target && !prop->mapped && span_valid(prop_annotation_circularity_span(prop))) {
         Span name = prop_annotation_circularity_span(prop);
         ty_error_at(me, name, 2502, cstr_d("'", span_sv(name), "' is referenced directly or indirectly in its own type annotation."));
     }

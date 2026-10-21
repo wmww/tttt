@@ -648,7 +648,6 @@ struct Prop {
     uint8_t type_state; // LazyState
     // Its declaration can't mention `this` (tsc's isThisless*): instantiating only `this` leaves it as it is
     bool thisless : 1;
-    bool circular : 1; // Its type needed its type (a mapped type property: TS2615 when done)
     // A property of a mapped type: the (resolved) mapped type is in the checker's links (KEY_PROP_MAPPED_TYPE), for
     // TS2615, see prop_type()
     bool mapped : 1;
