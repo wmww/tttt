@@ -4657,13 +4657,25 @@ static Checker* check_file_or_give_up(Program* me, Checker* checker, SourceFile*
     __atomic_store_n(&checker->file_order, at, __ATOMIC_RELAXED);
     checker->flow_analysis_disabled = false;
     deferred_bodies_acquire(me, source, nullptr);
-    isize errors_before = vec_error_size(&checker->errs->errors);
     jmp_buf redo;
+    // A file that may be given up reports into a context of its own (its parent the checker's, which error_ctx_find()
+    // looks in too), merged into the checker's once it's checked: the checker's errors are kept in span order, so what a
+    // file reported isn't its tail (the files checked before it whose spans sort after it lost their errors when it was
+    // given up: drizzle's missing errors under @ts-expect-error at K12 without the variance lock)
+    ErrorCtx* file_errs = nullptr;
     if (may_give_up && checker->graph && graph_can_redo(checker->graph)) {
+        file_errs = malloc(sizeof(ErrorCtx));
+        panic_if(!file_errs, "out of memory");
+        *file_errs = error_ctx_scratch(checker->errs);
+        file_errs->parent = checker->errs;
+        checker->errs = file_errs;
         if (setjmp(redo)) {
             // (Given up: the stack is gone, what it reported for this file too)
             checker->redo_jmp = nullptr;
-            while (vec_error_size(&checker->errs->errors) > errors_before) vec_error_pop(&checker->errs->errors);
+            ErrorCtx* given_up = checker->errs;
+            checker->errs = given_up->parent;
+            error_ctx_drop(given_up);
+            free(given_up);
             graph_retire(checker->graph, checker);
             if (getenv("TTTT_GRAPH_STATS")) eprintln("graph: redo of ", source->canonical_path, " (worker ", (u32)checker->graph_worker, ")");
             pthread_mutex_lock(&retired_lock);
@@ -4694,6 +4706,12 @@ static Checker* check_file_or_give_up(Program* me, Checker* checker, SourceFile*
         check_deferred(checker->deferred[d], checker->errs);
     }
     checker->redo_jmp = nullptr;
+    if (file_errs) {
+        checker->errs = file_errs->parent;
+        error_ctx_merge(checker->errs, file_errs);
+        error_ctx_drop(file_errs);
+        free(file_errs);
+    }
     checker->deferred_count = 0;
     checker->defer_checks = false;
     checker->checking_file = nullptr;
