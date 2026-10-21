@@ -94,6 +94,17 @@ void lazy_slots_add_type(LazySlots* me, Ty const* ty) {
 }
 
 
+#ifdef TTTT_DEBUG_IDS
+void lazy_slots_missing(LazySlots const* me, u32 id) {
+    u32 index = id >> LAZY_TYPE_CHUNK_BITS;
+    bool own = false;
+    for (u32 i = 0; i < my own_len; i++) own |= my own[i] == index;
+    void* dir = my directory ? (void*)atomic_load(&my directory->chunks[index]) : nullptr;
+    panic("type id ", (i64)id, " not in the table: chunk ", (i64)index, my types[index] ? " present" : " missing",
+        own ? " (own)" : "", ", directory ", dir ? (dir == (void*)my types[index] ? "same" : "other") : "none");
+}
+#endif
+
 void lazy_slots_sync(LazySlots* me) {
     if (!my directory) return;
     for (size_t i = 0; i < c_arraylen(my types); i++) {

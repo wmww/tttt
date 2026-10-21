@@ -49,7 +49,31 @@ struct TyGraph {
 };
 
 
+static GraphClass graph_kind_class_of(u32 kind);
+// (Debug: TTTT_GRAPH_NOSHARE=k,k,... or =all-but:k,k: kinds kept private, a bisection of what sharing breaks)
+static uint8_t noshare_kinds[256];
+static int noshare_init = -1;
 GraphClass graph_kind_class(u32 kind) {
+    if (__builtin_expect(noshare_init < 0, 0)) {
+        char const* env = getenv("TTTT_GRAPH_NOSHARE");
+        if (env) {
+            bool but = !strncmp(env, "all-but:", 8);
+            if (but) { memset(noshare_kinds, 1, sizeof(noshare_kinds)); env += 8; }
+            for (char const* p = env; *p;) {
+                char* end;
+                unsigned long k = strtoul(p, &end, 10);
+                if (end == p) break;
+                if (k < 256) noshare_kinds[k] = !but;
+                p = *end == ',' ? end + 1 : end;
+            }
+        }
+        noshare_init = 1;
+    }
+    GraphClass ret = graph_kind_class_of(kind);
+    return ret != GRAPH_SCRATCH && kind < 256 && noshare_kinds[kind] ? GRAPH_SCRATCH : ret;
+}
+
+static GraphClass graph_kind_class_of(u32 kind) {
     switch (kind) {
     // Roots (per symbol, per declaration) and identities (constructors: the value is what the key is)
     case KEY_TYPE_PARAM: case KEY_SYMBOL_LINKS: case KEY_GENERIC_PARAMS: case KEY_NAMESPACE: case KEY_TYPE_ONLY_EXPORT:
@@ -62,6 +86,8 @@ GraphClass graph_kind_class(u32 kind) {
     case KEY_FUNCTION: case KEY_UNIQUE_SYMBOL_NAME: case KEY_FUNCTION_RETURN: case KEY_INSTANTIATION_QUERY:
     case KEY_IMPLEMENTATION_SIGNATURE: case KEY_SIGNATURE_INSTANCE: case KEY_SIGNATURE_TYPE:
     case KEY_MODULE_CLONE: case KEY_FRESH_LITERAL:
+    // (A property's own: whoever sees the property may look for them, so they go out before it does)
+    case KEY_PROP_MAPPED_TYPE: case KEY_SYNTHETIC_PROP_PARTS: case KEY_PROP_WRITE_TYPE:
         return GRAPH_IDENTITY;
     // Computed values (some of them computed while lowering or instantiating: KEY_ALIAS_INSTANCE, KEY_UNION_NODE,
     // the conditional instances)
@@ -69,12 +95,12 @@ GraphClass graph_kind_class(u32 kind) {
     case KEY_UNION_NODE: case KEY_ALIAS_VARIANCES:
     case KEY_REGULAR_UNION: case KEY_WIDENED_OBJECTS: case KEY_REGULAR_OBJECT_LITERAL: case KEY_MAPPED_KEY_PARAM:
     case KEY_KEYOF_PROPERTIES: case KEY_SIMPLIFIED: case KEY_NORMALIZED_INTERSECTION: case KEY_MAPPED_FILTERING:
-    case KEY_PROP_MAPPED_TYPE: case KEY_PROP_WRITE_TYPE: case KEY_UNION_ACCESS: case KEY_BASE_CONSTRAINT:
+    case KEY_UNION_ACCESS: case KEY_BASE_CONSTRAINT:
     case KEY_INFERRED_TRUE_BRANCH: case KEY_DISTRIBUTION_DEPENDENT: case KEY_DISTRIBUTIVE_CONSTRAINT:
     case KEY_IMPLIED_CONSTRAINT: case KEY_TYPE_VARIABLE_REDUCTION: case KEY_DEFINITELY_RELATED:
     case KEY_CANONICAL_SIGNATURE: case KEY_BASE_SIGNATURE: case KEY_VARIANCES: case KEY_ALIAS_MARKER:
     case KEY_CHECK_MARKER_REF: case KEY_ITERATION_TYPES: case KEY_WIDENED_NULLABLE:
-    case KEY_INTERSECTION_PROP_CONTEXT: case KEY_SYNTHETIC_PROP_PARTS: case KEY_UNION_PAIR:
+    case KEY_INTERSECTION_PROP_CONTEXT: case KEY_UNION_PAIR:
     case KEY_INTERSECTION_OF: case KEY_REVERSE_MAPPED: case KEY_UNION_KEY_NAME: case KEY_UNION_KEY_MEMBER: case KEY_FLOW_NOT_UNIT:
     case KEY_EVOLVING_ARRAY: case KEY_REDUCED_UNION: case KEY_FUNCTION_FREE_PARAMS: case KEY_FUNCTION_TYPE_MENTIONS:
     case KEY_ARRAY_THIS_PROPS: case KEY_TUPLE_NAME_ORDER: case KEY_INDEX_NAME_ORDER: case KEY_DECIMAL_ORDER:
@@ -597,6 +623,10 @@ bool lazy_wait_slow(Checker* me, void* field, size_t size) {
     TyGraph* graph = me->graph;
     unsigned seen = lazy_field_load(field, size);
     unsigned owner = seen >> 2;
+    if (LAZY_IN_FLIGHT(seen) && !owner && getenv("TTTT_GRAPH_LOUD_FALLBACKS")) {
+        static _Atomic u32 told;
+        if (atomic_fetch_add(&told, 1) < 5) eprintln("graph: worker ", (u32)me->graph_worker, " meets a field in flight without an owner");
+    }
     if (!LAZY_IN_FLIGHT(seen) || !owner || owner == me->graph_worker) return true;
     u64 start = now_ns();
     bool ret = true;
@@ -614,6 +644,7 @@ bool lazy_wait_slow(Checker* me, void* field, size_t size) {
         bool breaks = breaks_wait_cycle(graph, me->graph_worker, owner);
         pthread_mutex_unlock(&graph->wait_lock);
         if (breaks) {
+            if (getenv("TTTT_GRAPH_LOUD_FALLBACKS")) eprintln("graph: worker ", (u32)me->graph_worker, " breaks a wait cycle on ", (u32)owner);
             me->graph_fallbacks++;
             ret = false;
             break;

@@ -96,10 +96,19 @@ static Slot* probe(Slots* slots, u64 hash, u64 const* words, u32 count) {
     }
 }
 
+// (What the probe saw decides: an empty slot it stopped at may take another key's entry the moment after, which a second
+// look at the slot would return for this key)
 void const** shared_table_find(SharedTable const* me, u64 hash, u64 const* words, u32 count) {
     Shard const* shard = &my shards[shard_of(hash)];
-    Slot* slot = probe(atomic_load_explicit(&((Shard*)shard)->slots, memory_order_acquire), hash, words, count);
-    return atomic_load_explicit(&slot->hash, memory_order_relaxed) ? atomic_load_explicit(&slot->block, memory_order_relaxed) : nullptr;
+    Slots* slots = atomic_load_explicit(&((Shard*)shard)->slots, memory_order_acquire);
+    for (u32 i = slot_of(hash, slots->cap);; i = (i + 1) & (slots->cap - 1)) {
+        Slot* slot = &slots->slot[i];
+        u64 h = atomic_load_explicit(&slot->hash, memory_order_acquire);
+        if (!h) return nullptr;
+        if (h != hash) continue;
+        void const** block = atomic_load_explicit(&slot->block, memory_order_relaxed);
+        if (key_is(block, words, count)) return block;
+    }
 }
 
 static u64 const* block_words(void const** block, u32 count) {
@@ -185,11 +194,17 @@ static LinkSlot* link_probe(LinkSlots* slots, u64 hash, u64 key) {
     }
 }
 
+// (As shared_table_find(): by what the probe saw, never a second look at the slot)
 void const* shared_links_get(SharedLinks const* me, u64 key) {
     u64 hash = link_hash(key);
     Shard* shard = (Shard*)&my shards[shard_of(hash)];
-    LinkSlot* slot = link_probe((LinkSlots*)atomic_load_explicit(&shard->slots, memory_order_acquire), hash, key);
-    return atomic_load_explicit(&slot->key, memory_order_relaxed) ? atomic_load_explicit(&slot->value, memory_order_relaxed) : nullptr;
+    LinkSlots* slots = (LinkSlots*)atomic_load_explicit(&shard->slots, memory_order_acquire);
+    for (u32 i = slot_of(hash, slots->cap);; i = (i + 1) & (slots->cap - 1)) {
+        LinkSlot* slot = &slots->slot[i];
+        u64 k = atomic_load_explicit(&slot->key, memory_order_acquire);
+        if (!k) return nullptr;
+        if (k == key) return atomic_load_explicit(&slot->value, memory_order_relaxed);
+    }
 }
 
 void const* shared_links_insert(SharedLinks* me, u64 key, void const* value) {

@@ -1310,6 +1310,13 @@ struct Checker {
 #define LAZY_STATE_OF(v) ((v) & 3)
 #define LAZY_IN_FLIGHT(v) (((v) & 3) == LAZY_STATE_IN_FLIGHT)
 #define LAZY_LOAD(field) __atomic_load_n(&(field), __ATOMIC_ACQUIRE)
+// The hottest done tests (ty_members(), prop_type()) load plainly, relying on x86's ordering (hacks.md); a
+// ThreadSanitizer build gets the acquire, so that what it reports are the races that matter
+#ifdef __SANITIZE_THREAD__
+#define LAZY_FAST_LOAD(field) LAZY_LOAD(field)
+#else
+#define LAZY_FAST_LOAD(field) (field)
+#endif
 // In flight to this worker (its own, or any without --shared-graph)
 #define LAZY_MINE_IN_FLIGHT(me, v) (LAZY_IN_FLIGHT(v) && (unsigned)((v) >> 2) == (me)->graph_worker)
 #define LAZY_FOREIGN(me, field) ((me)->graph_worker && LAZY_IN_FLIGHT(LAZY_LOAD(field)) && \
@@ -1686,7 +1693,7 @@ static inline Members const* ty_members(Checker* me, Ty const* ty) {
 #else
     // (A plain load: on x86 a store-ordered publication (LAZY_DONE() after the value) is seen in order; an acquire here
     // cost the default path ~0.3% of its instructions in the code it stops the compiler from combining)
-    if (state && state->members_state == LAZY_STATE_DONE) return state->members;
+    if (state && LAZY_FAST_LOAD(state->members_state) == LAZY_STATE_DONE) return state->members;
 #endif
     return ty_members_resolving(me, ty);
 }

@@ -1083,7 +1083,9 @@ static void builder_add_parts_members(Checker* me, MembersBuilder* builder, Ty c
                 SyntheticParts* parts = arena_alloc(&my arena, sizeof(SyntheticParts) + sizeof(Prop const*) * found_len);
                 parts->len = found_len;
                 memcpy(parts->props, found_props, sizeof(Prop const*) * found_len);
-                *intern_slot(me, &my links, (u64[]){ KEY_SYNTHETIC_PROP_PARTS, (u64)(uintptr_t)merged }, 2) = parts;
+                // (Part of the property: published with it, --shared-graph)
+                u64 parts_key[2] = { KEY_SYNTHETIC_PROP_PARTS, (u64)(uintptr_t)merged };
+                intern_set(me, &my links, intern_slot(me, &my links, parts_key, 2), parts);
                 prop = merged;
             }
             builder_push(builder, props, prop);
@@ -4419,7 +4421,9 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                     .mapped = true,
                     .decl = prop_decl_none(),
                 };
-                *intern_slot(me, &my links, (u64[]){ KEY_PROP_MAPPED_TYPE, (u64)(uintptr_t)prop }, 2) = ty;
+                // (Part of the property: published with it, --shared-graph)
+                u64 mapped_key[2] = { KEY_PROP_MAPPED_TYPE, (u64)(uintptr_t)prop };
+                intern_set(me, &my links, intern_slot(me, &my links, mapped_key, 2), ty);
                 // A fresh symbol, declared where the property it comes from is (tsc's resolveMappedTypeMembers), unless
                 // the `as` clause remaps rather than filters (any key: tsc's shouldLinkPropDeclarations, see below)
                 Prop const* declared = !remapping ? from : nullptr;
@@ -5344,7 +5348,7 @@ bool ty_prop_is_accessor(Prop const* prop) {
 
 Ty const* prop_type(Checker* me, Prop const* const_prop) {
     Prop* prop = (Prop*)const_prop; // The lazily resolved type is the one mutable thing about a Prop
-    if (prop->type_state == LAZY_STATE_DONE) { // (A plain load, see ty_members())
+    if (LAZY_FAST_LOAD(prop->type_state) == LAZY_STATE_DONE) {
         TAINT_READ(TK_PROP_TYPE, prop);
         return prop->type;
     }
@@ -5485,7 +5489,9 @@ Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
         type = prop_write_type(me, prop->target);
         if (type) type = ty_instantiate(me, type, prop->mapper);
     }
-    *intern_slot(me, &my links, key, 2) = type;
+    // (An identity of the property, published before the flag goes on: with --shared-graph another checker's
+    // property may be this one, and the flag says where to look. Who computes it first doesn't matter, it's the same)
+    type = intern_set(me, &my links, intern_slot(me, &my links, key, 2), type);
     prop->write_type_known = true;
     return type;
 }
@@ -5533,7 +5539,8 @@ static void clone_type_params(Checker* me, Signature* sig) {
     for (u32 i = 0; i < params.len; i++) {
         if (fresh[i] != params.data[i]) ((Ty*)fresh[i])->param.state->clone_mapper = mapper;
     }
-    sig->mapper = mapper;
+    // (Atomic: ty_erased_signature() reads the mapper of a signature another checker may be resolving)
+    __atomic_store_n(&sig->mapper, mapper, __ATOMIC_RELEASE);
     sig->type_params = (TyList){ .data = fresh, .len = params.len };
 }
 

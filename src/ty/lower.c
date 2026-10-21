@@ -283,7 +283,9 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
         case LAZY_STATE_IN_FLIGHT:
             // An alias in flight below the resolution barrier (a variance measurement's, a call's) is resolved again,
             // nested, and the first to finish is its type (tsc's findResolutionCycleStartIndex looks no further down)
-            if (alias_reenters(me, symbol)) {
+            // (Its own only: one in flight on another worker that this one doesn't wait for, a wait cycle it breaks
+            // (lazy_wait_slow()), can't be claimed again, and is a cycle like any)
+            if ((!my graph_worker || LAZY_MINE_IN_FLIGHT(me, seen)) && alias_reenters(me, symbol)) {
                 if (debug_env.debug_reentry) ty_debug_reentry(me, "REENTER 2 variance", span_null);
                 break;
             }

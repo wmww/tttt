@@ -292,6 +292,25 @@ static bool intern_needs_growth(InternTable const* table) {
     return (table->len + 1) * 4 > table->cap * 3;
 }
 
+#ifdef TTTT_DEBUG_IDS
+// (Debug: a kind whose values are types holds a type)
+static void debug_check_type_value(InternTable const* table, u64 const* words, u32 count, void const* const* block, char const* where) {
+    Checker* checker = current_checker;
+    if (!checker || table != &checker->types || !count || !block[0]) return;
+    switch (words[0] & 255) {
+        case KEY_LITERAL: case KEY_UNION: case KEY_INTERSECTION: case KEY_REFERENCE: case KEY_KEYOF: case KEY_INDEXED:
+        case KEY_CONDITIONAL: case KEY_SUBSTITUTION: case KEY_ANONYMOUS_INSTANCE: case KEY_TEMPLATE_LITERAL:
+        case KEY_STRING_MAPPING: case KEY_STRUCTURAL: break;
+        default: return;
+    }
+    Ty const* ty = block[0];
+    if ((uintptr_t)ty < 0x10000 || ((uintptr_t)ty & 7) || lazy_slots_type(current_lazy_slots, ty->id) != ty) {
+        panic(where, ": kind ", (u32)(words[0] & 255), " holds ", (u64)(uintptr_t)ty, " block ", (u64)(uintptr_t)block,
+            " count ", count, " worker ", (u32)checker->graph_worker);
+    }
+}
+#endif
+
 // --shared-graph: a key the checker's own table doesn't have, in the graph's (ty/graph.h). Null if none
 [[gnu::noinline]] static void const** intern_shared_find(InternTable const* table, u64 hash, u64 const* words, u32 count) {
     void const** block = shared_table_find(table->shared, hash, words, count);
@@ -303,6 +322,9 @@ static bool intern_needs_growth(InternTable const* table) {
         return nullptr;
     }
     graph_count_shared_hit(table, words, count);
+#ifdef TTTT_DEBUG_IDS
+    debug_check_type_value(table, words, count, block, "shared hit");
+#endif
     // (--first-touch-stamps: a type of a kind with a recursion identity met first here)
     Checker* checker = current_checker;
     if (checker && checker->stamps && table == &checker->types && count) {
@@ -320,9 +342,31 @@ static bool intern_needs_growth(InternTable const* table) {
     return graph_kind_class((u32)(words[0] & 255)) == GRAPH_IDENTITY;
 }
 
+#ifdef TTTT_DEBUG_IDS
+// (Debug: a table of the checker current on this thread, never another's)
+static Checker* debug_checkers[256];
+static _Atomic u32 debug_checker_count;
+static thread_local bool debug_in_checker_new;
+static inline void debug_own_table(InternTable const* table) {
+    Checker const* c = current_checker;
+    if (!c || debug_in_checker_new || ((char const*)table >= (char const*)c && (char const*)table < (char const*)(c + 1))) return;
+    u32 n = atomic_load(&debug_checker_count);
+    for (u32 i = 0; i < n && i < 256; i++) {
+        Checker const* o = debug_checkers[i];
+        if ((char const*)table >= (char const*)o && (char const*)table < (char const*)(o + 1)) {
+            panic("an intern table of another checker: table ", (u64)(uintptr_t)table, " current ", (u64)(uintptr_t)c);
+        }
+    }
+}
+#define DEBUG_OWN_TABLE(t) debug_own_table(t)
+#else
+#define DEBUG_OWN_TABLE(t) ((void)0)
+#endif
+
 // The returned slot is null if the key is new. It is in the key's arena block, so it stays valid (callers that intern
 // while computing the value look it up again all the same, from when the slots were in the table).
 void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 count) {
+    DEBUG_OWN_TABLE(table);
     if (intern_needs_growth(table)) {
         intern_grow(table);
     }
@@ -345,6 +389,7 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
 }
 
 void const* intern_lookup(InternTable const* table, u64 const* words, u32 count, InternMiss* miss) {
+    DEBUG_OWN_TABLE(table);
     u64 hash = hash_words(words, count);
     InternEntry* entry = intern_find(table, hash, words, count);
     *miss = (InternMiss){ .hash = hash, .cap = table->cap, .index = entry ? (u32)(entry - table->entries) : 0 };
@@ -363,6 +408,7 @@ void const* intern_lookup(InternTable const* table, u64 const* words, u32 count,
 }
 
 void const** intern_insert(Checker* me, InternTable* table, InternMiss const* miss, u64 const* words, u32 count) {
+    DEBUG_OWN_TABLE(table);
     // (Same table, nothing removed since: whatever was inserted meanwhile went into the key's probe sequence, so it's
     // probed from where the lookup stopped)
     u32 start = miss->index;
@@ -396,7 +442,22 @@ void const* intern_publish(Checker* me, InternTable* table, void const** slot) {
     u32 count = (u32)(hash >> 48);
     if (count == INTERN_LONG_KEY) count = (u32)((u64 const*)slot)[1];
     u64 kind = count ? intern_key_words(slot, count)[0] & 255 : 0;
+    // (TTTT_DEBUG_INTERN_SET=1: the slot must be this checker's own entry, not yet in the shared table)
+    static int debug = -1;
+    if (debug < 0) debug = getenv("TTTT_DEBUG_INTERN_SET") != nullptr;
+    if (debug) {
+        InternEntry* own = intern_find(table, hash, intern_key_words(slot, count), count);
+        void const** found = shared_table_find(table->shared, hash, intern_key_words(slot, count), count);
+        if (!own || !own->hash || own->block != slot || found == slot) {
+            eprintln("intern_set: slot of kind ", (u32)kind, own && own->hash ? (own->block == slot ? " own" : " other private") : " not private",
+                found == slot ? ", already shared" : "");
+        }
+    }
     if (table == &my intersection_props || graph_kind_class((u32)kind) != GRAPH_IDENTITY) return *slot;
+#ifdef TTTT_DEBUG_IDS
+    debug_check_type_value(table, intern_key_words(slot, count), count, slot, "publish");
+    if (!*slot && kind != KEY_PROP_WRITE_TYPE) panic("intern_publish: a null value of kind ", (u32)kind);
+#endif
     void const** there;
     if (!shared_table_insert(table->shared, hash, slot, count, &there)) {
         *slot = there[0];
@@ -426,6 +487,7 @@ static TyList intern_key_list(void const** block, u32 count, u32 at, u32 len) {
 }
 
 void const* intern_get(InternTable const* table, u64 const* words, u32 count) {
+    DEBUG_OWN_TABLE(table);
 #ifdef TTTT_TAINT
     u64 hash = hash_words(words, count);
     InternEntry* entry = intern_find(table, hash, words, count);
@@ -626,6 +688,10 @@ static Ty const* make_intrinsic(Checker* me, char const* name, u32 flags) {
 Checker* checker_new(Program* program) {
     Checker* me = calloc(1, sizeof(Checker));
     panic_if(!me, "out of memory");
+#ifdef TTTT_DEBUG_IDS
+    { u32 at = atomic_fetch_add(&debug_checker_count, 1); if (at < 256) debug_checkers[at] = me; }
+    debug_in_checker_new = true;
+#endif
     my program = program;
     my binder = program_get_binder(program);
     my errs = program_errors(program);
@@ -700,6 +766,9 @@ Checker* checker_new(Program* program) {
     my atom_constructor = checker_atom(me, c_sv("constructor"));
     my atom_prototype = checker_atom(me, c_sv("prototype"));
     my atom_bind = checker_atom(me, c_sv("bind"));
+#ifdef TTTT_DEBUG_IDS
+    debug_in_checker_new = false;
+#endif
     return me;
 }
 

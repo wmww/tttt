@@ -4747,7 +4747,7 @@ static Ty const* compute_base_constraint(Checker* me, Ty const* ty, ConstraintSt
 
 // A branch of a conditional type, as instantiated if it is already, else as written: whether it could be never
 static bool cond_branch_may_be_never(TyCondBranch const* branch) {
-    bool done = branch->state == LAZY_STATE_DONE || (!branch->node && !branch->source);
+    bool done = LAZY_LOAD(branch->state) == LAZY_STATE_DONE || (!branch->node && !branch->source);
     if (done) return branch->type && (branch->type->flags & TYF_NEVER);
     if (branch->source) {
         Ty const* type = branch->source;
@@ -4765,7 +4765,7 @@ static bool cond_branch_may_be_never(TyCondBranch const* branch) {
 
 // Whether a branch of a conditional type is (or as written could be) its check type
 static bool cond_branch_may_be_check(Ty const* ty, TyCondBranch const* branch) {
-    bool done = branch->state == LAZY_STATE_DONE || (!branch->node && !branch->source);
+    bool done = LAZY_LOAD(branch->state) == LAZY_STATE_DONE || (!branch->node && !branch->source);
     if (done) return branch->type && actual_type_variable(branch->type) == actual_type_variable(ty->conditional.check);
     Ty const* root = ty->conditional.root ? ty->conditional.root : ty;
     if (branch->source) return actual_type_variable(branch->source) == actual_type_variable(root->conditional.check);

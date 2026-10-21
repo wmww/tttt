@@ -91,9 +91,20 @@ void lazy_slots_sync(LazySlots* me);
 // --shared-graph: the table reads every checker's ids from now on (each new chunk is put in it as it is made)
 void lazy_slots_share(LazySlots* me);
 
+#ifdef TTTT_DEBUG_IDS
+void lazy_slots_missing(LazySlots const* me, u32 id); // (lazy_type.c: aborts saying why)
+static inline struct Ty const* lazy_slots_type(LazySlots const* me, u32 id) {
+    if (!id) return nullptr;
+    struct Ty const** chunk = my types[id >> LAZY_TYPE_CHUNK_BITS];
+    struct Ty const* ret = chunk ? chunk[id & ((1 << LAZY_TYPE_CHUNK_BITS) - 1)] : nullptr;
+    if (!ret) lazy_slots_missing(me, id);
+    return ret;
+}
+#else
 static inline struct Ty const* lazy_slots_type(LazySlots const* me, u32 id) {
     return id ? my types[id >> LAZY_TYPE_CHUNK_BITS][id & ((1 << LAZY_TYPE_CHUNK_BITS) - 1)] : nullptr;
 }
+#endif
 
 void lazy_slots_drop(LazySlots* me);
 

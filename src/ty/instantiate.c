@@ -199,11 +199,16 @@ TyMapper const* ty_mapper_with(Checker* me, TyMapper const* mapper, Ty const* so
 // cost drizzle 10% more instructions at K1 (each instance lowers its branch again): a known split, plan 86 4d)
 static TyCondBranch instantiate_branch(Checker* me, TyCondBranch const* branch, TyMapper const* mapper) {
     unsigned state = LAZY_LOAD(branch->state);
-    TyCondBranch ret = *branch;
+    // (Field by field: with --shared-graph another checker may be lowering the branch, writing its type)
+    TyCondBranch ret = { .node = branch->node, .source = branch->source, .ctx = branch->ctx, .mapper = branch->mapper };
     if ((branch->node || branch->source) && state != LAZY_STATE_DONE) {
         ret.mapper = ty_compose_mappers(me, branch->mapper, mapper);
         ret.state = LAZY_STATE_NOT_STARTED;
-    } else if (branch->type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
+        return ret;
+    }
+    ret.type = branch->type;
+    ret.state = state;
+    if (branch->type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
         ret = (TyCondBranch){ .source = branch->type, .mapper = mapper };
     }
     return ret;
@@ -781,14 +786,20 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
                 for (u32 i = 0; i < target->alias_args.len; i++) fresh->flags |= alias_args[i]->flags & TYF_NON_INFERRABLE;
             }
             void const** slot = intern_insert(me, &my types, &miss, key, count);
-            *slot = fresh;
-            ret = fresh;
-            // (Checked with the instance in place: a literal whose members lead back to it gets that instance, so
-            // it's a new one)
-            if (!inner && literal_instance_is_itself(me, target, composed)) ret = target;
-            // (Published with --shared-graph once its value is final)
-            *slot = nullptr;
-            ret = intern_set(me, &my types, slot, ret);
+            if (my types.shared && *slot) {
+                // (--shared-graph: instantiating the alias arguments made it already, and published it: that one is
+                // everyone's now. Without the flag this instance replaces it, as it always did)
+                ret = *slot;
+            } else {
+                *slot = fresh;
+                ret = fresh;
+                // (Checked with the instance in place: a literal whose members lead back to it gets that instance, so
+                // it's a new one)
+                if (!inner && literal_instance_is_itself(me, target, composed)) ret = target;
+                // (Published with --shared-graph once its value is final)
+                *slot = nullptr;
+                ret = intern_set(me, &my types, slot, ret);
+            }
         }
         if (key != stack_key) free(key);
     }
@@ -1067,6 +1078,10 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
     if (cached) {
         ret = cached[0];
         *distributed = (bool)(uintptr_t)cached[1];
+#ifdef TTTT_DEBUG_IDS
+        panic_if((uintptr_t)ret < 0x10000 || ((uintptr_t)ret & 7) || lazy_slots_type(current_lazy_slots, ret->id) != ret,
+            "conditional instance: a cached entry that isn't a type, key kind ", (i64)key[0]);
+#endif
     } else {
         // Only what changes: identity mappings say nothing
         Ty const** sources = malloc(sizeof(Ty const*) * (len ? len * 2 : 1));
@@ -1097,6 +1112,9 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
         // A result cut short by the instantiation limits (TS2589) isn't what this instantiation is: it is remembered only
         // while the count that ran out lasts, which keeps a runaway recursion from recomputing it exponentially
         bool cut_short = my instantiation_limit_hits != limit_hits;
+#ifdef TTTT_DEBUG_IDS
+        panic_if(!ret || lazy_slots_type(current_lazy_slots, ret->id) != ret, "conditional instance: resolved to something that isn't a type");
+#endif
         Ty const** entry = arena_new_n(&my arena, Ty const*, 3);
         entry[0] = ret;
         entry[1] = (Ty const*)(uintptr_t)*distributed;

@@ -4825,7 +4825,7 @@ static void check_share(Program* me, u32 c, u32 count) {
         }
     }
     // (--shared-graph: what it computed goes to the checkers after it, if there are any)
-    if (checker->graph && c + 1 < count) graph_publish(checker->graph, checker);
+    if (checker->graph && c + 1 < count && !getenv("TTTT_NO_SHARE_END_PUBLISH")) graph_publish(checker->graph, checker);
     checker_make_current(nullptr);
     timespec_get(&end, TIME_UTC);
     checker->check_ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;

@@ -3071,7 +3071,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         bool any_this = false;
         for (u32 i = 0; i < count && !any_this; i++) {
             Signature const* sig = signatures[i];
-            any_this = sig->state == LAZY_STATE_DONE ? sig->this_type != nullptr : ty_signature_has_this(me, sig);
+            any_this = LAZY_LOAD(sig->state) == LAZY_STATE_DONE ? sig->this_type != nullptr : ty_signature_has_this(me, sig);
         }
         if (any_this) {
             with_this.this_arg = this_argument(me, call, call_span, &with_this.this_span);

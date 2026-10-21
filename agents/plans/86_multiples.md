@@ -735,6 +735,42 @@ at the computation's end**, and makes every field another worker can read safe t
   two workers race; keying by the node always cost drizzle +10% at K1). Next: the cheap taint on in shared mode and
   tainted Ty-resident results kept in a per-worker overlay (slow path only), then rerun the 20-run gate.
   Default path (callgrind, flag off) against the step 2 tree: nest +0.0%, drizzle +0.37%, zod +0.35%.
+  **The segfault and most of the non-determinism were one bug** (2026-10-21, after step 3): shared_table_find() and
+  shared_links_get() probed, and when the probe stopped at an empty slot they looked at that slot *again*: another
+  worker's insert landing there in between made the lookup return that other key's entry (a KEY_STRUCTURAL block for a
+  KEY_TYPE_PARAM lookup, a Ty where a conditional instance's entry array belongs). Now the probe's own view decides.
+  Effect at K12 on 12 threads crashed 7/30 before, 0/40 after (K32 on 32 threads 5/20 -> 0/30); the 8-run table went
+  from zod 6/8, drizzle 7/8, effect 7/8 + a crash, excalidraw 3/8 to zod 8/8, drizzle 6/8, effect 8/8, excalidraw 8/8.
+  Also fixed on the way (each a real race, none the segfault): side table entries describing a property
+  (KEY_PROP_WRITE_TYPE behind Prop.write_type_known, KEY_SYNTHETIC_PROP_PARTS, KEY_PROP_MAPPED_TYPE) are identities
+  now, published before the property is reachable (a memo kind, only the checker that made the property found them
+  until its share ended); instantiate_branch() copies a branch field by field (the struct copy read the type another
+  worker was writing); clone_type_params() stores the mapper atomically (ty_erased_signature() reads it); the branch
+  and signature state peeks in cond_branch_may_be_never()/_check() and resolve_call_inner() are LAZY_LOAD();
+  instantiate_anonymous() adopts the instance a nested instantiation published instead of overwriting the published
+  block with null; an alias in flight on another worker that this one doesn't wait for (a broken wait cycle) is a
+  cycle, not a re-entry (ty_declared_type_of() looped forever: the one hang seen, 1 in ~60 runs). Tried and reverted:
+  KEY_ALIAS_MARKER / KEY_CHECK_MARKER_REF as identities (whether an alias instance is a marker is history: excalidraw
+  differed in every K12 run). Wait-cycle fallbacks do happen at K32 (0 to 1000 a run): each treats another worker's
+  field as its own cycle, which is K1's semantics only approximately; not yet a measured source of differences.
+  Remaining: drizzle's 2/8 (two TS2589 in mysql-core/db.ts, or two TS2345 `never` params in tidb-serverless/session.ts:
+  instantiation-depth and contextual results that depend on what a worker computed first), the taint experiment's
+  subject. TSan on effect at K12 and K32 (btsan) reports only formal races now: ty_param_constraint() reading
+  `circular` plainly next to its CAS, SymbolLinks.base_cycle's flag RMW (two workers' bits can be lost: a real one,
+  benign so far), Prop's write_type_known bitfield next to its neighbours, MappedInfo's struct copy.
+  **Resume from here.** Scratch is /tmp/wt-shared-scratch (delete when done): `paths.sh` (corpus -> tsconfig), `ref.X`
+  (K1 output: `release/tttt --threads 1 --checkers 1 --checker-memory off --noEmit --pretty false -p P`), `rep.sh BIN N
+  corpus...` (N runs at --shared-graph K12 T12 against ref.X: same/diff/crash, differing outputs kept as diffout.X.I),
+  `crashrate.sh N VAR=VAL...` (effect crash count, env passed through), `hunt2.sh CORPUS N` (gdb runs of tttt-dbg, each
+  crash's stacks kept as crash2.X.I), `hang.sh CORPUS N SECS` (a run past SECS interrupted under gdb, all threads'
+  stacks), `tsan.py ERR` (TSan reports grouped by both sites). Builds there: `bdbg` (debugoptimized
+  -DTTTT_DEBUG_IDS: id lookups that miss abort, intern tables used off their checker abort, type-valued kinds hold
+  types, identities never publish null), `btsan` (-Db_sanitize=thread), `basan` (address), `bpoison`
+  (-DTTTT_TY_POISON). Tools in the tree: TTTT_GRAPH_NOSHARE=k,k / =all-but:k,k (kinds kept private: sharing nothing
+  never crashed in 80 runs, which is how the bisection started), TTTT_NO_SHARE_END_PUBLISH=1 (no memo publication),
+  TTTT_GRAPH_LOUD_FALLBACKS=1 (each broken wait cycle on stderr), TTTT_DEBUG_INTERN_SET=1. Next: the taint experiment
+  (coordinator's step 2): cheap taint on in shared mode, tainted Ty-resident fields withheld (reset to not started,
+  not published), the 8x4 table again with per-kind counts of the withheld fields the differing runs touched.
 
 ### 4e's first item: a shared relation cache (measured and designed 2026-10-21, not built)
 **Measurement** (`agents/plans/86_relation_share_probe.patch`, a scratch patch to relate.c's recursive_related():

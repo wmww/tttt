@@ -396,14 +396,26 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   mappedTypeRelationships and zod's SortItem<output<T>> (generic keys) against `{ [K in keyof A | keyof B]: (A & B)[K] }`.
 
 ## Type core (`src/ty/`)
-- `--shared-graph` (ty/graph.c, plan 86 track S) is sequential only: atoms, the type id counter, the id -> Ty table's
-  chunk directory and the lib singletons are handed to whichever checker is current (graph_enter() from
-  checker_make_current(), a 512 KB memcpy each way), which is only right while one checker at a time allocates.
-  Publication is batched at a share's end (graph_publish()), equivalent only sequentially. graph_kind_class() puts
-  KEY_FLOW_NARROWED / KEY_FLOW_DISCRIMINANT (census: SHARE) with the scratch kinds, and treats identity records
-  (SymbolLinks, FunctionReturn) as published whatever their contents' taint. Its cheap taint compiles only with
-  -DTTTT_GRAPH_TAINT and doesn't count reads of tainted private intern entries or of Ty-resident results other than
-  at TAINT_READ sites (members only on the slow path).
+- `--shared-graph` on threads relies on x86's store and load ordering in two places: ty_members()'s and prop_type()'s
+  done tests read the state with a plain load (LAZY_FAST_LOAD(), an acquire only in a ThreadSanitizer build), while
+  the writer publishes the value and then the state with a release store (LAZY_DONE()). An acquire there cost the
+  default path ~1% of its instructions (it stops the compiler combining the loads around it). Formally a data race; on
+  a weakly ordered CPU those two need the acquire back.
+- `--shared-graph` (ty/graph.c, plan 86 stage 4d) runs its checkers on threads but isn't deterministic yet (plan 86's
+  4d status). Identities go out at creation (intern_set()), memo kinds only at a share's end (graph_publish()), so
+  what a checker finds of another's depends on the schedule. A side table entry that describes a shared object (a
+  property's write type, its synthetic parts) must be an identity kind, published before the
+  object is reachable: graph_kind_class() lists the ones found so far (KEY_PROP_WRITE_TYPE, KEY_SYNTHETIC_PROP_PARTS,
+  KEY_PROP_MAPPED_TYPE), more may hide behind a flag on a shared struct (KEY_ALIAS_MARKER is history: published
+  at creation it changed excalidraw at K12 threads, kept a memo kind).
+  Prop.write_type_known is a bitfield set (read-modify-write of its byte) on a published property: only that bit
+  changes after construction, so concurrent setters agree. SymbolLinks.base_cycle is a flag byte two workers OR
+  bits into without an atomic (ty_interface_in_base_cycle(), ty_bases_reentered()): one's bit can be lost (TSan's one
+  real report left; no output seen to depend on it). graph_kind_class() puts KEY_FLOW_NARROWED /
+  KEY_FLOW_DISCRIMINANT (census: SHARE) with the scratch kinds, and treats identity records (SymbolLinks,
+  FunctionReturn) as published whatever their contents' taint. Its cheap taint compiles only with -DTTTT_GRAPH_TAINT
+  and doesn't count reads of tainted private intern entries or of Ty-resident results other than at TAINT_READ sites
+  (members only on the slow path).
 - Re-entry below resolution barriers (plan 88): tsc re-enters anything in flight below `resolutionStart` (a call's
   first resolution, the outermost variance measurement) and stops only when a request is above a barrier; tttt
   approximates per site: declarations and inferred return types re-enter below the call barrier every time, as tsc
