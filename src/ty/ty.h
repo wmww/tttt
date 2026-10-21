@@ -497,8 +497,7 @@ typedef struct TyDeferredRef {
     LowerCtx ctx;
     TyMapper const* mapper; // may be null
     LazyState state;
-    bool circular; // Its arguments needed its arguments (TS4109/TS4110 when they're done, see ty_reference_args())
-    TyList args;
+    TyList args; // (While they are resolved, what is known about them is the resolving checker's: ty_reference_args())
 } TyDeferredRef;
 
 typedef enum PropFlags {
@@ -1026,6 +1025,7 @@ typedef struct DeferredCheck {
 // lookup only walks its own claims
 typedef enum ClaimKind {
     CLAIM_VARIANCES, // relate.c's VarianceClaim: a declared type's or alias's variances being measured
+    CLAIM_DEFERRED_ARGS, // lower.c's DeferredArgsClaim: a deferred reference's arguments being resolved
     CLAIM_KIND_COUNT,
 } ClaimKind;
 

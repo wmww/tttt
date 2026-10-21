@@ -2697,6 +2697,19 @@ static void circular_reference_args(Checker* me, Ty const** args, u32 len) {
     for (u32 i = 0; i < len; i++) args[i] = ty_intrinsic(me, TY_ERROR);
 }
 
+// A deferred reference's arguments being resolved (CLAIM_DEFERRED_ARGS, keyed by its TyDeferredRef)
+typedef struct DeferredArgsClaim {
+    Claim claim;
+    bool circular; // Its arguments needed its arguments (TS4109/TS4110 when they're done)
+} DeferredArgsClaim;
+
+// The deferred reference's arguments are done
+static TyList publish_reference_args(TyDeferredRef* deferred, Ty const** args, u32 len) {
+    deferred->args = (TyList){ .data = args, .len = len };
+    deferred->state = LAZY_STATE_DONE;
+    return deferred->args;
+}
+
 TyList ty_reference_args(Checker* me, Ty const* reference) {
     check(reference->kind == TY_REFERENCE);
     TyDeferredRef* deferred = reference->reference.deferred;
@@ -2707,11 +2720,14 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     if (deferred->state == LAZY_STATE_IN_FLIGHT) {
         TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
         // Only an illegal cycle gets here (its arguments need its arguments)
-        deferred->circular = true;
+        Claim* claim = ty_claim_find(me, CLAIM_DEFERRED_ARGS, deferred, 0);
+        if (claim) c_container_of(claim, DeferredArgsClaim, claim)->circular = true;
         circular_reference_args(me, args, len);
         return (TyList){ .data = args, .len = len };
     }
     deferred->state = LAZY_STATE_IN_FLIGHT;
+    DeferredArgsClaim claim = {0};
+    ty_claim_push(me, CLAIM_DEFERRED_ARGS, &claim.claim, deferred, 0);
     TypeNode const* node = deferred->node;
     if (node->tag == TYPE_IDENTIFIER) {
         Ty const* written_buf[MAX_TYPE_ARGS];
@@ -2728,7 +2744,8 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
             args[i] = ty_instantiate(me, element, deferred->mapper);
         }
     }
-    if (deferred->circular) {
+    ty_claim_pop(me, CLAIM_DEFERRED_ARGS, &claim.claim);
+    if (claim.circular) {
         // tsc's getTypeArguments when popTypeResolution fails: error type arguments, reported at the node (array and
         // tuple nodes have no span here: the current node instead)
         circular_reference_args(me, args, len);
@@ -2761,9 +2778,7 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
             ty_error_at_current_node_d(me, 4110, "Tuple type arguments circularly reference themselves.");
         }
     }
-    deferred->args = (TyList){ .data = args, .len = len };
-    deferred->state = LAZY_STATE_DONE;
-    return deferred->args;
+    return publish_reference_args(deferred, args, len);
 }
 
 // `[a, b, ...rest]`: what `rest` gets out of a tuple, `start` being its index in the pattern. Mutable even of a readonly
