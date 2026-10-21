@@ -176,7 +176,6 @@ void graph_count_lost(TyGraph* me, u32 kind); // An identity another checker pub
 void const* graph_link_insert(TyGraph* me, u32 kind, void const* subject, void const* value); // First wins
 void graph_count_shared_hit(InternTable const* table, u64 const* words, u32 count); // (checker.c)
 
-// A redo of a file after a broken wait cycle (plan 86 4d): whether one may start (threads on, room for a fresh worker,
-// TTTT_GRAPH_REDO=0 not set), and the giving-up checker retired: its in-flight fields are reset by whoever meets them
-bool graph_can_redo(TyGraph const* me);
-void graph_retire(TyGraph* me, Checker* checker);
+// A shadowed worker may hand over to a fresh worker at its file's end (plan 86 4f: threads on, room for another worker
+// number); the retired checker is kept to the program's end (the graph holds what it made)
+bool graph_can_retire(TyGraph const* me);

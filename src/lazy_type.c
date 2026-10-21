@@ -122,7 +122,7 @@ void lazy_slots_sync(LazySlots* me) {
 
 void lazy_slots_share(LazySlots* me) {
     if (!my directory) return;
-    // (Under graph_adopt()'s lock: one registration at a time, also while the other checkers run, a redo's fresh one)
+    // (Under graph_adopt()'s lock: one registration at a time, also while the other checkers run, a shadowed worker's fresh one)
     u32 at = atomic_load_explicit(&my directory->reader_count, memory_order_relaxed);
     panic_if(at >= c_arraylen(my directory->readers), "too many checkers on one graph");
     __atomic_store_n(&my directory->readers[at], me, __ATOMIC_RELEASE);

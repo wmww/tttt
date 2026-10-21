@@ -136,7 +136,7 @@ typedef struct Program {
     HMapPackageFlag packages;
     Checker* checker; // Created by program_make_current(), checks the first share of the files
     Checker** checkers; // malloc'd, checker_count of them once typechecked: checker and the others
-    // --shared-graph: checkers that gave a file up (check_file_or_give_up()), dropped with the others
+    // --shared-graph: checkers retired after a shadowed file (graph_fresh_worker()), dropped with the others
     Checker** retired;
     u32 retired_count, retired_cap;
     u32 checker_count;
@@ -4158,7 +4158,6 @@ static void check_deferred(DeferredCheck deferred, ErrorCtx* errs) {
 
 // The file whose deferred bodies the thread is parsing and walking: their readers there take them as they are
 static thread_local SourceFile const* materializing_file;
-bool program_thread_materializing(void) { return materializing_file != nullptr; }
 
 // A deferred function's scope and the outer walk's flow nodes the body's walk refers to (their reference counts, the
 // return label's list), as the walk of its signature left them (DeferredBodies.snapshots)
@@ -4662,16 +4661,10 @@ static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
     return checker;
 }
 
-// A file's check by `checker`. With --shared-graph on threads and `may_give_up`, a broken wait cycle gives the file
-// up instead (plan 86 4d): the diagnostics it reported so far go, the checker is retired (kept, not dropped: the graph
-// holds what it made; its in-flight fields are reset by whoever meets them) and a fresh one is returned for the redo.
-// Null when the file was checked
-enum { MAX_FILE_REDOS = 3 };
 static pthread_mutex_t retired_lock = PTHREAD_MUTEX_INITIALIZER;
 // --shared-graph: the checker retired (kept until the program ends: the graph holds what it made) and a fresh one, a
 // new worker on the same graph, made current in its place. At a file boundary nothing of the old one is in flight
 static Checker* graph_fresh_worker(Program* me, Checker* checker) {
-    graph_retire(checker->graph, checker);
     pthread_mutex_lock(&retired_lock);
     if (my retired_count == my retired_cap) {
         my retired_cap = my retired_cap ? my retired_cap * 2 : 8;
@@ -4689,40 +4682,12 @@ static Checker* graph_fresh_worker(Program* me, Checker* checker) {
     return fresh;
 }
 
-// A file check_file_or_give_up() gave up (its setjmp returned): the checker is retired and a fresh one returned.
-// (A function of its own: its locals and the compound literals of its messages aren't live across the setjmp,
-// -Wclobbered)
-static Checker* give_up_file(Program* me, Checker* checker, SourceFile const* source) {
-    // (Given up: the stack is gone, what it reported for this file too)
-    checker->redo_jmp = nullptr;
-    ErrorCtx* given_up = checker->errs;
-    checker->errs = given_up->parent;
-    error_ctx_drop(given_up);
-    free(given_up);
-    if (getenv("TTTT_GRAPH_STATS")) eprintln("graph: redo of ", source->canonical_path, " (worker ", (u32)checker->graph_worker, ")");
-    return graph_fresh_worker(me, checker);
-}
-
-static Checker* check_file_or_give_up(Program* me, Checker* checker, SourceFile* source, u32 at, bool may_give_up) {
+// A file's check by `checker`
+static void check_file(Program* me, Checker* checker, SourceFile* source, u32 at) {
     __atomic_store_n(&checker->file_order, at, __ATOMIC_RELAXED);
     checker->flow_analysis_disabled = false;
     deferred_bodies_acquire(me, source, nullptr);
     if (checker->graph) graph_memo_file_start(checker);
-    jmp_buf redo;
-    // A file that may be given up reports into a context of its own (its parent the checker's, which error_ctx_find()
-    // looks in too), merged into the checker's once it's checked: the checker's errors are kept in span order, so what a
-    // file reported isn't its tail (the files checked before it whose spans sort after it lost their errors when it was
-    // given up: drizzle's missing errors under @ts-expect-error at K12 without the variance lock)
-    ErrorCtx* file_errs = nullptr;
-    if (may_give_up && checker->graph && graph_can_redo(checker->graph)) {
-        file_errs = malloc(sizeof(ErrorCtx));
-        panic_if(!file_errs, "out of memory");
-        *file_errs = error_ctx_scratch(checker->errs);
-        file_errs->parent = checker->errs;
-        checker->errs = file_errs;
-        if (setjmp(redo)) return give_up_file(me, checker, source);
-        checker->redo_jmp = &redo;
-    }
     if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
     source_file_check_verbatim_exports(source, checker->errs);
     checker->defer_checks = true;
@@ -4733,19 +4698,11 @@ static Checker* check_file_or_give_up(Program* me, Checker* checker, SourceFile*
     for (u32 d = 0; d < checker->deferred_count; d++) {
         check_deferred(checker->deferred[d], checker->errs);
     }
-    checker->redo_jmp = nullptr;
-    if (file_errs) {
-        checker->errs = file_errs->parent;
-        error_ctx_merge(checker->errs, file_errs);
-        error_ctx_drop(file_errs);
-        free(file_errs);
-    }
     checker->deferred_count = 0;
     checker->defer_checks = false;
     checker->checking_file = nullptr;
     checker->observing_file = nullptr;
     if (checker->graph_memo_on) graph_memo_flush(checker);
-    return nullptr;
 }
 
 // The floor each checker keeps (today's default at 4 checkers): a table of every corpus and the source sweep's 169
@@ -4973,21 +4930,11 @@ static void check_share(Program* me, u32 c, u32 count) {
         segment[segment_count++] = at;
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
-        // --shared-graph on threads: a broken wait cycle gives the file up (lazy_wait_slow()), and it's checked again
-        // by a fresh checker, which then reads what the other side of the cycle finished (plan 86 4d)
-        for (u32 redo = 0;; redo++) {
-            Checker* redoing = check_file_or_give_up(me, checker, source, at, redo < MAX_FILE_REDOS);
-            if (!redoing) break;
-            check_segment_after(me, checker, c, segment, segment_count - 1);
-            segment[0] = at;
-            segment_count = 1;
-            checker = redoing;
-            my checkers[c] = checker;
-        }
+        check_file(me, checker, source, at);
         // (Plan 86 stage 4f: a worker that kept a tainted value of a word another worker published meanwhile goes by its
         // Overlay first, on every fast path. Its file is done: it hands over to a fresh worker, whose history starts
         // here, like a recycle's)
-        if (checker->graph_shadowed && graph_can_redo(checker->graph)) {
+        if (checker->graph_shadowed && graph_can_retire(checker->graph)) {
             check_segment_after(me, checker, c, segment, segment_count);
             segment_count = 0;
             if (getenv("TTTT_GRAPH_STATS")) eprintln("graph: shadowed worker ", (u32)checker->graph_worker, " retired after ", source->canonical_path);
@@ -5210,7 +5157,7 @@ static void* materialize_ahead_thread(void* arg) {
 // checked file is checked again, in program order, by one fresh checker, and each file's diagnostics are compared with
 // what the workers reported for it (both sorted and deduplicated like the CLI's, printed `--pretty false`). `graph`
 // (the default) adopts the fresh checker into the finished graph, so it reads what the workers published: a file whose
-// errors differ was checked in a history the published graph doesn't give (the redo's lost errors, a poisoned relation
+// errors differ was checked in a history the published graph doesn't give (a poisoned relation
 // cache, plan 86 4e item 1). `private` gives it no graph: a K1 check in the same process, which every file must
 // match. On stderr: `recheck: N of M files differ`, then the first differing file in program order with both lists
 // (TTTT_GRAPH_RECHECK_ALL=1: every differing file). The output itself is the workers'. Debug only: it doubles the work
@@ -5229,7 +5176,7 @@ static void graph_fingerprint_record(Program* me) {
     // (deal_files()'s list, made later)
     u32 at = 0;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-        if (source_file_is_checked(*i) && !my declarations_only) check_file_or_give_up(me, k1, *i, at++, false);
+        if (source_file_is_checked(*i) && !my declarations_only) check_file(me, k1, *i, at++);
     }
     graph_fp_record_tables(k1);
     error_ctx_drop(&errs);
@@ -5269,7 +5216,7 @@ static void graph_recheck(Program* me, ErrorCtx const* checker_errs, u32 count) 
     u32 files = (u32)vec_source_file_ptr_size(&my check_files);
     for (u32 at = 0; at < files; at++) {
         SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
-        check_file_or_give_up(me, fresh, source, at, false);
+        check_file(me, fresh, source, at);
     }
     for (u32 at = 0; at < files; at++) {
         SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
@@ -5318,7 +5265,7 @@ static void graph_recheck(Program* me, ErrorCtx const* checker_errs, u32 count) 
     vec_error_drop(&again);
     error_ctx_drop(&errs);
     fresh->errs = my errs;
-    // (In the graph it may hold what others point to: kept to the end like a redo's retired checker)
+    // (In the graph it may hold what others point to: kept to the end like a shadowed worker's retired checker)
     if (private_) {
         checker_drop(fresh);
     } else {
@@ -5393,7 +5340,7 @@ static void recheck_stale_undefined_props(Program* me, ErrorCtx* checker_errs, u
                 if (vec_source_file_ptr_at(&my check_files, k)[0] == source) at = k;
             }
             if (at != UINT32_MAX) {
-                check_file_or_give_up(me, fresh, source, at, false);
+                check_file(me, fresh, source, at);
                 checked[checked_count++] = at;
             }
         }

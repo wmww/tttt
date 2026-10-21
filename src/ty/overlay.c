@@ -279,7 +279,7 @@ void sw_copy_in_flight(Checker* me, SharedWord* to, uint8_t* to_state) {
 
 // (The seeded scheduler's and TTTT_DEBUG_PUBLISH's claim)
 [[gnu::noinline, gnu::cold]] static void sw_claim_debug(Checker* me, SharedWord const* w) {
-    // (A scheduling point of the seeded scheduler (TTTT_GRAPH_SEED), as lazy_claim_slow() is: a claim is where
+    // (A scheduling point of the seeded scheduler (TTTT_GRAPH_SEED) (as the old lazy claims were): a claim is where
     // another worker's computation of the same word can interleave)
     graph_sched_point(false);
     claim_push(&my overlay, w);

@@ -1403,7 +1403,7 @@ struct Checker {
     // Taint events internal to the variance group being measured (its own claims and values read: plan 86 stage 4f),
     // which don't taint the group
     u64 variance_internal_events;
-    // Its worker number on the graph (1..63, the tag of what it has in flight: LAZY_FOREIGN()), 0 without one
+    // Its worker number on the graph (1..63: the stats', the oracles' and the scheduler's), 0 without one
     uint8_t graph_worker;
     // Plan 86 stage 4f (overlay.h): its words in flight and the values it keeps privately (tainted, or computed after
     // a poison); and whether one of them is a word another worker published meanwhile (then every word's fast path
@@ -1416,50 +1416,8 @@ struct Checker {
     bool relation_deep_seen; // The relation in progress went through a deep-nesting cut (relate.c CACHE_DEEP)
     u64 relation_pairs; // Pairs recursive_related() computed (TTTT_GRAPH_STATS: plan 86 4e's relation sharing)
     bool graph_memo_on; // --shared-graph with another checker to read them: memo kinds published as they finish
-    u64 graph_waits, graph_wait_ns, graph_fallbacks; // lazy_wait_slow() (TTTT_GRAPH_STATS)
-    // --shared-graph on threads: a jmp_buf the file being checked can be given up through (a broken wait cycle,
-    // check_share()'s redo), null when it can't
-    void* redo_jmp;
 };
 
-// Lazily computed fields on shared objects (plan 86 4d): a LazyState in the low two bits, and while in flight the
-// worker that has it in the bits above (0 without --shared-graph, so the values are LazyState's). A field another worker
-// has in flight is waited for (LAZY_AWAIT()), claimed with LAZY_CLAIM(), published with LAZY_DONE() after its value
-#define LAZY_STATE_OF(v) ((v) & 3)
-#define LAZY_IN_FLIGHT(v) (((v) & 3) == LAZY_STATE_IN_FLIGHT)
-#define LAZY_LOAD(field) __atomic_load_n(&(field), __ATOMIC_ACQUIRE)
-// The hottest done tests (ty_members(), prop_type()) load plainly, relying on x86's ordering (hacks.md); a
-// ThreadSanitizer build gets the acquire, so that what it reports are the races that matter
-#ifdef __SANITIZE_THREAD__
-#define LAZY_FAST_LOAD(field) LAZY_LOAD(field)
-#else
-#define LAZY_FAST_LOAD(field) (field)
-#endif
-// In flight to this worker (its own, or any without --shared-graph)
-#define LAZY_MINE_IN_FLIGHT(me, v) (LAZY_IN_FLIGHT(v) && (unsigned)((v) >> 2) == (me)->graph_worker)
-#define LAZY_FOREIGN(me, field) ((me)->graph_worker && LAZY_IN_FLIGHT(LAZY_LOAD(field)) && \
-    (unsigned)(LAZY_LOAD(field) >> 2) != (me)->graph_worker)
-// Waits while another worker has `field` in flight, then goes to `again` (look at it again). If waiting would close a
-// cycle of waits this worker is the one to break (lazy_wait_slow()), it goes on: the field is in flight to it as if
-// its own (a cycle), counted in Checker.graph_fallbacks
-#define LAZY_AWAIT(me, field, again) do { \
-    if (LAZY_FOREIGN(me, field) && lazy_wait_slow((me), &(field), sizeof(field))) goto again; \
-} while (0)
-// The field's state as of now in `v`, a declaration: what the code after it decides by (another worker can claim the
-// field the moment after: LAZY_CLAIM() is what finds out). If another worker has it in flight, waits and goes to `again`;
-// if that would close a wait cycle this worker breaks, `v` stays in flight: the code treats it as its own (a cycle)
-#define LAZY_SNAP(me, field, v, again) \
-    unsigned v = LAZY_LOAD(field); \
-    if (__builtin_expect(LAZY_IN_FLIGHT(v), 0) && (me)->graph_worker && (unsigned)(v >> 2) != (me)->graph_worker && \
-        lazy_wait_slow((me), &(field), sizeof(field))) goto again
-// Marks it in flight (not started, or its own already): false if another worker got there first (look again)
-#define LAZY_CLAIM(me, field) ((me)->graph_worker ? lazy_claim_slow((me), &(field), sizeof(field)) : \
-    ((field) = LAZY_STATE_IN_FLIGHT, true))
-// A field of a copy (`*copy = *original`): in flight on another worker, which won't finish the copy's, it isn't started
-#define LAZY_COPIED(me, field) do { \
-    if (LAZY_IN_FLIGHT(field) && !LAZY_MINE_IN_FLIGHT(me, (field))) (field) = LAZY_STATE_NOT_STARTED; \
-} while (0)
-#define LAZY_DONE(field) __atomic_store_n(&(field), LAZY_STATE_DONE, __ATOMIC_RELEASE)
 // A shared word's fast path (overlay.h): its value if published and this worker isn't shadowed, else SW_EMPTY (then
 // sw_look())
 static inline uintptr_t sw_get(Checker const* me, SharedWord const* w) {
@@ -1547,8 +1505,6 @@ static inline bool ty_reference_args_known(Checker const* me, Ty const* referenc
     TyDeferredRef const* deferred = reference->reference.deferred;
     return !deferred || sw_get(me, &deferred->args) || sw_peek_fast(me, &deferred->args);
 }
-bool lazy_wait_slow(Checker* me, void* field, size_t size); // (graph.c) false: break the cycle, don't wait
-bool lazy_claim_slow(Checker* me, void* field, size_t size);
 
 // checker.c
 Checker* checker_new(Program* program);
