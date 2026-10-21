@@ -583,7 +583,8 @@ void ty_link_set(Checker* me, u32 kind, void const* subject, void const* value) 
 }
 
 static inline void link_set(LinkTable* table, u32 kind, void const* subject, void const* value) {
-    if ((table->len + 1) * 4 > table->cap * 3) {
+    // (At most 5/8 full: most lookups miss, and a miss probes to an empty slot, ~3.4 probes at 5/8 against ~8.5 at 3/4)
+    if ((table->len + 1) * 8 > table->cap * 5) {
         LinkTable bigger = { .cap = table_grown(table->cap, 1024), .len = table->len };
         bigger.entries = zeroed_table(bigger.cap, sizeof(LinkEntry));
         panic_if(!bigger.entries, "out of memory");
