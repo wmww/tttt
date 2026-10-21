@@ -2720,7 +2720,8 @@ Ty* ty_clone_type_param(Checker* me, Ty const* param, TyMapper const* mapper, At
 bool ty_param_is_bounded(Ty const* param) {
     TyParamState const* state = param->param.state;
     if (state->clone_of || state->is_this) return true;
-    if (state->item) return state->item->extends_explicit || state->item->fallback_explicit;
+    GenericItem const* item = __atomic_load_n(&state->item, __ATOMIC_ACQUIRE); // (set_param_item()'s CAS, lower.c)
+    if (item) return item->extends_explicit || item->fallback_explicit;
     // (A constraint or default as published: the ones made with it, those without an item; plan 86 4f P1: a private
     // one doesn't count, which only a poisoned word can make differ from one checker's answer)
     uintptr_t fallback = sw_load(&state->fallback);
@@ -2735,7 +2736,8 @@ bool ty_is_const_type_variable(Checker* me, Ty const* ty, u32 depth) {
     switch (ty->kind) {
         case TY_TYPE_PARAM: {
             while (ty->param.state->clone_of) ty = ty->param.state->clone_of;
-            return ty->param.state->item && ty->param.state->item->is_const;
+            GenericItem const* item = __atomic_load_n(&ty->param.state->item, __ATOMIC_ACQUIRE); // (set_param_item())
+            return item && item->is_const;
         }
         case TY_UNION:
         case TY_INTERSECTION:

@@ -1602,6 +1602,10 @@ in parallel only where the file sets are disjoint):
       as landed (A): TyCondBranch.lowered is the word, conditional.c's branch_type()/branch_type_with() compute fresh
       (their peeks deleted: no output change), instantiate_branch() keeps the creation-time choice through
       ty_cond_branch_known() (the hole), relate.c's cond_branch_may_be_never/_check() peek it (selecting, no event yet).
+      **Proven: P3's fingerprint divergence (1)** (zod registries.ts `$replace<Meta, S>`'s distributive constraint,
+      KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT: K1 a 4-member union, K12 an aliased 2-member one) is this hole: with
+      instantiate_branch() forced to the node path (a throwaway knob) `fingerprint.sh 2 zod` has 0 differences (9 per
+      run otherwise). The paths-agree fix is its fix.
   - **P3, relate.c + graph.c + lazy_type.c + shared_table.c** (variance groups without waiting, declaration memos as
     words, memo kinds publishing only clean entries in graph_memo_flush(), the shared relation cache's deeply-nested
     rule). ~1-2 sessions. The tooling worker's hooks in graph.c and shared_table.c are its neighbours: rebase often.
