@@ -8,6 +8,11 @@
 #include <stdatomic.h>
 #include <time.h>
 
+// TTTT_GRAPH_STATS' counters: global, so every worker's increment of one would take the same cache line exclusively
+// (several million a run, from every core). Counted only when the stats are printed
+static bool graph_stats_on;
+#define GRAPH_STAT_ADD(p, n, order) do { if (graph_stats_on) __atomic_fetch_add((p), (n), __ATOMIC_RELAXED); } while (0)
+
 
 typedef struct KindStats {
     u64 shared_hits; // Lookups a checker's own table missed and the shared one had
@@ -148,6 +153,7 @@ static void graph_share_tables(TyGraph* me, Checker* checker) {
 
 TyGraph* graph_new(Checker* first) {
     graph_kind_class(0); // (Its tables, before any worker asks)
+    graph_stats_on = getenv("TTTT_GRAPH_STATS") != nullptr;
     TyGraph* me = calloc(1, sizeof(TyGraph));
     panic_if(!me, "out of memory");
     my types = shared_table_new();
@@ -257,7 +263,7 @@ void graph_count_shared_hit(InternTable const* table, u64 const* words, u32 coun
     Checker* checker = current_checker;
     if (!checker || !checker->graph || !count) return;
     u32 kind = table == &checker->intersection_props ? GRAPH_KIND_INTERSECTION_PROPS : (u32)(words[0] & 255);
-    __atomic_fetch_add(&checker->graph->stats[kind].shared_hits, 1, __ATOMIC_RELAXED);
+    GRAPH_STAT_ADD(&checker->graph->stats[kind].shared_hits, 1, __ATOMIC_RELAXED);
 }
 
 // Publication
@@ -284,15 +290,15 @@ static void publish_table(TyGraph* me, Checker* checker, InternTable* private_ta
         KindStats* stats = &my stats[kind];
         GraphClass class = graph_kind_class(kind);
         if (class == GRAPH_SCRATCH) {
-            __atomic_fetch_add(&stats->scratch, 1, __ATOMIC_RELAXED);
+            GRAPH_STAT_ADD(&stats->scratch, 1, __ATOMIC_RELAXED);
             continue;
         }
         if (!entry->block[0]) {
-            __atomic_fetch_add(&stats->unfinished, 1, __ATOMIC_RELAXED);
+            GRAPH_STAT_ADD(&stats->unfinished, 1, __ATOMIC_RELAXED);
             continue;
         }
         void const** there;
-        if (shared_table_insert(shared, entry->hash, entry->block, count, &there)) __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
+        if (shared_table_insert(shared, entry->hash, entry->block, count, &there)) GRAPH_STAT_ADD(&stats->published, 1, __ATOMIC_RELAXED);
     }
 }
 
@@ -350,14 +356,14 @@ static void publish_link(void* arg, u32 kind, void const* subject, void const* v
     TyGraph* me = ((LinkPublish*)arg)->graph;
     KindStats* stats = &my stats[256 + (kind & 255)];
     if (graph_kind_class(kind) == GRAPH_SCRATCH) {
-        __atomic_fetch_add(&stats->scratch, 1, __ATOMIC_RELAXED);
+        GRAPH_STAT_ADD(&stats->scratch, 1, __ATOMIC_RELAXED);
         return;
     }
     if (!value) {
-        __atomic_fetch_add(&stats->unfinished, 1, __ATOMIC_RELAXED);
+        GRAPH_STAT_ADD(&stats->unfinished, 1, __ATOMIC_RELAXED);
         return;
     }
-    if (shared_links_insert(my node_links, graph_link_key(kind, subject), value) == value) __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
+    if (shared_links_insert(my node_links, graph_link_key(kind, subject), value) == value) GRAPH_STAT_ADD(&stats->published, 1, __ATOMIC_RELAXED);
 }
 
 // (Pages are made by CAS: a loser frees its own)
@@ -405,13 +411,13 @@ void graph_publish(TyGraph* me, Checker* checker) {
 
 unsigned graph_relation_get(TyGraph* me, u32 relation, u64 key) {
     unsigned ret = (unsigned)(uintptr_t)shared_links_get(my relations[relation], key);
-    if (ret) atomic_fetch_add_explicit(&my relation_hits, 1, memory_order_relaxed);
+    if (ret) GRAPH_STAT_ADD(&my relation_hits, 1, memory_order_relaxed);
     return ret;
 }
 
 void graph_relation_put(TyGraph* me, u32 relation, u64 key, unsigned value) {
     if (shared_links_insert(my relations[relation], key, (void const*)(uintptr_t)value) == (void const*)(uintptr_t)value) {
-        atomic_fetch_add_explicit(&my relation_puts, 1, memory_order_relaxed);
+        GRAPH_STAT_ADD(&my relation_puts, 1, memory_order_relaxed);
     }
 }
 
@@ -446,8 +452,8 @@ bool graph_variances_publish(
     Checker* checker, void const** (*block_of)(Checker* checker, VarianceSlot const* slot), bool (*equal)(void const* a, void const* b), bool clean
 ) {
     bool all_published = true;
-    atomic_fetch_add_explicit(&variance_groups, 1, memory_order_relaxed);
-    if (!clean) atomic_fetch_add_explicit(&variance_groups_tainted, 1, memory_order_relaxed);
+    GRAPH_STAT_ADD(&variance_groups, 1, memory_order_relaxed);
+    if (!clean) GRAPH_STAT_ADD(&variance_groups_tainted, 1, memory_order_relaxed);
     for (u32 i = 0; i < checker->graph_variance_claims_len; i++) {
         VarianceSlot* slot = checker->graph_variance_claims[i];
         void const** block = block_of(checker, slot);
@@ -458,22 +464,22 @@ bool graph_variances_publish(
         uintptr_t seen = SW_EMPTY;
         if (__atomic_compare_exchange_n(&slot->value.v, &seen, clean ? (uintptr_t)mine : (uintptr_t)SW_POISON, false, __ATOMIC_RELEASE, __ATOMIC_ACQUIRE)) {
             if (clean) {
-                atomic_fetch_add_explicit(&variance_published, 1, memory_order_relaxed);
+                GRAPH_STAT_ADD(&variance_published, 1, memory_order_relaxed);
 #ifdef TTTT_GRAPH_FINGERPRINT
                 if (!slot->alias) graph_fp_result(TK_VARIANCES, slot->subject, mine, false);
 #endif
                 continue;
             }
-            atomic_fetch_add_explicit(&variance_poisoned, 1, memory_order_relaxed);
+            GRAPH_STAT_ADD(&variance_poisoned, 1, memory_order_relaxed);
         } else if (clean && seen != SW_POISON && equal((void const*)seen, mine)) {
             // (Pure data: the winner's from now on, nothing told the two apart)
-            atomic_fetch_add_explicit(&variance_adopted, 1, memory_order_relaxed);
+            GRAPH_STAT_ADD(&variance_adopted, 1, memory_order_relaxed);
             block[0] = (void const*)seen;
             continue;
         } else if (!clean || seen == SW_POISON) {
-            atomic_fetch_add_explicit(&variance_private, 1, memory_order_relaxed);
+            GRAPH_STAT_ADD(&variance_private, 1, memory_order_relaxed);
         } else {
-            atomic_fetch_add_explicit(&variance_differ, 1, memory_order_relaxed);
+            GRAPH_STAT_ADD(&variance_differ, 1, memory_order_relaxed);
             // (Two clean groups that disagree: something either read escaped the rule)
             if (getenv("TTTT_GRAPH_STATS")) {
                 cstr name = slot->alias ? cstr_from("(an alias)") : ty_to_cstr(checker, slot->subject);
@@ -506,7 +512,7 @@ static void publish_declaration_memo(TyGraph* me, Checker* checker, u32 slot) {
     LazyMemo const* memo = lazy_type_state_peek(&lazy);
     current_lazy_slots = saved;
     if (!memo || !memo->done) {
-        __atomic_fetch_add(&stats->unfinished, 1, __ATOMIC_RELAXED);
+        GRAPH_STAT_ADD(&stats->unfinished, 1, __ATOMIC_RELAXED);
         return;
     }
     // (An immutable copy in the checker's arena, which lives as long as the graph: first wins, a loser's copy is unread)
@@ -514,7 +520,7 @@ static void publish_declaration_memo(TyGraph* me, Checker* checker, u32 slot) {
     *copy = (LazyMemo){ .evaluated = memo->evaluated, .context = memo->context, .evaluation_started = true, .done = true };
     uintptr_t seen = SW_EMPTY;
     if (__atomic_compare_exchange_n(&memo_at(me, slot, true)->v, &seen, (uintptr_t)copy, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED)) {
-        __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
+        GRAPH_STAT_ADD(&stats->published, 1, __ATOMIC_RELAXED);
     }
 }
 
@@ -522,17 +528,17 @@ void const* graph_link_get(TyGraph const* me, u32 kind, void const* subject) {
     // (Alone on the graph, a checker has its own identities, the only ones published: ty_link_publish())
     if (__atomic_load_n(&my checkers, __ATOMIC_RELAXED) == 1) return nullptr;
     void const* ret = shared_links_get(my node_links, graph_link_key(kind, subject));
-    if (ret) __atomic_fetch_add(&((TyGraph*)me)->stats[256 + (kind & 255)].shared_hits, 1, __ATOMIC_RELAXED);
+    if (ret) GRAPH_STAT_ADD(&((TyGraph*)me)->stats[256 + (kind & 255)].shared_hits, 1, __ATOMIC_RELAXED);
     return ret;
 }
 
 void graph_count_lost(TyGraph* me, u32 kind) {
-    __atomic_fetch_add(&my stats[kind < GRAPH_STAT_KINDS ? kind : 0].lost, 1, __ATOMIC_RELAXED);
+    GRAPH_STAT_ADD(&my stats[kind < GRAPH_STAT_KINDS ? kind : 0].lost, 1, __ATOMIC_RELAXED);
 }
 
 void const* graph_link_insert(TyGraph* me, u32 kind, void const* subject, void const* value) {
     void const* there = shared_links_insert(my node_links, graph_link_key(kind, subject), value);
-    if (there == value) __atomic_fetch_add(&my stats[256 + (kind & 255)].published, 1, __ATOMIC_RELAXED);
+    if (there == value) GRAPH_STAT_ADD(&my stats[256 + (kind & 255)].published, 1, __ATOMIC_RELAXED);
     return there;
 }
 
@@ -547,7 +553,7 @@ bool graph_memo_take(TyGraph* me, u32 slot, LazyMemo* memo) {
     memo->evaluation_started = true;
     memo->done = true;
     memo->tainted = false;
-    __atomic_fetch_add(&my stats[GRAPH_STAT_MEMOS].shared_hits, 1, __ATOMIC_RELAXED);
+    GRAPH_STAT_ADD(&my stats[GRAPH_STAT_MEMOS].shared_hits, 1, __ATOMIC_RELAXED);
     return true;
 }
 
@@ -703,7 +709,7 @@ static u64 memo_start(struct MemoTaint* t, InternTable const* table, u64 hash) {
     }
     u32 f = memo_floor_index(table, hash);
     if (t->floor_gen[f] == t->gen && t->floor_start[f] != graph_taint_now) {
-        atomic_fetch_add_explicit(&memo_stat_floor, 1, memory_order_relaxed);
+        GRAPH_STAT_ADD(&memo_stat_floor, 1, memory_order_relaxed);
         return t->floor_start[f];
     }
     return graph_taint_now;
@@ -741,7 +747,7 @@ static void memo_taint_mark(Checker* checker, void const* const* block) {
     if (t->blocks[i]) return;
     t->blocks[i] = key;
     t->len++;
-    atomic_fetch_add_explicit(&memo_stat_tainted, 1, memory_order_relaxed);
+    GRAPH_STAT_ADD(&memo_stat_tainted, 1, memory_order_relaxed);
     checker->types.taint = checker->links.taint = checker->intersection_props.taint = t;
 }
 
@@ -755,7 +761,7 @@ void graph_link_tainted(Checker* checker, u64 key) {
 
 void graph_memo_hit_slow(struct MemoTaint const* t, uintptr_t key) {
     if (memo_taint_has(t, key)) {
-        atomic_fetch_add_explicit(&memo_stat_hits, 1, memory_order_relaxed);
+        GRAPH_STAT_ADD(&memo_stat_hits, 1, memory_order_relaxed);
         TAINT_EVENT(TAINT_READ_TAINTED);
     }
 }
@@ -823,7 +829,7 @@ void graph_memo_log_put(Checker* checker, InternTable const* table, void const**
         if (tainted) memo_taint_mark(checker, (void const* const*)block);
         else {
             memo_pending_push(t, (void const* const*)block);
-            atomic_fetch_add_explicit(&memo_stat_clean, 1, memory_order_relaxed);
+            GRAPH_STAT_ADD(&memo_stat_clean, 1, memory_order_relaxed);
         }
     }
     if (!checker->graph_memo_log_limit) checker->graph_memo_log_limit = 64;
@@ -864,7 +870,7 @@ void graph_memo_flush(Checker* checker) {
         // (The instantiation limits ran out while it may have been computed (TS2589): what it is was cut short in this
         // worker's history, which the others don't share. It stays the worker's own)
         if (logged.limit_hits != checker->instantiation_limit_hits) {
-            __atomic_fetch_add(&my stats[GRAPH_STAT_KINDS - 1].tainted, 1, __ATOMIC_RELAXED);
+            GRAPH_STAT_ADD(&my stats[GRAPH_STAT_KINDS - 1].tainted, 1, __ATOMIC_RELAXED);
             continue;
         }
         u64 hash = ((u64 const*)block)[-1];
@@ -875,7 +881,7 @@ void graph_memo_flush(Checker* checker) {
         KindStats* stats = &my stats[kind];
         // (Its computation was tainted: the checker's own, plan 86 stage 4f)
         if ((entry & LOG_TAINTED) || (checker->memo_taint && memo_taint_has(checker->memo_taint, (uintptr_t)block))) {
-            __atomic_fetch_add(&stats->tainted, 1, __ATOMIC_RELAXED);
+            GRAPH_STAT_ADD(&stats->tainted, 1, __ATOMIC_RELAXED);
             continue;
         }
 #ifdef TTTT_GRAPH_FINGERPRINT
@@ -883,7 +889,7 @@ void graph_memo_flush(Checker* checker) {
 #endif
         void const** there;
         if (shared_table_insert(memo_log_table(me, entry & 3), hash, block, count, &there)) {
-            __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
+            GRAPH_STAT_ADD(&stats->published, 1, __ATOMIC_RELAXED);
             if (__atomic_load_n(&debug_memo_publish, __ATOMIC_RELAXED) > 0) debug_memo_published(block);
         } else if (there != block) {
             // (Another checker's came first: this one reads that from now on)
@@ -903,7 +909,7 @@ void graph_memo_flush(Checker* checker) {
                 pthread_mutex_unlock(&disagree_lock);
             }
             block[0] = winner;
-            __atomic_fetch_add(&stats->lost, 1, __ATOMIC_RELAXED);
+            GRAPH_STAT_ADD(&stats->lost, 1, __ATOMIC_RELAXED);
         }
     }
     checker->graph_memo_log_len = kept;
@@ -917,7 +923,7 @@ void graph_memo_flush(Checker* checker) {
 void graph_memo_done(Checker* checker, u32 slot, bool tainted) {
     if (!graph_memo_sharing(checker)) return;
     if (tainted) {
-        __atomic_fetch_add(&checker->graph->stats[GRAPH_STAT_MEMOS].tainted, 1, __ATOMIC_RELAXED);
+        GRAPH_STAT_ADD(&checker->graph->stats[GRAPH_STAT_MEMOS].tainted, 1, __ATOMIC_RELAXED);
         return;
     }
     publish_declaration_memo(checker->graph, checker, slot);

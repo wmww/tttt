@@ -21,6 +21,60 @@ void graph_taint_bump(void) {
 static OverlayStats stat_total;
 static pthread_mutex_t stat_lock = PTHREAD_MUTEX_INITIALIZER;
 
+// TTTT_GRAPH_WORK=1 (overlay.h): a stack of the claims' start cycles per thread
+#include <x86intrin.h>
+#include <time.h>
+static int work_on = -1;
+static _Atomic u64 work_base;
+static struct timespec work_base_ts;
+typedef struct WorkFrame { SharedWord const* w; u64 start, child; } WorkFrame;
+static thread_local WorkFrame* work_stack;
+static thread_local u32 work_depth, work_cap;
+static bool work_enabled(void) {
+    int on = __atomic_load_n(&work_on, __ATOMIC_RELAXED);
+    if (on < 0) {
+        on = getenv("TTTT_GRAPH_WORK") != nullptr;
+        __atomic_store_n(&work_on, on, __ATOMIC_RELAXED);
+    }
+    return on;
+}
+static u32 work_bin(u64 start) {
+    // (Bins of the run since the first claim: 0-25, 25-50, 50-100, 100-200 ms, later; calibrated at the first claim)
+    u64 base = atomic_load_explicit(&work_base, memory_order_relaxed);
+    static u64 per_ms;
+    if (!per_ms) per_ms = 3000000; // (Refined at print; bins use a nominal 3 GHz)
+    u64 ms = (start - base) / per_ms;
+    return ms < 25 ? 0 : ms < 50 ? 1 : ms < 100 ? 2 : ms < 200 ? 3 : 4;
+}
+[[gnu::noinline, gnu::cold]] static void work_push(SharedWord const* w) {
+    u64 now = __rdtsc();
+    u64 zero = 0;
+    if (atomic_compare_exchange_strong(&work_base, &zero, now)) timespec_get(&work_base_ts, TIME_UTC);
+    if (work_depth == work_cap) {
+        work_cap = work_cap ? work_cap * 2 : 256;
+        work_stack = realloc(work_stack, sizeof(WorkFrame) * work_cap);
+    }
+    work_stack[work_depth++] = (WorkFrame){ w, now, 0 };
+}
+[[gnu::noinline, gnu::cold]] static void work_pop(Overlay* o, SharedWord const* w, u32 outcome) {
+    u64 now = __rdtsc();
+    // (The frame of `w`, innermost; frames above it that never finished are dropped into it)
+    u32 i = work_depth;
+    while (i-- > 0 && work_stack[i].w != w) {}
+    if (i == UINT32_MAX) return;
+    while (work_depth > i + 1) {
+        WorkFrame f = work_stack[--work_depth];
+        work_stack[work_depth - 1].child += 0; // (Their time stays in the frame below, counted as its own)
+        (void)f;
+    }
+    WorkFrame f = work_stack[--work_depth];
+    u64 incl = now - f.start;
+    u64 excl = incl > f.child ? incl - f.child : 0;
+    o->stats.work[outcome][work_bin(f.start)] += excl;
+    o->stats.works[outcome]++;
+    if (work_depth) work_stack[work_depth - 1].child += incl;
+}
+
 static inline u32 map_slot(OverlayMap const* o, uintptr_t key) {
     u64 h = (u64)key * 0x9e3779b97f4a7c15ull;
     return (u32)(h >> 32) & (o->cap - 1);
@@ -144,6 +198,10 @@ void overlay_drop(Checker* me) {
     stat_total.shadowed += o->stats.shadowed;
     stat_total.hits += o->stats.hits;
     stat_total.mine += o->stats.mine;
+    for (u32 k = 0; k < SW_OUTS; k++) {
+        stat_total.works[k] += o->stats.works[k];
+        for (u32 b = 0; b < SW_TIME_BINS; b++) stat_total.work[k][b] += o->stats.work[k][b];
+    }
     pthread_mutex_unlock(&stat_lock);
     free(o->map.keys);
     free(o->map.values);
@@ -284,11 +342,12 @@ void sw_copy_in_flight(Checker* me, SharedWord* to, uint8_t* to_state) {
     graph_sched_point(false);
     claim_push(&my overlay, w);
     if (debug_publish_on()) debug_mark(me, w);
+    if (work_enabled()) work_push(w);
 }
 
 uint64_t sw_claim(Checker* me, SharedWord* w, uint8_t* state) {
     if (!my graph) *state = LAZY_STATE_IN_FLIGHT;
-    else if (__builtin_expect(graph_sched_on || __atomic_load_n(&debug_publish, __ATOMIC_RELAXED) != 0, 0)) sw_claim_debug(me, w);
+    else if (__builtin_expect(graph_sched_on || __atomic_load_n(&debug_publish, __ATOMIC_RELAXED) != 0 || __atomic_load_n(&work_on, __ATOMIC_RELAXED) != 0, 0)) sw_claim_debug(me, w);
     else claim_push(&my overlay, w);
     return graph_taint_now;
 }
@@ -324,6 +383,7 @@ uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value,
     if (seen == SW_EMPTY &&
         __atomic_compare_exchange_n(&w->v, &seen, clean ? value : (uintptr_t)SW_POISON, false, __ATOMIC_RELEASE, __ATOMIC_ACQUIRE)) {
         if (debug) debug_finish(me, w, !clean);
+        if (work_on > 0) work_pop(o, w, clean ? SW_OUT_PUBLISHED : SW_OUT_POISONED);
         if (clean) {
             o->stats.published++;
             return value;
@@ -333,6 +393,7 @@ uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value,
         return value;
     }
     if (debug) debug_finish(me, w, true);
+    if (work_on > 0) work_pop(o, w, seen == SW_POISON ? SW_OUT_PRIVATE : clean ? SW_OUT_ADOPTED : SW_OUT_SHADOWED);
     if (seen == SW_POISON) {
         // (Someone's was tainted: every worker keeps its own, clean or not)
         o->stats.private_++;
@@ -361,6 +422,7 @@ bool sw_mine_in_flight(Checker const* me, SharedWord const* w, uint8_t const* st
 }
 
 void sw_unclaim(Checker* me, SharedWord const* w) {
+    if (my graph && work_on > 0) work_pop(&my overlay, w, SW_OUT_DROPPED);
     if (my graph && __builtin_expect(__atomic_load_n(&debug_publish, __ATOMIC_RELAXED) > 0, 0)) debug_finish(me, w, true);
 }
 
@@ -396,6 +458,25 @@ void overlay_print_stats(Checker* const* live, u32 count) {
         OverlayStats const* s = &live[i]->overlay.stats;
         t.published += s->published, t.adopted += s->adopted, t.poisoned += s->poisoned, t.private_ += s->private_;
         t.shadowed += s->shadowed, t.hits += s->hits, t.mine += s->mine;
+        for (u32 k = 0; k < SW_OUTS; k++) {
+            t.works[k] += s->works[k];
+            for (u32 b = 0; b < SW_TIME_BINS; b++) t.work[k][b] += s->work[k][b];
+        }
+    }
+    if (work_on > 0) {
+        static char const* names[SW_OUTS] = { "published", "adopted", "poisoned", "private", "shadowed", "dropped" };
+        struct timespec now_ts;
+        timespec_get(&now_ts, TIME_UTC);
+        double ms = (double)(now_ts.tv_sec - work_base_ts.tv_sec) * 1e3 + (double)(now_ts.tv_nsec - work_base_ts.tv_nsec) / 1e6;
+        fprintf(stderr, "graph: word work: TSC %.0f cycles per ms (bins assume 3e6)\n", (double)(__rdtsc() - atomic_load(&work_base)) / ms);
+        eprintln("graph: word work (G cycles, exclusive; computations; bins 0-25/25-50/50-100/100-200/200+ ms):");
+        for (u32 k = 0; k < SW_OUTS; k++) {
+            u64 sum = 0;
+            for (u32 b = 0; b < SW_TIME_BINS; b++) sum += t.work[k][b];
+            fprintf(stderr, "graph:   %-9s %7.3f  n=%-9llu  %.3f %.3f %.3f %.3f %.3f\n", names[k], (double)sum / 1e9,
+                (unsigned long long)t.works[k], (double)t.work[k][0] / 1e9, (double)t.work[k][1] / 1e9,
+                (double)t.work[k][2] / 1e9, (double)t.work[k][3] / 1e9, (double)t.work[k][4] / 1e9);
+        }
     }
     eprintln("graph: shared words published ", t.published, ", adopted ", t.adopted, ", poisoned ", t.poisoned,
         ", computed privately after poison ", t.private_, ", shadowed ", t.shadowed, ", overlay hits ", t.hits,

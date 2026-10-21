@@ -63,8 +63,13 @@ typedef struct OverlayMap {
     uintptr_t* values;
     uint32_t cap, len;
 } OverlayMap;
+// TTTT_GRAPH_WORK=1 (a measuring knob, plan 86 "Stage 4f: the perf accounting"): the cycles spent in each
+// computation of a word, exclusive of the nested ones, by its outcome and by when it started (bins of the run)
+enum { SW_OUT_PUBLISHED, SW_OUT_ADOPTED, SW_OUT_POISONED, SW_OUT_PRIVATE, SW_OUT_SHADOWED, SW_OUT_DROPPED, SW_OUTS };
+enum { SW_TIME_BINS = 5 };
 typedef struct OverlayStats {
     uint64_t published, adopted, poisoned, private_, shadowed, hits, mine;
+    uint64_t work[SW_OUTS][SW_TIME_BINS], works[SW_OUTS];
 } OverlayStats;
 typedef struct Overlay {
     uintptr_t* claims; // Bottom first; 0 is a claim a nested computation finished (popped once it is on top)
