@@ -194,7 +194,8 @@ void graph_adopt(TyGraph* me, Checker* checker) {
     // (Memo publication from the second checker on: the first one's, made alone, went with graph_new()'s publication)
     if (graph_memo_eager()) {
         checker->graph_memo_on = true;
-        if (my workers[1]) my workers[1]->graph_memo_on = true;
+        // (Not written again once on: a redo's fresh worker adopts while the first one runs, which reads it)
+        if (my workers[1] && !my workers[1]->graph_memo_on) my workers[1]->graph_memo_on = true;
     }
     __atomic_store_n(&my workers[my checkers], checker, __ATOMIC_RELEASE);
     pthread_mutex_unlock(&my adopt_lock);
@@ -1281,7 +1282,9 @@ void graph_memo_flush(Checker* checker) {
     TyGraph* me = checker->graph;
     if (!me) return;
     graph_sched_point(false);
-    if (__builtin_expect(debug_memo_publish < 0, 0)) debug_memo_publish = getenv("TTTT_DEBUG_MEMO_PUBLISH") != nullptr;
+    if (__builtin_expect(__atomic_load_n(&debug_memo_publish, __ATOMIC_RELAXED) < 0, 0)) {
+        __atomic_store_n(&debug_memo_publish, getenv("TTTT_DEBUG_MEMO_PUBLISH") != nullptr, __ATOMIC_RELAXED);
+    }
     u32 kept = 0;
     for (u32 i = 0; i < checker->graph_memo_log_len; i++) {
         GraphMemoLogEntry logged = checker->graph_memo_log[i];
@@ -1321,7 +1324,7 @@ void graph_memo_flush(Checker* checker) {
         void const** there;
         if (shared_table_insert(memo_log_table(me, entry & 3), hash, block, count, &there)) {
             __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
-            if (debug_memo_publish) debug_memo_published(block);
+            if (__atomic_load_n(&debug_memo_publish, __ATOMIC_RELAXED) > 0) debug_memo_published(block);
         } else if (there != block) {
             // (Another checker's came first: this one reads that from now on)
             void const* winner = __atomic_load_n(there, __ATOMIC_ACQUIRE);

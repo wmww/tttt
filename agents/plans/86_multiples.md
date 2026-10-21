@@ -1590,6 +1590,12 @@ in parallel only where the file sets are disjoint):
     variances gone; (1) now starts at a conditional branch [185] in registries.ts (P2's word) with the memo kinds
     downstream of it; (4) KEY_UNION_PAIR of the Promise unions in query.ts still differs although clean by the
     counter: two members that print alike, most likely their order by per-worker ids (P2's order keys), not a taint.
+    TSan T12 drizzle + effect (9 groups): none of A's base_cycle or B's LazyMemo.done any more; the two in graph.c
+    fixed after the run (graph_memo_flush()'s debug knob initialized racily, graph_adopt() rewriting the first
+    checker's graph_memo_on on a redo's fresh worker); the rest are members.c/ty.h (P1: param constraints, mapped
+    templates and MappedInfo copies, sig_target, write types) and conditional.c's prop-type peek. SymbolLinks'
+    interface_cycle word has no SW_FP() point: no TK_ kind for it in fingerprint.inc (a boolean of a walk over
+    declarations).
     **Audit of per-worker state read by publishing computations** (relate.c, graph.c, lazy_type.c; the coordinator's
     generalization of P1's contextual-signature finding):
     - relate.c ty_is_related_within(): inference inside a relation reads the relation in progress (`my relating`:
