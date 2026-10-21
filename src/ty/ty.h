@@ -1473,11 +1473,20 @@ static inline uintptr_t sw_finish_fast(Checker* me, SharedWord* w, uint8_t* stat
     *state = LAZY_STATE_NOT_STARTED;
     return value;
 }
+// sw_mine_in_flight() and sw_peek() with the default path inline (the end of every function return and declared type)
+static inline bool sw_mine_in_flight_fast(Checker const* me, SharedWord const* w, uint8_t const* state) {
+    if (__builtin_expect(my graph != nullptr, 0)) return sw_mine_in_flight(me, w, state);
+    return *state == LAZY_STATE_IN_FLIGHT;
+}
+static inline uintptr_t sw_peek_fast(Checker const* me, SharedWord const* w) {
+    if (__builtin_expect(my graph != nullptr, 0)) return sw_peek(me, w);
+    return __atomic_load_n(&w->v, __ATOMIC_RELAXED);
+}
 // Whether a deferred reference's arguments are known to this worker (a done-ness peek, no event): the reference's
 // syntax answers otherwise (lower.c ty_reference_args())
 static inline bool ty_reference_args_known(Checker const* me, Ty const* reference) {
     TyDeferredRef const* deferred = reference->reference.deferred;
-    return !deferred || sw_get(me, &deferred->args) || sw_peek(me, &deferred->args);
+    return !deferred || sw_get(me, &deferred->args) || sw_peek_fast(me, &deferred->args);
 }
 bool lazy_wait_slow(Checker* me, void* field, size_t size); // (graph.c) false: break the cycle, don't wait
 bool lazy_claim_slow(Checker* me, void* field, size_t size);

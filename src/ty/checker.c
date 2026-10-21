@@ -1978,15 +1978,15 @@ Ty const* ty_reduced_slow(Checker* me, Ty const* ty) {
         // (A shared word, plan 86 stage 4f)
         uintptr_t v = sw_get(me, &state->reduced);
         if (!v) {
-            switch (sw_look(me, &state->reduced, &state->reduced_state, &v)) {
+            switch (sw_look_fast(me, &state->reduced, &state->reduced_state, &v)) {
                 case SW_LOOK_DONE: break;
                 case SW_LOOK_MINE: return ty; // (In flight here: itself, a taint event)
                 case SW_LOOK_COMPUTE: {
-                    u64 taint = sw_claim(me, &state->reduced, &state->reduced_state);
+                    u64 taint = sw_claim_fast(me, &state->reduced, &state->reduced_state);
                     bool private_conflict;
                     bool never = never_reduced_prop(me, ty->composite.types.data, ty->composite.types.len, &private_conflict) != nullptr;
                     SW_FP(TK_REDUCED, ty, (void const*)(uintptr_t)(never ? 2 : 1), taint);
-                    v = sw_finish(me, &state->reduced, &state->reduced_state, never ? REDUCED_NEVER : REDUCED_ITSELF, taint);
+                    v = sw_finish_fast(me, &state->reduced, &state->reduced_state, never ? REDUCED_NEVER : REDUCED_ITSELF, taint);
                     break;
                 }
             }

@@ -354,7 +354,7 @@ bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function) {
     if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body) return false;
     FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
     // (Only this worker's own: another's in flight is never seen)
-    bool in_flight = memo && sw_mine_in_flight(me, &memo->word, &memo->state);
+    bool in_flight = memo && sw_mine_in_flight_fast(me, &memo->word, &memo->state);
     if (in_flight) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
     return in_flight;
 }
@@ -365,7 +365,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
 Ty const* ty_function_return_known(Checker* me, FunctionImpl const* function) {
     if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body) return nullptr;
     FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
-    uintptr_t v = memo ? sw_peek(me, &memo->word) : SW_EMPTY;
+    uintptr_t v = memo ? sw_peek_fast(me, &memo->word) : SW_EMPTY;
     return v ? FR_TYPE(v) : nullptr;
 }
 
@@ -377,7 +377,7 @@ bool ty_function_return_circular(Checker* me, FunctionImpl const* function) {
     ty_function_return_type(me, function);
     return_type_speculative = outer;
     FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
-    return memo && ((sw_peek(me, &memo->word) & FR_CIRCULAR) || ty_link_get(me, KEY_RETURN_LATE_CIRCULAR, function));
+    return memo && ((sw_peek_fast(me, &memo->word) & FR_CIRCULAR) || ty_link_get(me, KEY_RETURN_LATE_CIRCULAR, function));
 }
 
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
@@ -416,7 +416,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     }
     uintptr_t v = sw_get(me, &memo->word);
     if (!v) {
-        switch (sw_look(me, &memo->word, &memo->state, &v)) {
+        switch (sw_look_fast(me, &memo->word, &memo->state, &v)) {
             case SW_LOOK_DONE: break;
             case SW_LOOK_MINE:
                 // Asked again from below a call's barrier, it isn't circular yet: it's inferred again, nested, and the
@@ -435,7 +435,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
         report_promise_missing(me, function, v);
         return FR_TYPE(v);
     }
-    u64 taint = sw_claim(me, &memo->word, &memo->state);
+    u64 taint = sw_claim_fast(me, &memo->word, &memo->state);
     ty_resolving_push(me, RESOLVING_FUNCTION_RETURN, function);
     FlowIsolation isolation = ty_flow_isolate(me);
     // (An object literal getter a call's resolution types: nothing in its body is remembered, see
@@ -456,16 +456,16 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     bool circular = ty_resolving_pop(me);
     my outer_inference = outer;
     ty_flow_restore(me, isolation);
-    if (sw_mine_in_flight(me, &memo->word, &memo->state)) {
+    if (sw_mine_in_flight_fast(me, &memo->word, &memo->state)) {
         // A return type that depends on itself is any, whatever else the body says (tsc: popTypeResolution() failing)
         v = (uintptr_t)(circular ? ty_intrinsic(me, TY_ANY) : type) | (promise_missing ? FR_PROMISE_MISSING : 0) | (circular ? FR_CIRCULAR : 0);
         SW_FP(TK_FUNCTION_RETURN, function, FR_TYPE(v), taint);
-        v = sw_finish(me, &memo->word, &memo->state, v, taint);
+        v = sw_finish_fast(me, &memo->word, &memo->state, v, taint);
     } else {
         // A nested inference finished first: its result stays (tsc's). If this outer one turned out circular, the TS7023
         // tsc reports here is this checker's to say (ty_function_return_circular())
         sw_unclaim(me, &memo->word);
-        v = sw_peek(me, &memo->word);
+        v = sw_peek_fast(me, &memo->word);
         check(v);
         if (circular && !(v & FR_CIRCULAR)) ty_link_set(me, KEY_RETURN_LATE_CIRCULAR, function, function);
     }

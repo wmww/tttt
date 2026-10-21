@@ -222,7 +222,7 @@ static_assert(_Alignof(Ty) >= 2, "SymbolLinks.declared tags a Ty's low bit");
 // clean if that is, whatever comes after), whether the member's own computation has it in flight here or not
 void ty_set_declared_type(Checker* me, Symbol const* symbol, Ty const* type, u64 taint) {
     SymbolLinks* links = symbol_links(me, symbol);
-    sw_finish(me, &links->declared, &links->declared_state, (uintptr_t)type, taint);
+    sw_finish_fast(me, &links->declared, &links->declared_state, (uintptr_t)type, taint);
 }
 
 // An enum member's type is made when its enum's is
@@ -230,7 +230,7 @@ static Ty const* enum_member_type(Checker* me, Symbol const* symbol) {
     if (!symbol->parent || !(symbol->parent->flags & SYMBOL_ENUM)) return ty_intrinsic(me, TY_ERROR);
     ty_declared_type_of(me, symbol->parent);
     SymbolLinks* links = symbol_links(me, symbol);
-    uintptr_t v = sw_peek(me, &links->declared);
+    uintptr_t v = sw_peek_fast(me, &links->declared);
     // (Null: the enum is being resolved further up the stack and hasn't got to this member yet)
     return v ? DECLARED_TYPE(v) : nullptr;
 }
@@ -278,7 +278,7 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     // (A shared word, plan 86 stage 4f: published when clean, this worker's own otherwise)
     uintptr_t v = sw_get(me, &links->declared);
     if (__builtin_expect(v != 0, 1)) return DECLARED_TYPE(v);
-    switch (sw_look(me, &links->declared, &links->declared_state, &v)) {
+    switch (sw_look_fast(me, &links->declared, &links->declared_state, &v)) {
         case SW_LOOK_DONE: return DECLARED_TYPE(v);
         case SW_LOOK_MINE:
             // An alias in flight below the resolution barrier (a variance measurement's, a call's) is resolved again,
@@ -292,7 +292,7 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
             return ty_intrinsic(me, TY_ERROR);
         case SW_LOOK_COMPUTE: break;
     }
-    u64 taint = sw_claim(me, &links->declared, &links->declared_state);
+    u64 taint = sw_claim_fast(me, &links->declared, &links->declared_state);
     Ty const* ret;
     bool alias_circular = false;
     // An interface's, a class's and a type parameter's declared type is an identity made of identities (the symbol's
@@ -363,13 +363,13 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     // links.declaredType == nil`; tsc's typeParameters aren't unset by a later failure either, and this one's TS2456 is
     // said above)
     if (identity) taint = graph_taint_now;
-    if (sw_mine_in_flight(me, &links->declared, &links->declared_state)) {
+    if (sw_mine_in_flight_fast(me, &links->declared, &links->declared_state)) {
         SW_FP(TK_SYMBOL_DECLARED, symbol, ret, taint);
-        v = sw_finish(me, &links->declared, &links->declared_state, (uintptr_t)ret | (alias_circular ? SYMBOL_DECLARED_CIRCULAR : 0), taint);
+        v = sw_finish_fast(me, &links->declared, &links->declared_state, (uintptr_t)ret | (alias_circular ? SYMBOL_DECLARED_CIRCULAR : 0), taint);
     } else {
         // (Finished by a nested resolution, or an enum member by its enum's)
         sw_unclaim(me, &links->declared);
-        v = sw_peek(me, &links->declared);
+        v = sw_peek_fast(me, &links->declared);
         check(v);
     }
     return DECLARED_TYPE(v);
@@ -385,7 +385,7 @@ bool ty_alias_is_circular(Checker* me, Symbol const* symbol) {
     uintptr_t v = sw_get(me, &links->declared);
     if (!v) {
         ty_declared_type_of(me, symbol);
-        v = sw_peek(me, &links->declared);
+        v = sw_peek_fast(me, &links->declared);
     }
     return (v & SYMBOL_DECLARED_CIRCULAR) != 0;
 }
@@ -2736,7 +2736,7 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     u32 len = deferred->arg_count;
     uintptr_t v = sw_get(me, &deferred->args);
     if (__builtin_expect(v != 0, 1)) return (TyList){ .data = (Ty const* const*)v, .len = len };
-    switch (sw_look(me, &deferred->args, &deferred->state, &v)) {
+    switch (sw_look_fast(me, &deferred->args, &deferred->state, &v)) {
         case SW_LOOK_DONE: return (TyList){ .data = (Ty const* const*)v, .len = len };
         case SW_LOOK_MINE: {
             // Only an illegal cycle gets here (its arguments need its arguments; a taint event)
@@ -2748,7 +2748,7 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
         }
         case SW_LOOK_COMPUTE: break;
     }
-    u64 taint = sw_claim(me, &deferred->args, &deferred->state);
+    u64 taint = sw_claim_fast(me, &deferred->args, &deferred->state);
     Ty const** args = arena_new_n(&my arena, Ty const*, len ? len : 1);
     DeferredArgsClaim claim = {0};
     ty_claim_push(me, CLAIM_DEFERRED_ARGS, &claim.claim, deferred, 0);
@@ -2804,7 +2804,7 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     }
     TyList list = { .data = args, .len = len };
     SW_FP(TK_DEFERRED_ARGS, deferred, &list, taint);
-    return (TyList){ .data = (Ty const* const*)sw_finish(me, &deferred->args, &deferred->state, (uintptr_t)args, taint), .len = len };
+    return (TyList){ .data = (Ty const* const*)sw_finish_fast(me, &deferred->args, &deferred->state, (uintptr_t)args, taint), .len = len };
 }
 
 // `[a, b, ...rest]`: what `rest` gets out of a tuple, `start` being its index in the pattern. Mutable even of a readonly
@@ -4183,7 +4183,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 // An object type takes the new name when instantiated (tsc's getObjectTypeInstantiation), except a
                 // homomorphic mapped type; anything else keeps a name only if it still is what the alias names
                 SymbolLinks const* links = symbol_links(me, canonical(me, decl));
-                uintptr_t declared_v = sw_peek(me, &links->declared); // (A done-ness peek)
+                uintptr_t declared_v = sw_peek_fast(me, &links->declared); // (A done-ness peek)
                 Ty const* declared = declared_v ? DECLARED_TYPE(declared_v) : nullptr;
                 bool object = declared ? declared->kind == TY_ANONYMOUS : body->tag == TYPE_INTERFACE || body->tag == TYPE_CALLABLE;
                 // (The declared type's node when there is one: `{ [K in keyof T]: T[K] } & {}` is the mapped type;
