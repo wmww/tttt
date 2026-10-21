@@ -633,6 +633,11 @@ static u64 fp_value(u32 kind, void const* value);
 
 // What the value's fingerprint is made of
 static void const* key_subject;
+static thread_local bool simplified_writing; // taint_simplified_writing(): the next TK_SIMPLIFIED result's `writing`
+
+void taint_simplified_writing(bool writing) {
+    simplified_writing = writing;
+}
 
 static cstr trace_value(unsigned kind, void const* result) {
     cstr ret = cstr_init();
@@ -675,8 +680,13 @@ static void cleandiff(unsigned kind, void const* subject, void const* result) {
             break;
         case TK_PARAM_CONSTRAINT:
         case TK_BASE_CONSTRAINT:
-        case TK_SIMPLIFIED:
             key = fp_ty(subject);
+            value = fp_ty(result);
+            break;
+        case TK_SIMPLIFIED:
+            // (Keyed by (type, writing): a writing target's simplification is the intersection of what a read's is the
+            // union of, so the two would mismatch as one key)
+            key = fp_mix(fp_ty(subject), simplified_writing);
             value = fp_ty(result);
             break;
         case TK_VARIANCES: {

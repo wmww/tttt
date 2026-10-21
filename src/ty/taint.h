@@ -63,6 +63,7 @@ TaintFrame taint_begin(void);
 // (by kind)
 void taint_end(TaintFrame frame, unsigned kind, void const* object, void const* subject, void const* result);
 void taint_read(unsigned kind, void const* object);
+void taint_simplified_writing(bool writing); // ty_simplified()'s, for the TK_SIMPLIFIED result ended next
 // An explicitly instrumented intern entry: its in-flight placeholder is hit
 void taint_slot_begin(void const* const* block);
 void taint_slot_end(void const* const* block);

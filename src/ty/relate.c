@@ -4093,6 +4093,7 @@ Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing) {
     void const** slot = intern_insert(me, &my links, &miss, key, 3);
     *slot = ret;
 #ifdef TTTT_TAINT
+    taint_simplified_writing(writing);
     taint_end(taint_frame, TK_SIMPLIFIED, slot, ty, ret);
 #else
     TAINT_END(taint_frame, TK_SIMPLIFIED, slot, ty, ret);
