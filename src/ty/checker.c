@@ -3717,7 +3717,7 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
                 }
                 if (same) ret = renamed->constraint;
             }
-            if (ty_members_done(operand)) *intern_slot(me, &my links, cache_key, 2) = ret;
+            if (ty_members_done(me, operand)) *intern_slot(me, &my links, cache_key, 2) = ret;
             return ret;
         }
     }

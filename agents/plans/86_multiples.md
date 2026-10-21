@@ -1498,6 +1498,26 @@ in parallel only where the file sets are disjoint):
       stacks (MembersClaim's early members, bases_frames, members_in_flight, eager_probe_depth); those are rule 1's
       in-flight reads, counted by the cycle machinery. Making the two contextual reads taint events doesn't help (a
       private recompute is context-free all the same: P2's measurement), and that fix is wt-ctx's.
+    - **Members, raw members, unexpanded members, mapped templates, the class base variable**: TyObjectState.members
+      (Members, never null) with members_flight, declared raw members (the same TyObjectState of Ty.declared.raw),
+      TyObjectState.unexpanded (no in-flight state of its own: settled first-wins without a graph, sw_finish() with one,
+      word_settle()), MappedInfo.template_ (MappedInfo copied field by field, so the copy never reads the word: TSan D)
+      and SymbolLinks.base_variable are words. ty_members()'s fast path is the acquire load and the shadow test (the
+      x86 plain-load hack is gone). Early members stay in the MembersClaim (this worker's own); every in-flight test is
+      members_mine_in_flight(). ty_mapped_info_unexpanded() claims the members word and abandons it (sw_abandon()).
+      ty_members_done() and the peeks (conditional.c, instantiate.c, the eager-base probe) go through
+      ty_members_peek(). Fresh types' members go through ty_members_init() (relate.c).
+    - **ty_function_type_mentions()** (conditional.c), rule 5: its peeks selected between results (known mentions,
+      a trimmed instantiation mapper; unknown, the whole mapper: divergence 5). The members and the signature's
+      resolution are computed now instead of peeked (the default path's output doesn't move: suite, five corpora). An
+      object literal's property-type peek is a taint event. The return type's peek stays: inferring it there changes the
+      default path (a suite test, and excalidraw's output, when the return type was forced). It becomes a taint event
+      with the held return-type commit, whose line it is (the gates ran with it as one).
+    - **SymbolLinks.base_cycle** (P3's hack): REENTERED and IN_CYCLE are set by a declared type's raw members
+      resolution, CONSTRUCTOR by class_base(), which more than that resolution calls (the static side, the base
+      instance, a mixin's check). REENTERED and IN_CYCLE can move into the raw Members (MembersRare, set before
+      publication, read through declared_raw_members()); CONSTRUCTOR wants a word of its own (class_base()'s cycle
+      result per class). Not done in this session.
   - **P2, checker.c + lower.c + function.c + instantiate.c** (reduced, cond branches, declared types, reference args,
     implied constraints, function returns, ty_alloc and the directory's chunk slots (lazy_type.c's lazy_slots_*),
     order keys, literal twins: TSan C). ~1-2 sessions.

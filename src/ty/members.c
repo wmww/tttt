@@ -114,16 +114,35 @@ static MembersClaim* members_claim_of(Checker* me, TyObjectState const* state) {
     return claim ? c_container_of(claim, MembersClaim, claim) : nullptr;
 }
 
+// The members are in flight in this worker
+static inline bool members_mine_in_flight(Checker* me, TyObjectState const* state) {
+    return my graph ? sw_mine_in_flight(me, &state->members, &state->members_flight) : state->members_flight == LAZY_STATE_IN_FLIGHT;
+}
+
+// A word whose first answer stays and that has no in-flight state of its own (TyObjectState.unexpanded): without a graph
+// a first-wins store; with one, sw_finish() (published if clean, else this worker's own)
+static uintptr_t word_settle(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value, u64 taint) {
+    if (my graph) return sw_finish(me, w, state, value, taint);
+    uintptr_t unset = SW_EMPTY;
+    if (__atomic_compare_exchange_n(&w->v, &unset, value, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED)) return value;
+    return unset;
+}
+
+// TyObjectState.unexpanded as this worker knows it, null if not yet
+static Members const* unexpanded_known(Checker* me, TyObjectState const* state) {
+    return (Members const*)(my graph ? sw_peek(me, &state->unexpanded) : __atomic_load_n(&state->unexpanded.v, __ATOMIC_ACQUIRE));
+}
+
 // What a state in flight has published so far (null: nothing, or not in flight here)
 static Members const* early_members(Checker* me, TyObjectState const* state) {
-    if (!LAZY_IN_FLIGHT(state->members_state)) return nullptr;
+    if (!members_mine_in_flight(me, state)) return nullptr;
     MembersClaim* claim = members_claim_of(me, state);
     return claim ? claim->early : nullptr;
 }
 
 // Whether the state is in flight here with nothing published yet
 static bool early_members_wanted(Checker* me, TyObjectState const* state) {
-    if (!state || !LAZY_IN_FLIGHT(state->members_state)) return false;
+    if (!state || !members_mine_in_flight(me, state)) return false;
     MembersClaim* claim = members_claim_of(me, state);
     return claim && !claim->early;
 }
@@ -138,28 +157,11 @@ static void members_claim_push(Checker* me, MembersClaim* claim, TyObjectState c
     ty_claim_push(me, CLAIM_MEMBERS, &claim->claim, state, 0);
 }
 
-// The members are resolved
-static Members const* publish_members(Checker* me, MembersClaim* claim, TyObjectState* state, Members const* members) {
+// The members are resolved: what this worker uses from now on (its own, or the clean winner's: sw_finish())
+static Members const* publish_members(Checker* me, MembersClaim* claim, TyObjectState* state, Members const* members, u64 taint) {
     ty_claim_pop(me, CLAIM_MEMBERS, &claim->claim);
-    state->members = members;
-    LAZY_DONE(state->members_state);
-    return members;
+    return (Members const*)sw_finish_fast(me, &state->members, &state->members_flight, (uintptr_t)members, taint);
 }
-
-// (The withholding experiment's: graph_withhold())
-#if defined(TTTT_GRAPH_TAINT) && !defined(TTTT_TAINT)
-static Members const* publish_members_clean(Checker* me, MembersClaim* claim, TyObjectState* state, Members const* members,
-    TaintFrame frame, unsigned kind
-) {
-    ty_claim_pop(me, CLAIM_MEMBERS, &claim->claim);
-    state->members = members;
-    LAZY_DONE_CLEAN(state->members_state, frame, kind);
-    return members;
-}
-#define PUBLISH_MEMBERS_CLEAN(me, claim, state, members, frame, kind) publish_members_clean(me, claim, state, members, frame, kind)
-#else
-#define PUBLISH_MEMBERS_CLEAN(me, claim, state, members, frame, kind) publish_members(me, claim, state, members)
-#endif
 
 // The signatures among a class's or interface's raw members that its bases give it without a this-argument
 typedef struct ThislessSignatures {
@@ -1412,14 +1414,14 @@ Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol) {
     // (A class name isn't a type variable: no need to type the expression)
     if (extends->tag == EXPR_IDENTIFIER && symbol_for_meaning(extends->identifier.target, SYMBOL_CLASS)) return nullptr;
     SymbolLinks* links = ty_symbol_links(me, class_symbol);
-    again:;
-    LAZY_SNAP(me, links->base_variable_state, seen, again);
-    if (seen == LAZY_STATE_DONE) return links->base_variable;
-    if (LAZY_IN_FLIGHT(seen)) {
-        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-        return nullptr;
-    } // The extends expression mentions the class
-    if (!LAZY_CLAIM(me, links->base_variable_state)) goto again;
+    uintptr_t v = sw_get(me, &links->base_variable);
+    if (__builtin_expect(v != SW_EMPTY, 1)) return SW_PTR(v);
+    switch (sw_look_fast(me, &links->base_variable, &links->base_variable_flight, &v)) {
+        case SW_LOOK_DONE: return SW_PTR(v);
+        case SW_LOOK_MINE: return nullptr; // The extends expression mentions the class (sw_look() counted the event)
+        case SW_LOOK_COMPUTE: break;
+    }
+    u64 taint = sw_claim_fast(me, &links->base_variable, &links->base_variable_flight);
     TAINT_BEGIN(taint_frame);
     Ty const* type = ty_expr_type(me, extends);
     Ty const* variable = nullptr;
@@ -1434,11 +1436,8 @@ Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol) {
             if ((part->flags & TYF_TYPE_PARAM) || part->kind == TY_INDEXED) variable = part;
         }
     }
-    links = ty_symbol_links(me, class_symbol);
-    TAINT_END(taint_frame, TK_BASE_VARIABLE, class_symbol, class_symbol, variable);
-    links->base_variable = variable;
-    LAZY_DONE(links->base_variable_state);
-    return variable;
+    if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_BASE_VARIABLE, class_symbol, class_symbol, variable);
+    return SW_PTR(sw_finish_fast(me, &links->base_variable, &links->base_variable_flight, sw_ptr_value(variable), taint));
 }
 
 // Whether a class or interface declaration adds members to what it inherits: anything but statics (tsc's
@@ -3229,7 +3228,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             builder.skip_computed = builder.only_late = false;
             if (index_signatures) {
                 TyObjectState* state = object_state(ty);
-                if (state && LAZY_IN_FLIGHT(state->members_state) && members_claim_of(me, state)) {
+                if (state && members_mine_in_flight(me, state) && members_claim_of(me, state)) {
                     Members* partial = arena_new(&my arena, Members);
                     Prop** props = arena_new_n(&my arena, Prop*, builder.props_count ? builder.props_count : 1);
                     memcpy(props, builder.props, sizeof(Prop*) * builder.props_count);
@@ -3482,8 +3481,12 @@ static void mapped_key_circular(Checker* me, MappedInfo const* source, MappedInf
 // instantiated (tsc's createInstantiatedSymbolTable with mappingThisOnly)
 MappedInfo const* ty_mapped_info_instantiate(Checker* me, MappedInfo const* source, TyMapper const* mapper) {
     MappedInfo* mapped = arena_new(&my arena, MappedInfo);
-    *mapped = *source;
-    LAZY_COPIED(me, mapped->template_state);
+    // (Field by field: the template is a word, which another worker may be publishing; an instantiation has its own)
+    *mapped = (MappedInfo){
+        .type_param = source->type_param, .constraint = source->constraint, .name_type = source->name_type,
+        .template_ctx = source->template_ctx, .modifiers_type = source->modifiers_type,
+        .keyof_constraint = source->keyof_constraint, .readonly = source->readonly, .optional = source->optional,
+    };
     // tsc's instantiateMappedType makes a fresh key parameter constrained by the instantiated constraint, whose base
     // constraint (getResolvedBaseConstraint, pushed) is resolved when the constraint is asked for: a cycle through it
     // (`interface Y extends X<Y>` with `type X<T> = { [K in keyof T]: ... }`: `keyof Y` needs Y's bases, in flight)
@@ -3504,11 +3507,8 @@ MappedInfo const* ty_mapped_info_instantiate(Checker* me, MappedInfo const* sour
     // instantiateMappedType maps K to a fresh type parameter first, which shadows it)
     mapper = ty_mapper_without(me, mapper, (TyList){ .data = &source->type_param, .len = 1 });
     if (mapped->name_type) mapped->name_type = ty_instantiate(me, mapped->name_type, mapper);
-    mapped->template_ = nullptr;
-    mapped->template_node = nullptr;
     mapped->template_from = source;
     mapped->template_mapper = mapper;
-    mapped->template_state = LAZY_STATE_NOT_STARTED;
     if (mapped->modifiers_type) mapped->modifiers_type = ty_instantiate(me, mapped->modifiers_type, mapper);
     return mapped;
 }
@@ -3661,7 +3661,7 @@ static void probe_eager_bases(Checker* me, Members const* raw, TyMapper const* m
         Ty const* base = ty_instantiate(me, rare->eager_bases[i], mapper);
         if (base->kind != TY_REFERENCE || base->reference.deferred) continue;
         Ty const* target = base->reference.target;
-        if (target->kind != TY_DECLARED || !target->declared.raw || target->declared.raw->members_state != LAZY_STATE_DONE) continue;
+        if (target->kind != TY_DECLARED || !target->declared.raw || !ty_members_peek(me, target->declared.raw)) continue;
         probe_reference(me, base, depth + 1);
     }
     my eager_probe_depth--;
@@ -3678,8 +3678,8 @@ static bool mentions_members_in_flight(Checker* me, Ty const* ty, u32 depth) {
                 if (my members_in_flight[i].ty == ty) return true;
             }
             Ty const* declared = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
-            if (declared->kind == TY_DECLARED && declared->declared.raw && declared->declared.raw->members_state == LAZY_STATE_DONE &&
-                members_rare(declared->declared.raw->members)->recursive_bases
+            if (declared->kind == TY_DECLARED && declared->declared.raw && ty_members_peek(me, declared->declared.raw) &&
+                members_rare(ty_members_peek(me, declared->declared.raw))->recursive_bases
             ) {
                 return true;
             }
@@ -3713,8 +3713,8 @@ static bool mentions_members_in_flight(Checker* me, Ty const* ty, u32 depth) {
 // probe_eager_bases() for a reference whose members are known (and still in flight: the second round gets them)
 static void probe_reference(Checker* me, Ty const* ty, u32 depth) {
     Ty const* target = ty->reference.target;
-    if (target->kind != TY_DECLARED || !target->declared.raw || target->declared.raw->members_state != LAZY_STATE_DONE) return;
-    Members const* raw = target->declared.raw->members;
+    if (target->kind != TY_DECLARED || !target->declared.raw || !ty_members_peek(me, target->declared.raw)) return;
+    Members const* raw = ty_members_peek(me, target->declared.raw);
     if (!members_rare(raw)->eager_base_count) return;
     // (Where nothing it can reach is in flight, it can't run away: not worth instantiating. Only the outermost reference
     // is looked at, the bases along the chain are instantiated from it)
@@ -3743,31 +3743,28 @@ static void probe_reference(Checker* me, Ty const* ty, u32 depth) {
 // The raw members of a class or interface (see resolve_declared_members()), memoised in Ty.declared.raw
 static Members const* declared_raw_members(Checker* me, Ty const* declared) {
     TyObjectState* state = declared->declared.raw;
-    again:;
-    LAZY_SNAP(me, state->members_state, seen, again);
-    switch (LAZY_STATE_OF(seen)) {
-        case LAZY_STATE_DONE:
+    uintptr_t v;
+    switch (sw_look_fast(me, &state->members, &state->members_flight, &v)) {
+        case SW_LOOK_DONE:
             TAINT_READ(TK_DECLARED_RAW, state);
-            return state->members;
-        case LAZY_STATE_IN_FLIGHT: // `interface A extends A`
-            TAINT_EVENT(TAINT_IN_FLIGHT_MEMBERS);
+            return (Members const*)v;
+        case SW_LOOK_MINE: // `interface A extends A` (sw_look() counted the taint event)
             if (my eager_probe_depth) members_reentered_unguarded(me, declared);
             if (!early_members(me, state)) early_declared_members(me, declared);
             if (early_members(me, state)) return early_members(me, state); // (See early_declared_members())
             members_reentered(me, declared);
             return &empty_members;
-        case LAZY_STATE_NOT_STARTED: break;
+        case SW_LOOK_COMPUTE: break;
     }
-    if (!LAZY_CLAIM(me, state->members_state)) goto again;
+    u64 taint = sw_claim_fast(me, &state->members, &state->members_flight);
     MembersClaim claim;
     members_claim_push(me, &claim, state);
     TAINT_BEGIN(taint_frame);
     members_in_flight_push(me, declared);
     Members const* members = resolve_declared_members(me, declared);
     my members_in_flight_len--;
-    PUBLISH_MEMBERS_CLEAN(me, &claim, state, members, taint_frame, TK_DECLARED_RAW);
-    TAINT_END(taint_frame, TK_DECLARED_RAW, state, declared, members);
-    return members;
+    if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_DECLARED_RAW, state, declared, members);
+    return publish_members(me, &claim, state, members, taint);
 }
 
 // The members of `target` (a declared type with a `this` type) applied to type arguments and a this-argument (tsc's
@@ -4922,11 +4919,15 @@ Ty const* ty_reverse_mapped_object(Checker* me, ReverseMapped const* reverse) {
 static Members const* resolve_members(Checker* me, Ty const* ty) {
     if (ty->kind == TY_INTERSECTION) return resolve_intersection_members(me, ty);
     TyObjectState* state = object_state(ty);
-    Members const* members = state && state->unexpanded ? state->unexpanded : resolve_members_inner(me, ty);
+    Members const* known = state ? unexpanded_known(me, state) : nullptr;
+    u64 taint = graph_taint_now;
+    Members const* members = known ? known : resolve_members_inner(me, ty);
     if (!members->mapped) return members;
-    // (What instantiations go by, see declared_mapped_members(): a finished value of its own, published while the
-    // members are still in flight, once)
-    if (state && !state->unexpanded) state->unexpanded = members;
+    // (What instantiations go by, see declared_mapped_members(): a finished value of its own, settled while the
+    // members are still in flight, once: published if clean, this worker's own otherwise)
+    if (state && !known) {
+        members = (Members const*)word_settle(me, &state->unexpanded, &state->unexpanded_flight, (uintptr_t)members, taint);
+    }
     // (A mapped type's keys: tsc mostly finds them first through its key parameter's constraint, under that one's
     // pushTypeResolution, see RESOLVING_MAPPED_CONSTRAINT)
     ty_resolving_push(me, RESOLVING_MAPPED_CONSTRAINT, members->mapped);
@@ -4941,25 +4942,29 @@ static Members const* resolve_members(Checker* me, Ty const* ty) {
 MappedInfo const* ty_mapped_info_unexpanded(Checker* me, Ty const* ty) {
     TyObjectState* state = object_state(ty);
     if (!state) return nullptr;
-    again:;
-    LAZY_SNAP(me, state->members_state, seen, again);
-    if (seen == LAZY_STATE_DONE) return state->members->mapped ? state->members->mapped : members_rare(state->members)->expanded_from;
-    if (LAZY_IN_FLIGHT(seen)) {
-        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-        return nullptr;
+    uintptr_t v;
+    switch (sw_look_fast(me, &state->members, &state->members_flight, &v)) {
+        case SW_LOOK_DONE: {
+            Members const* members = (Members const*)v;
+            return members->mapped ? members->mapped : members_rare(members)->expanded_from;
+        }
+        case SW_LOOK_MINE: return nullptr; // (sw_look() counted the taint event)
+        case SW_LOOK_COMPUTE: break;
     }
-    if (!__atomic_load_n(&state->unexpanded, __ATOMIC_ACQUIRE)) {
-        // (In flight meanwhile: the members are asked for as they would be while they are resolved, with nothing early)
-        if (!LAZY_CLAIM(me, state->members_state)) goto again;
+    Members const* unexpanded = unexpanded_known(me, state);
+    if (!unexpanded) {
+        // (In flight meanwhile: the members are asked for as they would be while they are resolved, with nothing
+        // early: their claim, abandoned after, sw_abandon())
+        u64 taint = sw_claim_fast(me, &state->members, &state->members_flight);
         MembersClaim claim;
         members_claim_push(me, &claim, state);
-        Members const* unexpanded = resolve_members_inner(me, ty);
+        Members const* computed = resolve_members_inner(me, ty);
         ty_claim_pop(me, CLAIM_MEMBERS, &claim.claim);
-        Members const* expected = nullptr;
-        __atomic_compare_exchange_n(&state->unexpanded, &expected, unexpanded, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED);
-        __atomic_store_n(&state->members_state, LAZY_STATE_NOT_STARTED, __ATOMIC_RELEASE);
+        if (my graph) sw_abandon(me, &state->members, &state->members_flight);
+        else state->members_flight = LAZY_STATE_NOT_STARTED;
+        unexpanded = (Members const*)word_settle(me, &state->unexpanded, &state->unexpanded_flight, (uintptr_t)computed, taint);
     }
-    return __atomic_load_n(&state->unexpanded, __ATOMIC_ACQUIRE)->mapped;
+    return unexpanded->mapped;
 }
 
 // A mapped type node's members before expansion (its declaration's MappedInfo), what an instantiation of it is
@@ -4970,15 +4975,16 @@ static Members const* declared_mapped_members(Checker* me, Ty const* target) {
     if (target->kind != TY_ANONYMOUS || !target->anonymous.mapped || target->anonymous.target) return nullptr;
     TyObjectState* state = object_state(target);
     if (!state) return nullptr;
-    if (!state->unexpanded) ty_mapped_info_unexpanded(me, target);
-    return state->unexpanded && state->unexpanded->mapped ? state->unexpanded : nullptr;
+    if (!unexpanded_known(me, state)) ty_mapped_info_unexpanded(me, target);
+    Members const* unexpanded = unexpanded_known(me, state);
+    return unexpanded && unexpanded->mapped ? unexpanded : nullptr;
 }
 
 // tsc's isGenericMappedType: the mapped type's info if it stays generic (its members then are those its keys' lower
 // bound has). A constraint that is a generic index answers from the declaration, as tsc's does: expanding the type to
 // find out relates its `as` clause, which may reach this very type (`${K}.${keyof Self<T[K]>}`, mappedTypeAsClauseRecursiveNoCrash1)
 MappedInfo const* ty_generic_mapped(Checker* me, Ty const* ty) {
-    if (ty->kind == TY_ANONYMOUS && ty->anonymous.mapped && !ty_members_done(ty)) {
+    if (ty->kind == TY_ANONYMOUS && ty->anonymous.mapped && !ty_members_done(me, ty)) {
         MappedInfo const* mapped = ty_mapped_info_unexpanded(me, ty);
         if (mapped && ty_is_generic_index(mapped->constraint)) return mapped;
     }
@@ -5203,15 +5209,14 @@ static TyObjectState* object_state(Ty const* ty) {
 Members const* ty_members_resolving(Checker* me, Ty const* ty) {
     TyObjectState* state = object_state(ty);
     if (!state) return &empty_members;
-    again:;
-    LAZY_SNAP(me, state->members_state, seen, again);
-    switch (LAZY_STATE_OF(seen)) {
-        case LAZY_STATE_DONE:
+    uintptr_t v;
+    switch (sw_look_fast(me, &state->members, &state->members_flight, &v)) {
+        case SW_LOOK_DONE:
             TAINT_READ(TK_MEMBERS, state);
-            return state->members;
+            return (Members const*)v;
 
-        case LAZY_STATE_IN_FLIGHT:
-            TAINT_EVENT(TAINT_IN_FLIGHT_MEMBERS);
+        case SW_LOOK_MINE:
+            // (sw_look() counted the taint event)
             if (my eager_probe_depth) members_reentered_unguarded(me, ty);
             // An interface's properties while its index signatures are lowered (see resolve_declared_members())
             if (ty->kind == TY_DECLARED) early_declared_members(me, ty);
@@ -5234,16 +5239,16 @@ Members const* ty_members_resolving(Checker* me, Ty const* ty) {
             members_reentered(me, ty);
             return &empty_members;
 
-        case LAZY_STATE_NOT_STARTED:
+        case SW_LOOK_COMPUTE:
             // A deferred reference's arguments come first, before its members are in flight (tsc's
             // resolveTypeReferenceMembers starts with getTypeArguments): arguments that need these members find
             // their own resolution in flight (TS4109), not the members'
             if (ty->kind == TY_REFERENCE && !ty_reference_args_known(me, ty)) {
                 ty_reference_args(me, ty);
-                if (LAZY_LOAD(state->members_state) != LAZY_STATE_NOT_STARTED) return ty_members(me, ty);
+                if (ty_members_peek(me, state) || members_mine_in_flight(me, state)) return ty_members(me, ty);
             }
             if (my eager_probe_depth && ty->kind == TY_REFERENCE && !ty->reference.deferred) members_reentered_unguarded(me, ty);
-            if (!LAZY_CLAIM(me, state->members_state)) goto again;
+            u64 taint = sw_claim_fast(me, &state->members, &state->members_flight);
             MembersClaim claim;
             members_claim_push(me, &claim, state);
             TAINT_BEGIN(taint_frame);
@@ -5258,16 +5263,15 @@ Members const* ty_members_resolving(Checker* me, Ty const* ty) {
             } else {
                 members = resolve_members(me, ty);
             }
-            PUBLISH_MEMBERS_CLEAN(me, &claim, state, members, taint_frame, TK_MEMBERS);
-            TAINT_END(taint_frame, TK_MEMBERS, state, ty, members);
-            return members;
+            if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_MEMBERS, state, ty, members);
+            return publish_members(me, &claim, state, members, taint);
     }
     impossible;
 }
 
-bool ty_members_done(Ty const* ty) {
+bool ty_members_done(Checker* me, Ty const* ty) {
     TyObjectState* state = object_state(ty);
-    return !state || LAZY_LOAD(state->members_state) == LAZY_STATE_DONE;
+    return !state || ty_members_peek(me, state);
 }
 
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name) {
@@ -6236,8 +6240,7 @@ Ty const* ty_object_literal_alternative(
         }
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
         builder_sort_stable(&builder);
-        fresh->anonymous.state->members = builder_finish(me, &builder);
-        fresh->anonymous.state->members_state = LAZY_STATE_DONE;
+        ty_members_init(fresh->anonymous.state, builder_finish(me, &builder));
         ret = intern_set(me, &my links, intern_slot(me, &my links, words.data, words.len), fresh);
     }
     free(words.data);
@@ -6873,8 +6876,7 @@ Ty const* ty_signature_type(Checker* me, Signature const* sig) {
     ret->anonymous.ctx = (LowerCtx){ .generic = true };
     ret->anonymous.free_params_unknown = true;
     ret->anonymous.state = arena_new(&my arena, TyObjectState);
-    ret->anonymous.state->members = builder_finish(me, &builder);
-    ret->anonymous.state->members_state = LAZY_STATE_DONE;
+    ty_members_init(ret->anonymous.state, builder_finish(me, &builder));
     return intern_set(me, &my links, slot, ret);
 }
 
@@ -7077,21 +7079,21 @@ Ty const* ty_mapped_template_instantiated(Checker* me, MappedInfo const* mapped,
 }
 
 Ty const* ty_mapped_template(Checker* me, MappedInfo const* mapped) {
-    MappedInfo* state = (MappedInfo*)mapped; // The lazy part is private to this function
-    again:;
-    LAZY_SNAP(me, state->template_state, seen, again);
-    if (seen == LAZY_STATE_DONE) return state->template_;
-    // Re-entered while in flight: compute again without remembering (tsc has no guard here either, the instantiation
-    // limits end a runaway; an error type would lose the recursive types that do terminate)
-    if (LAZY_IN_FLIGHT(seen)) {
-        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-        return compute_mapped_template(me, mapped);
+    MappedInfo* state = (MappedInfo*)mapped; // The lazy part is private to this function: a shared word
+    uintptr_t v = sw_get(me, &state->template_);
+    if (__builtin_expect(v != SW_EMPTY, 1)) return SW_PTR(v);
+    switch (sw_look_fast(me, &state->template_, &state->template_flight, &v)) {
+        case SW_LOOK_DONE: return SW_PTR(v);
+        case SW_LOOK_MINE:
+            // Re-entered while in flight: compute again without remembering (tsc has no guard here either, the
+            // instantiation limits end a runaway; an error type would lose the recursive types that do terminate)
+            // (sw_look() counted the taint event)
+            return compute_mapped_template(me, mapped);
+        case SW_LOOK_COMPUTE: break;
     }
-    if (!LAZY_CLAIM(me, state->template_state)) goto again;
+    u64 taint = sw_claim_fast(me, &state->template_, &state->template_flight);
     TAINT_BEGIN(taint_frame);
     Ty const* template = compute_mapped_template(me, mapped);
-    TAINT_END(taint_frame, TK_MAPPED_TEMPLATE, mapped, mapped, template);
-    state->template_ = template;
-    LAZY_DONE(state->template_state);
-    return template;
+    if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_MAPPED_TEMPLATE, mapped, mapped, template);
+    return SW_PTR(sw_finish_fast(me, &state->template_, &state->template_flight, sw_ptr_value(template), taint));
 }

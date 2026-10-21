@@ -369,8 +369,7 @@ static u64 relation_key_of(Checker* me, Ty const* source, Ty const* target, bool
         ) {
             Ty* empty = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT | (which == GLOBAL_ANY_FUNCTION ? TYF_NON_INFERRABLE : 0));
             empty->anonymous.state = arena_new(&my arena, TyObjectState);
-            empty->anonymous.state->members = arena_new(&my arena, Members);
-            empty->anonymous.state->members_state = LAZY_STATE_DONE;
+            ty_members_init(empty->anonymous.state, arena_new(&my arena, Members));
             // (tsc's emptyObjectType, unknownEmptyObjectType and anyFunctionType have no symbol: printed from their
             // members even past a message's truncation length, `{}`. emptyTypeLiteralType has one)
             empty->anonymous.no_symbol = which != GLOBAL_EMPTY_TYPE_LITERAL;

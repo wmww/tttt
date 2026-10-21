@@ -540,8 +540,8 @@ static bool literal_instance_is_itself(Checker* me, Ty const* target, TyMapper c
         return false;
     }
     TyObjectState const* state = target->anonymous.state;
-    if (TAINT_IF(TAINT_PEEK, !state || state->members_state != LAZY_STATE_DONE)) return false;
-    Members const* members = state->members;
+    if (TAINT_IF(TAINT_PEEK, !state || !ty_members_peek(me, state))) return false;
+    Members const* members = ty_members_peek(me, state);
     if (members->call_count || members->construct_count || members->mapped || members_rare(members)->base_count) return false;
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];

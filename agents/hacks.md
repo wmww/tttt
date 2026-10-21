@@ -423,13 +423,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   mappedTypeRelationships and zod's SortItem<output<T>> (generic keys) against `{ [K in keyof A | keyof B]: (A & B)[K] }`.
 
 ## Type core (`src/ty/`)
-- `--shared-graph` on threads relies on x86's store and load ordering in one place: ty_members()'s done test reads
-  the state with a plain load (LAZY_FAST_LOAD(), an acquire only in a ThreadSanitizer build), while the writer
-  publishes the value and then the state with a release store (LAZY_DONE()). Formally a data race; on a weakly
-  ordered CPU it needs the acquire back. Plan 86 stage 4f replaces it with one acquire load of a write-once value word,
-  as P1 already did for prop_type() (Prop.type) and the signature words.
 - Plan 86 4f's converted words keep a default-path state byte next to each (Prop.type_flight, Signature.res_flight,
-  ret_flight, predicate_flight): without --shared-graph in flight is that byte, with it the worker's Overlay. Step D
+  ret_flight, predicate_flight, TyObjectState.members_flight, MappedInfo.template_flight, TyParamState's three): without --shared-graph in flight is that byte, with it the worker's Overlay. Step D
   deletes them with the plain path. sw_look_fast() & co (ty.h) inline the default path of overlay.c's functions.
 - sw_v() (ty.h, with the signature words) and sw_ptr_value() (ty.h, with the type parameter words) are the same
   helper twice, so that each P1 commit applies without the other (the signature return commit is held). One goes at

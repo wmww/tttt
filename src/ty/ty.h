@@ -246,11 +246,15 @@ typedef struct LowerCtx {
 
 // The mutable, lazily resolved part of an object type. Everything else about a Ty is immutable once published.
 typedef struct TyObjectState {
-    LazyState members_state;
+    // `members`' default-path byte (NOT_STARTED / IN_FLIGHT, overlay.h); also the claim of ty_mapped_info_unexpanded()
+    uint8_t members_flight;
+    uint8_t unexpanded_flight; // `unexpanded`'s (unused: it has no in-flight state of its own, see that function)
     uint8_t base_state; // equivalent_base in flight (NOT_STARTED / IN_FLIGHT, without --shared-graph: overlay.h)
     uint8_t reduced_state; // `reduced` in flight without --shared-graph (overlay.h)
-    Members const* members;
-    Members const* unexpanded; // resolve_members_inner()'s result before expand_mapped(), see ty_mapped_info_unexpanded()
+    // The members, a shared word (Members, never null): ty_members(), ty_members_done(); a fresh type's ty_members_init()
+    SharedWord members;
+    // resolve_members_inner()'s result before expand_mapped(), see ty_mapped_info_unexpanded(): a shared word (Members)
+    SharedWord unexpanded;
     SharedWord equivalent_base; // A Ty, see ty_non_augmenting_base() (plan 86 stage 4f's worked example)
     SharedWord reduced; // Intersections: whether ty_reduced() is never (REDUCED_ITSELF or REDUCED_NEVER, checker.c)
 } TyObjectState;
@@ -833,13 +837,14 @@ typedef struct MappedInfo {
     Ty const* constraint;
     Ty const* name_type; // `as` clause, may be null
     // The template is lowered/instantiated on first use (tsc's getTemplateTypeFromMappedType): read it through
-    // ty_mapped_template(). Lowering it while the mapped type's members are built can reach this mapped type again
-    Ty const* template_;
+    // ty_mapped_template(). Lowering it while the mapped type's members are built can reach this mapped type again.
+    // A shared word (a Ty): never copied with the struct (ty_mapped_info_instantiate() builds its copy field by field)
+    SharedWord template_;
     struct TypeNode const* template_node; // Declared: lowered with template_ctx
     LowerCtx template_ctx;
     struct MappedInfo const* template_from; // Instantiated: template_from's template through template_mapper
     struct TyMapper const* template_mapper;
-    LazyState template_state;
+    uint8_t template_flight; // template_'s default-path byte (overlay.h)
     Ty const* modifiers_type; // `T` of a homomorphic `[K in keyof T]`: where optional/readonly come from. May be null
     bool keyof_constraint; // The constraint is written `keyof T` (not `K extends keyof T`): the keys are T's members
     signed char readonly; // -1 remove, +1 add
@@ -965,8 +970,8 @@ typedef struct SymbolLinks {
     uint8_t interface_cycle_state; // (S0's default-path in-flight byte for interface_cycle)
     // ty_interface_in_base_cycle()'s walk of an interface's bases: SW_NONE none, BASE_CYCLE_WORD_FOUND a cycle
     SharedWord interface_cycle;
-    LazyState base_variable_state;
-    Ty const* base_variable; // See ty_class_base_type_variable()
+    uint8_t base_variable_flight; // `base_variable` in flight without --shared-graph (overlay.h)
+    SharedWord base_variable; // A Ty, NONE for none: see ty_class_base_type_variable()
 } SymbolLinks;
 
 typedef enum TyRelation {
@@ -1878,21 +1883,33 @@ Members const* ty_members_resolving(Checker* me, Ty const* ty);
 // Never null. Empty for non-object types. (Resolved ones inline: drizzle asks 17M times)
 static inline Members const* ty_members(Checker* me, Ty const* ty) {
     TyObjectState const* state = ty_object_state(ty);
-    // (Not TAINT_READ here: --shared-graph's taint counts tainted members read only on the slow path, to keep this one
-    // as it is without the flag; under -DTTTT_TAINT they are counted in ty_members_resolving())
+    // (The word published and this worker not shadowed. Not TAINT_READ here: -DTTTT_TAINT counts tainted members read in
+    // ty_members_resolving())
 #ifdef TTTT_TAINT
-    if (state && LAZY_LOAD(state->members_state) == LAZY_STATE_DONE) {
+    if (state && sw_load(&state->members) > SW_NONE && !my graph_shadowed) {
         TAINT_READ(TK_MEMBERS, state);
-        return state->members;
+        return (Members const*)sw_load(&state->members);
     }
 #else
-    // (A plain load: on x86 a store-ordered publication (LAZY_DONE() after the value) is seen in order; an acquire here
-    // cost the default path ~0.3% of its instructions in the code it stops the compiler from combining)
-    if (state && LAZY_FAST_LOAD(state->members_state) == LAZY_STATE_DONE) return state->members;
+    if (state) {
+        uintptr_t v = sw_load(&state->members);
+        if (__builtin_expect(v > SW_NONE && !my graph_shadowed, 1)) return (Members const*)v;
+    }
 #endif
     return ty_members_resolving(me, ty);
 }
-bool ty_members_done(Ty const* ty); // Its members are resolved (not in flight: what ty_members() gives is final)
+// Its members are resolved, as this worker knows them (published, or its own private ones; not in flight): what
+// ty_members() gives is final
+bool ty_members_done(Checker* me, Ty const* ty);
+// Its members if this worker knows them (published, or its own private ones), else null: a done-ness peek
+static inline Members const* ty_members_peek(Checker* me, TyObjectState const* state) {
+    uintptr_t v = me->graph ? sw_peek(me, &state->members) : __atomic_load_n(&state->members.v, __ATOMIC_RELAXED);
+    return (Members const*)v;
+}
+// A fresh object type's members, known from the start
+static inline void ty_members_init(TyObjectState* state, Members const* members) {
+    __atomic_store_n(&state->members.v, (uintptr_t)members, __ATOMIC_RELAXED);
+}
 // A generic class or interface (or one with a `this` type) declared more than once (`interface Array<T>` in every lib):
 // its type parameters have several declarations, so tsc's isTypeParameterPossiblyReferenced says every node in it may
 // reference them, they are free in every anonymous type made there (TypeFlow.owner, lower.c)

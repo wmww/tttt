@@ -388,16 +388,16 @@ static bool object_literal_type_mentions(Checker* me, Ty const* ty, TyList* out)
         TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
         return false;
     }
-    TyObjectState const* state = ty->anonymous.state;
-    if (TAINT_IF(TAINT_PEEK, !state || state->members_state != LAZY_STATE_DONE)) return false;
-    Members const* members = state->members;
+    if (!ty->anonymous.state) return false;
+    Members const* members = ty_members(me, ty);
     if (members->call_count || members->construct_count || members->mapped) return false;
     // (Not with a getter: one of a recursive schema, zod's `get content() { return z.array(z.tuple([Self, ...])) }`, can
     // have been resolved inside its own circularity, and an instance resolving it again later is what gets it right:
     // the identity instance made recursive-types.test.ts's TS2344 spurious)
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
-        if (TAINT_IF(TAINT_PEEK, !prop_type_peek(me, prop)) || prop->target || (prop->flags & PROP_GETTER)) return false;
+        // (A property type not known yet: unknown, a peek that selects between results, so an event (rule 5))
+        if (TAINT_IF(TAINT_IN_FLIGHT_OTHER, !prop_type_peek(me, prop)) || prop->target || (prop->flags & PROP_GETTER)) return false;
     }
     return compute_mentions(me, ty, key, out);
 }
@@ -423,12 +423,14 @@ bool ty_function_type_mentions(Checker* me, Ty const* ty, TyList* out) {
         TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
         return false;
     }
-    TyObjectState const* state = ty->anonymous.state;
-    if (TAINT_IF(TAINT_PEEK, !state || state->members_state != LAZY_STATE_DONE)) return false;
-    Members const* members = state->members;
+    // (Rule 5 of plan 86 4f: a peek that selects between results is a read of in-flight state. The members and the
+    // signature's resolution are computed instead, which leaves the default path's output as it was)
+    if (!ty->anonymous.state) return false;
+    Members const* members = ty_members(me, ty);
     if (members->call_count != 1 || members->construct_count || members->prop_count || members->index_count || members->mapped) return false;
     Signature const* sig = members->call[0];
-    if (TAINT_IF(TAINT_PEEK, !sig_resolved(me, sig)) || sig_target(me, sig) || sig->function != ty->anonymous.function) return false;
+    signature_resolve(me, sig);
+    if (sig_target(me, sig) || sig->function != ty->anonymous.function) return false;
     FunctionImpl const* function = sig->function;
     if (TAINT_IF(TAINT_PEEK, sig->ret_state != LAZY_STATE_DONE && !function->ret_explicit && function->has_body && !ty_function_return_known(me, function))) return false;
     return compute_mentions(me, ty, key, out);
