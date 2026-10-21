@@ -43,14 +43,21 @@ Ty const* ty_function_type(Checker* me, FunctionImpl const* function) {
     return ty_link_publish(me, KEY_FUNCTION, function, ret);
 }
 
+// KEY_FUNCTION_RETURN's record (an identity, one per function): the inferred return type is a shared word (plan 86
+// stage 4f, overlay.h), a Ty tagged with FR_CIRCULAR and FR_PROMISE_MISSING in its low bits
 typedef struct FunctionReturn {
-    LazyState state;
-    bool circular; // Asked for while being inferred
+    uint8_t state; // In flight without --shared-graph (overlay.h)
+    SharedWord word;
+} FunctionReturn;
+enum {
+    FR_CIRCULAR = 1, // Asked for while being inferred: the type is any
     // An async function's body returns no value and there's no Promise value (TS2705), not said yet: only a request
     // for the type that tsc would make says it (see ty_function_return_circular())
-    bool promise_missing;
-    Ty const* type;
-} FunctionReturn;
+    FR_PROMISE_MISSING = 2,
+    FR_TAGS = 3,
+};
+static_assert(_Alignof(Ty) >= 4, "FunctionReturn tags a Ty's low bits");
+#define FR_TYPE(v) ((Ty const*)((v) & ~(uintptr_t)FR_TAGS))
 
 // infer_return_type() found the Promise constructor missing (FunctionReturn.promise_missing)
 static thread_local bool inferred_promise_missing;
@@ -59,8 +66,8 @@ static thread_local bool return_type_speculative;
 
 // (Every time the type is asked for, not once: the memo is published, nothing may change it afterwards, and the merge
 // drops the duplicates, the way plan 86 has diagnostics computed with a shared result reported)
-static void report_promise_missing(Checker* me, FunctionImpl const* function, FunctionReturn const* memo) {
-    if (!memo->promise_missing || return_type_speculative) return;
+static void report_promise_missing(Checker* me, FunctionImpl const* function, uintptr_t v) {
+    if (!(v & FR_PROMISE_MISSING) || return_type_speculative) return;
     ty_error_at(me, span_null, 2468, cstr_lit("Cannot find global value 'Promise'."));
     ty_error_at(me, function_error_span(function), 2705, cstr_lit("An async function or method in ES5 requires the "
         "'Promise' constructor.  Make sure you have a declaration for the 'Promise' constructor or include 'ES2015' in "
@@ -346,8 +353,8 @@ Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol) {
 bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function) {
     if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body) return false;
     FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
-    // (Another worker's in flight isn't one here)
-    bool in_flight = memo && LAZY_MINE_IN_FLIGHT(me, LAZY_LOAD(memo->state));
+    // (Only this worker's own: another's in flight is never seen)
+    bool in_flight = memo && sw_mine_in_flight(me, &memo->word, &memo->state);
     if (in_flight) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
     return in_flight;
 }
@@ -358,8 +365,8 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
 Ty const* ty_function_return_known(Checker* me, FunctionImpl const* function) {
     if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body) return nullptr;
     FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
-    if (TAINT_IF(TAINT_PEEK, !(memo && LAZY_LOAD(memo->state) == LAZY_STATE_DONE))) return nullptr;
-    return memo->type;
+    uintptr_t v = memo ? sw_peek(me, &memo->word) : SW_EMPTY;
+    return v ? FR_TYPE(v) : nullptr;
 }
 
 // The inferred return type depended on itself, so it's any (tsc's getReturnTypeOfSignature failing popTypeResolution)
@@ -370,29 +377,8 @@ bool ty_function_return_circular(Checker* me, FunctionImpl const* function) {
     ty_function_return_type(me, function);
     return_type_speculative = outer;
     FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
-    return memo && (memo->circular || ty_link_get(me, KEY_RETURN_LATE_CIRCULAR, function));
+    return memo && ((sw_peek(me, &memo->word) & FR_CIRCULAR) || ty_link_get(me, KEY_RETURN_LATE_CIRCULAR, function));
 }
-
-// The return type is inferred (any if it depended on itself, TS7023): the first inference to finish publishes it, a
-// nested one asked for from below a call's barrier included (tsc's `if signature.resolvedReturnType == nil`)
-static void publish_function_return(FunctionReturn* memo, Ty const* type, bool promise_missing, bool circular) {
-    memo->type = type;
-    memo->promise_missing = promise_missing;
-    memo->circular = circular;
-    LAZY_DONE(memo->state);
-}
-
-// (The withholding experiment's: graph_withhold())
-#if defined(TTTT_GRAPH_TAINT) && !defined(TTTT_TAINT)
-#define PUBLISH_FUNCTION_RETURN_CLEAN(memo, type_, promise_missing_, circular_, frame) do { \
-    (memo)->type = (type_); \
-    (memo)->promise_missing = (promise_missing_); \
-    (memo)->circular = (circular_); \
-    LAZY_DONE_CLEAN((memo)->state, frame, TK_FUNCTION_RETURN); \
-} while (0)
-#else
-#define PUBLISH_FUNCTION_RETURN_CLEAN(memo, type, promise_missing, circular, frame) publish_function_return(memo, type, promise_missing, circular)
-#endif
 
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
     return function_return_type(me, function, false);
@@ -409,6 +395,9 @@ Ty const* ty_iife_return_type(Checker* me, FunctionImpl const* function) {
     return function_return_type(me, function, true);
 }
 
+// The return type is inferred (any if it depended on itself, TS7023): the first inference to finish publishes it, a
+// nested one asked for from below a call's barrier included (tsc's `if signature.resolvedReturnType == nil`). The
+// record's word (plan 86 stage 4f): published when clean, this worker's own otherwise
 static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer) {
     if (function_impl_rare(function)->constructed_class) return ty_class_instance_type(me, function_impl_rare(function)->constructed_class);
     // (A getter without an annotation is its setter's parameter annotation, body or not: tsc's getTypeOfAccessors)
@@ -425,36 +414,42 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     if (!memo) {
         memo = (FunctionReturn*)ty_link_publish(me, KEY_FUNCTION_RETURN, function, arena_new(&my arena, FunctionReturn));
     }
-    again:;
-    LAZY_SNAP(me, memo->state, seen, again);
-    switch (LAZY_STATE_OF(seen)) {
-        case LAZY_STATE_DONE:
-            TAINT_READ(TK_FUNCTION_RETURN, memo);
-            report_promise_missing(me, function, memo);
-            return memo->type;
-        case LAZY_STATE_IN_FLIGHT:
-            TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-            // Asked again from below a call's barrier, it isn't circular yet: it's inferred again, nested, and the inner
-            // result is the one remembered (tsc's getReturnTypeOfSignature, like declarations: lazy_type_evaluate_inner(),
-            // which says why that ends)
-            if (ty_resolving_reenters(me, RESOLVING_FUNCTION_RETURN, function)) {
-                if (debug_env.debug_reentry) ty_debug_reentry(me, "REENTER 3 call", span_null);
-                break;
-            }
-            ty_resolving_cycle(me, RESOLVING_FUNCTION_RETURN, function);
-            return ty_intrinsic(me, TY_CIRCULAR);
-        case LAZY_STATE_NOT_STARTED: break;
+    uintptr_t v = sw_get(me, &memo->word);
+    if (!v) {
+        switch (sw_look(me, &memo->word, &memo->state, &v)) {
+            case SW_LOOK_DONE: break;
+            case SW_LOOK_MINE:
+                // Asked again from below a call's barrier, it isn't circular yet: it's inferred again, nested, and the
+                // inner result is the one remembered (tsc's getReturnTypeOfSignature, like declarations:
+                // lazy_type_evaluate_inner(), which says why that ends)
+                if (ty_resolving_reenters(me, RESOLVING_FUNCTION_RETURN, function)) {
+                    if (debug_env.debug_reentry) ty_debug_reentry(me, "REENTER 3 call", span_null);
+                    break;
+                }
+                ty_resolving_cycle(me, RESOLVING_FUNCTION_RETURN, function);
+                return ty_intrinsic(me, TY_CIRCULAR);
+            case SW_LOOK_COMPUTE: break;
+        }
     }
-    if (!LAZY_CLAIM(me, memo->state)) goto again;
+    if (v) {
+        report_promise_missing(me, function, v);
+        return FR_TYPE(v);
+    }
+    u64 taint = sw_claim(me, &memo->word, &memo->state);
     TAINT_BEGIN(taint_frame);
     ty_resolving_push(me, RESOLVING_FUNCTION_RETURN, function);
     FlowIsolation isolation = ty_flow_isolate(me);
     // (An object literal getter a call's resolution types: nothing in its body is remembered, see
-    // ty_object_literal_accessor_type())
+    // ty_object_literal_accessor_type(); a result under flow_uncached is no clean one)
     if (my lazy_getter == function) my flow_uncached = isolation.uncached;
+    if (my flow_uncached) TAINT_EVENT(TAINT_END_CONDITION);
     // Unless the function is an argument of the call inferring now, nothing in its body is an argument of that call
     struct OuterInference* outer = my outer_inference;
     if (!keep_outer) my outer_inference = nullptr;
+    // An argument's return type inferred while the call it is an argument of infers reads that inference, which is in
+    // flight: no clean result (rule 1 of plan 86 stage 4f; published, it made another worker's contextual parameter
+    // types differ: effect's fiber.ts TS7006 under seeded schedules)
+    else if (outer) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
     inferred_promise_missing = false;
     Ty const* type = infer_return_type(me, function);
     bool promise_missing = inferred_promise_missing;
@@ -462,17 +457,21 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     bool circular = ty_resolving_pop(me);
     my outer_inference = outer;
     ty_flow_restore(me, isolation);
-    if (LAZY_LOAD(memo->state) != LAZY_STATE_DONE) {
+    if (sw_mine_in_flight(me, &memo->word, &memo->state)) {
         // A return type that depends on itself is any, whatever else the body says (tsc: popTypeResolution() failing)
-        PUBLISH_FUNCTION_RETURN_CLEAN(memo, circular ? ty_intrinsic(me, TY_ANY) : type, promise_missing, circular, taint_frame);
-    } else if (circular && !memo->circular) {
-        // A nested inference published first and this outer one turned out circular: the type stays (tsc's), the
-        // TS7023 tsc reports here is this checker's to say (ty_function_return_circular())
-        ty_link_set(me, KEY_RETURN_LATE_CIRCULAR, function, function);
+        v = (uintptr_t)(circular ? ty_intrinsic(me, TY_ANY) : type) | (promise_missing ? FR_PROMISE_MISSING : 0) | (circular ? FR_CIRCULAR : 0);
+        v = sw_finish(me, &memo->word, &memo->state, v, taint);
+    } else {
+        // A nested inference finished first: its result stays (tsc's). If this outer one turned out circular, the TS7023
+        // tsc reports here is this checker's to say (ty_function_return_circular())
+        sw_unclaim(me, &memo->word);
+        v = sw_peek(me, &memo->word);
+        check(v);
+        if (circular && !(v & FR_CIRCULAR)) ty_link_set(me, KEY_RETURN_LATE_CIRCULAR, function, function);
     }
-    TAINT_END(taint_frame, TK_FUNCTION_RETURN, memo, function, memo->type);
-    report_promise_missing(me, function, memo);
-    return memo->type;
+    if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_FUNCTION_RETURN, memo, function, FR_TYPE(v));
+    report_promise_missing(me, function, v);
+    return FR_TYPE(v);
 }
 
 bool ty_extends_array(Checker* me, Ty const* ty) {
