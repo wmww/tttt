@@ -85,7 +85,9 @@ argued here instead. Nothing a user sees differs in any of them.
   still depend on which checker gets there first. Read flagflip's TS5115/TS2589 deltas as noise.
 - sequelize/packages/core's TS7022 differs with the checker count in tsgo too (kdiff, plan 62); tttt's K16 shows it
   since costliest-first (2026-10-20: kdiff 2 -> 4, sequelize and sequelize/packages/core; `TTTT_NO_COSTLIEST_FIRST=1`
-  hides it again). The defaults match tsc.
+  hides it again). The defaults match tsc. Rechecked 2026-10-21 with the pinned tsgo (`tsc -p packages/core --noEmit
+  --incremental false --pretty false --checkers 1` vs `16`, from `thirdparty/sources/sequelize`): K16 adds TS7022
+  :335 and drops TS2322 :1053 and TS2488 :1080, exactly tttt's K16 difference (`scripts/kdiff.py -f sequelize`).
 - rxjs/packages/rxjs's TS2322 elaborations (2026-10-18, since b3c2fbfa normalized deferred references in the
   relation): tsgo `--singleThreaded` (the cached oracle) says "types returned by '[bufferTime](...)[bufferTime](...)
   [groupBy]'" with `number[][]` below, tsgo `--checkers 16` "'[bufferTime](...)[groupBy]'" with `number[]`: which
@@ -93,6 +95,20 @@ argued here instead. Nothing a user sees differs in any of them.
   (kdiff and the recycle oracle list it): matching tsgo, not a tttt order bug.
   Rechecked 2026-10-20 (agent B): tsgo 65 / 37 deep / shallow chains at `--singleThreaded`, 55 / 43 at 16; tttt 65 /
   37 at K1.
+  Rechecked 2026-10-21 (worker cor): `tsc -p packages/rxjs --noEmit --incremental false --pretty false --checkers 1`
+  vs `16` (from `thirdparty/sources/rxjs`) differ in those chains; tttt `--threads 1 --checkers 1 --checker-memory off`
+  is byte-identical to tsgo K1 over all 23300 lines. tttt's K16 differs from tsgo's K16 elsewhere (each side's split
+  relates other pairs first): both history-dependent, the oracle (K1) matched. Not a tttt bug; no fix wanted.
+- **vue corpus 0 / 2** (pluginScoped.ts:190,27 and :235,25 -TS7006 `ss` on `n.nodes[0].each(ss => ...)`, 2026-10-21,
+  worker cor): tsgo's TS5115 runaway (pluginScoped.ts(107,3), which tttt reports too) leaves errorType in whichever
+  cache the 100th instantiation lands in: tsgo's `tttt-oracle --type-at` gives `Pseudo.nodes : any[]` at :125 and :190
+  (tttt: `Selector[]`). resolveStructuredTypeMembers has no in-flight guard, so `_Selector<Selector>`'s base
+  `Container<string, Diff<Node, S>>` evaluates `Diff`, relating Pseudo to Selector, resolving Selector's members again,
+  until the instantiation stack is 100 deep. Repro (3 files): pluginScoped.ts copied, `../warn` stubbed by a
+  `warn.d.ts`, a tsconfig (strict, bundler, `types: []`) with `paths` for `postcss` and `postcss-selector-parser` into
+  vue's node_modules; standalone shapes (`r1.ts` in sourcesweep_checker.md) give the TS5115 but no TS7006 in tsgo
+  either: which cache gets poisoned depends on the whole file's check order. Matching it is modelling a runaway's
+  artifact (vision.md "Decisions still in force", plan 88 stage E, hacks.md probe_eager_bases()): won't fix.
 - inbox-zero/apps/web choose-args.security.test.ts:334 (2026-10-20, agent B): the `to?: undefined` / `content?:
   undefined` order of widened object literals is tsgo's undefinedProperties cache (one symbol per name per checker,
   declared by the first property it was made for; getNamedMembers sorts by declaration). At one checker both caches
