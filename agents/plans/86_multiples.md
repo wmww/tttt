@@ -955,6 +955,14 @@ every `-p` corpus, 20-run tables on the four, no default-path cost until the fla
    deterministic id order) are needed, at their K1 cost (+0.7-0.8% instructions measured in 4c), or the lock.
    Lock off after (a): 150 + 300 + 400 + 500 runs, the only differences (b)'s. Not done: drizzle/effect wall with lock
    off + stamps against the defaults, zod/effect/excalidraw/nest repeat tables with that combination.
+   **Done (2026-10-22, wt-design4f): the lock deleted, stamps on whenever the graph is shared**
+   (program_set_shared_graph() sets first_touch_stamps; graph_variance_lock() and its field gone). Gates (numbers in
+   measurements.md "Plan 86 4e item 1"): 20-run tables drizzle/zod/excalidraw/nest 20/20, effect 19/20; 300 loaded
+   drizzle runs K1's; vscode 5/5; every corpus K1 = K4 = K4 T4 = K12 T12 with the flag; work K12/K1 drizzle 1.117,
+   zod 1.097; drizzle K12 wall 0.25 s against the defaults' 0.29 (the lock's 0.42). What remains: effect's ~1.5% of
+   loaded runs adding a TS7006 (fiber.ts or Schema/TestUtils.ts: a contextual parameter type lost), present with the
+   lock too and with base + stamps, no redo or broken cycle in the differing runs; effect's wall +10% over the
+   defaults; redos are back to 0-8 a drizzle run. Stage 4f's design is what should make the residue moot.
    Tooling left in the tree: TTTT_DEBUG_VARIANCE is worker-tagged and buffered per thread (vlog(), printed when
    typechecking ends: stderr writes per line hid the races), with VARWAIT / VARSLOT lines for each foreign variance slot
    met; TTTT_DEBUG_DISAGREE=1 prints, at the end, memo entries (conditional instances, intersection properties) a

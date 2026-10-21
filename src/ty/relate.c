@@ -3691,16 +3691,12 @@ static void const* variance_slot_value(Checker* me, VarianceSlot const* slot) {
 static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) {
     void const* subject_ptr = subject.declared ? (void const*)subject.declared : (void const*)subject.alias;
     // --shared-graph on threads: measured once for the program, by whichever worker claims the subject's slot first;
-    // the others wait for the group its outermost measurement publishes (graph.h). One worker measures at a time (the
-    // graph's variance lock, taken by the outermost measurement; TTTT_GRAPH_VARIANCE_LOCK=0 without): measurements
-    // running at once on several workers made drizzle at K12 differ from K1 in ~2% of runs (`Promise<unknown>`
-    // returns, unused `@ts-expect-error`s, TS2589s; the redos, private marker types and memos kept private while
-    // measuring each changed nothing), with the lock 0 in 300. It costs drizzle's wall (+65% at K12: a third of its K1
-    // work is under measurements), plan 86 4d. A worker that would close a cycle of waits and breaks it (no redo)
-    // measures privately
+    // the others wait for the group its outermost measurement publishes (graph.h). Measurements run at once on
+    // several workers: the graph-wide lock that serialized them (plan 86 4d task 3) hid two bugs that weren't about
+    // variances (4e item 1: the redo's error bookkeeping, and deep nesting deciding by schedule-ordered type ids, which
+    // first-touch stamps, on whenever the graph is shared, make per-worker history again). A worker that would close a
+    // cycle of waits and breaks it (no redo) measures privately
     VarianceSlot* slot = my graph ? graph_variance_slot(me, subject_ptr, !subject.declared, true) : nullptr;
-    unsigned* lock = nullptr;
-    bool unlocked = false;
     if (slot) {
         again:;
         if (debug_env.debug_variance) {
@@ -3714,28 +3710,13 @@ static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) 
             vlog("VARSLOT w%u %.*s state %u vdepth=%u\n", (unsigned)my graph_worker, (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "", v, (unsigned)my variance_depth);
         }
         if (LAZY_STATE_OF(v) == LAZY_STATE_DONE) {
-            if (lock) __atomic_store_n(lock, (unsigned)LAZY_STATE_NOT_STARTED, __ATOMIC_RELEASE);
             Variances const* shared = __atomic_load_n(&slot->value, __ATOMIC_RELAXED);
             u64 key[2] = { subject.declared ? KEY_VARIANCES : KEY_ALIAS_VARIANCES,
                 subject.declared ? subject.declared->id : (u64)(uintptr_t)subject.alias };
             *intern_slot(me, &my links, key, 2) = shared;
             return shared;
         }
-        static int use_lock = -1;
-        if (use_lock < 0) use_lock = !(getenv("TTTT_GRAPH_VARIANCE_LOCK") && !strcmp(getenv("TTTT_GRAPH_VARIANCE_LOCK"), "0"));
-        if (use_lock && !my variance_depth && !lock && !unlocked) {
-            unsigned* graph_lock = graph_variance_lock(me);
-            lock_again:;
-            LAZY_SNAP(me, *graph_lock, held, lock_again);
-            if (LAZY_IN_FLIGHT(held) && !LAZY_MINE_IN_FLIGHT(me, held)) {
-                unlocked = true;
-            } else {
-                if (!LAZY_CLAIM(me, *graph_lock)) goto lock_again;
-                lock = graph_lock;
-            }
-            goto again;
-        }
-        if (!LAZY_IN_FLIGHT(v) && !unlocked) {
+        if (!LAZY_IN_FLIGHT(v)) {
             if (!LAZY_CLAIM(me, slot->state)) goto again;
             graph_variance_claimed(me, slot);
         }
@@ -3745,7 +3726,6 @@ static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) 
     measure_variances(me, subject, &claim);
     ty_claim_pop(me, CLAIM_VARIANCES, &claim.claim);
     if (__builtin_expect(my graph_variance_claims_len != 0, 0) && !my variance_depth) graph_variances_publish(me, variance_slot_value);
-    if (lock) __atomic_store_n(lock, (unsigned)LAZY_STATE_NOT_STARTED, __ATOMIC_RELEASE);
     return claim.done;
 }
 

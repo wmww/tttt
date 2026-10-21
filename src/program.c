@@ -3914,6 +3914,10 @@ bool program_first_touch_stamps(Program const* me) {
 
 void program_set_shared_graph(Program* me, bool shared) {
     my shared_graph = shared;
+    // (A shared graph hands out type ids in scheduling order, and deep nesting decides by "newer" types: by id, one
+    // worker's relation cache was poisoned by the schedule and measured every later variance as unreliable, plan 86 4e
+    // item 1. Stamps make "newer" this worker's history; at one checker they equal the ids)
+    if (shared) my first_touch_stamps = true;
 }
 
 struct TypeDirectory* program_type_directory(Program const* me) {

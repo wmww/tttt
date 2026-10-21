@@ -380,6 +380,24 @@ without / with `--shared-graph` (which turns recycling off).
   drizzle 300 loaded runs (an effect K12 loop beside it) all K1's; vscode 5 / 5 (2.16-2.26 s, 4.56-4.58 GB, no redo),
   TypeScript6's compiler 5 / 5; all 13 other `-p` corpora at K4 and K12 twice each K1's output.
 
+## Plan 86 4e item 1: the variance lock removed, first-touch stamps on under the flag (2026-10-22, wt-design4f)
+Release build, this box (16 vCPUs shared, load 7-16 during the runs). `--shared-graph` now turns stamps on; the lock in
+claim_and_measure() is gone (not just off). Base = de94e1179 (lock on, stamps off), built in the same scratch.
+- **Determinism** (K12 T12 against K1's output, `scripts/sharedgraph/`): 20-run tables drizzle 20, zod 20, excalidraw
+  20, nest 20, effect 19 (one run added `internal/fiber.ts(293,21) TS7006`); 300 loaded drizzle runs (`t3loop.sh`, an
+  effect K12 loop beside it) all K1's (redos 0-8 a run, median 2: without the lock redos are common again); vscode 5 /
+  5. Effect's TS7006 is not the lock's: effect 60 more runs give 1 diff with this build, 1 with base + stamps, 1 with
+  base as it is (`test/Schema/TestUtils.ts(45,20) TS7006` there): a lost contextual parameter type, ~1.5% of loaded
+  effect runs with or without the lock (the stage 4f design's subject, not chased).
+- **checkerdiff / threadcheck equivalent** (`TTTT_SHARED_GRAPH=1`, pretty, `--keep-going --checker-memory off`; every
+  corpus K1 against K4 twice, K4 at T4 three times, K12 at T12): all 16 corpora identical.
+- **Work** (`cgtc.sh`, callgrind Ir in the typecheck and worker threads): drizzle flag K1 5.319 G (base 5.284: the
+  stamps, +0.66%), K12 5.940 (base 5.972) = **1.117x** K1; zod K1 4.428 (base 4.390, +0.86%), K12 4.859 (base 4.807)
+  = **1.097x**. Default path (no flag, callgrind whole process): nest, drizzle, zod identical to base to the 1e-3 G.
+- **Wall** (best / median of 7, interleaved, load ~8): drizzle defaults 0.292 / 0.301 s, flag 0.253 / 0.269, base flag
+  (lock) 0.417 / 0.439: the lock's +54% is gone and the flag now beats the defaults. Effect defaults 0.267 / 0.271,
+  flag 0.293 / 0.297, base flag 0.281 / 0.286: effect is still +10% over the defaults (it was +17% at G2).
+
 ## Oracle totals (2026-10-21: gate G1's `scripts/oracles.py` run after stage 4c, and the merger's suite at b3a67c3e5)
 Suite 13958 / 13992 (dts 1887 / 1909; `scripts/passcount.py`; the +1 is the IntersectionState audit's own test),
 `--no-defer-bodies` and `--checker-memory 0` unchanged, every corpus 0/0 but vue 0/2 (tsc-src and typescript-eslint

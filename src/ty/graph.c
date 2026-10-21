@@ -44,7 +44,6 @@ struct TyGraph {
     SharedLinks* variance_slots; // By subject (graph_variance_slot())
     SharedLinks* relations[TY_RELATION_COUNT]; // graph_relation_get()
     _Atomic u64 relation_hits, relation_puts;
-    unsigned variance_lock; // The worker measuring variances, owner-tagged (graph_variance_lock())
     // Declaration memos by slot, like LazySlots.top (pages made by CAS, a memo written flags last under memo_lock)
     LazyMemo** _Atomic memos[1 << LAZY_TOP_BITS];
     pthread_mutex_t memo_lock;
@@ -666,10 +665,6 @@ void graph_relation_put(TyGraph* me, u32 relation, u64 key, unsigned value) {
     if (shared_links_insert(my relations[relation], key, (void const*)(uintptr_t)value) == (void const*)(uintptr_t)value) {
         atomic_fetch_add_explicit(&my relation_puts, 1, memory_order_relaxed);
     }
-}
-
-unsigned* graph_variance_lock(Checker* checker) {
-    return &checker->graph->variance_lock;
 }
 
 // Variance slots (graph.h). The slots are the graph's arena's: the first checker's, never recycled with the flag
