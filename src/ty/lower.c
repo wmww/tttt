@@ -283,6 +283,7 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     links->declared_state = LAZY_STATE_IN_FLIGHT;
     TAINT_BEGIN(taint_frame);
     Ty const* ret;
+    bool alias_circular = false;
     if (symbol->flags & SYMBOL_INTERFACE) {
         ret = make_declared(me, symbol, TY_DECLARED_INTERFACE);
     } else if (symbol->flags & SYMBOL_CLASS) {
@@ -323,8 +324,8 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
             } else {
                 ty_resolving_push(me, RESOLVING_ALIAS, symbol);
                 ret = lower(me, body, ctx, symbol, params);
-                if (ty_resolving_pop(me)) links->circular = true;
-                if (links->circular) {
+                alias_circular = ty_resolving_pop(me);
+                if (alias_circular) {
                     ty_error_at(me, decl->name, 2456, cstr_d("Type alias '", symbol->name, "' circularly references itself."));
                     ret = ty_intrinsic(me, TY_ERROR);
                 }
@@ -341,9 +342,12 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
         ret = ty_intrinsic(me, TY_ERROR); // A value used as a type, TS2749
     }
     // symbol_links() pointers are stable (arena), the table growing in the meantime doesn't matter. (A nested
-    // resolution of an alias that re-entered may have finished first: its type stays, tsc's `if links.declaredType == nil`)
+    // resolution of an alias that re-entered may have finished first: its type and circularity stay, tsc's `if
+    // links.declaredType == nil`; tsc's typeParameters aren't unset by a later failure either, and this one's TS2456 is
+    // said above)
     if (links->declared_state != LAZY_STATE_DONE) {
         links->declared_type = ret;
+        links->circular = alias_circular;
         links->declared_state = LAZY_STATE_DONE;
     }
     TAINT_END(taint_frame, TK_SYMBOL_DECLARED, links, symbol, links->declared_type);
