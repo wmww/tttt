@@ -1,0 +1,48 @@
+//// [test/cases/ttttExactOptionalIntersectionTargetHead.ts] ////
+
+=== ttttExactOptionalIntersectionTargetHead.ts ===
+// A target intersection's property that one member declares optional keeps the missing type in its combined type
+// even when another member makes it required: tsc's getExactOptionalUnassignableProperties doesn't ask whether it is
+// optional, so the head is TS2375 (xstate's spawn options under exactOptionalPropertyTypes, flagflip)
+type A = { input?: number } & { [K in "input"]: unknown };
+>A : A
+>input : number | undefined
+
+type B = { input?: number } & { [K in "input"]: unknown };
+>B : B
+>input : number | undefined
+
+declare let a: A;
+>a : A
+
+export let b: B = a;
+>b : B
+>a : A
+
+interface I1 { input?: number }
+>input : number | undefined
+
+interface I2 { input?: number }
+>input : number | undefined
+
+declare let c: I1 & { input: unknown };
+>c : I1 & { input: unknown; }
+>input : unknown
+
+export let d: I2 & { input: unknown } = c;
+>d : I2 & { input: unknown; }
+>input : unknown
+>c : I1 & { input: unknown; }
+
+type M<K extends string> = { [P in K]: unknown };
+>M : M<K>
+
+declare let e: { input?: number } & M<"input">;
+>e : { input?: number; } & M<"input">
+>input : number | undefined
+
+export let f: { input?: number } & { [P in "input"]: unknown } = e;
+>f : { input?: number; } & { input: unknown; }
+>input : number | undefined
+>e : { input?: number; } & M<"input">
+

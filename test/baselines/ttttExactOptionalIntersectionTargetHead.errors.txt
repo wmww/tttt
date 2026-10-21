@@ -1,0 +1,51 @@
+ttttExactOptionalIntersectionTargetHead.ts(7,12): error TS2375: Type 'A' is not assignable to type 'B' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'A' is not assignable to type '{ input?: number; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Types of property 'input' are incompatible.
+      Type 'number | undefined' is not assignable to type 'number'.
+        Type 'undefined' is not assignable to type 'number'.
+ttttExactOptionalIntersectionTargetHead.ts(11,12): error TS2375: Type 'I1 & { input: unknown; }' is not assignable to type 'I2 & { input: unknown; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'I1 & { input: unknown; }' is not assignable to type 'I2' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Types of property 'input' are incompatible.
+      Type 'number | undefined' is not assignable to type 'number'.
+        Type 'undefined' is not assignable to type 'number'.
+ttttExactOptionalIntersectionTargetHead.ts(14,12): error TS2375: Type '{ input?: number; } & M<"input">' is not assignable to type '{ input?: number; } & { input: unknown; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type '{ input?: number; } & M<"input">' is not assignable to type '{ input?: number; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Types of property 'input' are incompatible.
+      Type 'number | undefined' is not assignable to type 'number'.
+        Type 'undefined' is not assignable to type 'number'.
+
+
+==== ttttExactOptionalIntersectionTargetHead.ts (3 errors) ====
+    // A target intersection's property that one member declares optional keeps the missing type in its combined type
+    // even when another member makes it required: tsc's getExactOptionalUnassignableProperties doesn't ask whether it is
+    // optional, so the head is TS2375 (xstate's spawn options under exactOptionalPropertyTypes, flagflip)
+    type A = { input?: number } & { [K in "input"]: unknown };
+    type B = { input?: number } & { [K in "input"]: unknown };
+    declare let a: A;
+    export let b: B = a;
+               ~
+!!! error TS2375: Type 'A' is not assignable to type 'B' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2375:   Type 'A' is not assignable to type '{ input?: number; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2375:     Types of property 'input' are incompatible.
+!!! error TS2375:       Type 'number | undefined' is not assignable to type 'number'.
+!!! error TS2375:         Type 'undefined' is not assignable to type 'number'.
+    interface I1 { input?: number }
+    interface I2 { input?: number }
+    declare let c: I1 & { input: unknown };
+    export let d: I2 & { input: unknown } = c;
+               ~
+!!! error TS2375: Type 'I1 & { input: unknown; }' is not assignable to type 'I2 & { input: unknown; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2375:   Type 'I1 & { input: unknown; }' is not assignable to type 'I2' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2375:     Types of property 'input' are incompatible.
+!!! error TS2375:       Type 'number | undefined' is not assignable to type 'number'.
+!!! error TS2375:         Type 'undefined' is not assignable to type 'number'.
+    type M<K extends string> = { [P in K]: unknown };
+    declare let e: { input?: number } & M<"input">;
+    export let f: { input?: number } & { [P in "input"]: unknown } = e;
+               ~
+!!! error TS2375: Type '{ input?: number; } & M<"input">' is not assignable to type '{ input?: number; } & { input: unknown; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2375:   Type '{ input?: number; } & M<"input">' is not assignable to type '{ input?: number; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+!!! error TS2375:     Types of property 'input' are incompatible.
+!!! error TS2375:       Type 'number | undefined' is not assignable to type 'number'.
+!!! error TS2375:         Type 'undefined' is not assignable to type 'number'.
+    

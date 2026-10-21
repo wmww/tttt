@@ -235,7 +235,14 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
     `p[v]`, tttt nothing): `function g(p: number[], result: number[], k: number) { let u, v; v = k; u = result.length;
     v = result[u - 1]; while (u-- > 0) { result[u] = v; v = p[v] } }` under strict + noUncheckedIndexedAccess (without
     the `v = k` both agree). Mirroring means reporting what the loop's incomplete evaluations report: architectural.
-  - xstate/eopt +TS2322 input.test.ts:272: `spawn`'s `...[options]: SpawnOptions<TActor, TSrc>` compared between two
+    (2026-10-21, worker cor: reduced further, `let y; while (arr.length) { y = arr[y] }` under nuia is TS2538 in tsc,
+    and `let node; node = el; while (node && node !== anchor) node = node.nextSibling` with `el: RN | null`, `RN` an
+    index signature, is TS4111 under npafis: tsc's types baseline prints the final `any` there, so the diagnostic is
+    the incomplete evaluation's. tttt's compute() reports nothing and check.c sees only final types.)
+  - xstate/eopt +TS2322 input.test.ts:272 (2026-10-21, worker cor: tsc relates two such distinct instantiations
+    structurally as unassignable too, `type A = { input?: number } & { [K in "input"]: unknown }` against an identical
+    B is TS2375 in both since ttttExactOptionalIntersectionTargetHead, which fixed tttt's TS2322 head there; so the
+    spurious one is only tttt's second instantiation): `spawn`'s `...[options]: SpawnOptions<TActor, TSrc>` compared between two
     instantiations ("Two different types with this name exist"): `{ input?: number } & { [K in "input"]: unknown }` is
     not assignable to itself structurally under exactOptionalPropertyTypes (the intersection's input keeps the missing
     type), tsgo never compares it (the same cached instantiation: identity). Small probes reuse the instantiation in

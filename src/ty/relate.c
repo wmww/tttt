@@ -1249,8 +1249,10 @@ static bool exact_optional_unassignable_in(Checker* me, Ty const* source, Ty con
         Ty const* target_type;
         if (owner != target) {
             // (A union's or an intersection's property is the combined one)
+            // (Optional or not: tsc's isExactOptionalPropertyMismatch asks only whether its type has the missing
+            // type, which `input?: number` keeps in `{ input?: number } & { input: unknown }`, a required property)
             FoundProp common = ty_find_prop(me, target, target_prop->name);
-            if (!common.found || !(common.flags & PROP_OPTIONAL)) continue;
+            if (!common.found) continue;
             target_type = common.type;
         } else {
             if (!(target_prop->flags & PROP_OPTIONAL)) continue;

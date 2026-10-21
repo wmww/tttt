@@ -1039,6 +1039,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExactOptionalIntersectionTargetHead': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExpandoAssignmentsUnion': {
         errors: true,
         symbols: true,
