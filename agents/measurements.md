@@ -380,14 +380,18 @@ without / with `--shared-graph` (which turns recycling off).
   drizzle 300 loaded runs (an effect K12 loop beside it) all K1's; vscode 5 / 5 (2.16-2.26 s, 4.56-4.58 GB, no redo),
   TypeScript6's compiler 5 / 5; all 13 other `-p` corpora at K4 and K12 twice each K1's output.
 
-## Oracle totals (2026-10-20, b93fd63f3: the twenty-third window's triage)
-Suite 13957 / 13991 (dts 1887 / 1909; `scripts/passcount.py`), every corpus 0/0 but vue 0/2, DT 8595 / 8595,
-`$ExpectType` 68640 / 68640, flagflip 18 / 3 / 2 (missing / spurious / other code; flagflip.py runs at `--checkers 1`),
-source sweep (every `tsconfig*.json`, 5242 projects in 248 repos) **5235 / 5242**, `-b` sweep 411 / 416, clidiff 3824 /
-3831, dtsdiff 1330 / 1350 projects, kdiff 4 and recycle 4 (all tsgo-shared dependences; dokploy a recycle timeout),
-perfsweep worst types ratio 1.40 (lit tsserver-plugin; mikro-orm's 3.47 is gone). Instructions: `test/instrcount.txt`.
-`scripts/oracles.py` reprints all of these (it takes over 25 minutes on this 4-vCPU box when loaded: give it a
-generous background timeout); compare against its output, not this paragraph, once it's stale.
+## Oracle totals (2026-10-21: gate G1's `scripts/oracles.py` run after stage 4c, and the merger's suite at b3a67c3e5)
+Suite 13958 / 13992 (dts 1887 / 1909; `scripts/passcount.py`; the +1 is the IntersectionState audit's own test),
+`--no-defer-bodies` and `--checker-memory 0` unchanged, every corpus 0/0 but vue 0/2 (tsc-src and typescript-eslint
+crashed in that run under the scripts' old address-space cap: `-b` reserves 12-28 GB on 16 cores, `--mem-gb 48` since,
+triage.md), DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 18 / 3 / 2 (missing / spurious / other code;
+flagflip.py runs at `--checkers 1`), source sweep `--sample 4` 1272 / 1274 (full: 5235 / 5242 on 2026-10-20), `-b`
+sweep 411 / 416, clidiff 3823 / 3831 plus typescript-eslint's cap crash (3824 without it), dtsdiff 1327 / 1350
+projects (+7 as tsgo `--singleThreaded`; 1330 on 2026-10-20, the difference not looked at), kdiff 4 and recycle 4 (all
+tsgo-shared dependences), perfsweep worst types ratio 1.40 (lit tsserver-plugin). None of this ran with
+`--shared-graph` (only the suite and the corpora have: "Plan 86 gate G2"). Instructions: `test/instrcount.txt`.
+`scripts/oracles.py` reprints all of these (over 25 minutes when the box is loaded: a generous background timeout);
+compare against its output, not this paragraph, once it's stale.
 
 ## Past conclusions
 Condensed from the per-session sections (2026-09-28 .. 2026-10-19); `git log -S'<heading>' -- agents/measurements.md`

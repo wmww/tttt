@@ -5,111 +5,101 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal; real projects that are clean under tsc are the second oracle.
 
-## State (2026-10-20, insights after the twenty-fourth window)
+## State (2026-10-21, after the coordinator day)
 - **Target: TypeScript 7.1** (`main` at the 7.1 nightly fed0bf24, `thirdparty/typescript`; re-pin to 7.1.0 stable
-  once it is on npm, expected after 2026-11-24: plan 58; on 2026-10-20 npm's `latest` was 7.0.2 and 7.1.0-beta was published
-  that day: not a re-pin target, one re-pin to stable). Its native suite: 13556 / 13568 (99.9%), the last 12 off the table (argued or one-test
-  mechanisms, bugs/tsgo_divergences.md); with own tests and the dts component **13957 / 13991** (dts 1887 / 1909).
-  Every oracle cache is tsgo 7.1's, every probe runs tsgo (`test/oracle`: a Go overlay, so a patched tsgo is one
-  `go build` away).
+  once it is on npm, expected after 2026-11-24: plan 58; 7.1.0-beta, published 2026-10-20, is not a re-pin target).
+  Its native suite: 13556 / 13568 (99.9%), the last 12 off the table (argued or one-test mechanisms,
+  bugs/tsgo_divergences.md); with own tests and the dts component **13958 / 13992** (dts 1887 / 1909). Every oracle
+  cache is tsgo 7.1's, every probe runs tsgo (`test/oracle`: a Go overlay, so a patched tsgo is one `go build` away).
 - **Drop-in `tsc --noEmit`, and drop-in `tsc` where the config only emits declarations**, TypeScript and JavaScript
   sources alike (plans 53, 64). **clidiff** (the whole `--pretty false` output, byte for byte, every corpus and
-  source sweep project): **3824 / 3831**. dtsdiff **1330 / 1350** projects (part of the rest is tsgo's own checker
-  split). JS emit is out of scope (the human, 2026-10-12). **Refused**: `--watch`, `--incremental`'s
-  `.tsbuildinfo`, `--showConfig`, `--explainFiles`, `--init` (plan 76, parked by the human 2026-10-16; asked twice
-  whether to reopen it, no answer: stays parked).
+  source sweep project): **3824 / 3831**. dtsdiff **1327 / 1350** projects (1330 on 2026-10-20; part of the rest is
+  tsgo's own checker split). JS emit is out of scope (the human, 2026-10-12). **Refused**: `--watch`,
+  `--incremental`'s `.tsbuildinfo`, `--showConfig`, `--explainFiles`, `--init` (plan 76, parked by the human
+  2026-10-16: stays parked unless reopened).
 - **Real code**: corpora 0 / 0 everywhere but vue (0 / 2, plan-sized: tsc's in-flight-free member resolution), **DT
   sweep 8595 / 8595**, `$ExpectType` 68640 / 68640, flagflip 18 / 3 / 2, scenarios 221 / 0 failed, **source sweep
-  5235 / 5242 projects** (every `tsconfig*.json` since 2026-10-19; three refreshes, 96.1%, 97.1%, 98.1% on day one),
-  **`-b` sweep 411 / 416 solutions** (one model since plan 87 stage 1), kdiff 4, recycle 4 (all tsgo-shared).
-- **Perf and memory** (12-core box, PGO + LTO shipped: measurements.md "The 12-core box with PGO + LTO" and "bun
-  canary"): tttt is fastest single-threaded everywhere (1.1-2.9x bun canary, vscode 10.4 s against tsc-rs's 14.0)
-  and uses the least CPU at the defaults but tsc-rs's 4 checkers on 3 / 14. **At the defaults bun canary
-  (oven-sh/bun#45800, 2026-10-19) beats tttt's wall on 4 / 14** (vscode 2.00 against 2.44 s, drizzle, excalidraw,
-  nest) at 1.7x tttt's CPU, and bun's peak is lower on 10-12 / 14. tttt's K12 spends 2.3-4.4x its own K1 CPU:
-  clocks 1.62x, duplicated instantiations ~1.2x (drizzle 1.4x), recycling 5-8%. Bun's output isn't tsc's (drizzle
-  21 errors against 41).
+  5235 / 5242 projects** (every `tsconfig*.json`; 2026-10-21's G1 run sampled a quarter: 1272 / 1274), **`-b` sweep
+  411 / 416 solutions**, kdiff 4, recycle 4 (all tsgo-shared).
+- **Perf and memory at the defaults** (12-core box, PGO + LTO: measurements.md "The 12-core box at efb91998"): tttt
+  is fastest single-threaded everywhere (1.1-2.9x bun canary, vscode 10.4 s against tsc-rs's 14.0) and uses the least
+  CPU at the defaults but tsc-rs's 4 checkers on 3 / 14; bun canary beats tttt's default wall on 4 / 14 (vscode 2.05
+  against ~2.5 s, drizzle, excalidraw, nest) at 1.7x tttt's CPU, and bun's peak is lower on 10-12 / 14. Today's K12
+  spends 2.3-4.4x K1's CPU: clocks 1.62x, duplicated instantiations ~1.2x (drizzle 1.4x), recycling 5-8%.
+- **`--shared-graph` (plan 86 stage 4d, `src/ty/graph.c`, `src/ty/shared_table.c`; `TTTT_SHARED_GRAPH=1`)**: one
+  type graph shared by every checker on real threads. Identity kinds are published at creation, memo kinds when
+  their value exists, Ty-resident lazy states are claimed by CAS and waited for; a broken wait cycle redoes the
+  yielder's file in a fresh checker; the lib's hot types are warmed before the workers start; variances have one
+  shared slot per subject and, for now, one measurement at a time (a graph-wide lock). **Gate G2 (measurements.md
+  "Plan 86 gate G2", a loaded 16-vCPU box)**: K12 work 1.10-1.13x K1 (was 1.4-2.6x), K1's output at K4 and K12 on
+  every `-p` corpus (drizzle 300 / 300 under load, vscode 5 / 5), CPU lower than today's K12 on 10 / 14, wall equal or
+  better on 11 / 14 (worse on drizzle: the variance lock; type-fest, effect), **peak RSS higher everywhere** (nothing
+  is recycled: vscode 4.4-4.6 GB against 1.4). Not the default; stage 4e makes it one.
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, stable type ordering, mapper instantiation, tsc's inference flow (return mappers included) and
   ContextChecked/context anchors, one circularity stack, conditional/mapped/indexed/template/substitution types,
   deferred references, flow graph + narrowing, module resolution + tsconfig with tsgo's two-phase file collection,
   iteration protocol, generators, `this` types, mixins, decorators, union origins, elaboration, JSX, tsc's type
-  printer and symbol chains, JSDoc + CommonJS + expandos as 7 has them, parallel loading / resolving / checking with
-  the output independent of the checker count, checker recycling, deferred function bodies, per-file AST arenas,
-  declaration diagnostics, the declaration writer with comments and maps for TypeScript and JavaScript, project
-  references / `-b`, 7.1's content mappers, tsc's laziness and deferred checks, 7.1's language. ~150k lines of C.
+  printer and symbol chains, JSDoc + CommonJS + expandos as 7 has them, parallel loading / declaring / resolving /
+  checking with the output independent of the checker count, checker recycling, deferred function bodies, per-file
+  AST arenas, declaration diagnostics, the declaration writer with comments and maps for TypeScript and JavaScript,
+  project references / `-b`, 7.1's content mappers, tsc's laziness and deferred checks, 7.1's language, in-flight
+  state as per-checker records, one atom table and one type-id space per program. ~150k lines of C.
 - **Absent or approximated**: pseudo-type builder gaps (plan 55's list), namespace-import clones
   (cloneTypeAsModuleType), member identity (members aren't Symbols), the CLI modes above.
 
-## Course correction (insights of 2026-10-20, end of the twenty-fourth window)
-- **The window did what it said, in six sessions.** Plan 86 stage 4's design (go, staged, ~25 sessions) and its
-  taint prototype (G0: go, three conditions) both passed; `-b` has one model (plan 87 stage 1, the sources model
-  deleted, `-b` sweep 402 -> 411 / 416); costliest-file-first took 6% off TypeScript6 at K4; a real-code fan-out and
-  a triage moved the source sweep 5234 -> 5235 and fixed a relation bug (IntersectionState leaking into a generic
-  mapped target) that had been hiding as a 3.5x types ratio. Nothing regressed; instruction counts within 2%.
-- **Decision: the next window is stage 4a (in-flight state into per-checker overlays), with nothing shared yet.**
-  This is the first build-out window of the ~25-session bet, and its stages 4a-4c are K1 refactors that must leave
-  every oracle byte-identical: so a later no-go at G1 or G2 leaves better-structured code, not a half-feature. The
-  risk worth watching is creep: each stage may cost 1% of K1 instructions (3% to G1). If 4a takes more than its 3-5
-  sessions, or cleandiff grows, the next insights reprices the bet against the fallback (stage 3 plus the snapshot
-  recycle) before 4b.
-- **Plan 88 (re-entrancy) folds into 4a, not beside it.** Its stage A (one barrier stack) is the natural substrate for
-  per-checker in-flight records, and stage B (barrier termination instead of "once" flags) removes in-flight flags
-  instead of moving them. Both are scheduled inside 4a; C-E stay where plan 88 put them.
-- **IntersectionState stickiness is the next correctness debt** (hacks.md): one session, the window's real-code slot.
-  It already produced one wrong answer that looked like a perf problem (mikro-orm), the pattern "a relation that is
-  too lenient hides other bugs" again.
-- **The 12-core rerun (the human, 2026-10-20; measurements.md "The 12-core box at efb91998")**: costliest-first is a
-  wash there (its -6% was a 4-core effect), the front end is ~0.5 s of vscode's 2.5 s, and bun canary still wins
-  default wall on vscode (2.05 against ~2.5 s), drizzle and nest. Nothing changes the order: stage 4 is the lever,
-  stage 3 its fallback.
+## Course correction (2026-10-21, after the coordinator day)
+- **The workflow changed**: a coordinator runs 3-4 Opus workers in worktrees in parallel and merges their commits
+  (CLAUDE.md "Workflow"). In ~14 hours ~70 commits landed: what was scheduled as two windows (4a's three sessions,
+  then 4b-4c to G1) plus 4d's 3-4 sessions, stage 3's first session and the IntersectionState audit. Parallel workers
+  pay where the work splits along files or stages with disjoint code; the shared state is the oracles' caches and the
+  machine's load (walls measured today are noisy: work is measured in instructions).
+- **Plan 86 stage 4 passed both remaining gates.** 4a (in-flight state into per-checker records; plan 88 stage B
+  adopted: declarations and return types re-enter below the call barrier), 4b (M1 fixed, M2 a fingerprint artifact,
+  the write-after-publish sites), 4c (one atom table per program, global type ids with a directory, first-touch stamps
+  behind `--first-touch-stamps`) were K1 refactors with every oracle byte-identical: **G1 passed** (a full
+  `scripts/oracles.py` run matched the session-start numbers, but for two `-b` crashes from the oracle scripts'
+  address-space cap, since raised). 4d built `--shared-graph` on threads and **G2's work
+  and determinism criteria passed; its memory criterion failed** (no recycling with the flag). Determinism took the
+  most: a lookup race in the shared tables (the segfault and most flakes), broken wait cycles (fixed by the redo, not
+  by computing through them) and concurrent variance measurements (fixed by a lock whose need isn't understood yet).
+- **Decision: the next window is stage 4e** (plan 86 "Stage 4e", ~9-13 sessions, in its order): narrow the variance
+  lock (understand what one measurement reads from another first), the shared relation cache (designed and
+  measured: 7-40% of K12's relation work, 0 disagreements), the arena split into a published and a recycled private
+  part (memory: vscode K12 within ~1.3x of today's 1.4 GB), the redo's gaps, then the whole oracle set with the flag
+  and the default on where it wins. The human's 12-core laptop bench (with and without the flag) decides the default
+  policy, not this loaded box. Plan 58 still goes first if 7.1.0 is on npm.
+- **Stage 3 (front end) is done to where it pays**: sharded resolver caches, the loader never stats or frees the
+  workers' blocks, a rank-ordered load pool, parallel declare (10604 of vscode's 11015 files), module refs on threads,
+  a word-at-a-time symbol hash. The import pre-scan waits for a quiet 12-core measurement (`TTTT_LOAD_POOL_INLINE=1`);
+  link stays serial by design (plan 86 stage 3: < 1.5% of vscode's wall for the binder's riskiest code).
+- **IntersectionState stickiness is fixed** (structured_related_impl() clears both states, passing() hands them on
+  at tsc's sites; suite +1). Two neighbouring divergences went to triage.md.
 
-## Course correction (insights of 2026-10-20, end of the twenty-third window) (superseded where the newer one disagrees)
-- **The perf window shipped its cheap stages and found the next one is the big one.** PGO + LTO took 11-17%
-  instructions (-8-9% wall) on every corpus, the untrained ones too. Plan 86's stage 4 gate said go: id-decided
-  union ties are 0.003-0.6% and unobservable on every oracle once the spread-of-a-union class has a structural key.
-  Stage 2's first session took ~2% from a flat profile. Plan 87 (`-b` reads emitted declarations) said go and was
-  faster and more correct in one prototype session. The cut-short window still ran a real-code fan-out (source
-  sweep 5225 -> 5234) and a triage.
-- **Decision: plan 86 stage 4 (one type graph shared by every checker) goes next, ahead of stage 2** (plan 86
-  "Order"). The human asked for multiples on many cores sooner. bun canary now wins on wall at the defaults on 4 /
-  14 by keeping ~20 threads busy, while tttt's extra checkers each rebuild the same instantiations: K24 costs
-  40-160% more CPU for 0-7% wall. A shared graph is the only lever that makes more checkers pay and that cuts memory
-  at the defaults K-fold, our other weak axis. It's the riskiest change since the type core (every lazily written
-  field becomes publish-once or scratch), so it gets a design session with a census and a prototype with a go/no-go
-  before any build-out window. Its fallback, if no, is stage 3 (front end) plus the snapshot recycle for the
-  thrashers. **The design session (2026-10-20) said go, staged, ~25 sessions**: K12 rebuilds 1.4-1.7x K1's check
-  work, only concurrent sharing removes it, and correctness rests on one rule (publish only results computed clean;
-  each worker keeps the rest private), proved first at K1 by a taint prototype (gate G0) and K1 refactors (G1). **G0 (2026-10-20) said go**: the hot
-  kinds are 99-100% clean if flow only taints expressions (strict flow tainting would leave 39-76% of the time), and
-  two histories disagree only through two named mechanisms and a <= 0.03% residue. Whether that flow rule is sound is
-  its open condition (46 drizzle prop types). The rule "faster than bun on every corpus at the defaults" stays the target; it is currently broken,
-  and this is the plan to restore it, not a reason to tune the defaults' policy again (five policies were already
-  declined along one frontier).
-- **Single-threaded speed is the multiplier, but its cheap part is spent.** With hardware counters unavailable here,
-  stage 2's remaining levers (instruction footprint, intern table layout) can't be confirmed except by wall time.
-  Keep them for perf slots and measure them on wall at K1.
-- **`-b` has one model since 2026-10-20** (plan 87 stage 1: emitted declarations, the sources model deleted, ~350
-  lines net). Its leftovers are `-p` checker bugs (bugs/sourcesweep_build.md).
-- **Correctness is in its long tail and holds** (5234 / 5242 projects, clidiff 3824 / 3831, every corpus clean but
-  vue). Each window keeps one real-code session; a fourth refresh comes after the stage 4 gate.
+## Course correction (2026-10-20, condensed 2026-10-21)
+- Plan 86 stage 4 (one type graph shared by every checker) went ahead of stage 2: the human asked for multiples on
+  many cores, bun canary wins default wall on 4 / 14 by keeping ~20 threads busy, and only a shared graph makes more
+  checkers pay and cuts memory at the defaults. Its design said go, staged (~25 sessions); G0's taint prototype said
+  go. The rule "faster than bun on every corpus at the defaults" stays the target and stage 4 is the plan to restore
+  it, not another tuning of the defaults' policy (five were declined along one frontier).
+- Every staged refactor before sharing (4a-4c) had to leave every oracle byte-identical, so a later no-go would leave
+  better-structured code, not a half-feature: that held. Plan 88's stages A-B folded into 4a; C-E stay in plan 88.
+- PGO + LTO took 11-17% instructions on every corpus. Stage 2's remaining levers (instruction footprint, intern table
+  layout) can't be confirmed without hardware counters: perf slots, measured on wall at K1. On 12 cores
+  costliest-file-first is a wash and the front end is ~0.5 s of vscode's 2.5 s.
+- `-b` has one model (plan 87 stage 1: emitted declarations); its leftovers are `-p` checker bugs
+  (bugs/sourcesweep_build.md). Correctness is in its long tail and holds; each window keeps one real-code session.
 
-## Course correction (insights of 2026-10-19, condensed 2026-10-20)
-- Correctness work now comes from refreshes and new oracle axes, not the existing oracles' tails (day-one rates
-  96.1, 97.1, 98.1%: the checker generalizes). Perf is where the multiples are (plan 86, the human's ask).
-- `-b` reads its references' emitted declarations (plan 87): more correct and faster than checking their sources.
+## Course correction (insights of 2026-10-18 and 10-19, condensed 2026-10-21)
+- Correctness work comes from refreshes and new oracle axes, not the existing oracles' tails (day-one rates 96.1,
+  97.1, 98.1%: the checker generalizes); "saturated" oracles hid a whole axis (message text), so every oracle that
+  compares a projection should say what it doesn't compare. Debt windows after feature windows are cheap.
+- Plan 85 (a shared *declared* layer) closed no-go: what checkers rebuild is instantiations of the project's own
+  code, hence plan 86 stage 4's whole shared graph. tsc-rs is tracked next to bun (its edge: CPU at few checkers).
+- Price many-core work by instructions (callgrind) and by per-file time sums under real parallel runs on a quiet box,
+  never by serialized CPU; on the shared 16-vCPU box per-file wall sums at 12 threads aren't work (G2).
 - A drop-in must survive its inputs changing mid-run (`text_sigbus()`).
-
-## Course correction (insights of 2026-10-18, condensed 2026-10-20)
-- Debt windows after feature or memory windows are cheap (one session each, as sized): keep scheduling them.
-- "Saturated" oracles hid a whole axis (54 text mismatches under 0 / 0 corpora): every oracle that compares a
-  projection should say what it doesn't compare.
-- tsc-rs (a Rust port of tsgo at our pin, tsgo-exact) is tracked next to bun in report.md: its edge is CPU
-  efficiency at few checkers.
-- Plan 85 (a shared *declared* layer) closed no-go: declaration files' declarations are 2-6% of the extra CPU; what
-  is rebuilt is instantiations of the project's own code. That is why plan 86 stage 4 shares the whole graph.
-- Price many-core work by per-file time sums under real parallel runs, never by serialized CPU.
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **The suite's last 12 are off the table** (2026-10-15): each is argued (bugs/tsgo_divergences.md) or a plan-sized
@@ -134,17 +124,11 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **The type count is the perf oracle** (2026-10-11): tsgo's `--extendedDiagnostics` `Types`/`Instantiations` are
   machine-independent and directly comparable with tttt's; a ratio far above 1 is a missing cache or a runaway, found
   without timing anything on this shared 4-vCPU box (`scripts/perfsweep.py`).
-- **Thread defaults** (2026-10-12, the human asked why 4): `--threads` defaults to every core (parsing and name
-  resolution scale with it), and since plan 62 (2026-10-14) `--checkers` follows them: one checker per thread, at
-  most one per 64 KB of checked source (a small project's second checker saves milliseconds and copies the lib
-  types). tsgo's output is K-independent and so is tttt's now (kdiff: only inbox-zero's undefinedProperties order,
-  which tsgo shares). On 12 cores / 24 threads (2026-10-16): K4 -> K12
-  1.2-2.0x faster, K12 -> K24 0-11%, at ~170 MB per checker on vscode: the CLI caps the checkers' budget at 1.5 GB together (plan 75).
-  **Since 2026-10-18 the default checkers stop at the physical cores** (but every thread up to 4: on 2 cores / 4
-  threads K2 is 10-26% slower than K4, vscode then level with bun): 24 threads oversubscribed on 4 vCPUs spend 6-26%
-  more CPU at K24 than K12 on the corpora, 31-42% on the thrashers (dokploy, monkeytype) and 0.2-2 GB more peak
-  (measurements.md "Checkers per physical core"). Unconfirmed on the 12-core box; the human's command is there. The
-  budgets stay (larger ones from the start trade along plan 81's frontier: vscode K12 -10% CPU, +1.2 GB).
+- **Thread defaults** (2026-10-12, since 2026-10-18 for the cap): `--threads` defaults to every core, `--checkers` to
+  one per thread, at most one per 64 KB of checked source, and **at most one per physical core** (but every thread up
+  to 4): 24 threads oversubscribed spend 6-42% more CPU at K24 than K12 for 0-11% wall (measurements.md "Checkers per
+  physical core"); the CLI caps the checkers' budget at 1.5 GB together (plan 75). tsgo's output is K-independent and
+  so is tttt's (kdiff: only tsgo-shared dependences). The shared graph's default (4e) revisits this policy.
 - **Fan-out merge discipline** (2026-10-13): full source sweep match-set diffs and flagflip against a session-start
   run at every fan-out merge (they caught 11 lost projects and a -31 TS6196 nothing else saw).
 - **Fan-out sessions** (four Opus sub-agents in worktrees, one failstats/displaydiff/jsstats bucket each, disjoint
@@ -194,15 +178,21 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 (-> plan 04), checker state in the AST (-> per-`Checker` slots). What's left to watch:
 - **Parser**: error-recovery fidelity is essentially done (plan 27: 34 tests still differ, 2026-09-29; the framework held, no rewrite needed), unbounded recursion depth (binary chains need ~8 MB of
   stack; tsc walks them iteratively), backtracking cost.
-- **Binder**: declare and link are serial and write shared tables; the resolve walk shards per file, JavaScript too
-  (plan 45: a JS file's assignment declarations replay in program order; merged type parameters still walk serially;
-  `hacks.md`, "Parallelism contract"). JS support will add declarations from assignments; design it with that in mind.
+- **Binder**: declare runs in parallel for files that declare only into their own tables (`declares_in_isolation()`:
+  96% of vscode's files; libs and global-merging files stay serial); link is serial by design (alias resolution's
+  order is observable: plan 86 stage 3 has a two-phase design, not worth it now); the resolve walk shards per file,
+  JavaScript too (plan 45; merged type parameters still walk serially; `hacks.md`, "Parallelism contract").
 - **Threading**: checking is threaded (stage 3; nothing in the checker had to change once stage 2's audit fixes were
   in, which is evidence the "AST read-only while checking" contract holds). Any new checker-wide memo that *reports*
   must be tagged `Error.once_key`, and anything written to AST/binder state during checking is a race (the frozen
   guards log it; TSan on the corpora is the net: documentation.md "Typecheck" has the build line). Loading is
   threaded too (a cache-warmer pool beside the unchanged sequential loader: `src/load_pool.c`; the shared state is the
-  resolver's locked caches). Name resolution shards per file (plan 45 stages 1-2); declare/link are serial.
+  resolver's caches, sharded 64 ways). Name resolution shards per file (plan 45 stages 1-2).
+- **The shared graph** (`--shared-graph`, plan 86 4d): the checker is no longer private state per thread under the
+  flag. Every Ty-resident lazy field is claimed by CAS, written once and read through a snapshot; identities and
+  memo entries are published into sharded lock-free tables; in-flight state lives in per-checker records (4a). A new
+  lazily written field must follow that protocol (plan 86 "Stage 4d"), or it is a race only TSan and the 20-run
+  tables find.
 
 ## Risks / concerns
 - Exact-match oracle: `types`/`symbols` baselines require tsc's type printing (alias preservation, union order,
@@ -216,11 +206,22 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 - tsgo is order dependent in places tttt isn't; tsgo 7.1's ordering rules are what `ty/order.c` must port, not patch.
 - **Competition**: bun check (a Rust tsgo port, 2026-10) beats tttt on memory at the defaults
   on many cores; tsc-rs (pingdotgg/ts-rust, a Rust port of tsgo at our pin, `scripts/bench.sh --tscrs`) spends the
-  least CPU at its defaults and is tsgo-exact. tttt is fastest on wall everywhere (12-core: 0.26x tsgo's wall against
-  bun's 0.41x) and single-threaded by 2x+; our margin is single-threaded efficiency, which the defaults currently
-  spend on SMT inflation, recycling and (at many checkers) duplicated instantiations (plan 85's census).
+  least CPU at its defaults and is tsgo-exact. tttt is fastest single-threaded by 2x+ but bun canary wins default
+  wall on 4 / 14; our margin is single-threaded efficiency, which the defaults spend on SMT inflation, recycling and
+  duplicated instantiations. The shared graph removes the duplication; whether it wins wall on the 12-core box is
+  the human's bench, not yet run.
 - **Determinism vs scaling**: the output must stay byte-identical at any checker and thread count, so across machines
-  (`scripts/kdiff.py`, `scripts/checkerdiff.py`, `scripts/threadcheck.sh`; `scripts/oracles.py` runs kdiff).
+  (`scripts/kdiff.py`, `scripts/checkerdiff.py`, `scripts/threadcheck.sh`; `scripts/oracles.py` runs kdiff). **Under
+  the shared graph this is a property of the schedule, shown by repetition, not by construction**: the 20-run tables
+  and drizzle's 300 runs passed on a loaded 16-vCPU box, a quiet many-core one hasn't run them. Three mechanisms carry
+  it and each is a soundness argument still open: the redo (a yielder's file checked again in a fresh checker is
+  assumed to reach K1's history; its gaps: deferred-body materialization, leaked temporaries), the variance lock (it
+  removed a ~2% flake whose mechanism is unknown: narrowing it without understanding it brings the flake back), and
+  the steady tainted results every history shares (G0). Only the suite and the corpora have run with the flag; the
+  sweeps, kdiff and the rest must run with `TTTT_SHARED_GRAPH=1` before it is the default.
+- **Memory under the shared graph**: nothing is recycled with the flag (a checker's arena holds both what it published
+  and its scratch), so the defaults' memory target ("Decisions still in force") is further off with it than without:
+  vscode 4.4-4.6 GB at K12 against 1.4. 4e's arena split must bring it to ~1.3x before the flag is the default.
 - Parser rewrites are tempting and expensive; plan 27 looked and found no case for one. Revisit only with a profile.
 
 ## Where this is going (rough order)
@@ -268,7 +269,9 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    a real-code fan-out~~ done.
 24. ~~Plan 86 stage 4's design and gate G0 (go), plan 87 stage 1 (one `-b`), costliest-file-first and the front
    end measured, a real-code fan-out~~ done.
-25. **Now: plan 86 stage 4a** (in-flight state into per-checker overlays, plan 88 A-B inside it), the IntersectionState
-   audit. Then 4b-4c to gate G1, 4d behind `--shared-graph` to G2, plan 87 stage 2, a fourth refresh after G1.
-   Plan 58 (7.1.0 stable, then plan 66 stage 5's fan-out) as soon as it's on npm, ahead of everything; plan 76 only if
-   the human reopens it.
+25. ~~Plan 86 stages 4a-4c to gate G1 (plan 88 stage B inside 4a), 4d (`--shared-graph` on threads) to gate G2,
+   stage 3's front end, the IntersectionState audit: the first coordinator day~~ done.
+26. **Now: plan 86 stage 4e** (variance lock, shared relation cache, the arena split and recycle, the redo's gaps,
+   the oracle set with the flag, default on), with the 12-core bench with and without the flag. Then plan 87 stage
+   2 and a fourth refresh. Plan 58 (7.1.0 stable, then plan 66 stage 5's fan-out) as soon as it's on npm, ahead of
+   everything; plan 76 only if the human reopens it.
