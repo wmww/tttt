@@ -458,8 +458,9 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   bucket is taken for tainted, ~20-180 per corpus run; forgotten at each file's start). Puts that miss no recorded
   miss (intern_slot() straight away) start at the put. The -DTTTT_GRAPH_TAINT build's hooks (graph_taint_miss/put,
   the global mark set) are the older duplicate, for step D to delete. Identity-valued memo kinds (KEY_MAPPED_KEY_PARAM,
-  KEY_EVOLVING_ARRAY, KEY_REVERSE_MAPPED, KEY_UNION_NODE: their value is a fresh object no key hash-conses) publish
-  whatever their taint, like identities. A clean variance group rewinds graph_taint_now to its start
+  KEY_EVOLVING_ARRAY, KEY_REVERSE_MAPPED, KEY_UNION_NODE: their value is a fresh object no key hash-conses; the
+  conditional instances, whose inference can make fresh nested objects, by a kdiff bisection rather than a proof)
+  publish whatever their taint, like identities: a tainted value of theirs reaches the others. A clean variance group rewinds graph_taint_now to its start
   (claim_and_measure()): its internal events (its own claims read) don't taint its callers; sound because nothing
   started inside the group is still in flight, but it is the one place the counter goes backwards.
 - Re-entry below resolution barriers (plan 88): tsc re-enters anything in flight below `resolutionStart` (a call's

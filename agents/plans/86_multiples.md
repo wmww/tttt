@@ -1517,8 +1517,12 @@ in parallel only where the file sets are disjoint):
       identity-valued ones, whose value is a fresh object no other key hash-conses and which publish whatever their
       taint, like identities: KEY_MAPPED_KEY_PARAM (a synthetic stand-in type parameter in a fresh mapper),
       KEY_EVOLVING_ARRAY (ty_alloc'd, this kind is its only hash-consing), KEY_REVERSE_MAPPED (a fresh reverse mapped
-      object at the top level) and KEY_UNION_NODE (a lowered node's type; fresh only for a stray `infer X`). Values:
-      the conditional instances (an arena record of an interned result), alias instances, regular unions, widened
+      object at the top level) and KEY_UNION_NODE (a lowered node's type; fresh only for a stray `infer X`), and,
+      found by react-navigation's kdiff after the rebase onto P2's words, the conditional instances
+      (KEY_CONDITIONAL_INSTANCE, _FOR_CONSTRAINT: an arena record of an interned result, but their inference can make
+      fresh nested reverse mapped objects; withheld, react-navigation's TS2344/TS2345 at K16 T1; not proven which of
+      the two, fresh objects or a clean value that differs, so fingerprint (1)'s _FOR_CONSTRAINT entry is to watch).
+      Values: alias instances, regular unions, widened
       objects and regular object literals (KEY_STRUCTURAL identities), keyof properties, simplified, normalized
       intersections, mapped filtering, union access, inferred true branches, distribution-dependent,
       distributive constraints, type variable reductions, definitely-related, canonical and base signatures (interned

@@ -1103,6 +1103,9 @@ static struct MemoTaint* memo_taint_of(Checker* checker) {
 static bool memo_identity_valued(u32 kind) {
     switch (kind) {
     case KEY_MAPPED_KEY_PARAM: case KEY_EVOLVING_ARRAY: case KEY_REVERSE_MAPPED: case KEY_UNION_NODE:
+    // (A conditional instance's result can hold objects its inference made fresh, a nested reverse mapped type:
+    // withheld, react-navigation's TS2344/TS2345 at K16 T1, each checker making its own)
+    case KEY_CONDITIONAL_INSTANCE: case KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT:
         return true;
     default:
         return false;
