@@ -662,6 +662,12 @@ static u64 now_ns(void) {
 // Waits until the field isn't the same worker's in flight any more: true (look at it again). False: waiting would close
 // a cycle of waits this worker is the one to break; it goes on as if the field were its own in flight. A short spin,
 // then sleeps growing to a millisecond: a worker blocked behind a long computation doesn't burn a core
+// (A breakpoint for debuggers: where a wait cycle is broken, scripts in plan 86's 4d status)
+[[gnu::noinline]] void graph_fallback_hook(Checker* me, void* field) {
+    __asm__ volatile("" :: "r"(me), "r"(field) : "memory");
+}
+
+void graph_fallback_hook(Checker* me, void* field);
 bool lazy_wait_slow(Checker* me, void* field, size_t size) {
     TyGraph* graph = me->graph;
     unsigned seen = lazy_field_load(field, size);
@@ -688,6 +694,7 @@ bool lazy_wait_slow(Checker* me, void* field, size_t size) {
         pthread_mutex_unlock(&graph->wait_lock);
         if (breaks) {
             if (getenv("TTTT_GRAPH_LOUD_FALLBACKS")) eprintln("graph: worker ", (u32)me->graph_worker, " breaks a wait cycle on ", (u32)owner);
+            graph_fallback_hook(me, field);
             me->graph_fallbacks++;
             ret = false;
             break;

@@ -768,9 +768,28 @@ at the computation's end**, and makes every field another worker can read safe t
   types, identities never publish null), `btsan` (-Db_sanitize=thread), `basan` (address), `bpoison`
   (-DTTTT_TY_POISON). Tools in the tree: TTTT_GRAPH_NOSHARE=k,k / =all-but:k,k (kinds kept private: sharing nothing
   never crashed in 80 runs, which is how the bisection started), TTTT_NO_SHARE_END_PUBLISH=1 (no memo publication),
-  TTTT_GRAPH_LOUD_FALLBACKS=1 (each broken wait cycle on stderr), TTTT_DEBUG_INTERN_SET=1. Next: the taint experiment
-  (coordinator's step 2): cheap taint on in shared mode, tainted Ty-resident fields withheld (reset to not started,
-  not published), the 8x4 table again with per-kind counts of the withheld fields the differing runs touched.
+  TTTT_GRAPH_LOUD_FALLBACKS=1 (each broken wait cycle on stderr), TTTT_DEBUG_INTERN_SET=1, graph_fallback_hook() (a
+  breakpoint: scratch's `fb.gdb` prints each broken cycle's stack).
+  **The taint experiment** (coordinator's step 2, after the auto array fix, which removed the `push(x)` against never
+  family): `bgtaint` (release -DTTTT_GRAPH_TAINT, scratch) at K12 T12, 20 runs per corpus, rep3.sh with stats:
+  without withholding 70/80 runs K1's output (excalidraw 17, drizzle 17, effect 19, zod 17), with
+  TTTT_GRAPH_WITHHOLD=1 76/80 (18, 20, 19, 19). **Every differing run, either way, broke wait cycles**
+  (TTTT_GRAPH_LOUD_FALLBACKS: 1 to 63 fallbacks); runs without a fallback were all K1's output, and with withholding
+  most runs with fallbacks were too (drizzle 12 of 12). Per kind, the tainted counts of K1-identical runs are steady
+  (zod: members 117, prop types 539, signature returns 1393, function returns ~1387, conditional instances ~279;
+  effect: members 122, base constraints 90...): the results every history taints, K1's too. Differing runs add a burst
+  in some kind where the cycle broke (drizzle prop types 326/339 against ~10; zod union nodes 396 or declared types 63;
+  excalidraw everything). So the differences aren't the steady tainted results but the cycles workers enter from the
+  other side than K1: A computing X waits for B's Y while B computing Y waits for A's X, and the breaker (the higher
+  number) takes X as its own cycle, which K1 only does if it entered Y first. Broken cycles seen (fb.gdb):
+  ty_reduced_slow() of two intersections (never_reduced_prop() -> prop type -> an indexed access -> the other's
+  reduction), ty_members_resolving() under property access. Withholding the Ty-resident results tainted by the break
+  hides most of it; what's left is the breaker's own file, checked in its broken-cycle history (its diagnostics), and
+  results of kinds not withheld. Overlay work scoped by this: only results tainted *by a fallback* need keeping from
+  the others (the steady ones are K1's), and the breaker's own diagnostics need its file rechecked or its cycle
+  entered K1's way. Cheaper directions to weigh first: fewer cycles to break (ty_reduced()'s in-flight guard is
+  tttt's, tsc's getReducedType recomputes on re-entry; the lib warm-up cycles), or a breaker that waits for the owner
+  to finish its whole top-level computation by yielding its own claims (abort and redo, not partial).
 
 ### 4e's first item: a shared relation cache (measured and designed 2026-10-21, not built)
 **Measurement** (`agents/plans/86_relation_share_probe.patch`, a scratch patch to relate.c's recursive_related():
