@@ -368,7 +368,16 @@ bool ty_function_return_circular(Checker* me, FunctionImpl const* function) {
     ty_function_return_type(me, function);
     return_type_speculative = outer;
     FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
-    return memo && memo->circular;
+    return memo && (memo->circular || ty_link_get(me, KEY_RETURN_LATE_CIRCULAR, function));
+}
+
+// The return type is inferred (any if it depended on itself, TS7023): the first inference to finish publishes it, a
+// nested one asked for from below a call's barrier included (tsc's `if signature.resolvedReturnType == nil`)
+static void publish_function_return(FunctionReturn* memo, Ty const* type, bool promise_missing, bool circular) {
+    memo->type = type;
+    memo->promise_missing = promise_missing;
+    memo->circular = circular;
+    memo->state = LAZY_STATE_DONE;
 }
 
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
@@ -435,16 +444,17 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     Ty const* type = infer_return_type(me, function);
     bool promise_missing = inferred_promise_missing;
     inferred_promise_missing = false;
-    if (memo->state != LAZY_STATE_DONE) {
-        memo->type = type;
-        memo->promise_missing = promise_missing;
-    }
-    if (ty_resolving_pop(me)) memo->circular = true;
-    // A return type that depends on itself is any, whatever else the body says (tsc: popTypeResolution() failing)
-    if (memo->circular) memo->type = ty_intrinsic(me, TY_ANY);
+    bool circular = ty_resolving_pop(me);
     my outer_inference = outer;
     ty_flow_restore(me, isolation);
-    memo->state = LAZY_STATE_DONE;
+    if (memo->state != LAZY_STATE_DONE) {
+        // A return type that depends on itself is any, whatever else the body says (tsc: popTypeResolution() failing)
+        publish_function_return(memo, circular ? ty_intrinsic(me, TY_ANY) : type, promise_missing, circular);
+    } else if (circular && !memo->circular) {
+        // A nested inference published first and this outer one turned out circular: the type stays (tsc's), the
+        // TS7023 tsc reports here is this checker's to say (ty_function_return_circular())
+        ty_link_set(me, KEY_RETURN_LATE_CIRCULAR, function, function);
+    }
     TAINT_END(taint_frame, TK_FUNCTION_RETURN, memo, function, memo->type);
     report_promise_missing(me, function, memo);
     return memo->type;

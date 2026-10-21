@@ -160,6 +160,9 @@ enum {
     KEY_EXTENDED_CONTAINERS, // (Symbol, enclosing SourceFile) -> the modules of its imports that export it (symbol_chain.c)
     KEY_MODULE_DISPLAY_NAME, // (module Symbol, file printed from, override mode, usage ModuleRef) -> its name in `import()` (csview)
     KEY_CLASS_MEMBER_SYMBOLS, // ClassDecl -> ClassMemberSymbols (check.c)
+    // FunctionImpl (node_links) -> non-null if its return type's outer inference was circular after a nested one had
+    // published (function.c): the checker's own record of a TS7023 to say, the published memo stays as it was
+    KEY_RETURN_LATE_CIRCULAR,
 };
 
 // The type parameters declared outside a root conditional type that it mentions (tsc's root.outerTypeParameters, less
