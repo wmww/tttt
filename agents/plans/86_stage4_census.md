@@ -39,7 +39,7 @@ Hotness: H (relations/instantiation/property access inner loops), M, R (rare).
 |---|---|---|---|---|---|
 | `order_key` | order.c `ty_order_key()` (`((Ty*)t)->order_key = k`) | ty_compare()'s prefix (rank, name/position) | P (compute_key reads only immutable fields/symbols, no checker). Racy-benign 8-byte store; but see `rest_binding` below which changes its input after creation | no | H (every union sort) |
 | `evolving_array.final_array` | flow.c `final_array_type()` | finalized array of an evolving array | P* (subtype reduction goes through the relation cache: complexity limits) | no | R |
-| `xflags |= TYX_CONSTRAINED_TYPE_VARIABLE` | checker.c `intersection()` after `intern_composite()` (may hit an existing intersection) | IsConstrainedTypeVariable | **C/history**: set only when *this path* built it (`out == 2 && !inherited`); an identical intersection first made by another path lacks it until this path runs. Not lazy: a mutation of a published type. Needs an atomic OR or (better) computing it in the constructor | no | M |
+| `xflags |= TYX_CONSTRAINED_TYPE_VARIABLE` | checker.c `intersection()` after `intern_composite()` (may hit an existing intersection) | IsConstrainedTypeVariable | **Fixed (CONDP, 2026-10-22): set at creation only, intersections made without constraint reduction keyed apart (tsgo's getIntersectionKey '*'), the late write deleted.** Was **C/history**: set only when *this path* built it (`out == 2 && !inherited`); an identical intersection first made by another path lacks it until this path runs. Not lazy: a mutation of a published type. Needs an atomic OR or (better) computing it in the constructor | no | M |
 | `anonymous.empty_symbol` | lower.c `ty_dynamic_import_module_type()` (2 sites) on the result of `with_synthetic_default()` = `ty_object_literal(OBJECT_SYNTHETIC)`, which is **structurally interned** (KEY_STRUCTURAL) | tsc's anonymousSymbol (isEmptyAnonymousObjectType) | **history**: mutates a shared interned type; another `{default: X}` synthetic object of the same shape gains the flag. Make it part of the key | no | R |
 | `anonymous.module_clone` | lower.c `namespace_import_type()` | KEY_MODULE_CLONE companion | P (type is made fresh per alias by namespace_import_type_uncached; check) | no | R |
 | `anonymous.rest_binding` + `rest_of_binding` | lower.c `rest_literal()` after `ty_object_literal_of(.., symbol)` (interned by shape + symbol) | union order key of an object rest | P per symbol, but written after interning; changes `order_key`'s input (if an order_key was computed in between it is stale) | no | R |
@@ -156,7 +156,7 @@ Grouped by class (ty_internal.h KEY_*):
    memoized anyway (function.c isolates declarations with `ty_flow_isolate()`, which is the reason it mostly works).
 
 ### 4. Non-lazy mutations of published types
-- checker.c `intersection()`: `xflags |= TYX_CONSTRAINED_TYPE_VARIABLE` on an interned (possibly pre-existing) intersection.
+- (Fixed) checker.c `intersection()`: `xflags |= TYX_CONSTRAINED_TYPE_VARIABLE` on an interned (possibly pre-existing) intersection.
 - lower.c `ty_dynamic_import_module_type()`: `anonymous.empty_symbol = true` on a KEY_STRUCTURAL-interned object.
 - lower.c `rest_literal()`: `anonymous.rest_binding/rest_of_binding` after `ty_object_literal_of()` interned it.
 - lower.c `namespace_import_type()`: `anonymous.module_clone = true` (fresh in practice).

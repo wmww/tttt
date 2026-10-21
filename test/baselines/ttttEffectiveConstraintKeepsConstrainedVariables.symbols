@@ -1,0 +1,49 @@
+//// [test/cases/ttttEffectiveConstraintKeepsConstrainedVariables.ts] ////
+
+=== ttttEffectiveConstraintKeepsConstrainedVariables.ts ===
+// getEffectiveConstraintOfIntersection intersects the members' constraints without constraint reduction: the
+// intersections of its cross product are its own there, never constrained type variables, so the union keeps them all.
+// `string & K`, `number & K` and `symbol & K` made first by the reducing path (the Need<...> below) once made
+// `PropertyKey & K & ...` collapse back to the source, a spurious TS2344 (type-fest's object-merge.d.ts)
+type Need<T extends PropertyKey> = T;
+>Need : Symbol(Need, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 0, 0))
+>T : Symbol(T, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 4, 10))
+>PropertyKey : Symbol(PropertyKey, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 4, 10))
+
+type Test<First, K extends PropertyKey, J extends PropertyKey> = [
+>Test : Symbol(Test, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 4, 37))
+>First : Symbol(First, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 5, 10))
+>K : Symbol(K, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 5, 16))
+>PropertyKey : Symbol(PropertyKey, Decl(lib.es5.d.ts, --, --))
+>J : Symbol(J, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 5, 39))
+>PropertyKey : Symbol(PropertyKey, Decl(lib.es5.d.ts, --, --))
+
+    Need<string & K>, Need<number & K>, Need<symbol & K>, Need<string & J>, Need<number & J>, Need<symbol & J>,
+>Need : Symbol(Need, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 0, 0))
+>K : Symbol(K, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 5, 16))
+>Need : Symbol(Need, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 0, 0))
+>K : Symbol(K, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 5, 16))
+>Need : Symbol(Need, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 0, 0))
+>K : Symbol(K, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 5, 16))
+>Need : Symbol(Need, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 0, 0))
+>J : Symbol(J, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 5, 39))
+>Need : Symbol(Need, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 0, 0))
+>J : Symbol(J, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 5, 39))
+>Need : Symbol(Need, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 0, 0))
+>J : Symbol(J, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 5, 39))
+
+    { [P in keyof First as P extends K ? P extends J ? Need<P> : never : never]: First[P] },
+>P : Symbol(P, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 7, 7))
+>First : Symbol(First, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 5, 10))
+>P : Symbol(P, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 7, 7))
+>K : Symbol(K, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 5, 16))
+>P : Symbol(P, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 7, 7))
+>J : Symbol(J, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 5, 39))
+>Need : Symbol(Need, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 0, 0))
+>P : Symbol(P, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 7, 7))
+>First : Symbol(First, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 5, 10))
+>P : Symbol(P, Decl(ttttEffectiveConstraintKeepsConstrainedVariables.ts, 7, 7))
+
+];
+

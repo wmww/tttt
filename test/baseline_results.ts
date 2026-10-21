@@ -989,6 +989,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttEffectiveConstraintKeepsConstrainedVariables': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttElaborateAfterSpreadElement': {
         errors: true,
         symbols: true,

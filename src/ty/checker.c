@@ -1220,17 +1220,33 @@ static Ty const* make_origin(Checker* me, OriginSpec const* spec, TyList types) 
     return ret;
 }
 
+// `distinct`: an intersection made without constraint reduction, a type of its own (tsc's getIntersectionKey writes '*'
+// for IntersectionFlagsNoConstraintReduction in place of the alias). `create_xflags`: what the type gets when it's made
+// here (TYX_CONSTRAINED_TYPE_VARIABLE, which is a function of the members and so the same for whoever makes it)
+static Ty const* intern_composite_ex(
+    Checker* me, TyKind kind, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args,
+    OriginSpec const* origin, bool distinct, u32 create_xflags
+);
+
 static Ty const* intern_composite_origin(
     Checker* me, TyKind kind, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args,
     OriginSpec const* origin
 ) {
+    return intern_composite_ex(me, kind, types, len, alias, alias_args, origin, false, 0);
+}
+
+static Ty const* intern_composite_ex(
+    Checker* me, TyKind kind, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args,
+    OriginSpec const* origin, bool distinct, u32 create_xflags
+) {
+    check(!distinct || (kind == TY_INTERSECTION && !alias));
     // tsc's getUnionTypeFromSortedList: an origin is part of the identity. It goes last, after a marker no type id
     // can equal, so keys with and without one can't collide
     u32 count = 3 + alias_args.len + len + (origin ? 1 + origin->len : 0);
     u64 stack_key[64];
     u64* key = count <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * count);
     key[0] = kind == TY_UNION ? KEY_UNION : KEY_INTERSECTION;
-    key[1] = (u64)(uintptr_t)alias;
+    key[1] = distinct ? 1 : (u64)(uintptr_t)alias; // (No symbol is at address 1)
     key[2] = alias_args.len;
     // (The lists by pointer, which are as unique as ids: the type's lists are the key's, see intern_key_list(). No
     // pointer equals the marker, they're 8-byte aligned)
@@ -1275,7 +1291,7 @@ static Ty const* intern_composite_origin(
             }
         }
         Ty* ret = ty_alloc(me, kind, flags);
-        ret->xflags = xflags;
+        ret->xflags = xflags | create_xflags;
         ret->alias = alias;
         ret->alias_args = intern_key_list(slot, count, 3, alias_args.len);
         ret->composite.types = intern_key_list(slot, count, 3 + alias_args.len, len);
@@ -1436,8 +1452,7 @@ static Ty const* union_with_origin(
     bool includes_error = false, includes_non_widening = false;
     for (u32 i = 0; i < buf.len; i++) {
         includes |= buf.data[i]->flags;
-        // (Relaxed: a member intersection's TYX_CONSTRAINED_TYPE_VARIABLE may be set late, see intersection())
-        u32 xflags = __atomic_load_n(&buf.data[i]->xflags, __ATOMIC_RELAXED);
+        u32 xflags = buf.data[i]->xflags;
         xincludes |= xflags;
         if ((buf.data[i]->flags & TYF_NULLABLE) && !(xflags & TYX_CONTAINS_WIDENING)) includes_non_widening = true;
         // (An unresolved name's any too: tsc's isErrorType, IncludesError)
@@ -2096,7 +2111,8 @@ Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol c
 // could reach a declaration being resolved, a spurious TS2502)
 Ty const* ty_intersection_unaliased(Checker* me, Ty const* ty) {
     if (ty->kind != TY_INTERSECTION || !ty->alias) return ty;
-    return intern_composite(me, TY_INTERSECTION, ty->composite.types.data, ty->composite.types.len, nullptr, (TyList){0});
+    return intern_composite_ex(me, TY_INTERSECTION, ty->composite.types.data, ty->composite.types.len, nullptr, (TyList){0},
+        nullptr, false, ty->xflags & TYX_CONSTRAINED_TYPE_VARIABLE);
 }
 
 // Whether tsc's getTypeWithThisArgument(t, this, needApparentType) makes a member of an intersection anew: a class or
@@ -2293,9 +2309,9 @@ static Ty const* compute_type_variable_reduction(Checker* me, Ty const* variable
     return nullptr;
 }
 
-// TYX_CONSTRAINED_TYPE_VARIABLE, which intersection() may set on a published intersection
+// TYX_CONSTRAINED_TYPE_VARIABLE, set when intersection() makes the intersection (never later)
 static inline bool constrained_type_variable(Ty const* t) {
-    return __atomic_load_n(&t->xflags, __ATOMIC_RELAXED) & TYX_CONSTRAINED_TYPE_VARIABLE;
+    return t->xflags & TYX_CONSTRAINED_TYPE_VARIABLE;
 }
 
 // tsc's removeConstrainedTypeVariables: `(T & "a") | (T & "b")` with `T extends "a" | "b"` is T. `types` is sorted
@@ -2636,14 +2652,12 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
             if (reduced) {
                 ret = reduced;
             } else {
-                ret = intern_composite(me, TY_INTERSECTION, buf.data, out, alias, alias_args);
-                // (Also on an intersection another path made first, which lacks it until one that reduces gets here:
-                // a write to a published type, history-like the way K1's order is. An atomic OR of a bit that only goes
-                // on, read relaxed by remove_constrained_type_variables(); the other readers of xflags look at other
-                // bits, which never change after construction)
-                if (constrained && !(__atomic_load_n(&ret->xflags, __ATOMIC_RELAXED) & TYX_CONSTRAINED_TYPE_VARIABLE)) {
-                    __atomic_or_fetch(&((Ty*)ret)->xflags, TYX_CONSTRAINED_TYPE_VARIABLE, __ATOMIC_RELAXED);
-                }
+                // (tsc's: a constrained type variable is one when it's made, and one made without constraint
+                // reduction is a type of its own that never is. Setting the flag on whichever one was made first, as
+                // tttt did, was a write after publication whose effect was history: type-fest object-merge.d.ts's
+                // TS2344, ttttEffectiveConstraintKeepsConstrainedVariables)
+                ret = intern_composite_ex(me, TY_INTERSECTION, buf.data, out, alias, alias_args, nullptr, inherited != 0,
+                    constrained ? TYX_CONSTRAINED_TYPE_VARIABLE : 0);
             }
         }
     }
