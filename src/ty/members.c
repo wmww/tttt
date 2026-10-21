@@ -107,6 +107,7 @@ static TyObjectState* object_state(Ty const* ty);
 typedef struct MembersClaim {
     Claim claim;
     Members const* early;
+    uint8_t base_cycle; // The flags resolve_declared_members() found so far (MembersRare.base_cycle once published)
 } MembersClaim;
 
 static MembersClaim* members_claim_of(Checker* me, TyObjectState const* state) {
@@ -1255,12 +1256,52 @@ bool ty_base_constructors_fit(Checker* me, Ty const* constructor, u32 count, boo
 // (SymbolLinks.base_cycle; BASE_CYCLE_CONSTRUCTOR: the class's `extends` expression needed the class, see class_base())
 enum { BASE_CYCLE_KNOWN = 1, BASE_CYCLE_IN_CYCLE = 2, BASE_CYCLE_REENTERED = 4, BASE_CYCLE_CONSTRUCTOR = 8 };
 enum { BASE_CYCLE_WORD_FOUND = 4 }; // (SymbolLinks.interface_cycle's value for a cycle: above SW_NONE)
-// (Atomic: set while another worker may read them, plan 86 stage 4f's TSan A; see SymbolLinks.base_cycle)
-static inline unsigned base_cycle_flags(SymbolLinks const* links) {
-    return __atomic_load_n(&links->base_cycle, __ATOMIC_ACQUIRE);
+// A reference's arguments for a test that would otherwise only look at known ones (rule 5 of plan 86 4f: a done-ness
+// peek that selects between results is a read of in-flight state): computed unless in flight here, which is unknown
+// (an in-flight read, a taint event)
+static bool reference_args_available(Checker* me, Ty const* reference) {
+    if (ty_reference_args_known(me, reference)) return true;
+    TyDeferredRef const* deferred = reference->reference.deferred;
+    if (TAINT_IF(TAINT_IN_FLIGHT_OTHER, sw_mine_in_flight(me, &deferred->args, &deferred->state))) return false;
+    ty_reference_args(me, reference);
+    return true;
 }
-static inline void base_cycle_set(SymbolLinks* links, unsigned flags) {
-    __atomic_fetch_or(&links->base_cycle, (uint8_t)flags, __ATOMIC_RELEASE);
+
+// The state whose members resolve_declared_members() makes: the raw one if the declared type has it
+static TyObjectState* declared_cycle_state(Ty const* declared) {
+    return declared->declared.raw ? declared->declared.raw : object_state(declared);
+}
+
+// The BASE_CYCLE_* flags of a declared type's members as this worker knows them: the published (or its own private)
+// raw Members', or while it resolves them, its claim's (what was a SymbolLinks byte, plan 86 4f: a value's flags belong
+// in the value)
+static unsigned declared_base_cycle(Checker* me, Ty const* declared) {
+    TyObjectState* state = declared_cycle_state(declared);
+    if (!state) return 0;
+    Members const* members = ty_members_peek(me, state);
+    if (members) return members_rare(members)->base_cycle;
+    MembersClaim* claim = members_mine_in_flight(me, state) ? members_claim_of(me, state) : nullptr;
+    return claim ? claim->base_cycle : 0;
+}
+
+// Found during the declared type's members' resolution: noted on its claim, and put into the members when they're made
+static void declared_base_cycle_note(Checker* me, Ty const* declared, unsigned flags) {
+    TyObjectState* state = declared_cycle_state(declared);
+    MembersClaim* claim = state ? members_claim_of(me, state) : nullptr;
+    if (claim) claim->base_cycle |= (uint8_t)flags;
+}
+
+// The flags noted while the declared type's members were resolved, into the members being made (before publication)
+static void declared_base_cycle_keep(Checker* me, Ty const* declared, Members const* members) {
+    TyObjectState* state = declared_cycle_state(declared);
+    MembersClaim* claim = state ? members_claim_of(me, state) : nullptr;
+    if (claim && claim->base_cycle) members_rare_mut(me, (Members*)members)->base_cycle |= claim->base_cycle;
+}
+
+enum { BASE_CONSTRUCTOR_CYCLIC = 3 };
+static bool base_constructor_cyclic(Checker* me, SymbolLinks const* links) {
+    uintptr_t v = my graph ? sw_peek(me, &links->base_constructor_cycle) : sw_load(&links->base_constructor_cycle);
+    return v == BASE_CONSTRUCTOR_CYCLIC;
 }
 
 // An object type, `object`, a type parameter constrained to one or an intersection of them (tsc's isValidBaseType).
@@ -1326,17 +1367,20 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
         // (Under tsc's pushTypeResolution(ResolvedBaseConstructorType): an expression that needs the class's bases is
         // circular, TS2506, and the class has no base)
         SymbolLinks* links = class_decl->symbol ? ty_symbol_links(me, class_decl->symbol) : nullptr;
-        if (links && (base_cycle_flags(links) & BASE_CYCLE_CONSTRUCTOR)) return false;
+        if (links && base_constructor_cyclic(me, links)) return false;
         if (ty_resolving_find(me, RESOLVING_BASE_CONSTRUCTOR, class_decl)) {
             ty_resolving_cycle(me, RESOLVING_BASE_CONSTRUCTOR, class_decl);
             return false;
         }
+        u64 taint = graph_taint_now;
         ty_resolving_push(me, RESOLVING_BASE_CONSTRUCTOR, class_decl);
         my base_constructors_in_flight++;
         Ty const* expr_type = ty_expr_type(me, extends);
         my base_constructors_in_flight--;
         if (ty_resolving_pop(me) && links) {
-            base_cycle_set(links, BASE_CYCLE_CONSTRUCTOR);
+            // (Its own word, found under a cycle: with a graph sw_finish() keeps it this worker's)
+            if (my graph) sw_finish(me, &links->base_constructor_cycle, &links->base_constructor_flight, BASE_CONSTRUCTOR_CYCLIC, taint);
+            else __atomic_store_n(&links->base_constructor_cycle.v, (uintptr_t)BASE_CONSTRUCTOR_CYCLIC, __ATOMIC_RELEASE);
             return false;
         }
         Ty const* constructor = ty_apparent_type(me, expr_type);
@@ -2801,21 +2845,22 @@ bool ty_bases_reentered(Checker* me, Symbol const* symbol) {
     Ty const* declared = ty_declared_type_of(me, symbol);
     if (declared->kind != TY_DECLARED) return false;
     ty_members(me, declared);
-    return base_cycle_flags(ty_symbol_links(me, symbol)) & BASE_CYCLE_REENTERED;
+    return declared_base_cycle(me, declared) & BASE_CYCLE_REENTERED;
 }
 
 bool ty_class_base_constructor_circular(Checker* me, ClassDecl const* class_decl) {
     if (!class_decl->symbol) return false;
     Ty const* declared = ty_declared_type_of(me, class_decl->symbol);
     if (declared->kind == TY_DECLARED) ty_members(me, declared);
-    return base_cycle_flags(ty_symbol_links(me, class_decl->symbol)) & BASE_CYCLE_CONSTRUCTOR;
+    return base_constructor_cyclic(me, ty_symbol_links(me, class_decl->symbol));
 }
 
 static bool interface_walk_finds_cycle(Checker* me, Symbol const* symbol);
 // (The walk is a shared word, plan 86 stage 4f; what its members' resolution found, a flag)
 bool ty_interface_in_base_cycle(Checker* me, Symbol const* symbol) {
     SymbolLinks* links = ty_symbol_links(me, symbol);
-    if (base_cycle_flags(links) & BASE_CYCLE_IN_CYCLE) return true;
+    Ty const* declared = ty_declared_type_of(me, symbol);
+    if (declared->kind == TY_DECLARED && (declared_base_cycle(me, declared) & BASE_CYCLE_IN_CYCLE)) return true;
     uintptr_t v = sw_get(me, &links->interface_cycle);
     if (!v) {
         switch (sw_look(me, &links->interface_cycle, &links->interface_cycle_state, &v)) {
@@ -2828,7 +2873,7 @@ bool ty_interface_in_base_cycle(Checker* me, Symbol const* symbol) {
             }   break;
         }
     }
-    return v == BASE_CYCLE_WORD_FOUND || (base_cycle_flags(links) & BASE_CYCLE_IN_CYCLE);
+    return v == BASE_CYCLE_WORD_FOUND || (declared->kind == TY_DECLARED && (declared_base_cycle(me, declared) & BASE_CYCLE_IN_CYCLE));
 }
 
 static bool interface_walk_finds_cycle(Checker* me, Symbol const* symbol) {
@@ -3153,7 +3198,7 @@ static bool mentions_declared(Checker* me, Ty const* ty, Ty const* declared, u32
         case TY_DECLARED: return ty == declared && depth >= 2;
         case TY_REFERENCE:
             if (ty->reference.target == declared && depth >= 2) return true;
-            if (ty_reference_args_known(me, ty)) {
+            if (reference_args_available(me, ty)) {
                 TyList args = ty_reference_args(me, ty);
                 for (u32 i = 0; i < args.len; i++) {
                     if (mentions_declared(me, args.data[i], declared, depth + 1)) return true;
@@ -3311,9 +3356,9 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 }
                 // (Bases that lead back are a cycle tsc finds elsewhere: TS2506 in getBaseConstructorTypeOfClass, or
                 // the interfaces' own TS2310, see ty_interface_in_base_cycle())
-                if ((base_cycle_flags(links) & BASE_CYCLE_CONSTRUCTOR) && !bases.len) base_cycle_set(links, BASE_CYCLE_REENTERED);
-                else if (kept < bases.len || !bases.len) base_cycle_set(links, BASE_CYCLE_KNOWN | BASE_CYCLE_IN_CYCLE);
-                else base_cycle_set(links, BASE_CYCLE_REENTERED);
+                if (base_constructor_cyclic(me, links) && !bases.len) declared_base_cycle_note(me, ty, BASE_CYCLE_REENTERED);
+                else if (kept < bases.len || !bases.len) declared_base_cycle_note(me, ty, BASE_CYCLE_KNOWN | BASE_CYCLE_IN_CYCLE);
+                else declared_base_cycle_note(me, ty, BASE_CYCLE_REENTERED);
                 bases.len = kept;
                 written_bases.len = kept;
             }
@@ -3345,6 +3390,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 rare->base_count = bases.len;
                 set_eager_bases(me, ret, &eager);
                 if (recursive_bases) members_rare_mut(me, ret)->recursive_bases = true;
+                declared_base_cycle_keep(me, ty, ret);
                 ty_buf_drop(&bases);
                 ty_buf_drop(&written_bases);
                 return ret;
@@ -3369,6 +3415,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             Members const* ret = builder_finish(me, &builder);
             set_eager_bases(me, (Members*)ret, &eager);
             if (recursive_bases) members_rare_mut(me, (Members*)ret)->recursive_bases = true;
+            declared_base_cycle_keep(me, ty, ret);
             if (thisless.len) {
                 Signature const** list = arena_new_n(&my arena, Signature const*, thisless.len + 1);
                 memcpy(list, thisless.data, sizeof(Signature const*) * thisless.len);
@@ -3616,7 +3663,7 @@ static bool same_reference_members(Checker* me, Ty const* a, Ty const* b) {
     if (a->kind != TY_REFERENCE || b->kind != TY_REFERENCE || a->reference.target != b->reference.target) return false;
     if (!a->reference.deferred == !b->reference.deferred) return false;
     Ty const* deferred = a->reference.deferred ? a : b;
-    if (!ty_reference_args_known(me, deferred)) return false;
+    if (!reference_args_available(me, deferred)) return false;
     TyList x = ty_reference_args(me, a), y = ty_reference_args(me, b);
     return x.len == y.len && !memcmp(x.data, y.data, sizeof(Ty const*) * x.len);
 }
@@ -3684,7 +3731,7 @@ static bool mentions_members_in_flight(Checker* me, Ty const* ty, u32 depth) {
                 return true;
             }
             // (A deferred reference's arguments once they are resolved)
-            if (ty->kind == TY_REFERENCE && ty_reference_args_known(me, ty)) {
+            if (ty->kind == TY_REFERENCE && reference_args_available(me, ty)) {
                 TyList args = ty_reference_args(me, ty);
                 for (u32 i = 0; i < args.len; i++) {
                     if (mentions_members_in_flight(me, args.data[i], depth + 1)) return true;
@@ -5490,10 +5537,13 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
         // (tsc's getTypeOfMappedSymbol sets containsError where pushTypeResolution fails, before it reports)
         if (mapped_type && (mapped_type->flags & TYF_OBJECT)) {
             Members const* expanded = ty_members(me, mapped_type);
-            // (A write to published members: a flag that only ever goes on, atomically. History-like: printing after
-            // the cycle shows the mapped syntax, before it doesn't, which is K1's order already)
+            // (A word of the published members' late rare part (its own word too): found under a cycle, so with a graph
+            // this worker's own. History-like: printing after the cycle shows the mapped syntax, before it doesn't,
+            // which is K1's order already)
             if (members_rare(expanded)->expanded_from) {
-                __atomic_store_n(&members_rare_published(me, expanded)->contains_error, true, __ATOMIC_RELAXED);
+                MembersRare* rare = members_rare_published(me, expanded);
+                if (my graph) sw_finish(me, &rare->contains_error, &rare->contains_error_flight, MEMBERS_CONTAINS_ERROR, taint);
+                else __atomic_store_n(&rare->contains_error.v, (uintptr_t)MEMBERS_CONTAINS_ERROR, __ATOMIC_RELEASE);
             }
         }
         cstr mapped = ty_to_cstr(me, mapped_type);
@@ -5517,6 +5567,11 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
     type = SW_PTR(sw_finish_fast(me, &prop->type, &prop->type_flight, SW_VAL(type), taint));
     if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_PROP_TYPE, prop, prop, type);
     return type;
+}
+
+bool ty_members_contain_error(Checker* me, Members const* members) {
+    SharedWord const* w = &members_rare(members)->contains_error;
+    return (my graph ? sw_peek(me, w) : sw_load(w)) == MEMBERS_CONTAINS_ERROR;
 }
 
 TypeNode const* prop_decl_asserted_slow(PropDecl const* decl) {

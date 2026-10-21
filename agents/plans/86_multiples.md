@@ -1513,11 +1513,25 @@ in parallel only where the file sets are disjoint):
       object literal's property-type peek is a taint event. The return type's peek stays: inferring it there changes the
       default path (a suite test, and excalidraw's output, when the return type was forced). It becomes a taint event
       with the held return-type commit, whose line it is (the gates ran with it as one).
-    - **SymbolLinks.base_cycle** (P3's hack): REENTERED and IN_CYCLE are set by a declared type's raw members
-      resolution, CONSTRUCTOR by class_base(), which more than that resolution calls (the static side, the base
-      instance, a mixin's check). REENTERED and IN_CYCLE can move into the raw Members (MembersRare, set before
-      publication, read through declared_raw_members()); CONSTRUCTOR wants a word of its own (class_base()'s cycle
-      result per class). Not done in this session.
+    - **SymbolLinks.base_cycle is gone** (P3's hack): REENTERED and IN_CYCLE, which a declared type's members'
+      resolution finds, are MembersRare.base_cycle of the members resolve_declared_members() makes (set before
+      publication; while they are in flight, on the worker's MembersClaim), read by declared_base_cycle(). CONSTRUCTOR,
+      which class_base() finds from more than that resolution (the static side, the base instance, a mixin's check),
+      is a word of its own, SymbolLinks.base_constructor_cycle (found under a cycle, so with a graph each worker's own).
+    - **MembersRare.contains_error** (TS2615's mapped-syntax flag, written into published members) is a word,
+      settled with the property type's taint (always a cycle, so private with a graph). The late-attached rare part
+      itself (members_rare_published()) and MembersRare.by_name_order stay first-wins CASes: write-once words in
+      effect, of a value or a pure function of the members, so no taint applies.
+    - **Deferred reference arguments' peeks** (P2's leftovers in members.c: mentions_declared(), the eager-base
+      probe's mentions_members_in_flight(), the same-arguments test): rule 5, they selected between results. They
+      compute the arguments now unless in flight here, which is unknown and a taint event (reference_args_available()).
+      The default path doesn't move (suite, five corpora).
+    - **The seeded scheduler**: sw_claim() is a scheduling point (as lazy_claim_slow() was). Seeds from before that
+      commit aren't comparable with seeds after it. With it, effect shows the TS7006 residue on 2 of 100 seeds, drizzle
+      on none.
+    - **Natural shadowing**: nest shadowed 11 times over 20 K12 runs with the members group in, the first natural
+      shadowing seen (drizzle 0, zod 0, effect 1, excalidraw 0). This bears on step D's lever of retiring a shadowed
+      worker at once.
   - **P2, checker.c + lower.c + function.c + instantiate.c** (reduced, cond branches, declared types, reference args,
     implied constraints, function returns, ty_alloc and the directory's chunk slots (lazy_type.c's lazy_slots_*),
     order keys, literal twins: TSan C). ~1-2 sessions.

@@ -5756,7 +5756,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         return;
     }
     // (One whose property's type needed itself, as a mapped type too: tsc's createAnonymousTypeNode, containsError)
-    if (__atomic_load_n(&members_rare(members)->contains_error, __ATOMIC_RELAXED) && members_rare(members)->expanded_from) {
+    if (ty_members_contain_error(me, members) && members_rare(members)->expanded_from) {
         display_mapped(me, d, members_rare(members)->expanded_from);
         return;
     }

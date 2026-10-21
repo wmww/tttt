@@ -899,8 +899,10 @@ typedef struct MembersRare {
     // of an intersection, expand_generic_intersection_homomorphic()): what it seems to lack isn't reported missing
     bool index_signatures_incomplete;
     // A mapped type (expanded_from) one of whose properties' types needed itself (TS2615, tsc's containsError): it
-    // prints in mapped syntax
-    bool contains_error;
+    // prints in mapped syntax. A shared word, MEMBERS_CONTAINS_ERROR once found (always under a cycle: with a graph
+    // each worker's own), ty_members_contain_error()
+    SharedWord contains_error;
+    uint8_t contains_error_flight; // (Its default-path byte: never in flight)
     // Only in the raw members of a class or interface (declared_raw_members()) with a base whose members depend on the
     // type arguments (`interface I<T extends object> extends T`, or extending such a type): the bases, in order, with
     // the `this` type as this-argument. The members above are then only the type's own, and whoever instantiates or
@@ -915,6 +917,9 @@ typedef struct MembersRare {
     // Only in the raw members of a class or interface: a base's type arguments mention the type itself (zod's
     // `interface ZodJSONSchema extends _ZodJSONSchema`, `type _ZodJSONSchema = ZodUnion<[..., ZodArray<ZodJSONSchema>]>`):
     // what an eager base's instantiation can get back to (see mentions_members_in_flight())
+    // BASE_CYCLE_* flags its resolution found (members.c resolve_declared_members()): a declared type's members'
+    // bases led back to it. Set before the members are published; while they are in flight, in the MembersClaim
+    uint8_t base_cycle;
     bool recursive_bases;
     // Members of more than 8 properties with distinct names that were instantiated (members_by_name_order()): the
     // index in props of each of props_by_name, which an instantiation's props (the same names in the same order) take.
@@ -964,9 +969,11 @@ typedef struct SymbolLinks {
     // SYMBOL_DECLARED_CIRCULAR for a type alias whose resolution reached itself (TS2456 when it finishes)
     SharedWord declared;
     Ty const* static_type; // See ty_static_type_of()
-    // BASE_CYCLE_* flags set by its members' resolution (members.c), atomic ORs. HACK (plan 86 stage 4f): bits set on a
-    // shared record by a computation of another value (the members); they belong in that value (hacks.md)
-    uint8_t base_cycle;
+    // A class's `extends` expression needed the class (TS2506, class_base()): a shared word, BASE_CONSTRUCTOR_CYCLIC once
+    // found (always under a cycle, so with a graph each worker's own). The other base-cycle flags are in the declared
+    // type's raw Members (MembersRare.base_cycle)
+    uint8_t base_constructor_flight;
+    SharedWord base_constructor_cycle;
     uint8_t interface_cycle_state; // (S0's default-path in-flight byte for interface_cycle)
     // ty_interface_in_base_cycle()'s walk of an interface's bases: SW_NONE none, BASE_CYCLE_WORD_FOUND a cycle
     SharedWord interface_cycle;
@@ -1897,6 +1904,8 @@ static inline Members const* ty_members_peek(Checker* me, TyObjectState const* s
     uintptr_t v = me->graph ? sw_peek(me, &state->members) : __atomic_load_n(&state->members.v, __ATOMIC_RELAXED);
     return (Members const*)v;
 }
+enum { MEMBERS_CONTAINS_ERROR = 3 };
+bool ty_members_contain_error(Checker* me, Members const* members); // MembersRare.contains_error
 // A fresh object type's members, known from the start
 static inline void ty_members_init(TyObjectState* state, Members const* members) {
     __atomic_store_n(&state->members.v, (uintptr_t)members, __ATOMIC_RELAXED);

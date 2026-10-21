@@ -402,7 +402,7 @@ static u64 fp_members(Members const* members) {
         h = M(h, fp_ty(members->mapped->name_type));
     }
     MembersRare const* rare = members_rare(members);
-    h = M(h, rare->generic_keys_known | rare->index_signatures_incomplete << 1 | rare->contains_error << 2 |
+    h = M(h, rare->generic_keys_known | rare->index_signatures_incomplete << 1 | (sw_load(&rare->contains_error) == MEMBERS_CONTAINS_ERROR) << 2 |
         rare->recursive_bases << 3 | (u64)rare->base_count << 8 | (u64)rare->eager_base_count << 24);
     for (u32 i = 0; i < rare->base_count; i++) h = M(h, fp_ty(rare->bases[i]));
     return h;

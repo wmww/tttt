@@ -454,12 +454,9 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   KEY_PROP_MAPPED_TYPE), more may hide behind a flag on a shared struct (KEY_ALIAS_MARKER is history: published
   at creation it changed excalidraw at K12 threads; a memo kind until plan 86 4f P3 made it scratch, each checker's
   own marker instances, once poisoned variance groups are measured by every worker).
-  Prop.write_type_known is a bitfield set (read-modify-write of its byte) on a published property: only that bit
-  changes after construction, so concurrent setters agree. SymbolLinks.base_cycle is a flag byte that members'
-  resolution (resolve_members_with_this()'s base cycle, class_base()'s constructor cycle) ORs bits into on a shared
-  record, atomically since plan 86 4f P3 (base_cycle_set()): against the 4f rule (nothing written on a shared object but
-  words), the bits belong in the members' value (P1's Members.rare); a tainted members computation's bits are seen
-  by everyone. ty_interface_in_base_cycle()'s own walk is a word (SymbolLinks.interface_cycle). TSan with the flag is far from clean: `scripts/sharedgraph/tsan.sh` found ~55 distinct report groups
+  (Prop.write_type_known and SymbolLinks.base_cycle are gone, plan 86 4f P1: a KEY_PROP_WRITE_TYPE entry's presence,
+  MembersRare.base_cycle with SymbolLinks.base_constructor_cycle.) ty_interface_in_base_cycle()'s own walk is a word
+  (SymbolLinks.interface_cycle). TSan with the flag is far from clean: `scripts/sharedgraph/tsan.sh` found ~55 distinct report groups
   over the 14 `-p` corpora at T4/T12 (2026-10-21; the list is plan 86 4e item 1's "Stage 4f gates"), most of them
   lazy fields on shared types read plainly beside another worker's write. graph_kind_class() puts KEY_FLOW_NARROWED /
   KEY_FLOW_DISCRIMINANT (census: SHARE) with the scratch kinds, and treats identity records (SymbolLinks,
