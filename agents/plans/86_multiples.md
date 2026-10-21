@@ -970,6 +970,23 @@ every `-p` corpus, 20-run tables on the four, no default-path cost until the fla
    The recheck-in-the-finished-graph and per-file trace comparison (TTTT_SHADOW) were scratch patches, not kept: the
    recipe is to check every file again with one fresh checker after the workers join and diff its errors per file
    against the first check's (by span.file over the share's whole ErrorCtx, not the tail).
+   **Stage 4f gates (worker "tooling", 2026-10-21; scripts/sharedgraph/README.md has the usage).** Regression gates
+   that find violations of the publish rule, not the correctness argument. (1) `tsan.sh`: TSan on every `-p` corpus
+   at T4/T12 under the flag, one line per run, exit 1 on any report. First run (de94e1179): every output K1's, no run
+   clean, 57 groups (inventory with stacks and guesses: `$SG_OUT/tsan-groups-de94e1179.txt`, default
+   /tmp/tttt-sharedgraph, not committed). Categories: A, one lazily written field accessed both atomically and plainly
+   (TyParamState.circular in ty_param_constraint(), the biggest at 20 of 28 runs; TyParamState.item, signature
+   predicates, reference args, SymbolLinks.base_cycle); B, bitfield read-modify-writes on published objects
+   (Prop.write_type_known against every read of its neighbours; LazyMemo.done of declaration memos, which
+   graph_memo_take() reads without the lock, fences only); C, fresh objects reached by another worker before their
+   initializing stores are visible to it (ty_alloc()'s fields, TyObjectState, fresh-literal twins, order keys, the type
+   directory's chunk slots: a publication path without a release/acquire pair); D, structs copied while written
+   (ty_mapped_info_instantiate()'s `*mapped = *source` against template_ and the unexpanded members being built); E,
+   data mutated in place after publication (ty_function_type_mentions() into members and signatures,
+   ty_function_type() still initializing a type another worker resolves the members of); F, four trivial ones, fixed
+   (1519287bb). (2) The recheck, `TTTT_GRAPH_RECHECK=1|private` (program.c graph_recheck(), rep3.sh counts it): every
+   file checked again by one fresh checker after the join, in the finished graph or privately, per-file errors
+   compared, the first differing file printed with both lists.
 2. **Shared relation cache (2 sessions)**, as designed below. Gate as there; excalidraw's K12 pairs within 5% of K1.
    **Done (2026-10-21).** recursive_related(): after the private cache and the maybe stack, a pair the private cache
    doesn't have is looked up in the graph's table for its relation kind (graph_relation_get(), SharedLinks keyed like
