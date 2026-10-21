@@ -8,8 +8,7 @@ goes into plans or triage.md. Every entry ends with `scripts/fasttest.sh -s`, th
 starts (`npm view typescript dist-tags`; on 2026-10-22 `latest` was 7.0.2, `next` 7.1.0-dev, `beta` 7.1.0-beta), do plan
 58 (the re-pin) first, then plan 66 stage 5**, and push the rest down. `claude-stop` is gitignored: never commit it.
 
-Starting point: the end-state totals in ORACLE-TOTALS-PLACEHOLDER (measurements.md "Oracle totals"); suite 13972 / 14006
-as saved. Instructions: `test/instrcount.txt` is at a recycle-free K1 now (the memory default), so a jump against it
+Starting point: the end-state totals in measurements.md "Oracle totals (2026-10-22 ...)" (suite 13972 / 14006). Instructions: `test/instrcount.txt` is at a recycle-free K1 now (the memory default), so a jump against it
 needs attribution first.
 
 **The next coordinator's whole briefing is `agents/plans/91_next_coordinator.md`.** Order:

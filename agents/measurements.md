@@ -497,6 +497,20 @@ claim_and_measure() is gone (not just off). Base = de94e1179 (lock on, stamps of
   (lock) 0.417 / 0.439: the lock's +54% is gone and the flag now beats the defaults. Effect defaults 0.267 / 0.271,
   flag 0.293 / 0.297, base flag 0.281 / 0.286: effect is still +10% over the defaults (it was +17% at G2).
 
+## Oracle totals (2026-10-22: the merger's final run of the third coordinator session, 8a2bb4b38)
+The merger's full `scripts/oracles.py` at ai-main 8a2bb4b38; box load ~20, so perfsweep's times are inflated. Suite 13972 /
+14006 (dts 1888 / 1910; `--no-defer-bodies` 13972; `--checker-memory 0`: 0 of 17643 differ), every corpus 0/0 but vue
+0/2, DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 18 / 3 / 2, source sweep `--sample 4` 1272 / 1274, `-b` sweep
+411 / 416, dtsdiff 1328 / 1350 projects (105145 / 106222 files, +7 as tsgo `--singleThreaded`), clidiff 3824 / 3831
+(text 1: apollo vite; diagnostics 6), kdiff 3 / 3814 and recycle 3 / 3814 (rxjs, sequelize x2: tsgo-shared), perfsweep
+worst types ratio 1.40 (lit tsserver-plugin), median check ratio 0.29 under load. With `TTTT_SHARED_GRAPH=1`:
+checkerdiff drizzle/zod identical, TSan drizzle T4 + T12 clean.
+**Instructions** (PGO, `test/instrcount.txt` saved at 9f979e91c, now at a recycle-free K1: the memory default alone is
+-11.9% drizzle / -6.2% zod of these), session start -> end: nest 0.942 -> 0.932 G (-1.1%), drizzle 5.548 -> 4.601
+(-17.1%), zod 4.204 -> 3.731 (-11.3%), effect 8.069 -> 7.449 (-7.7%), tsc 3.865 -> 3.709 (-4.0%); against the previous
+save: vscode 76.85 -> 68.45 (-10.9%), excalidraw -11.0%, tanstack-router -7.5%, xstate -6.1%, type-fest -5.4%, vue
+-5.2%, valibot -5.1%, webpack -3.3%, react -2.5%.
+
 ## Oracle totals (2026-10-23: the merger's last full `scripts/oracles.py` runs, 2026-10-21/22, plain at 9032ae214 and 8d693aeb5)
 Suite 13962 / 13996 (dts 1887 / 1909; `scripts/passcount.py`), `--no-defer-bodies` and `--checker-memory 0` unchanged,
 every corpus 0/0 but vue 0/2, DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 18 / 3 / 2, source sweep `--sample

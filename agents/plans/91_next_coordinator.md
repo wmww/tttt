@@ -50,7 +50,7 @@ graph only with a genuinely new insight; parallel workers are fine, waste is not
   literal type text escaping. Confirmed tsgo artifacts, recorded in bugs/tsgo_divergences.md: vue's two TS7006 (the
   TS5115 runaway), the three kdiff projects (rxjs too: tsgo K1 vs K16 differ the same way), es-toolkit, monkeytype's
   TS2589, all 5 `-b` sweep failures, the flagflip tail.
-- **Oracle totals at the end state:** ORACLE-TOTALS-PLACEHOLDER (the coordinator sends the line; the merger's final run; also goes into measurements.md "Oracle totals").
+- **Oracle totals at the end state:** measurements.md "Oracle totals (2026-10-22: the merger's final run of the third coordinator session, 8a2bb4b38)" (suite 13972 / 14006, every other oracle as on 2026-10-23 but dtsdiff 1328 / 1350).
 
 ## 2. What the numbers say about the next 1.5x on vscode
 This box (16 vCPUs) at the session's end: vscode defaults wall ~2.3 s = front end ~0.4 (floor ~0.25) + typecheck ~1.9
