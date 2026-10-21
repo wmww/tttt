@@ -21,10 +21,25 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   written file). Anything that drops or mutates `SourceFile.contents` must check `text_mapping` first. Correct: a
   `csview` text field. Oracle: the corpora and sweeps (the harness's mock fs never maps).
 - `check_share()` / `checker_memory()` (program.c, ty/checker.c): checker recycling assumes no diagnostic depends on a
-  checker's history; false in a few places (undefinedProperties member order: 4 vscode `.d.ts`; bugs/sourcesweep_checker.md
-  "History dependences recycling exposes"). `checker_memory()` leaves out LazyMemo pages (real memory the budget doesn't
+  checker's history; false in a few places (bugs/sourcesweep_checker.md "History dependences recycling exposes"; the
+  undefinedProperties member order was one until 2026-10-21). `checker_memory()` leaves out LazyMemo pages (real memory the budget doesn't
   see), and the 256 MB budget (96 MB per-checker floor, `CHECKER_MEMORY_FLOOR`) is a wall-time compromise. Correct: no history dependence. Oracle:
   `scripts/kdiff.py -k 1 -m 0`.
+- `undefined_choice()` / `recheck_stale_undefined_props()` (ty/members.c, program.c; ty.h's UndefinedProps): the
+  `?: undefined` member's declaration is chosen program-wide while checking (first in declaration order, check-phase
+  candidates before emit-only ones), so a print can show a choice a later candidate replaces; prints are recorded
+  (`ty_undefined_prop_observed()` in display_structure) and such files are checked again at the end in a private
+  checker (outside --shared-graph's graph). Holes: (1) staleness is told by the printed member's first span start, so
+  a copy with spans of its own (an instantiation) isn't recorded as stale; (2) only prints are tracked, not the member
+  order's other effects (which property a relation's elaboration fails at first); (3) "an incarnation emits only after
+  its checks" (what makes the check/emit phase history-independent) doesn't hold under --shared-graph, where a worker's
+  check can read a widened type another's emit published; (4) the choice keeps its item only where declaration emit
+  prints from it (an empty object literal, `p?: {}`), and pins that deferred body's file (`DeferredBodies.pinned`);
+  (5) the recheck drops a file's diagnostics by location, assuming a file's check reports only in that file (what K
+  independence relies on anyway); (6) `TTTT_DEBUG_UNDEFINED_PROPS=all` once saw extra TS6133/TS6138 in two unrechecked
+  vscode files at K12 with --shared-graph (1 of 10 graph runs, not reproduced; plain-graph runs clean): unexplained.
+  Correct: candidates known before checking (a pre-pass can't: they're the checker's). Oracle: dtsdiff -f vscode at
+  K1/K12/`-m 0`, `TTTT_DEBUG_UNDEFINED_PROPS=all` against a plain run.
 - `current_checker` / `current_lazy_slots` / `compiler_options()` (thread locals, `checker_make_current`): how the AST
   side (`*_typecheck`, `*_evaluate_type`, `ty_of_node`) finds its checker; left set after `program_typecheck` for the
   test traversal. Correct: a passed check context (checker + errs + options). Many parsed options are inert (`grep -o
@@ -663,7 +678,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   `builder_add_assignment_members()` and enum members append spans to the checker's `Prop` for it), `module.exports`'s
   `exports` member (span override in the traversal's `EXPR_PROPERTY` case), `append_decl()` sniffing a JSDoc typedef's
   dotted name / tag Decl trivia from the text, `symbol_declaration_spans()` dropping a JSDoc namespace declaration at
-  another's start, `KEY_UNDEFINED_PROPERTY` (members.c, declaration spans only).
+  another's start, a `?: undefined` member's spans (the program-wide choice's, members.c's `undefined_choice()`).
 - Member-table merges rebuilt in the harness only (the checker doesn't merge): `class_prop_declarations()` (field +
   parameter property/interface member), `register_type_parameter_member_merges()` (`BaselineTestCase.merged_declarations`,
   registered when the class is walked: an earlier use misses it), `baseline_symbol_declaration_spans()` (namespace local

@@ -178,8 +178,8 @@ places that trade an acquire load for ~1% ("formally a race, x86 saves us": `ty_
    the corpora where bun led (vscode, drizzle, nest). Only then flip the default and rewrite the defaults' policy.
 5. **Standing items, lower priority, fillers for free worker slots**: plan 58 (re-pin to TypeScript 7.1.0 stable when
    `npm view typescript dist-tags` shows it: do it first, ahead of everything, then plan 66 stage 5); the plain-path
-   dtsdiff history dependence (vscode's `?: undefined` property order: `KEY_UNDEFINED_PROPERTY` picks the first
-   property by need, recycling resets it; choose by declaration order instead); `bugs/sourcesweep_checker.md`'s
+   dtsdiff history dependence (vscode's `?: undefined` property order: done 2026-10-21, bugs/dts_emit.md "Member
+   order"); `bugs/sourcesweep_checker.md`'s
    cheapest items (real-code correctness); the front end's wall checks on the laptop (`TTTT_LOAD_POOL_STATS=1`,
    `TTTT_RESOLVE_TIMES=1` on vscode) to decide the import pre-scan (plan 86 stage 3 says how); the effect TS2769 stress
    miss and any other residue, which the by-construction design should make moot (verify, don't chase).

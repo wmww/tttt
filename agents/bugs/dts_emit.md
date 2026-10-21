@@ -41,25 +41,26 @@ size on real code, each with an example:
   isDeclarationContainedBy offset quirk of mixins): tsgo sorts every resolved object type's properties by
   compareSymbols (getNamedMembers), tttt sorts at Members build (builder_sort_stable). What's left:
   - `?: undefined` members of normalized object literal unions (postiz-app `*.provider.d.ts`, slate
-    `test/interfaces/Text/decorations/*`, excalidraw `actionElementLink.d.ts`; likely react-navigation's
-    `getShadowStyle` `?: never` too): tsgo's getUndefinedProperty caches one symbol per name per checker, declared
-    where the first property it was made for is, so the order depends on which file that checker checked first (tsgo
-    runs 4 checkers). tttt emulates the cache (KEY_UNDEFINED_PROPERTY) but its checking order/distribution differs.
-    The single-checker repro triage C found (`ttttPseudoInferredUnionOfLiterals.ts` with `e: [safe ? { a: 1 } : { b:
-    '' }]` added to `m`) is the harness's: tsgo's CLI on that file (`--declaration --emitDeclarationOnly`, single-threaded
-    or not) writes `{ a: number; b?: undefined; }` like tttt; only tsgo's baseline harness has `b` first (2026-10-20).
-    Plan-sized: needs tsgo's file-to-checker assignment and check order. tttt's K>1 emit follows its own history the
-    same way (`dtsdiff.py --kdiff 4` on the bucket: 5 / 18 projects write other files at K4, the same 5 twice; at the
-    defaults work stealing makes that timing-dependent), accepted as tsgo's split (2026-10-18, todo entry 1(d));
-    dtsdiff runs tttt at one checker and is deterministic (five runs byte-identical per project). ui
-    `apps/v4/registry/config.d.ts:241` (`parseRegistryBaseParts`' `error?: undefined`) **is the split after all**
-    (2026-10-20, an instrumented tsgo): ui is gated (TS5108), so nothing is checked and the emit types everything. tsgo
-    `--singleThreaded`'s emit runs the files last first (core.singleThreadedWorkGroup pops its queue), so config.ts (2022nd
-    file) makes the undefinedProperties `error` before parse-config.ts (159th); tsgo's default runs the emits in
-    parallel on its 4 checkers, config.ts's checker never sees parse-config.ts's. tttt walks in program order.
-    Walking a gated project's files last first in tttt (tried) makes ui and discord.js match `--singleThreaded`
-    byte for byte but loses discord.js, postiz-app/apps/commands and 6 slate test files against the default: not kept.
-    Non-gated projects check first (program order) in both, then emit.
+    `test/interfaces/Text/decorations/*`, excalidraw `actionElementLink.d.ts`, ui `registry/config.d.ts:241`; likely
+    react-navigation's `getShadowStyle` `?: never` too): tsgo's getUndefinedProperty caches one symbol per name per
+    checker, declared where the first property it was made for is, so the order depends on which files that checker
+    met first (4 checkers, FENNEL's split; a gated project's emit walk, last file first under `--singleThreaded`).
+    **tttt's choice is history-independent since 2026-10-21** (worker "filler", `undefined_choice()` in members.c,
+    ty.h's UndefinedProps): one program-wide entry per name, the candidate first in declaration order among those some
+    file's check meets, else among those only the emit walk does; prints of a choice a later candidate replaced are
+    recorded per file and those files checked again at the end of program_typecheck()
+    (`recheck_stale_undefined_props()`, `TTTT_DEBUG_UNDEFINED_PROPS=1` lists them, `=all` rechecks every file that
+    printed one: its own oracle). vscode at the defaults 9929 / 9929 (was 9925: recycling reset the old per-checker
+    first-need cache, the terminal xterm recordings), byte-identical at K1, `-m 0`, K4, K12 and `--shared-graph` K1/K12;
+    a quarter sample (`--sample 4`) as before. What's left is where tsgo's first need isn't declaration order: a
+    literal union in a deferred function body (an arrow's) declared before a top-level one tsgo checks first (filetest
+    shape: `const run = (): number => { const v = [{ x: 1 }, { y: 1 }]; return v.length; };` then `export const b =
+    [{ y: 1, z: 1 }, { x: 1 }];`: tsgo `x?` last, tttt first), and tsgo's own split (postiz, slate tests, ui, whose
+    `--singleThreaded` differs from its default). Whether a check met a candidate deferred or not depends on history
+    (a warm checker skips what an earlier deferred check cached), so that order isn't emulated. tsgo's baseline harness
+    is history-dependent here too (a two-file test with the costlier file second: its `.d.ts` differs from tsgo's CLI):
+    no `test/cases` repro is possible, the harness's one checker in program order meets candidates in about
+    declaration order.
   - qwik mcp `page.d.ts`: union order, checker-side. `inc ? { ...signal, value } : signal` with `signal` a parameter's
     rest binding (`({ value, ...signal }: T)`) is `{ name; hookType } | { name; hookType; value }` in tsgo (the rest
     type made first) and the other way in tttt (filetest repro; a declared `signal` matches). tttt's rest type
@@ -96,7 +97,7 @@ size on real code, each with an example:
   mapped literals and contravariant aliased intersections, fumadocs' implied infer constraints, ts-mixer's abstract
   constructor parens, tanstack-table's contextual intersection, slate, vitest, nextra, pi keybindings). Left:
   - ui `registry/config.d.ts` (its ZodEnum fixed 2026-10-18): left is `parseRegistryBaseParts`'s `error?: undefined`
-    member order, the undefinedProperties cache of "Member order" above.
+    member order, tsgo's undefinedProperties split of "Member order" above.
   - feathers generators `language: "js" | "ts"` (tsgo prints, no comments, an intersection member repeated) after a
     long `.then()` chain of prompts: checker-side identity. `initializeBaseContext()` (commons.ts, a generic arrow
     returning `{ ...ctx, dependencyVersions: { ...pkg.devDependencies, ...ctx.dependencyVersions, '@feathersjs/cli':
@@ -215,6 +216,7 @@ static order (own statics first). dtsdiff in a worktree: 1326 / 1350. Verdicts:
   checker; tttt's K1 meets a readonly `id` first, tsgo (and `--singleThreaded`, whose hashes don't match tttt either)
   a mutable one. `TTTT_CHECK_ONLY` on the file gives yet another order. The undefinedProperties history of "Member
   order" above; feathers generators' connection/index.d.ts and postiz orchestrator's autopost.service.d.ts are it too.
+  (vscode's matched at the defaults since the program-wide choice, 2026-10-21; the others not rechecked)
 - headlessui-vue: `--singleThreaded` writes what tsgo's default does (cached); its last file matches since the twin fix.
 - Left as before: babel-parser, mcp-sdk (checker split), slate test / postiz / ui (undefinedProperties), feathers
   `language`, mockoon, vest (tsgo bug), telegraf's partial reuse map (react-three-fiber's mock fixed since).

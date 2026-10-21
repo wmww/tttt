@@ -710,7 +710,13 @@ static Ty const* make_intrinsic(Checker* me, char const* name, u32 flags) {
     return ret;
 }
 
-Checker* checker_new(Program* program) {
+static Checker* checker_make(Program* program, bool join_graph);
+
+Checker* checker_new(Program* program) { return checker_make(program, true); }
+
+Checker* checker_new_private(Program* program) { return checker_make(program, false); }
+
+static Checker* checker_make(Program* program, bool join_graph) {
     Checker* me = calloc(1, sizeof(Checker));
     panic_if(!me, "out of memory");
 #ifdef TTTT_DEBUG_IDS
@@ -728,7 +734,7 @@ Checker* checker_new(Program* program) {
         panic_if(!my stamps, "out of memory");
     }
     // (--shared-graph: the graph's first checker made the intrinsics, the rest share them)
-    TyGraph* graph = program_graph(program);
+    TyGraph* graph = join_graph ? program_graph(program) : nullptr;
     if (graph) {
         graph_adopt(graph, me);
         return me;

@@ -164,12 +164,12 @@ subtype pass). Left:
 `recycle`) lists 4 / 3363 source sweep projects, where K=16 lists 1. In each, the never-recycling run is the one that
 matches tsc's cached (`--checkers 1`) output. The default budget (256 MB) doesn't recycle any of them, so the sweeps don't show them:
 - **inbox-zero/apps/web**: the `x?: undefined` member order of widened object literals (tsgo's per-checker
-  undefinedProperties cache, `widen_object_literal()`'s KEY_UNDEFINED_PROPERTY). tsgo depends on its history here too.
-  The same mechanism changes 4 vscode `.d.ts` files at the default budget (dtsdiff 74466 -> 74462:
-  `terminal/test/browser/xterm/recordings/rich/windows11_pwsh7_*.d.ts`, `data?:`/`id?: undefined` swapped). Accepted:
-  only a checker's history can reproduce it. (2026-10-16: it is also the one K=16 difference of `scripts/kdiff.py`,
-  while tsgo's output for inbox-zero/apps/web is identical at `--checkers 1` and 16: tsgo's history there doesn't
-  follow the checker split the way tttt's does.)
+  undefinedProperties cache). **Fixed 2026-10-21** (worker "filler"): tttt's choice is program-wide and
+  history-independent (`undefined_choice()` in members.c: first in declaration order among the candidates the checks
+  meet; files that printed a choice a later candidate replaced are checked again, `recheck_stale_undefined_props()`).
+  The base differed in 10 lines between `--checkers 1`, 16 and `-m 0`; now none, and vscode's 4 recordings `.d.ts`
+  match at the default budget. tsgo's output for inbox-zero is the same at 1 and 16 checkers (its split keeps the
+  files together); where tsgo's own history shows (dts_emit.md "Member order") tttt now gives one answer whatever the split.
 - **sequelize, sequelize/packages/core**: TS7022 on `models` (sequelize-typescript.ts:335, `readonly models = new
   ModelSetView<Dialect>(this, this.#models)`) appears with a fresh checker per file (and then TS2322 :1053 / TS2488
   :1080 go, models being any). **tsgo does the same**: `tsc -p packages/core --checkers 4` (or 16, 64, 256) prints

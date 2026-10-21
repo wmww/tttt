@@ -30,5 +30,5 @@ human's ruling: correctness by construction, not by catching races). Its order:
 3. Gates as tooling: fingerprint-at-publish oracle, seeded scheduler, TSan on the corpora, the recheck tool.
 4. Default-on only after plan 89 §3 item 4's release criterion, including the human's laptop bench with and without
    `TTTT_SHARED_GRAPH=1`.
-5. Fillers: plan 58 when 7.1.0 is out (first, ahead of everything), the plain-path dtsdiff `KEY_UNDEFINED_PROPERTY`
-   order, bugs/sourcesweep_checker.md, the front end's laptop wall checks.
+5. Fillers: plan 58 when 7.1.0 is out (first, ahead of everything), bugs/sourcesweep_checker.md, the front end's
+   laptop wall checks.

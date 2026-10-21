@@ -889,9 +889,10 @@ conditional instances keyed by root and mapper, KEY_NODE published at creation).
 item 3 (the graph-wide recycle) and item 4 (the redo's gaps) done. Open: item 1, the global variance lock (one worker
 measures at a time; without it ~2-3% of loaded drizzle K12 runs differ, mechanism unknown, findings below; costs
 drizzle +54% K12 wall) and item 5, default on, which waits for item 1 and the full oracle set with the flag (run once
-at b3a67c3e5: identical but for the kdiff and dtsdiff items since fixed or explained). Also open: plain-path dtsdiff on
-vscode (KEY_UNDEFINED_PROPERTY's first-need declaration reset by recycling, terminal xterm recordings: choose the first
-by declaration order), the effect TS2769 seen once in 43 recycle storms. Knobs: TTTT_SHARED_GRAPH=1 (the flag for
+at b3a67c3e5: identical but for the kdiff and dtsdiff items since fixed or explained). (Plain-path dtsdiff on vscode, KEY_UNDEFINED_PROPERTY's
+first-need declaration reset by recycling: fixed 2026-10-21, the choice is program-wide and history-independent,
+members.c's undefined_choice(); KEY_UNDEFINED_PROPERTY is now only each checker's name -> program entry link.) Also
+open: the effect TS2769 seen once in 43 recycle storms. Knobs: TTTT_SHARED_GRAPH=1 (the flag for
 scripts), TTTT_GRAPH_BUDGET_MB (graph-wide recycle budget, default 800; `--checker-memory 0` every file, `off` never),
 TTTT_GRAPH_VARIANCE_LOCK=0 (lock off), TTTT_GRAPH_SHARE_RELATIONS=0, TTTT_GRAPH_MEMO_EAGER=0|nodecl,
 TTTT_GRAPH_MEMO_LATE=k,k, TTTT_GRAPH_WAIT_YIELDS=N, TTTT_GRAPH_REDO=0, TTTT_GRAPH_STATS=1 (shares, waits, redos and

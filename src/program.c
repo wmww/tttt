@@ -157,6 +157,7 @@ typedef struct Program {
     bool shared_graph; // program_set_shared_graph()
     bool first_touch_stamps; // program_set_first_touch_stamps()
     struct TyGraph* graph; // Its checkers', while they share one (ty/graph.h)
+    UndefinedProps* undefined_props; // Its checkers' `?: undefined` members' declarations (ty.h)
     // --shared-graph on threads: the graph-wide recycle (graph_epoch_arrive()). What each share's checker holds
     // (checker_memory(), after each file), the sum's budget (UINT64_MAX: never), the barrier
     _Atomic u64* graph_held;
@@ -244,6 +245,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
     CachedFs* cached = cached_fs_new(fs);
     Program* ret = c_new(Program, {
         .errs = errs,
+        .undefined_props = undefined_props_new(),
         .fs = cached_fs_fs(cached),
         .cached_fs = cached,
         .binder = binder_new(errs),
@@ -327,6 +329,7 @@ static void program_drop(Program* me) {
     free(my checkers);
     checker_drop(my checker);
     graph_drop(my graph);
+    undefined_props_drop(my undefined_props);
     atom_table_drop(my atoms);
     type_directory_drop(my type_directory);
     drop_source_files(me);
@@ -3932,6 +3935,10 @@ TyGraph* program_graph(Program const* me) {
     return my graph;
 }
 
+UndefinedProps* program_undefined_props(Program const* me) {
+    return my undefined_props;
+}
+
 void program_set_checkers(Program* me, u32 count) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     my requested_checkers = count;
@@ -4610,10 +4617,12 @@ static void check_segment_after(Program* me, Checker* checker, u32 c, u32 const*
         SourceFile* source = vec_source_file_ptr_at(&my check_files, segment[i])[0];
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
+        checker->observing_file = source;
         if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
         if (my declaration_errs && !source->is_stdlib && !declaration_walk_moot(me)) {
             declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
         }
+        checker->observing_file = nullptr;
         if (debug_env.file_times) print_file_time("unused and declaration", file_start, source);
     }
 }
@@ -4704,6 +4713,7 @@ static Checker* check_file_or_give_up(Program* me, Checker* checker, SourceFile*
     source_file_check_verbatim_exports(source, checker->errs);
     checker->defer_checks = true;
     checker->checking_file = source;
+    checker->observing_file = source;
     block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
     // (What a deferred check defers joins the end of the queue)
     for (u32 d = 0; d < checker->deferred_count; d++) {
@@ -4719,6 +4729,7 @@ static Checker* check_file_or_give_up(Program* me, Checker* checker, SourceFile*
     checker->deferred_count = 0;
     checker->defer_checks = false;
     checker->checking_file = nullptr;
+    checker->observing_file = nullptr;
     if (checker->graph_memo_on) graph_memo_flush(checker);
     return nullptr;
 }
@@ -5024,7 +5035,9 @@ static void check_share(Program* me, u32 c, u32 count) {
             (source->is_js && !checked && !my emit_declarations)) continue;
         if (index++ % count != c) continue;
         if (my declaration_errs && !declaration_walk_moot(me)) {
+            checker->observing_file = source;
             declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
+            checker->observing_file = nullptr;
         }
     }
     // (--shared-graph: what it computed goes to the checkers after it, if there are any)
@@ -5301,6 +5314,76 @@ static void graph_recheck(Program* me, ErrorCtx const* checker_errs, u32 count) 
     }
 }
 
+// Drops what `errors` holds about the file
+static void errors_drop_file(VecError* errors, SourceFile const* file) {
+    isize kept = 0;
+    for (isize i = 0; i < vec_error_size(errors); i++) {
+        Error* error = vec_error_at_mut(errors, i);
+        if (span_source(error->span) == file) {
+            error_drop(error);
+        } else {
+            if (kept != i) errors->data[kept] = *error;
+            kept++;
+        }
+    }
+    errors->size = kept;
+}
+
+static int compare_program_order(void const* a, void const* b) {
+    u32 x = (*(SourceFile const* const*)a)->program_order, y = (*(SourceFile const* const*)b)->program_order;
+    return x < y ? -1 : x > y;
+}
+
+// The files whose diagnostics or declarations printed a `?: undefined` member before its name's choice was final
+// (ty.h's UndefinedProps: a candidate declared earlier showed later) are checked again, each in a fresh checker of its
+// own (outside --shared-graph's graph, whose types hold the old choices) now that the choices are final: what each file
+// reports or emits is then what any history makes (the choices are, and nothing else a file reports depends on its
+// checker's history). Rarely more than a few files: a checker that checks a file before the files declared before it
+// (another checker's share, a share's costliest file first). Again while that changes a choice (a candidate only a
+// fresh checker's path makes), up to a few rounds
+static void recheck_stale_undefined_props(Program* me, ErrorCtx* checker_errs, u32 count) {
+    enum { MAX_ROUNDS = 3 };
+    for (u32 round = 0; round < MAX_ROUNDS; round++) {
+        u32 stale_count = 0;
+        // (TTTT_DEBUG_UNDEFINED_PROPS=all: every file that printed one, once, the recheck's own oracle: the output stays)
+        char const* debug = getenv("TTTT_DEBUG_UNDEFINED_PROPS");
+        bool all = !round && debug && !strcmp(debug, "all");
+        SourceFile const** stale = undefined_props_stale(my undefined_props, all, &stale_count);
+        if (!stale_count) {
+            free(stale);
+            return;
+        }
+        qsort(stale, stale_count, sizeof(SourceFile const*), compare_program_order);
+        for (u32 i = 0; i < stale_count; i++) {
+            SourceFile* source = (SourceFile*)stale[i];
+            if (getenv("TTTT_DEBUG_UNDEFINED_PROPS")) eprintln("undefined props: checking ", source->canonical_path, " again");
+            for (u32 c = 0; c < count; c++) {
+                errors_drop_file(&checker_errs[c].errors, source);
+                if (my declaration_errs) errors_drop_file(&my declaration_errs[c].errors, source);
+            }
+            u32 at = UINT32_MAX;
+            for (u32 k = 0; k < (u32)vec_source_file_ptr_size(&my check_files) && at == UINT32_MAX; k++) {
+                if (vec_source_file_ptr_at(&my check_files, k)[0] == source) at = k;
+            }
+            Checker* fresh = checker_new_private(me);
+            fresh->errs = &checker_errs[0];
+            checker_make_current(fresh);
+            ty_init_global_types(fresh);
+            if (at != UINT32_MAX) {
+                check_file_or_give_up(me, fresh, source, at, false);
+                check_segment_after(me, fresh, 0, &at, 1);
+            } else if (my declaration_errs && !declaration_walk_moot(me)) {
+                fresh->observing_file = source;
+                declaration_diagnostics_check(source, &my declaration_errs[0], my emit_declarations);
+                fresh->observing_file = nullptr;
+            }
+            checker_make_current(nullptr);
+            checker_drop(fresh);
+        }
+        free(stale);
+    }
+}
+
 void program_typecheck(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_NAMES_RESOLVED, PROGRAM_PHASE_TYPECHECKING);
     my errs->phase = ERROR_PHASE_TYPECHECK;
@@ -5436,6 +5519,7 @@ void program_typecheck(Program* me) {
             atomic_fetch_sub(&ahead_bytes, list->source_bytes);
         }
     }
+    recheck_stale_undefined_props(me, checker_errs, count);
     my binder->frozen = false;
     my errs->frozen = false;
     if (my graph && getenv("TTTT_GRAPH_STATS")) graph_print_stats(my graph);

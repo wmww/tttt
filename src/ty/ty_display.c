@@ -5755,6 +5755,11 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         display_mapped(me, d, members_rare(members)->expanded_from);
         return;
     }
+    // (Where its `?: undefined` members are declared decides their order and how they print: recorded for the file
+    // whose output this is, ty.h's UndefinedProps)
+    for (u32 i = 0; i < members->prop_count; i++) {
+        if (members->props[i]->flags & PROP_NORMALIZED_UNDEFINED) ty_undefined_prop_observed(me, members->props[i]);
+    }
     bool only_signatures = !members->prop_count && !members->index_count;
     if (only_signatures && members->call_count == 1 && !members->construct_count) {
         display_signature(me, d, members->call[0], " => ", false);
