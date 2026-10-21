@@ -437,6 +437,44 @@ checker.** At K1 nothing is shared, so 4a is a pure refactor (byte-identical out
   together, and is where 4d puts the CAS and the taint test. A computation that finishes after another one published
   (a nested re-entry, a restart) keeps the first value, as today.
 - Session 1's cost: K1 instructions in `test/instrcount.txt`'s session-1 commit, against b7ad0eac's counts.
+- **Session 2 (2026-10-21): done as below; what changed from the shape above.** `Resolving` got a `void* record` and
+  `ty_in_flight_record()`, then lost them again: its only payloads were the `reevaluating` flags, and plan 88 stage B
+  (done in the same session) removed those. What stays for the kinds that push an entry is `ty_in_flight_entry()` (whole
+  stack, barriers ignored): props mark their own entry circular through it (Prop.circular is gone), base constraints
+  ask it whether they're in flight (KEY_BASE_CONSTRAINT has no in-flight sentinel any more). Kinds with no entry use
+  `Claim` headers on per-kind lists, `Checker.claims[ClaimKind]` (`ty_claim_push/pop/find()`): CLAIM_VARIANCES
+  (session 1's VarianceClaim, rehomed), CLAIM_DEFERRED_ARGS (TyDeferredRef.circular gone), CLAIM_PARAM_DEFAULT
+  (fallback_circular written only with the default), CLAIM_SIMPLIFIED (no self placeholder in the links),
+  CLAIM_PRIMITIVE_CONSTRAINT (no `1` in KEY_TYPE_VARIABLE_REDUCTION), CLAIM_MEMBERS (early and partial members: every
+  `state->members` write while IN_FLIGHT now goes into the MembersClaim), CLAIM_PREDICATE (predicate_done no longer set
+  before computing, predicate_in_flight gone), CLAIM_MENTIONS (FunctionMentions.in_flight gone). Byte-identical output
+  on the suite, the five corpora, vscode, kdiff-style checkerdiff/threadcheck, and taint cleandiff counts identical on
+  drizzle and zod; K1 instructions nest -0.02%, drizzle +0.16%, zod +0.07% (callgrind, release build).
+- **Publish functions** (where 4d's CAS and taint test go): publish_variances() (relate.c), publish_base_constraint()
+  (relate.c), publish_reference_args() (lower.c), publish_param_default(), publish_members(),
+  publish_signature_predicate() (members.c). The rest still publish inline: prop_type_slow() (`prop->type` +
+  type_state), signature_return_type(), function_return_type() (KEY_FUNCTION_RETURN), ty_declared_type_of()
+  (SymbolLinks), declared_param_constraint(), ty_mapped_template(), ty_cond_branch_type(), ty_non_augmenting_base(),
+  ty_reduced_slow(), ty_simplified() and primitive_constraint_of() (an intern insert after the claim pops).
+- **Left after session 2** (each a shared field written while the computation runs, or after it published):
+  - Writes after publication: function_return_type()'s outer computation sets `memo->circular` and `memo->type = any`
+    on a memo a nested one already published; ty_declared_type_of() ORs `links->circular` (TS2456) after a nested
+    alias resolution published; report_promise_missing() clears `FunctionReturn.promise_missing` (a report-once flag on
+    a done memo: 4b's diagnostics-as-data). ty_members_resolving() publishes the outer resolution's members over what a
+    nested one (in flight below it) set early; `TyObjectState.unexpanded` is written during resolve_members().
+  - The hint-only IN_FLIGHT states (no payload, a fixed answer on re-entry: they need 4d's owner tag, not a record):
+    TyCondBranch.state (error type), TyObjectState.reduced_state (itself), base_state (null),
+    SymbolLinks.base_variable_state (null), TyParamState.constraint_state (circular: none), MappedInfo.template_state
+    (recomputed, not stored), ImpliedConstraint.check_state (skipped), Signature.state / ret_state, Prop.type_state,
+    LazyMemo.evaluation_started, SymbolLinks.declared_state, TyDeferredRef.state, the IN_FLIGHT members_state
+    (including ty_mapped_info_unexpanded()'s toggle back to NOT_STARTED).
+  - LazyMemo.pattern_retried (a destructuring pattern found circular once is evaluated again later: history on the
+    memo, a tainted result rather than in-flight state) and LazyMemo.hits / is_self_referential (only ever on
+    expression memos, which stay per worker).
+  - Intern entries inserted before their value (the instance kinds' null slots, TAINT_IN_FLIGHT_SLOT): the shared
+    table's "key first, value last" publish covers them.
+  - Per-expression scratch with in-flight markers, per worker by design: CallResolution.in_flight, KEY_FLOW_EXHAUSTIVE's
+    2, KEY_BINDING_COMPUTED_KEY's `{}`.
 
 ## Validation of the whole plan
 The 12-core table in measurements.md re-run by the human after each stage (`scripts/bench.sh --runs 3 --bun PATH
