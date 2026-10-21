@@ -1091,7 +1091,7 @@ struct Checker {
     u32 index_atoms_len;
     u32* index_atoms_by_name; // 0..index_atoms_by_name_len-1 in the order of their atoms' addresses (members.c)
     u32 index_atoms_by_name_len;
-    InternTable atoms;
+    struct AtomTable* atom_table; // The program's (ty/atom_table.h): every checker's atoms are the same
     InternTable types;  // literals, unions, intersections, references, deferred, instantiated anonymous, tuple targets
     InternTable intersection_props; // (intersection id, property name) -> FoundProp, see find_prop()
     InternTable links;  // Symbol -> SymbolLinks, AST node -> Ty, Generic -> type parameter list...

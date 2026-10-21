@@ -1013,7 +1013,7 @@ void taint_intern_put(void const* table, u64 hash, void const** block, unsigned 
     if (busy) return;
     sweep();
     Checker* c = current_checker;
-    if (!c || table == &c->atoms) return;
+    if (!c) return;
     if (table == &c->intersection_props) kind = 254;
     if (explicit_kind(kind)) return;
     TaintFrame frame;

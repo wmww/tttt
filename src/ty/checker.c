@@ -10,6 +10,7 @@
 #include "ast_alloc.h"
 #include "source_file.h"
 #include "ty/graph.h"
+#include "ty/atom_table.h"
 
 // Arena
 
@@ -506,48 +507,7 @@ static inline void link_set(LinkTable* table, u32 kind, void const* subject, voi
 }
 
 Atom const* checker_atom(Checker* me, csview sv) {
-    sv = name_cooked(sv); // (an identifier's name: by its value)
-    // Atoms are keyed by content, so they get their own probing rather than the word keys
-    InternTable* table = &my atoms;
-    if ((table->len + 1) * 4 > table->cap * 3) {
-        InternTable bigger = { .cap = table->cap ? table->cap * 2 : 256, .len = table->len };
-        bigger.entries = zeroed_table(bigger.cap, sizeof(InternEntry));
-        panic_if(!bigger.entries, "out of memory");
-        for (u32 i = 0; i < table->cap; i++) {
-            InternEntry* entry = &table->entries[i];
-            if (!entry->hash) continue;
-            u32 j = table_index(entry->hash, bigger.cap);
-            while (bigger.entries[j].hash) j = table_next(j, bigger.cap);
-            bigger.entries[j] = *entry;
-        }
-        free(table->entries);
-        *table = bigger;
-    }
-    // c_hash_n() leaves similar strings (`ns1.Foo`, `ns2.Foo`) close together in the low bits, which linear probing
-    // turns into long runs: finish it off (murmur3's finalizer)
-    u64 hash = c_hash_n(sv.buf, sv.size);
-    hash ^= hash >> 33;
-    hash *= 0xff51afd7ed558ccdULL;
-    hash ^= hash >> 33;
-    hash *= 0xc4ceb9fe1a85ec53ULL;
-    hash ^= hash >> 33;
-    if (!hash) hash = 1;
-    for (u32 i = table_index(hash, table->cap);; i = table_next(i, table->cap)) {
-        InternEntry* entry = &table->entries[i];
-        if (!entry->hash) {
-            Atom* atom = arena_alloc(&my arena, sizeof(Atom) + (size_t)sv.size + 1);
-            atom->len = (u32)sv.size;
-            memcpy(atom->str, sv.buf, (size_t)sv.size);
-            entry->hash = hash;
-            entry->block = (void const**)atom; // (The Atom itself: no word key)
-            table->len++;
-            return atom;
-        }
-        Atom const* atom = (Atom const*)entry->block;
-        if (entry->hash == hash && atom->len == (u32)sv.size && memcmp(atom->str, sv.buf, (size_t)sv.size) == 0) {
-            return atom;
-        }
-    }
+    return atom_table_get(my atom_table, name_cooked(sv)); // (an identifier's name: by its value)
 }
 
 // Types
@@ -666,6 +626,7 @@ Checker* checker_new(Program* program) {
     my binder = program_get_binder(program);
     my errs = program_errors(program);
     my next_type_id = 1;
+    my atom_table = program_atoms(program);
     // (--shared-graph: the graph's first checker made the intrinsics, the rest share them)
     TyGraph* graph = program_graph(program);
     if (graph) {
@@ -803,7 +764,6 @@ void checker_drop(Checker* me) {
     lazy_slots_drop(&my lazy);
     free(my index_atoms);
     free(my index_atoms_by_name);
-    free(my atoms.entries);
     free(my types.entries);
     free(my links.entries);
     free(my node_links.entries);
@@ -823,7 +783,7 @@ void checker_drop(Checker* me) {
 
 u64 checker_memory(Checker const* me) {
     u64 bytes = my arena.total;
-    bytes += ((u64)my atoms.cap + my types.cap + my intersection_props.cap + my links.cap) * sizeof(InternEntry);
+    bytes += ((u64)my types.cap + my intersection_props.cap + my links.cap) * sizeof(InternEntry);
     bytes += (u64)my node_links.cap * sizeof(LinkEntry);
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) bytes += (u64)my relations[i].cap * (sizeof(u64) + 1);
     // (lazy_slots_add_type()'s chunks)

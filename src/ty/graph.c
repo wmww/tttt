@@ -8,7 +8,6 @@
 // The state handed to whichever checker is current (graph_enter()): sequentially one checker at a time makes atoms and
 // types. In 4d: shared structures of their own (4c's global atoms and ids)
 typedef struct GraphHeld {
-    InternTable atoms;
     u32 next_type_id;
     Ty const** types[1 << LAZY_TYPE_DIR_BITS]; // The id -> Ty table's chunks (LazySlots.types)
     Ty const* array_target;
@@ -95,7 +94,6 @@ GraphClass graph_kind_class(u32 kind) {
 }
 
 static void held_take(GraphHeld* held, Checker const* from) {
-    held->atoms = from->atoms;
     held->next_type_id = from->next_type_id;
     memcpy(held->types, from->lazy.types, sizeof(held->types));
     held->array_target = from->array_target;
@@ -111,7 +109,6 @@ static void held_take(GraphHeld* held, Checker const* from) {
 }
 
 static void held_give(GraphHeld const* held, Checker* to) {
-    to->atoms = held->atoms;
     to->next_type_id = held->next_type_id;
     memcpy(to->lazy.types, held->types, sizeof(held->types));
     to->array_target = held->array_target;
@@ -170,7 +167,6 @@ void graph_enter(TyGraph* me, Checker* checker) {
 void graph_release(TyGraph* me, Checker* checker) {
     if (my owner == checker) graph_enter(me, nullptr);
     // (The graph's: freed by graph_drop())
-    checker->atoms = (InternTable){0};
     memset(checker->lazy.types, 0, sizeof(checker->lazy.types));
     free(checker->graph_memo_slots);
     checker->graph_memo_slots = nullptr;
@@ -179,7 +175,6 @@ void graph_release(TyGraph* me, Checker* checker) {
 void graph_drop(TyGraph* me) {
     if (!me) return;
     if (my owner) graph_release(me, my owner);
-    free(my held.atoms.entries);
     for (size_t i = 0; i < c_arraylen(my held.types); i++) free(my held.types[i]);
     free(my types.entries);
     free(my links.entries);

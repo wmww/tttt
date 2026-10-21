@@ -8,6 +8,7 @@
 #include <sys/resource.h>
 
 #include "ty/ty.h"
+#include "ty/atom_table.h"
 #include "content_mapper.h"
 #include "type.h"
 #include "program.h"
@@ -840,8 +841,8 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
                     checker->relations[TY_RELATION_SUBTYPE].len, ", strict subtype ", checker->relations[TY_RELATION_STRICT_SUBTYPE].len,
                     ", identity ", checker->relations[TY_RELATION_IDENTITY].len);
                 out_eprintln(out, "time: checker ", i, " intern tables (entries / capacity): types ", checker->types.len, " / ",
-                    checker->types.cap, ", links ", checker->links.len, " / ", checker->links.cap, ", atoms ", checker->atoms.len,
-                    " / ", checker->atoms.cap, ", intersection props ", checker->intersection_props.len, " / ",
+                    checker->types.cap, ", links ", checker->links.len, " / ", checker->links.cap, ", atoms ", atom_table_len(checker->atom_table),
+                    ", intersection props ", checker->intersection_props.len, " / ",
                     checker->intersection_props.cap);
                 out_eprintln(out, "time: checker ", i, " node links ", checker->node_links.len, " / ", checker->node_links.cap);
             }

@@ -208,7 +208,6 @@ void survivors_report(Checker const* me) {
     table_pend(&my types, false, 0);
     table_pend(&my links, false, 0);
     table_pend(&my intersection_props, false, KEY_INTERSECTION_PROPS);
-    table_pend(&my atoms, true, 0);
     for (u32 i = 0; i < my node_links.cap; i++) {
         LinkEntry const* entry = &my node_links.entries[i];
         if (!entry->key) continue;

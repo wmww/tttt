@@ -106,6 +106,7 @@ void program_set_checkers(Program* me, u32 count);
 // --shared-graph: the checkers share one type graph (plan 86 stage 4, ty/graph.h): one after another, never recycled
 void program_set_shared_graph(Program* me, bool shared);
 struct TyGraph* program_graph(Program const* me); // Null without
+struct AtomTable* program_atoms(Program const* me); // Its checkers' atoms (ty/atom_table.h)
 // The default checker count's ceiling below the threads (0, the default: the threads): the CLI's checkers per physical
 // core on a machine with many (main.c's default_checker_cap()). Call it while loading
 void program_set_checker_cap(Program* me, u32 count);

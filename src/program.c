@@ -18,6 +18,7 @@
 #include "source_file.h"
 #include "ty/ty.h"
 #include "ty/graph.h"
+#include "ty/atom_table.h"
 #include "module_resolution.h"
 #include "json.h"
 #include "content_mapper.h"
@@ -149,6 +150,7 @@ typedef struct Program {
     u32 requested_checkers; // program_set_checkers()
     bool shared_graph; // program_set_shared_graph()
     struct TyGraph* graph; // Its checkers', while they share one (ty/graph.h)
+    struct AtomTable* atoms; // Every checker's atoms (ty/atom_table.h)
     u32 checker_cap; // program_set_checker_cap(), 0: the threads
     u64 checker_memory; // program_set_checker_memory(), bytes: UINT64_MAX never recycles
     u64 checker_memory_cap; // program_set_checker_memory_cap(), bytes: UINT64_MAX none
@@ -232,6 +234,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
         .options = compiler_options_init(),
         .symlinks = symlink_cache_new(),
         .checker_memory = UINT64_MAX,
+        .atoms = atom_table_new(),
         .checker_memory_cap = UINT64_MAX,
         .checker_memory_shared = UINT64_MAX,
     });
@@ -292,6 +295,7 @@ static void program_drop(Program* me) {
     free(my checkers);
     checker_drop(my checker);
     graph_drop(my graph);
+    atom_table_drop(my atoms);
     drop_source_files(me);
     hmap_box_source_file_drop(&my source_files_map);
     hmap_source_file_ptr_drop(&my files_by_package_id);
@@ -3729,6 +3733,10 @@ enum { CHECKER_BYTES = 64 << 10 };
 
 void program_set_shared_graph(Program* me, bool shared) {
     my shared_graph = shared;
+}
+
+struct AtomTable* program_atoms(Program const* me) {
+    return my atoms;
 }
 
 TyGraph* program_graph(Program const* me) {

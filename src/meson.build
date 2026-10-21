@@ -53,6 +53,7 @@ core_files = files(
     'ty/checker.c',
     'ty/taint.c',
     'ty/graph.c',
+    'ty/atom_table.c',
     'ty/survivors.c',
     'ty/order.c',
     'ty/members.c',
