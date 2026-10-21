@@ -439,10 +439,25 @@ static MembersRare* members_rare_mut(Checker* me, Members* members) {
     return (MembersRare*)members->rare;
 }
 
+// The rare part of members another worker may be reading: attached by a CAS if there is none yet, the first attached
+// stays (a loser's is left in its arena)
+static MembersRare* members_rare_published(Checker* me, Members const* members) {
+    MembersRare const* rare = __atomic_load_n(&members->rare, __ATOMIC_ACQUIRE);
+    if (rare) return (MembersRare*)rare;
+    MembersRare* fresh = arena_new(&my arena, MembersRare);
+    MembersRare const* expected = nullptr;
+    if (__atomic_compare_exchange_n(&((Members*)members)->rare, &expected, fresh, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) {
+        return fresh;
+    }
+    return (MembersRare*)expected;
+}
+
+static u32 const by_name_order_none[1]; // MembersRare.by_name_order computed: a name is there twice
+
 // MembersRare.by_name_order, null when a name is there twice
 static u32 const* members_by_name_order(Checker* me, Members const* members) {
-    MembersRare const* rare = members_rare(members);
-    if (rare->by_name_order || rare->by_name_order_none) return rare->by_name_order;
+    u32 const* known = __atomic_load_n(&members_rare(members)->by_name_order, __ATOMIC_ACQUIRE);
+    if (known) return known == by_name_order_none ? nullptr : known;
     u32* order = arena_new_n(&my arena, u32, members->prop_count);
     bool* taken = calloc(members->prop_count, sizeof(bool));
     panic_if(!taken, "out of memory");
@@ -463,10 +478,12 @@ static u32 const* members_by_name_order(Checker* me, Members const* members) {
         }
     }
     free(taken);
-    MembersRare* mut = members_rare_mut(me, (Members*)members);
-    if (placed) mut->by_name_order = order;
-    else mut->by_name_order_none = true;
-    return mut->by_name_order;
+    // (A pure function of the members: whoever's lands first, it's the same)
+    MembersRare* mut = members_rare_published(me, members);
+    u32 const* expected = nullptr;
+    u32 const* mine = placed ? order : by_name_order_none;
+    if (!__atomic_compare_exchange_n(&mut->by_name_order, &expected, mine, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) mine = expected;
+    return mine == by_name_order_none ? nullptr : mine;
 }
 
 static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
@@ -5407,7 +5424,11 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
         // (tsc's getTypeOfMappedSymbol sets containsError where pushTypeResolution fails, before it reports)
         if (mapped_type && (mapped_type->flags & TYF_OBJECT)) {
             Members const* expanded = ty_members(me, mapped_type);
-            if (members_rare(expanded)->expanded_from) members_rare_mut(me, (Members*)expanded)->contains_error = true;
+            // (A write to published members: a flag that only ever goes on, atomically. History-like: printing after
+            // the cycle shows the mapped syntax, before it doesn't, which is K1's order already)
+            if (members_rare(expanded)->expanded_from) {
+                __atomic_store_n(&members_rare_published(me, expanded)->contains_error, true, __ATOMIC_RELAXED);
+            }
         }
         cstr mapped = ty_to_cstr(me, mapped_type);
         ty_error_at_current_node_d(me, 2615, "Type of property '", name, "' circularly references itself in mapped type '",
