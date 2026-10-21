@@ -1003,7 +1003,14 @@ every `-p` corpus, 20-run tables on the four, no default-path cost until the fla
    500 (fiber.ts:293 TS7006, a contextual parameter lost, and aggregation.test.ts TS2375), with stamps 494 / 500, all
    fiber.ts TS7006 (replay: `TTTT_FIRST_TOUCH_STAMPS=1 TTTT_GRAPH_SEED=18`; the recheck in the graph doesn't show it:
    the worker's history). The schedules the seeds explore are far from what the free-running threads produce (the
-   free runs never showed fiber.ts): run both.
+   free runs never showed fiber.ts): run both. Combined (FP_MODE=1 with _ONLY/_STACKS/_TRACE on a failing seed,
+   README "fingerprint + seed"): effect seed 18 names the declaration memo of the parameter `id` at
+   src/internal/fiber.ts:293 published as `any` (K1: FiberId) through the same stack K1 computed it by, so the
+   contextual type was missing on the worker at that moment (the symptom key; its cause is upstream); drizzle seed 379
+   without stamps names View's variances [11 11 11] against K1's [1 1 1], mechanism (b). The oracle now covers every
+   published lazy kind (README "Fingerprint coverage"), clean results only, and converted sites call SW_FP() beside
+   sw_finish(). With stamps on (the graph's default since 3f4c7550c): 300 seeds each on zod, excalidraw and nest all K1's
+   output.
 2. **Shared relation cache (2 sessions)**, as designed below. Gate as there; excalidraw's K12 pairs within 5% of K1.
    **Done (2026-10-21).** recursive_related(): after the private cache and the maybe stack, a pair the private cache
    doesn't have is looked up in the graph's table for its relation kind (graph_relation_get(), SharedLinks keyed like
