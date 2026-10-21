@@ -67,6 +67,17 @@ noise). bun canary `1.4.3-canary.20261019.1` (the same as below). Best wall s / 
   14, ties valibot/zod/xstate, loses nest (0.08 / 0.06), drizzle (0.32 / 0.27; the flag's K24 0.24 wins) and vscode. Single-threaded tttt is fastest everywhere (vscode 12.4 against bun 15.6 and tsc-rs 16.1).
 - Raw outputs were scratch (not kept); rerun the command above to reproduce.
 
+## The config glob next to the load pool (2026-10-21, worker fe, this box: 16 vCPUs / 8 cores, load 10-25)
+Since 0eca94ef9 the pool parses while the include glob walks; the glob (vscode, T16) went from 28-30 ms to 68-81 ms.
+`--time` now prints the main thread's CPU time per phase: the glob's is 30-32 ms alone and 55-59 ms next to the
+pool, so the extra wall is on-CPU, not waiting. The sampler (CPU mode against wall mode, 10-12 runs each) shows no
+lock: the pool's and the resolver's locks are ~3% of its wall, and every function of the glob slows about
+uniformly (glob_matches 1.7x, getdents 1.3x, hash lookups 1.3x, brk/morecore 2.8x): the SMT sibling and all-core
+clocks. Giving the main thread a core (only 4 or 7 of the 16 workers started until the glob ends) brought the glob
+back to 37-39 ms, but config + libs + load+parse stayed at 218-226 ms best against 202-207 with every worker:
+what the glob gains, the pool's parse loses. A 64 MB M_TOP_PAD for the main arena gave 61-62 against 67-70 ms
+(noise-sized). Nothing changed; the glob's own 250 M instructions (glob_matches(), path strings) are what is left.
+
 ## The 12-core box at efb91998 (2026-10-20, run by an agent on the human's laptop)
 AMD Ryzen AI 9 HX 370 (12 cores / 24 threads), on AC, `balanced` profile, GCC 16.2. Answers 2026-10-20's ask.
 **Costliest file first, A/B of the same pgo/tttt** (`TTTT_NO_COSTLIEST_FIRST=1`, 3 runs each at the default K12,

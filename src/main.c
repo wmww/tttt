@@ -155,7 +155,17 @@ static void phase_done(Options const* opts, Output* out, const char* name, doubl
         memtrack_scan(phase);
     }
     const double now = now_ms();
-    if (opts->time) out_eprintln(out, "time: ", name, " ", now - *last, " ms (resident ", resident_mb(), " MB)");
+    // (How long the main thread was on a CPU meanwhile: a loaded machine's preemption is the rest, for the serial
+    // phases)
+    static double main_cpu_last;
+    struct timespec cpu;
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &cpu);
+    double main_cpu = (double)cpu.tv_sec * 1e3 + (double)cpu.tv_nsec / 1e6;
+    if (opts->time) {
+        out_eprintln(out, "time: ", name, " ", now - *last, " ms (resident ", resident_mb(), " MB, main thread on a CPU ",
+            main_cpu - main_cpu_last, " ms)");
+    }
+    main_cpu_last = main_cpu;
     *last = now;
 }
 
