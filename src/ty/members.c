@@ -4854,7 +4854,9 @@ static Members const* resolve_members(Checker* me, Ty const* ty) {
     TyObjectState* state = object_state(ty);
     Members const* members = state && state->unexpanded ? state->unexpanded : resolve_members_inner(me, ty);
     if (!members->mapped) return members;
-    if (state) state->unexpanded = members; // (What instantiations go by, see declared_mapped_members())
+    // (What instantiations go by, see declared_mapped_members(): a finished value of its own, published while the
+    // members are still in flight, once)
+    if (state && !state->unexpanded) state->unexpanded = members;
     // (A mapped type's keys: tsc mostly finds them first through its key parameter's constraint, under that one's
     // pushTypeResolution, see RESOLVING_MAPPED_CONSTRAINT)
     ty_resolving_push(me, RESOLVING_MAPPED_CONSTRAINT, members->mapped);
@@ -4882,7 +4884,7 @@ MappedInfo const* ty_mapped_info_unexpanded(Checker* me, Ty const* ty) {
         Members const* unexpanded = resolve_members_inner(me, ty);
         ty_claim_pop(me, CLAIM_MEMBERS, &claim.claim);
         state->members_state = LAZY_STATE_NOT_STARTED;
-        state->unexpanded = unexpanded;
+        if (!state->unexpanded) state->unexpanded = unexpanded;
     }
     return state->unexpanded->mapped;
 }
