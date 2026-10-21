@@ -168,6 +168,8 @@ enum {
     // must see it in flight (iterate.c's iterable types, flow.c's union key property): a scratch kind, so the marker is
     // never in the memo's own slot, where a memo flush could publish it as the value (plan 86 4f). A hit is a taint event
     KEY_IN_FLIGHT,
+    // A union member's type as ty_union_subtype_reduced() keys it (node_links) -> ReductionKey (expr.c)
+    KEY_REDUCTION_KEY,
 };
 
 // The type parameters declared outside a root conditional type that it mentions (tsc's root.outerTypeParameters, less

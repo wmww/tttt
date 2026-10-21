@@ -429,6 +429,68 @@ static bool anonymous_with_symbol(Checker* me, Ty const* ty) {
         ty->anonymous.module_clone;
 }
 
+typedef struct ReductionKey {
+    Atom const* name; // Null: none
+    Ty const* type;
+} ReductionKey;
+
+// The first property of a union member's (keyed) type whose type is a unit type, which ty_union_subtype_reduced()
+// tells members apart by, and that unit type (regular). Remembered per type: a big union's reduction asked it for each
+// member and each reduction again, its intersection members' properties looked up in each other part (5.6M ty_get_prop()
+// calls on excalidraw K1)
+static Atom const* reduction_key(Checker* me, Ty const* keyed, Ty const** key_type_out) {
+    ReductionKey const* known = ty_link_get(me, KEY_REDUCTION_KEY, keyed);
+    if (known) {
+        *key_type_out = known->type;
+        return known->name;
+    }
+    Atom const* key = nullptr;
+    Ty const* key_type = nullptr;
+    if (keyed && keyed->kind == TY_INTERSECTION) {
+        // An intersection's properties are its members', in order, each of the type the intersection gives it (tsc's
+        // getPropertiesOfType): `YieldExpression & { comments: ... }` is keyed by `type` like YieldExpression
+        TyList parts = keyed->composite.types;
+        for (u32 p = 0; p < parts.len && !key; p++) {
+            if (!(parts.data[p]->flags & TYF_OBJECT)) continue;
+            Members const* m = ty_members(me, parts.data[p]);
+            for (u32 k = 0; k < m->prop_count && !key; k++) {
+                // (It is only a unit type if some member's own is: a literal and its primitive are the literal,
+                // two literals never)
+                Atom const* name = m->props[k]->name;
+                bool unit_somewhere = false;
+                for (u32 q = 0; q < parts.len && !unit_somewhere; q++) {
+                    if (!(parts.data[q]->flags & TYF_OBJECT)) {
+                        Ty const* t = ty_prop_type_of(me, parts.data[q], name); // (a type variable's apparent type's)
+                        unit_somewhere = t && is_unit_for_reduction(t);
+                        continue;
+                    }
+                    Prop const* own = q == p ? m->props[k] : ty_get_prop(me, parts.data[q], name);
+                    unit_somewhere = own && is_unit_for_reduction(prop_type(me, own));
+                }
+                Ty const* t = unit_somewhere ? ty_prop_type_of(me, keyed, name) : nullptr;
+                if (t && is_unit_for_reduction(t)) {
+                    key = m->props[k]->name;
+                    key_type = ty_regular(me, t);
+                }
+            }
+        }
+    } else if (keyed && (keyed->flags & TYF_OBJECT)) {
+        Members const* m = ty_members(me, keyed);
+        for (u32 k = 0; k < m->prop_count && !key; k++) {
+            Ty const* t = prop_type(me, m->props[k]);
+            if (is_unit_for_reduction(t)) {
+                key = m->props[k]->name;
+                key_type = ty_regular(me, t);
+            }
+        }
+    }
+    ReductionKey* memo = arena_new(&my arena, ReductionKey);
+    *memo = (ReductionKey){ key, key_type };
+    ty_link_set(me, KEY_REDUCTION_KEY, keyed, memo);
+    *key_type_out = key_type;
+    return key;
+}
+
 Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len) {
     if (len < 2) return len ? types[0] : ty_intrinsic(me, TY_NEVER);
     // Flatten first, so members of member unions take part
@@ -475,50 +537,12 @@ Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len)
                 continue;
             }
         }
-        Atom const* key = nullptr;
         Ty const* key_type = nullptr;
         // (tsc: of objects, intersections and type variables, conditional types and substitutions, whose properties are
         // their apparent type's)
         Ty const* keyed = source->flags & (TYF_OBJECT | TYF_INTERSECTION) ? source :
             (source->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) && source->kind != TY_KEYOF ? ty_apparent_type(me, source) : nullptr;
-        if (keyed && keyed->kind == TY_INTERSECTION) {
-            // An intersection's properties are its members', in order, each of the type the intersection gives it (tsc's
-            // getPropertiesOfType): `YieldExpression & { comments: ... }` is keyed by `type` like YieldExpression
-            TyList parts = keyed->composite.types;
-            for (u32 p = 0; p < parts.len && !key; p++) {
-                if (!(parts.data[p]->flags & TYF_OBJECT)) continue;
-                Members const* m = ty_members(me, parts.data[p]);
-                for (u32 k = 0; k < m->prop_count && !key; k++) {
-                    // (It is only a unit type if some member's own is: a literal and its primitive are the literal,
-                    // two literals never)
-                    Atom const* name = m->props[k]->name;
-                    bool unit_somewhere = false;
-                    for (u32 q = 0; q < parts.len && !unit_somewhere; q++) {
-                        if (!(parts.data[q]->flags & TYF_OBJECT)) {
-                            Ty const* t = ty_prop_type_of(me, parts.data[q], name); // (a type variable's apparent type's)
-                            unit_somewhere = t && is_unit_for_reduction(t);
-                            continue;
-                        }
-                        Prop const* own = q == p ? m->props[k] : ty_get_prop(me, parts.data[q], name);
-                        unit_somewhere = own && is_unit_for_reduction(prop_type(me, own));
-                    }
-                    Ty const* t = unit_somewhere ? ty_prop_type_of(me, keyed, name) : nullptr;
-                    if (t && is_unit_for_reduction(t)) {
-                        key = m->props[k]->name;
-                        key_type = ty_regular(me, t);
-                    }
-                }
-            }
-        } else if (keyed && (keyed->flags & TYF_OBJECT)) {
-            Members const* m = ty_members(me, keyed);
-            for (u32 k = 0; k < m->prop_count && !key; k++) {
-                Ty const* t = prop_type(me, m->props[k]);
-                if (is_unit_for_reduction(t)) {
-                    key = m->props[k]->name;
-                    key_type = ty_regular(me, t);
-                }
-            }
-        }
+        Atom const* key = keyed ? reduction_key(me, keyed, &key_type) : nullptr;
         for (u32 j = 0; j < members.len; j++) {
             if (j == i || dropped[j]) continue;
             Ty const* target = members.data[j];
