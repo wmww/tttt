@@ -116,9 +116,9 @@ static GraphClass graph_kind_class_of(u32 kind) {
     case KEY_ARRAY_THIS_PROPS: case KEY_TUPLE_NAME_ORDER: case KEY_INDEX_NAME_ORDER: case KEY_DECIMAL_ORDER:
     case KEY_THISLESS_SIGNATURES: case GRAPH_KIND_INTERSECTION_PROPS:
         return GRAPH_MEMO;
-    // KEY_GENERIC_RELATION numbers relations per checker; KEY_UNDEFINED_PROPERTY is a first-need cache whose candidates
-    // print differently (shared, which came first would be the schedule's); the rest is per expression, per call, flow,
-    // inference, report-once
+    // KEY_GENERIC_RELATION numbers relations per checker; KEY_UNDEFINED_PROPERTY is each checker's link from a name to
+    // its program-wide entry (members.c's undefined_choice(), the same for every checker); the rest is per expression,
+    // per call, flow, inference, report-once
     default:
         return GRAPH_SCRATCH;
     }

@@ -1133,7 +1133,12 @@ loaded effect K12 runs add a `TS7006 Parameter 'x' implicitly has an 'any' type`
 `interruptAsFork: (id) =>`, or `test/Schema/TestUtils.ts(45,20)`). The same rate shows with the lock and without the
 stamps, and the differing runs have no wait, redo or broken cycle. A contextual parameter type is lost, so a
 contextual signature (a signature return or a members result read while another worker had it in flight) came out
-different.
+different. A second residue for the build-out to verify (worker "filler", 2026-10-21): one vscode K12 `--shared-graph` run of
+10 with `TTTT_DEBUG_UNDEFINED_PROPS=all` (program.c's recheck_stale_undefined_props(), private checkers after the
+workers join) added TS6133/TS6138 in two files the recheck didn't check (chatEditingNotebookCellEntry.ts,
+notebookModifiedCellDecorator.ts), not reproduced since: unused-tracking (reference marks, the deferred bodies' undo of
+unused registrations when a private checker drops a materialization) seems to interact with the shared graph; the S0/P
+workers should check it (hacks.md, the undefined_choice() entry).
 
 **The decision: write-once shared words, private overlays, no waiting.** It takes B's invariant with A's storage.
 - Every lazily computed value reachable from a shared object (the 18 sites below, variance slots, declaration memos)

@@ -5340,12 +5340,13 @@ static int compare_program_order(void const* a, void const* b) {
 }
 
 // The files whose diagnostics or declarations printed a `?: undefined` member before its name's choice was final
-// (ty.h's UndefinedProps: a candidate declared earlier showed later) are checked again, each in a fresh checker of its
-// own (outside --shared-graph's graph, whose types hold the old choices) now that the choices are final: what each file
+// (ty.h's UndefinedProps: a candidate declared earlier showed later) are checked again, in a fresh checker (outside --shared-graph's graph, whose types hold the old choices) now that the choices are final: what each file
 // reports or emits is then what any history makes (the choices are, and nothing else a file reports depends on its
-// checker's history). Rarely more than a few files: a checker that checks a file before the files declared before it
-// (another checker's share, a share's costliest file first). Again while that changes a choice (a candidate only a
-// fresh checker's path makes), up to a few rounds
+// checker's history). Rarely more than a few files (none on vscode at the defaults): a checker that checks a file
+// before the files declared before it (another checker's share, a share's costliest file first). A recheck changes a
+// choice only if a fresh check meets a candidate no check met before (one a warm checker's history skipped without
+// another check having met it: not seen); then the files that printed the old choice go again, at most MAX_ROUNDS
+// rounds, after which what's left stays as printed (history-dependent again, never seen)
 static void recheck_stale_undefined_props(Program* me, ErrorCtx* checker_errs, u32 count) {
     enum { MAX_ROUNDS = 3 };
     for (u32 round = 0; round < MAX_ROUNDS; round++) {
@@ -5359,6 +5360,15 @@ static void recheck_stale_undefined_props(Program* me, ErrorCtx* checker_errs, u
             return;
         }
         qsort(stale, stale_count, sizeof(SourceFile const*), compare_program_order);
+        // (One fresh checker for the round's files, in program order: what else a file reports doesn't depend on what
+        // its checker checked before, and a checker per file would warm the libraries and the imports up again for
+        // each, ~0.2 s a file on vscode)
+        Checker* fresh = checker_new_private(me);
+        fresh->errs = &checker_errs[0];
+        checker_make_current(fresh);
+        ty_init_global_types(fresh);
+        u32* checked = c_new_n(u32, stale_count);
+        u32 checked_count = 0;
         for (u32 i = 0; i < stale_count; i++) {
             SourceFile* source = (SourceFile*)stale[i];
             if (getenv("TTTT_DEBUG_UNDEFINED_PROPS")) eprintln("undefined props: checking ", source->canonical_path, " again");
@@ -5370,21 +5380,25 @@ static void recheck_stale_undefined_props(Program* me, ErrorCtx* checker_errs, u
             for (u32 k = 0; k < (u32)vec_source_file_ptr_size(&my check_files) && at == UINT32_MAX; k++) {
                 if (vec_source_file_ptr_at(&my check_files, k)[0] == source) at = k;
             }
-            Checker* fresh = checker_new_private(me);
-            fresh->errs = &checker_errs[0];
-            checker_make_current(fresh);
-            ty_init_global_types(fresh);
             if (at != UINT32_MAX) {
                 check_file_or_give_up(me, fresh, source, at, false);
-                check_segment_after(me, fresh, 0, &at, 1);
-            } else if (my declaration_errs && !declaration_walk_moot(me)) {
-                fresh->observing_file = source;
-                declaration_diagnostics_check(source, &my declaration_errs[0], my emit_declarations);
-                fresh->observing_file = nullptr;
+                checked[checked_count++] = at;
             }
-            checker_make_current(nullptr);
-            checker_drop(fresh);
         }
+        // (Then the after-check pass, like a segment's; a file that isn't checked gets the declaration walk alone)
+        check_segment_after(me, fresh, 0, checked, checked_count);
+        for (u32 i = 0; i < stale_count; i++) {
+            SourceFile* source = (SourceFile*)stale[i];
+            bool was_checked = false;
+            for (u32 k = 0; k < checked_count && !was_checked; k++) was_checked = vec_source_file_ptr_at(&my check_files, checked[k])[0] == source;
+            if (was_checked || !my declaration_errs || declaration_walk_moot(me)) continue;
+            fresh->observing_file = source;
+            declaration_diagnostics_check(source, &my declaration_errs[0], my emit_declarations);
+            fresh->observing_file = nullptr;
+        }
+        free(checked);
+        checker_make_current(nullptr);
+        checker_drop(fresh);
         free(stale);
     }
 }

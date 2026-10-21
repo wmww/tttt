@@ -38,6 +38,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   (5) the recheck drops a file's diagnostics by location, assuming a file's check reports only in that file (what K
   independence relies on anyway); (6) `TTTT_DEBUG_UNDEFINED_PROPS=all` once saw extra TS6133/TS6138 in two unrechecked
   vscode files at K12 with --shared-graph (1 of 10 graph runs, not reproduced; plain-graph runs clean): unexplained.
+  The recheck is a fixpoint on the global choices: after the workers join, the files whose records show a replaced
+  choice are dropped from the diagnostics and checked again (check, unused and declaration pass) by one fresh private
+  checker per round, in program order, which records its prints again. It changes a choice only if a fresh check meets
+  a check-phase candidate no original check met (a need some warm history skipped with no other check having made it):
+  never seen; then the files that printed the replaced choice go in the next round, at most 3 rounds, after which the
+  output stays as printed. Cost: vscode at the defaults rechecks 0 files (K1, `-m 0`, K4, K12); `=all` (13 files)
+  is within wall noise of a plain run (15.4 s against 14.9, load 13) since one checker serves the round.
   Correct: candidates known before checking (a pre-pass can't: they're the checker's). Oracle: dtsdiff -f vscode at
   K1/K12/`-m 0`, `TTTT_DEBUG_UNDEFINED_PROPS=all` against a plain run.
 - `current_checker` / `current_lazy_slots` / `compiler_options()` (thread locals, `checker_make_current`): how the AST
