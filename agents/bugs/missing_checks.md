@@ -239,6 +239,24 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
     and `let node; node = el; while (node && node !== anchor) node = node.nextSibling` with `el: RN | null`, `RN` an
     index signature, is TS4111 under npafis: tsc's types baseline prints the final `any` there, so the diagnostic is
     the incomplete evaluation's. tttt's compute() reports nothing and check.c sees only final types.)
+    Mutation testing (seed 1021) found two more of the family: selfReferencingSpreadInLoop with `let additional =
+    undefined` (tsc's TS2488 "Type 'undefined' must have a '[Symbol.iterator]()'" at `[...additional, x]` in the loop)
+    and typeGuardsAsAssertions with `isSome(null)` (tsc's TS2339 names 'None', the loop's first-round type of `result`,
+    where tttt names the final `Optional<r>` with an elaboration). Five sightings: worth a plan if the corpora show one.
+- Other diagnostics tsc reports from an evaluation order tttt doesn't have (mutation testing seed 1021, 2026-10-21,
+  worker cor; not attempted):
+  - noCircularitySelfReferentialGetter4 with `satisfies { prop: string; self: any }` (a failing satisfies): tsc's
+    elaboration of the failing satisfies runs inside `a`'s own initializer, asks for the `self` getter's type and finds
+    `a` circular (TS7022 on a, TS7023 on self); tttt checks the satisfies after a's type is known. With a passing
+    satisfies neither reports anything.
+  - destructuringWithGenericParameter with `genericFunction(null, ({greeting}) => ...)`: the first argument fails
+    before the context-sensitive arrow is ever checked, so tsc's error pass checks the arrow for the first time against
+    `(payload: unknown) => void` and reports TS2339 'greeting' on unknown; tttt's final types match tsc's (`{ greeting:
+    any }`) but it doesn't report it.
+  - recursiveTypeInference with `def?:` (zod getters, #64192): tsc's TS2345 prints `$ZodNullable<$ZodType<...>>` where
+    tttt has `any` in the object's shape: the re-entrant getter inference of plan 88 C/D.
+  - destructuringWithGenericParameter with its `genericObject` declaration deleted: tsc's harness reports that the
+    emit resolver added a TS2339 (its "pre-emit / post-emit diagnostic counts" TS-1 line); a baseline-harness artifact.
   - xstate/eopt +TS2322 input.test.ts:272 (2026-10-21, worker cor: tsc relates two such distinct instantiations
     structurally as unassignable too, `type A = { input?: number } & { [K in "input"]: unknown }` against an identical
     B is TS2375 in both since ttttExactOptionalIntersectionTargetHead, which fixed tttt's TS2322 head there; so the
