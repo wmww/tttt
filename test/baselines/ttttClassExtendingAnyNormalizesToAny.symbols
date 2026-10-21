@@ -1,0 +1,75 @@
+//// [test/cases/ttttClassExtendingAnyNormalizesToAny.ts] ////
+
+=== ttttClassExtendingAnyNormalizesToAny.ts ===
+// A class that declares no instance members over a base of any (a constructor of any, or one that constructs any) is
+// any where it's related: tsc's getBaseTypes is [any] and getNormalizedType takes a non-augmenting subtype's single base
+// (getSingleBaseForNonAugmentingSubtype). With members or a constructor it's compared structurally (mutation testing,
+// mixinAbstractClassesReturnTypeInference without its mixinMethod)
+interface I { m(): void }
+>I : Symbol(I, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 0, 0))
+>m : Symbol(I.m, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 4, 13))
+
+declare const B: any;
+>B : Symbol(B, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 5, 13))
+
+class C extends B {}
+>C : Symbol(C, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 5, 21))
+>B : Symbol(B, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 5, 13))
+
+declare const c: C;
+>c : Symbol(c, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 7, 13))
+>C : Symbol(C, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 5, 21))
+
+const i1: I = c;
+>i1 : Symbol(i1, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 8, 5))
+>I : Symbol(I, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 0, 0))
+>c : Symbol(c, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 7, 13))
+
+class D extends B { x = 1 }
+>D : Symbol(D, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 8, 16))
+>B : Symbol(B, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 5, 13))
+>x : Symbol(D.x, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 9, 19))
+
+const i2: I = new D();
+>i2 : Symbol(i2, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 10, 5))
+>I : Symbol(I, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 0, 0))
+>D : Symbol(D, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 8, 16))
+
+class E extends B { constructor() { super(); } }
+>E : Symbol(E, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 10, 22))
+>B : Symbol(B, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 5, 13))
+
+const i3: I = new E();
+>i3 : Symbol(i3, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 12, 5))
+>I : Symbol(I, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 0, 0))
+>E : Symbol(E, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 10, 22))
+
+class F extends B implements I { static s(): void {} }
+>F : Symbol(F, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 12, 22))
+>B : Symbol(B, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 5, 13))
+>I : Symbol(I, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 0, 0))
+>s : Symbol(F.s, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 13, 32))
+
+function mix<T extends abstract new (...args: any[]) => any>(b: T) {
+>mix : Symbol(mix, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 13, 54))
+>T : Symbol(T, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 14, 13))
+>args : Symbol(args, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 14, 37))
+>b : Symbol(b, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 14, 61))
+>T : Symbol(T, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 14, 13))
+
+    abstract class M extends b implements I {}
+>M : Symbol(M, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 14, 68))
+>b : Symbol(b, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 14, 61))
+>I : Symbol(I, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 0, 0))
+
+    return M;
+>M : Symbol(M, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 14, 68))
+}
+declare const ctor: new () => any;
+>ctor : Symbol(ctor, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 18, 13))
+
+class G extends ctor implements I {}
+>G : Symbol(G, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 18, 34))
+>ctor : Symbol(ctor, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 18, 13))
+>I : Symbol(I, Decl(ttttClassExtendingAnyNormalizesToAny.ts, 0, 0))
+

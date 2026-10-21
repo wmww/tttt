@@ -1557,6 +1557,7 @@ static bool declaration_has_members(SymbolDecl const* node) {
 }
 
 static bool has_base_type(Checker* me, Ty const* source, Ty const* target);
+static bool class_base_is_any(Checker* me, ClassDecl const* class_decl, LowerCtx ctx);
 
 static Ty const* non_augmenting_base_uncached(Checker* me, Ty const* ty) {
     Ty const* target = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
@@ -1586,7 +1587,12 @@ static Ty const* non_augmenting_base_uncached(Checker* me, Ty const* ty) {
             if (extends->tag != EXPR_IDENTIFIER && extends->tag != EXPR_PROPERTY) return nullptr;
             Ty const* instance = nullptr;
             Symbol const* base_decl = nullptr;
-            if (!class_base(me, class_decl, ctx, &instance, &base_decl)) continue;
+            if (!class_base(me, class_decl, ctx, &instance, &base_decl)) {
+                // (A base constructor of any, or one that constructs any: tsc's getBaseTypes is [any], and the class
+                // that adds nothing is any, `class C extends anyValue {}` assignable to every interface)
+                if (!class_base_is_any(me, class_decl, ctx)) continue;
+                instance = ty_intrinsic(me, TY_ANY);
+            }
             if (base) return nullptr;
             base = instance;
         } else if (node->kind == SYMBOL_DECL_INTERFACE) {
@@ -2828,8 +2834,15 @@ Ty const* ty_single_base_for_non_augmenting_subtype(Checker* me, Ty const* ty) {
             if (extends->tag != EXPR_IDENTIFIER && extends->tag != EXPR_PROPERTY) return nullptr;
             Ty const* instance = nullptr;
             Symbol const* base_decl = nullptr;
-            if (class_base(me, class_decl, ctx, &instance, &base_decl) && instance != declared) {
-                base = instance;
+            if (class_base(me, class_decl, ctx, &instance, &base_decl)) {
+                if (instance != declared) {
+                    base = instance;
+                    count++;
+                }
+            } else if (class_base_is_any(me, class_decl, ctx)) {
+                // (A base constructor of any, or one that constructs any: tsc's getBaseTypes is [any], so a class that
+                // declares nothing of its own is any where it's related, getNormalizedType)
+                base = ty_intrinsic(me, TY_ANY);
                 count++;
             }
         } else if (node->kind == SYMBOL_DECL_INTERFACE) {

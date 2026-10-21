@@ -1,0 +1,70 @@
+//// [test/cases/ttttClassExtendingAnyNormalizesToAny.ts] ////
+
+=== ttttClassExtendingAnyNormalizesToAny.ts ===
+// A class that declares no instance members over a base of any (a constructor of any, or one that constructs any) is
+// any where it's related: tsc's getBaseTypes is [any] and getNormalizedType takes a non-augmenting subtype's single base
+// (getSingleBaseForNonAugmentingSubtype). With members or a constructor it's compared structurally (mutation testing,
+// mixinAbstractClassesReturnTypeInference without its mixinMethod)
+interface I { m(): void }
+>m : () => void
+
+declare const B: any;
+>B : any
+
+class C extends B {}
+>C : C
+>B : any
+
+declare const c: C;
+>c : C
+
+const i1: I = c;
+>i1 : I
+>c : C
+
+class D extends B { x = 1 }
+>D : D
+>B : any
+>x : number
+>1 : 1
+
+const i2: I = new D();
+>i2 : I
+>new D() : D
+>D : typeof D
+
+class E extends B { constructor() { super(); } }
+>E : E
+>B : any
+>super() : void
+>super : any
+
+const i3: I = new E();
+>i3 : I
+>new E() : E
+>E : typeof E
+
+class F extends B implements I { static s(): void {} }
+>F : F
+>B : any
+>s : () => void
+
+function mix<T extends abstract new (...args: any[]) => any>(b: T) {
+>mix : <T extends abstract new (...args: any[]) => any>(b: T) => ((abstract new (...args: any[]) => M) & { prototype: mix.M; }) & T
+>args : any[]
+>b : T
+
+    abstract class M extends b implements I {}
+>M : M
+>b : T
+
+    return M;
+>M : ((abstract new (...args: any[]) => M) & { prototype: mix.M; }) & T
+}
+declare const ctor: new () => any;
+>ctor : new () => any
+
+class G extends ctor implements I {}
+>G : G
+>ctor : new () => any
+

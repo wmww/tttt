@@ -156,6 +156,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttClassExtendingAnyNormalizesToAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttClassMembersContainedByOffsetQuirk': {
         errors: true,
         symbols: true,
