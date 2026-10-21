@@ -20,30 +20,15 @@ tables (drizzle, zod, effect, excalidraw, nest at K12 T12; drizzle 300 loaded ru
 waiting) hold. A change that makes a flake rarer without a mechanism is not a fix: write the mechanism down or keep
 looking.
 
-1. **4e items 1-2: narrow the variance lock, then the shared relation cache** (plan 86 "Stage 4e"; a worker is on
-   these now). The lock first needs the mechanism: what one measurement reads from another in flight. Gate: drizzle's
-   K12 wall at or below the defaults' with 300 / 300 loaded runs K1's output; excalidraw's K12 relation pairs within
-   5% of K1's.
-2. **The oracle set with `TTTT_SHARED_GRAPH=1`** (the env alias exists, b3a67c3e5): sweep, source sweep, `-b` sweep,
-   `$ExpectType`, flagflip, clidiff, dtsdiff, scenarios, kdiff -k 1 vs 16 with the flag. Only the suite and the
-   corpora have run with it. Each mismatch is a sharing bug or a history dependence: root-cause before item 5.
-3. **4e item 3: memory** (3-4 sessions): each checker's arena split into a published and a private part, the private
-   one recycled at today's budget points, the graph kept. Target vscode K12 peak within ~1.3x of today's defaults
-   (1.4 GB), drizzle/effect within 1.2x. Item 4 (the redo's gaps: deferred-body materialization, leaked temporaries,
-   retired checkers' memory) folds into it.
-4. **The bench on the human's 12-core laptop**: `scripts/bench.sh --runs 3 --bun PATH --tscrs PATH` with and without
-   `--shared-graph`, the CPU and RSS columns, and per-file sums at K1 / K12 on vscode and drizzle (a quiet box: this
-   one's walls are load-bound). With it, stage 3's wall checks: `TTTT_LOAD_POOL_INLINE=1` on vscode at 12 threads
-   (how many inline parses are of files queued < 1 ms before: decides the import pre-scan) and `tttt --time`'s
-   front-end phases against measurements.md "The 12-core box at efb91998". The commands go in a brief for the
-   human; the numbers into measurements.md.
-5. **4e item 5: default on** (2-3 sessions) where the flag wins (threads > 1, programs big enough: the table from
-   item 4), after items 2-3 are green; recycling's oracle (kdiff -m 0) replaced by item 3's; type-fest and effect
-   (where the flag costs CPU) looked at; vision.md's "Perf and memory" bullet rewritten.
-6. **Plan 58** when 7.1.0 is on npm (expected after 2026-11-24), then plan 66 stage 5's fan-out: ahead of everything.
-
-Not in this window: stage 4f (determinism at breadth: the sweeps repeated with the flag, flakes root-caused), plan 87
-stage 2 (share declaration files across `-b` programs), plan 88 stages C-E (C after B; D only with a
-contextual-typing rework; E no), stage 2's leftovers in perf slots, a fourth refresh by a new rule (monorepos with
-`paths`-heavy configs, `allowImportingTsExtensions` projects, Vue/Svelte tooling), bugs/sourcesweep_checker.md's
-cheapest item, plan 76 only if the human reopens it.
+**Superseded on 2026-10-21 evening by `agents/plans/89_next_coordinator.md`**, the next coordinator's whole briefing (the
+human's ruling: correctness by construction, not by catching races). Its order:
+1. Plan 86 stage 4f design session: the publish-when-clean rule enforced for lazy fields on shared types (overlay vs
+   immutable shared types with publication at quiescence), costed on the real code; first task: the variance lock
+   removed with first-touch stamps on under the flag (plan 86 4e item 1's late finding), drizzle/effect K12 wall against
+   the defaults, the 20-run tables.
+2. The build-out by parallel workers; the lock, the redo and the lib warm-up deleted; TSan clean with the flag.
+3. Gates as tooling: fingerprint-at-publish oracle, seeded scheduler, TSan on the corpora, the recheck tool.
+4. Default-on only after plan 89 §3 item 4's release criterion, including the human's laptop bench with and without
+   `TTTT_SHARED_GRAPH=1`.
+5. Fillers: plan 58 when 7.1.0 is out (first, ahead of everything), the plain-path dtsdiff `KEY_UNDEFINED_PROPERTY`
+   order, bugs/sourcesweep_checker.md, the front end's laptop wall checks.
