@@ -263,16 +263,18 @@ static void const** intern_put(Checker* me, InternTable* table, InternEntry* ent
 #else
     void const** ret = entry->block;
     // (--shared-graph: whether its computation is clean, see graph.c)
+#ifdef TTTT_GRAPH_TAINT
     if (table->shared) graph_taint_put(table, hash, ret, count ? (u32)(words[0] & 255) : 0);
+#endif
     return ret;
 #endif
 }
 
-// A private entry hit: with --shared-graph reading a tainted one is a taint event (graph.c)
+// A private entry hit. (--shared-graph's taint doesn't count reads of a tainted private entry: a test on every hit
+// cost the default path ~1% of its instructions. What a tainted memo entry feeds is published when its own computation
+// saw no event, see graph.c)
 static inline void const** intern_hit(InternTable const* table, void const** block) {
-#ifndef TTTT_TAINT
-    if (table->shared && graph_taint_marks) graph_taint_read_block(block);
-#endif
+    (void)table;
     return block;
 }
 
@@ -285,7 +287,9 @@ static bool intern_needs_growth(InternTable const* table) {
     InternEntry* entry = intern_find(table->shared, hash, words, count);
     if (!entry || !entry->hash) {
         // (Its value's computation may start here: graph_taint_put() takes the counter from then)
+#ifdef TTTT_GRAPH_TAINT
         graph_taint_miss(table, hash);
+#endif
         return nullptr;
     }
     graph_count_shared_hit(table, words, count);
@@ -461,11 +465,17 @@ void const* link_table_get(LinkTable const* table, u32 kind, void const* subject
     }
 }
 
+static inline void link_set(LinkTable* table, u32 kind, void const* subject, void const* value);
+
 void ty_link_set(Checker* me, u32 kind, void const* subject, void const* value) {
-    link_table_set(&my node_links, kind, subject, value);
+    link_set(&my node_links, kind, subject, value);
 }
 
 void link_table_set(LinkTable* table, u32 kind, void const* subject, void const* value) {
+    link_set(table, kind, subject, value);
+}
+
+static inline void link_set(LinkTable* table, u32 kind, void const* subject, void const* value) {
     if ((table->len + 1) * 4 > table->cap * 3) {
         LinkTable bigger = { .cap = table_grown(table->cap, 1024), .len = table->len };
         bigger.entries = zeroed_table(bigger.cap, sizeof(LinkEntry));

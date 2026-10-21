@@ -86,16 +86,18 @@ void taint_flow_change(void); // flow_uncached is about to change: what is done 
 #define TAINT_END(name, kind, object, subject, result) taint_end(name, kind, object, subject, result)
 #define TAINT_READ(kind, object) taint_read(kind, object)
 
-#else
+#elif defined(TTTT_GRAPH_TAINT)
 
 // --shared-graph's cheap taint (plan 86 stage 4 track S, ty/graph.c): the G0 rule's events (TTTT_TAINT_LENIENT's:
 // done-ness peeks don't count) bump a counter, a computation compares it at its end, and what ended tainted is marked
 // so that reading it is an event too. Always on and cheap: an increment per event (rare: cycles, in-flight reads,
 // limits), a load at each frame's start and end, and a test of graph_taint_marks where tracked results are read.
-// Without --shared-graph nothing is ever marked or pending
+// Compiled only with -DTTTT_GRAPH_TAINT (a build of its own: the frames and checks cost the default path ~0.6% of its
+// instructions); without it --shared-graph publishes memo kinds whatever their computation saw
 extern thread_local uint64_t graph_taint_now;
 extern thread_local uint32_t graph_taint_pending; // intern entries put before their value (graph.c)
 extern bool graph_taint_marks; // Anything marked tainted (any checker)
+extern uint64_t graph_mark_bits[1 << 14]; // The marks' bitmap by a hash of their keys (graph.c)
 void graph_taint_sweep(void);
 void graph_taint_end(unsigned kind, void const* object, void const* subject);
 void graph_taint_read(unsigned kind, void const* object);
@@ -112,6 +114,23 @@ typedef struct TaintFrame { uint64_t taint; } TaintFrame;
 #define TAINT_BEGIN(name) TaintFrame name = { graph_taint_now }
 #define TAINT_END(name, kind, object, subject, result) \
     (graph_taint_now != (name).taint ? graph_taint_end(kind, object, subject) : (void)0)
-#define TAINT_READ(kind, object) (graph_taint_marks ? graph_taint_read(kind, object) : (void)0)
+// (The bitmap first, inline: TK_MEMBERS is read on ty_members()'s fast path)
+static inline bool graph_mark_maybe(unsigned kind, void const* object) {
+    uint64_t h = (uint64_t)(uintptr_t)object ^ (uint64_t)kind << 48;
+    h ^= h >> 33;
+    h *= 0xff51afd7ed558ccdull;
+    h ^= h >> 33;
+    return graph_mark_bits[(h >> 6) & ((1 << 14) - 1)] >> (h & 63) & 1;
+}
+#define TAINT_READ(kind, object) (graph_taint_marks && graph_mark_maybe(kind, object) ? graph_taint_read(kind, object) : (void)0)
+
+#else
+
+#define TAINT_EVENT(reason) ((void)0)
+#define TAINT_FLOW() ((void)0)
+#define TAINT_IF(reason, condition) (condition)
+#define TAINT_BEGIN(name) ((void)0)
+#define TAINT_END(name, kind, object, subject, result) ((void)0)
+#define TAINT_READ(kind, object) ((void)0)
 
 #endif

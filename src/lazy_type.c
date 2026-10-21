@@ -152,15 +152,18 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 
     // THREADSAFETY: slots belong to one checker, which belongs to one thread
     LazyMemo* state = lazy_type_state(me);
-    // (--shared-graph: a tainted declaration, read)
-    if (state->done) {
-        TAINT_EVENT(TAINT_READ_TAINTED);
-        return lazy_memo_evaluated(state);
-    }
-    // (--shared-graph: a declaration another checker evaluated, cleanly)
-    if (!state->evaluation_started && current_checker->graph && my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FOR_EACH_LOOP_VAR &&
-        graph_memo_take(current_checker->graph, my slot, state)) {
-        return lazy_memo_evaluated(state);
+    // --shared-graph (one test without it): a tainted declaration read (lazy_type_get() sends those here), or one another
+    // checker evaluated cleanly
+    TyGraph* graph = current_checker->graph;
+    if (graph) {
+        if (state->done) {
+            TAINT_EVENT(TAINT_READ_TAINTED);
+            return lazy_memo_evaluated(state);
+        }
+        if (!state->evaluation_started && my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FOR_EACH_LOOP_VAR &&
+            graph_memo_take(graph, my slot, state)) {
+            return lazy_memo_evaluated(state);
+        }
     }
 
     if (state->evaluation_started) {
@@ -215,8 +218,9 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 #ifdef TTTT_TAINT
     TaintFrame taint_frame = taint_begin();
     unsigned taint_kind = my tag == LAZY_TYPE_EXPR ? TK_LAZY_EXPR : TK_LAZY_DECL + my tag;
-#else
-    TAINT_BEGIN(taint_frame);
+#elif defined(TTTT_GRAPH_TAINT)
+    // (Only a declaration's, only with --shared-graph)
+    u64 taint_start = graph && resolving ? graph_taint_now : 0;
 #endif
     if (resolving) ty_resolving_push(current_checker, lazy_type_pattern_root(me) ? RESOLVING_PATTERN : RESOLVING_DECLARATION, me);
     Ty const* result = nullptr;
@@ -275,9 +279,13 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     taint_end(taint_frame, taint_kind, me, me, lazy_memo_evaluated(state));
 #endif
 #ifndef TTTT_TAINT
-    if (current_checker->graph && my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FOR_EACH_LOOP_VAR) {
-        bool tainted = graph_taint_now != taint_frame.taint;
+    if (graph && resolving && my tag != LAZY_TYPE_FOR_EACH_LOOP_VAR) {
+#ifdef TTTT_GRAPH_TAINT
+        bool tainted = graph_taint_now != taint_start;
         if (tainted) state->tainted = true;
+#else
+        bool tainted = false;
+#endif
         graph_memo_done(current_checker, my slot, tainted);
     }
 #endif

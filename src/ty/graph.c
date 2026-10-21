@@ -202,6 +202,7 @@ void graph_count_shared_hit(InternTable const* table, u64 const* words, u32 coun
     checker->graph->stats[kind].shared_hits++;
 }
 
+#ifdef TTTT_GRAPH_TAINT
 // The cheap taint (taint.h's non-TTTT_TAINT macros): one thread, so plain statics besides the counter
 
 thread_local u64 graph_taint_now;
@@ -219,7 +220,7 @@ typedef struct MarkSet {
     u32 cap, len;
 } MarkSet;
 static MarkSet marks;
-static u64 mark_bits[1 << 14]; // 2^20 bits
+u64 graph_mark_bits[1 << 14]; // 2^20 bits
 
 static u64 mix_key(u64 h) {
     h ^= h >> 33;
@@ -234,7 +235,7 @@ static u64 object_key(unsigned kind, void const* object) {
 
 static bool mark_has(u64 key) {
     u64 h = mix_key(key);
-    if (!(mark_bits[(h >> 6) & (c_arraylen(mark_bits) - 1)] >> (h & 63) & 1)) return false;
+    if (!(graph_mark_bits[(h >> 6) & (c_arraylen(graph_mark_bits) - 1)] >> (h & 63) & 1)) return false;
     for (u32 i = (u32)(h >> 20) & (marks.cap - 1);; i = (i + 1) & (marks.cap - 1)) {
         if (marks.keys[i] == key) return true;
         if (!marks.keys[i]) return false;
@@ -261,7 +262,7 @@ static void mark_add(u64 key) {
     while (marks.keys[i]) i = (i + 1) & (marks.cap - 1);
     marks.keys[i] = key;
     marks.len++;
-    mark_bits[(h >> 6) & (c_arraylen(mark_bits) - 1)] |= 1ull << (h & 63);
+    graph_mark_bits[(h >> 6) & (c_arraylen(graph_mark_bits) - 1)] |= 1ull << (h & 63);
     graph_taint_marks = true;
 }
 
@@ -367,6 +368,8 @@ void graph_taint_read(unsigned kind, void const* object) {
     if (mark_has(result_key(kind, object))) graph_taint_tick();
 }
 
+#endif
+
 // TTTT_GRAPH_PUBLISH_TAINTED=kind,kind... (KEY_* numbers, node_links' as 256 + kind, 500 the declaration memos; `all`):
 // publish those kinds' tainted results all the same (to find which kind's withholding changes the output)
 static bool publish_tainted(u32 kind) {
@@ -387,21 +390,31 @@ static bool publish_tainted(u32 kind) {
 
 // Whether a private entry may be published: an identity always, a memo if its computation was clean
 static bool entry_tainted(u32 kind, void const* const* block) {
+#ifndef TTTT_GRAPH_TAINT
+    (void)kind, (void)block, (void)publish_tainted;
+    return false;
+#else
     if (!graph_taint_marks || publish_tainted(kind)) return false;
     if (mark_has((u64)(uintptr_t)block)) return true;
     switch (kind) {
     case KEY_VARIANCES: case KEY_ALIAS_VARIANCES: return mark_has(object_key(TK_VARIANCES, block[0]));
     default: return false;
     }
+#endif
 }
 
 static bool link_tainted(u32 kind, void const* subject, void const* value) {
+#ifndef TTTT_GRAPH_TAINT
+    (void)kind, (void)subject, (void)value;
+    return false;
+#else
     if (!graph_taint_marks || publish_tainted(256 + kind)) return false;
     switch (kind) {
     case KEY_BASE_CONSTRAINT: return mark_has(object_key(TK_BASE_CONSTRAINT, subject));
     case KEY_FUNCTION_FREE_PARAMS: return mark_has(object_key(TK_FREE_PARAMS, value));
     default: return false;
     }
+#endif
 }
 
 // Publication
@@ -603,6 +616,7 @@ void graph_print_stats(TyGraph const* me) {
     }
     eprintln("graph: total ", total.shared_hits, " ", total.published, " ", total.tainted, " ", total.scratch, " ",
         total.unfinished);
+#ifdef TTTT_GRAPH_TAINT
     eprintln("graph: taint events ", (i64)graph_taint_now, ", sweeps ", taint_events_seen, ", marked ", (i64)marks.len);
     static char const* const tk_names[] = { "members", "declared raw", "prop type", "signature return", "param constraint",
         "symbol declared", "function return", "base constraint", "simplified", "variances", "free params" };
@@ -613,4 +627,7 @@ void graph_print_stats(TyGraph const* me) {
         eprintln("graph: tainted ", name ? name : "?", " ", tainted_by_kind[k], " (on an earlier checker's type: ",
             tainted_shared_by_kind[k], ")");
     }
+#else
+    eprintln("graph: taint not compiled in (-DTTTT_GRAPH_TAINT): memo kinds published whatever their computation saw");
+#endif
 }

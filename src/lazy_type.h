@@ -115,5 +115,9 @@ static inline struct Ty const* lazy_type_get(LazyType* me) {
 #ifdef TTTT_TAINT
     if (state && state->done) TAINT_READ(my tag == LAZY_TYPE_EXPR ? TK_LAZY_EXPR : TK_LAZY_DECL + my tag, me);
 #endif
+#ifdef TTTT_GRAPH_TAINT
     return state && state->done && !state->tainted ? lazy_memo_evaluated(state) : lazy_type_evaluate(me);
+#else
+    return state && state->done ? lazy_memo_evaluated(state) : lazy_type_evaluate(me);
+#endif
 }

@@ -1563,10 +1563,16 @@ Members const* ty_members_resolving(Checker* me, Ty const* ty);
 // Never null. Empty for non-object types. (Resolved ones inline: drizzle asks 17M times)
 static inline Members const* ty_members(Checker* me, Ty const* ty) {
     TyObjectState const* state = ty_object_state(ty);
+    // (Not TAINT_READ here: --shared-graph's taint counts tainted members read only on the slow path, to keep this one
+    // as it is without the flag; under -DTTTT_TAINT they are counted in ty_members_resolving())
+#ifdef TTTT_TAINT
     if (state && state->members_state == LAZY_STATE_DONE) {
         TAINT_READ(TK_MEMBERS, state);
         return state->members;
     }
+#else
+    if (state && state->members_state == LAZY_STATE_DONE) return state->members;
+#endif
     return ty_members_resolving(me, ty);
 }
 bool ty_members_done(Ty const* ty); // Its members are resolved (not in flight: what ty_members() gives is final)
