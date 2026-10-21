@@ -1426,6 +1426,38 @@ static inline Ty const* apparent_type(Checker* me, Ty const* ty) {
     return ty_reduced(me, apparent_type_inner(me, ty_reduced(me, ty)));
 }
 
+// (Out of apparent_type_inner(): its buffer would give every call the frame, 22M calls on vscode)
+[[gnu::noinline]] static Ty const* apparent_type_of_intersection(Checker* me, Ty const* ty) {
+    // The intersection of what its generic members are apparently (tsc's getApparentTypeOfIntersectionType, through
+    // getTypeWithThisArgument(needApparentType)): `NonNullable<T["p"]>` with `p?: X` is `(X | undefined) & {}`,
+    // which is X
+    bool generic = false;
+    for (u32 i = 0; i < ty->composite.types.len && !generic; i++) {
+        Ty const* member = ty->composite.types.data[i];
+        generic = member->kind == TY_TYPE_PARAM || member->kind == TY_INDEXED || member->kind == TY_CONDITIONAL ||
+            member->kind == TY_SUBSTITUTION;
+    }
+    if (!generic) return ty;
+    Ty const* stack_buf[16];
+    TyList members = ty->composite.types;
+    Ty const** parts = members.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * members.len);
+    panic_if(!parts, "out of memory");
+    bool changed = false;
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
+        bool member_generic = member->kind == TY_TYPE_PARAM || member->kind == TY_INDEXED ||
+            member->kind == TY_CONDITIONAL || member->kind == TY_SUBSTITUTION;
+        parts[i] = member_generic ? apparent_type(me, member) : member;
+        changed |= parts[i] != member;
+    }
+    Ty const* ret = changed ? ty_intersection(me, parts, members.len, nullptr, (TyList){0}) : ty;
+    if (parts != stack_buf) free(parts);
+    // (What the members made of it may be apparent itself: `T & object` without strictNullChecks is `{} & object`,
+    // which is `object`, apparently `{}`)
+    if (ret != ty && ret->kind != TY_INTERSECTION) ret = apparent_type(me, ret);
+    return ret;
+}
+
 // tsc's getApparentType: an instantiable type is its base constraint (unknown without one or with a circular one), a
 // generic mapped type over an array its array, primitives their global interfaces
 static Ty const* apparent_type_inner(Checker* me, Ty const* ty) {
@@ -1440,36 +1472,7 @@ static Ty const* apparent_type_inner(Checker* me, Ty const* ty) {
         if (constraint->flags & (TYF_OBJECT | TYF_INTERSECTION)) return ty_with_this_arg(me, constraint, ty);
         ty = constraint;
     }
-    if (ty->kind == TY_INTERSECTION) {
-        // The intersection of what its generic members are apparently (tsc's getApparentTypeOfIntersectionType, through
-        // getTypeWithThisArgument(needApparentType)): `NonNullable<T["p"]>` with `p?: X` is `(X | undefined) & {}`,
-        // which is X
-        bool generic = false;
-        for (u32 i = 0; i < ty->composite.types.len && !generic; i++) {
-            Ty const* member = ty->composite.types.data[i];
-            generic = member->kind == TY_TYPE_PARAM || member->kind == TY_INDEXED || member->kind == TY_CONDITIONAL ||
-                member->kind == TY_SUBSTITUTION;
-        }
-        if (!generic) return ty;
-        Ty const* stack_buf[16];
-        TyList members = ty->composite.types;
-        Ty const** parts = members.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * members.len);
-        panic_if(!parts, "out of memory");
-        bool changed = false;
-        for (u32 i = 0; i < members.len; i++) {
-            Ty const* member = members.data[i];
-            bool member_generic = member->kind == TY_TYPE_PARAM || member->kind == TY_INDEXED ||
-                member->kind == TY_CONDITIONAL || member->kind == TY_SUBSTITUTION;
-            parts[i] = member_generic ? apparent_type(me, member) : member;
-            changed |= parts[i] != member;
-        }
-        Ty const* ret = changed ? ty_intersection(me, parts, members.len, nullptr, (TyList){0}) : ty;
-        if (parts != stack_buf) free(parts);
-        // (What the members made of it may be apparent itself: `T & object` without strictNullChecks is `{} & object`,
-        // which is `object`, apparently `{}`)
-        if (ret != ty && ret->kind != TY_INTERSECTION) ret = apparent_type(me, ret);
-        return ret;
-    }
+    if (ty->kind == TY_INTERSECTION) return apparent_type_of_intersection(me, ty);
     if (ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL || ty->kind == TY_SUBSTITUTION) {
         // (tsc's getApparentType: an instantiable type is its base constraint, which sees it as its `this` when that is
         // a class or interface or an intersection: a chain of `this`-returning builder methods on `T` stays generic,
