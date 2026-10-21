@@ -24,7 +24,9 @@
 // ambiguous and skipped; one K1 never computed is counted as unrecorded.
 // TTTT_GRAPH_FINGERPRINT=1: abort with a backtrace at the first difference; =count: count them all, print up to 5 per
 // kind with their backtraces; =print adds the types printed (perturbs: printing resolves);
-// TTTT_GRAPH_FINGERPRINT_TRACE=1 keeps each K1 value's fields to print beside a difference's (memory: zod ~1 GB more).
+// TTTT_GRAPH_FINGERPRINT_TRACE=1 keeps each K1 value's fields to print beside a difference's (memory: zod ~1 GB more,
+// drizzle 25 GB; =K only kind K's, the number printed with each difference); _STACKS=1 where K1 computed each value;
+// _ONLY=substring only the differences found while checking a matching file.
 // A difference whose value fingerprinted afresh is K1's is a stale memo of type fingerprints, counted apart. A summary
 // per kind on stderr at the end.
 #ifdef TTTT_GRAPH_FINGERPRINT
@@ -60,10 +62,19 @@ static int on_difference; // 0 abort, 1 count, 2 count and print types
 static U64Map recorded; // (kind, key fingerprint) -> value fingerprint, written in record mode only
 static U64Map ambiguous; // keys K1 gave two values
 static bool keep_traces; // TTTT_GRAPH_FINGERPRINT_TRACE=1: the K1 values' fields kept, printed beside a difference's
+static int trace_kind = -1; // TTTT_GRAPH_FINGERPRINT_TRACE=K (a kind's number): only that kind's (drizzle's all: 25 GB)
 static U64Map traces; // key -> strdup'd fields
+// TTTT_GRAPH_FINGERPRINT_STACKS=1: where K1 computed each value (its backtrace kept per key), printed after a
+// difference's own (memory: ~200 bytes a key)
+static bool keep_stacks;
+static U64Map stacks; // key -> malloc'd { count, frames... }
+enum { K1_FRAMES = 24 };
+// TTTT_GRAPH_FINGERPRINT_ONLY=substring: only differences found while checking a file whose path has it are reported
+// (the others counted as filtered): FP_MODE=1 then aborts at the first one there
+static char const* only_file;
 
 typedef struct FpStats {
-    _Atomic u64 recorded, ambiguous, checked, matched, unrecorded, skipped, differ, stale, unfingerprinted;
+    _Atomic u64 recorded, ambiguous, checked, matched, unrecorded, skipped, differ, stale, filtered, unfingerprinted;
 } FpStats;
 static FpStats stats[TK_COUNT];
 
@@ -83,7 +94,11 @@ void graph_fp_start(bool record) {
     on_difference = env && !strcmp(env, "print") ? 2 : env && !strcmp(env, "count") ? 1 : 0;
     // (Each thread's memo of type fingerprints is its checker's: the record's types are the K1 checker's)
     map_clear(&ty_fps);
-    keep_traces = getenv("TTTT_GRAPH_FINGERPRINT_TRACE") != nullptr;
+    char const* t = getenv("TTTT_GRAPH_FINGERPRINT_TRACE");
+    keep_traces = t != nullptr;
+    trace_kind = t && strcmp(t, "1") ? atoi(t) : -1;
+    keep_stacks = getenv("TTTT_GRAPH_FINGERPRINT_STACKS") != nullptr;
+    only_file = getenv("TTTT_GRAPH_FINGERPRINT_ONLY");
     mode = record ? FP_RECORD : FP_CHECK;
 }
 
@@ -103,6 +118,11 @@ static u64 value_of(unsigned kind, void const* result) {
             unsigned char masked[256];
             u32 len = v->len < sizeof masked ? v->len : sizeof masked;
             for (u32 i = 0; i < len; i++) masked[i] = v->data[i] & ~8u;
+            if (trace) {
+                cstr_append_fmt(trace, " variances=[");
+                for (u32 i = 0; i < len; i++) cstr_append_fmt(trace, "%s%u", i ? " " : "", (unsigned)v->data[i]);
+                cstr_append_fmt(trace, "]");
+            }
             return fp_bytes(masked, len);
         }
         default:
@@ -124,10 +144,31 @@ static u64 value_fresh(unsigned kind, void const* result, cstr* out) {
     return ret;
 }
 
+// A type's name without printing it (ty_to_cstr() resolves what it prints): its alias, its target's declared name
+static void cheap_name(char const* what, Ty const* ty) {
+    if (!ty) return;
+    Ty const* named = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
+    if (ty->alias) eprintln("fingerprint:   ", what, " alias ", ty->alias->name, " (type kind ", (u32)ty->kind, ")");
+    else if (named && named->kind == TY_DECLARED) eprintln("fingerprint:   ", what, " ", atom_sv(named->declared.name), " (type kind ", (u32)ty->kind, ")");
+    else if (ty->kind == TY_TYPE_PARAM) eprintln("fingerprint:   ", what, " type parameter ", atom_sv(ty->param.name));
+    else eprintln("fingerprint:   ", what, " (type kind ", (u32)ty->kind, ")");
+}
+
 static void describe(Checker* c, unsigned kind, void const* subject, void const* result) {
     if (kind == TK_PROP_TYPE) eprintln("fingerprint:   property ", atom_sv(((Prop const*)subject)->name));
     if (kind == TK_SYMBOL_DECLARED) eprintln("fingerprint:   symbol ", ((Symbol const*)subject)->name);
-    if (on_difference < 2) return;
+    if (kind == TK_LAZY_DECL + LAZY_TYPE_INITIALIZED_BINDING) {
+        Span span = c_container_of((LazyType*)subject, InitializedBinding, lazy_type)->binding.content_span;
+        if (span_valid(span)) {
+            eprintln("fingerprint:   binding ", cstr_str(&span_source(span)->canonical_path), ":", span_line_index(span) + 1, " `",
+                csview_slice(span_sv(span), 0, span_sv(span).size < 60 ? span_sv(span).size : 60), "`");
+        }
+    }
+    if (on_difference < 2) {
+        if (kind == TK_MEMBERS || kind == TK_DECLARED_RAW || kind == TK_PARAM_CONSTRAINT || kind == TK_BASE_CONSTRAINT ||
+            kind == TK_VARIANCES) cheap_name("subject", subject);
+        return;
+    }
     bool subject_type = kind == TK_MEMBERS || kind == TK_DECLARED_RAW || kind == TK_PARAM_CONSTRAINT ||
         kind == TK_BASE_CONSTRAINT || kind == TK_VARIANCES;
     if (subject_type && subject) {
@@ -152,11 +193,17 @@ static void note(unsigned kind, u64 key, u64 value, void const* subject, void co
         u64* known = map_find(&recorded, slot, true, true, &inserted);
         if (inserted) {
             *known = value, s->recorded++;
-            if (keep_traces) {
+            if (keep_traces && (trace_kind < 0 || (int)kind == trace_kind)) {
                 cstr fields = cstr_init();
                 value_fresh(kind, result, &fields);
                 *map_find(&traces, slot, true, true, nullptr) = (u64)(uintptr_t)strdup(cstr_str(&fields));
                 cstr_drop(&fields);
+            }
+            if (keep_stacks) {
+                void** frames = malloc(sizeof(void*) * (K1_FRAMES + 1));
+                panic_if(!frames, "out of memory");
+                frames[0] = (void*)(uintptr_t)backtrace(frames + 1, K1_FRAMES);
+                *map_find(&stacks, slot, true, true, nullptr) = (u64)(uintptr_t)frames;
             }
         }
         else if (*known != value && !map_find(&ambiguous, slot, false, false, nullptr)) {
@@ -184,13 +231,18 @@ static void note(unsigned kind, u64 key, u64 value, void const* subject, void co
         atomic_fetch_add_explicit(&s->stale, 1, memory_order_relaxed);
         return;
     }
+    Checker* checking = current_checker;
+    if (only_file && !(checking && checking->checking_file && strstr(cstr_str(&checking->checking_file->canonical_path), only_file))) {
+        atomic_fetch_add_explicit(&s->filtered, 1, memory_order_relaxed);
+        return;
+    }
     u64 n = atomic_fetch_add_explicit(&s->differ, 1, memory_order_relaxed);
     if (on_difference && n >= 5) return;
     static pthread_mutex_t print_lock = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_lock(&print_lock);
     Checker* c = current_checker;
     char buf[48];
-    eprintln("fingerprint: differs from K1: ", kind_label(kind, buf, sizeof buf), " key ", key, " K1 ", *known, " now ", value,
+    eprintln("fingerprint: differs from K1: ", kind_label(kind, buf, sizeof buf), " [", kind, "] key ", key, " K1 ", *known, " now ", value,
         " (worker ", c ? (u32)c->graph_worker : 0u, ", checking ",
         c && c->checking_file ? cstr_str(&c->checking_file->canonical_path) : "(no file)", ")");
     describe(c, kind, subject, result);
@@ -206,6 +258,12 @@ static void note(unsigned kind, u64 key, u64 value, void const* subject, void co
     void* frames[48];
     int count = backtrace(frames, 48);
     backtrace_symbols_fd(frames, count, 2);
+    u64* k1 = keep_stacks ? map_find(&stacks, slot, false, true, nullptr) : nullptr;
+    if (k1) {
+        void** stored = (void**)(uintptr_t)*k1;
+        eprintln("fingerprint: K1 computed it at:");
+        backtrace_symbols_fd(stored + 1, (int)(uintptr_t)stored[0], 2);
+    }
     if (!on_difference) {
         fflush(stderr);
         abort();
@@ -316,7 +374,7 @@ void graph_fp_print(void) {
         char buf[48];
         eprint("fingerprint: ", kind_label(kind, buf, sizeof buf), ": recorded ", (u64)s->recorded, " (ambiguous ",
             (u64)s->ambiguous, "), checked ", (u64)s->checked, ": matched ", (u64)s->matched);
-        eprintln(", differ ", (u64)s->differ, " (and ", (u64)s->stale, " a stale memo's), unrecorded ", (u64)s->unrecorded,
+        eprintln(", differ ", (u64)s->differ, " (and ", (u64)s->stale, " a stale memo's, ", (u64)s->filtered, " filtered), unrecorded ", (u64)s->unrecorded,
             ", ambiguous ", (u64)s->skipped, "; unfingerprinted ", (u64)s->unfingerprinted);
         differ += s->differ;
     }
