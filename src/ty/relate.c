@@ -3792,7 +3792,14 @@ static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) 
 // Whether the declared type's variances are measured, or being measured by this checker (--shared-graph on threads:
 // or published)
 static bool variances_known(Checker* me, Ty const* target) {
-    if (intern_get(&my links, (u64[]){ KEY_VARIANCES, target->id }, 2) || variance_claim_of(me, target, nullptr)) return true;
+    if (intern_get(&my links, (u64[]){ KEY_VARIANCES, target->id }, 2)) return true;
+    // (Known because it is in flight here: what it selects is this worker's in-flight state, an event, internal to the
+    // group if it is the running measurement's own subject)
+    VarianceClaim* claim = variance_claim_of(me, target, nullptr);
+    if (claim) {
+        variance_claim_read(me, claim);
+        return true;
+    }
     VarianceSlot const* slot = my graph ? graph_variance_slot(me, target, false, false) : nullptr;
     return slot && sw_load(&slot->value) > SW_POISON;
 }
@@ -6498,6 +6505,8 @@ static Ternary structured_related_members(
         if (elements && my base_constructors_in_flight && is_tuple(source) && is_tuple(target) &&
             st->relation != TY_RELATION_IDENTITY && source->reference.target != target->reference.target
         ) {
+            // (Decided by what this worker has in flight: a taint event, plan 86 stage 4f)
+            TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
             Ty const* number = ty_intrinsic(me, TY_NUMBER);
             IndexInfo const* ti = ty_applicable_index_info(me, apparent_type(me, target), number);
             IndexInfo const* si = ti ? ty_applicable_index_info(me, apparent_type(me, source), number) : nullptr;
@@ -8281,6 +8290,9 @@ bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b) {
 bool ty_is_related_within(Checker* me, Ty const* source, Ty const* target) {
     RelationState* st = my relating;
     if (!st) return ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE);
+    // (Under the relation in progress, its maybe stack and depth: this worker's own context, a taint event for what
+    // is computed around it, plan 86 stage 4f)
+    TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
     if (error_related(source, target, st->relation)) return true;
     return is_related_to(me, st, source, target, false) != TERNARY_FALSE;
 }

@@ -90,7 +90,13 @@ bool graph_memo_late(u32 kind);
 // (graph_memo_hit(), through InternTable.taint). Every put is logged while the checker is on a graph; published only
 // once others read them (graph_memo_sharing())
 void graph_memo_log_put(Checker* checker, InternTable const* table, void const** block, u32 kind);
-void graph_memo_miss(InternTable const* table, u64 hash, u64 const* words, u32 count);
+void graph_memo_miss(Checker* checker, InternTable const* table, u64 hash);
+extern uint8_t graph_memo_tracked_kinds[256]; // The memo kinds whose taint is tracked: not the identity-valued ones
+// (A miss of a key whose computation may start here, intern_shared_find())
+static inline void graph_memo_note_miss(Checker* checker, InternTable const* table, u64 hash, u64 const* words, u32 count) {
+    if (!checker || !checker->graph_memo_on) return;
+    if (table == &checker->intersection_props || (count && graph_memo_tracked_kinds[words[0] & 255])) graph_memo_miss(checker, table, hash);
+}
 void graph_memo_sweep(Checker* checker); // A taint event (overlay.c's graph_taint_bump())
 enum { MEMO_MISS_SLOTS = 4096, MEMO_FLOOR_SLOTS = 1024, MEMO_TAINT_BITS = 1 << 16 };
 typedef struct MemoMiss {
@@ -121,6 +127,8 @@ static inline bool memo_taint_maybe(MemoTaint const* t, uintptr_t key) {
     return t->bits[(h >> 6) & (MEMO_TAINT_BITS / 64 - 1)] >> (h & 63) & 1;
 }
 void graph_memo_hit_slow(MemoTaint const* taint, uintptr_t key);
+// (Out of line: intern_hit() is inlined into every lookup, only the test of InternTable.taint stays there)
+[[gnu::noinline, gnu::cold]] void graph_memo_hit_cold(MemoTaint const* taint, void const* const* block);
 static inline void graph_memo_hit(MemoTaint const* taint, void const* const* block) {
     if (memo_taint_maybe(taint, (uintptr_t)block)) graph_memo_hit_slow(taint, (uintptr_t)block);
 }

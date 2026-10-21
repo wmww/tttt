@@ -1557,7 +1557,67 @@ in parallel only where the file sets are disjoint):
     flag K12 work (cgtc.sh) drizzle 5.90 -> 6.44 G (K12/K1 1.106 -> 1.187), zod 4.875 -> 5.478 G (1.096 -> 1.217);
     relation pairs at K12 drizzle 257k -> 352k, zod 238k -> 394k (K1 247k, 234k), almost all of it the poisoned
     variance groups measured again by every worker (zod without relation sharing 270k -> 407k). ~0.1 G is the
-    hooks' own (graph_memo_miss(), the log). Decision pending with the coordinator.
+    hooks' own (graph_memo_miss(), the log), trimmed since (graph_memo_note_miss()'s inline kind filter, the log
+    only while memos are shared): K1 with the flag drizzle +0.59% against ai-main.
+    **Decision (coordinator, 2026-10-22): option 1, the variance group rule as it is.** The options were (1) accept
+    the duplicated measurements (correct by the rule; the cost is work, not waits), (2) a per-group variance lock
+    (rejected: it brings waiting back, and wait cycles with it), (3) a history-independent deep-nesting order so that
+    deep cuts stop tainting (rejected for now, see the follow-up below). Narrowing "results made inside a clean group,
+    tainted only by its internal events, are internal for later groups" was rejected: such a result is the same only
+    when computed inside that group's measurement, and another history can compute the pair outside it, so it isn't
+    by construction. Gates changed with it: K12 work within 1.25x K1 on every corpus; the binding criterion is drizzle,
+    effect and zod K12 wall at or below today's defaults (best-of-7, load stated; the human's bench decides).
+    Stamps stay on under the flag: drizzle seeds with them off are 27/100, the taint rule only keeps a schedule-ordered
+    deep-nesting decision private, the worker's own history still makes it.
+    **After the decision (same session):** the variance slots are used whenever memos are shared, threads or not
+    (the memo log no longer carries variances): at T1 K16 the per-entry rule withheld some members of clean groups
+    and react-navigation's three projects differed (kdiff). KEY_ALIAS_MARKER became a scratch kind: it says which
+    alias instances this checker's own measurements made, and shared, it told a checker that never measured the
+    alias that an instance it met was a marker (react-navigation's spurious TS2322s at K16 T1; the four kdiff
+    projects: react-navigation x3 now K1's, trpc/examples/nuxt still differs, not mine, see above).
+    TTTT_GRAPH_RECHECK=1 on drizzle: 3 of 519 files differ in the graph at K12 (elaboration chains of the TS2416
+    group: `with(...).update(...).set(...)` against `...$dynamic()`), but base (ai-main 6b2063a69) shows the same 3
+    at --checkers 1 --threads 1 with the flag: a fresh checker reading the finished graph elaborates differently,
+    pre-existing; at K12 base hid it because every worker took the one published measurement.
+    Final numbers of the session (against ai-main 6b2063a69): default path callgrind drizzle +0.07%, zod +0.18%,
+    nest +0.09% (try_resolve_indexed() pinned inline: gcc had stopped inlining it into indexed(), +0.3% on drizzle);
+    K1 with the flag (cgtc.sh) drizzle +0.39%, zod +0.43%; K12/K1 work drizzle 1.197, zod 1.224, effect 1.084 (gate
+    1.25); wall best-of-15 interleaved at load 15-27, K12 T12 shared against the defaults: drizzle 0.240 s against
+    0.322, zod 0.204 against 0.222, effect 0.564 against 0.412 (base: 0.563, effect's known +10-35% under the flag,
+    not this step's; base drizzle 0.257, zod 0.187). 20-run tables 20/20 on the five; checkerdiff K12 and threadcheck
+    T12 identical; seeds drizzle 100/100, effect 99/100 (seed 18, the TS7006 residue: P2's outer-inference event
+    is to be rechecked once merged). Fingerprint (2 runs zod, drizzle): (3) the PgArrayBuilder/GelArrayBuilder
+    variances gone; (1) now starts at a conditional branch [185] in registries.ts (P2's word) with the memo kinds
+    downstream of it; (4) KEY_UNION_PAIR of the Promise unions in query.ts still differs although clean by the
+    counter: two members that print alike, most likely their order by per-worker ids (P2's order keys), not a taint.
+    **Audit of per-worker state read by publishing computations** (relate.c, graph.c, lazy_type.c; the coordinator's
+    generalization of P1's contextual-signature finding):
+    - relate.c ty_is_related_within(): inference inside a relation reads the relation in progress (`my relating`:
+      its maybe stack, depth, expanding): now a taint event.
+    - relate.c tuples_related()'s extra index-signature comparison while `my base_constructors_in_flight` (a class's
+      `extends` expression is evaluated): decided by in-flight state, now an event.
+    - relate.c variances_known() answering true for this worker's own claim in flight: an event now (internal to
+      the group for the running measurement's own subject), like the get_variances() reads.
+    - relate.c structured_related_members()'s `marker` test reads `variance_depth` and variances_known(): marker
+      references exist only inside measurements, whose relations aren't published; the claim reads are events.
+    - relate.c `for_constraint_root`: part of the conditional instance's key (KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT),
+      reset for nested conditionals (checker.c): no leak found.
+    - relate.c relation state (maybe stack, deep-nesting stacks, budgets, `variance_reports`, the generic relation
+      numbering): the maybe stack is tsc's context-free rule; deep cuts and limits are events; the generic numbering
+      is never shared; variance reports only flag measurements.
+    - the private relation cache: entries made under any event are CACHE_DEEP (hit = event); clean ones are this
+      worker's clean results, fine.
+    - lazy_type.c: a declaration's LazyMemo state (evaluation_started: an event; pattern_retried: the retry is a
+      TAINT_CYCLE event); expression memos (LAZY_TYPE_EXPR) are per checker and never shared, but a declaration
+      evaluation that reads an expression's cached type computed earlier under another contextual type or flow state
+      reads private state: not an event today (rule 4's flow isolation covers flow, not contextual typing). Left for
+      P2/D, which own expr.c: the expression memo's `context` check decides whether it is reused.
+    - graph.c: only bookkeeping of its own (the miss table, the log).
+ If is_deeply_nested_as()
+    ordered types by something every history agrees on (a canonical key instead of first-touch stamps or ids), a deep
+    cut would stop being a taint event, and most of the variance groups' and relations' taint (the cascade above)
+    would go. Risk: tsc's isDeeplyNestedType compares type ids along the stack, so id order is tsc's semantics there;
+    another order changes which relations get cut and so tttt's TS2589 tail against tsgo.
     Not done: divergence (1) (zod `$replace` distributive constraint) and the trpc/examples/nuxt kdiff are not memo,
     relation, variance or declaration memo publications (they stay with every one of those kept private): an
     unconverted Ty-resident value, P1/P2's.

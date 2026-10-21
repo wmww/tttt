@@ -440,7 +440,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   property's write type, its synthetic parts) must be an identity kind, published before the
   object is reachable: graph_kind_class() lists the ones found so far (KEY_PROP_WRITE_TYPE, KEY_SYNTHETIC_PROP_PARTS,
   KEY_PROP_MAPPED_TYPE), more may hide behind a flag on a shared struct (KEY_ALIAS_MARKER is history: published
-  at creation it changed excalidraw at K12 threads, kept a memo kind).
+  at creation it changed excalidraw at K12 threads; a memo kind until plan 86 4f P3 made it scratch, each checker's
+  own marker instances, once poisoned variance groups are measured by every worker).
   Prop.write_type_known is a bitfield set (read-modify-write of its byte) on a published property: only that bit
   changes after construction, so concurrent setters agree. SymbolLinks.base_cycle is a flag byte that members'
   resolution (resolve_members_with_this()'s base cycle, class_base()'s constructor cycle) ORs bits into on a shared

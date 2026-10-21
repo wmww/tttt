@@ -254,7 +254,7 @@ static void const** intern_put(Checker* me, InternTable* table, InternEntry* ent
         block = arena_new_n(&my arena, u64, 2 + long_key + count) + 1;
         block[-1] = hash;
         // (A memo kind's entry is published once its value is there, if its computation was clean: graph_memo_flush())
-        graph_memo_log_put(me, table, (void const**)block, count ? (u32)(words[0] & 255) : 0);
+        if (my graph_memo_on) graph_memo_log_put(me, table, (void const**)block, count ? (u32)(words[0] & 255) : 0);
     } else {
         block = arena_new_n(&my arena, u64, 1 + long_key + count);
     }
@@ -285,7 +285,7 @@ static void const** intern_put(Checker* me, InternTable* table, InternEntry* ent
 // A private entry hit. (--shared-graph: a memo kind's entry whose computation was tainted is this worker's own, and
 // reading it is a taint event, plan 86 stage 4f; `taint` is set once the checker has one, graph.c)
 static inline void const** intern_hit(InternTable const* table, void const** block) {
-    if (__builtin_expect(table->taint != nullptr, 0)) graph_memo_hit(table->taint, block);
+    if (__builtin_expect(table->taint != nullptr, 0)) graph_memo_hit_cold(table->taint, block);
     return block;
 }
 
@@ -321,7 +321,7 @@ static void debug_check_type_value(InternTable const* table, u64 const* words, u
         graph_taint_miss(table, hash);
 #endif
         // (A memo kind's computation may start here: graph_memo_log_put() takes the taint counter from then)
-        graph_memo_miss(table, hash, words, count);
+        graph_memo_note_miss(current_checker, table, hash, words, count);
         return nullptr;
     }
     graph_count_shared_hit(table, words, count);
@@ -3932,8 +3932,9 @@ static bool mapped_keys_have_index_signature(Ty const* constraint) {
     return nullptr;
 }
 
-// The access itself is ty_access() (access.c), the same lookup property access expressions get
-static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* index, bool written, bool include_undefined) {
+// The access itself is ty_access() (access.c), the same lookup property access expressions get. (Inlined into indexed():
+// gcc stopped doing it on its own after unrelated changes to checker.c, +0.3% of drizzle)
+__attribute__((always_inline)) static inline Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* index, bool written, bool include_undefined) {
     // (An error index is any to tsgo's getIndexedAccessType: the index signatures say, `keyof Record<Unresolved, X>`)
     if (object->flags & TYF_ANY) return object;
     // (No shortcut for a never index: a generic object defers first, `(T | Record<string, T> | null)[never]`, and an

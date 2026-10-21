@@ -62,6 +62,8 @@ static char const* kind_name(u32 kind);
 // (Debug: TTTT_GRAPH_NOSHARE=k,k,... or =all-but:k,k: kinds kept private, a bisection of what sharing breaks)
 // (A table: asked at every memo kind's miss and put)
 static uint8_t kind_classes[512];
+uint8_t graph_memo_tracked_kinds[256];
+static bool memo_identity_valued(u32 kind);
 static int kind_classes_init;
 [[gnu::noinline, gnu::cold]] static void kind_classes_make(void) {
     static uint8_t noshare_kinds[256];
@@ -81,6 +83,7 @@ static int kind_classes_init;
         GraphClass c = graph_kind_class_of(kind);
         kind_classes[kind] = (uint8_t)(c != GRAPH_SCRATCH && kind < 256 && noshare_kinds[kind] ? GRAPH_SCRATCH : c);
     }
+    for (u32 kind = 0; kind < 256; kind++) graph_memo_tracked_kinds[kind] = kind_classes[kind] == GRAPH_MEMO && !memo_identity_valued(kind);
     __atomic_store_n(&kind_classes_init, 1, __ATOMIC_RELEASE);
 }
 
@@ -114,7 +117,7 @@ static GraphClass graph_kind_class_of(u32 kind) {
     case KEY_UNION_ACCESS: case KEY_BASE_CONSTRAINT:
     case KEY_INFERRED_TRUE_BRANCH: case KEY_DISTRIBUTION_DEPENDENT: case KEY_DISTRIBUTIVE_CONSTRAINT:
     case KEY_IMPLIED_CONSTRAINT: case KEY_TYPE_VARIABLE_REDUCTION: case KEY_DEFINITELY_RELATED:
-    case KEY_CANONICAL_SIGNATURE: case KEY_BASE_SIGNATURE: case KEY_VARIANCES: case KEY_ALIAS_MARKER:
+    case KEY_CANONICAL_SIGNATURE: case KEY_BASE_SIGNATURE: case KEY_VARIANCES:
     case KEY_CHECK_MARKER_REF: case KEY_ITERATION_TYPES: case KEY_WIDENED_NULLABLE:
     case KEY_INTERSECTION_PROP_CONTEXT: case KEY_UNION_PAIR:
     case KEY_INTERSECTION_OF: case KEY_REVERSE_MAPPED: case KEY_UNION_KEY_NAME: case KEY_UNION_KEY_MEMBER: case KEY_FLOW_NOT_UNIT:
@@ -122,6 +125,9 @@ static GraphClass graph_kind_class_of(u32 kind) {
     case KEY_ARRAY_THIS_PROPS: case KEY_TUPLE_NAME_ORDER: case KEY_INDEX_NAME_ORDER: case KEY_DECIMAL_ORDER:
     case KEY_THISLESS_SIGNATURES: case GRAPH_KIND_INTERSECTION_PROPS:
         return GRAPH_MEMO;
+    // KEY_ALIAS_MARKER says which alias instances this checker's own variance measurements made (plan 86 4f: with
+    // variance groups poisoned and measured privately, a shared flag told a checker that never measured the alias that
+    // an instance it met was a marker, react-navigation's spurious TS2322s at K16 T1);
     // KEY_GENERIC_RELATION numbers relations per checker; KEY_UNDEFINED_PROPERTY is each checker's link from a name to
     // its program-wide entry (members.c's undefined_choice(), the same for every checker); the rest is per expression,
     // per call, flow, inference, report-once
@@ -142,6 +148,7 @@ void graph_publish(TyGraph* me, Checker* checker);
 static void publish_declaration_memo(TyGraph* me, Checker* checker, u32 slot);
 
 TyGraph* graph_new(Checker* first) {
+    graph_kind_class(0); // (Its tables, before any worker asks)
     TyGraph* me = calloc(1, sizeof(TyGraph));
     panic_if(!me, "out of memory");
     my types = shared_table_new();
@@ -675,7 +682,9 @@ void graph_relation_put(TyGraph* me, u32 relation, u64 key, unsigned value) {
 // Variance slots (graph.h). The slots are the graph's arena's: the first checker's, never recycled with the flag
 VarianceSlot* graph_variance_slot(Checker* checker, void const* subject, bool alias, bool create) {
     TyGraph* me = checker->graph;
-    if (!me || !my concurrent) return nullptr;
+    // (Whenever others read what it measures, on threads or one checker after another: published by groups only, a
+    // withheld member of a clean group measured again in a warm graph changed react-navigation at K16 T1)
+    if (!me || !checker->graph_memo_on) return nullptr;
     u64 key = (u64)alias << 56 | (u64)(uintptr_t)subject;
     VarianceSlot* ret = (VarianceSlot*)shared_links_get(my variance_slots, key);
     if (ret || !create) return ret;
@@ -1099,18 +1108,11 @@ static bool memo_identity_valued(u32 kind) {
     }
 }
 
-static bool memo_kind_tracked(Checker const* checker, InternTable const* table, u32 kind) {
-    if (table == &checker->intersection_props) return true;
-    return graph_kind_class(kind) == GRAPH_MEMO && !memo_identity_valued(kind);
-}
-
 static u32 memo_floor_index(void const* table, u64 hash) {
     return (u32)(memo_taint_mix(hash ^ (u64)(uintptr_t)table) >> 54) & (MEMO_FLOOR_SLOTS - 1);
 }
 
-void graph_memo_miss(InternTable const* table, u64 hash, u64 const* words, u32 count) {
-    Checker* checker = current_checker;
-    if (!checker || !checker->graph_memo_on || !memo_kind_tracked(checker, table, count ? (u32)(words[0] & 255) : 0)) return;
+void graph_memo_miss(Checker* checker, InternTable const* table, u64 hash) {
     struct MemoTaint* t = memo_taint_of(checker);
     MemoMiss* m = &t->misses[memo_taint_mix(hash ^ (u64)(uintptr_t)table) & (MEMO_MISS_SLOTS - 1)];
     if (m->gen == t->gen && m->hash == hash && m->table == table) return; // (The earlier miss: its computation started first)
@@ -1190,6 +1192,10 @@ void graph_memo_hit_slow(struct MemoTaint const* t, uintptr_t key) {
     }
 }
 
+void graph_memo_hit_cold(MemoTaint const* t, void const* const* block) {
+    graph_memo_hit(t, block);
+}
+
 // (The entries put since the last event: those still without a value were in flight across this one)
 void graph_memo_sweep(Checker* checker) {
     struct MemoTaint* t = checker->memo_taint;
@@ -1236,7 +1242,7 @@ void graph_memo_log_put(Checker* checker, InternTable const* table, void const**
     else tag = 2;
     if (tag != 2 && graph_kind_class(kind) != GRAPH_MEMO) return;
     // (Variances on threads go through their slots, graph_variance_slot(), as groups: relate.c)
-    if ((kind == KEY_VARIANCES || kind == KEY_ALIAS_VARIANCES) && tag == 1 && checker->graph->concurrent) return;
+    if ((kind == KEY_VARIANCES || kind == KEY_ALIAS_VARIANCES) && tag == 1) return;
     // (Nobody to read them: one checker on the graph, `--checkers 1`, publishes nothing)
     if (!graph_memo_sharing(checker)) return;
     // (Clean so far: no event since its miss, and pending until its value is there. Tainted: the checker's own from now
