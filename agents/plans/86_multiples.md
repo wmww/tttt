@@ -531,6 +531,17 @@ variance cycle's results must be published as a group with their cold values (fi
 publishing them gives), not withheld; the publish rule needs a "cycle-internal in-flight read" exception for
 variances, the case G0's `--variances-clean` probed. The other tainted kinds (conditional instances, simplified,
 base constraints, declaration memos) changed nothing withheld.
+**Variances are never withheld now (2026-10-21, get_variances())**: tsc measures a type's variances once per program,
+whoever asks first; the cheap taint no longer marks them. Tried first and rejected: a group rule where only the
+cycle's own claim reads are exempt. The outermost measurements' groups were still tainted, by reads of tainted
+results (signature returns, declaration memos: 88 and 394 reads on drizzle K4) whose taint came from a handful of
+in-flight declarations and return types outside the measurement (lazy_type.c's IN_FLIGHT, function_return_type()'s),
+so every one of drizzle's MySql/Pg/SQLite/Gel/SingleStore groups stayed withheld and the TS2416s still went. With
+variances published: drizzle K4 and K12 identical to K1, and zod, effect, excalidraw, nest, vscode at K12 too (a
+-DTTTT_GRAPH_TAINT build, --threads 1). For 4d: what a variance cycle measures is published by the checker that
+measured it, as one group when the outermost measurement (claim_and_measure()) ends, first group to finish wins: a
+group must not be mixed from two workers' measurements (different entries into one cycle can measure its members
+differently). Not built yet: the prototype publishes per checker, which is per group already.
 
 **The share** (`TTTT_GRAPH_STATS=1`, K12): shared hits 1.18 M drizzle, 1.02 M zod, 1.85 M excalidraw lookups
 (literals, SymbolLinks, references, anonymous and conditional instances, intersection props, union pairs); taint marks

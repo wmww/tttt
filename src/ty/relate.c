@@ -3622,7 +3622,18 @@ static Variances const* get_variances(Checker* me, Ty const* target) {
         return covariant;
     }
     variances = claim_and_measure(me, subject);
+    // Never withheld from a shared graph (--shared-graph's cheap taint, -DTTTT_GRAPH_TAINT): like tsc's, a type's
+    // variances are measured once per program, by whoever asks first, whatever is in flight then. A variance withheld
+    // because its measurement saw something in flight is measured again in a warm graph, which can give what no cold
+    // history does (drizzle's MySqlUpdateBase, plan 86's track S), and the in-flight reads that taint them are mostly
+    // the cycle's own claims and, through those, everything its measurement computed. What a cycle measures is
+    // published by the checker that measured it, all of it: in 4d, as one group when the outermost measurement ends
+    // (claim_and_measure(), first finisher wins). The prototype's TTTT_TAINT keeps tainting them (cleandiff's G0 rule)
+#ifndef TTTT_GRAPH_TAINT
     TAINT_END(taint_frame, TK_VARIANCES, variances, target, variances);
+#else
+    (void)taint_frame;
+#endif
     return variances;
 }
 
