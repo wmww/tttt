@@ -7,8 +7,8 @@ relative to its cwd, so always make the references and the runs through these sc
 argument may be empty (`""`) for `release/tttt`; other builds (`-g`, TSan, `-DTTTT_GRAPH_TAINT`) are your own, kept in
 `$SG_OUT` or another scratch dir.
 
-**References first:** `refs.sh [BIN] [corpus...]` writes `ref.X` for each corpus in `paths.sh` (drizzle, zod,
-excalidraw, effect, nest, vscode): one K1 run, `--threads 1 --checkers 1 --checker-memory off --noEmit --pretty false
+**References first:** `refs.sh [BIN] [corpus...]` writes `ref.X` for each corpus named, by default the six `CORE`
+ones in `paths.sh` (drizzle, zod, excalidraw, effect, nest, vscode; `ALL` is every `-p` corpus): one K1 run, `--threads 1 --checkers 1 --checker-memory off --noEmit --pretty false
 -p TSCONFIG`. Regenerate them after any change to the default path's output (they're never committed).
 
 | script | what it does |
@@ -27,4 +27,5 @@ excalidraw, effect, nest, vscode): one K1 run, `--threads 1 --checkers 1 --check
 | `hang.sh BIN corpus N SECS` | gdb runs; one past SECS is interrupted and all threads' stacks kept as `hang.X.I` |
 | `g2bench.sh BIN [RUNS]` | gate G2's table: best wall, CPU and peak RSS per `-p` corpus at K1, defaults, K4, shared K4, K12, shared K12 (`ONLY=` restricts) |
 | `fb.gdb` | `gdb -x fb.gdb --args BIN ...`: a backtrace at every `graph_fallback_hook` (broken wait cycle) |
-| `tsan.py LOG` | groups a ThreadSanitizer log's reports by (access, previous access) |
+| `tsan.sh [corpus...]` | the standing race check: a TSan build of the tree (`$TSAN_BUILD`, default `$OUT/btsan-<hash>`), every `-p` corpus (default `ALL`) at `THREADS` (default "4 12") with `TTTT_SHARED_GRAPH=1`; one line per run (clean / N report groups, output against `ref.X`), then every group over all runs; exit 1 if any. ~25 min for all, vscode T12 ~25 GB (`SKIP=vscode`); `TSAN_ENV=`, `EXTRA=` |
+| `tsan.py LOG... [--brief]` | groups ThreadSanitizer reports by the unordered pair (access, previous access), innermost non-TSan frames, with the runs each group occurs in and both stacks of its first report |

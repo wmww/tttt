@@ -4088,7 +4088,7 @@ static Ty const* conditional_flow_type(Checker* me, TypeNode const* node, Ty con
             Ty const* unset = nullptr;
             __atomic_compare_exchange_n(&implied->extends, &unset, extends, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED);
         }
-        ty_buf_push(&constraints, implied->extends);
+        ty_buf_push(&constraints, __atomic_load_n(&implied->extends, __ATOMIC_ACQUIRE));
     }
     if (constraints.len) {
         Ty const* constraint = constraints.len == 1 ? constraints.data[0] :

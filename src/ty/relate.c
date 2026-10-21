@@ -6938,8 +6938,13 @@ static void maybe_truncate(RelationState* st, u32 len) {
 // one relation map per program). Not a pair keyed by a generic relation number (KEY_GENERIC_RELATION numbers them per
 // checker), and only what is computed outside variance measurements is published. TTTT_GRAPH_SHARE_RELATIONS=0: off
 static bool relation_shares(u64 key) {
-    static int off = -1;
-    if (__builtin_expect(off < 0, 0)) off = getenv("TTTT_GRAPH_SHARE_RELATIONS") && !strcmp(getenv("TTTT_GRAPH_SHARE_RELATIONS"), "0");
+    // (Relaxed atomics: the workers' first calls race to set it)
+    static int off_ = -1;
+    int off = __atomic_load_n(&off_, __ATOMIC_RELAXED);
+    if (__builtin_expect(off < 0, 0)) {
+        off = getenv("TTTT_GRAPH_SHARE_RELATIONS") && !strcmp(getenv("TTTT_GRAPH_SHARE_RELATIONS"), "0");
+        __atomic_store_n(&off_, off, __ATOMIC_RELAXED);
+    }
     return !off && !(key & (1ull << 61));
 }
 

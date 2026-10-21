@@ -410,8 +410,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   at creation it changed excalidraw at K12 threads, kept a memo kind).
   Prop.write_type_known is a bitfield set (read-modify-write of its byte) on a published property: only that bit
   changes after construction, so concurrent setters agree. SymbolLinks.base_cycle is a flag byte two workers OR
-  bits into without an atomic (ty_interface_in_base_cycle(), ty_bases_reentered()): one's bit can be lost (TSan's one
-  real report left; no output seen to depend on it). graph_kind_class() puts KEY_FLOW_NARROWED /
+  bits into without an atomic (ty_interface_in_base_cycle(), ty_bases_reentered()): one's bit can be lost (no output seen to
+  depend on it). TSan with the flag is far from clean: `scripts/sharedgraph/tsan.sh` found ~55 distinct report groups
+  over the 14 `-p` corpora at T4/T12 (2026-10-21; the list is plan 86 4e item 1's "Stage 4f gates"), most of them
+  lazy fields on shared types read plainly beside another worker's write. graph_kind_class() puts KEY_FLOW_NARROWED /
   KEY_FLOW_DISCRIMINANT (census: SHARE) with the scratch kinds, and treats identity records (SymbolLinks,
   FunctionReturn) as published whatever their contents' taint. Its cheap taint compiles only with -DTTTT_GRAPH_TAINT
   and doesn't count reads of tainted private intern entries or of Ty-resident results other than at TAINT_READ sites

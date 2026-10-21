@@ -176,7 +176,8 @@ void graph_adopt(TyGraph* me, Checker* checker) {
     graph_link_tables(me, checker);
     checker->singletons = my singletons;
     ty_singletons_sync(checker);
-    my checkers++;
+    // (Atomic: graph_can_redo() reads it without the lock)
+    __atomic_store_n(&my checkers, my checkers + 1, __ATOMIC_RELAXED);
     panic_if(my checkers > 63, "--shared-graph: at most 63 checkers");
     checker->graph_worker = (uint8_t)my checkers;
     // (Memo publication from the second checker on: the first one's, made alone, went with graph_new()'s publication)
@@ -189,8 +190,13 @@ void graph_adopt(TyGraph* me, Checker* checker) {
 }
 
 bool graph_can_redo(TyGraph const* me) {
-    static int off = -1;
-    if (off < 0) off = getenv("TTTT_GRAPH_REDO") && !strcmp(getenv("TTTT_GRAPH_REDO"), "0");
+    // (Relaxed atomics: every worker asks, the first ones at once)
+    static int off_ = -1;
+    int off = __atomic_load_n(&off_, __ATOMIC_RELAXED);
+    if (off < 0) {
+        off = getenv("TTTT_GRAPH_REDO") && !strcmp(getenv("TTTT_GRAPH_REDO"), "0");
+        __atomic_store_n(&off_, off, __ATOMIC_RELAXED);
+    }
     return !off && my concurrent && __atomic_load_n(&((TyGraph*)me)->checkers, __ATOMIC_RELAXED) < 60;
 }
 
