@@ -1313,6 +1313,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttIntersectionStateNotPassedToConditionalBranches': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttIntersectionTargetThisProps': {
         errors: true,
         symbols: true,
