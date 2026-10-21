@@ -2821,6 +2821,7 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     }
     TyList list = { .data = args, .len = len };
     SW_FP(TK_DEFERRED_ARGS, deferred, &list, taint);
+    (void)list;  // used by the fingerprint build only
     return (TyList){ .data = (Ty const* const*)sw_finish_fast(me, &deferred->args, &deferred->state, (uintptr_t)args, taint), .len = len };
 }
 
