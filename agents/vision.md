@@ -80,7 +80,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   tracks included); the flag's K1 +4% (from +14.6%: claims as a stack, no publication while one checker is alone).
   Recovery levers if it matters: a single look-and-claim call at the members.c sites (~2%), retiring shadowed workers
   at once (-0.2..-0.6%; the redo's mid-file abort is gone).
-- **Decision: the flag is not the default yet.** The release criterion (plan 89 section 3 item 4, plan 90 section 3):
+- **Decision (superseded by the 2026-10-22 paragraph above: parked, not pending): the flag is not the default.** The release criterion (plan 89 section 3 item 4, plan 90 section 3):
   residues closed, the full oracles identical plain and flagged, seeds and loaded runs, TSan zero groups, then the
   human's laptop bench with and without `TTTT_SHARED_GRAPH=1`. Plan 58 still waits for 7.1.0 stable.
 - **Lessons** (plan 90 section 4): the fix for each invisible state class was tsc's shape (derive from the node, not
