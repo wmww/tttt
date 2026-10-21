@@ -644,11 +644,24 @@ bool lazy_claim_slow(Checker* me, void* field, size_t size) {
 
 // Whether `me` waiting for `owner` closes a cycle of waits, and if so, whether `me` has the highest number in it: the
 // one that breaks it, whichever saw it first (under wait_lock)
+// Which one yields: the worker whose file is latest in program order (Checker.file_order), ties by the higher number.
+// K1 enters whichever of two mutually dependent results its file order reaches first and makes the other the inner,
+// circular one: the yielder is the worker K1 would have reached later. (TTTT_GRAPH_YIELD=worker: by number only)
+static u64 yield_rank(TyGraph const* me, unsigned worker) {
+    static int by_worker = -1;
+    if (by_worker < 0) by_worker = getenv("TTTT_GRAPH_YIELD") && !strcmp(getenv("TTTT_GRAPH_YIELD"), "worker");
+    Checker const* c = my workers[worker];
+    u64 order = c && !by_worker ? __atomic_load_n(&c->file_order, __ATOMIC_RELAXED) : 0;
+    return order << 8 | worker;
+}
+
 static bool breaks_wait_cycle(TyGraph const* me, unsigned waiter, unsigned owner) {
     unsigned highest = waiter;
+    u64 highest_rank = yield_rank(me, waiter);
     for (unsigned at = owner, n = 0; at && n < 64; at = my waiting_on[at], n++) {
         if (at == waiter) return highest == waiter;
-        if (at > highest) highest = at;
+        u64 rank = yield_rank(me, at);
+        if (rank > highest_rank) highest = at, highest_rank = rank;
     }
     return false;
 }

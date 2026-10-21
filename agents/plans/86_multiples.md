@@ -790,6 +790,16 @@ at the computation's end**, and makes every field another worker can read safe t
   entered K1's way. Cheaper directions to weigh first: fewer cycles to break (ty_reduced()'s in-flight guard is
   tttt's, tsc's getReducedType recomputes on re-entry; the lib warm-up cycles), or a breaker that waits for the owner
   to finish its whole top-level computation by yielding its own claims (abort and redo, not partial).
+  **The coordinator's levers** (release, K12 T12, 20 runs a corpus, rep3.sh + summ.sh; fallbacks = broken wait cycles
+  summed over the 20 runs): before them 74/80 K1's output, 1088 fallbacks. Lever 1, ty_graph_warm_up() (the first
+  checker resolves the global types and the members and property types of ~30 hot lib interfaces before the workers
+  start; TTTT_GRAPH_WARM_UP=0 skips it): 73/80, 405 fallbacks. Lever 2, the yielder is the worker whose file is latest
+  in program order (Checker.file_order, ties by number; TTTT_GRAPH_YIELD=worker for the old rule): 76/80 (excalidraw
+  17, drizzle 19, effect 20, zod 20), 183 fallbacks (zod 0). The differing runs all had fallbacks (excalidraw's 3:
+  contextual parameters lost, 1 to 164 added lines; drizzle's 1: a TS2589); 15 runs with fallbacks were K1's output.
+  Lever 3 doesn't apply: tsgo's getReducedType sets ObjectFlagsIsNeverIntersectionComputed before computing, so a
+  re-entered intersection is itself there too, the same guard as tttt's reduced_state (its union case recomputes, and
+  so does tttt's KEY_REDUCED_UNION path); the cycle is real in tsgo's order as well, only private to one checker.
 
 ### 4e's first item: a shared relation cache (measured and designed 2026-10-21, not built)
 **Measurement** (`agents/plans/86_relation_share_probe.patch`, a scratch patch to relate.c's recursive_related():

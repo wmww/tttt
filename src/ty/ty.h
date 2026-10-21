@@ -1740,6 +1740,7 @@ Ty const* ty_lower_bound_of_key_type(Checker* me, Ty const* ty);
 Ty const* ty_global_function_type(Checker* me); // Null without a lib
 Symbol const* ty_global_value_symbol(Checker* me, csview name); // The global value of that name, null if none (relate.c)
 void ty_init_global_types(Checker* me); // tsc's initializeTypeChecker's global types, in its order
+void ty_graph_warm_up(Checker* me); // --shared-graph on threads: the hot lib types' members, before the workers start
 Ty const* prop_type(Checker* me, Prop const* prop);
 bool ty_prop_is_accessor(Prop const* prop); // Its symbol is an accessor (tsc's SymbolFlags.Accessor): typed without optionality
 // What writes to the property are checked against when it differs from what reads get (a `set` accessor whose

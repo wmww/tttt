@@ -4753,7 +4753,7 @@ static void check_share(Program* me, u32 c, u32 count) {
             recycle_due = false;
         }
         segment[segment_count++] = at;
-        checker->file_order = at;
+        __atomic_store_n(&checker->file_order, at, __ATOMIC_RELAXED);
         checker->flow_analysis_disabled = false;
         deferred_bodies_acquire(me, source, nullptr);
         struct timespec file_start;
@@ -5011,6 +5011,15 @@ void program_typecheck(Program* me) {
         checker_errs[c] = (ErrorCtx){ .phase = ERROR_PHASE_TYPECHECK, .parent = my errs };
         my checkers[c] = c ? checker_new(me) : my checker;
         my checkers[c]->errs = &checker_errs[c];
+    }
+    // (--shared-graph on threads: the lib's hot types before the workers start, see ty_graph_warm_up())
+    if (my graph && count > 1 && (my threads ? my threads : 1) > 1) {
+        char const* warm = getenv("TTTT_GRAPH_WARM_UP");
+        if (!warm || strcmp(warm, "0")) {
+            checker_make_current(my checkers[0]);
+            ty_graph_warm_up(my checkers[0]);
+            checker_make_current(nullptr);
+        }
     }
     my steal_files = !getenv("TTTT_NO_STEAL");
     my share_states = c_new_n(_Atomic u32, count);
