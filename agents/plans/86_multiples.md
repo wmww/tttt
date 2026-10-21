@@ -907,6 +907,11 @@ every `-p` corpus, 20-run tables on the four, no default-path cost until the fla
    overload results of class members reached through marker instances) that another worker's measurement or check
    races to compute first; under K1 the order is fixed. Tools for the next try: a worker-tagged TTTT_DEBUG_VARIANCE,
    a per-slot dump at publication (both scratch patches, easy to redo), and the 100-run loaded loop (`t3loop.sh`).
+   Also ruled out (coordinator's hypothesis, one round of 150 loaded runs): memos built on a relation decided by
+   assumption. A per-worker counter bumped at every maybe-stack / deeply-nested / depth-limit Maybe and every Unknown
+   from unmeasured variances; intern memo entries and declaration memos whose computation saw it move kept private
+   (110k of 450k intern memo entries and 45 of 4900 declaration memos withheld on drizzle): still 2 of 150 differ.
+   Not testable that way: Ty-resident results (members, prop and signature return types), which have no private home.
 2. **Shared relation cache (2 sessions)**, as designed below. Gate as there; excalidraw's K12 pairs within 5% of K1.
 3. **Memory: per-worker private state recycled, the shared graph kept (3-4 sessions).** With the flag nothing is
    freed: a worker's arena holds both what it published and its private state (relation caches, scratch kinds,
