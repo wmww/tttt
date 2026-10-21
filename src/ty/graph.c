@@ -5,6 +5,7 @@
 #include "program.h"
 #include "ty/shared_table.h"
 #include <pthread.h>
+#include <setjmp.h>
 #include <stdatomic.h>
 #include <time.h>
 
@@ -23,6 +24,10 @@ enum { GRAPH_STAT_KINDS = 512, GRAPH_STAT_MEMOS = 500 };
 
 struct TyGraph {
     bool concurrent; // On several threads (graph_set_concurrent())
+    // Workers retired by a redo (graph_retire()): their in-flight fields are nobody's, whoever finds one resets it
+    _Atomic bool retired[64];
+    _Atomic u32 redos; // Files checked again after a broken wait cycle (TTTT_GRAPH_STATS)
+    pthread_mutex_t adopt_lock; // graph_adopt() on a worker thread (a redo's fresh checker)
     TySingletons* singletons; // The lib singletons, published once (ty.h)
     // The first checker's, which every other one shares (checker_new() makes them only for the first)
     Ty const* intrinsics[TY_INTRINSIC_COUNT];
@@ -143,6 +148,7 @@ TyGraph* graph_new(Checker* first) {
     ty_singletons_sync(first);
     my checkers = 1;
     pthread_mutex_init(&my wait_lock, nullptr);
+    pthread_mutex_init(&my adopt_lock, nullptr);
     first->graph_worker = 1;
     my workers[1] = first;
     // (What it made before the graph, the intrinsics' literals and typeof's union among them, is everyone's from the start:
@@ -157,13 +163,26 @@ void graph_adopt(TyGraph* me, Checker* checker) {
     checker->atom_constructor = my atom_constructor;
     checker->atom_prototype = my atom_prototype;
     checker->atom_bind = my atom_bind;
+    pthread_mutex_lock(&my adopt_lock);
     graph_link_tables(me, checker);
     checker->singletons = my singletons;
     ty_singletons_sync(checker);
     my checkers++;
     panic_if(my checkers > 63, "--shared-graph: at most 63 checkers");
     checker->graph_worker = (uint8_t)my checkers;
-    my workers[my checkers] = checker;
+    __atomic_store_n(&my workers[my checkers], checker, __ATOMIC_RELEASE);
+    pthread_mutex_unlock(&my adopt_lock);
+}
+
+bool graph_can_redo(TyGraph const* me) {
+    static int off = -1;
+    if (off < 0) off = getenv("TTTT_GRAPH_REDO") && !strcmp(getenv("TTTT_GRAPH_REDO"), "0");
+    return !off && my concurrent && __atomic_load_n(&((TyGraph*)me)->checkers, __ATOMIC_RELAXED) < 60;
+}
+
+void graph_retire(TyGraph* me, Checker* checker) {
+    atomic_store(&my retired[checker->graph_worker], true);
+    atomic_fetch_add(&my redos, 1);
 }
 
 void graph_set_concurrent(TyGraph* me, bool concurrent) {
@@ -629,6 +648,16 @@ static unsigned lazy_field_load(void* field, size_t size) {
     return size == 1 ? __atomic_load_n((uint8_t*)field, __ATOMIC_ACQUIRE) : __atomic_load_n((unsigned*)field, __ATOMIC_ACQUIRE);
 }
 
+static void lazy_field_reset(void* field, size_t size, unsigned seen) {
+    if (size == 1) {
+        uint8_t expected = (uint8_t)seen;
+        __atomic_compare_exchange_n((uint8_t*)field, &expected, (uint8_t)LAZY_STATE_NOT_STARTED, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+    } else {
+        unsigned expected = seen;
+        __atomic_compare_exchange_n((unsigned*)field, &expected, (unsigned)LAZY_STATE_NOT_STARTED, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+    }
+}
+
 bool lazy_claim_slow(Checker* me, void* field, size_t size) {
     unsigned mine = LAZY_STATE_IN_FLIGHT | (unsigned)me->graph_worker << 2;
     unsigned seen = lazy_field_load(field, size);
@@ -685,6 +714,11 @@ bool lazy_wait_slow(Checker* me, void* field, size_t size) {
     TyGraph* graph = me->graph;
     unsigned seen = lazy_field_load(field, size);
     unsigned owner = seen >> 2;
+    // (A retired worker won't finish it: not started again, for whoever claims it next)
+    if (LAZY_IN_FLIGHT(seen) && owner && owner < 64 && atomic_load(&graph->retired[owner])) {
+        lazy_field_reset(field, size, seen);
+        return true;
+    }
     if (LAZY_IN_FLIGHT(seen) && !owner && getenv("TTTT_GRAPH_LOUD_FALLBACKS")) {
         static _Atomic u32 told;
         if (atomic_fetch_add(&told, 1) < 5) eprintln("graph: worker ", (u32)me->graph_worker, " meets a field in flight without an owner");
@@ -698,6 +732,10 @@ bool lazy_wait_slow(Checker* me, void* field, size_t size) {
     u64 sleep_ns = 2000;
     for (u32 round = 0;; round++) {
         if (lazy_field_load(field, size) != seen) break;
+        if (atomic_load(&graph->retired[owner])) {
+            lazy_field_reset(field, size, seen);
+            break;
+        }
         if (round < 64) {
             __builtin_ia32_pause();
             continue;
@@ -709,6 +747,14 @@ bool lazy_wait_slow(Checker* me, void* field, size_t size) {
             if (getenv("TTTT_GRAPH_LOUD_FALLBACKS")) eprintln("graph: worker ", (u32)me->graph_worker, " breaks a wait cycle on ", (u32)owner);
             graph_fallback_hook(me, field);
             me->graph_fallbacks++;
+            // A redo instead (plan 86 4d): the worker gives its file up, its claims become nobody's, and the file is
+            // checked again by a fresh checker once the other side has finished (check_share())
+            if (me->redo_jmp) {
+                pthread_mutex_lock(&graph->wait_lock);
+                graph->waiting_on[me->graph_worker] = 0;
+                pthread_mutex_unlock(&graph->wait_lock);
+                longjmp(*(jmp_buf*)me->redo_jmp, 1);
+            }
             ret = false;
             break;
         }
@@ -773,6 +819,7 @@ static char const* kind_name(u32 kind) {
 
 // TTTT_GRAPH_STATS=1 (at the end of the typecheck): by kind, what was published, kept private and found shared
 void graph_print_stats(TyGraph const* me) {
+    eprintln("graph: ", (u32)atomic_load(&((TyGraph*)me)->redos), " files checked again after a broken wait cycle");
     eprintln("graph: ", my checkers, " checkers, ", shared_table_len(my types), " types entries, ", shared_table_len(my links),
         " links, ", shared_table_len(my intersection_props), " intersection props, ", shared_links_len(my node_links),
         " node links shared");

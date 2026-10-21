@@ -64,3 +64,8 @@ void graph_taint_read_block(void const* const* block);
 void graph_count_lost(TyGraph* me, u32 kind); // An identity another checker published first (intern_publish())
 void const* graph_link_insert(TyGraph* me, u32 kind, void const* subject, void const* value); // First wins
 void graph_count_shared_hit(InternTable const* table, u64 const* words, u32 count); // (checker.c)
+
+// A redo of a file after a broken wait cycle (plan 86 4d): whether one may start (threads on, room for a fresh worker,
+// TTTT_GRAPH_REDO=0 not set), and the giving-up checker retired: its in-flight fields are reset by whoever meets them
+bool graph_can_redo(TyGraph const* me);
+void graph_retire(TyGraph* me, Checker* checker);

@@ -82,10 +82,12 @@ void lazy_slots_add_type(LazySlots* me, Ty const* ty) {
         }
         my own[my own_len++] = index;
         if (my directory) {
-            atomic_store_explicit(&my directory->chunks[index], *chunk, memory_order_release);
-            u32 readers = atomic_load_explicit(&my directory->reader_count, memory_order_acquire);
+            // (Sequentially consistent with lazy_slots_share(): a reader registering meanwhile either is counted here
+            // or finds the chunk in its sync)
+            atomic_store_explicit(&my directory->chunks[index], *chunk, memory_order_seq_cst);
+            u32 readers = atomic_load_explicit(&my directory->reader_count, memory_order_seq_cst);
             for (u32 i = 0; i < readers; i++) {
-                LazySlots* reader = my directory->readers[i];
+                LazySlots* reader = __atomic_load_n(&my directory->readers[i], __ATOMIC_ACQUIRE);
                 if (reader != me) __atomic_store_n(&reader->types[index], *chunk, __ATOMIC_RELEASE);
             }
         }
@@ -108,17 +110,17 @@ void lazy_slots_missing(LazySlots const* me, u32 id) {
 void lazy_slots_sync(LazySlots* me) {
     if (!my directory) return;
     for (size_t i = 0; i < c_arraylen(my types); i++) {
-        if (!my types[i]) my types[i] = (Ty const**)atomic_load_explicit(&my directory->chunks[i], memory_order_acquire);
+        if (!my types[i]) my types[i] = (Ty const**)atomic_load_explicit(&my directory->chunks[i], memory_order_seq_cst);
     }
 }
 
 void lazy_slots_share(LazySlots* me) {
     if (!my directory) return;
-    // (Before the checkers run: the graph adopts them as it makes them)
+    // (Under graph_adopt()'s lock: one registration at a time, also while the other checkers run, a redo's fresh one)
     u32 at = atomic_load_explicit(&my directory->reader_count, memory_order_relaxed);
     panic_if(at >= c_arraylen(my directory->readers), "too many checkers on one graph");
-    my directory->readers[at] = me;
-    atomic_store_explicit(&my directory->reader_count, at + 1, memory_order_release);
+    __atomic_store_n(&my directory->readers[at], me, __ATOMIC_RELEASE);
+    atomic_store_explicit(&my directory->reader_count, at + 1, memory_order_seq_cst);
     lazy_slots_sync(me);
 }
 

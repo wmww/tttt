@@ -1302,6 +1302,9 @@ struct Checker {
     // Its worker number on the graph (1..63, the tag of what it has in flight: LAZY_FOREIGN()), 0 without one
     uint8_t graph_worker;
     u64 graph_waits, graph_wait_ns, graph_fallbacks; // lazy_wait_slow() (TTTT_GRAPH_STATS)
+    // --shared-graph on threads: a jmp_buf the file being checked can be given up through (a broken wait cycle,
+    // check_share()'s redo), null when it can't
+    void* redo_jmp;
 };
 
 // Lazily computed fields on shared objects (plan 86 4d): a LazyState in the low two bits, and while in flight the

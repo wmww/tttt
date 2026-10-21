@@ -28,6 +28,7 @@
 #include "cached_fs.h"
 #include <time.h>
 #include <pthread.h>
+#include <setjmp.h>
 #include <stdatomic.h>
 
 #define g_class_key SourceFile, source_file
@@ -135,6 +136,9 @@ typedef struct Program {
     HMapPackageFlag packages;
     Checker* checker; // Created by program_make_current(), checks the first share of the files
     Checker** checkers; // malloc'd, checker_count of them once typechecked: checker and the others
+    // --shared-graph: checkers that gave a file up (check_file_or_give_up()), dropped with the others
+    Checker** retired;
+    u32 retired_count, retired_cap;
     u32 checker_count;
     // What program_typecheck() checks, in order: every checked file of source_files_ordered
     VecSourceFilePtr check_files;
@@ -307,6 +311,8 @@ static void program_drop(Program* me) {
     content_mapper_host_drop(atomic_load(&my content_mapper_host));
     // First, its memos point into the AST and the scopes
     for (u32 i = 1; i < my checker_count; i++) checker_drop(my checkers[i]);
+    for (u32 i = 0; i < my retired_count; i++) if (my retired[i] != my checker) checker_drop(my retired[i]);
+    free(my retired);
     free(my file_shares);
     free(my file_checkers);
     vec_source_file_ptr_drop(&my check_files);
@@ -4632,6 +4638,58 @@ static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
     return checker;
 }
 
+// A file's check by `checker`. With --shared-graph on threads and `may_give_up`, a broken wait cycle gives the file
+// up instead (plan 86 4d): the diagnostics it reported so far go, the checker is retired (kept, not dropped: the graph
+// holds what it made; its in-flight fields are reset by whoever meets them) and a fresh one is returned for the redo.
+// Null when the file was checked
+enum { MAX_FILE_REDOS = 3 };
+static pthread_mutex_t retired_lock = PTHREAD_MUTEX_INITIALIZER;
+static Checker* check_file_or_give_up(Program* me, Checker* checker, SourceFile* source, u32 at, bool may_give_up) {
+    __atomic_store_n(&checker->file_order, at, __ATOMIC_RELAXED);
+    checker->flow_analysis_disabled = false;
+    deferred_bodies_acquire(me, source, nullptr);
+    isize errors_before = vec_error_size(&checker->errs->errors);
+    jmp_buf redo;
+    if (may_give_up && checker->graph && graph_can_redo(checker->graph)) {
+        if (setjmp(redo)) {
+            // (Given up: the stack is gone, what it reported for this file too)
+            checker->redo_jmp = nullptr;
+            while (vec_error_size(&checker->errs->errors) > errors_before) vec_error_pop(&checker->errs->errors);
+            graph_retire(checker->graph, checker);
+            pthread_mutex_lock(&retired_lock);
+            if (my retired_count == my retired_cap) {
+                my retired_cap = my retired_cap ? my retired_cap * 2 : 8;
+                my retired = realloc(my retired, sizeof(Checker*) * my retired_cap);
+                panic_if(!my retired, "out of memory");
+            }
+            my retired[my retired_count++] = checker;
+            pthread_mutex_unlock(&retired_lock);
+            checker_make_current(nullptr);
+            Checker* fresh = checker_new(me);
+            fresh->errs = checker->errs;
+            fresh->peak_memory = checker->peak_memory;
+            checker_make_current(fresh);
+            ty_init_global_types(fresh);
+            return fresh;
+        }
+        checker->redo_jmp = &redo;
+    }
+    if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
+    source_file_check_verbatim_exports(source, checker->errs);
+    checker->defer_checks = true;
+    checker->checking_file = source;
+    block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
+    // (What a deferred check defers joins the end of the queue)
+    for (u32 d = 0; d < checker->deferred_count; d++) {
+        check_deferred(checker->deferred[d], checker->errs);
+    }
+    checker->redo_jmp = nullptr;
+    checker->deferred_count = 0;
+    checker->defer_checks = false;
+    checker->checking_file = nullptr;
+    return nullptr;
+}
+
 // The floor each checker keeps (today's default at 4 checkers): a table of every corpus and the source sweep's 169
 // biggest projects at 4 checkers of 128 / 96 / 80 / 64 MB (measurements.md "The checkers' budget") put the corpora at
 // +1.4 / +2.3 / +3.3% wall for -6.5 / -11 / -17% peak, the sweep's at +3 / +5 / +9% for -3 / -6 / -7%
@@ -4753,23 +4811,19 @@ static void check_share(Program* me, u32 c, u32 count) {
             recycle_due = false;
         }
         segment[segment_count++] = at;
-        __atomic_store_n(&checker->file_order, at, __ATOMIC_RELAXED);
-        checker->flow_analysis_disabled = false;
-        deferred_bodies_acquire(me, source, nullptr);
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
-        if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
-        source_file_check_verbatim_exports(source, checker->errs);
-        checker->defer_checks = true;
-        checker->checking_file = source;
-        block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
-        // (What a deferred check defers joins the end of the queue)
-        for (u32 d = 0; d < checker->deferred_count; d++) {
-            check_deferred(checker->deferred[d], checker->errs);
+        // --shared-graph on threads: a broken wait cycle gives the file up (lazy_wait_slow()), and it's checked again
+        // by a fresh checker, which then reads what the other side of the cycle finished (plan 86 4d)
+        for (u32 redo = 0;; redo++) {
+            Checker* redoing = check_file_or_give_up(me, checker, source, at, redo < MAX_FILE_REDOS);
+            if (!redoing) break;
+            check_segment_after(me, checker, c, segment, segment_count - 1);
+            segment[0] = at;
+            segment_count = 1;
+            checker = redoing;
+            my checkers[c] = checker;
         }
-        checker->deferred_count = 0;
-        checker->defer_checks = false;
-        checker->checking_file = nullptr;
         if (debug_env.file_times) {
             struct timespec file_end;
             timespec_get(&file_end, TIME_UTC);

@@ -800,6 +800,21 @@ at the computation's end**, and makes every field another worker can read safe t
   Lever 3 doesn't apply: tsgo's getReducedType sets ObjectFlagsIsNeverIntersectionComputed before computing, so a
   re-entered intersection is itself there too, the same guard as tttt's reduced_state (its union case recomputes, and
   so does tttt's KEY_REDUCED_UNION path); the cycle is real in tsgo's order as well, only private to one checker.
+  **Lever 4, the redo** (coordinator's design, the abort variant): a worker that would break a wait cycle gives its
+  file up instead. check_file_or_give_up() (program.c) arms a jmp_buf (Checker.redo_jmp) around each file;
+  lazy_wait_slow() longjmps there when this worker is the yielder. The file's diagnostics so far are dropped, the checker
+  is retired (graph_retire(): kept until the program ends, the graph holds what it made; Program.retired) and a fresh
+  checker (a new worker number, graph_adopt() under a lock now, lazy_slots_share() registration sequentially consistent
+  with chunk broadcasts) checks the file again; the files before it in the segment get their after-check pass from the
+  old one first. The retired worker's in-flight fields are nobody's: whoever meets one (lazy_wait_slow()) resets it to
+  not started, so the other side claims and finishes them in K1's shape. At most MAX_FILE_REDOS (3) redos a file, then
+  the old fallback; none past 60 workers; TTTT_GRAPH_REDO=0 turns it off; TTTT_GRAPH_STATS counts the redos. Nothing
+  computed after the break is published, since nothing is computed after it. Not handled: a break while the thread
+  materializes deferred bodies (none seen; the AST thread state would be left set), malloc'd temporaries of the
+  abandoned stack leak. **20 runs a corpus: 79/80** (excalidraw 20, drizzle 19, effect 20, zod 20), 29 redos in all,
+  every run that broke a cycle K1's output; the one differing drizzle run had no broken cycle (a TS2589 in
+  mysql-core/query-builders/query-builder.ts: instantiation depth against what is cached already, another mechanism).
+  vscode: 2 runs, both K1's output, no redos, 2.3-2.6 s wall at K12 against K1's 13.5 s, 4.6 GB peak (K1 4.1 GB).
 
 ### 4e's first item: a shared relation cache (measured and designed 2026-10-21, not built)
 **Measurement** (`agents/plans/86_relation_share_probe.patch`, a scratch patch to relate.c's recursive_related():
