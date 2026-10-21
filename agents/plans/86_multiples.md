@@ -936,7 +936,7 @@ every `-p` corpus, 20-run tables on the four, no default-path cost until the fla
    checker's error vector back to its length before the file, but errors are kept in span order, so the tail it
    popped held the errors of files the same checker had checked earlier whose paths sort after the given-up file
    (geldb/insert.ts given up: mysql/insert.ts, sqlite/with.ts lost theirs), while the given-up check's own errors
-   stayed. Fixed (ebb6e432f): a file that may be given up reports into an ErrorCtx of its own, merged when checked.
+   stayed. Fixed (4bdbb37de): a file that may be given up reports into an ErrorCtx of its own, merged when checked.
    How it was found: rechecking every file in the finished graph with a fresh checker (and with the original one)
    always gave K1's errors, and the relations both checks asked agreed: the loss was in the bookkeeping, and every
    affected file had been checked by the worker that later redid a type-tests file (a redo never seen in identical
