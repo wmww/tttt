@@ -12,7 +12,7 @@ if test "${1:-}" = --rm; then
 fi
 name=$1; base=${2:-HEAD}; dir=/tmp/wt-$name
 git worktree add -b "wt-$name" "$dir" "$base" >/dev/null
-for d in typescript typescript-gopath go corpora corpora-locks sources node; do
+for d in typescript typescript-gopath go corpora sources node; do
     test -e "thirdparty/$d" && ln -s "$(realpath "thirdparty/$d")" "$dir/thirdparty/$d"
 done
 echo "$dir"
