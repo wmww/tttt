@@ -321,8 +321,14 @@ static void program_free_preresolved(Program* me) {
     my preresolved_garbage_count = my preresolved_garbage_cap = 0;
 }
 
+void program_join_releases(Program* me) {
+    if (!my release_started) return;
+    pthread_join(my release_thread, nullptr);
+    my release_started = false;
+}
+
 static void program_drop(Program* me) {
-    if (my release_started) pthread_join(my release_thread, nullptr);
+    program_join_releases(me);
     load_pool_destroy(my pool);
     program_free_preresolved(me);
     content_mapper_host_drop(atomic_load(&my content_mapper_host));

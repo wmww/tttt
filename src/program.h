@@ -35,6 +35,9 @@ void program_set_references(Program* me, ProjectRedirects const* redirects);
 // Change them before loading anything, and call compiler_options_resolve() when done. Parsing, name resolution and
 // checking of this program read them through compiler_options()
 CompilerOptions* program_options(Program* me);
+// Waits for what program_resolve_names() releases on a thread of its own (program_destroy() does too): before an exit
+// that skips the destroy
+void program_join_releases(Program* me);
 
 // The tsconfig.json the options came from (tsc's options.configFile): diagnostics about the options go on it. Returns
 // its source file, which isn't part of the program (nothing parses or checks it), null if it can't be read

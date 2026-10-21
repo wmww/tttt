@@ -293,7 +293,8 @@ static_failable apply_compiler_options(Options const* opts, csview config, Progr
 static void destroy_program(Program* program, ErrorCtx* errs, [[maybe_unused]] bool last) {
 #ifndef DEBUG_BUILD
     // The process is about to exit: freeing the AST node by node was a tenth of a run on a real project. Set
-    // TTTT_TEARDOWN to look for leaks with a release build
+    // TTTT_TEARDOWN to look for leaks with a release build. (Its threads are joined all the same)
+    program_join_releases(program);
     if (last && !getenv("TTTT_TEARDOWN")) return;
 #endif
     program_destroy(program);
@@ -817,7 +818,10 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         errs->errors = (VecError){0};
         phase_done(opts, out, "resolve names", &last_time);
         // (TTTT_EXIT_AFTER_RESOLVE=1: the front end's phases alone, timed with --time; nothing checked or reported)
-        if (getenv("TTTT_EXIT_AFTER_RESOLVE")) exit(0);
+        if (getenv("TTTT_EXIT_AFTER_RESOLVE")) {
+            program_join_releases(program);
+            exit(0);
+        }
 
         if (opts->print_ast && source) {
             out_println(out, color_good, "Parsed:", color_normal);
