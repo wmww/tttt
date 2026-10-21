@@ -403,6 +403,21 @@ Not measured: the share of these results another checker actually reuses (the wa
 the duplication, not which kinds). Cleandiff compares a fresh checker per file against the first one, not two
 interleaved shared histories, so the mixed derivation of census B §4 is still untested.
 
+### 4b's named mechanisms (session 3, 2026-10-21)
+- **M1 fixed**: instantiate_conditional() keeps every identity-mapped type parameter in the restricted mapper (outside
+  the identity instance), tsgo's newTypeMapper of all outer parameters, instead of only those whose distributed twin
+  already existed. Types: drizzle equal, zod -1, effect +4; oracles held.
+- **M2 was a fingerprint artifact**: ty_realias() already keys on (type, alias, alias arguments), like tsgo's
+  getObjectTypeInstantiation; taint.c's fp_key() read its key as type id pairs and dropped the alias. Fixed there.
+  Likewise vscode's 142 TK_SIMPLIFIED: the fingerprint ignored `writing`.
+- **Cleandiff residue** (--lenient, after M1 and the two fingerprint fixes; before: drizzle CI 62 / prop 62 / AI 16,
+  zod CI 5 / sigret 3, effect CI 61 / sigret 3 / members 2 / AI 2 / symbol 1 / lazy 1, excalidraw AI 5 / prop 3 /
+  base 1 / param 1, vscode AI 327 / simplified 142 / members 45 / CI 5 / union pair 2 / keyof 2 / prop 1 / sigret 1):
+  drizzle prop types 46 (G0's condition 3, the lenient-only ones); zod CI 3, signature returns 3; effect CI 3,
+  signature returns 3, AI 2, symbol declared 1, lazy decl (class accessor) 1; excalidraw prop types 3, AI 1, base
+  constraint 1, param constraint 1; vscode members 45, CI 5, union pairs 2, AI 2, keyof props 2, prop 1, signature
+  return 1. Not classified yet; at most 0.03% of a kind.
+
 ### 4a's overlay: record shape and API (session 1, 2026-10-20)
 Every 4a session follows this, so the sessions don't each invent a shape. The rule: **a field another worker could
 read holds only finished values; anything about a computation in progress lives in a record owned by the computing
@@ -457,11 +472,16 @@ checker.** At K1 nothing is shared, so 4a is a pure refactor (byte-identical out
   (SymbolLinks), declared_param_constraint(), ty_mapped_template(), ty_cond_branch_type(), ty_non_augmenting_base(),
   ty_reduced_slow(), ty_simplified() and primitive_constraint_of() (an intern insert after the claim pops).
 - **Left after session 2** (each a shared field written while the computation runs, or after it published):
-  - Writes after publication: function_return_type()'s outer computation sets `memo->circular` and `memo->type = any`
-    on a memo a nested one already published; ty_declared_type_of() ORs `links->circular` (TS2456) after a nested
-    alias resolution published; report_promise_missing() clears `FunctionReturn.promise_missing` (a report-once flag on
-    a done memo: 4b's diagnostics-as-data). ty_members_resolving() publishes the outer resolution's members over what a
-    nested one (in flight below it) set early; `TyObjectState.unexpanded` is written during resolve_members().
+  - Writes after publication: **done in session 3** (2026-10-21). Return types publish once
+    (publish_function_return(), the nested type stays like tsc's; a later circular outer inference goes into the
+    checker's scratch KEY_RETURN_LATE_CIRCULAR, read by ty_function_return_circular() for TS7023); an alias publishes
+    declared_type and circular together, first to finish (tsc's typeParameters aren't unset by a later failure,
+    whose TS2456 is reported where it happens); promise_missing is never cleared (reported on every non-speculative
+    read, the merge drops duplicates); `unexpanded` is written only if unset. Instrumented, the late cases fire 13x
+    (return types) and 1x (aliases) in the suite and 0-1x per corpus, never with a circular outer pop: nothing moves.
+    ty_members_resolving()'s "outer overwrites nested" stays as it is, on purpose: the nested resolution's members only
+    ever went into the MembersClaim (session 2), the shared state is written once, and tsc's setStructuredTypeMembers is
+    last-writer too (resolveStructuredTypeMembers has no "if unset"), so the outer result is the faithful one.
   - The hint-only IN_FLIGHT states (no payload, a fixed answer on re-entry: they need 4d's owner tag, not a record):
     TyCondBranch.state (error type), TyObjectState.reduced_state (itself), base_state (null),
     SymbolLinks.base_variable_state (null), TyParamState.constraint_state (circular: none), MappedInfo.template_state
