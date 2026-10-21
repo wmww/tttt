@@ -1197,7 +1197,10 @@ compares at the end, so taint propagates outward for free):
 4. It reported nothing at the current node (diagnostics as data on the memo otherwise, as `CallResolutionRare.errs`
    does). It ended with `flow_uncached == 0` if it is an expression kind (the G0 rule: declarations are flow-isolated).
    It ran in the typecheck phase.
-5. Done-ness peeks (TAINT_PEEK) don't count (G0's lenient rule, cleandiff-checked).
+5. Done-ness peeks (TAINT_PEEK) don't count (G0's lenient rule, cleandiff-checked). A done-ness peek doesn't count only when it cannot change the
+   result. A peek that selects between results (ty_function_type_mentions()'s trimming of an instantiation's mapper
+   is the example: divergence 5) is a read of in-flight state and must be an event, or be replaced by computing the
+   value.
 
 **Why it is deterministic by construction.** A clean value is a function of published clean values and identities.
 Identities are hash-consed and pure (4b), and history-like ones carry a written reason. So any worker computing that
@@ -1447,6 +1450,11 @@ in parallel only where the file sets are disjoint):
       100 seeds, 0 with the event. The event is at function_return_type()'s keep_outer; at the reads of the outer
       inference (call.c's outer_inference_mapper() & co., expr.c) it would poison less (effect's poisoned words 2.9k ->
       20k with it, summed K12 types unchanged).
+      **Follow-up (step D or later):** the narrower event, at the reads of the outer inference (call.c
+      outer_inference_mapper(), the OuterInference reads at its other uses, expr.c's two `my outer_inference` tests in
+      check_with()/ty_check_expr()) instead of at keep_outer. Poisoned words per K12 run with the wholesale event
+      (all words, means of 20): drizzle 681, zod 5753, effect 19985, excalidraw 2788, nest 54; before it (function
+      returns alone): drizzle 107, zod 1426, effect 2943, excalidraw 311, nest 2. The gate: effect seeds 100/100.
     - **Divergence 5 (Pretty.ts) is a peek that decides an identity**, not the function return's publication:
       ty_instantiate() of a function expression's anonymous type trims the mapper to what ty_function_type_mentions()
       says it mentions, and that answers "unknown" (keep every source) unless the members, the signature and the
