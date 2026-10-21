@@ -809,7 +809,11 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
     ) {
         function_impl_rare_mut(initialized_binding_value(me)->function)->top_level_variable = my binding.symbol;
     }
+    // (The context root of its function expressions, FunctionImpl.context_root: the walk checks the initializer)
+    uintptr_t outer_root = names->flow->context_root;
+    names->flow->context_root = context_root_make(me, CONTEXT_ROOT_BINDING);
     if (my value) expr_lookup_names(my value, names, errs);
+    names->flow->context_root = outer_root;
     if (my binding.has_explicit_type && my value && my value->tag == EXPR_UNARY_OP && my value->unary_op->op == UNARY_OP_YIELD) {
         my value->unary_op->declared_context = binding_type(&my binding);
     }
@@ -826,7 +830,10 @@ void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* n
     flow->parameter_function_scope = names->parent; // `names` is the parameter list's own scope
     binding_lookup_names(&my binding, names, errs);
     flow->contextual_depth += my binding.has_explicit_type;
+    uintptr_t outer_root = flow->context_root;
+    flow->context_root = context_root_make(me, CONTEXT_ROOT_BINDING);
     if (my value) expr_lookup_names_initializer(my value, names, value_unchecked ? binder_discarded_errs(names->binder) : errs);
+    flow->context_root = outer_root;
     flow->contextual_depth -= my binding.has_explicit_type;
     flow->parameter_initializing = saved;
     flow->parameter_function_scope = saved_scope;
@@ -865,6 +872,20 @@ static Ty const* initialized_binding_check_value(InitializedBinding* me) {
         if (value->tag == EXPR_ARRAY || value->tag == EXPR_OBJECT) ty_report_pattern_iterable(checker, &my binding);
     }
     return ty_check_expr(checker, initialized_binding_value(me), contextual);
+}
+
+// The initializer checked as the declaration's evaluation checks it (initialized_binding_evaluate_assigned_type()), for a
+// function expression in it that needs its contextual type first (ty_settle_function_context()): memoized, so the
+// declaration's own check finds it done
+void initialized_binding_settle_value(InitializedBinding* me) {
+    Checker* checker = current_checker;
+    if (!my value) return;
+    FlowIsolation isolation = ty_flow_isolate(checker);
+    struct OuterInference* outer = checker->outer_inference;
+    if (!binding_is_parameter(&my binding)) checker->outer_inference = nullptr;
+    initialized_binding_check_value(me);
+    checker->outer_inference = outer;
+    ty_flow_restore(checker, isolation);
 }
 
 // `let x;`, `let x = null` and `let x = []` under noImplicitAny (JavaScript too, nothing more: tsgo): the type comes

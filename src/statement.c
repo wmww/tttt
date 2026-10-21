@@ -1406,12 +1406,20 @@ static Scope* branch_names_scope(Statement const* branch, Scope* names) {
     }
 }
 
+// A condition, a context root of its own (FunctionImpl.context_root: the walk checks it without a contextual type)
+static void lookup_names_condition_root(Expr* expr, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target) {
+    uintptr_t outer_root = names->flow->context_root;
+    names->flow->context_root = context_root_make(expr, CONTEXT_ROOT_EXPR);
+    expr_lookup_names_condition(expr, names, errs, true_target, false_target);
+    names->flow->context_root = outer_root;
+}
+
 static void if_else_resolve_names(IfStatement* me, isize_t index, Scope* names, ErrorCtx* errs) {
     FlowBuilder* flow = names->flow;
     FlowNode* then_label = flow_new_branch_label(flow);
     FlowNode* else_label = flow_new_branch_label(flow);
     FlowNode* post = flow_new_branch_label(flow);
-    expr_lookup_names_condition(vec_expr_at_mut(&my conditions, index), names, errs, then_label, else_label);
+    lookup_names_condition_root(vec_expr_at_mut(&my conditions, index), names, errs, then_label, else_label);
     flow_set_current(flow, flow_finish_label(then_label));
     {
         Statement* branch = vec_statement_at_mut(&my statements, index);
@@ -1438,7 +1446,10 @@ static void if_else_resolve_names(IfStatement* me, isize_t index, Scope* names, 
 static void switch_resolve_names(SwitchStatement* me, Scope* names, ErrorCtx* errs) {
     FlowBuilder* flow = names->flow;
     FlowNode* post = flow_new_branch_label(flow);
+    uintptr_t outer_root = names->flow->context_root;
+    names->flow->context_root = context_root_make(&my needle, CONTEXT_ROOT_EXPR);
     expr_lookup_names(&my needle, names, errs);
+    names->flow->context_root = outer_root;
     FlowNode* saved_break = flow->break_target;
     FlowNode* saved_pre_switch = flow->pre_switch_case_flow;
     flow->break_target = post;
@@ -1661,7 +1672,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 statement_resolve_names_body(&loop->body, loop_scope, errs, post, pre_condition);
                 flow_add_antecedent(flow, pre_condition, flow->current);
                 flow_set_current(flow, flow_finish_label(pre_condition));
-                expr_lookup_names_condition(&loop->condition, loop_scope, errs, pre_do, post);
+                lookup_names_condition_root(&loop->condition, loop_scope, errs, pre_do, post);
                 flow_set_current(flow, flow_finish_label(post));
                 break;
             }
@@ -1675,7 +1686,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             // An initializer that ends the flow (a throwing IIFE): the rest stays unreachable. Entering the loop
             // label would leave it only the back edge, a cycle with no way in (tsgo's bindForStatement bails out)
             if (!flow_is_unreachable(flow->current)) flow_set_current(flow, pre_loop);
-            expr_lookup_names_condition(&loop->condition, loop_scope, errs, pre_body, post);
+            lookup_names_condition_root(&loop->condition, loop_scope, errs, pre_body, post);
             flow_set_current(flow, flow_finish_label(pre_body));
             // (tsgo's bindWhileStatement: `continue` is another way back into the loop label, no incrementor between)
             statement_resolve_names_body(&loop->body, loop_scope, errs, post, loop->is_while ? pre_loop : pre_incrementor);
@@ -1766,18 +1777,27 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             bool saved_type_query = flow->in_type_query;
             if (my export_equals && my expr.tag == EXPR_IDENTIFIER) flow->in_type_query = flow->export_equals_name = true;
             flow->type_only_alias_ok = my expr.tag == EXPR_IDENTIFIER;
+            // (Its function expressions' context root, FunctionImpl.context_root: checked without a contextual type
+            // unless a JSDoc `@type` gives it one)
+            uintptr_t outer_root = flow->context_root;
+            flow->context_root = my expr_jsdoc_type ? 0 : context_root_make(&my expr, CONTEXT_ROOT_EXPR);
             expr_lookup_names(&my expr, names, errs);
+            flow->context_root = outer_root;
             flow->in_type_query = saved_type_query;
             flow->export_equals_name = false;
             flow->type_only_alias_ok = false;
             if (my expr_jsdoc_type) type_lookup_names(my expr_jsdoc_type, names, errs);
         }   break;
 
-        case STATEMENT_THROW_EXPR:
+        case STATEMENT_THROW_EXPR: {
+            uintptr_t outer_root = flow->context_root;
+            flow->context_root = context_root_make(&my expr, CONTEXT_ROOT_EXPR);
             expr_lookup_names(&my expr, names, errs);
+            flow->context_root = outer_root;
             flow_set_current(flow, &flow_unreachable);
             flow->has_flow_effects = true;
             break;
+        }
 
         case STATEMENT_RETURN_EXPR: {
             // tsc's checkReturnStatement: the containing function or class static block
@@ -1794,7 +1814,11 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                     "A 'return' statement can only be used within a function body.");
             }
             // (tsgo's checkReturnStatement checks the expression first, wherever the `return` is)
+            // (The context root of its function expressions: the function's return context, FunctionImpl.context_root)
+            uintptr_t outer_root = flow->context_root;
+            flow->context_root = flow->function ? context_root_make(flow->function, CONTEXT_ROOT_RETURN) : 0;
             expr_lookup_names(&my expr, names, errs);
+            flow->context_root = outer_root;
             // (unreachable or not: tsc's checkAndAggregateReturnExpressionTypes goes by forEachReturnStatement)
             if (statement_is_bare_return(me)) flow->has_bare_return = true;
             if (!flow->dead) {

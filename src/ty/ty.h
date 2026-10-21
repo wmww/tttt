@@ -2437,6 +2437,13 @@ Ty const* ty_import_meta_expr_type(Checker* me, Expr const* expr);
 Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function); // null if nothing says what `this` is
 // The contextual signature a function expression's parameters were typed by, if any (after it was checked)
 Signature const* ty_function_assigned_contextual_signature(Checker* me, FunctionImpl const* function);
+// A function expression nothing has checked yet: its context root is checked first (FunctionImpl.context_root), so
+// its contextual signature is the one the walk gives it, whatever asks first. Whether that checked it
+bool ty_settle_function_context(Checker* me, FunctionImpl const* function);
+// The walk checks a context root itself (an InitializedBinding, a FunctionImpl's return expression): nothing in it is
+// settled from inside meanwhile. Returns what ty_context_root_leave() takes
+bool ty_context_root_enter(void const* node);
+void ty_context_root_leave(bool entered);
 bool ty_function_closed(Checker* me, FunctionImpl const* function); // function.c: instantiating its type is the identity
 // The type of an object literal accessor property: the getter's widened return type, else the setter's parameter
 // TS2353 for a literal whose contextual type is an object binding pattern's implied type

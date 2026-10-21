@@ -177,6 +177,17 @@ typedef struct FunctionSpan {
     u32 length;
 } FunctionSpan;
 
+// FunctionImpl.context_root's tag (the low bits of the pointer)
+typedef enum ContextRootKind {
+    CONTEXT_ROOT_EXPR = 0, // An Expr the walk checks without a contextual type (an expression statement's)
+    CONTEXT_ROOT_BINDING = 1, // An InitializedBinding whose initializer the walk checks (a variable, a parameter's default)
+    CONTEXT_ROOT_RETURN = 2, // A FunctionImpl one of whose return expressions it is in (an arrow's expression body too)
+    CONTEXT_ROOT_TAGS = 3,
+} ContextRootKind;
+static inline uintptr_t context_root_make(void const* node, ContextRootKind kind) { return (uintptr_t)node | kind; }
+static inline ContextRootKind context_root_kind(uintptr_t root) { return (ContextRootKind)(root & CONTEXT_ROOT_TAGS); }
+static inline void const* context_root_node(uintptr_t root) { return (void const*)(root & ~(uintptr_t)CONTEXT_ROOT_TAGS); }
+
 typedef struct FunctionImpl {
     Span name;
     Span full_span;
@@ -240,6 +251,12 @@ typedef struct FunctionImpl {
     // typed by a generic contextual signature takes that signature's type parameters, which the functions inside it
     // may mention (tsc's getOuterTypeParameters), see ty_function_closed()
     struct FunctionImpl const* contextual_ancestor;
+    // A function expression: where its contextual type comes from, as the typecheck walk would check it (set by the
+    // resolve walk, FlowBuilder.context_root; 0 if nothing gives it one): a tagged pointer, see ContextRootKind. The
+    // checker checks that root first when something asks for the function's contextual signature before anything
+    // checked the function (ty_settle_function_context(): tsc's getContextualSignature resolves the enclosing call on
+    // demand), so the contextual signature is a function of the node, whatever was checked before
+    uintptr_t context_root;
     // A declaration no type parameter list encloses (not an expression, whose context may have some, nor a method, nor
     // JavaScript): its type mentions no type parameters but its own (tsc's getOuterTypeParameters is empty), so
     // instantiating it is the identity. Set by the resolve walk

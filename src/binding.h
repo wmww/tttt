@@ -155,10 +155,13 @@ typedef struct InitializedBindingRare {
     // An unannotated `this` parameter: its function, whose contextual `this` type it has (tsc's
     // getTypeForVariableLikeDeclaration: getContextualThisParameterType)
     struct FunctionImpl const* this_of;
-    // An unannotated parameter of a function expression that is an argument of a call an expression statement makes
-    // (`xs.forEach(x => { this.y = x })`): that statement's expression, which settles the parameter's contextual type
-    // when something asks for the parameter's type before the statement is checked (tsc's getContextuallyTypedParameterType
-    // resolves the call then: a JavaScript `this.y` read in an earlier method)
+    // An unannotated parameter of a function expression that has a context root (FunctionImpl.context_root): that
+    // function, whose context is settled when something asks for the parameter's type before anything checked the
+    // function (tsc's getContextuallyTypedParameterType resolves the call then: a JavaScript `this.y` read in an
+    // earlier method, `xs.forEach(x => { this.y = x })`)
+    struct FunctionImpl const* context_function;
+    // An unannotated parameter of a function expression that is an argument of a call an expression statement makes:
+    // that statement's expression, checked first when the parameter's type is asked for before it is
     struct Expr const* settled_by;
     // JavaScript: `const x = require("m")`, `const { a, b: c } = require("m")`, `const a = require("m").a` declare
     // aliases like imports (tsc's isVariableDeclarationInitializedToBareOrAccessedRequire), one per name (owned)
@@ -185,6 +188,7 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
 // `value_unchecked`: the initializer of a function without a body (TS2371 only): its names are resolved silently
 void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, bool value_unchecked, ErrorCtx* errs);
 Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me);
+void initialized_binding_settle_value(InitializedBinding* me); // Its initializer checked, see ty_settle_function_context()
 bool initialized_binding_js_empty_array(InitializedBinding const* me, Ty const* init);
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs);
 // A parameter (`span`: all of it)

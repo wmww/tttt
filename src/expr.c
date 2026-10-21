@@ -1338,7 +1338,11 @@ void expr_mark_result_unused(Expr* me) {
 
 void expr_lookup_names_statement(Expr* me, Scope* names, ErrorCtx* errs) {
     expr_mark_result_unused(me);
+    // (The context root of the function expressions in it: the walk checks it without a contextual type)
+    uintptr_t outer_root = names->flow->context_root;
+    names->flow->context_root = context_root_make(me, CONTEXT_ROOT_EXPR);
     expr_lookup_names(me, names, errs);
+    names->flow->context_root = outer_root;
     flow_maybe_call(names->flow, me);
     // The unannotated parameters of its call's function arguments are settled by checking it (see
     // InitializedBindingRare.settled_by)
@@ -2255,6 +2259,14 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 function_impl_add_names(my function, name_scope, (DeclStatementProps){0}, false);
             }
             my function->syntactically_contextual = flow->contextual_depth > 0;
+            // Where its contextual signature comes from (FunctionImpl.context_root), which its unannotated parameters
+            // settle when asked for first (InitializedBindingRare.context_function)
+            if (flow->context_root) {
+                my function->context_root = flow->context_root;
+                for_each (param, vec_function_arg, &my function->args) {
+                    if (!param->initializer.binding.has_explicit_type) initialized_binding_rare_mut(&param->initializer)->context_function = my function;
+                }
+            }
             function_impl_lookup_names_as(my function, FUNCTION_IS_EXPRESSION, !function_impl_is_arrow(me->function), name_scope, errs);
         }   break;
 

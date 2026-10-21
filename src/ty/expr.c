@@ -1513,6 +1513,142 @@ Signature const* ty_function_contextual_signature(Checker* me, FunctionImpl cons
     return contextual_signature(me, ty_instantiate_contextual_type_for(me, contextual, true), function, 0);
 }
 
+// The context of a function expression as a function of the node (FunctionImpl.context_root). Contextual types are
+// pushed down (this file's header): the first check of a function with a contextual type assigns its contextual
+// signature (KEY_CONTEXT_CHECKED, KEY_CONTEXT_PARAM, KEY_CONTEXT_RETURN...), which its parameters and inferred return
+// type read back. Something may ask for those before anything checked the function: a JavaScript `this.x = p` member
+// read elsewhere, a type another checker of the shared graph published that holds the function's type (plan 86 stage
+// 4f). tsc's getContextualSignature walks up and resolves the enclosing call on demand; here the function's context
+// root, the outermost node the walk checks (an expression statement's expression, a declaration's initializer, a
+// return expression), is checked first, as the walk would check it, and the links are read then. A call is resolved
+// once, wherever that happens first (call.c), so this gives the context the walk gives; checking a root from inside
+// (an inner call before the outer one that infers it) wouldn't. Nothing is done for a root in flight on this checker:
+// its check assigns the links when it gets to the function (or doesn't: what that check does then is today's)
+// The roots being checked on this thread, by a settlement or by the walk where nothing else says so
+// (ty_context_root_enter()): not settled again from inside
+static _Thread_local struct { void const* data[256]; u32 len, overflow; } settling;
+
+bool ty_context_root_enter(void const* node) {
+    if (settling.len == c_arraylen(settling.data)) {
+        settling.overflow++;
+        return false;
+    }
+    settling.data[settling.len++] = node;
+    return true;
+}
+
+void ty_context_root_leave(bool entered) {
+    if (entered) settling.len--;
+    else settling.overflow--;
+}
+
+static bool context_root_in_flight(void const* node) {
+    if (settling.overflow) return true;
+    for (u32 i = 0; i < settling.len; i++) {
+        if (settling.data[i] == node) return true;
+    }
+    return false;
+}
+
+// (An accessor or a method of an object literal is never checked as an expression of its own: no KEY_CONTEXT_CHECKED)
+static bool function_unsettled(Checker* me, FunctionImpl const* function) {
+    return function->context_root && function->is_expression && !function->accessor &&
+        !ty_link_get(me, KEY_CONTEXT_CHECKED, function) && !function_impl_rare(function)->jsdoc_signature_type;
+}
+
+static _Thread_local FunctionImpl const* settle_target;
+static _Thread_local Expr const* settle_found;
+static bool return_contains_target(Expr const* expr) {
+    if (!span_contains_span(expr_outer_span(expr), settle_target->full_span)) return false;
+    settle_found = expr;
+    return true;
+}
+
+static void settle_function(Checker* me, FunctionImpl const* function, u32 depth);
+
+static void settle_root(Checker* me, FunctionImpl const* function, uintptr_t root, u32 depth) {
+    void const* node = context_root_node(root);
+    switch (context_root_kind(root)) {
+        case CONTEXT_ROOT_EXPR: {
+            Expr const* expr = node;
+            LazyMemo* memo = lazy_type_state_peek((LazyType*)&expr->lazy_type);
+            if (memo && memo->evaluation_started && !memo->done) return;
+            (void)ty_expr_type(me, expr);
+            return;
+        }
+        case CONTEXT_ROOT_BINDING: {
+            InitializedBinding* binding = (InitializedBinding*)node;
+            FunctionImpl const* outer = initialized_binding_rare(binding)->context_function;
+            if (outer) settle_function(me, outer, depth + 1);
+            LazyMemo* memo = lazy_type_state_peek(&binding->lazy_type);
+            if (memo && memo->evaluation_started && !memo->done) return;
+            initialized_binding_settle_value(binding);
+            return;
+        }
+        case CONTEXT_ROOT_RETURN: {
+            FunctionImpl const* outer = node;
+            if (outer->is_generator || !outer->has_body) return;
+            settle_function(me, outer, depth + 1);
+            // As the walk checks a return statement: the inferred return type first, then the expression in its return
+            // context (statement_typecheck_inner()). The first has checked it, unless it was known already
+            if (!outer->ret_explicit && !function_impl_rare(outer)->constructed_class && !function_impl_setter_type(outer)) {
+                if (ty_function_return_in_flight(me, outer)) return;
+                ty_function_return_type(me, outer);
+            }
+            if (!function_unsettled(me, function)) return;
+            settle_target = function;
+            settle_found = nullptr;
+            statements_any_return(&function_impl_body(outer)->statements, return_contains_target);
+            Expr const* found = settle_found;
+            if (!found) return;
+            Ty const* outer_context = function_impl_enter_return_context(outer);
+            CurrentNode saved_node = ty_enter_node(me, expr_outer_span(found));
+            ty_check_expr(me, found, my return_context);
+            ty_leave_node(me, saved_node);
+            my return_context = outer_context;
+            return;
+        }
+        default: return;
+    }
+}
+
+static void settle_function(Checker* me, FunctionImpl const* function, u32 depth) {
+    if (depth > 8 || !function_unsettled(me, function)) return;
+    uintptr_t root = function->context_root;
+    void const* node = context_root_node(root);
+    if (context_root_in_flight(node)) return;
+    bool entered = ty_context_root_enter(node);
+    // Self-contained, like a declaration (tsc's checkExpressionCached): not an argument of the call inferring now, no
+    // loop in progress, no return context, and a node of its own (what is reported at the current node is at the root,
+    // with the instantiation count the walk would start it with) whose count the asker gets back
+    FlowIsolation isolation = ty_flow_isolate(me);
+    struct OuterInference* outer = my outer_inference;
+    u32 inferential_depth = my inferential_depth, argument_return_depth = my argument_return_depth;
+    Ty const* return_context = my return_context;
+    u32 instantiation_count = my instantiation_count;
+    my outer_inference = nullptr;
+    my inferential_depth = my argument_return_depth = 0;
+    my return_context = nullptr;
+    Span at = context_root_kind(root) == CONTEXT_ROOT_EXPR ? expr_outer_span(node) :
+        context_root_kind(root) == CONTEXT_ROOT_BINDING ? ((InitializedBinding const*)node)->binding.content_span : ((FunctionImpl const*)node)->full_span;
+    CurrentNode saved_node = ty_enter_node(me, at);
+    settle_root(me, function, root, depth);
+    ty_leave_node(me, saved_node);
+    my instantiation_count = instantiation_count;
+    my return_context = return_context;
+    my inferential_depth = inferential_depth;
+    my argument_return_depth = argument_return_depth;
+    my outer_inference = outer;
+    ty_flow_restore(me, isolation);
+    ty_context_root_leave(entered);
+}
+
+bool ty_settle_function_context(Checker* me, FunctionImpl const* function) {
+    if (!function_unsettled(me, function)) return false;
+    settle_function(me, function, 0);
+    return !function_unsettled(me, function);
+}
+
 Signature const* ty_function_assigned_contextual_signature(Checker* me, FunctionImpl const* function) {
     Signature const* sig = ty_link_get(me, KEY_CONTEXT_CHECKED, function);
     return sig == &context_checked_none ? nullptr : sig;
