@@ -222,8 +222,14 @@ static void describe(Checker* c, unsigned kind, void const* subject, void const*
         eprintln("fingerprint:   subject ", cstr_sv(&s));
         cstr_drop(&s);
     }
-    bool result_type = kind != TK_MEMBERS && kind != TK_DECLARED_RAW && kind != TK_VARIANCES &&
-        (kind >= 160 || (kind != KEY_CONDITIONAL_INSTANCE && kind != KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT && kind != KEY_DEFINITELY_RELATED));
+    // (Only the kinds whose result is a type: members, variances, SigResolved records, deferred references, conditional
+    // instances' entries and the flags of reductions, relations and definitely-related are not)
+    bool result_type = kind < 160 ?
+        kind != KEY_CONDITIONAL_INSTANCE && kind != KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT && kind != KEY_DEFINITELY_RELATED :
+        (kind >= TK_LAZY_DECL && kind < TK_LAZY_EXPR) || kind == TK_PROP_TYPE || kind == TK_SIGNATURE_RETURN ||
+        kind == TK_PARAM_CONSTRAINT || kind == TK_SYMBOL_DECLARED || kind == TK_FUNCTION_RETURN ||
+        kind == TK_BASE_CONSTRAINT || kind == TK_SIMPLIFIED || kind == TK_COND_BRANCH || kind == TK_MAPPED_TEMPLATE ||
+        kind == TK_PARAM_DEFAULT || kind == TK_IMPLIED_CHECK || kind == TK_BASE_VARIABLE || kind == TK_EQUIVALENT_BASE;
     if (result_type && result) {
         cstr r = ty_to_cstr(c, result);
         eprintln("fingerprint:   result ", cstr_sv(&r));
