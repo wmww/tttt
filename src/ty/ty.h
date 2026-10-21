@@ -2598,6 +2598,10 @@ typedef enum ObjectLiteralKind {
     // Or'ed with OBJECT_SYNTHETIC: `import("m")`'s synthetic default object, TyAnonymous.empty_symbol (a type of its own,
     // keyed apart from the same shape made without it)
     OBJECT_EMPTY_SYMBOL = 1 << 8,
+    // Or'ed with OBJECT_SYNTHETIC: a namespace import's clone of an `export =` module (tsc's cloneTypeAsModuleType),
+    // TyAnonymous.module_clone: a type of its own, set at creation (plan 86 4f: a bit written on a shared type later
+    // was a race and reached the type's other uses)
+    OBJECT_MODULE_CLONE = 1 << 9,
 } ObjectLiteralKind;
 Ty const* ty_object_literal(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind

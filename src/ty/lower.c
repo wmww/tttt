@@ -1973,13 +1973,13 @@ static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread
 
 // tsc's cloneTypeAsModuleType of a type that gets no synthetic default: its members as they are, in a type of its
 // own (printed structurally, not by the symbol it was)
-static Ty const* module_type_clone(Checker* me, Ty const* type) {
+static Ty const* module_type_clone(Checker* me, Ty const* type, ObjectLiteralKind kind) {
     if (type->kind != TY_ANONYMOUS && type->kind != TY_DECLARED && type->kind != TY_REFERENCE) return nullptr;
     Members const* members = ty_members(me, type);
     if (members->call_count || members->construct_count) return nullptr;
     ObjectLiteralProp* props = arena_new_n(&my arena, ObjectLiteralProp, members->prop_count + 1);
     for (u32 i = 0; i < members->prop_count; i++) props[i] = (ObjectLiteralProp){ .reuse = members->props[i] };
-    return ty_object_literal(me, props, members->prop_count, members->index, members->index_count, OBJECT_SYNTHETIC);
+    return ty_object_literal(me, props, members->prop_count, members->index, members->index_count, OBJECT_SYNTHETIC | kind);
 }
 
 // `import * as ns` of a module with `export =` (tsc's resolveESModuleSymbol): what it assigns, with a synthetic
@@ -1996,7 +1996,6 @@ static Ty const* namespace_import_type(Checker* me, Symbol const* symbol) {
     if (cached) return cached == (void const*)symbol ? nullptr : cached;
     Ty const* type = namespace_import_type_uncached(me, symbol);
     if (type) {
-        ((Ty*)type)->anonymous.module_clone = true;
         u64 clone_key[2] = { KEY_MODULE_CLONE, (u64)(uintptr_t)type };
         intern_set(me, &my links, intern_slot(me, &my links, clone_key, 2), symbol);
     }
@@ -2016,7 +2015,7 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
     bool esm_usage = node && importer && importer->is_esm;
     Ty const* type = ty_type_of_symbol(me, assigned);
     if (type->flags & TYF_ERROR) return nullptr;
-    if (esm_usage && target && target->is_json) return with_synthetic_default(me, type, false, 0);
+    if (esm_usage && target && target->is_json) return with_synthetic_default(me, type, false, OBJECT_MODULE_CLONE);
     // (tsc's isESMFormatImportImportingCommonjsFormatFile: the import's emit syntax and the target's format for emit,
     // with any module setting)
     ModuleKind usage = importer ? source_file_emit_module_kind(importer) : MODULE_KIND_NONE;
@@ -2045,14 +2044,14 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
             syntactic = symbol_resolve_alias((Symbol*)exported) == declared || exported == declared;
         }
         if (syntactic) {
-            Ty const* clone = module_type_clone(me, type);
+            Ty const* clone = module_type_clone(me, type, OBJECT_MODULE_CLONE);
             if (clone) return clone;
             synthetic = false;
         }
     }
     bool structured = type->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED);
-    if (!structured) return with_synthetic_default(me, type, false, 0);
-    return synthetic ? with_synthetic_default(me, type, true, 0) : nullptr;
+    if (!structured) return with_synthetic_default(me, type, false, OBJECT_MODULE_CLONE);
+    return synthetic ? with_synthetic_default(me, type, true, OBJECT_MODULE_CLONE) : nullptr;
 }
 
 Ty const* ty_namespace_import_original(Checker* me, Symbol const* alias) {

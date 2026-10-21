@@ -1058,8 +1058,13 @@ void graph_memo_flush(Checker* checker) {
         } else if (there != block) {
             // (Another checker's came first: this one reads that from now on)
             void const* winner = __atomic_load_n(there, __ATOMIC_ACQUIRE);
-            static int debug_disagree = -1;
-            if (debug_disagree < 0) debug_disagree = getenv("TTTT_DEBUG_DISAGREE") != nullptr;
+            // (Relaxed atomics: every worker's first loss reads the knob, TSan)
+            static int debug_disagree_ = -1;
+            int debug_disagree = __atomic_load_n(&debug_disagree_, __ATOMIC_RELAXED);
+            if (debug_disagree < 0) {
+                debug_disagree = getenv("TTTT_DEBUG_DISAGREE") != nullptr;
+                __atomic_store_n(&debug_disagree_, debug_disagree, __ATOMIC_RELAXED);
+            }
             if (winner != block[0] && debug_disagree) {
                 pthread_mutex_lock(&disagree_lock);
                 if (disagree_len < c_arraylen(disagree_list)) {
