@@ -747,6 +747,22 @@ static Checker* checker_make(Program* program, bool join_graph) {
     my binder = program_get_binder(program);
     my errs = program_errors(program);
     my atom_table = program_atoms(program);
+    {
+        typeof(my atoms)* a = &my atoms;
+        static struct { size_t offset; char const* name; } const known[] = {
+            { offsetof(typeof(my atoms), constructor), "constructor" }, { offsetof(typeof(my atoms), prototype), "prototype" },
+            { offsetof(typeof(my atoms), bind), "bind" }, { offsetof(typeof(my atoms), length), "length" },
+            { offsetof(typeof(my atoms), then), "then" }, { offsetof(typeof(my atoms), this_), "this" },
+            { offsetof(typeof(my atoms), zero), "0" }, { offsetof(typeof(my atoms), value), "value" },
+            { offsetof(typeof(my atoms), done), "done" }, { offsetof(typeof(my atoms), default_), "default" },
+            { offsetof(typeof(my atoms), empty), "" }, { offsetof(typeof(my atoms), children), "children" },
+            { offsetof(typeof(my atoms), x), "x" },
+        };
+        static_assert(sizeof(known) / sizeof(known[0]) == sizeof(my atoms) / sizeof(Atom const*));
+        for (u32 i = 0; i < c_arraylen(known); i++) {
+            *(Atom const**)((char*)a + known[i].offset) = atom_table_get(my atom_table, csview_from(known[i].name));
+        }
+    }
     my lazy.directory = program_type_directory(program);
     my next_type_id = type_directory_block(my lazy.directory);
     if (program_first_touch_stamps(program)) {
@@ -814,9 +830,6 @@ static Checker* checker_make(Program* program, bool join_graph) {
         for (u32 i = 0; i < c_arraylen(names); i++) types[i] = ty_string_literal(me, csview_from(names[i]));
         my typeof_type = ty_union(me, types, c_arraylen(names), nullptr, (TyList){0});
     }
-    my atom_constructor = checker_atom(me, c_sv("constructor"));
-    my atom_prototype = checker_atom(me, c_sv("prototype"));
-    my atom_bind = checker_atom(me, c_sv("bind"));
 #ifdef TTTT_DEBUG_IDS
     debug_in_checker_new = false;
 #endif
@@ -2830,7 +2843,7 @@ bool ty_some_mutable_array_like(Checker* me, Ty const* ty) {
 // The `this` type of a class or interface: constrained to the type as seen from inside (applied to its own type
 // parameters)
 Ty const* ty_this_type_param(Checker* me, Ty const* declared) {
-    Ty const* ret = make_type_param(me, nullptr, checker_atom(me, c_sv("this")));
+    Ty const* ret = make_type_param(me, nullptr, my atoms.this_);
     TyParamState* state = ret->param.state;
     state->is_this = true;
     ty_param_constraint_init(state, declared->declared.type_params.len ?

@@ -213,14 +213,14 @@ static void sig_list_drop(SigList* me) {
 
 static bool is_iterator_result(Checker* me, Ty const* ty, bool yield) {
     bool optional;
-    Ty const* done = property_type(me, ty, checker_atom(me, c_sv("done")), &optional, nullptr);
+    Ty const* done = property_type(me, ty, my atoms.done, &optional, nullptr);
     if (!done) done = ty_intrinsic(me, TY_FALSE);
     return ty_is_related(me, ty_intrinsic(me, yield ? TY_FALSE : TY_TRUE), done, TY_RELATION_ASSIGNABLE);
 }
 
 static Ty const* value_of(Checker* me, TyList members, bool yield) {
     TyBuf values = {0};
-    Atom const* value = checker_atom(me, c_sv("value"));
+    Atom const* value = my atoms.value;
     bool missing = false;
     for (u32 i = 0; i < members.len; i++) {
         // (tsc reads `value` off the union, whose reduced type drops a member like the `IteratorYieldResult<X> &

@@ -3803,7 +3803,7 @@ static Ty const* promised_type_of(Checker* me, Ty const* ty) {
     if (ty->flags & TYF_ANY) return nullptr;
     Ty const* constraint = ty_base_constraint(me, ty);
     if (primitive_or_never(constraint ? constraint : ty)) return nullptr;
-    Ty const* then = ty_prop_type_of(me, ty, checker_atom(me, c_sv("then")));
+    Ty const* then = ty_prop_type_of(me, ty, my atoms.then);
     if (!then || then->flags & TYF_ANY) return nullptr;
     u32 count = 0;
     Signature* const* sigs = call_signatures_of(me, then, &count);
@@ -3828,7 +3828,7 @@ static Ty const* promised_type_of(Checker* me, Ty const* ty) {
 static bool is_thenable(Checker* me, Ty const* ty) {
     Ty const* constraint = ty_base_constraint(me, ty);
     if (primitive_or_never(constraint ? constraint : ty)) return false;
-    Ty const* then = ty_prop_type_of(me, ty, checker_atom(me, c_sv("then")));
+    Ty const* then = ty_prop_type_of(me, ty, my atoms.then);
     if (!then) return false;
     u32 count = 0;
     call_signatures_of(me, ty_non_nullable(me, then), &count);
@@ -3838,7 +3838,7 @@ static bool is_thenable(Checker* me, Ty const* ty) {
 // The `this` type of the last `then` signature that the type doesn't fit, when none fits (tsc's getPromisedTypeOfPromise's
 // thisTypeForErrorOut), else null
 static Ty const* then_this_type_for_error(Checker* me, Ty const* ty) {
-    Ty const* then = ty_prop_type_of(me, ty, checker_atom(me, c_sv("then")));
+    Ty const* then = ty_prop_type_of(me, ty, my atoms.then);
     if (!then || then->flags & TYF_ANY) return nullptr;
     u32 count = 0;
     Signature* const* sigs = call_signatures_of(me, then, &count);

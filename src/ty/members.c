@@ -16,7 +16,7 @@ static bool define_property_readonly(Checker* me, Expr const* call) {
     if (descriptor->tag == EXPR_OBJECT) return expr_define_property_readonly(call);
     Ty const* type = ty_apparent_type(me, ty_expr_type(me, descriptor));
     if (!(type->flags & TYF_OBJECT)) return false;
-    if (!ty_get_prop(me, type, checker_atom(me, c_sv("value")))) return !ty_get_prop(me, type, checker_atom(me, c_sv("set")));
+    if (!ty_get_prop(me, type, my atoms.value)) return !ty_get_prop(me, type, checker_atom(me, c_sv("set")));
     Prop const* writable = ty_get_prop(me, type, checker_atom(me, c_sv("writable")));
     if (!writable) return true;
     Ty const* flag = prop_type(me, writable);
@@ -1081,7 +1081,7 @@ static void builder_add_interface(
         IndexInfo info = {
             .key = key,
             .value = types.len ? ty_union_subtype_reduced(me, types.data, types.len) : ty_intrinsic(me, TY_UNDEFINED),
-            .param_name = checker_atom(me, c_sv("x")),
+            .param_name = my atoms.x,
             .readonly = readonly[k],
         };
         ty_buf_drop(&types);
@@ -1973,7 +1973,7 @@ static void builder_add_computed_index_infos(Checker* me, MembersBuilder* builde
         IndexInfo info = {
             .key = key,
             .value = types.len ? ty_union_subtype_reduced(me, types.data, types.len) : ty_intrinsic(me, TY_UNDEFINED),
-            .param_name = checker_atom(me, c_sv("x")),
+            .param_name = my atoms.x,
             .readonly = readonly[k],
         };
         ty_buf_drop(&types);
@@ -2283,7 +2283,7 @@ static void builder_push_any_base_index(Checker* me, MembersBuilder* builder) {
         if (builder->index[i].key == string) return;
     }
     builder_push(builder, index, ((IndexInfo){ .key = string, .value = ty_intrinsic(me, TY_ANY),
-        .param_name = checker_atom(me, c_sv("x")) }));
+        .param_name = my atoms.x }));
 }
 
 static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, Ty const* ty, ClassDecl const* class_decl) {
@@ -2294,7 +2294,7 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
 
     // `prototype` is the instance type with `any` for every type parameter
     Prop* prototype = prop_new(me);
-    prototype->name = checker_atom(me, c_sv("prototype"));
+    prototype->name = my atoms.prototype;
     prototype->parent = instance_decl;
     prototype->flags = PROP_STATIC | PROP_PROTOTYPE; // Not readonly: tsc's prototype symbol is a plain property
     if (instance->declared.type_params.len) {
@@ -2702,7 +2702,7 @@ static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDe
         IndexInfo info = {
             .key = ty_intrinsic(me, TY_NUMBER),
             .value = ty_intrinsic(me, TY_STRING),
-            .param_name = checker_atom(me, c_sv("x")),
+            .param_name = my atoms.x,
             .readonly = true,
         };
         builder_push(builder, index, info);
@@ -4076,7 +4076,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
         IndexInfo info = {
             .key = from->key,
             .value = value,
-            .param_name = checker_atom(me, c_sv("x")),
+            .param_name = my atoms.x,
             .readonly = mapped->readonly > 0 || (!mapped->readonly && from->readonly),
         };
         builder_push(&builder, index, info);
@@ -4206,7 +4206,7 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
                 IndexInfo info = {
                     .key = from->key,
                     .value = value,
-                    .param_name = checker_atom(me, c_sv("x")),
+                    .param_name = my atoms.x,
                     .readonly = mapped->readonly > 0 || (!mapped->readonly && from->readonly),
                 };
                 builder_push(&builder, index, info);
@@ -4645,7 +4645,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 IndexInfo info = {
                     .key = prop_name,
                     .value = value,
-                    .param_name = checker_atom(me, c_sv("x")),
+                    .param_name = my atoms.x,
                     // (Without a modifier, as readonly as the index signature the modifiers type has for the key)
                     .readonly = mapped->readonly > 0 || (!mapped->readonly && modifiers && modifiers_index_readonly(me, modifiers, prop_name)),
                 };
@@ -4905,7 +4905,7 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
         free(lengths);
     }
     Prop* length_prop = prop_new(me);
-    length_prop->name = checker_atom(me, c_sv("length"));
+    length_prop->name = my atoms.length;
     length_prop->flags = shape->readonly ? PROP_READONLY : 0; // Like tsc's, a mutable tuple's length can be assigned
     prop_type_init(length_prop, length);
     builder_push(&builder, props, length_prop);
@@ -5976,7 +5976,7 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
         if (function_is_untyped_js(function) && !(function->is_expression && ty_function_assigned_contextual_signature(me, function))) {
             r->min_args = 0;
         }
-        if (count && params[0].name == checker_atom(me, c_sv("this"))) {
+        if (count && params[0].name == my atoms.this_) {
             // `this: T` is about how the function is called, not an argument
             if (r->min_args && !params[0].optional) r->min_args--;
             r->this_type = params[0].type;

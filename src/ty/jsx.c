@@ -105,7 +105,7 @@ static Atom const* container_prop_name(Checker* me, JsxElement const* element, c
     Ty const* container = ty_jsx_type(me, element, container_name);
     if (!container || !(container->flags & TYF_OBJECT)) return nullptr;
     Members const* members = ty_members(me, container);
-    if (members->prop_count == 0) return checker_atom(me, c_sv(""));
+    if (members->prop_count == 0) return my atoms.empty;
     if (members->prop_count == 1) return members->props[0]->name;
     return nullptr; // TODO: TS2608 on its declaration
 }
@@ -114,7 +114,7 @@ static Atom const* container_prop_name(Checker* me, JsxElement const* element, c
 // without one)
 Atom const* ty_jsx_children_prop_name(Checker* me, JsxElement const* element) {
     JsxKind jsx = compiler_options()->jsx;
-    if (jsx == JSX_REACT_JSX || jsx == JSX_REACT_JSXDEV) return checker_atom(me, c_sv("children"));
+    if (jsx == JSX_REACT_JSX || jsx == JSX_REACT_JSXDEV) return my atoms.children;
     return container_prop_name(me, element, c_sv("ElementChildrenAttribute"));
 }
 

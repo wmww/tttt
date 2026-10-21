@@ -319,7 +319,7 @@ Ty const* ty_string_mapping(Checker* me, TyStringMapping mapping, Symbol const* 
     }
     if (ty_is_pattern_placeholder(type)) {
         // Uppercase<`${number}`>
-        Atom const* empty = checker_atom(me, c_sv(""));
+        Atom const* empty = my atoms.empty;
         Atom const* texts[2] = { empty, empty };
         return make_string_mapping(me, mapping, symbol, ty_template_literal(me, texts, &type, 1));
     }
@@ -653,7 +653,7 @@ static bool infer_from_parts(
 // The string-like type a template placeholder stands for (tsc's getStringLikeTypeForType)
 static Ty const* string_like_of(Checker* me, Ty const* ty) {
     if (ty->flags & (TYF_ANY | TYF_STRING_LIKE)) return ty;
-    Atom const* empty = checker_atom(me, c_sv(""));
+    Atom const* empty = my atoms.empty;
     Atom const* texts[2] = { empty, empty };
     return ty_template_literal(me, texts, &ty, 1);
 }

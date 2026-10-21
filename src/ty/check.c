@@ -384,7 +384,7 @@ static bool elaborate_object_literal(Checker* me, Expr const* expr, Ty const* so
 
 // tsc's isTupleLikeType
 static bool is_tuple_like(Checker* me, Ty const* ty) {
-    return ty_is_tuple(ty) || target_prop_of(me, ty, checker_atom(me, c_sv("0")));
+    return ty_is_tuple(ty) || target_prop_of(me, ty, my atoms.zero);
 }
 
 // target as written decides which elements are elaborated (tsc's generateLimitedTupleElements: not one a tuple target
@@ -464,7 +464,7 @@ static bool elaborate_jsx_children(Checker* me, JsxElement const* element, Ty co
     for_each (i, vec_jsx_child, &element->children) child_count += ty_jsx_child_is_semantic(i);
     if (!child_count) return false;
     Atom const* children_name = ty_jsx_children_prop_name(me, element);
-    if (!children_name) children_name = checker_atom(me, c_sv("children"));
+    if (!children_name) children_name = my atoms.children;
     Ty const* name_type = ty_prop_name_literal(me, children_name);
     Ty const* children_target = ty_access(me, target, name_type);
     if (!children_target) children_target = ty_intrinsic(me, TY_UNKNOWN_);
@@ -610,7 +610,7 @@ static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* so
         program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);
     Ty const* promise = promise_symbol ? ty_declared_type_of(me, promise_symbol) : nullptr;
     if (promise && promise->kind == TY_DECLARED && promise->declared.type_params.len == 1 &&
-        !ty_access(me, source_ret, ty_prop_name_literal(me, checker_atom(me, c_sv("then")))) &&
+        !ty_access(me, source_ret, ty_prop_name_literal(me, my atoms.then)) &&
         ty_is_related(me, ty_reference(me, promise, (TyList){ .data = &source_ret, .len = 1 }), target_ret,
             TY_RELATION_ASSIGNABLE)
     ) {
@@ -3788,7 +3788,7 @@ static void declare_namespace_exports(Checker* me, MemberTables* tables, Symbol 
 // tsc's bindClassLikeDeclaration: the class's static side has a `prototype`, which replaces what the table had there
 // (a namespace's export of that name is a duplicate)
 static void declare_prototype(Checker* me, MemberTables* tables, ErrorCtx* errs) {
-    Atom const* name = checker_atom(me, c_sv("prototype"));
+    Atom const* name = my atoms.prototype;
     MemberEntry* entry = find_member(tables, name, 1);
     if (entry && entry->decl_count) report_duplicate(entry->decls[0], errs);
     if (!entry) {

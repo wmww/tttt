@@ -1216,10 +1216,12 @@ struct Checker {
     u32 next_type_id;
     Ty const* intrinsics[TY_INTRINSIC_COUNT];
     Ty const* typeof_type; // tsc's typeofType: made with the intrinsics, so its literals get tsc's low ids
-    // Names flow asks about at every narrowing (checker_atom() hashes the name each time)
-    struct Atom const* atom_constructor;
-    struct Atom const* atom_prototype;
-    struct Atom const* atom_bind;
+    // Names hot paths ask about (checker_atom() hashes the name each time): the program's atoms, looked up once by
+    // checker_new()
+    struct {
+        struct Atom const *constructor, *prototype, *bind, *length, *then, *this_, *zero, *value, *done, *default_, *empty,
+            *children, *x;
+    } atoms;
     struct Atom const** index_atoms; // ty_index_atom(): "0", "1"... by index
     u32 index_atoms_len;
     u32* index_atoms_by_name; // 0..index_atoms_by_name_len-1 in the order of their atoms' addresses (members.c)

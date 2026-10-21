@@ -3235,7 +3235,7 @@ static bool has_numeric_props(Checker* me, Ty const* ty) {
 }
 
 static bool has_literal_length(Checker* me, Ty const* ty) {
-    Ty const* length = ty_prop_type_of(me, ty, checker_atom(me, c_sv("length")));
+    Ty const* length = ty_prop_type_of(me, ty, my atoms.length);
     return length && !(length->flags & TYF_NUMBER) && !(length->flags & TYF_ANY) && (length->flags & TYF_NUMBER_LITERAL ||
         (length->kind == TY_UNION && (length->composite.types.data[0]->flags & TYF_NUMBER_LITERAL)));
 }

@@ -1629,7 +1629,7 @@ static Ty const* annotated_expando_type(Checker* me, Symbol const* symbol) {
 // parameter type, else any (tsc's getInitializerTypeFromAssignmentDeclaration for a call)
 static Ty const* define_property_type(Checker* me, Expr const* call) {
     Ty const* descriptor = ty_expr_type(me, vec_expr_at(&call->call->args, 2));
-    Ty const* value = ty_prop_type_of(me, descriptor, checker_atom(me, c_sv("value")));
+    Ty const* value = ty_prop_type_of(me, descriptor, my atoms.value);
     if (value) return value;
     Ty const* get = ty_prop_type_of(me, descriptor, checker_atom(me, c_sv("get")));
     Signature const* get_sig = get ? ty_single_signature(me, get, false, true) : nullptr;
@@ -1931,7 +1931,7 @@ static u32 intersection_props(Checker* me, Ty const* ty, ObjectLiteralProp** out
 // `{ default: T }`, with T's own properties too if `spread` (tsc's createDefaultPropertyWrapperForModule, and
 // getSpreadType of the type with it in getTypeWithSyntheticDefaultImportType)
 static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread, ObjectLiteralKind kind) {
-    Atom const* default_name = checker_atom(me, c_sv("default"));
+    Atom const* default_name = my atoms.default_;
     ObjectLiteralProp* from = nullptr;
     u32 from_count = 0;
     Members const* members = spread && (type->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_members(me, type) : nullptr;
@@ -2025,14 +2025,14 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
     // (tsc's getSignaturesOfStructuredType: an intersection has the signatures of its members)
     Members const* members = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_members(me, apparent) : nullptr;
     bool callable = members && (members->call_count || members->construct_count);
-    bool has_default = members && ty_get_prop(me, apparent, checker_atom(me, c_sv("default")));
+    bool has_default = members && ty_get_prop(me, apparent, my atoms.default_);
     if (!callable && !has_default && !esm_cjs) return nullptr;
     // A module that says it's an ES module has no synthetic default (tsc's canHaveSyntheticDefault), nor does a
     // declaration file whose `export =` value has a `default` that a module declares (`export default`: resolveExportByName
     // finds the property, isSyntacticDefault)
     bool synthetic = !symbol_get_export(module, c_sv("__esModule"));
     if (synthetic && has_default && (!target || target->is_declaration)) {
-        Prop const* found = ty_get_prop(me, apparent, checker_atom(me, c_sv("default")));
+        Prop const* found = ty_get_prop(me, apparent, my atoms.default_);
         while (found && found->target) found = found->target;
         Symbol const* declared = found && found->decl ? found->decl->symbol : nullptr;
         // (A module's type has its exports resolved: the `default` export of the module that declares it says)
@@ -3408,7 +3408,7 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
         for_each (item, vec_object_binding_item, &pattern->object) {
             if (item->target.rest) {
                 index = (IndexInfo){ .key = ty_intrinsic(me, TY_STRING), .value = ty_intrinsic(me, TY_ANY),
-                    .param_name = checker_atom(me, c_sv("x")) };
+                    .param_name = my atoms.x };
                 index_count = 1;
                 continue;
             }

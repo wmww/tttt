@@ -1614,7 +1614,7 @@ static Ty const* empty_object_from_string_literals(Checker* me, Ty const* ty) {
         if (!name) continue;
         props[count++] = (ObjectLiteralProp){ .name = name, .type = ty_intrinsic(me, TY_ANY) };
     }
-    IndexInfo index = { .key = ty_intrinsic(me, TY_STRING), .value = ty_empty_object_type(me), .param_name = checker_atom(me, c_sv("x")) };
+    IndexInfo index = { .key = ty_intrinsic(me, TY_STRING), .value = ty_empty_object_type(me), .param_name = my atoms.x };
     bool string = (ty->flags & TYF_STRING) != 0;
     Ty const* ret = ty_object_literal(me, props, count, string ? &index : nullptr, string ? 1 : 0,
         OBJECT_SYNTHETIC | OBJECT_NO_INFERABLE_INDEX | OBJECT_NO_SYMBOL);

@@ -33,9 +33,6 @@ struct TyGraph {
     // The first checker's, which every other one shares (checker_new() makes them only for the first)
     Ty const* intrinsics[TY_INTRINSIC_COUNT];
     Ty const* typeof_type;
-    struct Atom const* atom_constructor;
-    struct Atom const* atom_prototype;
-    struct Atom const* atom_bind;
     // The shared tables
     SharedTable* types;
     SharedTable* links;
@@ -164,9 +161,6 @@ TyGraph* graph_new(Checker* first) {
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) my relations[i] = shared_links_new();
     memcpy(my intrinsics, first->intrinsics, sizeof(my intrinsics));
     my typeof_type = first->typeof_type;
-    my atom_constructor = first->atom_constructor;
-    my atom_prototype = first->atom_prototype;
-    my atom_bind = first->atom_bind;
     graph_link_tables(me, first);
     my singletons = ty_singletons_new();
     first->singletons = my singletons;
@@ -184,9 +178,6 @@ TyGraph* graph_new(Checker* first) {
 void graph_adopt(TyGraph* me, Checker* checker) {
     memcpy(checker->intrinsics, my intrinsics, sizeof(my intrinsics));
     checker->typeof_type = my typeof_type;
-    checker->atom_constructor = my atom_constructor;
-    checker->atom_prototype = my atom_prototype;
-    checker->atom_bind = my atom_bind;
     pthread_mutex_lock(&my adopt_lock);
     graph_link_tables(me, checker);
     checker->singletons = my singletons;

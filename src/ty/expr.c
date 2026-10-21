@@ -959,7 +959,7 @@ Ty const* ty_contextual_element_type_of(Checker* me, Ty const* contextual, u32 i
 // tsc's isTupleLikeType past its "0" check: an array-like type (assignable to `readonly any[]`) whose length is number
 // literals
 static bool array_like_with_literal_length(Checker* me, Ty const* ty) {
-    Ty const* length = ty_prop_type_of(me, ty, checker_atom(me, c_sv("length")));
+    Ty const* length = ty_prop_type_of(me, ty, my atoms.length);
     if (!length) return false;
     TyList parts = length->kind == TY_UNION ? length->composite.types : (TyList){ .data = &length, .len = 1 };
     for (u32 i = 0; i < parts.len; i++) {
@@ -1019,7 +1019,7 @@ static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) 
     ) {
         return true;
     }
-    if ((contextual->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_get_prop(me, contextual, checker_atom(me, c_sv("0")))) return true;
+    if ((contextual->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_get_prop(me, contextual, my atoms.zero)) return true;
     if (contextual->kind == TY_TYPE_PARAM) {
         Ty const* constraint = ty_param_constraint(me, contextual);
         return constraint && constraint != contextual && context_is_tuple_like(me, constraint, depth + 1);
@@ -1048,7 +1048,7 @@ static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) 
             return true;
         }
     }
-    if (contextual->kind == TY_ANONYMOUS) return ty_get_prop(me, contextual, checker_atom(me, c_sv("0"))) != nullptr;
+    if (contextual->kind == TY_ANONYMOUS) return ty_get_prop(me, contextual, my atoms.zero) != nullptr;
     return false;
 }
 
@@ -3751,7 +3751,7 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
             for (u32 j = 0; j < right->index_count; j++) {
                 if (left->index[i].key != right->index[j].key) continue;
                 // (A new one, without a declaration)
-                IndexInfo info = { .key = left->index[i].key, .param_name = checker_atom(me, c_sv("x")) };
+                IndexInfo info = { .key = left->index[i].key, .param_name = my atoms.x };
                 info.value = union_of_two(me, left->index[i].value, right->index[j].value);
                 info.readonly = left->index[i].readonly && right->index[j].readonly;
                 result.index[result.index_count++] = info;
@@ -4230,7 +4230,7 @@ static IndexInfo literal_members_index(Checker* me, LiteralMembers const* member
     IndexInfo ret = {
         .key = ty_intrinsic(me, key),
         .value = n ? ty_union_subtype_reduced(me, types, n) : ty_intrinsic(me, TY_UNDEFINED),
-        .param_name = checker_atom(me, c_sv("x")),
+        .param_name = my atoms.x,
         .readonly = readonly,
         .components = components,
         .component_count = component_count,
