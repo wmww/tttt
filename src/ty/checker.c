@@ -1823,7 +1823,7 @@ static Ty const* known_objects_constraint(Checker* me, Ty const* ty) {
     if (ty->kind == TY_TYPE_PARAM) {
         TyParamState const* param = ty_non_distributed(ty)->param.state;
         uintptr_t known = me->graph ? sw_peek(me, &param->constraint) : sw_load(&param->constraint);
-        if (TAINT_IF(TAINT_PEEK, !known)) return nullptr;
+        if (TY_PEEK_FAILED(me, !known)) return nullptr;
         constraint = SW_PTR(known);
     } else if (ty->kind == TY_INDEXED) {
         constraint = ty_apparent_type(me, ty);
@@ -3767,7 +3767,7 @@ deferred:;
 bool ty_is_generic_tuple(Checker* me, Ty const* ty) {
     if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || !ty_is_tuple(ty)) return false;
     TyDeferredRef const* deferred = ty->reference.deferred;
-    if (deferred && !ty_reference_args_known(me, ty)) {
+    if (deferred && TY_PEEK_FAILED(me, !ty_reference_args_known(me, ty))) {
         return deferred->node->tag == TYPE_TUPLE && ty_tuple_node_has_variadic(deferred->node);
     }
     TupleShape const* shape = ty_tuple_shape(ty);
@@ -3856,7 +3856,7 @@ static bool is_generic_operand(Checker* me, Ty const* ty, u32 depth) {
 
 // Every number the index can be names one of the leading fixed elements of a tuple
 static bool index_less_than_fixed(Checker* me, Ty const* tuple, Ty const* index) {
-    if (!ty_reference_args_known(me, tuple)) return false;
+    if (TY_PEEK_FAILED(me, !ty_reference_args_known(me, tuple))) return false;
     // (The leading and trailing fixed elements: tsc's getTotalFixedElementCount)
     TupleShape const* shape = ty_tuple_shape(tuple);
     u32 fixed = 0;

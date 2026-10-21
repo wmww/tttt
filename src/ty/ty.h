@@ -1503,6 +1503,10 @@ static inline uintptr_t sw_peek_fast(Checker const* me, SharedWord const* w) {
 // in-flight markers of per-worker memos. With a graph the computation then has no clean result, so every worker that
 // needs it computes it and has the side data (plan 86 "P2 progress": the audit of P2's files)
 #define TY_WORKER_STATE(me) do { if (__builtin_expect((me)->graph != nullptr, 0)) TAINT_EVENT(TAINT_READ_TAINTED); } while (0)
+// Plan 86 4f rule 5: a done-ness peek whose "not known" answer selects another result (a syntax fallback, a
+// conservative false) is a read of this worker's history: with a graph its failure is a taint event, so the result
+// stays private. `cond` is the failure; the value is `cond`. Without a graph nothing is counted
+#define TY_PEEK_FAILED(me, cond) ((cond) ? (__builtin_expect((me)->graph != nullptr, 0) ? (TAINT_EVENT(TAINT_PEEK), true) : true) : false)
 // Whether a deferred reference's arguments are known to this worker (a done-ness peek, no event): the reference's
 // syntax answers otherwise (lower.c ty_reference_args())
 static inline bool ty_reference_args_known(Checker const* me, Ty const* reference) {
