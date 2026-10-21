@@ -810,7 +810,10 @@ typedef struct ContainerList {
 // tsgo's getAlternativeContainingModules: the modules of the enclosing file's imports that export the symbol (perhaps
 // through `export *`), remembered per (symbol, file) by the checker once some are found (tsc's extendedContainersByFile,
 // which only a lookup from inside an import declaration fills under bundler resolution), else every module of the
-// program that does
+// program that does. History-like by design: what is found depends on the usage mode of the lookup that first finds
+// some, which is not in the key, and later lookups in another mode see those (tsc's semantics, which a key holding the
+// mode would change). So under 4d KEY_EXTENDED_CONTAINERS stays each worker's own (scratch): shared first-wins, the
+// first worker's lookup context would decide what everyone prints, by schedule
 static u32 alternative_modules_uncached(ChainCtx* me, SourceFile const* file, Symbol const* symbol, Symbol const** out, u32 cap) {
     Checker* checker = current_checker;
     u64 key[3] = { KEY_EXTENDED_CONTAINERS, (u64)(uintptr_t)symbol, (u64)(uintptr_t)file };
