@@ -968,7 +968,46 @@ static void debug_memo_check(void) {
 typedef struct GraphMemoLogEntry {
     uintptr_t entry;
     u32 limit_hits;
+    u32 variance_depth_scratch; // Checker.variance_depth at the put (TTTT_DEBUG_DISAGREE)
 } GraphMemoLogEntry;
+typedef struct Disagreement { void const* mine; void const* winner; u64 k0, k1; u32 kind; bool iprop; u32 depth; u32 worker; } Disagreement;
+static Disagreement disagree_list[1 << 16];
+static u32 disagree_len;
+static pthread_mutex_t disagree_lock = PTHREAD_MUTEX_INITIALIZER;
+static char const* kind_name(u32 kind);
+// TTTT_DEBUG_DISAGREE=1 (--shared-graph): memo entries a checker computed differently from the one another checker
+// published first (conditional instances and intersection properties whose types print differently), at the end
+void graph_print_disagreements(Checker* checker) {
+    for (u32 i = 0; i < disagree_len; i++) {
+        Disagreement d = disagree_list[i];
+        Ty const* a = nullptr;
+        Ty const* b = nullptr;
+        if (d.iprop) {
+            FoundProp const* x = d.mine;
+            FoundProp const* y = d.winner;
+            if (x->found != y->found || x->flags != y->flags) {
+                fprintf(stderr, "IPROPDIS w%u d%u found %u/%u flags %x/%x\n", d.worker, d.depth, x->found, y->found, x->flags, y->flags);
+            }
+            a = x->found ? x->type : nullptr;
+            b = y->found ? y->type : nullptr;
+        } else if (d.kind == KEY_CONDITIONAL_INSTANCE || d.kind == KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT) {
+            a = ((Ty const* const*)d.mine)[0];
+            b = ((Ty const* const*)d.winner)[0];
+        } else {
+            continue;
+        }
+        if (!a || !b) continue;
+        cstr x = ty_to_cstr(checker, a), y = ty_to_cstr(checker, b);
+        if (!cstr_eq(&x, &y)) {
+            Ty const* subject = d.iprop ? lazy_slots_type(&checker->lazy, (u32)(d.k0 >> 1)) : nullptr;
+            cstr sub = subject ? ty_to_cstr(checker, subject) : cstr_init();
+            fprintf(stderr, "DISAGREE %s w%u d%u %s.%s\n  mine   %.400s\n  winner %.400s\n", d.iprop ? "iprop" : kind_name(d.kind), d.worker, d.depth,
+                cstr_str(&sub), d.iprop ? ((Atom const*)(uintptr_t)d.k1)->str : "", cstr_str(&x), cstr_str(&y));
+            cstr_drop(&sub);
+        }
+        c_drop(cstr, &x, &y);
+    }
+}
 
 static SharedTable* memo_log_table(TyGraph* me, uintptr_t tag) {
     return tag == 0 ? my types : tag == 1 ? my links : my intersection_props;
@@ -996,7 +1035,7 @@ void graph_memo_log_put(Checker* checker, InternTable const* table, void const**
         checker->graph_memo_log = realloc(checker->graph_memo_log, sizeof(GraphMemoLogEntry) * checker->graph_memo_log_cap);
         panic_if(!checker->graph_memo_log, "out of memory");
     }
-    checker->graph_memo_log[checker->graph_memo_log_len++] = (GraphMemoLogEntry){ (uintptr_t)block | tag, checker->instantiation_limit_hits };
+    checker->graph_memo_log[checker->graph_memo_log_len++] = (GraphMemoLogEntry){ (uintptr_t)block | tag, checker->instantiation_limit_hits, checker->variance_depth };
 }
 
 void graph_memo_log_unput(Checker* checker, void const** block) {
@@ -1045,7 +1084,17 @@ void graph_memo_flush(Checker* checker) {
             if (debug_memo_publish) debug_memo_published(block);
         } else if (there != block) {
             // (Another checker's came first: this one reads that from now on)
-            block[0] = __atomic_load_n(there, __ATOMIC_ACQUIRE);
+            void const* winner = __atomic_load_n(there, __ATOMIC_ACQUIRE);
+            static int debug_disagree = -1;
+            if (debug_disagree < 0) debug_disagree = getenv("TTTT_DEBUG_DISAGREE") != nullptr;
+            if (winner != block[0] && debug_disagree) {
+                pthread_mutex_lock(&disagree_lock);
+                if (disagree_len < c_arraylen(disagree_list)) {
+                    disagree_list[disagree_len++] = (Disagreement){ block[0], winner, key[0], key[1], kind, (entry & 3) == 2, logged.variance_depth_scratch, checker->graph_worker };
+                }
+                pthread_mutex_unlock(&disagree_lock);
+            }
+            block[0] = winner;
             __atomic_fetch_add(&stats->lost, 1, __ATOMIC_RELAXED);
         }
     }

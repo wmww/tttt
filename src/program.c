@@ -5299,6 +5299,13 @@ void program_typecheck(Program* me) {
     my binder->frozen = false;
     my errs->frozen = false;
     if (my graph && getenv("TTTT_GRAPH_STATS")) graph_print_stats(my graph);
+    if (getenv("TTTT_DEBUG_VARIANCE")) { extern void vlog_dump(void); vlog_dump(); }
+    if (my graph && getenv("TTTT_DEBUG_DISAGREE")) {
+        extern void graph_print_disagreements(Checker* checker);
+        checker_make_current(my checkers[0]);
+        graph_print_disagreements(my checkers[0]);
+        checker_make_current(nullptr);
+    }
     if (my first_touch_stamps && getenv("TTTT_GRAPH_STATS")) {
         u64 decisions = 0, disagreements = 0;
         for (u32 c = 0; c < count; c++) decisions += my checkers[c]->stamp_decisions, disagreements += my checkers[c]->stamp_disagreements;

@@ -931,6 +931,37 @@ every `-p` corpus, 20-run tables on the four, no default-path cost until the fla
    from unmeasured variances; intern memo entries and declaration memos whose computation saw it move kept private
    (110k of 450k intern memo entries and 45 of 4900 declaration memos withheld on drizzle): still 2 of 150 differ.
    Not testable that way: Ty-resident results (members, prop and signature return types), which have no private home.
+   **Third session (worker "varlock", 2026-10-21): the residue was two mechanisms, neither a variance-sharing leak.**
+   (a) *The redo dropped other files' errors* (most of it: every TS2578 case). check_file_or_give_up() popped the
+   checker's error vector back to its length before the file, but errors are kept in span order, so the tail it
+   popped held the errors of files the same checker had checked earlier whose paths sort after the given-up file
+   (geldb/insert.ts given up: mysql/insert.ts, sqlite/with.ts lost theirs), while the given-up check's own errors
+   stayed. Fixed (ebb6e432f): a file that may be given up reports into an ErrorCtx of its own, merged when checked.
+   How it was found: rechecking every file in the finished graph with a fresh checker (and with the original one)
+   always gave K1's errors, and the relations both checks asked agreed: the loss was in the bookkeeping, and every
+   affected file had been checked by the worker that later redid a type-tests file (a redo never seen in identical
+   runs). The lock "fixed" it only by making late redos rare. Likely also the coordinator's effect TS2769 under
+   TTTT_GRAPH_BUDGET_MB=1 with the lock on (every recycle replays warm-up, more redos).
+   (b) *Deep-nesting decisions by type id* (the singlestore/mysql TS2416/TS2322/TS2430 group, ~0.5% of lock-off runs
+   after (a)): one worker's measurements all came out bivariant + unreliable ([19 19 ...] in tsgo's numbering:
+   SingleStoreSession, SingleStoreSelectBase, ..., even Awaited) from some point on. Its relation cache held
+   `super-T -> sub-T = true`: inside SingleStoreSelectWithout's measurement (Omit<SingleStoreSelectKind<...>>) the
+   pair was reached in a frame both sides of which were deeply nested (expanding == 3, Maybe), the outermost pair
+   concluded Maybe and the maybe stack's keys went into the cache as succeeded (tsc's rule), poisoning every later
+   measurement of that worker. is_deeply_nested_as() counts occurrences with *increasing type ids*; under the shared
+   graph ids come from per-worker blocks, so the order is the schedule's. With TTTT_FIRST_TOUCH_STAMPS=1 (4c's
+   per-checker stamps) and the lock off: 500 / 500 loaded drizzle K12 runs K1's output (without stamps 2 of ~400).
+   So stage 4c's "ids are another history, unobservable" is false under concurrent measurement: stamps (or a
+   deterministic id order) are needed, at their K1 cost (+0.7-0.8% instructions measured in 4c), or the lock.
+   Lock off after (a): 150 + 300 + 400 + 500 runs, the only differences (b)'s. Not done: drizzle/effect wall with lock
+   off + stamps against the defaults, zod/effect/excalidraw/nest repeat tables with that combination.
+   Tooling left in the tree: TTTT_DEBUG_VARIANCE is worker-tagged and buffered per thread (vlog(), printed when
+   typechecking ends: stderr writes per line hid the races), with VARWAIT / VARSLOT lines for each foreign variance slot
+   met; TTTT_DEBUG_DISAGREE=1 prints, at the end, memo entries (conditional instances, intersection properties) a
+   checker computed differently from the value another published first (normal runs: none that print differently).
+   The recheck-in-the-finished-graph and per-file trace comparison (TTTT_SHADOW) were scratch patches, not kept: the
+   recipe is to check every file again with one fresh checker after the workers join and diff its errors per file
+   against the first check's (by span.file over the share's whole ErrorCtx, not the tail).
 2. **Shared relation cache (2 sessions)**, as designed below. Gate as there; excalidraw's K12 pairs within 5% of K1.
    **Done (2026-10-21).** recursive_related(): after the private cache and the maybe stack, a pair the private cache
    doesn't have is looked up in the graph's table for its relation kind (graph_relation_get(), SharedLinks keyed like

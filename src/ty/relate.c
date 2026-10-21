@@ -1,5 +1,37 @@
 #include "ty/ty_internal.h"
 #include "ty/graph.h"
+#include <stdarg.h>
+#include <pthread.h>
+// TTTT_DEBUG_VARIANCE's lines (worker-tagged) kept in memory per thread: written to stderr as they came they changed
+// the timing enough to hide --shared-graph races. Printed by vlog_dump() when typechecking ends
+typedef struct VlogBuf { char* data; size_t len, cap; struct VlogBuf* next; } VlogBuf;
+static _Thread_local VlogBuf* vlog_buf;
+static VlogBuf* vlog_all;
+static pthread_mutex_t vlog_lock = PTHREAD_MUTEX_INITIALIZER;
+[[gnu::format(printf, 1, 2)]] void vlog(char const* fmt, ...);
+void vlog(char const* fmt, ...) {
+    if (!vlog_buf) {
+        vlog_buf = calloc(1, sizeof(VlogBuf));
+        pthread_mutex_lock(&vlog_lock);
+        vlog_buf->next = vlog_all;
+        vlog_all = vlog_buf;
+        pthread_mutex_unlock(&vlog_lock);
+    }
+    VlogBuf* b = vlog_buf;
+    if (b->cap - b->len < 8192) {
+        b->cap = b->cap ? b->cap * 2 : 1 << 20;
+        b->data = realloc(b->data, b->cap);
+    }
+    va_list ap;
+    va_start(ap, fmt);
+    int n = vsnprintf(b->data + b->len, b->cap - b->len, fmt, ap);
+    va_end(ap);
+    if (n > 0) b->len += (size_t)n < b->cap - b->len ? (size_t)n : b->cap - b->len - 1;
+}
+void vlog_dump(void);
+void vlog_dump(void) {
+    for (VlogBuf* b = vlog_all; b; b = b->next) fwrite(b->data, 1, b->len, stderr);
+}
 #include "program.h"
 #include "scope.h"
 #include "error.h"
@@ -2676,7 +2708,7 @@ static void variance_debug_log(Checker* me, u32 indent, char const* what, Ty con
     cstr_append(&line, " -> ");
     variance_debug_desc(me, target, 0, &line);
     cstr_append(&line, tail);
-    fprintf(stderr, "%s  @%u,%u\n", cstr_str(&line), source->id, target->id);
+    vlog("w%u %s  @%u,%u\n", (unsigned)my graph_worker, cstr_str(&line), source->id, target->id);
     cstr_drop(&line);
 }
 
@@ -3549,7 +3581,7 @@ static void measure_variances(Checker* me, VarianceSubject subject, VarianceClai
     unsigned char measured[claim->len ? claim->len : 1];
     if (debug_env.debug_variance) {
         Symbol const* sym = subject_symbol(subject);
-        fprintf(stderr, "VAR> %.*s depth=%u\n", (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "", my variance_stack_len);
+        vlog("VAR> w%u %.*s depth=%u vdepth=%u\n", (unsigned)my graph_worker, (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "", my variance_stack_len, (unsigned)my variance_depth);
     }
     u32 types_before = my next_type_id;
     for (u32 i = 0; i < claim->len; i++) {
@@ -3578,15 +3610,15 @@ static void measure_variances(Checker* me, VarianceSubject subject, VarianceClai
     }
     if (debug_env.debug_variance) {
         Symbol const* sym = subject_symbol(subject);
-        fprintf(stderr, "VAR< %.*s [", (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "");
-        // (tsgo's VarianceFlags values: 0 invariant, 1 co, 2 contra, 3 bi, 4 independent, +8 unmeasurable, +16
-        // unreliable; tttt's own flags are the other way round)
-        for (u32 i = 0; i < claim->len; i++) {
+        char line[4096];
+        int n = snprintf(line, sizeof(line), "VAR< w%u %.*s [", (unsigned)my graph_worker, (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "");
+        for (u32 i = 0; i < claim->len && n < 4000; i++) {
             unsigned v = measured[i];
             unsigned tsgo = (v & 7) | (v & VARIANCE_UNMEASURABLE ? 8 : 0) | (v & VARIANCE_UNRELIABLE ? 16 : 0);
-            fprintf(stderr, i ? " %u" : "%u", tsgo);
+            n += snprintf(line + n, sizeof(line) - (size_t)n, i ? " %u" : "%u", tsgo);
         }
-        fprintf(stderr, "] stored=%s types=%u\n", claim->done ? "false" : "true", my next_type_id - types_before);
+        if (n < 4000) snprintf(line + n, sizeof(line) - (size_t)n, "] stored=%s types=%u\n", claim->done ? "false" : "true", my next_type_id - types_before);
+        vlog("%s", line);
     }
     if (pushed) my variance_stack_len--;
     if (outermost) ty_barrier_pop(me);
@@ -3631,7 +3663,7 @@ static Variances const* measured_variances(Checker* me, VarianceClaim* claim) {
     if (debug_env.debug_variance) {
         Symbol const* sym = subject_symbol(subject);
         Symbol const* restart = subject_symbol(subject_of_claim(me, my variance_stack[min]));
-        fprintf(stderr, "VAR circular %.*s restart=%.*s\n", (int)sym->name.size, sym->name.buf, (int)restart->name.size, restart->name.buf);
+        vlog("VAR circular w%u %.*s restart=%.*s\n", (unsigned)my graph_worker, (int)sym->name.size, sym->name.buf, (int)restart->name.size, restart->name.buf);
     }
     if (min > (u32)index) {
         u32 saved_len = my variance_stack_len;
@@ -3671,7 +3703,16 @@ static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) 
     bool unlocked = false;
     if (slot) {
         again:;
+        if (debug_env.debug_variance) {
+            unsigned peek = LAZY_LOAD(slot->state);
+            Symbol const* sym = subject_symbol(subject);
+            if (LAZY_IN_FLIGHT(peek) && !LAZY_MINE_IN_FLIGHT(me, peek)) vlog("VARWAIT w%u %.*s owner %u vdepth=%u\n", (unsigned)my graph_worker, (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "", peek >> 2, (unsigned)my variance_depth);
+        }
         LAZY_SNAP(me, slot->state, v, again);
+        if (debug_env.debug_variance) {
+            Symbol const* sym = subject_symbol(subject);
+            vlog("VARSLOT w%u %.*s state %u vdepth=%u\n", (unsigned)my graph_worker, (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "", v, (unsigned)my variance_depth);
+        }
         if (LAZY_STATE_OF(v) == LAZY_STATE_DONE) {
             if (lock) __atomic_store_n(lock, (unsigned)LAZY_STATE_NOT_STARTED, __ATOMIC_RELEASE);
             Variances const* shared = __atomic_load_n(&slot->value, __ATOMIC_RELAXED);
