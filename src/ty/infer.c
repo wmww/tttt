@@ -34,7 +34,7 @@ void inference_drop(Inference* inf) {
 // The key's slot in `visited` (its priority in visited_priority), added if it wasn't there (`*existed` says)
 static u32 visited_slot(Inference* inf, VisitKey key, bool* existed) {
     if ((inf->visited_len + 1) * 2 > inf->visited_cap) {
-        u32 cap = inf->visited_cap ? inf->visited_cap * 2 : 64;
+        u32 cap = inf->visited_cap ? inf->visited_cap * 2 : 16;
         VisitKey* grown = calloc(cap, sizeof(VisitKey));
         u32* grown_priority = calloc(cap, sizeof(u32));
         panic_if(!grown || !grown_priority, "out of memory");

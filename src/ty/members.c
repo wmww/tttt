@@ -542,7 +542,7 @@ static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
         ret->field = copy; \
         ret->count_field = builder->field##_count; \
     } \
-    free(builder->field);
+    if (builder->field) free(builder->field);
     FINISH(props, prop_count, Prop*)
     FINISH(call, call_count, Signature*)
     FINISH(construct, construct_count, Signature*)
@@ -3564,6 +3564,12 @@ static Members const* instantiate_members(
     Checker* me, Members const* source, TyMapper const* mapper, bool applies_type_args, bool this_only
 ) {
     MembersBuilder builder = {0};
+    // (At most the source's: one allocation rather than a growing one)
+    if (source->prop_count) {
+        builder.props = malloc(sizeof(*builder.props) * source->prop_count);
+        panic_if(!builder.props, "out of memory");
+        builder.props_cap = source->prop_count;
+    }
     for (u32 i = 0; i < source->prop_count; i++) {
         if (this_only && source->props[i]->thisless) {
             builder_push(&builder, props, source->props[i]);

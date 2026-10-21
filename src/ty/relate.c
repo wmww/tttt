@@ -149,6 +149,7 @@ typedef struct RelationState {
     u32* maybe_next;
     u32* maybe_heads;
     u32 maybe_count, maybe_cap;
+    u64 maybe_small[32]; // maybe_keys while it fits (most relations: no allocation)
     Ty const* source_stack[MAX_RELATION_DEPTH];
     Ty const* target_stack[MAX_RELATION_DEPTH];
     // Each stack entry's recursion identity (ty_recursion_entry()), worked out once, when a deep nesting check first needs it
@@ -6921,9 +6922,19 @@ static bool maybe_contains(RelationState const* st, u64 key) {
 
 static void maybe_push(RelationState* st, u64 key) {
     if (st->maybe_count == st->maybe_cap) {
-        st->maybe_cap = st->maybe_cap ? st->maybe_cap * 2 : 32;
-        st->maybe_keys = realloc(st->maybe_keys, sizeof(u64) * st->maybe_cap);
-        panic_if(!st->maybe_keys, "out of memory");
+        if (!st->maybe_cap) {
+            st->maybe_cap = c_arraylen(st->maybe_small);
+            st->maybe_keys = st->maybe_small;
+        } else if (st->maybe_keys == st->maybe_small) {
+            st->maybe_cap *= 2;
+            st->maybe_keys = malloc(sizeof(u64) * st->maybe_cap);
+            panic_if(!st->maybe_keys, "out of memory");
+            memcpy(st->maybe_keys, st->maybe_small, sizeof(st->maybe_small));
+        } else {
+            st->maybe_cap *= 2;
+            st->maybe_keys = realloc(st->maybe_keys, sizeof(u64) * st->maybe_cap);
+            panic_if(!st->maybe_keys, "out of memory");
+        }
         if (st->maybe_cap >= MAYBE_INDEXED_CAP) {
             st->maybe_next = realloc(st->maybe_next, sizeof(u32) * st->maybe_cap);
             free(st->maybe_heads);
@@ -8208,9 +8219,11 @@ static bool check_related(
         }
     }
     vec_ty_report_line_drop(&st->lines);
-    free(st->maybe_keys);
-    free(st->maybe_next);
-    free(st->maybe_heads);
+    if (st->maybe_keys && st->maybe_keys != st->maybe_small) free(st->maybe_keys);
+    if (st->maybe_heads) {
+        free(st->maybe_next);
+        free(st->maybe_heads);
+    }
     if (debug_env.debug_relate) {
         cstr source_str = ty_to_cstr(me, source);
         cstr target_str = ty_to_cstr(me, target);

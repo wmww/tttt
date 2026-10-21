@@ -39,11 +39,12 @@ typedef struct Arg {
 } Arg;
 
 typedef struct Args {
-    Arg* data;
-    u32 len;
+    Arg* data; // `small` until there are more
+    u32 len, cap;
     i32 spread_index; // first `spread` argument, -1 if none
     bool incomplete; // An incomplete tagged template: too few arguments are fine (tsc's callIsIncomplete)
     uint8_t decorator_arity; // DecoratorArity
+    Arg small[6]; // (Most calls have few arguments: no allocation for them)
 } Args;
 
 // How many arguments the runtime passes a decorator (tsc's getDecoratorArgumentCount)
@@ -64,13 +65,40 @@ typedef struct DecoratorCall {
 } DecoratorCall;
 
 // The parameters of a signature as a call sees them: a rest parameter of tuple type is spread out
+// (A ParamShape lives where it was made: `types` may point into it)
 typedef struct ParamShape {
-    Ty const** types;
+    Ty const** types; // `small` while they fit
     u32 count;
     u32 min;
     Ty const* rest_element; // `...rest: X[]`: X
     Ty const* rest_variadic; // a rest parameter that's neither array nor tuple (a type parameter, mostly)
+    Ty const* small[8];
 } ParamShape;
+
+static void shape_drop(ParamShape* shape) {
+    if (shape->types != shape->small) free(shape->types);
+}
+
+// Room for `cap` types, the `count` there kept
+static void shape_reserve(ParamShape* shape, u32 cap) {
+    if (cap <= c_arraylen(shape->small)) return;
+    if (shape->types == shape->small) {
+        shape->types = malloc(sizeof(Ty const*) * cap);
+        panic_if(!shape->types, "out of memory");
+        memcpy(shape->types, shape->small, sizeof(Ty const*) * shape->count);
+    } else {
+        shape->types = realloc(shape->types, sizeof(Ty const*) * cap);
+        panic_if(!shape->types, "out of memory");
+    }
+}
+
+static void shape_init(ParamShape* shape, u32 min) {
+    shape->types = shape->small;
+    shape->count = 0;
+    shape->min = min;
+    shape->rest_element = nullptr;
+    shape->rest_variadic = nullptr;
+}
 
 typedef struct Candidate {
     Signature const* sig;
@@ -128,10 +156,34 @@ typedef struct CallInfo {
     DecoratorCall const* decorator; // A decorator (tsc's resolveDecorator): its synthetic arguments
 } CallInfo;
 
+// (An Args lives where it was initialized: `data` may point into it)
+static void args_init(Args* args) {
+    // (Field by field: `small` isn't zeroed)
+    args->data = args->small;
+    args->len = 0;
+    args->cap = c_arraylen(args->small);
+    args->spread_index = -1;
+    args->incomplete = false;
+    args->decorator_arity = 0;
+}
+
 static void args_push(Args* args, Arg arg) {
-    args->data = realloc(args->data, sizeof(Arg) * (args->len + 1));
-    panic_if(!args->data, "out of memory");
+    if (args->len == args->cap) {
+        args->cap *= 2;
+        if (args->data == args->small) {
+            args->data = malloc(sizeof(Arg) * args->cap);
+            panic_if(!args->data, "out of memory");
+            memcpy(args->data, args->small, sizeof(args->small));
+        } else {
+            args->data = realloc(args->data, sizeof(Arg) * args->cap);
+            panic_if(!args->data, "out of memory");
+        }
+    }
     args->data[args->len++] = arg;
+}
+
+static void args_drop(Args* args) {
+    if (args->data != args->small) free(args->data);
 }
 
 static bool is_empty_tuple(Ty const* ty) {
@@ -157,21 +209,21 @@ bool ty_calls_generic_function_returning_function(Checker* me, Expr const* expr)
     return false;
 }
 
-static Args collect_args(Checker* me, CallInfo const* info) {
+static void collect_args(Checker* me, CallInfo const* info, Args* out) {
     CallExpr const* call = info->call;
-    Args args = { .spread_index = -1 };
+    args_init(out);
     if (info->decorator) {
         for (u32 i = 0; i < info->decorator->count; i++) {
-            args_push(&args, (Arg){ .expr = &call->callable, .type = info->decorator->params[i], .part_of_spread = true });
+            args_push(out, (Arg){ .expr = &call->callable, .type = info->decorator->params[i], .part_of_spread = true });
         }
-        args.decorator_arity = info->decorator->arity;
-        return args;
+        out->decorator_arity = info->decorator->arity;
+        return;
     }
     if (info->tagged_template) {
         Symbol const* strings = program_get_global(my program, c_sv("TemplateStringsArray"), SYMBOL_TYPE);
         Ty const* type = strings ? ty_declared_type_of(me, strings) : ty_empty_object_type(me);
-        args_push(&args, (Arg){ .expr = info->tagged_template, .type = type, .part_of_spread = true });
-        args.incomplete = info->tagged_template->template_->incomplete;
+        args_push(out, (Arg){ .expr = info->tagged_template, .type = type, .part_of_spread = true });
+        out->incomplete = info->tagged_template->template_->incomplete;
     }
     for_each (i, vec_expr, &call->args) {
         if (i->tag == EXPR_SPREAD) {
@@ -184,16 +236,16 @@ static Args collect_args(Checker* me, CallInfo const* info) {
                 for (u32 j = 0; j < shape->arity; j++) {
                     Atom const* name = shape->names ? shape->names[j] : nullptr;
                     if (shape->flags[j] & TUPLE_ELEMENT_REST) {
-                        if (args.spread_index < 0) args.spread_index = (i32)args.len;
+                        if (out->spread_index < 0) out->spread_index = (i32)out->len;
                         // A variadic element (`...T`, T generic) stays itself (tsc's getSpreadArgumentType)
                         Ty const* rest = elements.data[j];
                         bool variadic = !ty_is_array(me, rest) && !ty_is_tuple(rest) && !(rest->flags & TYF_ANY);
                         Ty const* element = variadic ? ty_iterated_type(me, ITERATION_SPREAD, rest, span_null, nullptr) :
                             ty_rest_element_type(me, rest);
-                        args_push(&args, (Arg){ .expr = i, .type = element, .spread = true, .tuple_name = name,
+                        args_push(out, (Arg){ .expr = i, .type = element, .spread = true, .tuple_name = name,
                             .variadic = variadic ? rest : nullptr });
                     } else {
-                        args_push(&args, (Arg){ .expr = i, .type = elements.data[j], .part_of_spread = true, .tuple_name = name });
+                        args_push(out, (Arg){ .expr = i, .type = elements.data[j], .part_of_spread = true, .tuple_name = name });
                     }
                 }
                 continue;
@@ -211,18 +263,17 @@ static Args collect_args(Checker* me, CallInfo const* info) {
                 // (A homomorphic mapped type over an array type parameter too: `Foo<T>` with `T extends any[]`)
                 variadic = operand;
             }
-            if (args.spread_index < 0) args.spread_index = (i32)args.len;
-            args_push(&args, (Arg){ .expr = i, .type = element, .spread = true, .variadic = variadic });
+            if (out->spread_index < 0) out->spread_index = (i32)out->len;
+            args_push(out, (Arg){ .expr = i, .type = element, .spread = true, .variadic = variadic });
         } else {
             bool context_sensitive = ty_expr_is_context_sensitive(i);
-            args_push(&args, (Arg){
+            args_push(out, (Arg){
                 .expr = i,
                 .context_sensitive = context_sensitive,
                 .generic_call = !context_sensitive && ty_calls_generic_function_returning_function(me, i),
             });
         }
     }
-    return args;
 }
 
 static bool accepts_void(Ty const* ty) {
@@ -234,12 +285,12 @@ static bool accepts_void(Ty const* ty) {
     return false;
 }
 
-static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const* mapper) {
+static void param_shape(Checker* me, Signature const* sig, TyMapper const* mapper, ParamShape* out) {
     SigResolved const* sig_rs = signature_resolve(me, sig);
-    ParamShape shape = { .min = sig_rs->min_args };
+    shape_init(out, sig_rs->min_args);
+#define shape (*out)
     u32 cap = sig_rs->param_count + 1;
-    shape.types = malloc(sizeof(Ty const*) * cap);
-    panic_if(!shape.types, "out of memory");
+    shape_reserve(out, cap);
     for (u32 i = 0; i < sig_rs->param_count; i++) {
         SigParam const* param = &sig_rs->params[i];
         Ty const* type = ty_instantiate(me, param->type, mapper);
@@ -253,8 +304,7 @@ static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const*
             TupleShape const* tuple = type->reference.target->declared.tuple;
             TyList elements = ty_reference_args(me, type);
             cap += elements.len;
-            shape.types = realloc(shape.types, sizeof(Ty const*) * cap);
-            panic_if(!shape.types, "out of memory");
+            shape_reserve(out, cap);
             for (u32 j = 0; j < elements.len; j++) {
                 if (tuple->flags[j] & TUPLE_ELEMENT_REST) {
                     // A trailing array is the element type of the arguments left; a variadic element (`[...M, P]`) or
@@ -283,10 +333,10 @@ static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const*
     }
     // Trailing parameters that accept void can be left out (tsc's getMinArgumentCount): `resolve()` of a Promise<void>
     while (shape.min > 0 && shape.min <= shape.count && accepts_void(shape.types[shape.min - 1])) shape.min--;
-    return shape;
+#undef shape
 }
 
-static ParamShape call_param_shape(Checker* me, CallInfo const* info, Signature const* sig, TyMapper const* mapper);
+static void call_param_shape(Checker* me, CallInfo const* info, Signature const* sig, TyMapper const* mapper, ParamShape* out);
 
 static bool shape_has_rest(ParamShape const* shape) {
     return shape->rest_element || shape->rest_variadic;
@@ -1265,7 +1315,8 @@ static TyMapper const* infer_type_arguments(
     inference_init(&inf, sig_res(me, sig)->type_params);
     SourceFile const* file = info->call ? span_source(info->call->callable.inner_span) : span_source(info->call_span);
     inf.any_default = file && file->is_js;
-    ParamShape shape = call_param_shape(me, info, sig, nullptr);
+    ParamShape shape;
+    call_param_shape(me, info, sig, nullptr, &shape);
 
     // Nested in an argument of another generic call, the contextual type mentions its type parameters: what it has
     // inferred so far stands in for them
@@ -1536,7 +1587,7 @@ static TyMapper const* infer_type_arguments(
         infer_from_arg(me, &inf, &shape, args, i);
     }
     if (!rest_inferred) infer_rest_variadic(me, &inf, &shape, args, &self, skip_sensitive, skip_generic_functions);
-    free(shape.types);
+    shape_drop(&shape);
     free(self.sites);
 
     TyMapper const* mapper = inference_mapper(me, sig, &inf, false);
@@ -1709,14 +1760,15 @@ static i32 first_unfit_argument(
 
 // The parameters a call's arguments are checked against. A JSX element has one argument, its attributes, which any
 // signature takes (tsc's hasCorrectArity: a class's argumentless constructor too), as the props of the signature
-static ParamShape call_param_shape(Checker* me, CallInfo const* info, Signature const* sig, TyMapper const* mapper) {
-    if (!info->jsx) return param_shape(me, sig, mapper);
+static void call_param_shape(Checker* me, CallInfo const* info, Signature const* sig, TyMapper const* mapper, ParamShape* out) {
+    if (!info->jsx) {
+        param_shape(me, sig, mapper, out);
+        return;
+    }
     SigResolved const* sig_rs = signature_resolve(me, sig);
-    ParamShape shape = { .count = 1, .min = sig_rs->min_args ? 1 : 0 };
-    shape.types = malloc(sizeof(Ty const*));
-    panic_if(!shape.types, "out of memory");
-    shape.types[0] = ty_jsx_signature_props(me, info->jsx, sig, mapper, info->jsx_class);
-    return shape;
+    shape_init(out, sig_rs->min_args ? 1 : 0);
+    out->count = 1;
+    out->types[0] = ty_jsx_signature_props(me, info->jsx, sig, mapper, info->jsx_class);
 }
 
 // What the errors about a call are reported at (tsc's getDiagnosticForCallNode): the name of a method, else the callee;
@@ -1873,7 +1925,8 @@ static void report_arity(
     bool any_below = false;
     Signature const* closest = nullptr;
     for (u32 i = 0; i < count; i++) {
-        ParamShape shape = call_param_shape(me, info, signatures[i], mapper);
+        ParamShape shape;
+        call_param_shape(me, info, signatures[i], mapper, &shape);
         if (shape.min < min) {
             min = shape.min;
             closest = signatures[i];
@@ -1885,7 +1938,7 @@ static void report_arity(
         }
         if (shape.min > args->len && shape.min < min_above) min_above = shape.min;
         has_rest |= shape_has_rest(&shape);
-        free(shape.types);
+        shape_drop(&shape);
     }
     Span name_span = callee_span(info);
     if (args->spread_index >= 0) {
@@ -1967,7 +2020,8 @@ static Span report_unfit_argument(
         ty_report_unfit_this(me, info->this_arg, target, info->this_span, errs);
         return info->this_span;
     }
-    ParamShape shape = call_param_shape(me, info, candidate->sig, candidate->mapper);
+    ParamShape shape;
+    call_param_shape(me, info, candidate->sig, candidate->mapper, &shape);
     Ty const* arg_type = nullptr;
     Ty const* param_type = nullptr;
     // (While it reports, what the arguments' functions ask for their contextual types goes through this candidate:
@@ -2004,7 +2058,7 @@ static Span report_unfit_argument(
         ty_report_unfit_argument(me, arg_type, param_type, span, is_rest_tuple || template_strings ? nullptr : effective, errs);
     }
     my reporting_candidate = outer_reporting;
-    free(shape.types);
+    shape_drop(&shape);
     return span;
 }
 
@@ -2040,9 +2094,10 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
     // sets ContextChecked, `(c: any, ...rest: unknown[])` makes `(md, opts) => ...` implicitly any, TS7006)
     bool fits = resolve_with_signatures(me, &impl_sig, 1, args, info, call_span, nullptr).chosen.sig;
     // The arguments stay typed as checked against the overload (what the types baseline shows)
-    ParamShape shape = call_param_shape(me, info, candidate->sig, candidate->mapper);
+    ParamShape shape;
+    call_param_shape(me, info, candidate->sig, candidate->mapper, &shape);
     check_args(me, &shape, args, false);
-    free(shape.types);
+    shape_drop(&shape);
     if (!fits) return;
     Span at = span_valid(impl->name) ? impl->name : span_valid(function_impl_member_name(impl)) ? function_impl_member_name(impl) : impl->full_span;
     error_add_related_s(error, at, 2793, cstr_lit(
@@ -2372,7 +2427,13 @@ static Resolution resolve_with_signatures_inner(
     ErrorCtx* errs
 ) {
     Resolution ret = {0};
-    Candidate* unfit = calloc(count ? count : 1, sizeof(Candidate));
+    // (Most calls have one or few signatures: no allocation for them)
+    Candidate unfit_small[4];
+    Candidate* unfit = unfit_small;
+    if (count > c_arraylen(unfit_small)) {
+        unfit = malloc(sizeof(Candidate) * count);
+        panic_if(!unfit, "out of memory");
+    }
     u32 unfit_count = 0;
     bool type_argument_arity_ok = false;
     Candidate arity_candidate = {0}; // tsc's candidateForArgumentArityError
@@ -2395,10 +2456,11 @@ static Resolution resolve_with_signatures_inner(
             if (!has_correct_type_argument_arity(me, sig, info)) continue;
             type_argument_arity_ok = true;
             // (A `super(...)` of a base without type arguments checks the instantiated constructor)
-            ParamShape uninstantiated = call_param_shape(me, info, sig, super_filled_type_arguments(me, sig, info));
+            ParamShape uninstantiated;
+            call_param_shape(me, info, sig, super_filled_type_arguments(me, sig, info), &uninstantiated);
             bool arity_ok = has_correct_arity(&uninstantiated, args);
             bool generic_rest = uninstantiated.rest_variadic != nullptr;
-            free(uninstantiated.types);
+            shape_drop(&uninstantiated);
             if (!arity_ok) continue;
             // A candidate's first inference leaves generic function arguments out, and they fit its first check (tsc's
             // CheckMode.SkipGenericFunctions): a candidate whose other arguments don't fit is reported as that
@@ -2423,15 +2485,17 @@ static Resolution resolve_with_signatures_inner(
             if (generic_rest && candidate.mapper) {
                 // A rest parameter of a generic type may have a different arity once instantiated (tsc's second
                 // hasCorrectArity for getNonArrayRestType): `...m: T extends true ? [] : [X]`
-                ParamShape instantiated = call_param_shape(me, info, sig, candidate.mapper);
+                ParamShape instantiated;
+                call_param_shape(me, info, sig, candidate.mapper, &instantiated);
                 arity_ok = has_correct_arity(&instantiated, args);
-                free(instantiated.types);
+                shape_drop(&instantiated);
                 if (!arity_ok) {
                     arity_candidate = candidate;
                     continue;
                 }
             }
-            ParamShape shape = call_param_shape(me, info, sig, candidate.mapper);
+            ParamShape shape;
+            call_param_shape(me, info, sig, candidate.mapper, &shape);
             // (With a generic function left out, the generic calls among the arguments wait too: checking them now
             // would type their functions for good against what isn't inferred yet)
             Ty const* arg_type;
@@ -2444,12 +2508,12 @@ static Resolution resolve_with_signatures_inner(
             if (fits && (skip_sensitive || skipped_generic)) {
                 // Again with everything, for this candidate and the ones after it
                 skip_sensitive = false;
-                free(shape.types);
+                shape_drop(&shape);
                 candidate = make_candidate(me, sig, args, info, false, false);
-                shape = call_param_shape(me, info, sig, candidate.mapper);
+                call_param_shape(me, info, sig, candidate.mapper, &shape);
                 if (generic_rest && candidate.mapper && !has_correct_arity(&shape, args)) {
                     // (tsc's second hasCorrectArity after the full inference too)
-                    free(shape.types);
+                    shape_drop(&shape);
                     arity_candidate = candidate;
                     continue;
                 }
@@ -2467,7 +2531,7 @@ static Resolution resolve_with_signatures_inner(
             } else {
                 unfit[unfit_count++] = candidate;
             }
-            free(shape.types);
+            shape_drop(&shape);
         }
     }
 
@@ -2511,9 +2575,10 @@ static Resolution resolve_with_signatures_inner(
             // (The arguments are checked against it: a callback's parameters get the union of what each overload
             // gives them, which is no contextual signature unless they agree)
             Signature const* failure = overload_failure_union_signature(me, signatures, count);
-            ParamShape shape = call_param_shape(me, info, failure, nullptr);
+            ParamShape shape;
+            call_param_shape(me, info, failure, nullptr, &shape);
             check_args(me, &shape, args, false);
-            free(shape.types);
+            shape_drop(&shape);
             ret.ret = signature_return_type(me, failure);
         } else if (unfit_count) {
             // Inferred again from what doesn't depend on the candidate: context-sensitive and generic function
@@ -2540,9 +2605,10 @@ static Resolution resolve_with_signatures_inner(
             ) {
                 fallback.mapper = failure_type_arguments(me, fallback.sig, info);
                 // (The arguments are checked against it again: an arrow's literal returns see its contextual type)
-                ParamShape shape = call_param_shape(me, info, fallback.sig, fallback.mapper);
+                ParamShape shape;
+                call_param_shape(me, info, fallback.sig, fallback.mapper, &shape);
                 check_args(me, &shape, args, false);
-                free(shape.types);
+                shape_drop(&shape);
             }
             if (longest && sig_res(me, longest)->type_params.len && unfit[picked].sig != longest && !info->type_arg_nodes) {
                 // A generic one that wasn't checked (too many parameters for the arguments: vitest's `spyOn(o, k,
@@ -2551,28 +2617,32 @@ static Resolution resolve_with_signatures_inner(
             } else if (sig_res(me, fallback.sig)->type_params.len && !info->type_arg_nodes) {
                 fallback = make_candidate(me, fallback.sig, args, info, true, true);
                 // (The arguments are left as checked against the candidate, which is what the types baseline shows)
-                ParamShape shape = call_param_shape(me, info, unfit[picked].sig, unfit[picked].mapper);
+                ParamShape shape;
+                call_param_shape(me, info, unfit[picked].sig, unfit[picked].mapper, &shape);
                 check_args(me, &shape, args, false);
-                free(shape.types);
+                shape_drop(&shape);
             } else if (!sig_res(me, fallback.sig)->type_params.len && fallback.sig != unfit[unfit_count - 1].sig) {
                 // (A non-generic one checked before the last candidate: the arguments are typed by it again, tsc's
                 // getContextualTypeForArgument going by the resolved failure signature)
-                ParamShape shape = call_param_shape(me, info, fallback.sig, nullptr);
+                ParamShape shape;
+                call_param_shape(me, info, fallback.sig, nullptr, &shape);
                 check_args(me, &shape, args, false);
-                free(shape.types);
+                shape_drop(&shape);
             }
             // (What the error report left unchecked, after the argument that didn't fit, is typed by it)
-            ParamShape shape = call_param_shape(me, info, fallback.sig, fallback.mapper);
+            ParamShape shape;
+            call_param_shape(me, info, fallback.sig, fallback.mapper, &shape);
             check_args(me, &shape, args, false);
-            free(shape.types);
+            shape_drop(&shape);
             ret.ret = resolved_return_type(me, &fallback);
             ret.failure = fallback;
         } else if (count == 1 && !sig_res(me, signatures[0])->type_params.len) {
             // (The arguments are checked against it: an arrow's parameters get its types, tsc's
             // getContextualTypeForArgument going by the resolved failure signature)
-            ParamShape shape = call_param_shape(me, info, signatures[0], nullptr);
+            ParamShape shape;
+            call_param_shape(me, info, signatures[0], nullptr, &shape);
             check_args(me, &shape, args, false);
-            free(shape.types);
+            shape_drop(&shape);
             ret.ret = resolved_return_type(me, &(Candidate){ .sig = signatures[0] });
             ret.failure = (Candidate){ .sig = signatures[0] };
         } else {
@@ -2595,15 +2665,16 @@ static Resolution resolve_with_signatures_inner(
                 sig_res(me, sig)->type_params.len ? make_candidate(me, sig, args, info, true, true) : (Candidate){ .sig = sig };
             // (The arguments are checked against it: an arrow's parameters get its types, tsc's
             // getContextualTypeForArgument going by the resolved failure signature)
-            ParamShape shape = call_param_shape(me, info, candidate.sig, candidate.mapper);
+            ParamShape shape;
+            call_param_shape(me, info, candidate.sig, candidate.mapper, &shape);
             check_args(me, &shape, args, false);
-            free(shape.types);
+            shape_drop(&shape);
             ret.ret = info->type_arg_nodes ? candidate_return_type(me, &candidate) :
                 sig_res(me, sig)->type_params.len ? resolved_return_type(me, &candidate) : signature_return_type(me, sig);
             ret.failure = candidate; // (What control flow goes by too: tsc's getEffectsSignature, a type predicate's)
         }
     }
-    free(unfit);
+    if (unfit != unfit_small) free(unfit);
     return ret;
 }
 
@@ -2702,7 +2773,8 @@ static TyDeclGroup const* signature_decl_group(Checker* me, Signature const* sig
 // Promise.all is tried before lib.es2015.iterable's Iterable one. Another interface's (a base's) come after
 static void reorder_candidates(Checker* me, Signature** signatures, u32 count) {
     static char const sentinel = 0; // Stands for the symbol and declaration of signatures not from an interface
-    Signature** result = malloc(sizeof(Signature*) * (count ? count : 1));
+    Signature* small[8];
+    Signature** result = count <= c_arraylen(small) ? small : malloc(sizeof(Signature*) * count);
     panic_if(!result, "out of memory");
     u32 len = 0, cutoff = 0, index = 0;
     i32 specialized = -1;
@@ -2736,7 +2808,7 @@ static void reorder_candidates(Checker* me, Signature** signatures, u32 count) {
         len++;
     }
     memcpy(signatures, result, sizeof(Signature*) * count);
-    free(result);
+    if (result != small) free(result);
 }
 
 static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs);
@@ -2925,10 +2997,11 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
 
     // (An intersection's signatures are those of its members, see resolve_intersection_members())
     Signature** signatures = nullptr;
+    Signature* signatures_small[8]; // (Most callees have few: no allocation for them)
     u32 count = 0;
     u32 other_count = 0; // signatures of the kind that wasn't asked for
     if (union_sigs) {
-        signatures = malloc(sizeof(Signature*) * union_count);
+        signatures = union_count <= c_arraylen(signatures_small) ? signatures_small : malloc(sizeof(Signature*) * union_count);
         panic_if(!signatures, "out of memory");
         for (u32 i = 0; i < union_count; i++) signatures[count++] = union_sigs[i];
     } else {
@@ -2937,7 +3010,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         u32 list_count = construct ? members->construct_count : members->call_count;
         other_count = construct ? members->call_count : members->construct_count;
         if (list_count) {
-            signatures = malloc(sizeof(Signature*) * list_count);
+            signatures = list_count <= c_arraylen(signatures_small) ? signatures_small : malloc(sizeof(Signature*) * list_count);
             panic_if(!signatures, "out of memory");
             for (u32 j = 0; j < list_count; j++) signatures[count++] = list[j];
         }
@@ -3028,7 +3101,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
 
     if (call->is_extends) {
         // `class A extends B`: B only has to be constructable, `super(...)` is the call that gets checked
-        free(signatures);
+        if (signatures != signatures_small) free(signatures);
         return any;
     }
     if (call->uses_new) {
@@ -3036,7 +3109,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         // getConstructorAccessibilityError, `typeof A & typeof B` with one private constructor)
         for (u32 i = 0; i < count; i++) {
             if (!ty_constructor_accessible(me, call, signatures[i], call_span, errs)) {
-                free(signatures);
+                if (signatures != signatures_small) free(signatures);
                 return ty_intrinsic(me, TY_ERROR); // (tsc's resolveErrorCall)
             }
         }
@@ -3045,7 +3118,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         for (u32 i = 0; i < count; i++) some_abstract |= (signatures[i]->flags & (SIGNATURE_ABSTRACT | SIGNATURE_SOME_ABSTRACT)) != 0;
         if (some_abstract) {
             error_ctx_error_d(errs, call_span, 2511, "Cannot create an instance of an abstract class.");
-            free(signatures);
+            if (signatures != signatures_small) free(signatures);
             return ty_intrinsic(me, TY_ERROR);
         }
     }
@@ -3063,7 +3136,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             }
         }
         if (!kept) {
-            free(signatures);
+            if (signatures != signatures_small) free(signatures);
             for_each (i, vec_expr, &call->args) ty_expr_type(me, i->tag == EXPR_SPREAD ? i->spread : i);
             return any;
         }
@@ -3090,7 +3163,8 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
     if (declared_order) memcpy(declared_order, signatures, sizeof(Signature*) * count);
     with_this.declared_order = declared_order;
     reorder_candidates(me, signatures, count);
-    Args args = collect_args(me, info);
+    Args args;
+    collect_args(me, info, &args);
     Resolution resolution = resolve_with_signatures(me, signatures, count, &args, &with_this, call_span, errs);
     free(declared_order);
     ret = resolution.ret;
@@ -3103,8 +3177,8 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             info->outcome_out->param_count = resolution.chosen_count;
         }
     }
-    free(args.data);
-    free(signatures);
+    args_drop(&args);
+    if (signatures != signatures_small) free(signatures);
     return ret;
 }
 
@@ -3233,13 +3307,14 @@ JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, Err
         }
         info.type_args = (TyList){ .data = type_args, .len = len };
     }
-    Args args = { .spread_index = -1 };
+    Args args;
+    args_init(&args);
     args_push(&args, (Arg){ .expr = &element->attributes, .context_sensitive = ty_expr_is_context_sensitive(&element->attributes) });
     // A component that needs more arguments than the factory gives fits no signature, which is all that's said
     // (checkApplicableSignatureForJsxCallLikeElement checks the arity before the attributes)
     if (!element->fragment && !ty_jsx_tag_arity_fits(me, element, tag_type, errs)) errs = nullptr;
     Resolution resolution = resolve_with_signatures(me, signatures, count, &args, &info, at, errs);
-    free(args.data);
+    args_drop(&args);
     ret.sig = resolution.chosen.sig;
     ret.mapper = resolution.chosen.mapper;
     ret.ret = resolution.ret;

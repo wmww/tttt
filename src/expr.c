@@ -4633,6 +4633,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             object_check_grammar(me, errs);
             ty_check_object_literal_pattern(current_checker, me, errs);
             ty_check_object_literal_late_members(current_checker, me, errs);
+            // (The names written before a spread are what it may override: none to collect without one)
+            bool has_spread = false;
+            for_each (i, vec_object_expr_item, &my object) has_spread |= i->tag == OBJECT_ITEM_SPREAD;
             TyWrittenProp* written = nullptr;
             u32 written_count = 0;
             for_each (i, vec_object_expr_item, &my object) {
@@ -4651,7 +4654,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 ) {
                     error_ctx_error_d(errs, i->name_span, 1539, "A 'bigint' literal cannot be used as a property name.");
                 }
-                if (i->tag != OBJECT_ITEM_SPREAD && !i->computed_key) {
+                if (has_spread && i->tag != OBJECT_ITEM_SPREAD && !i->computed_key) {
                     written = realloc(written, sizeof(TyWrittenProp) * (written_count + 1));
                     panic_if(!written, "out of memory");
                     written[written_count++] = (TyWrittenProp){ checker_atom(current_checker, cstr_sv(&i->name_string)), i->span };
