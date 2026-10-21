@@ -3286,10 +3286,10 @@ typedef struct Variances {
     unsigned char data[];
 } Variances;
 
-// A measurement in flight (Checker.variance_claims), on the stack of the get_variances() or get_alias_variances() that
+// A measurement in flight (Checker.claims[CLAIM_VARIANCES]), on the stack of the get_variances() or get_alias_variances() that
 // started it. What a checker reads of variances while they are being measured is its own, never the links'
 typedef struct VarianceClaim {
-    struct VarianceClaim* next; // The claim in flight around this one
+    Claim claim; // (CLAIM_VARIANCES, keyed by the declared type or the alias)
     Ty const* declared; // What it measures: a generic declared type, or else
     Symbol const* alias; // a generic type alias
     u32 len;
@@ -3299,10 +3299,8 @@ typedef struct VarianceClaim {
 } VarianceClaim;
 
 static VarianceClaim* variance_claim_of(Checker* me, Ty const* declared, Symbol const* alias) {
-    for (VarianceClaim* claim = my variance_claims; claim; claim = claim->next) {
-        if (claim->declared == declared && claim->alias == alias) return claim;
-    }
-    return nullptr;
+    Claim* claim = ty_claim_find(me, CLAIM_VARIANCES, declared ? (void const*)declared : (void const*)alias, !declared);
+    return claim ? c_container_of(claim, VarianceClaim, claim) : nullptr;
 }
 
 static Ty const* variance_marker(Checker* me, u32 which) {
@@ -3577,11 +3575,11 @@ static Variances const* measured_variances(Checker* me, VarianceClaim* claim) {
 
 // Measures what is neither in the links nor in flight, under a claim of its own
 static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) {
-    VarianceClaim claim = { .next = my variance_claims, .declared = subject.declared, .alias = subject.alias,
-        .len = subject.params.len };
-    my variance_claims = &claim;
+    VarianceClaim claim = { .declared = subject.declared, .alias = subject.alias, .len = subject.params.len };
+    ty_claim_push(me, CLAIM_VARIANCES, &claim.claim,
+        subject.declared ? (void const*)subject.declared : (void const*)subject.alias, !subject.declared);
     measure_variances(me, subject, &claim);
-    my variance_claims = claim.next;
+    ty_claim_pop(me, CLAIM_VARIANCES, &claim.claim);
     return claim.done;
 }
 

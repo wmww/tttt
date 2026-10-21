@@ -1023,6 +1023,13 @@ typedef struct DeferredCheck {
     void const* node;
 } DeferredCheck;
 
+// The kinds of in-flight record that hang off no Resolving entry (see ty_claim_push()): one list each, so that a kind's
+// lookup only walks its own claims
+typedef enum ClaimKind {
+    CLAIM_VARIANCES, // relate.c's VarianceClaim: a declared type's or alias's variances being measured
+    CLAIM_KIND_COUNT,
+} ClaimKind;
+
 struct Checker {
     Program* program;
     struct Binder const* binder;
@@ -1217,9 +1224,11 @@ struct Checker {
     // circularity restarts from its smallest symbol (relate.c, measured_variances())
     struct VarianceClaim* variance_stack[64];
     u32 variance_stack_len;
-    // Every variance measurement in flight, innermost first, those a restart set aside from variance_stack too: the
-    // checker's own in-flight records (relate.c's get_variances()). The links only ever hold finished variances
-    struct VarianceClaim* variance_claims;
+    // The checker's in-flight records of the kinds that push no Resolving entry, innermost first, per kind (see
+    // ty_claim_push()): what a lazy field another worker could read must not hold while it is computed. Every variance
+    // measurement in flight is one (CLAIM_VARIANCES, relate.c's get_variances()), those a restart set aside from
+    // variance_stack too: the links only ever hold finished variances
+    struct Claim* claims[CLAIM_KIND_COUNT];
     unsigned char variance_reports; // VARIANCE_UNRELIABLE/UNMEASURABLE of what the measurement went through (relate.c)
     struct IterationState const* iteration; // The lib's iteration interfaces, looked up on first use (iterate.c)
     // `Disposable | null | undefined` and `AsyncDisposable | Disposable | null | undefined`, what a `using` / `await
@@ -2184,6 +2193,9 @@ typedef struct MembersInFlight {
 } MembersInFlight;
 typedef struct Resolving {
     void const* key;
+    // The computation's in-flight record (plan 86 4a): what it knows about itself while it runs that the shared object
+    // it computes mustn't hold (re-entered once, a placeholder...), per kind, on the computing C frame. Null if none
+    void* record;
     u32 kind;
     bool circular;
 } Resolving;
@@ -2191,6 +2203,45 @@ void ty_resolving_grow(Checker* me);
 static inline void ty_resolving_push(Checker* me, ResolvingKind kind, void const* key) {
     if (my resolving_len == my resolving_cap) ty_resolving_grow(me);
     my resolving[my resolving_len++] = (Resolving){ .key = key, .kind = kind };
+}
+// The same, with the computation's in-flight record
+static inline void ty_resolving_push_record(Checker* me, ResolvingKind kind, void const* key, void* record) {
+    if (my resolving_len == my resolving_cap) ty_resolving_grow(me);
+    my resolving[my resolving_len++] = (Resolving){ .key = key, .record = record, .kind = kind };
+}
+// This checker's innermost entry of `key` anywhere on the stack, barriers or not: whether the computation is the
+// checker's own (a lazy field's IN_FLIGHT state only says that someone has it in flight), and its record. Null if it
+// isn't in flight here. Only asked on an in-flight hit, which is rare
+Resolving* ty_in_flight_entry(Checker* me, ResolvingKind kind, void const* key);
+static inline void* ty_in_flight_record(Checker* me, ResolvingKind kind, void const* key) {
+    Resolving* entry = ty_in_flight_entry(me, kind, key);
+    return entry ? entry->record : nullptr;
+}
+
+// In-flight records of the computations that push no Resolving entry (they aren't part of tsc's cycles), a list per
+// ClaimKind, innermost first: the header of a per-kind record on the computing C frame, like relate.c's VarianceClaim.
+// Pushed when the computation starts and popped when it publishes its value, so the lazy field itself only ever holds
+// finished values (or the IN_FLIGHT hint)
+typedef struct Claim {
+    struct Claim* next;
+    void const* key;
+    u64 key2; // (A second key word for the kinds keyed by two)
+} Claim;
+static inline void ty_claim_push(Checker* me, ClaimKind kind, Claim* claim, void const* key, u64 key2) {
+    claim->next = my claims[kind];
+    claim->key = key;
+    claim->key2 = key2;
+    my claims[kind] = claim;
+}
+static inline void ty_claim_pop(Checker* me, ClaimKind kind, Claim* claim) {
+    check(my claims[kind] == claim);
+    my claims[kind] = claim->next;
+}
+static inline Claim* ty_claim_find(Checker* me, ClaimKind kind, void const* key, u64 key2) {
+    for (Claim* claim = my claims[kind]; claim; claim = claim->next) {
+        if (claim->key == key && claim->key2 == key2) return claim;
+    }
+    return nullptr;
 }
 // Whether it turned out circular
 static inline bool ty_resolving_pop(Checker* me) {

@@ -3950,6 +3950,13 @@ bool ty_resolving_reenters(Checker* me, ResolvingKind kind, void const* key) {
     return true;
 }
 
+Resolving* ty_in_flight_entry(Checker* me, ResolvingKind kind, void const* key) {
+    for (u32 i = my resolving_len; i-- > 0;) {
+        if (my resolving[i].key == key && my resolving[i].kind == kind) return &my resolving[i];
+    }
+    return nullptr;
+}
+
 void ty_debug_reentry(Checker* me, char const* event, Span at) {
     if (!span_valid(at)) at = my current_node.span;
     if (!span_valid(at)) {
