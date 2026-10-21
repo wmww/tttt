@@ -3964,8 +3964,7 @@ ClassMemberSymbols const* ty_class_member_symbols(Checker* me, ClassDecl const* 
     vec_dup_record_drop(&records);
     free(tables->entries);
     member_tables_unindex(tables);
-    ty_link_set(me, KEY_CLASS_MEMBER_SYMBOLS, class_decl, ret);
-    return ret;
+    return ty_link_publish(me, KEY_CLASS_MEMBER_SYMBOLS, class_decl, ret);
 }
 
 ClassItem const* ty_class_accessor_first(Checker* me, ClassItem const* item) {

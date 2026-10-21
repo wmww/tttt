@@ -40,8 +40,7 @@ static inline Ty const* lower(Checker* me, TypeNode const* node, LowerCtx ctx, S
 SymbolLinks* ty_symbol_links(Checker* me, Symbol const* symbol) {
     SymbolLinks* ret = (SymbolLinks*)ty_link_get(me, KEY_SYMBOL_LINKS, symbol);
     if (!ret) {
-        ret = arena_new(&my arena, SymbolLinks);
-        ty_link_set(me, KEY_SYMBOL_LINKS, symbol, ret);
+        ret = (SymbolLinks*)ty_link_publish(me, KEY_SYMBOL_LINKS, symbol, arena_new(&my arena, SymbolLinks));
     }
     return ret;
 }
@@ -77,8 +76,7 @@ TyList ty_type_params_of(Checker* me, Generic const* generic) {
     }
     TyList* list = arena_new(&my arena, TyList);
     *list = (TyList){ .data = params, .len = len };
-    *intern_slot(me, &my links, key, 2) = list;
-    return *list;
+    return *(TyList const*)intern_set(me, &my links, intern_slot(me, &my links, key, 2), list);
 }
 
 // The type parameters of a class or interface with several declarations (tsc's
@@ -102,7 +100,7 @@ static TyList merged_local_type_params(Checker* me, Symbol const* symbol, Generi
             if (same) {
                 // (A no-op for a shared symbol: its slot is `same` already)
                 void const** slot = intern_slot(me, &my links, key, 2);
-                if (!*slot) *slot = same;
+                if (!*slot) intern_set(me, &my links, slot, same);
                 continue;
             }
             Ty const* param = ty_type_param(me, i->symbol_ref);
@@ -1335,8 +1333,7 @@ static TyConditionalOuter const* deferred_node_outer(Checker* me, TypeNode const
     TyConditionalOuter const* ret = intern_get(&my links, key, 2);
     if (ret) return ret;
     TyConditionalOuter* outer = collect_outer_params(me, node);
-    *intern_slot(me, &my links, key, 2) = outer;
-    return outer;
+    return intern_set(me, &my links, intern_slot(me, &my links, key, 2), outer);
 }
 
 TyConditionalOuter const* ty_conditional_outer(Checker* me, Ty const* root) {
@@ -1396,8 +1393,7 @@ Ty const* ty_anonymous_from_overloads(Checker* me, FunctionImpl const* const* ov
         for (u32 i = 0; i < count; i++) collect_free_params_of_function(me, overloads[i], &found);
         anonymous_set_free_params(me, ret, found);
     }
-    *intern_slot(me, &my links, key, 2) = ret;
-    return ret;
+    return intern_set(me, &my links, intern_slot(me, &my links, key, 2), ret);
 }
 
 static Ty* make_namespace(Checker* me, Symbol const* symbol) {
@@ -1480,8 +1476,7 @@ Ty const* ty_namespace_type(Checker* me, Symbol const* symbol) {
     if (existing) return existing;
     Ty* ret = make_namespace(me, symbol);
     ret->declared.js_container = symbol_is_js_container(symbol);
-    *intern_slot(me, &my links, key, 2) = ret;
-    return ret;
+    return intern_set(me, &my links, intern_slot(me, &my links, key, 2), ret);
 }
 
 // Whether a declaration of a symbol adds something to what the symbol is as a value
@@ -1964,10 +1959,10 @@ static Ty const* namespace_import_type(Checker* me, Symbol const* symbol) {
     if (type) {
         ((Ty*)type)->anonymous.module_clone = true;
         u64 clone_key[2] = { KEY_MODULE_CLONE, (u64)(uintptr_t)type };
-        *intern_slot(me, &my links, clone_key, 2) = symbol;
+        intern_set(me, &my links, intern_slot(me, &my links, clone_key, 2), symbol);
     }
-    *intern_slot(me, &my links, key, 2) = type ? (void const*)type : (void const*)symbol;
-    return type;
+    void const* there = intern_set(me, &my links, intern_slot(me, &my links, key, 2), type ? (void const*)type : (void const*)symbol);
+    return there == (void const*)symbol ? nullptr : there;
 }
 
 static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbol) {
@@ -2461,8 +2456,7 @@ Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol) {
         ret->anonymous.free_params_unknown = true;
         ret->anonymous.state = arena_new(&my arena, TyObjectState);
     }
-    *intern_slot(me, &my links, key, 2) = ret;
-    return ret;
+    return intern_set(me, &my links, intern_slot(me, &my links, key, 2), ret);
 }
 
 u32 ty_merged_value_entries(Checker* me, Symbol const* symbol, Ty const*** out) {
@@ -2687,8 +2681,7 @@ Ty const* ty_deferred_reference(
         // An array or tuple written as the body of an alias goes by the alias name
         fresh->alias = alias;
         fresh->alias_args = ty_list_copy(me, alias_args.data, alias_args.len);
-        *intern_slot(me, &my links, key, count) = fresh;
-        ret = fresh;
+        ret = intern_set(me, &my links, intern_slot(me, &my links, key, count), fresh);
     }
     if (key != stack_key) free(key);
     if (pairs != stack_pairs) free(pairs);

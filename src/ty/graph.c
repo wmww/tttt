@@ -29,6 +29,7 @@ typedef struct KindStats {
     u64 tainted; // Entries of memo kinds kept private because their computation was tainted
     u64 scratch; // Entries of scratch kinds (never published)
     u64 unfinished; // Entries without a value when their checker's share ended
+    u64 lost; // Identities another checker published first (intern_publish())
 } KindStats;
 
 // What a checker made, by GraphClass and by kind (256: node_links kinds 256 + kind)
@@ -560,6 +561,16 @@ void const* graph_link_get(TyGraph const* me, u32 kind, void const* subject) {
     void const* ret = shared_links_get(my node_links, graph_link_key(kind, subject));
     if (ret) ((TyGraph*)me)->stats[256 + (kind & 255)].shared_hits++;
     return ret;
+}
+
+void graph_count_lost(TyGraph* me, u32 kind) {
+    my stats[kind < GRAPH_STAT_KINDS ? kind : 0].lost++;
+}
+
+void const* graph_link_insert(TyGraph* me, u32 kind, void const* subject, void const* value) {
+    void const* there = shared_links_insert(my node_links, graph_link_key(kind, subject), value);
+    if (there == value) my stats[256 + (kind & 255)].published++;
+    return there;
 }
 
 bool graph_memo_take(TyGraph* me, u32 slot, LazyMemo* memo) {

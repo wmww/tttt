@@ -5391,8 +5391,7 @@ Ty const* ty_apply_type_arguments_mapper_of(Checker* me, Ty const* ty, TyMapper 
         fresh->anonymous.applies_type_args = true;
         fresh->anonymous.free_params_unknown = true;
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
-        *intern_slot(me, &my types, key, count) = fresh;
-        ret = fresh;
+        ret = intern_set(me, &my types, intern_slot(me, &my types, key, count), fresh);
     }
     free(key);
     return ret;

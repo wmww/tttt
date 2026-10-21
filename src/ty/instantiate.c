@@ -780,10 +780,9 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
             ret = fresh;
             // (Checked with the instance in place: a literal whose members lead back to it gets that instance, so
             // it's a new one)
-            if (!inner && literal_instance_is_itself(me, target, composed)) {
-                *slot = target;
-                ret = target;
-            }
+            if (!inner && literal_instance_is_itself(me, target, composed)) ret = target;
+            // (Published with --shared-graph once its value is final)
+            ret = intern_set(me, &my types, slot, ret);
         }
         if (key != stack_key) free(key);
     }
@@ -885,8 +884,7 @@ Ty const* ty_alias_body_mapped_instance(Checker* me, Ty const* ty, Symbol const*
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
         fresh->alias = ty->alias;
         fresh->alias_args = ty->alias_args;
-        *intern_insert(me, &my types, &miss, stack_key, count) = fresh;
-        ret = fresh;
+        ret = intern_set(me, &my types, intern_insert(me, &my types, &miss, stack_key, count), fresh);
     }
     return ret;
 }
@@ -960,8 +958,7 @@ Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alia
         }
         fresh->alias = alias;
         fresh->alias_args = ty_list_copy(me, alias_args.data, alias_args.len);
-        *intern_insert(me, &my types, &miss, stack_key, count) = fresh;
-        ret = fresh;
+        ret = intern_set(me, &my types, intern_insert(me, &my types, &miss, stack_key, count), fresh);
     }
     return ret;
 }

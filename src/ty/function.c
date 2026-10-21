@@ -40,8 +40,7 @@ Ty const* ty_function_type(Checker* me, FunctionImpl const* function) {
         (!function->accessor && !function->is_constructor && span_valid(function_impl_member_name(function)));
     ret->anonymous.free_params_unknown = !closed;
     ret->anonymous.state = arena_new(&my arena, TyObjectState);
-    ty_link_set(me, KEY_FUNCTION, function, ret);
-    return ret;
+    return ty_link_publish(me, KEY_FUNCTION, function, ret);
 }
 
 typedef struct FunctionReturn {
@@ -410,8 +409,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     }
     FunctionReturn* memo = (FunctionReturn*)ty_link_get(me, KEY_FUNCTION_RETURN, function);
     if (!memo) {
-        memo = arena_new(&my arena, FunctionReturn);
-        ty_link_set(me, KEY_FUNCTION_RETURN, function, memo);
+        memo = (FunctionReturn*)ty_link_publish(me, KEY_FUNCTION_RETURN, function, arena_new(&my arena, FunctionReturn));
     }
     switch (memo->state) {
         case LAZY_STATE_DONE:

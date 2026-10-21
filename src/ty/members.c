@@ -691,7 +691,7 @@ static bool function_is_thisless(FunctionImpl const* function) {
 
 // Adds the members written in (or, for classes/enums/namespaces, evaluated by the legacy checker into) an Interface
 static void set_decl_group(Checker* me, FunctionImpl const* function, TyDeclGroup const* group) {
-    ty_link_set(me, KEY_DECL_GROUP, function, group);
+    ty_link_publish(me, KEY_DECL_GROUP, function, group);
 }
 
 // The interface declaration a method or call signature was written in, null if it's not an interface's
@@ -708,7 +708,7 @@ static TyDeclGroup const* decl_group_of(Checker* me, Symbol const* symbol, void 
         TyDeclGroup* group = arena_new(&my arena, TyDeclGroup);
         group->symbol = symbol;
         group->declaration = node;
-        *slot = group;
+        intern_set(me, &my links, slot, group);
     }
     return *slot;
 }
@@ -2370,8 +2370,7 @@ Prop const* ty_namespace_type_only_prop(Checker* me, Ty const* object, Atom cons
     Prop const* existing = intern_get(&my links, key, 3);
     if (existing) return existing;
     Prop* made = namespace_export_prop(me, &entry);
-    *intern_slot(me, &my links, key, 3) = made;
-    return made;
+    return intern_set(me, &my links, intern_slot(me, &my links, key, 3), made);
 }
 
 // The property a namespace's export makes of its value, null if it has no value
@@ -6059,8 +6058,7 @@ Ty const* ty_object_literal_alternative(
         builder_sort_stable(&builder);
         fresh->anonymous.state->members = builder_finish(me, &builder);
         fresh->anonymous.state->members_state = LAZY_STATE_DONE;
-        *intern_slot(me, &my links, words.data, words.len) = fresh;
-        ret = fresh;
+        ret = intern_set(me, &my links, intern_slot(me, &my links, words.data, words.len), fresh);
     }
     free(words.data);
     return ret;
@@ -6186,7 +6184,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
         // (One symbol per name for the whole program, made of the first property it was needed for: tsc's
         // undefinedProperties cache. Only its declarations show, in the symbols baseline)
         void const** cached = intern_slot(me, &my links, (u64[]){ KEY_UNDEFINED_PROPERTY, (u64)(uintptr_t)prop->name }, 2);
-        if (!*cached) *cached = prop;
+        if (!*cached) intern_set(me, &my links, cached, prop);
         Prop const* first = *cached;
         props[count++] = (ObjectLiteralProp){
             .name = prop->name,
@@ -6456,8 +6454,7 @@ Ty const* ty_signature_type(Checker* me, Signature const* sig) {
     ret->anonymous.state = arena_new(&my arena, TyObjectState);
     ret->anonymous.state->members = builder_finish(me, &builder);
     ret->anonymous.state->members_state = LAZY_STATE_DONE;
-    *slot = ret;
-    return ret;
+    return intern_set(me, &my links, slot, ret);
 }
 
 // The constraint as declared (tsc's getConstraintFromTypeParameter)

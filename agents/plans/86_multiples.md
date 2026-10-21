@@ -653,6 +653,15 @@ at the computation's end**, and makes every field another worker can read safe t
   first insert wins) replaces the graph's InternTables and LinkTable; the declaration memo store makes its pages by CAS
   and writes a memo flags-last under a mutex. Still --threads 1, publication at share end: K4/K12 byte-identical on
   drizzle, zod, effect, excalidraw.
+  Step 2 done: identities publish at creation. `intern_set(me, table, slot, value)` (ty.h; `*slot = value` without the
+  flag) and `ty_link_publish()` (node links) at every identity site (39 intern sites, the SymbolLinks / function type /
+  FunctionReturn / fresh literal / decl group / class member symbols links); with the flag, `intern_publish()` inserts
+  the new block into the shared table (its hash kept in the word before the block) and, if another checker's is there,
+  the private entry takes the winner's value, which the constructor returns. Constructors set the value only once it
+  is final: intern_deferred()'s callers fill the fresh type first, instantiate_anonymous() decides
+  literal_instance_is_itself() first, signature instantiations resolve first. Lookup stays private first: a private
+  identity entry holds the winner, a memo entry its own value. At one thread nothing is ever lost and the output
+  doesn't move.
 
 ## Validation of the whole plan
 The 12-core table in measurements.md re-run by the human after each stage (`scripts/bench.sh --runs 3 --bun PATH

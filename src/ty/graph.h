@@ -60,4 +60,6 @@ void link_table_each(LinkTable const* table, void (*each)(void* arg, u32 kind, v
 void graph_taint_miss(InternTable const* table, u64 hash);
 void graph_taint_put(InternTable const* table, u64 hash, void const** block, u32 kind);
 void graph_taint_read_block(void const* const* block);
+void graph_count_lost(TyGraph* me, u32 kind); // An identity another checker published first (intern_publish())
+void const* graph_link_insert(TyGraph* me, u32 kind, void const* subject, void const* value); // First wins
 void graph_count_shared_hit(InternTable const* table, u64 const* words, u32 count); // (checker.c)

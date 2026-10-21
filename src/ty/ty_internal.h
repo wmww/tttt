@@ -186,6 +186,9 @@ void const* intern_get(InternTable const* table, u64 const* words, u32 count);
 // whose every use goes through these two (the commonest: calls, functions, shared flow nodes, object literals)
 void const* ty_link_get(Checker const* me, u32 kind, void const* subject);
 void ty_link_set(Checker* me, u32 kind, void const* subject, void const* value);
+// ty_link_set() of a new identity record (SymbolLinks, a function's type...): with --shared-graph published at once, the
+// first checker's winning; returns the value the link holds after
+void const* ty_link_publish(Checker* me, u32 kind, void const* subject, void const* value);
 // Two type ids as one key word: keys made of mapper pairs are most of the interned key bytes
 static inline u64 ty_id_pair(Ty const* a, Ty const* b) { return (u64)a->id << 32 | b->id; }
 

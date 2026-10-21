@@ -167,7 +167,7 @@ static Ty const* make_template(Checker* me, Atom const* const* texts, Ty const* 
         memcpy(texts_copy, texts, sizeof(Atom const*) * (len + 1));
         ret->template_literal.texts = texts_copy;
         ret->template_literal.types = ty_list_copy(me, types, len);
-        *slot = ret;
+        intern_set(me, &my types, slot, ret);
     }
     return *slot;
 }
@@ -272,7 +272,7 @@ static Ty const* make_string_mapping(Checker* me, TyStringMapping mapping, Symbo
         ret->string_mapping.mapping = mapping;
         ret->string_mapping.symbol = symbol;
         ret->string_mapping.type = type;
-        *slot = ret;
+        intern_set(me, &my types, slot, ret);
     }
     return *slot;
 }

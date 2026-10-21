@@ -1304,6 +1304,14 @@ static inline Ty const* ty_intrinsic(Checker const* me, TyIntrinsic i) { return 
 
 // Intern key building. Keys are small, build them on the stack: u64 key[1 + n] = { n, ... }
 void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 count);
+// Sets a new entry's value (`*slot = value`): with --shared-graph an identity is published at once, and the value is
+// then whichever checker's came first (plan 86 4d). Constructors set their result through this and return what it gives
+void const* intern_publish(Checker* me, InternTable* table, void const** slot);
+static inline void const* intern_set(Checker* me, InternTable* table, void const** slot, void const* value) {
+    (void)me;
+    *slot = value;
+    return __builtin_expect(table->shared != nullptr, 0) ? intern_publish(me, table, slot) : value;
+}
 // A lookup that missed: where intern_insert() puts the key without probing the table from the start again (the probe
 // is a cache miss in a big table: the value's computation in between evicts it, drizzle 1M misses)
 typedef struct InternMiss {

@@ -494,7 +494,7 @@ static Ty const* restrictive_type_param(Checker* me, Ty const* param) {
     if (!*slot) {
         Ty const* ret = ty_synthetic_type_param(me, atom_sv(param->param.name));
         ret->param.state->constraint_state = LAZY_STATE_DONE;
-        *slot = ret;
+        intern_set(me, &my links, slot, ret);
     }
     return *slot;
 }

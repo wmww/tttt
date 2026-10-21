@@ -247,7 +247,14 @@ static void intern_grow(InternTable* me) {
 // Puts a new key at `entry` (empty)
 static void const** intern_put(Checker* me, InternTable* table, InternEntry* entry, u64 hash, u64 const* words, u32 count) {
     bool long_key = count >= INTERN_LONG_KEY;
-    u64* block = arena_new_n(&my arena, u64, 1 + long_key + count);
+    // (--shared-graph: the hash goes in the word before the block, for intern_set()'s publication)
+    u64* block;
+    if (__builtin_expect(table->shared != nullptr, 0)) {
+        block = arena_new_n(&my arena, u64, 2 + long_key + count) + 1;
+        block[-1] = hash;
+    } else {
+        block = arena_new_n(&my arena, u64, 1 + long_key + count);
+    }
 #ifdef TTTT_ARENA_SITES
     key_kind_bytes[count ? words[0] & 255 : 0] += sizeof(u64) * (1 + long_key + count);
     key_kind_count[count ? words[0] & 255 : 0]++;
@@ -371,6 +378,36 @@ static u64 const* intern_key_words(void const** block, u32 count) {
     return (u64 const*)block + 1 + (count >= INTERN_LONG_KEY);
 }
 
+// --shared-graph: an identity's new private entry, its value just set, goes into the graph's table at once (plan 86
+// 4d: before the value escapes). If another checker's is there already, the private entry takes that one's value:
+// the winner's, which intern_set() returns (the loser's value stays in the arena, unreferenced)
+void const* intern_publish(Checker* me, InternTable* table, void const** slot) {
+    u64 hash = ((u64 const*)slot)[-1];
+    u32 count = (u32)(hash >> 48);
+    if (count == INTERN_LONG_KEY) count = (u32)((u64 const*)slot)[1];
+    u64 kind = count ? intern_key_words(slot, count)[0] & 255 : 0;
+    if (table == &my intersection_props || graph_kind_class((u32)kind) != GRAPH_IDENTITY) return *slot;
+    void const** there;
+    if (!shared_table_insert(table->shared, hash, slot, count, &there)) {
+        *slot = there[0];
+        graph_count_lost(me->graph, (u32)kind);
+    }
+    return *slot;
+}
+
+static inline void link_set(LinkTable* table, u32 kind, void const* subject, void const* value);
+
+void const* ty_link_publish(Checker* me, u32 kind, void const* subject, void const* value) {
+    link_set(&my node_links, kind, subject, value);
+    if (!my graph || graph_kind_class(kind) != GRAPH_IDENTITY) return value;
+    void const* there = graph_link_insert(my graph, kind, subject, value);
+    if (there != value) {
+        link_set(&my node_links, kind, subject, there);
+        graph_count_lost(my graph, 256 + kind);
+    }
+    return there;
+}
+
 // A list of types that is part of an interned key as pointers (`at` words in): the type's list can be the key's
 // instead of a copy (drizzle 29, effect 34, vscode 44 MB of copies)
 static TyList intern_key_list(void const** block, u32 count, u32 at, u32 len) {
@@ -423,8 +460,6 @@ void link_table_each(LinkTable const* table, void (*each)(void* arg, u32 kind, v
     }
 }
 
-
-static inline void link_set(LinkTable* table, u32 kind, void const* subject, void const* value);
 
 void ty_link_set(Checker* me, u32 kind, void const* subject, void const* value) {
     link_set(&my node_links, kind, subject, value);
@@ -836,7 +871,7 @@ static Ty const* literal_type(Checker* me, Value const* value, Symbol const* enu
         ret->literal.string = string;
         ret->literal.enum_decl = enum_decl;
         ret->literal.enum_member = enum_member;
-        *slot = ret;
+        intern_set(me, &my types, slot, ret);
     }
     return *slot;
 }
@@ -858,7 +893,7 @@ Ty const* ty_unresolved(Checker* me, csview name, TyList args) {
         Ty* ret = ty_alloc(me, TY_INTRINSIC, TYF_ANY | TYF_ERROR);
         ret->intrinsic.name = atom_sv(atom);
         ret->intrinsic.unresolved_args = ty_list_copy(me, args.data, args.len);
-        *slot = ret;
+        intern_set(me, &my types, slot, ret);
     }
     if (key != stack_key) free(key);
     return *slot;
@@ -882,7 +917,7 @@ Ty const* ty_enum_computed_member(Checker* me, Symbol const* enum_decl, Symbol c
         ret->literal.value = (Value){ .tag = VALUE_NUMBER, .number = NAN };
         ret->literal.enum_decl = enum_decl;
         ret->literal.enum_member = member;
-        *slot = ret;
+        intern_set(me, &my types, slot, ret);
     }
     return *slot;
 }
@@ -899,9 +934,11 @@ Ty const* ty_unique_symbol(Checker* me, UniqueSymbolDecl const* decl) {
         cstr escaped = cstr_d("__@", name, "@", ret->id);
         ret->literal.string = checker_atom(me, cstr_sv(&escaped));
         cstr_drop(&escaped);
-        *slot = ret;
-        u64 name_key[2] = { KEY_UNIQUE_SYMBOL_NAME, (u64)(uintptr_t)ret->literal.string };
-        *intern_slot(me, &my links, name_key, 2) = ret;
+        // (Its name is the winner's to map, with --shared-graph)
+        if (intern_set(me, &my types, slot, ret) == ret) {
+            u64 name_key[2] = { KEY_UNIQUE_SYMBOL_NAME, (u64)(uintptr_t)ret->literal.string };
+            intern_set(me, &my links, intern_slot(me, &my links, name_key, 2), ret);
+        }
     }
     return *slot;
 }
@@ -928,8 +965,7 @@ Ty const* ty_fresh_literal(Checker* me, Ty const* ty) {
         Ty* ret = ty_alloc(me, TY_LITERAL, ty->flags | TYF_FRESH_LITERAL);
         ret->literal = ty->literal;
         ret->literal.regular = ty;
-        ty_link_set(me, KEY_FRESH_LITERAL, ty, ret);
-        fresh = ret;
+        fresh = ty_link_publish(me, KEY_FRESH_LITERAL, ty, ret);
     }
     return fresh;
 }
@@ -1116,7 +1152,7 @@ static Ty const* intern_composite_origin(
         ret->composite.types = intern_key_list(slot, count, 3 + alias_args.len, len);
         if (origin) ret->composite.origin = make_origin(me, origin, intern_key_list(slot, count, 4 + alias_args.len + len, origin->len));
         if (kind == TY_INTERSECTION) ret->composite.state = arena_new(&my arena, TyObjectState);
-        *slot = ret;
+        intern_set(me, &my types, slot, ret);
     }
     return *slot;
 }
@@ -2506,7 +2542,7 @@ Ty const* ty_type_param(Checker* me, Symbol const* decl) {
         if (mapped) ret->param.state->constraint_node = &mapped->key.mapped->in_type;
         ret->param.state->is_infer = inferred != nullptr;
         ret->param.state->item = symbol_find_node(decl, SYMBOL_DECL_TYPE_PARAMETER);
-        *slot = ret;
+        intern_set(me, &my links, slot, ret);
     }
     return *slot;
 }
@@ -2688,7 +2724,7 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
             for (u32 i = 0; i < args.len; i++) ret->xflags |= args.data[i]->xflags;
         }
         ret->reference.state = arena_new(&my arena, TyObjectState);
-        *slot = ret;
+        intern_set(me, &my types, slot, ret);
     }
     return *slot;
 }
@@ -3080,19 +3116,24 @@ Ty const* ty_tuple_target(Checker* me, TupleShape const* shape) {
         copy->labels = target_labels;
         ret->declared.tuple = copy;
         ret->declared.type_params = (TyList){ .data = my tuple_params.data, .len = shape->arity };
-        *slot = ret;
+        intern_set(me, &my types, slot, ret);
     }
     return *slot;
 }
 
 // Deferred types. The constructors resolve what they can and only make a deferred type for the rest
 
-static Ty const* intern_deferred(Checker* me, u64 const* key, u32 count, TyKind kind, u32 operand_flags, Ty** fresh) {
+// A fresh one (`*fresh`) is the caller's to fill and then set into `*slot` with intern_set() (with --shared-graph that
+// publishes it, which must come after its fields: another checker reads it as soon as it is there)
+static Ty const* intern_deferred(Checker* me, u64 const* key, u32 count, TyKind kind, u32 operand_flags, Ty** fresh,
+    void const*** slot_out
+) {
     void const** slot = intern_slot(me, &my types, key, count);
+    *slot_out = slot;
     *fresh = nullptr;
     if (!*slot) {
         *fresh = ty_alloc(me, kind, TYF_DEFERRED | (operand_flags & TYF_COULD_CONTAIN_TYPE_VARIABLES));
-        *slot = *fresh;
+        return *fresh;
     }
     return *slot;
 }
@@ -3144,7 +3185,7 @@ Ty const* ty_prop_name_literal(Checker* me, Atom const* name) {
         ret->literal.value.tag = VALUE_STRING;
         ret->literal.value.string = cstr_null;
         ret->literal.string = name;
-        *slot = ret;
+        intern_set(me, &my types, slot, ret);
     }
     return *slot;
 }
@@ -3177,9 +3218,9 @@ Atom const* ty_private_name(Checker* me, Symbol const* class_symbol, csview text
     atom->len = plain->len;
     memcpy(atom->str, plain->str, plain->len);
     atom->str[plain->len] = 0;
-    *intern_slot(me, &my links, key, 3) = atom;
+    intern_set(me, &my links, intern_slot(me, &my links, key, 3), atom);
     u64 back[2] = { KEY_PRIVATE_NAME_CLASS, (u64)(uintptr_t)atom };
-    *intern_slot(me, &my links, back, 2) = class_symbol;
+    intern_set(me, &my links, intern_slot(me, &my links, back, 2), class_symbol);
     return atom;
 }
 
@@ -3286,8 +3327,12 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
     if (operand->kind == TY_UNION && is_generic_reducible(me, operand)) {
         u64 key[2] = { KEY_KEYOF, operand->id };
         Ty* fresh;
-        Ty const* ret = intern_deferred(me, key, 2, TY_KEYOF, operand->flags, &fresh);
-        if (fresh) fresh->keyof.operand = operand;
+        void const** slot;
+        Ty const* ret = intern_deferred(me, key, 2, TY_KEYOF, operand->flags, &fresh, &slot);
+        if (fresh) {
+            fresh->keyof.operand = operand;
+            ret = intern_set(me, &my types, slot, fresh);
+        }
         return ret;
     }
     if (operand->kind == TY_UNION) {
@@ -3442,8 +3487,12 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
 deferred:;
     u64 key[2] = { KEY_KEYOF, operand->id };
     Ty* fresh;
-    Ty const* ret = intern_deferred(me, key, 2, TY_KEYOF, operand->flags, &fresh);
-    if (fresh) fresh->keyof.operand = operand;
+    void const** slot;
+    Ty const* ret = intern_deferred(me, key, 2, TY_KEYOF, operand->flags, &fresh, &slot);
+    if (fresh) {
+        fresh->keyof.operand = operand;
+        ret = intern_set(me, &my types, slot, fresh);
+    }
     return ret;
 }
 
@@ -3689,11 +3738,13 @@ static Ty const* indexed(Checker* me, Ty const* object, Ty const* index, bool wr
     if (resolved) return resolved;
     u64 key[4] = { KEY_INDEXED, object->id, index->id, 1 };
     Ty* fresh;
-    Ty const* ret = intern_deferred(me, key, include_undefined ? 4 : 3, TY_INDEXED, object->flags | index->flags, &fresh);
+    void const** slot;
+    Ty const* ret = intern_deferred(me, key, include_undefined ? 4 : 3, TY_INDEXED, object->flags | index->flags, &fresh, &slot);
     if (fresh) {
         fresh->indexed.object = object;
         fresh->indexed.index = index;
         fresh->indexed.include_undefined = include_undefined;
+        ret = intern_set(me, &my types, slot, fresh);
     }
     return ret;
 }
@@ -3714,10 +3765,12 @@ Ty const* ty_indexed_include_undefined(Checker* me, Ty const* object, Ty const* 
 static Ty const* make_substitution(Checker* me, Ty const* base, Ty const* constraint) {
     u64 key[3] = { KEY_SUBSTITUTION, base->id, constraint->id };
     Ty* fresh;
-    Ty const* ret = intern_deferred(me, key, 3, TY_SUBSTITUTION, base->flags | constraint->flags, &fresh);
+    void const** slot;
+    Ty const* ret = intern_deferred(me, key, 3, TY_SUBSTITUTION, base->flags | constraint->flags, &fresh, &slot);
     if (fresh) {
         fresh->substitution.base = base;
         fresh->substitution.constraint = constraint;
+        ret = intern_set(me, &my types, slot, fresh);
     }
     return ret;
 }
@@ -3971,7 +4024,8 @@ Ty const* ty_conditional(
     count += cond_branch_key(key + count, if_false);
     u32 flags = check_type->flags | extends->flags | TYF_COULD_CONTAIN_TYPE_VARIABLES;
     Ty* fresh;
-    Ty const* ret = intern_deferred(me, key, count, TY_CONDITIONAL, flags, &fresh);
+    void const** slot;
+    Ty const* ret = intern_deferred(me, key, count, TY_CONDITIONAL, flags, &fresh, &slot);
     if (key != stack_key) free(key);
     if (fresh) {
         fresh->conditional.check = check_type;
@@ -3984,6 +4038,7 @@ Ty const* ty_conditional(
         fresh->conditional.check_tuples = check_tuples;
         fresh->conditional.root = root ? root : fresh;
         fresh->conditional.mapper = root ? mapper : nullptr;
+        ret = intern_set(me, &my types, slot, fresh);
     }
     return ret;
 }

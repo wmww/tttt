@@ -2176,10 +2176,11 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
                 .mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len }),
                 .instantiates_own_params = true,
             };
+            // (Its own until resolved: published with --shared-graph once it is)
             *slot = ret;
             signature_resolve(me, ret);
             ret->type_params = (TyList){0};
-            return ret;
+            return intern_set(me, &my links, slot, ret);
         }
     }
     signature_resolve(me, sig);
@@ -3315,7 +3316,7 @@ static Ty const* variance_marker(Checker* me, u32 which) {
             marker->param.state->constraint = super;
             marker->param.state->constraint_state = LAZY_STATE_DONE;
         }
-        *intern_slot(me, &my links, key, 2) = marker;
+        marker = intern_set(me, &my links, intern_slot(me, &my links, key, 2), marker);
     }
     return marker;
 }
@@ -3393,7 +3394,7 @@ Ty const* ty_variance_check_instance(Checker* me, Symbol const* owner, u32 index
             markers[which]->param.state->constraint = markers[0];
             markers[which]->param.state->constraint_state = LAZY_STATE_DONE;
         }
-        *intern_slot(me, &my links, key, 3) = (void*)markers[which];
+        markers[which] = (Ty*)intern_set(me, &my links, intern_slot(me, &my links, key, 3), (void*)markers[which]);
     }
     Ty const* ret = marker_instance(me, subject, index, markers[sub]);
     ty_link_set(me, KEY_CHECK_MARKER_REF, ret, ret);

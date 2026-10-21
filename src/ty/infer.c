@@ -433,10 +433,11 @@ Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, T
         .mapper = ty_mapper_new(me, sig->type_params, (TyList){ .data = targets, .len = args.len }),
         .instantiates_own_params = true,
     };
+    // (Its own until resolved: published with --shared-graph once it is)
     *slot = ret;
     signature_resolve(me, ret);
     ret->type_params = (TyList){0};
-    return ret;
+    return intern_set(me, &my links, slot, ret);
 }
 
 static bool has_candidates(InferParam const* param) {
