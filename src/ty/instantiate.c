@@ -1353,7 +1353,26 @@ static Ty const** active_slot(ActiveMapper* am, u64 key, bool insert) {
     return &am->values[j];
 }
 
+static Ty const* instantiate_structured(Checker* me, Ty const* ty, TyMapper const* mapper, bool tail);
+
+// A type parameter is a lookup in the mapper (it never pushes an active mapper nor enters the instantiation stack): it
+// stays out of instantiate_structured()'s frame, whose prologue was most of what half of the calls cost
 Ty const* ty_instantiate_mapped(Checker* me, Ty const* ty, TyMapper const* mapper, bool tail) {
+    if (ty->kind != TY_TYPE_PARAM) return instantiate_structured(me, ty, mapper, tail);
+    if (my instantiation_depth >= MAX_INSTANTIATION_DEPTH || my instantiation_count >= MAX_INSTANTIATION_COUNT) {
+        ty_instantiation_limit_reached(me);
+        return ty_intrinsic(me, TY_ERROR);
+    }
+    my instantiation_count++;
+    // (A distributed type parameter is mapped like its original: tsgo's getMappedType)
+    Ty const* key = ty_non_distributed(ty);
+    for (u32 i = 0; i < mapper->len; i++) {
+        if (mapper->sources[i] == key) return mapper->targets[i];
+    }
+    return ty;
+}
+
+__attribute__((noinline)) static Ty const* instantiate_structured(Checker* me, Ty const* ty, TyMapper const* mapper, bool tail) {
     if (tail && ty->kind == TY_CONDITIONAL) {
         if (my instantiation_tail_count >= MAX_TAIL_COUNT || my instantiation_count >= MAX_INSTANTIATION_COUNT) {
             ty_instantiation_limit_reached(me);
@@ -1374,9 +1393,8 @@ Ty const* ty_instantiate_mapped(Checker* me, Ty const* ty, TyMapper const* mappe
     }
     // A mapper already being instantiated with further out: what this type gave with it before (tsc's
     // instantiateTypeWithAlias). The outermost call itself isn't remembered, its cache goes when it returns
-    // (Not a type parameter: that's a lookup in the mapper, cheaper than the cache)
     i32 active = -1;
-    for (u32 i = ty->kind == TY_TYPE_PARAM ? 0 : my active_mapper_count; i-- > 0;) {
+    for (u32 i = my active_mapper_count; i-- > 0;) {
         if (my active_mappers[i].mapper == mapper) {
             active = (i32)i;
             break;
@@ -1388,7 +1406,7 @@ Ty const* ty_instantiate_mapped(Checker* me, Ty const* ty, TyMapper const* mappe
         key = active_key(me, ty);
         Ty const** slot = active_slot(&my active_mappers[active], key, false);
         if (slot) return *slot;
-    } else if (ty->kind != TY_TYPE_PARAM && my active_mapper_count < MAX_ACTIVE_MAPPERS) {
+    } else if (my active_mapper_count < MAX_ACTIVE_MAPPERS) {
         if (my active_mapper_count == my active_mapper_cap) {
             u32 cap = my active_mapper_cap ? my active_mapper_cap * 2 : 8;
             my active_mappers = realloc(my active_mappers, sizeof(ActiveMapper) * cap);
