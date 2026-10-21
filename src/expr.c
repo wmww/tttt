@@ -1344,17 +1344,6 @@ void expr_lookup_names_statement(Expr* me, Scope* names, ErrorCtx* errs) {
     expr_lookup_names(me, names, errs);
     names->flow->context_root = outer_root;
     flow_maybe_call(names->flow, me);
-    // The unannotated parameters of its call's function arguments are settled by checking it (see
-    // InitializedBindingRare.settled_by)
-    Expr const* call = me;
-    if (call->tag == EXPR_UNARY_OP && call->unary_op->op == UNARY_OP_AWAIT) call = &call->unary_op->expr;
-    if (call->tag != EXPR_CALL) return;
-    for_each (arg, vec_expr, &call->call->args) {
-        if (arg->tag != EXPR_FUNCTION) continue;
-        for_each (param, vec_function_arg, &arg->function->args) {
-            if (!param->initializer.binding.has_explicit_type) initialized_binding_rare_mut(&param->initializer)->settled_by = me;
-        }
-    }
 }
 
 static void flow_assignment_target(FlowBuilder* flow, Expr const* target, FlowAssign assign);

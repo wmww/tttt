@@ -241,6 +241,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttContextRootSettled': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttContextualIntersectionUnionConstraintMember': {
         errors: true,
         symbols: true,

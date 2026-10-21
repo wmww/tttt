@@ -431,7 +431,12 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
                 }
                 ty_resolving_cycle(me, RESOLVING_FUNCTION_RETURN, function);
                 return ty_intrinsic(me, TY_CIRCULAR);
-            case SW_LOOK_COMPUTE: break;
+            case SW_LOOK_COMPUTE:
+                // A function expression nothing has checked yet: its context root first, which may infer it too
+                // (ty_settle_function_context(): the inferred return type sees the contextual one the walk gives it,
+                // whoever asks first, another checker of the shared graph included)
+                if (function->context_root && ty_settle_function_context(me, function)) return function_return_type(me, function, keep_outer);
+                break;
         }
     }
     if (v) {

@@ -297,6 +297,18 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   `ThisType<T>` found by name, instantiated with `ty_instantiate_fixing()`.
 
 ## Expressions and contextual typing (`ty/expr.c`, `ty/access.c`)
+- **ty_settle_function_context() checks a function expression's context root, not the path to it** (ty/expr.c, the
+  root recorded by the names walk, FunctionImpl.context_root): tsc's getContextualSignature walks up and resolves only
+  what the path needs; tttt checks the whole root expression (one statement's expression, one initializer, or the
+  enclosing function's return inference plus one return expression) as the walk would, because a call is resolved
+  once and an inner call resolved before its outer one would differ. No root is recorded for class field
+  initializers, for-in/of iterables, decorators, computed keys, enum initializers or `export default` with a JSDoc
+  @type: those keep the push-down-only behaviour (an implicit any if asked first). Roots in flight on this thread
+  (memo flags, the per-thread stack ty_context_root_enter() fills from initialized_binding_typecheck() and return
+  statements) aren't settled; a stack overflow (256) counts as in flight. A RETURN root finds its return expression by
+  span containment (return_contains_target()). The settle enters a node at the root (an expression statement's
+  expression span, not the statement's: a TS2589 there would be at another start than the walk's). Oracle: the
+  suite's ttttContextRootSettled, the shared-graph seeds and fingerprint.
 - Member symbols: a class's are `ty_class_member_symbols()` (check.c: TS2300, the builder's joins, overload
   groups, computed accessor pairs via `ty_class_accessor_first/getter/setter()`), the binder's for written names
   (bind_member_symbols, symbol_first/accessor_first: syntactic like tsc's). Left on top: the builder's rules for a member

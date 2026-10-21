@@ -1142,7 +1142,9 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
         ty_type_of_symbol(checker, my binding.symbol);
     }
     binding_check_computed_names_first(&my binding);
+    bool entered = ty_context_root_enter(me);
     initialized_binding_check_value(me);
+    ty_context_root_leave(entered);
     // (Only when the initializer types the declaration: an annotated one never asks for its quick type)
     if (!my binding.has_explicit_type) check_quick_callee(initialized_binding_value(me), errs);
     expr_typecheck(initialized_binding_value(me), errs);
@@ -1155,7 +1157,9 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, bool bodiless, ErrorCtx* errs) {
     binding_annotation_typecheck(&my binding, errs);
     binding_check_computed_names_first(&my binding);
+    bool entered = ty_context_root_enter(me);
     initialized_binding_check_value(me);
+    ty_context_root_leave(entered);
     // (Only when the initializer types the declaration: an annotated one never asks for its quick type)
     if (!my binding.has_explicit_type) check_quick_callee(initialized_binding_value(me), errs);
     expr_typecheck(initialized_binding_value(me), errs);

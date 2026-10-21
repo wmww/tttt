@@ -160,9 +160,6 @@ typedef struct InitializedBindingRare {
     // function (tsc's getContextuallyTypedParameterType resolves the call then: a JavaScript `this.y` read in an
     // earlier method, `xs.forEach(x => { this.y = x })`)
     struct FunctionImpl const* context_function;
-    // An unannotated parameter of a function expression that is an argument of a call an expression statement makes:
-    // that statement's expression, checked first when the parameter's type is asked for before it is
-    struct Expr const* settled_by;
     // JavaScript: `const x = require("m")`, `const { a, b: c } = require("m")`, `const a = require("m").a` declare
     // aliases like imports (tsc's isVariableDeclarationInitializedToBareOrAccessedRequire), one per name (owned)
     struct PortItem* require_ports;

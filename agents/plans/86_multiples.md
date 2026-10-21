@@ -1732,6 +1732,40 @@ in parallel only where the file sets are disjoint):
     Not done: divergence (1) (zod `$replace` distributive constraint) and the trpc/examples/nuxt kdiff are not memo,
     relation, variance or declaration memo publications (they stay with every one of those kept private): an
     unconverted Ty-resident value, P1/P2's.
+  - **CTX, contextual signatures as a function of the node (wt-ctx, 2026-10-22).** A function expression's contextual
+    signature was a side effect of checking its enclosing call (KEY_CONTEXT_* links, per worker): a worker that needed
+    its inferred return (a published type holding its function type: excalidraw's `register({ perform })` actions under
+    P1's held signature-return conversion, wt-s1 5ffd63edc, 0/20) computed it context-free and published it as clean.
+    Now the resolve walk records each function expression's context root (FunctionImpl.context_root: an expression
+    statement's/throw's/export default's expression, a condition, a switch needle; a variable's or parameter default's
+    initializer; a return expression of a named function), and ty_settle_function_context() (ty/expr.c) checks that
+    root as the walk would, outermost first, when something asks for the parameters (lower.c settle_parameter_context)
+    or the inferred return (function.c function_return_type's compute path) of a function nothing has checked.
+    - **No resolution memo to extend**: KEY_CALL_RESOLUTION is GRAPH_SCRATCH, so a worker never adopts another's call
+      resolution; it resolves the call itself. Deterministic because the root is checked from the outermost node, as
+      the walk would (a call is resolved once: resolving an inner call before its outer one would differ).
+    - **Diagnostics of an early settle** go where any out-of-order check's go: compute-time reports carry their own
+      spans into the checker's ErrorCtx, and a call's resolution keeps its diagnostics on CallResolutionRare for the
+      walk's call_typecheck() to report once. The CLI sorts by file and position and drops identical ones
+      (error_ctx_sort_and_dedupe()), so a report made early is the walk's report, in the walk's place. What is reported
+      at the current node is at the root (the settle enters a node there, the asker's instantiation count restored).
+    - **A root in another file** (a JS assignment declaration read from elsewhere; under the graph a root of a file
+      another worker checks): the same checker-wide ErrorCtx (error_ctx_remove_unchecked() drops unchecked files');
+      bounded to that one root: one statement's expression, one initializer, or the enclosing function's return
+      inference and one return expression, plus the enclosing functions' own roots (depth 8), never a file's statements.
+    - **Flow isolation**: ty_flow_isolate() around the settle (no uncached mode, no loop in progress), no outer
+      inference, inferential or argument-return depth, no return context: what a declaration's evaluation has.
+    - Default path: rocket's settled_by generalized; ttttContextRootSettled (5 TS7006/TS7031 of nested callbacks,
+      callbacks in initializers, returns and conditions) passes; suite otherwise unchanged, 14 corpora, checkerdiff and
+      threadcheck unchanged; callgrind drizzle +0.03%, zod +0.04%, nest +0.07%.
+    - Flag gates (wt-s1 5ffd63edc + CTX): rep3 20 runs excalidraw, effect, drizzle, zod 20/20; seeds effect 100/100,
+      drizzle 100/100 (seed 37 passes with and without CTX on 5ffd63edc). Fingerprint 5 effect runs: 50 distinct
+      differences (53 without CTX), none an inferred return or a parameter: tagStartsWith/addCases/is are variable
+      declaration memos and property types of the same printed type, divergence (2)'s identity; the rest is the
+      `[any, ...any[]]` tuple constraint family (the 978-difference runs) and conditional instances. On ai-main HEAD
+      (with P3's clean-only declaration memos) + 5ffd63edc excalidraw is already 6/6 without CTX: P3 hides the case,
+      CTX removes the mechanism.
+    - Not covered (hacks.md): class field initializers, for-in/of iterables, decorators, computed keys have no root.
 - **D, the deletions (one worker, last; ~1 session).** program.c, graph.c, ty.h: everything in the list above, then
   the gates. A mechanism that can't be deleted at D means a site isn't converted.
 

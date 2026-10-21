@@ -1,0 +1,109 @@
+//// [test/cases/ttttContextRootSettled.ts] ////
+
+=== /a.js ===
+export class Build {
+>Build : Symbol(Build, Decl(a.js, 0, 0))
+
+  read() {
+>read : Symbol(Build.read, Decl(a.js, 0, 20))
+
+    return [this.out, this.len, this.obj, this.nested, this.ret, this.init];
+>this.out : Symbol(Build.out, Decl(a.js, 6, 37))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>out : Symbol(Build.out, Decl(a.js, 6, 37))
+>this.len : Symbol(Build.len, Decl(a.js, 11, 33))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>len : Symbol(Build.len, Decl(a.js, 11, 33))
+>this.obj : Symbol(Build.obj, Decl(a.js, 7, 24))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>obj : Symbol(Build.obj, Decl(a.js, 7, 24))
+>this.nested : Symbol(Build.nested, Decl(a.js, 8, 41))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>nested : Symbol(Build.nested, Decl(a.js, 8, 41))
+>this.ret : Symbol(Build.ret, Decl(a.js, 9, 39))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>ret : Symbol(Build.ret, Decl(a.js, 9, 39))
+>this.init : Symbol(Build.init, Decl(a.js, 10, 29))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>init : Symbol(Build.init, Decl(a.js, 10, 29))
+  }
+  /** @param {string[]} xs  @param {{ on(h: { cb(s: string): void }): void }} em */
+  setup(xs, em) {
+>setup : Symbol(Build.setup, Decl(a.js, 3, 3))
+>xs : Symbol(xs, Decl(a.js, 5, 8))
+>em : Symbol(em, Decl(a.js, 5, 11))
+
+    xs.map((s) => s).forEach((x) => { this.out = x; });
+>xs.map((s) => s).forEach : Symbol(Array.forEach, Decl(lib.es5.d.ts, --, --))
+>xs.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>xs : Symbol(xs, Decl(a.js, 5, 8))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>s : Symbol(s, Decl(a.js, 6, 12))
+>s : Symbol(s, Decl(a.js, 6, 12))
+>forEach : Symbol(Array.forEach, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.js, 6, 30))
+>this.out : Symbol(Build.out, Decl(a.js, 6, 37))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>out : Symbol(Build.out, Decl(a.js, 6, 37))
+>x : Symbol(x, Decl(a.js, 6, 30))
+
+    em.on({ cb: (s) => { this.obj = s; } });
+>em.on : Symbol(on, Decl(a.js, 4, 37))
+>em : Symbol(em, Decl(a.js, 5, 11))
+>on : Symbol(on, Decl(a.js, 4, 37))
+>cb : Symbol(cb, Decl(a.js, 7, 11))
+>s : Symbol(s, Decl(a.js, 7, 17))
+>this.obj : Symbol(Build.obj, Decl(a.js, 7, 24))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>obj : Symbol(Build.obj, Decl(a.js, 7, 24))
+>s : Symbol(s, Decl(a.js, 7, 17))
+
+    xs.forEach((a) => xs.forEach((b) => { this.nested = b; }));
+>xs.forEach : Symbol(Array.forEach, Decl(lib.es5.d.ts, --, --))
+>xs : Symbol(xs, Decl(a.js, 5, 8))
+>forEach : Symbol(Array.forEach, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(a.js, 8, 16))
+>xs.forEach : Symbol(Array.forEach, Decl(lib.es5.d.ts, --, --))
+>xs : Symbol(xs, Decl(a.js, 5, 8))
+>forEach : Symbol(Array.forEach, Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(a.js, 8, 34))
+>this.nested : Symbol(Build.nested, Decl(a.js, 8, 41))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>nested : Symbol(Build.nested, Decl(a.js, 8, 41))
+>b : Symbol(b, Decl(a.js, 8, 34))
+
+    const f = () => xs.forEach((r) => { this.ret = r; });
+>f : Symbol(f, Decl(a.js, 9, 9))
+>xs.forEach : Symbol(Array.forEach, Decl(lib.es5.d.ts, --, --))
+>xs : Symbol(xs, Decl(a.js, 5, 8))
+>forEach : Symbol(Array.forEach, Decl(lib.es5.d.ts, --, --))
+>r : Symbol(r, Decl(a.js, 9, 32))
+>this.ret : Symbol(Build.ret, Decl(a.js, 9, 39))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>ret : Symbol(Build.ret, Decl(a.js, 9, 39))
+>r : Symbol(r, Decl(a.js, 9, 32))
+
+    const g = xs.map((i) => { this.init = i; return i; });
+>g : Symbol(g, Decl(a.js, 10, 9))
+>xs.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>xs : Symbol(xs, Decl(a.js, 5, 8))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>i : Symbol(i, Decl(a.js, 10, 22))
+>this.init : Symbol(Build.init, Decl(a.js, 10, 29))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>init : Symbol(Build.init, Decl(a.js, 10, 29))
+>i : Symbol(i, Decl(a.js, 10, 22))
+>i : Symbol(i, Decl(a.js, 10, 22))
+
+    if (xs.some(({ length }) => { this.len = length; return true; })) {}
+>xs.some : Symbol(Array.some, Decl(lib.es5.d.ts, --, --))
+>xs : Symbol(xs, Decl(a.js, 5, 8))
+>some : Symbol(Array.some, Decl(lib.es5.d.ts, --, --))
+>length : Symbol(length, Decl(a.js, 11, 18))
+>this.len : Symbol(Build.len, Decl(a.js, 11, 33))
+>this : Symbol(Build, Decl(a.js, 0, 0))
+>len : Symbol(Build.len, Decl(a.js, 11, 33))
+>length : Symbol(length, Decl(a.js, 11, 18))
+  }
+}
+

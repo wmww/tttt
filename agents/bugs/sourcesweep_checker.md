@@ -253,8 +253,8 @@ full sweep: pixijs (binder merge unit), better-auth (lynx-store), es-toolkit (en
 
 ## clidiff `diagnostics` verdicts, 2026-10-18 (agent C)
 Fixed: rocket (+TS7031: a callback parameter asked for before its call statement is checked, through a JS
-this-property read elsewhere first; `InitializedBindingRare.settled_by`. Only statement calls are settled that way:
-callbacks of calls in initializers, returns or nested arguments still miss tsc's on-demand contextual typing),
+this-property read elsewhere first; generalized since to every function expression's context root,
+FunctionImpl.context_root and ty_settle_function_context()),
 tiptap/demos (+TS2590: a JSX tag's intersection member took its apparent union's intrinsic signatures; the tag's type
 `NoInfer<T> | (NoInfer<T> & string)` itself matches tsc's). Looked at again, unchanged (entries above):
 better-auth x2, es-toolkit (tsc's own order artifact), monkeytype TS2589, pixijs (binder merge unit). arktype this.test.ts

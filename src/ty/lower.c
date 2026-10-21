@@ -3739,18 +3739,15 @@ static Ty const* binding_element_of(Checker* me, Binding const* binding, Ty cons
 }
 
 
-// A parameter of a function argument of a statement's call, asked for before that statement is checked: checking it
-// first gives the parameter its contextual type (tsc's getContextuallyTypedParameterType resolves the call on demand;
-// tttt pushes contextual types down, so the statement is checked now, as its own check would, without a contextual
-// type). Not while the statement or the parameter is being evaluated
+// An unannotated parameter of a function expression asked for before anything checked the function: its context
+// root is checked first, which gives the parameter its contextual type (tsc's getContextuallyTypedParameterType
+// resolves the call on demand, see ty_settle_function_context()). Not while the parameter is being evaluated
 static void settle_parameter_context(Checker* me, InitializedBinding const* parameter) {
-    Expr const* statement = initialized_binding_rare(parameter)->settled_by;
-    if (!statement || ty_contextual_parameter_type(me, parameter)) return;
+    FunctionImpl const* function = initialized_binding_rare(parameter)->context_function;
+    if (!function || ty_contextual_parameter_type(me, parameter)) return;
     LazyMemo* own = lazy_type_state_peek((LazyType*)&parameter->lazy_type);
     if (own && own->evaluation_started) return;
-    LazyMemo* settling = lazy_type_state_peek((LazyType*)&statement->lazy_type);
-    if (settling && settling->evaluation_started) return;
-    (void)ty_expr_type(me, (Expr*)statement);
+    ty_settle_function_context(me, function);
 }
 
 static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {

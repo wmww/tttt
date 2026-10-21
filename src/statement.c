@@ -2901,7 +2901,9 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             if (ctx.function && !ctx.function->ret_explicit && !ctx.constructed_class && !ctx.in_setter) {
                 ty_function_return_type(current_checker, ctx.function);
             }
+            bool entered = ctx.function ? ty_context_root_enter(ctx.function) : false;
             ty_check_expr(current_checker, &my expr, current_checker->return_context);
+            if (ctx.function) ty_context_root_leave(entered);
             expr_typecheck(&my expr, errs);
             // tsc's checkAndAggregateReturnExpressionTypes: an async function's inferred return awaits what it returns
             if (ctx.function && ctx.function->is_async && !ctx.function->is_generator && !ctx.function->ret_explicit &&

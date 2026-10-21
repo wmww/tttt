@@ -1,0 +1,135 @@
+//// [test/cases/ttttContextRootSettled.ts] ////
+
+=== /a.js ===
+export class Build {
+>Build : Build
+
+  read() {
+>read : () => (string | number | undefined)[]
+
+    return [this.out, this.len, this.obj, this.nested, this.ret, this.init];
+>[this.out, this.len, this.obj, this.nested, this.ret, this.init] : (string | number | undefined)[]
+>this.out : string | undefined
+>this : this
+>out : string | undefined
+>this.len : number | undefined
+>this : this
+>len : number | undefined
+>this.obj : string | undefined
+>this : this
+>obj : string | undefined
+>this.nested : string | undefined
+>this : this
+>nested : string | undefined
+>this.ret : string | undefined
+>this : this
+>ret : string | undefined
+>this.init : string | undefined
+>this : this
+>init : string | undefined
+  }
+  /** @param {string[]} xs  @param {{ on(h: { cb(s: string): void }): void }} em */
+  setup(xs, em) {
+>setup : (xs: string[], em: { on(h: { cb(s: string): void; }): void; }) => void
+>xs : string[]
+>em : { on(h: { cb(s: string): void; }): void; }
+
+    xs.map((s) => s).forEach((x) => { this.out = x; });
+>xs.map((s) => s).forEach((x) => { this.out = x; }) : void
+>xs.map((s) => s).forEach : (callbackfn: (value: string, index: number, array: string[]) => void, thisArg?: any) => void
+>xs.map((s) => s) : string[]
+>xs.map : <U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]
+>xs : string[]
+>map : <U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]
+>(s) => s : (s: string) => string
+>s : string
+>s : string
+>forEach : (callbackfn: (value: string, index: number, array: string[]) => void, thisArg?: any) => void
+>(x) => { this.out = x; } : (x: string) => void
+>x : string
+>this.out = x : string
+>this.out : string | undefined
+>this : this
+>out : string | undefined
+>x : string
+
+    em.on({ cb: (s) => { this.obj = s; } });
+>em.on({ cb: (s) => { this.obj = s; } }) : void
+>em.on : (h: { cb(s: string): void; }) => void
+>em : { on(h: { cb(s: string): void; }): void; }
+>on : (h: { cb(s: string): void; }) => void
+>{ cb: (s) => { this.obj = s; } } : { cb: (s: string) => void; }
+>cb : (s: string) => void
+>(s) => { this.obj = s; } : (s: string) => void
+>s : string
+>this.obj = s : string
+>this.obj : string | undefined
+>this : this
+>obj : string | undefined
+>s : string
+
+    xs.forEach((a) => xs.forEach((b) => { this.nested = b; }));
+>xs.forEach((a) => xs.forEach((b) => { this.nested = b; })) : void
+>xs.forEach : (callbackfn: (value: string, index: number, array: string[]) => void, thisArg?: any) => void
+>xs : string[]
+>forEach : (callbackfn: (value: string, index: number, array: string[]) => void, thisArg?: any) => void
+>(a) => xs.forEach((b) => { this.nested = b; }) : (a: string) => void
+>a : string
+>xs.forEach((b) => { this.nested = b; }) : void
+>xs.forEach : (callbackfn: (value: string, index: number, array: string[]) => void, thisArg?: any) => void
+>xs : string[]
+>forEach : (callbackfn: (value: string, index: number, array: string[]) => void, thisArg?: any) => void
+>(b) => { this.nested = b; } : (b: string) => void
+>b : string
+>this.nested = b : string
+>this.nested : string | undefined
+>this : this
+>nested : string | undefined
+>b : string
+
+    const f = () => xs.forEach((r) => { this.ret = r; });
+>f : () => void
+>() => xs.forEach((r) => { this.ret = r; }) : () => void
+>xs.forEach((r) => { this.ret = r; }) : void
+>xs.forEach : (callbackfn: (value: string, index: number, array: string[]) => void, thisArg?: any) => void
+>xs : string[]
+>forEach : (callbackfn: (value: string, index: number, array: string[]) => void, thisArg?: any) => void
+>(r) => { this.ret = r; } : (r: string) => void
+>r : string
+>this.ret = r : string
+>this.ret : string | undefined
+>this : this
+>ret : string | undefined
+>r : string
+
+    const g = xs.map((i) => { this.init = i; return i; });
+>g : string[]
+>xs.map((i) => { this.init = i; return i; }) : string[]
+>xs.map : <U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]
+>xs : string[]
+>map : <U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]
+>(i) => { this.init = i; return i; } : (i: string) => string
+>i : string
+>this.init = i : string
+>this.init : string | undefined
+>this : this
+>init : string | undefined
+>i : string
+>i : string
+
+    if (xs.some(({ length }) => { this.len = length; return true; })) {}
+>xs.some(({ length }) => { this.len = length; return true; }) : boolean
+>xs.some : (predicate: (value: string, index: number, array: string[]) => unknown, thisArg?: any) => boolean
+>xs : string[]
+>some : (predicate: (value: string, index: number, array: string[]) => unknown, thisArg?: any) => boolean
+>({ length }) => { this.len = length; return true; } : ({ length }: string) => boolean
+>length : number
+>this.len = length : number
+>this.len : number | undefined
+>this : this
+>len : number | undefined
+>length : number
+>true : true
+  }
+}
+
