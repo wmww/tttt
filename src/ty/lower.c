@@ -3293,21 +3293,29 @@ static Ty const* binding_element_implied_type(Checker* me, Binding const* elemen
 
 // tsc's getTypeFromBindingPattern: what an unannotated `{ a, b = 1 }` or `[a, b = 1]` parameter takes, `{ a: any; b?:
 // number }` or `[any, number?]`
-// A clone of the type marked as a pattern's (tsc's cloneTypeReference, `pattern`)
-Ty const* ty_pattern_clone(Checker* me, Ty const* ty) {
+// A copy of a type under a new id, sharing its lazy state (TyObjectState and the like): the members of a pattern's
+// clone are the original's, whichever of the two resolves them, which is a write the original's other readers see.
+// That is history-like the way K1's order is (a tuple reference's this-argument is whichever resolved them first) and
+// safe under sharing: the state protocol is per state, not per Ty. Its order_key is its own: copying a cached one
+// would make it depend on whether the original was compared before it was cloned (the key can hold the id)
+static Ty* clone_with_new_id(Checker* me, Ty const* ty) {
     Ty* ret = ty_alloc(me, (TyKind)ty->kind, ty->flags);
     u32 id = ret->id;
     memcpy(ret, ty, ty_size_of_kind((TyKind)ty->kind));
     ret->id = id;
+    ret->order_key = 0;
+    return ret;
+}
+
+// A clone of the type marked as a pattern's (tsc's cloneTypeReference, `pattern`)
+Ty const* ty_pattern_clone(Checker* me, Ty const* ty) {
+    Ty* ret = clone_with_new_id(me, ty);
     ret->flags |= TYF_BINDING_PATTERN;
     return ret;
 }
 
 Ty const* ty_pattern_unclone(Checker* me, Ty const* ty) {
-    Ty* ret = ty_alloc(me, (TyKind)ty->kind, ty->flags);
-    u32 id = ret->id;
-    memcpy(ret, ty, ty_size_of_kind((TyKind)ty->kind));
-    ret->id = id;
+    Ty* ret = clone_with_new_id(me, ty);
     ret->flags &= ~(u32)TYF_BINDING_PATTERN;
     return ret;
 }
