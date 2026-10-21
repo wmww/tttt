@@ -601,7 +601,9 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         program_set_file_size(program, file_size_of, nullptr);
     }
     program_set_checkers(program, opts->checkers);
-    program_set_shared_graph(program, opts->shared_graph);
+    // (TTTT_SHARED_GRAPH=1: the same, for scripts that run tttt with their own arguments: the oracles)
+    char const* shared_env = getenv("TTTT_SHARED_GRAPH");
+    program_set_shared_graph(program, opts->shared_graph || (shared_env && *shared_env && strcmp(shared_env, "0")));
     // (Or TTTT_FIRST_TOUCH_STAMPS=1, which program_new() reads)
     if (opts->first_touch_stamps) program_set_first_touch_stamps(program, true);
     program_set_checker_cap(program, opts->checker_cap);
@@ -1285,8 +1287,8 @@ static void print_help(void) {
         "                fresh (default: " STRINGIFY(DEFAULT_CHECKER_MEMORY_MB) ", each at least 96, together at most\n"
         "                " STRINGIFY(CHECKER_MEMORY_CAP_MB) " but each at least 64; several checkers start at " STRINGIFY(SHARED_CHECKER_MEMORY_MB) " each\n"
         "                and grow when they recycle every few files; 0: a fresh checker per file, off: never).\n"
-        "  --shared-graph  the checkers share one type graph, one after another, never recycled (plan 86 stage 4:\n"
-        "                a measurement, implies --threads 1 --checker-memory off for the typecheck)\n"
+        "  --shared-graph  the checkers share one type graph, never recycled (plan 86 stage 4; also\n"
+        "                TTTT_SHARED_GRAPH=1)\n"
         "  --first-touch-stamps  deep nesting orders types by when each checker met them first, not by id\n"
         "                The output doesn't depend on it\n"
         "  --threads N   parse, bind and check on N threads (default: the number of cores; checking uses at\n"
