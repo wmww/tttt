@@ -1257,10 +1257,11 @@ static void collect_free_params_of_function(Checker* me, FunctionImpl const* fun
 typedef struct TyFreeParams { TyList params; bool known; } TyFreeParams;
 
 bool ty_function_free_params(Checker* me, FunctionImpl const* function, TyList* out) {
-    TyFreeParams const* cached = ty_link_get(me, KEY_FUNCTION_FREE_PARAMS, function);
+    TyFreeParams const* cached = ty_link_get_memo(me, KEY_FUNCTION_FREE_PARAMS, function);
     if (cached) TAINT_READ(TK_FREE_PARAMS, cached);
     if (!cached) {
         TAINT_BEGIN(taint_frame);
+        u64 start = graph_taint_now; // (--shared-graph: published if clean, plan 86 stage 4f)
         TyFreeParams* computed = arena_new(&my arena, TyFreeParams);
         bool eligible = !function->is_expression && !function->is_constructor && !function->accessor &&
             !function->is_type && !function->jsdoc_type && !function->jsdoc_callback && !function->jsdoc_typed &&
@@ -1283,7 +1284,7 @@ bool ty_function_free_params(Checker* me, FunctionImpl const* function, TyList* 
                 computed->known = true;
             }
         }
-        ty_link_set(me, KEY_FUNCTION_FREE_PARAMS, function, computed);
+        ty_link_set_memo(me, KEY_FUNCTION_FREE_PARAMS, function, computed, start);
         TAINT_END(taint_frame, TK_FREE_PARAMS, computed, function, computed);
         cached = computed;
     }

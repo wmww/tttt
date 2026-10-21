@@ -14,6 +14,7 @@
 // - nothing of a checker is freed before the program's end, so what a shared type points to stays
 
 #include "ty/ty.h"
+#include "ty/overlay.h"
 
 typedef struct TyGraph TyGraph;
 struct LazyMemo;
@@ -82,24 +83,72 @@ void graph_memo_done(Checker* checker, u32 slot, bool tainted);
 bool graph_memo_eager(void);
 bool graph_memo_sharing(Checker const* checker); // Eager, and another checker to read them
 bool graph_memo_late(u32 kind);
+// Plan 86 stage 4f: a memo kind's entry is published only if its computation was clean. Its computation starts at the
+// private and shared miss of its key (graph_memo_miss(), from intern_shared_find()) and ends when its value is there:
+// tainted if the taint counter moved between the miss and the put, or while the put entry had no value yet (an event
+// sweeps the log, graph_memo_sweep()). A tainted entry stays the checker's own, and a hit of it is an event
+// (graph_memo_hit(), through InternTable.taint). Every put is logged while the checker is on a graph; published only
+// once others read them (graph_memo_sharing())
 void graph_memo_log_put(Checker* checker, InternTable const* table, void const** block, u32 kind);
+void graph_memo_miss(InternTable const* table, u64 hash, u64 const* words, u32 count);
+void graph_memo_sweep(Checker* checker); // A taint event (overlay.c's graph_taint_bump())
+enum { MEMO_MISS_SLOTS = 4096, MEMO_FLOOR_SLOTS = 1024, MEMO_TAINT_BITS = 1 << 16 };
+typedef struct MemoMiss {
+    void const* table;
+    u64 hash;
+    u64 start;
+    u32 gen; // (MemoTaint.gen when made: older ones are forgotten)
+} MemoMiss;
+typedef struct MemoTaint {
+    u64 bits[MEMO_TAINT_BITS / 64]; // The tainted entries' bitmap by block address (or node link key), in front of
+    uintptr_t* blocks; // the exact set, open addressing
+    u32 cap, len;
+    u32 gen; // Bumped at each file's start
+    MemoMiss misses[MEMO_MISS_SLOTS];
+    u64 floor_start[MEMO_FLOOR_SLOTS]; // The oldest start of a miss pushed out to the bucket, if floor_gen is gen
+    u32 floor_gen[MEMO_FLOOR_SLOTS];
+    void const* const** pending; // Entries put since the last event, clean so far
+    u32 pending_len, pending_cap;
+} MemoTaint;
+static inline u64 memo_taint_mix(u64 h) {
+    h ^= h >> 33;
+    h *= 0xff51afd7ed558ccdull;
+    h ^= h >> 33;
+    return h;
+}
+static inline bool memo_taint_maybe(MemoTaint const* t, uintptr_t key) {
+    u64 h = memo_taint_mix((u64)key);
+    return t->bits[(h >> 6) & (MEMO_TAINT_BITS / 64 - 1)] >> (h & 63) & 1;
+}
+void graph_memo_hit_slow(MemoTaint const* taint, uintptr_t key);
+static inline void graph_memo_hit(MemoTaint const* taint, void const* const* block) {
+    if (memo_taint_maybe(taint, (uintptr_t)block)) graph_memo_hit_slow(taint, (uintptr_t)block);
+}
+void graph_memo_taint_block(Checker* checker, void const* const* block); // A private entry tainted: reading it is an event
+void graph_link_tainted(Checker* checker, u64 key); // A node link memo's (ty_link_set_memo())
+void graph_memo_file_start(Checker* checker); // Nothing in flight: the misses are forgotten (program.c)
 void graph_memo_log_unput(Checker* checker, void const** block); // The last put, its value found shared
 void graph_memo_flush(Checker* checker);
 
-// Variances on threads (plan 86 4d): one measurement per type or alias for the program, like tsc's, whoever asks
-// first. A slot per subject (the declared type or the alias symbol), claimed with LAZY_CLAIM() by the worker that
-// measures it, which every other one waits for (LAZY_SNAP()); claimed slots go done as one group when the claiming
-// worker's outermost measurement ends (graph_variances_publish()). Null without threads
+// Variances on threads (plan 86 4f, "Variances"): a slot per subject (the declared type or the alias symbol), its value a
+// shared word: empty, the Variances its group's measurement published, or POISON. Nobody waits: a worker that finds it
+// empty measures, and the subjects one outermost measurement claimed (its group, graph_variance_claimed()) are
+// published together when it ends (graph_variances_publish()): if the group was clean each slot by CAS, first wins; a
+// loser with equal values adopts the winner's, one with differing values keeps its own (private, a read of it a taint
+// event); a tainted group poisons its slots and keeps its values private. Null without threads
 typedef struct VarianceSlot {
-    unsigned state; // LazyState, owner-tagged
-    void const* value; // The Variances once done
+    SharedWord value; // Variances const* published, or SW_POISON
     void const* subject;
     bool alias;
 } VarianceSlot;
 VarianceSlot* graph_variance_slot(Checker* checker, void const* subject, bool alias, bool create);
 void graph_variance_claimed(Checker* checker, VarianceSlot* slot);
-// The outermost measurement ended: each claimed slot gets `value_of`'s answer (null: not started again)
-void graph_variances_publish(Checker* checker, void const* (*value_of)(Checker* checker, VarianceSlot const* slot));
+// The outermost measurement ended: each claimed slot is published from its private entry (`block_of`: the checker's
+// intern block of the slot's variances), or poisoned if the group wasn't clean. Returns whether the checker's values are
+// all the published ones (false: something it read is now private)
+bool graph_variances_publish(
+    Checker* checker, void const** (*block_of)(Checker* checker, VarianceSlot const* slot), bool (*equal)(void const* a, void const* b), bool clean
+);
 
 void graph_check_unshared(TyGraph* me, Checker* checker); // TTTT_DEBUG_UNSHARED=1 (program.c)
 // Relation results shared (plan 86 4e item 2): definitive and clean only (SUCCEEDED or FAILED, 1 or 2; nothing

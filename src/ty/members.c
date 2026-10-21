@@ -1252,6 +1252,14 @@ bool ty_base_constructors_fit(Checker* me, Ty const* constructor, u32 count, boo
 
 // (SymbolLinks.base_cycle; BASE_CYCLE_CONSTRUCTOR: the class's `extends` expression needed the class, see class_base())
 enum { BASE_CYCLE_KNOWN = 1, BASE_CYCLE_IN_CYCLE = 2, BASE_CYCLE_REENTERED = 4, BASE_CYCLE_CONSTRUCTOR = 8 };
+enum { BASE_CYCLE_WORD_FOUND = 4 }; // (SymbolLinks.interface_cycle's value for a cycle: above SW_NONE)
+// (Atomic: set while another worker may read them, plan 86 stage 4f's TSan A; see SymbolLinks.base_cycle)
+static inline unsigned base_cycle_flags(SymbolLinks const* links) {
+    return __atomic_load_n(&links->base_cycle, __ATOMIC_ACQUIRE);
+}
+static inline void base_cycle_set(SymbolLinks* links, unsigned flags) {
+    __atomic_fetch_or(&links->base_cycle, (uint8_t)flags, __ATOMIC_RELEASE);
+}
 
 // An object type, `object`, a type parameter constrained to one or an intersection of them (tsc's isValidBaseType).
 // Unlike tsc, not `any`: a class extending `any` has no base as far as class_base() goes
@@ -1316,7 +1324,7 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
         // (Under tsc's pushTypeResolution(ResolvedBaseConstructorType): an expression that needs the class's bases is
         // circular, TS2506, and the class has no base)
         SymbolLinks* links = class_decl->symbol ? ty_symbol_links(me, class_decl->symbol) : nullptr;
-        if (links && (links->base_cycle & BASE_CYCLE_CONSTRUCTOR)) return false;
+        if (links && (base_cycle_flags(links) & BASE_CYCLE_CONSTRUCTOR)) return false;
         if (ty_resolving_find(me, RESOLVING_BASE_CONSTRUCTOR, class_decl)) {
             ty_resolving_cycle(me, RESOLVING_BASE_CONSTRUCTOR, class_decl);
             return false;
@@ -1326,7 +1334,7 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
         Ty const* expr_type = ty_expr_type(me, extends);
         my base_constructors_in_flight--;
         if (ty_resolving_pop(me) && links) {
-            links->base_cycle |= BASE_CYCLE_CONSTRUCTOR;
+            base_cycle_set(links, BASE_CYCLE_CONSTRUCTOR);
             return false;
         }
         Ty const* constructor = ty_apparent_type(me, expr_type);
@@ -2794,43 +2802,58 @@ bool ty_bases_reentered(Checker* me, Symbol const* symbol) {
     Ty const* declared = ty_declared_type_of(me, symbol);
     if (declared->kind != TY_DECLARED) return false;
     ty_members(me, declared);
-    return ty_symbol_links(me, symbol)->base_cycle & BASE_CYCLE_REENTERED;
+    return base_cycle_flags(ty_symbol_links(me, symbol)) & BASE_CYCLE_REENTERED;
 }
 
 bool ty_class_base_constructor_circular(Checker* me, ClassDecl const* class_decl) {
     if (!class_decl->symbol) return false;
     Ty const* declared = ty_declared_type_of(me, class_decl->symbol);
     if (declared->kind == TY_DECLARED) ty_members(me, declared);
-    return ty_symbol_links(me, class_decl->symbol)->base_cycle & BASE_CYCLE_CONSTRUCTOR;
+    return base_cycle_flags(ty_symbol_links(me, class_decl->symbol)) & BASE_CYCLE_CONSTRUCTOR;
 }
 
+static bool interface_walk_finds_cycle(Checker* me, Symbol const* symbol);
+// (The walk is a shared word, plan 86 stage 4f; what its members' resolution found, a flag)
 bool ty_interface_in_base_cycle(Checker* me, Symbol const* symbol) {
     SymbolLinks* links = ty_symbol_links(me, symbol);
-    if (!(links->base_cycle & BASE_CYCLE_KNOWN)) {
-        links->base_cycle |= BASE_CYCLE_KNOWN;
-        BaseWalk* walk = malloc(sizeof(BaseWalk));
-        panic_if(!walk, "out of memory");
-        walk->target = symbol;
-        walk->visited_count = 1;
-        walk->visited[0] = symbol; // (The walk starts at its bases)
-        Ty const* declared = ty_declared_type_of(me, symbol);
-        LowerCtx ctx = { .generic = declared->kind == TY_DECLARED && declared->declared.type_params.len > 0 };
-        bool found = false;
-        for (SymbolDecl const* node = symbol->decls; node < symbol->decls + symbol->decl_count && !found; node++) {
-            if (node->kind != SYMBOL_DECL_INTERFACE) continue;
-            InterfaceDecl const* interface_decl = node->node;
-            for_each (extends, vec_spanned_type, &interface_decl->extends) {
-                Symbol const* base = interface_base_symbol(me, &extends->type, ctx);
-                if (base && interface_reaches(me, base, walk)) {
-                    found = true;
-                    break;
-                }
+    if (base_cycle_flags(links) & BASE_CYCLE_IN_CYCLE) return true;
+    uintptr_t v = sw_get(me, &links->interface_cycle);
+    if (!v) {
+        switch (sw_look(me, &links->interface_cycle, &links->interface_cycle_state, &v)) {
+            case SW_LOOK_DONE: break;
+            case SW_LOOK_MINE: return false; // (Asked again during its own walk: not known to be, a taint event)
+            case SW_LOOK_COMPUTE: {
+                u64 taint = sw_claim(me, &links->interface_cycle, &links->interface_cycle_state);
+                bool found = interface_walk_finds_cycle(me, symbol);
+                v = sw_finish(me, &links->interface_cycle, &links->interface_cycle_state, found ? BASE_CYCLE_WORD_FOUND : SW_NONE, taint);
+            }   break;
+        }
+    }
+    return v == BASE_CYCLE_WORD_FOUND || (base_cycle_flags(links) & BASE_CYCLE_IN_CYCLE);
+}
+
+static bool interface_walk_finds_cycle(Checker* me, Symbol const* symbol) {
+    BaseWalk* walk = malloc(sizeof(BaseWalk));
+    panic_if(!walk, "out of memory");
+    walk->target = symbol;
+    walk->visited_count = 1;
+    walk->visited[0] = symbol; // (The walk starts at its bases)
+    Ty const* declared = ty_declared_type_of(me, symbol);
+    LowerCtx ctx = { .generic = declared->kind == TY_DECLARED && declared->declared.type_params.len > 0 };
+    bool found = false;
+    for (SymbolDecl const* node = symbol->decls; node < symbol->decls + symbol->decl_count && !found; node++) {
+        if (node->kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* interface_decl = node->node;
+        for_each (extends, vec_spanned_type, &interface_decl->extends) {
+            Symbol const* base = interface_base_symbol(me, &extends->type, ctx);
+            if (base && interface_reaches(me, base, walk)) {
+                found = true;
+                break;
             }
         }
-        free(walk);
-        if (found) links->base_cycle |= BASE_CYCLE_IN_CYCLE;
     }
-    return links->base_cycle & BASE_CYCLE_IN_CYCLE;
+    free(walk);
+    return found;
 }
 
 // Whether TS2310 goes on this declaration of an interface in a base cycle. tsc's resolveBaseTypesOfInterface reports a
@@ -3289,9 +3312,9 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 }
                 // (Bases that lead back are a cycle tsc finds elsewhere: TS2506 in getBaseConstructorTypeOfClass, or
                 // the interfaces' own TS2310, see ty_interface_in_base_cycle())
-                if ((links->base_cycle & BASE_CYCLE_CONSTRUCTOR) && !bases.len) links->base_cycle |= BASE_CYCLE_REENTERED;
-                else if (kept < bases.len || !bases.len) links->base_cycle |= BASE_CYCLE_KNOWN | BASE_CYCLE_IN_CYCLE;
-                else links->base_cycle |= BASE_CYCLE_REENTERED;
+                if ((base_cycle_flags(links) & BASE_CYCLE_CONSTRUCTOR) && !bases.len) base_cycle_set(links, BASE_CYCLE_REENTERED);
+                else if (kept < bases.len || !bases.len) base_cycle_set(links, BASE_CYCLE_KNOWN | BASE_CYCLE_IN_CYCLE);
+                else base_cycle_set(links, BASE_CYCLE_REENTERED);
                 bases.len = kept;
                 written_bases.len = kept;
             }

@@ -76,7 +76,8 @@ enum {
     // which a member of an intersection source has none of: the pair may not hold under IntersectionState.Source
     CACHE_INDEX_INFERRED = 32,
     // Concluded while something below it was cut short by deep nesting (is_deeply_nested_as(), which decides by this
-    // checker's history): a hit is a taint event, and it isn't shared (plan 86 stage 4f, rule 3 of "clean")
+    // checker's history), or, with --shared-graph, while any taint event happened (a cycle, something in flight, a
+    // private value read): a hit is a taint event, and it isn't shared (plan 86 stage 4f, rules 1-3 of "clean")
     CACHE_DEEP = 64,
 };
 
@@ -3405,6 +3406,9 @@ static Ternary tuple_shapes_related(
 // Measured variances, what the links hold (KEY_VARIANCES, KEY_ALIAS_VARIANCES): only ever finished ones
 typedef struct Variances {
     u32 len;
+    // --shared-graph on threads: measured by this checker's group in progress, not published yet (a read of it is
+    // internal to the group, a taint event for anything else: plan 86 stage 4f's variance groups)
+    bool pending;
     unsigned char data[];
 } Variances;
 
@@ -3417,6 +3421,7 @@ typedef struct VarianceClaim {
     u32 len;
     // Met again while being measured (tsgo's empty variances): Ternary Unknown from then on, no more restarts
     bool circular;
+    bool in_group; // --shared-graph on threads: its slot was empty, it is published with the outermost measurement's group
     Variances const* done; // Set by the first measurement of it to finish (a restart's may be first)
 } VarianceClaim;
 
@@ -3573,6 +3578,7 @@ static VarianceSubject subject_of_claim(Checker* me, VarianceClaim const* claim)
 static Variances const* publish_variances(Checker* me, VarianceClaim* claim, unsigned char const* data) {
     Variances* variances = arena_alloc(&my arena, sizeof(Variances) + claim->len);
     variances->len = claim->len;
+    variances->pending = claim->in_group;
     memcpy(variances->data, data, claim->len);
     u64 key[2] = { claim->declared ? KEY_VARIANCES : KEY_ALIAS_VARIANCES,
         claim->declared ? claim->declared->id : (u64)(uintptr_t)claim->alias };
@@ -3697,60 +3703,98 @@ static Variances const* measured_variances(Checker* me, VarianceClaim* claim) {
     return nullptr;
 }
 
-// Measures what is neither in the links nor in flight, under a claim of its own
-// (--shared-graph on threads: a claimed slot's value, the measurement's in the checker's links)
-static void const* variance_slot_value(Checker* me, VarianceSlot const* slot) {
+// (--shared-graph on threads: a claimed slot's private entry)
+static void const** variance_slot_block(Checker* me, VarianceSlot const* slot) {
     u64 key[2] = { slot->alias ? KEY_ALIAS_VARIANCES : KEY_VARIANCES,
         slot->alias ? (u64)(uintptr_t)slot->subject : ((Ty const*)slot->subject)->id };
-    return intern_get(&my links, key, 2);
+    void const** block = intern_slot(me, &my links, key, 2);
+    // (The group's own values: not pending once its end publishes them)
+    if (block[0]) ((Variances*)block[0])->pending = false;
+    return block;
 }
 
+static bool variances_equal(void const* a, void const* b) {
+    Variances const* x = a;
+    Variances const* y = b;
+    return x->len == y->len && !memcmp(x->data, y->data, x->len);
+}
+
+// A read of variances: one of this checker's group in progress (not published yet) is internal to the group's
+// measurement and a taint event for anything else (plan 86 stage 4f)
+static inline void variances_read(Checker* me, Variances const* variances) {
+    if (__builtin_expect(variances->pending, 0)) {
+        my variance_internal_events++;
+        TAINT_EVENT(TAINT_READ_TAINTED);
+    }
+}
+
+// A claim in flight read: internal to the group if it is the measurement running now reading its own subject (always
+// Ternary Unknown, wherever it was entered from); any other is a taint event that taints the group too (an enclosing
+// measurement's subject: what a nested measurement then gets depends on where it was entered, drizzle's View measured
+// inside another one came out unreliable)
+static void variance_claim_read(Checker* me, VarianceClaim const* claim) {
+    if (my variance_stack_len && my variance_stack[my variance_stack_len - 1] == claim) my variance_internal_events++;
+    TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+}
+
+// Measures what is neither in the links nor in flight, under a claim of its own. --shared-graph on threads (plan 86
+// stage 4f, graph.h): a subject's slot, published, is adopted; empty, it joins the group of the outermost measurement
+// in progress (or starts one), published at its end if the group read nothing in flight but its own claims (else
+// poisoned); poisoned, it is measured privately. Nobody waits for anybody
 static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) {
     void const* subject_ptr = subject.declared ? (void const*)subject.declared : (void const*)subject.alias;
-    // --shared-graph on threads: measured once for the program, by whichever worker claims the subject's slot first;
-    // the others wait for the group its outermost measurement publishes (graph.h). Measurements run at once on
-    // several workers: the graph-wide lock that serialized them (plan 86 4d task 3) hid two bugs that weren't about
-    // variances (4e item 1: the redo's error bookkeeping, and deep nesting deciding by schedule-ordered type ids, which
-    // first-touch stamps, on whenever the graph is shared, make per-worker history again). A worker that would close a
-    // cycle of waits and breaks it (no redo) measures privately
     VarianceSlot* slot = my graph ? graph_variance_slot(me, subject_ptr, !subject.declared, true) : nullptr;
+    u64 key[2] = { subject.declared ? KEY_VARIANCES : KEY_ALIAS_VARIANCES,
+        subject.declared ? subject.declared->id : (u64)(uintptr_t)subject.alias };
+    bool in_group = false;
     if (slot) {
-        again:;
-        if (debug_env.debug_variance) {
-            unsigned peek = LAZY_LOAD(slot->state);
-            Symbol const* sym = subject_symbol(subject);
-            if (LAZY_IN_FLIGHT(peek) && !LAZY_MINE_IN_FLIGHT(me, peek)) vlog("VARWAIT w%u %.*s owner %u vdepth=%u\n", (unsigned)my graph_worker, (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "", peek >> 2, (unsigned)my variance_depth);
-        }
-        LAZY_SNAP(me, slot->state, v, again);
+        graph_sched_point(false);
+        uintptr_t v = sw_load(&slot->value);
         if (debug_env.debug_variance) {
             Symbol const* sym = subject_symbol(subject);
-            vlog("VARSLOT w%u %.*s state %u vdepth=%u\n", (unsigned)my graph_worker, (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "", v, (unsigned)my variance_depth);
+            vlog("VARSLOT w%u %.*s %s vdepth=%u\n", (unsigned)my graph_worker, (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "",
+                v > SW_POISON ? "published" : v == SW_POISON ? "poisoned" : "empty", (unsigned)my variance_depth);
         }
-        if (LAZY_STATE_OF(v) == LAZY_STATE_DONE) {
-            Variances const* shared = __atomic_load_n(&slot->value, __ATOMIC_RELAXED);
-            u64 key[2] = { subject.declared ? KEY_VARIANCES : KEY_ALIAS_VARIANCES,
-                subject.declared ? subject.declared->id : (u64)(uintptr_t)subject.alias };
+        if (v > SW_POISON) {
+            Variances const* shared = (Variances const*)v;
             *intern_slot(me, &my links, key, 2) = shared;
             return shared;
         }
-        if (!LAZY_IN_FLIGHT(v)) {
-            if (!LAZY_CLAIM(me, slot->state)) goto again;
+        if (v == SW_EMPTY) {
             graph_variance_claimed(me, slot);
+            in_group = true;
         }
     }
-    VarianceClaim claim = { .declared = subject.declared, .alias = subject.alias, .len = subject.params.len };
+    // (The group's frame: the outermost measurement's)
+    bool outermost = slot && !my variance_depth;
+    u64 group_start = graph_taint_now, internal_start = my variance_internal_events;
+    VarianceClaim claim = { .declared = subject.declared, .alias = subject.alias, .len = subject.params.len, .in_group = in_group };
     ty_claim_push(me, CLAIM_VARIANCES, &claim.claim, subject_ptr, !subject.declared);
     measure_variances(me, subject, &claim);
     ty_claim_pop(me, CLAIM_VARIANCES, &claim.claim);
-    if (__builtin_expect(my graph_variance_claims_len != 0, 0) && !my variance_depth) graph_variances_publish(me, variance_slot_value);
+    if (slot && !in_group && claim.done) {
+        // (Poisoned: this checker's own, a read of it a taint event, by the caller first)
+        graph_memo_taint_block(me, intern_slot(me, &my links, key, 2));
+        TAINT_EVENT(TAINT_READ_TAINTED);
+    }
+    if (outermost && my graph_variance_claims_len) {
+        // Clean: every event since its start was a read of its own claims or values
+        bool clean = graph_taint_now - group_start == my variance_internal_events - internal_start;
+        bool kept = graph_variances_publish(me, variance_slot_block, variances_equal, clean);
+        // (What the caller reads is the published values then: the group's internal events don't taint it. Otherwise it
+        // reads private ones)
+        if (clean && kept) graph_taint_now = group_start;
+        else TAINT_EVENT(TAINT_READ_TAINTED);
+    }
     return claim.done;
 }
 
-// Whether the declared type's variances are measured, or being measured (--shared-graph on threads: by any worker)
+// Whether the declared type's variances are measured, or being measured by this checker (--shared-graph on threads:
+// or published)
 static bool variances_known(Checker* me, Ty const* target) {
     if (intern_get(&my links, (u64[]){ KEY_VARIANCES, target->id }, 2) || variance_claim_of(me, target, nullptr)) return true;
     VarianceSlot const* slot = my graph ? graph_variance_slot(me, target, false, false) : nullptr;
-    return slot && LAZY_LOAD(slot->state) != LAZY_STATE_NOT_STARTED;
+    return slot && sw_load(&slot->value) > SW_POISON;
 }
 
 // Null while the variances are being measured (the caller then goes by Ternary Unknown, like tsc)
@@ -3759,6 +3803,7 @@ static Variances const* get_variances(Checker* me, Ty const* target) {
     Variances const* variances = intern_get(&my links, key, 2);
     if (variances) {
         TAINT_READ(TK_VARIANCES, variances);
+        variances_read(me, variances);
         return variances;
     }
     VarianceClaim* claim = variance_claim_of(me, target, nullptr);
@@ -3770,7 +3815,7 @@ static Variances const* get_variances(Checker* me, Ty const* target) {
         if (variances_clean < 0) variances_clean = getenv("TTTT_TAINT_VARIANCES_CLEAN") && *getenv("TTTT_TAINT_VARIANCES_CLEAN");
         if (!variances_clean) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
 #else
-        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+        variance_claim_read(me, claim);
 #endif
         return measured_variances(me, claim);
     }
@@ -3782,6 +3827,7 @@ static Variances const* get_variances(Checker* me, Ty const* target) {
     ) {
         Variances* covariant = arena_alloc(&my arena, sizeof(Variances) + subject.params.len);
         covariant->len = subject.params.len;
+        covariant->pending = false;
         memset(covariant->data, VARIANCE_COVARIANT, covariant->len);
         *intern_slot(me, &my links, key, 2) = covariant;
         return covariant;
@@ -3795,7 +3841,8 @@ static Variances const* get_variances(Checker* me, Ty const* target) {
     // published by the checker that measured it, all of it: in 4d, as one group when the outermost measurement ends
     // (claim_and_measure(), first finisher wins). The prototype's TTTT_TAINT keeps tainting them (cleandiff's G0 rule)
 #ifndef TTTT_GRAPH_TAINT
-    TAINT_END(taint_frame, TK_VARIANCES, variances, target, variances);
+    // (--shared-graph: fingerprinted where its group is published, graph_variances_publish())
+    if (!my graph) TAINT_END(taint_frame, TK_VARIANCES, variances, target, variances);
 #else
     (void)taint_frame;
 #endif
@@ -3806,9 +3853,15 @@ static Variances const* get_variances(Checker* me, Ty const* target) {
 static Variances const* get_alias_variances(Checker* me, Symbol const* alias) {
     u64 key[2] = { KEY_ALIAS_VARIANCES, (u64)(uintptr_t)alias };
     Variances const* variances = intern_get(&my links, key, 2);
-    if (variances) return variances;
+    if (variances) {
+        variances_read(me, variances);
+        return variances;
+    }
     VarianceClaim* claim = variance_claim_of(me, nullptr, alias);
-    if (claim) return measured_variances(me, claim);
+    if (claim) {
+        variance_claim_read(me, claim);
+        return measured_variances(me, claim);
+    }
     return claim_and_measure(me, (VarianceSubject){ .alias = alias, .params = ty_alias_type_params(me, alias) });
 }
 
@@ -4909,8 +4962,9 @@ static bool may_simplify_conditional(Ty const* ty) {
 static Ty const base_constraint_circular, base_constraint_none;
 
 // The base constraint is known
-static void publish_base_constraint(Checker* me, Ty const* ty, Ty const* constraint, bool circular) {
-    ty_link_set(me, KEY_BASE_CONSTRAINT, ty, circular ? &base_constraint_circular : constraint ? constraint : &base_constraint_none);
+// (--shared-graph: published if its computation, since `start`, was clean)
+static void publish_base_constraint(Checker* me, Ty const* ty, Ty const* constraint, bool circular, u64 start) {
+    ty_link_set_memo(me, KEY_BASE_CONSTRAINT, ty, circular ? &base_constraint_circular : constraint ? constraint : &base_constraint_none, start);
 }
 
 static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack) {
@@ -4922,7 +4976,7 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
     ) {
         return ty;
     }
-    Ty const* cached = ty_link_get(me, KEY_BASE_CONSTRAINT, ty);
+    Ty const* cached = ty_link_get_memo(me, KEY_BASE_CONSTRAINT, ty);
     if (cached) {
         TAINT_READ(TK_BASE_CONSTRAINT, ty);
         return cached == &base_constraint_circular || cached == &base_constraint_none ? nullptr : cached;
@@ -4951,13 +5005,14 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
     // (tsc simplifies every type first: indexed accesses here, conditional types only where their branches as written
     // could make them simplify, see may_simplify_conditional())
     TAINT_BEGIN(taint_frame);
+    u64 start = graph_taint_now;
     ty_resolving_push(me, RESOLVING_BASE_CONSTRAINT, ty);
     Ty const* ret = deep ? nullptr : compute_base_constraint(me, ty->kind == TY_INDEXED || (ty->kind == TY_CONDITIONAL && may_simplify_conditional(ty)) ?
         ty_simplified(me, ty, false) : ty, &inner);
     bool circular = ty_resolving_pop(me);
     // (The first answer stays: one computed again below the barrier answered already)
     if (!ty_link_get(me, KEY_BASE_CONSTRAINT, ty)) {
-        publish_base_constraint(me, ty, ret, circular);
+        publish_base_constraint(me, ty, ret, circular, start);
         TAINT_END(taint_frame, TK_BASE_CONSTRAINT, ty, ty, circular ? nullptr : ret);
     }
     return circular ? nullptr : ret;
@@ -7046,9 +7101,13 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
             return TERNARY_FALSE;
         }
     }
+    // (--shared-graph: a pair whose comparison saw a taint event is this checker's history, cached CACHE_DEEP and never
+    // shared, plan 86 stage 4f)
+    u64 taint_start = __builtin_expect(my graph != nullptr, 0) ? graph_taint_now : 0;
     if (fails_common_properties(me, st, source, target, report)) {
-        relation_cache_put(cache, key, CACHE_FAILED);
-        relation_publish(me, st, key, CACHE_FAILED);
+        bool tainted = my graph && graph_taint_now != taint_start;
+        relation_cache_put(cache, key, CACHE_FAILED | (tainted ? CACHE_DEEP : 0));
+        if (!tainted) relation_publish(me, st, key, CACHE_FAILED);
         return TERNARY_FALSE;
     }
     if (st->relation_count <= 0) {
@@ -7106,7 +7165,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     unsigned unreliable = (my variance_reports & VARIANCE_UNRELIABLE ? CACHE_UNRELIABLE : 0) |
         (my variance_reports & VARIANCE_UNMEASURABLE ? CACHE_UNMEASURABLE : 0);
     unsigned inferred = st->index_inferred ? CACHE_INDEX_INFERRED : 0;
-    unsigned deep = my relation_deep_seen ? CACHE_DEEP : 0;
+    unsigned deep = my relation_deep_seen || (my graph && graph_taint_now != taint_start) ? CACHE_DEEP : 0;
     my relation_deep_seen |= saved_deep;
     st->index_inferred |= saved_inferred;
     if (debug_env.debug_relate_nested) {

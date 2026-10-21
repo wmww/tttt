@@ -442,15 +442,25 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   KEY_PROP_MAPPED_TYPE), more may hide behind a flag on a shared struct (KEY_ALIAS_MARKER is history: published
   at creation it changed excalidraw at K12 threads, kept a memo kind).
   Prop.write_type_known is a bitfield set (read-modify-write of its byte) on a published property: only that bit
-  changes after construction, so concurrent setters agree. SymbolLinks.base_cycle is a flag byte two workers OR
-  bits into without an atomic (ty_interface_in_base_cycle(), ty_bases_reentered()): one's bit can be lost (no output seen to
-  depend on it). TSan with the flag is far from clean: `scripts/sharedgraph/tsan.sh` found ~55 distinct report groups
+  changes after construction, so concurrent setters agree. SymbolLinks.base_cycle is a flag byte that members'
+  resolution (resolve_members_with_this()'s base cycle, class_base()'s constructor cycle) ORs bits into on a shared
+  record, atomically since plan 86 4f P3 (base_cycle_set()): against the 4f rule (nothing written on a shared object but
+  words), the bits belong in the members' value (P1's Members.rare); a tainted members computation's bits are seen
+  by everyone. ty_interface_in_base_cycle()'s own walk is a word (SymbolLinks.interface_cycle). TSan with the flag is far from clean: `scripts/sharedgraph/tsan.sh` found ~55 distinct report groups
   over the 14 `-p` corpora at T4/T12 (2026-10-21; the list is plan 86 4e item 1's "Stage 4f gates"), most of them
   lazy fields on shared types read plainly beside another worker's write. graph_kind_class() puts KEY_FLOW_NARROWED /
   KEY_FLOW_DISCRIMINANT (census: SHARE) with the scratch kinds, and treats identity records (SymbolLinks,
-  FunctionReturn) as published whatever their contents' taint. Its cheap taint compiles only with -DTTTT_GRAPH_TAINT
-  and doesn't count reads of tainted private intern entries or of Ty-resident results other than at TAINT_READ sites
-  (members only on the slow path).
+  FunctionReturn) as published whatever their contents' taint. Since plan 86 4f P3 the intern memo kinds' taint is
+  runtime (graph.c's MemoTaint, every checker on a graph): a computation's start is its key's miss, found again at the
+  put through a per-checker direct-mapped miss table (4096 slots; a pushed-out miss leaves its start in a floor bucket
+  of 1024 that any put of a key not in the table takes, so it is never taken for clean: at worst a key sharing the
+  bucket is taken for tainted, ~20-180 per corpus run; forgotten at each file's start). Puts that miss no recorded
+  miss (intern_slot() straight away) start at the put. The -DTTTT_GRAPH_TAINT build's hooks (graph_taint_miss/put,
+  the global mark set) are the older duplicate, for step D to delete. Identity-valued memo kinds (KEY_MAPPED_KEY_PARAM,
+  KEY_EVOLVING_ARRAY, KEY_REVERSE_MAPPED, KEY_UNION_NODE: their value is a fresh object no key hash-conses) publish
+  whatever their taint, like identities. A clean variance group rewinds graph_taint_now to its start
+  (claim_and_measure()): its internal events (its own claims read) don't taint its callers; sound because nothing
+  started inside the group is still in flight, but it is the one place the counter goes backwards.
 - Re-entry below resolution barriers (plan 88): tsc re-enters anything in flight below `resolutionStart` (a call's
   first resolution, the outermost variance measurement) and stops only when a request is above a barrier; tttt
   approximates per site: declarations and inferred return types re-enter below the call barrier every time, as tsc

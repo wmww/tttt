@@ -59,6 +59,9 @@ typedef struct InternTable {
     u32 len;
     // With --shared-graph (ty/graph.h): the graph's table of the same keys, looked up when this one misses. Null otherwise
     struct SharedTable* shared;
+    // With --shared-graph, once the checker has a tainted memo entry: its set of them (graph.c's MemoTaint), which a
+    // hit looks in. Null otherwise
+    struct MemoTaint const* taint;
 } InternTable;
 
 // The commonest two-word keys of Checker.links, (kind, AST node or other address) -> value, with the key in the entry
@@ -929,7 +932,12 @@ typedef struct SymbolLinks {
     // SYMBOL_DECLARED_CIRCULAR for a type alias whose resolution reached itself (TS2456 when it finishes)
     SharedWord declared;
     Ty const* static_type; // See ty_static_type_of()
-    uint8_t base_cycle; // BASE_CYCLE_* flags, see ty_interface_in_base_cycle()
+    // BASE_CYCLE_* flags set by its members' resolution (members.c), atomic ORs. HACK (plan 86 stage 4f): bits set on a
+    // shared record by a computation of another value (the members); they belong in that value (hacks.md)
+    uint8_t base_cycle;
+    uint8_t interface_cycle_state; // (S0's default-path in-flight byte for interface_cycle)
+    // ty_interface_in_base_cycle()'s walk of an interface's bases: SW_NONE none, BASE_CYCLE_WORD_FOUND a cycle
+    SharedWord interface_cycle;
     LazyState base_variable_state;
     Ty const* base_variable; // See ty_class_base_type_variable()
 } SymbolLinks;
@@ -1344,9 +1352,15 @@ struct Checker {
     // once its value is there (plan 86 4d), unless the instantiation limits ran out meanwhile
     struct GraphMemoLogEntry* graph_memo_log;
     u32 graph_memo_log_len, graph_memo_log_cap, graph_memo_log_limit;
+    // Plan 86 stage 4f: where its memo kinds' computations started (their misses) and which of its entries were tainted
+    // (graph.c)
+    struct MemoTaint* memo_taint;
     // The variance slots it claimed during its outermost measurement in progress (graph_variance_claimed())
     struct VarianceSlot** graph_variance_claims;
     u32 graph_variance_claims_len, graph_variance_claims_cap;
+    // Taint events internal to the variance group being measured (its own claims and values read: plan 86 stage 4f),
+    // which don't taint the group
+    u64 variance_internal_events;
     // Its worker number on the graph (1..63, the tag of what it has in flight: LAZY_FOREIGN()), 0 without one
     uint8_t graph_worker;
     // Plan 86 stage 4f (overlay.h): its words in flight and the values it keeps privately (tainted, or computed after

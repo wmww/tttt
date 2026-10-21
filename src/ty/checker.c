@@ -228,7 +228,7 @@ __attribute__((always_inline)) static inline InternEntry* intern_find(InternTabl
 }
 
 static void intern_grow(InternTable* me) {
-    InternTable bigger = { .cap = my cap ? my cap * 2 : 64, .len = my len, .shared = my shared };
+    InternTable bigger = { .cap = my cap ? my cap * 2 : 64, .len = my len, .shared = my shared, .taint = my taint };
     bigger.entries = zeroed_table(bigger.cap, sizeof(InternEntry));
     panic_if(!bigger.entries, "out of memory");
     for (u32 i = 0; i < my cap; i++) {
@@ -253,8 +253,8 @@ static void const** intern_put(Checker* me, InternTable* table, InternEntry* ent
         panic_if(current_checker != me, "a checker's table used off its thread");
         block = arena_new_n(&my arena, u64, 2 + long_key + count) + 1;
         block[-1] = hash;
-        // (A memo kind's entry is published once its value is there, graph_memo_flush())
-        if (my graph_memo_on) graph_memo_log_put(me, table, (void const**)block, count ? (u32)(words[0] & 255) : 0);
+        // (A memo kind's entry is published once its value is there, if its computation was clean: graph_memo_flush())
+        graph_memo_log_put(me, table, (void const**)block, count ? (u32)(words[0] & 255) : 0);
     } else {
         block = arena_new_n(&my arena, u64, 1 + long_key + count);
     }
@@ -282,11 +282,10 @@ static void const** intern_put(Checker* me, InternTable* table, InternEntry* ent
 #endif
 }
 
-// A private entry hit. (--shared-graph's taint doesn't count reads of a tainted private entry: a test on every hit
-// cost the default path ~1% of its instructions. What a tainted memo entry feeds is published when its own computation
-// saw no event, see graph.c)
+// A private entry hit. (--shared-graph: a memo kind's entry whose computation was tainted is this worker's own, and
+// reading it is a taint event, plan 86 stage 4f; `taint` is set once the checker has one, graph.c)
 static inline void const** intern_hit(InternTable const* table, void const** block) {
-    (void)table;
+    if (__builtin_expect(table->taint != nullptr, 0)) graph_memo_hit(table->taint, block);
     return block;
 }
 
@@ -321,6 +320,8 @@ static void debug_check_type_value(InternTable const* table, u64 const* words, u
 #ifdef TTTT_GRAPH_TAINT
         graph_taint_miss(table, hash);
 #endif
+        // (A memo kind's computation may start here: graph_memo_log_put() takes the taint counter from then)
+        graph_memo_miss(table, hash, words, count);
         return nullptr;
     }
     graph_count_shared_hit(table, words, count);
@@ -574,6 +575,13 @@ void link_table_each(LinkTable const* table, void (*each)(void* arg, u32 kind, v
     if (!value || graph_kind_class(kind) != GRAPH_MEMO || graph_memo_late(kind)) return;
     void const* there = graph_link_insert(my graph, kind, subject, value);
     if (there != value) link_set(&my node_links, kind, subject, there);
+}
+
+void ty_link_set_memo(Checker* me, u32 kind, void const* subject, void const* value, u64 start) {
+    link_set(&my node_links, kind, subject, value);
+    if (__builtin_expect(my graph == nullptr, 1)) return;
+    if (start != graph_taint_now) graph_link_tainted(me, link_key(kind, subject));
+    else if (my graph_memo_on) link_memo_publish(me, kind, subject, value);
 }
 
 void ty_link_set(Checker* me, u32 kind, void const* subject, void const* value) {

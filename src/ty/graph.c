@@ -44,10 +44,9 @@ struct TyGraph {
     SharedLinks* variance_slots; // By subject (graph_variance_slot())
     SharedLinks* relations[TY_RELATION_COUNT]; // graph_relation_get()
     _Atomic u64 relation_hits, relation_puts;
-    // Declaration memos by slot, like LazySlots.top (pages made by CAS, a memo written flags last under memo_lock)
-    LazyMemo** _Atomic memos[1 << LAZY_TOP_BITS];
-    pthread_mutex_t memo_lock;
-    u64 memo_hits;
+    // Declaration memos by slot, like LazySlots.top (pages made by CAS): each a shared word to an immutable copy of the
+    // memo that finished cleanly first (plan 86 stage 4f)
+    SharedWord* _Atomic* _Atomic memos[1 << LAZY_TOP_BITS];
     KindStats stats[GRAPH_STAT_KINDS];
     u32 checkers;
     Checker* workers[64]; // By Checker.graph_worker
@@ -61,26 +60,33 @@ struct TyGraph {
 static GraphClass graph_kind_class_of(u32 kind);
 static char const* kind_name(u32 kind);
 // (Debug: TTTT_GRAPH_NOSHARE=k,k,... or =all-but:k,k: kinds kept private, a bisection of what sharing breaks)
-static uint8_t noshare_kinds[256];
-static int noshare_init = -1;
-GraphClass graph_kind_class(u32 kind) {
-    if (__builtin_expect(noshare_init < 0, 0)) {
-        char const* env = getenv("TTTT_GRAPH_NOSHARE");
-        if (env) {
-            bool but = !strncmp(env, "all-but:", 8);
-            if (but) { memset(noshare_kinds, 1, sizeof(noshare_kinds)); env += 8; }
-            for (char const* p = env; *p;) {
-                char* end;
-                unsigned long k = strtoul(p, &end, 10);
-                if (end == p) break;
-                if (k < 256) noshare_kinds[k] = !but;
-                p = *end == ',' ? end + 1 : end;
-            }
+// (A table: asked at every memo kind's miss and put)
+static uint8_t kind_classes[512];
+static int kind_classes_init;
+[[gnu::noinline, gnu::cold]] static void kind_classes_make(void) {
+    static uint8_t noshare_kinds[256];
+    char const* env = getenv("TTTT_GRAPH_NOSHARE");
+    if (env) {
+        bool but = !strncmp(env, "all-but:", 8);
+        if (but) { memset(noshare_kinds, 1, sizeof(noshare_kinds)); env += 8; }
+        for (char const* p = env; *p;) {
+            char* end;
+            unsigned long k = strtoul(p, &end, 10);
+            if (end == p) break;
+            if (k < 256) noshare_kinds[k] = !but;
+            p = *end == ',' ? end + 1 : end;
         }
-        noshare_init = 1;
     }
-    GraphClass ret = graph_kind_class_of(kind);
-    return ret != GRAPH_SCRATCH && kind < 256 && noshare_kinds[kind] ? GRAPH_SCRATCH : ret;
+    for (u32 kind = 0; kind < c_arraylen(kind_classes); kind++) {
+        GraphClass c = graph_kind_class_of(kind);
+        kind_classes[kind] = (uint8_t)(c != GRAPH_SCRATCH && kind < 256 && noshare_kinds[kind] ? GRAPH_SCRATCH : c);
+    }
+    __atomic_store_n(&kind_classes_init, 1, __ATOMIC_RELEASE);
+}
+
+GraphClass graph_kind_class(u32 kind) {
+    if (__builtin_expect(!__atomic_load_n(&kind_classes_init, __ATOMIC_ACQUIRE), 0)) kind_classes_make();
+    return kind < c_arraylen(kind_classes) ? (GraphClass)kind_classes[kind] : graph_kind_class_of(kind);
 }
 
 static GraphClass graph_kind_class_of(u32 kind) {
@@ -144,7 +150,6 @@ TyGraph* graph_new(Checker* first) {
     my node_links = shared_links_new();
     my variance_slots = shared_links_new();
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) my relations[i] = shared_links_new();
-    pthread_mutex_init(&my memo_lock, nullptr);
     memcpy(my intrinsics, first->intrinsics, sizeof(my intrinsics));
     my typeof_type = first->typeof_type;
     my atom_constructor = first->atom_constructor;
@@ -214,11 +219,13 @@ void graph_enter(TyGraph* me, Checker* checker) {
     (void)me, (void)checker;
 }
 
+static void memo_taint_drop(Checker* checker);
 void graph_release(TyGraph* me, Checker* checker) {
     if (checker->graph_worker < 64 && my workers[checker->graph_worker] == checker) my workers[checker->graph_worker] = nullptr;
     // (The graph's: freed by graph_drop())
     free(checker->graph_memo_slots);
     free(checker->graph_memo_log);
+    memo_taint_drop(checker);
     free(checker->graph_variance_claims);
     checker->graph_variance_claims = nullptr;
     checker->graph_variance_claims_len = checker->graph_variance_claims_cap = 0;
@@ -235,12 +242,11 @@ void graph_drop(TyGraph* me) {
     shared_links_drop(my node_links);
     shared_links_drop(my variance_slots);
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) shared_links_drop(my relations[i]);
-    pthread_mutex_destroy(&my memo_lock);
     pthread_mutex_destroy(&my wait_lock);
     for (size_t i = 0; i < c_arraylen(my memos); i++) {
         if (!my memos[i]) continue;
         for (size_t j = 0; j < (1 << LAZY_DIR_BITS); j++) free(my memos[i][j]);
-        free(my memos[i]);
+        free((void*)my memos[i]);
     }
     free(me);
 }
@@ -602,21 +608,21 @@ static void publish_link(void* arg, u32 kind, void const* subject, void const* v
 }
 
 // (Pages are made by CAS: a loser frees its own)
-static LazyMemo* memo_at(TyGraph* me, u32 slot, bool create) {
-    LazyMemo** _Atomic* dir = &my memos[slot >> (LAZY_PAGE_BITS + LAZY_DIR_BITS)];
-    LazyMemo** d = atomic_load_explicit(dir, memory_order_acquire);
+static SharedWord* memo_at(TyGraph* me, u32 slot, bool create) {
+    SharedWord* _Atomic* _Atomic* dir = &my memos[slot >> (LAZY_PAGE_BITS + LAZY_DIR_BITS)];
+    SharedWord* _Atomic* d = atomic_load_explicit(dir, memory_order_acquire);
     if (!d) {
         if (!create) return nullptr;
-        LazyMemo** fresh = calloc(1 << LAZY_DIR_BITS, sizeof(LazyMemo*));
+        SharedWord* _Atomic* fresh = calloc(1 << LAZY_DIR_BITS, sizeof(SharedWord*));
         panic_if(!fresh, "out of memory");
         if (atomic_compare_exchange_strong(dir, &d, fresh)) d = fresh;
-        else free(fresh);
+        else free((void*)fresh);
     }
-    LazyMemo* _Atomic* page = (LazyMemo* _Atomic*)&d[(slot >> LAZY_PAGE_BITS) & ((1 << LAZY_DIR_BITS) - 1)];
-    LazyMemo* p = atomic_load_explicit(page, memory_order_acquire);
+    SharedWord* _Atomic* page = &d[(slot >> LAZY_PAGE_BITS) & ((1 << LAZY_DIR_BITS) - 1)];
+    SharedWord* p = atomic_load_explicit(page, memory_order_acquire);
     if (!p) {
         if (!create) return nullptr;
-        LazyMemo* fresh = calloc(1 << LAZY_PAGE_BITS, sizeof(LazyMemo));
+        SharedWord* fresh = calloc(1 << LAZY_PAGE_BITS, sizeof(SharedWord));
         panic_if(!fresh, "out of memory");
         if (atomic_compare_exchange_strong(page, &p, fresh)) p = fresh;
         else free(fresh);
@@ -687,18 +693,64 @@ void graph_variance_claimed(Checker* checker, VarianceSlot* slot) {
     checker->graph_variance_claims[checker->graph_variance_claims_len++] = slot;
 }
 
-void graph_variances_publish(Checker* checker, void const* (*value_of)(Checker* checker, VarianceSlot const* slot)) {
+static _Atomic u64 variance_published, variance_adopted, variance_differ, variance_private, variance_poisoned, variance_groups, variance_groups_tainted;
+
+static void memo_taint_mark(Checker* checker, void const* const* block);
+
+bool graph_variances_publish(
+    Checker* checker, void const** (*block_of)(Checker* checker, VarianceSlot const* slot), bool (*equal)(void const* a, void const* b), bool clean
+) {
+    bool all_published = true;
+    atomic_fetch_add_explicit(&variance_groups, 1, memory_order_relaxed);
+    if (!clean) atomic_fetch_add_explicit(&variance_groups_tainted, 1, memory_order_relaxed);
     for (u32 i = 0; i < checker->graph_variance_claims_len; i++) {
         VarianceSlot* slot = checker->graph_variance_claims[i];
-        void const* value = value_of(checker, slot);
-        if (value) {
-            __atomic_store_n(&slot->value, value, __ATOMIC_RELAXED);
-            LAZY_DONE(slot->state);
+        void const** block = block_of(checker, slot);
+        void const* mine = block ? block[0] : nullptr;
+        // (Not measured after all: a restart of another subject's measurement finished first and this one's never
+        // ran. Left empty for whoever measures it)
+        if (!mine) continue;
+        uintptr_t seen = SW_EMPTY;
+        if (__atomic_compare_exchange_n(&slot->value.v, &seen, clean ? (uintptr_t)mine : (uintptr_t)SW_POISON, false, __ATOMIC_RELEASE, __ATOMIC_ACQUIRE)) {
+            if (clean) {
+                atomic_fetch_add_explicit(&variance_published, 1, memory_order_relaxed);
+#ifdef TTTT_GRAPH_FINGERPRINT
+                if (!slot->alias) graph_fp_result(TK_VARIANCES, slot->subject, mine, false);
+#endif
+                continue;
+            }
+            atomic_fetch_add_explicit(&variance_poisoned, 1, memory_order_relaxed);
+        } else if (clean && seen != SW_POISON && equal((void const*)seen, mine)) {
+            // (Pure data: the winner's from now on, nothing told the two apart)
+            atomic_fetch_add_explicit(&variance_adopted, 1, memory_order_relaxed);
+            block[0] = (void const*)seen;
+            continue;
+        } else if (!clean || seen == SW_POISON) {
+            atomic_fetch_add_explicit(&variance_private, 1, memory_order_relaxed);
         } else {
-            __atomic_store_n(&slot->state, (unsigned)LAZY_STATE_NOT_STARTED, __ATOMIC_RELEASE);
+            atomic_fetch_add_explicit(&variance_differ, 1, memory_order_relaxed);
+            // (Two clean groups that disagree: something either read escaped the rule)
+            if (getenv("TTTT_GRAPH_STATS")) {
+                cstr name = slot->alias ? cstr_from("(an alias)") : ty_to_cstr(checker, slot->subject);
+                unsigned char const* x = (unsigned char const*)mine;
+                unsigned char const* y = (unsigned char const*)seen;
+                // (Variances: u32 len, bool pending, the data from byte 5)
+                cstr xs = cstr_init(), ys = cstr_init();
+                for (u32 i = 0; i < *(u32 const*)x && i < 16; i++) {
+                    cstr_append_fmt(&xs, " %u", x[5 + i]);
+                    cstr_append_fmt(&ys, " %u", y[5 + i]);
+                }
+                eprintln("graph: variances of ", name, " differ from the published ones (worker ", (u32)checker->graph_worker, "):", xs, " vs", ys);
+                c_drop(cstr, &xs, &ys);
+                cstr_drop(&name);
+            }
         }
+        // Its own from now on: private-first lookups keep finding it, and reading it is a taint event
+        memo_taint_mark(checker, (void const* const*)block);
+        all_published = false;
     }
     checker->graph_variance_claims_len = 0;
+    return all_published;
 }
 
 static void publish_declaration_memo(TyGraph* me, Checker* checker, u32 slot) {
@@ -712,19 +764,13 @@ static void publish_declaration_memo(TyGraph* me, Checker* checker, u32 slot) {
         __atomic_fetch_add(&stats->unfinished, 1, __ATOMIC_RELAXED);
         return;
     }
-    LazyMemo* shared = memo_at(me, slot, true);
-    // (Written done last, read done first: a reader sees a whole memo or none)
-    pthread_mutex_lock(&my memo_lock);
-    if (!shared->done) {
-        LazyMemo copy = *memo;
-        copy.hits = 0;
-        copy.done = false;
-        *shared = copy;
-        atomic_thread_fence(memory_order_release);
-        shared->done = true;
+    // (An immutable copy in the checker's arena, which lives as long as the graph: first wins, a loser's copy is unread)
+    LazyMemo* copy = arena_new(&checker->arena, LazyMemo);
+    *copy = (LazyMemo){ .evaluated = memo->evaluated, .context = memo->context, .evaluation_started = true, .done = true };
+    uintptr_t seen = SW_EMPTY;
+    if (__atomic_compare_exchange_n(&memo_at(me, slot, true)->v, &seen, (uintptr_t)copy, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED)) {
         __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
     }
-    pthread_mutex_unlock(&my memo_lock);
 }
 
 void const* graph_link_get(TyGraph const* me, u32 kind, void const* subject) {
@@ -892,10 +938,16 @@ bool lazy_wait_slow(Checker* me, void* field, size_t size) {
 }
 
 bool graph_memo_take(TyGraph* me, u32 slot, LazyMemo* memo) {
-    LazyMemo const* shared = memo_at(me, slot, false);
-    if (!shared || !shared->done) return false;
-    atomic_thread_fence(memory_order_acquire);
-    *memo = *shared;
+    SharedWord const* word = memo_at(me, slot, false);
+    uintptr_t v = word ? sw_load(word) : SW_EMPTY;
+    if (v <= SW_POISON) return false;
+    LazyMemo const* shared = (LazyMemo const*)v;
+    // (Only its value: the rest of the private memo is this checker's)
+    memo->evaluated = shared->evaluated;
+    memo->context = shared->context;
+    memo->evaluation_started = true;
+    memo->done = true;
+    memo->tainted = false;
     __atomic_fetch_add(&my stats[GRAPH_STAT_MEMOS].shared_hits, 1, __ATOMIC_RELAXED);
     return true;
 }
@@ -1018,19 +1070,189 @@ static SharedTable* memo_log_table(TyGraph* me, uintptr_t tag) {
     return tag == 0 ? my types : tag == 1 ? my links : my intersection_props;
 }
 
+// Plan 86 stage 4f: which memo entries are clean (graph.h). Per checker: its memo kinds' misses by (table, hash),
+// direct-mapped. A miss pushed out of its slot leaves its start in a floor by a coarser hash, which a put of a key not in
+// the miss table takes as its start: a key whose miss was pushed out is never taken for clean (at worst another key of
+// the bucket is taken for tainted). Forgotten at each file's start, when nothing is in flight. The tainted entries: a
+// bitmap by block address in front of an exact set
+enum { LOG_TAINTED = 4 };
+static _Atomic u64 memo_stat_clean, memo_stat_tainted, memo_stat_floor, memo_stat_hits;
+
+static struct MemoTaint* memo_taint_of(Checker* checker) {
+    if (!checker->memo_taint) {
+        checker->memo_taint = calloc(1, sizeof(struct MemoTaint));
+        panic_if(!checker->memo_taint, "out of memory");
+        checker->memo_taint->gen = 1;
+    }
+    return checker->memo_taint;
+}
+
+// Memo kinds whose value is a fresh object no other key hash-conses (a synthetic type parameter, an evolving array, a
+// reverse mapped object, a lowered node's type): withheld, every worker would make its own and tell them apart. They
+// publish whatever their computation saw, like identities (plan 86 stage 4f; the rest are values, listed in plan 86)
+static bool memo_identity_valued(u32 kind) {
+    switch (kind) {
+    case KEY_MAPPED_KEY_PARAM: case KEY_EVOLVING_ARRAY: case KEY_REVERSE_MAPPED: case KEY_UNION_NODE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static bool memo_kind_tracked(Checker const* checker, InternTable const* table, u32 kind) {
+    if (table == &checker->intersection_props) return true;
+    return graph_kind_class(kind) == GRAPH_MEMO && !memo_identity_valued(kind);
+}
+
+static u32 memo_floor_index(void const* table, u64 hash) {
+    return (u32)(memo_taint_mix(hash ^ (u64)(uintptr_t)table) >> 54) & (MEMO_FLOOR_SLOTS - 1);
+}
+
+void graph_memo_miss(InternTable const* table, u64 hash, u64 const* words, u32 count) {
+    Checker* checker = current_checker;
+    if (!checker || !checker->graph_memo_on || !memo_kind_tracked(checker, table, count ? (u32)(words[0] & 255) : 0)) return;
+    struct MemoTaint* t = memo_taint_of(checker);
+    MemoMiss* m = &t->misses[memo_taint_mix(hash ^ (u64)(uintptr_t)table) & (MEMO_MISS_SLOTS - 1)];
+    if (m->gen == t->gen && m->hash == hash && m->table == table) return; // (The earlier miss: its computation started first)
+    if (m->gen == t->gen && m->hash) {
+        u32 f = memo_floor_index(m->table, m->hash);
+        if (t->floor_gen[f] != t->gen || m->start < t->floor_start[f]) {
+            t->floor_gen[f] = t->gen;
+            t->floor_start[f] = m->start;
+        }
+    }
+    *m = (MemoMiss){ table, hash, graph_taint_now, t->gen };
+}
+
+// Where the computation of a key put now started
+static u64 memo_start(struct MemoTaint* t, InternTable const* table, u64 hash) {
+    MemoMiss* m = &t->misses[memo_taint_mix(hash ^ (u64)(uintptr_t)table) & (MEMO_MISS_SLOTS - 1)];
+    if (m->gen == t->gen && m->hash == hash && m->table == table) {
+        m->hash = 0;
+        return m->start;
+    }
+    u32 f = memo_floor_index(table, hash);
+    if (t->floor_gen[f] == t->gen && t->floor_start[f] != graph_taint_now) {
+        atomic_fetch_add_explicit(&memo_stat_floor, 1, memory_order_relaxed);
+        return t->floor_start[f];
+    }
+    return graph_taint_now;
+}
+
+static bool memo_taint_has(struct MemoTaint const* t, uintptr_t key) {
+    if (!memo_taint_maybe(t, key)) return false;
+    for (u32 i = (u32)(memo_taint_mix((u64)key) >> 32) & (t->cap - 1); t->blocks[i]; i = (i + 1) & (t->cap - 1)) {
+        if (t->blocks[i] == key) return true;
+    }
+    return false;
+}
+
+static void memo_taint_mark(Checker* checker, void const* const* block) {
+    struct MemoTaint* t = memo_taint_of(checker);
+    uintptr_t key = (uintptr_t)block;
+    u64 h = memo_taint_mix((u64)key);
+    t->bits[(h >> 6) & (MEMO_TAINT_BITS / 64 - 1)] |= 1ull << (h & 63);
+    if ((t->len + 1) * 2 > t->cap) {
+        u32 cap = t->cap ? t->cap * 2 : 256;
+        uintptr_t* bigger = calloc(cap, sizeof(uintptr_t));
+        panic_if(!bigger, "out of memory");
+        for (u32 i = 0; i < t->cap; i++) {
+            if (!t->blocks[i]) continue;
+            u32 j = (u32)(memo_taint_mix((u64)t->blocks[i]) >> 32) & (cap - 1);
+            while (bigger[j]) j = (j + 1) & (cap - 1);
+            bigger[j] = t->blocks[i];
+        }
+        free(t->blocks);
+        t->blocks = bigger;
+        t->cap = cap;
+    }
+    u32 i = (u32)(h >> 32) & (t->cap - 1);
+    while (t->blocks[i] && t->blocks[i] != key) i = (i + 1) & (t->cap - 1);
+    if (t->blocks[i]) return;
+    t->blocks[i] = key;
+    t->len++;
+    atomic_fetch_add_explicit(&memo_stat_tainted, 1, memory_order_relaxed);
+    checker->types.taint = checker->links.taint = checker->intersection_props.taint = t;
+}
+
+void graph_memo_taint_block(Checker* checker, void const* const* block) {
+    memo_taint_mark(checker, block);
+}
+
+void graph_link_tainted(Checker* checker, u64 key) {
+    memo_taint_mark(checker, (void const* const*)(uintptr_t)key);
+}
+
+void graph_memo_hit_slow(struct MemoTaint const* t, uintptr_t key) {
+    if (memo_taint_has(t, key)) {
+        atomic_fetch_add_explicit(&memo_stat_hits, 1, memory_order_relaxed);
+        TAINT_EVENT(TAINT_READ_TAINTED);
+    }
+}
+
+// (The entries put since the last event: those still without a value were in flight across this one)
+void graph_memo_sweep(Checker* checker) {
+    struct MemoTaint* t = checker->memo_taint;
+    for (u32 i = 0; i < t->pending_len; i++) {
+        if (!t->pending[i][0]) memo_taint_mark(checker, t->pending[i]);
+    }
+    t->pending_len = 0;
+}
+
+static void memo_pending_push(struct MemoTaint* t, void const* const* block) {
+    if (t->pending_len == t->pending_cap) {
+        // (Those with their value are done, before any event since: clean)
+        u32 kept = 0;
+        for (u32 i = 0; i < t->pending_len; i++) {
+            if (!t->pending[i][0]) t->pending[kept++] = t->pending[i];
+        }
+        t->pending_len = kept;
+        if (!t->pending_cap || kept * 2 > t->pending_cap) {
+            t->pending_cap = t->pending_cap ? t->pending_cap * 2 : 256;
+            t->pending = realloc(t->pending, sizeof(void const* const*) * t->pending_cap);
+            panic_if(!t->pending, "out of memory");
+        }
+    }
+    t->pending[t->pending_len++] = block;
+}
+
+void graph_memo_file_start(Checker* checker) {
+    if (checker->memo_taint) checker->memo_taint->gen++;
+}
+
+static void memo_taint_drop(Checker* checker) {
+    if (!checker->memo_taint) return;
+    free(checker->memo_taint->blocks);
+    free(checker->memo_taint->pending);
+    free(checker->memo_taint);
+    checker->memo_taint = nullptr;
+    checker->types.taint = checker->links.taint = checker->intersection_props.taint = nullptr;
+}
+
 void graph_memo_log_put(Checker* checker, InternTable const* table, void const** block, u32 kind) {
     uintptr_t tag;
     if (table == &checker->types) tag = 0;
     else if (table == &checker->links) tag = 1;
     else tag = 2;
     if (tag != 2 && graph_kind_class(kind) != GRAPH_MEMO) return;
-    if (!graph_memo_sharing(checker) || graph_memo_late(tag == 2 ? GRAPH_KIND_INTERSECTION_PROPS : kind)) return;
-    // (Variances on threads go through their slots, graph_variance_slot(): published entry by entry, two workers measured
-    // one type at once, drizzle K12's View [0 0 0] next to K1's [1 1 1], and whichever was read first spread (TS2344 in
-    // 2-4 runs of 20); kept private instead, every worker measured them again in a warm graph (excalidraw's TS2345s in
-    // 20 of 20). One checker after another they go out as a group when the outermost measurement ends,
-    // graph_memo_flush())
+    // (Variances on threads go through their slots, graph_variance_slot(), as groups: relate.c)
     if ((kind == KEY_VARIANCES || kind == KEY_ALIAS_VARIANCES) && tag == 1 && checker->graph->concurrent) return;
+    // (Nobody to read them: one checker on the graph, `--checkers 1`, publishes nothing)
+    if (!graph_memo_sharing(checker)) return;
+    // (Clean so far: no event since its miss, and pending until its value is there. Tainted: the checker's own from now
+    // on, a hit of it an event)
+    bool identity = tag != 2 && memo_identity_valued(kind);
+    bool tainted = false;
+    if (!identity) {
+        struct MemoTaint* t = memo_taint_of(checker);
+        tainted = memo_start(t, table, ((u64 const*)block)[-1]) != graph_taint_now;
+        if (tainted) memo_taint_mark(checker, (void const* const*)block);
+        else {
+            memo_pending_push(t, (void const* const*)block);
+            atomic_fetch_add_explicit(&memo_stat_clean, 1, memory_order_relaxed);
+        }
+    }
+    if (graph_memo_late(tag == 2 ? GRAPH_KIND_INTERSECTION_PROPS : kind)) return;
     if (!checker->graph_memo_log_limit) checker->graph_memo_log_limit = 64;
     // (Before the new one goes in, whose block isn't filled yet. Entries still without a value stay: the limit grows
     // with them, a deep computation doesn't flush every put)
@@ -1040,12 +1262,13 @@ void graph_memo_log_put(Checker* checker, InternTable const* table, void const**
         checker->graph_memo_log = realloc(checker->graph_memo_log, sizeof(GraphMemoLogEntry) * checker->graph_memo_log_cap);
         panic_if(!checker->graph_memo_log, "out of memory");
     }
-    checker->graph_memo_log[checker->graph_memo_log_len++] = (GraphMemoLogEntry){ (uintptr_t)block | tag, checker->instantiation_limit_hits, checker->variance_depth };
+    checker->graph_memo_log[checker->graph_memo_log_len++] = (GraphMemoLogEntry){ (uintptr_t)block | tag | (tainted ? LOG_TAINTED : 0), checker->instantiation_limit_hits,
+        checker->variance_depth };
 }
 
 void graph_memo_log_unput(Checker* checker, void const** block) {
     u32 n = checker->graph_memo_log_len;
-    if (n && (checker->graph_memo_log[n - 1].entry & ~(uintptr_t)3) == (uintptr_t)block) checker->graph_memo_log_len--;
+    if (n && (checker->graph_memo_log[n - 1].entry & ~(uintptr_t)7) == (uintptr_t)block) checker->graph_memo_log_len--;
 }
 
 void graph_memo_flush(Checker* checker) {
@@ -1057,11 +1280,12 @@ void graph_memo_flush(Checker* checker) {
     for (u32 i = 0; i < checker->graph_memo_log_len; i++) {
         GraphMemoLogEntry logged = checker->graph_memo_log[i];
         uintptr_t entry = logged.entry;
-        void const** block = (void const**)(entry & ~(uintptr_t)3);
+        void const** block = (void const**)(entry & ~(uintptr_t)7);
         if (!block[0]) {
             checker->graph_memo_log[kept++] = logged;
             continue;
         }
+
         // (The instantiation limits ran out while it may have been computed (TS2589): what it is was cut short in this
         // worker's history, which the others don't share. It stays the worker's own)
         if (logged.limit_hits != checker->instantiation_limit_hits) {
@@ -1080,7 +1304,8 @@ void graph_memo_flush(Checker* checker) {
             continue;
         }
         KindStats* stats = &my stats[kind];
-        if (entry_tainted(kind, block)) {
+        // (Its computation was tainted: the checker's own, plan 86 stage 4f)
+        if ((entry & LOG_TAINTED) || (checker->memo_taint && memo_taint_has(checker->memo_taint, (uintptr_t)block)) || entry_tainted(kind, block)) {
             __atomic_fetch_add(&stats->tainted, 1, __ATOMIC_RELAXED);
             continue;
         }
@@ -1178,6 +1403,11 @@ void graph_print_stats(TyGraph const* me) {
     u64 deep = 0;
     for (u32 w = 1; w <= my checkers && w < 64; w++) if (my workers[w]) deep += my workers[w]->deep_cuts;
     eprintln("graph: deep-nesting cuts ", deep, " (taint events, plan 86 stage 4f)");
+    eprintln("graph: variance groups ", (u64)variance_groups, " (tainted ", (u64)variance_groups_tainted, "), slots published ",
+        (u64)variance_published, ", adopted ", (u64)variance_adopted, ", differing ", (u64)variance_differ, ", poisoned ",
+        (u64)variance_poisoned, ", tainted after another's ", (u64)variance_private);
+    eprintln("graph: memo entries clean ", (u64)memo_stat_clean, ", tainted ", (u64)memo_stat_tainted, " (by a pushed-out miss ",
+        (u64)memo_stat_floor, "), tainted hits ", (u64)memo_stat_hits);
     overlay_print_stats();
     eprintln("graph: relations shared ", (u64)atomic_load(&((TyGraph*)me)->relation_puts), ", hits ", (u64)atomic_load(&((TyGraph*)me)->relation_hits));
     eprintln("graph: ", my checkers, " checkers, ", shared_table_len(my types), " types entries, ", shared_table_len(my links),

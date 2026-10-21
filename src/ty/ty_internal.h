@@ -3,6 +3,7 @@
 // Shared between the files of the type core
 
 #include "ty/ty.h"
+#include "ty/graph.h"
 #include "several_types.h"
 #include "callable_type.h"
 #include "interface_member.h"
@@ -189,6 +190,16 @@ bool intern_has(InternTable const* table, u64 const* words, u32 count, void cons
 // whose every use goes through these two (the commonest: calls, functions, shared flow nodes, object literals)
 void const* ty_link_get(Checker const* me, u32 kind, void const* subject);
 void ty_link_set(Checker* me, u32 kind, void const* subject, void const* value);
+// A node link memo kind's value whose computation started at `start` (graph_taint_now then; plan 86 stage 4f): with
+// --shared-graph published only if no taint event happened since, else the checker's own, and reading it with
+// ty_link_get_memo() is an event
+void ty_link_set_memo(Checker* me, u32 kind, void const* subject, void const* value, uint64_t start);
+static inline void const* ty_link_get_memo(Checker const* me, u32 kind, void const* subject) {
+    void const* ret = ty_link_get(me, kind, subject);
+    // (The node link keys, as checker.c's link_key() makes them)
+    if (__builtin_expect(me->memo_taint != nullptr, 0) && ret) graph_memo_hit(me->memo_taint, (void const* const*)(uintptr_t)((u64)(kind + 1) << 56 | (u64)(uintptr_t)subject));
+    return ret;
+}
 // ty_link_set() of a new identity record (SymbolLinks, a function's type...): with --shared-graph published at once, the
 // first checker's winning; returns the value the link holds after
 void const* ty_link_publish(Checker* me, u32 kind, void const* subject, void const* value);

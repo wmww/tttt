@@ -295,10 +295,11 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 #ifdef TTTT_TAINT
     TaintFrame taint_frame = taint_begin();
     unsigned taint_kind = my tag == LAZY_TYPE_EXPR ? TK_LAZY_EXPR : TK_LAZY_DECL + my tag;
-#elif defined(TTTT_GRAPH_TAINT)
-    // (Only a declaration's, only with --shared-graph)
+#else
+    // (--shared-graph: a declaration's memo is published only if its evaluation was clean, plan 86 stage 4f)
     u64 taint_start = graph && resolving ? graph_taint_now : 0;
-#elif defined(TTTT_GRAPH_FINGERPRINT)
+#endif
+#ifdef TTTT_GRAPH_FINGERPRINT
     u64 fp_taint_start = graph_taint_now;
 #endif
     if (resolving) ty_resolving_push(current_checker, lazy_type_pattern_root(me) ? RESOLVING_PATTERN : RESOLVING_DECLARATION, me);
@@ -362,12 +363,9 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 #endif
 #ifndef TTTT_TAINT
     if (graph && resolving && my tag != LAZY_TYPE_FOR_EACH_LOOP_VAR) {
-#ifdef TTTT_GRAPH_TAINT
+        // (Tainted: the checker's own, and reading it is a taint event, lazy_type_get())
         bool tainted = graph_taint_now != taint_start;
         if (tainted) state->tainted = true;
-#else
-        bool tainted = false;
-#endif
         graph_memo_done(current_checker, my slot, tainted);
     }
 #endif

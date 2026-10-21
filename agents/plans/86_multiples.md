@@ -1504,6 +1504,63 @@ in parallel only where the file sets are disjoint):
   - **P3, relate.c + graph.c + lazy_type.c + shared_table.c** (variance groups without waiting, declaration memos as
     words, memo kinds publishing only clean entries in graph_memo_flush(), the shared relation cache's deeply-nested
     rule). ~1-2 sessions. The tooling worker's hooks in graph.c and shared_table.c are its neighbours: rebase often.
+    **P3 progress (2026-10-22, wt-p3).** Built:
+    - *Intern memo kinds publish only clean entries* (graph.c MemoTaint, runtime whenever the checker shares memos,
+      `graph_memo_on`). A computation starts at its key's private and shared miss (graph_memo_miss() from
+      intern_shared_find(), a per-checker direct-mapped table; a pushed-out miss leaves its start in a floor bucket,
+      so it is never taken for clean) and ends when its value is there (the entries put since the last event are
+      pending: an event finds the ones still without a value and taints them, graph_memo_sweep()). Tainted entries
+      stay private and a hit of one is an event (InternTable.taint, null without a graph: one load and branch per
+      hit). Node-link memos through ty_link_set_memo()/ty_link_get_memo(): KEY_BASE_CONSTRAINT, KEY_FUNCTION_FREE_PARAMS
+      (KEY_IMPLIED_CONSTRAINT is P2's word). The -DTTTT_GRAPH_TAINT build's hooks are the older duplicate (step D).
+    - *Which memo kinds are values*: every GRAPH_MEMO kind but four, checked producer by producer (2026-10-22). The
+      identity-valued ones, whose value is a fresh object no other key hash-conses and which publish whatever their
+      taint, like identities: KEY_MAPPED_KEY_PARAM (a synthetic stand-in type parameter in a fresh mapper),
+      KEY_EVOLVING_ARRAY (ty_alloc'd, this kind is its only hash-consing), KEY_REVERSE_MAPPED (a fresh reverse mapped
+      object at the top level) and KEY_UNION_NODE (a lowered node's type; fresh only for a stray `infer X`). Values:
+      the conditional instances (an arena record of an interned result), alias instances, regular unions, widened
+      objects and regular object literals (KEY_STRUCTURAL identities), keyof properties, simplified, normalized
+      intersections, mapped filtering, union access, inferred true branches, distribution-dependent,
+      distributive constraints, type variable reductions, definitely-related, canonical and base signatures (interned
+      instances; the base signature's mapper holds interned types and is keyed by nothing), variances, alias markers,
+      iteration types, widened nullables, intersection prop contexts, union pairs, intersections, union key names and
+      members, flow not-unit, reduced unions, function type mentions, array this-props, the name orders, thisless
+      signatures, and the intersection properties table (FoundProp records of interned types and existing Props).
+    - *Relation cache*: a pair whose comparison saw any taint event (not only a deep cut) is cached CACHE_DEEP:
+      private, a hit an event, never shared (fails_common_properties()'s failures too). relation_shares() checked:
+      generic relation keys stay out, nothing CACHE_DEEP/UNRELIABLE/UNMEASURABLE/INDEX_INFERRED or measured under a
+      variance measurement is published.
+    - *Variance groups without waiting*: VarianceSlot.value is a SharedWord (no state, no LAZY_SNAP/LAZY_CLAIM, no
+      graph_variances_publish() of states). The group is the slots one outermost measurement found empty; it is
+      clean if every taint event in it was internal: the running measurement reading its own subject in flight
+      (always Ternary Unknown), or a read of a group-mate's not-yet-published values (Variances.pending). Reading
+      an enclosing measurement's claim taints it (the View case of seed 379: a nested measurement's Unknown-driven
+      unreliable result). Clean: each slot CAS'd, an equal loser adopts the winner's, a differing one keeps its own
+      (marked tainted; none seen: 0 differing in every run); tainted: POISON and private. A subject found poisoned is
+      measured privately, its entry tainted. variances_known() reads only published values. A clean group rewinds
+      graph_taint_now to its start (hacks.md).
+    - *Declaration memos*: the shared store's slot is a SharedWord to an immutable LazyMemo copy (no lock, no `done`
+      read beside a writer: TSan B); published only if the evaluation was clean (lazy_type.c: drizzle 670 of 4977
+      tainted).
+    - *SymbolLinks.base_cycle*: ty_interface_in_base_cycle()'s walk is a word (interface_cycle); the bits members'
+      resolution sets are atomic ORs, still written on a shared record (hacks.md: they belong in P1's members value).
+    Numbers (K12, 20 runs each): drizzle, zod, effect, excalidraw, nest 20/20 K1's output; drizzle seeds 100/100;
+    effect seeds 98/100 (seeds 20, 94: the TS7006 residue at fiber.ts(293,21), divergence (5); base passes those
+    two, schedules shift with any code change); drizzle seeds with TTTT_FIRST_TOUCH_STAMPS=0 27/100 (TS2589s and
+    the TS2416 group): the stamps are still needed, deep-nesting by schedule-ordered ids changes a worker's own
+    history, which the taint rule only keeps private. Memo entries tainted: drizzle ~8k of 400k, zod 2.5-4k of 190k,
+    effect 3.5k of 185k. Variance groups tainted: drizzle ~240 of 390 (~500 slots poisoned, ~165 published), zod
+    ~70 of 137, effect ~55 of 418. The first non-internal event of a tainted group (drizzle, zod): a hit of a
+    CACHE_DEEP relation entry 105/23, a hit of a tainted memo entry 76/39, a deep cut 36/6, a poisoned subject
+    measured inside 11/10, an enclosing claim read 8/0.
+    **Cost, the open question**: default path flat (callgrind drizzle +0.10%, zod +0.18%, nest +0.09%), but with the
+    flag K12 work (cgtc.sh) drizzle 5.90 -> 6.44 G (K12/K1 1.106 -> 1.187), zod 4.875 -> 5.478 G (1.096 -> 1.217);
+    relation pairs at K12 drizzle 257k -> 352k, zod 238k -> 394k (K1 247k, 234k), almost all of it the poisoned
+    variance groups measured again by every worker (zod without relation sharing 270k -> 407k). ~0.1 G is the
+    hooks' own (graph_memo_miss(), the log). Decision pending with the coordinator.
+    Not done: divergence (1) (zod `$replace` distributive constraint) and the trpc/examples/nuxt kdiff are not memo,
+    relation, variance or declaration memo publications (they stay with every one of those kept private): an
+    unconverted Ty-resident value, P1/P2's.
 - **D, the deletions (one worker, last; ~1 session).** program.c, graph.c, ty.h: everything in the list above, then
   the gates. A mechanism that can't be deleted at D means a site isn't converted.
 

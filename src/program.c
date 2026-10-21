@@ -255,7 +255,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
         .atoms = atom_table_new(),
         .type_directory = type_directory_new(),
         // (TTTT_FIRST_TOUCH_STAMPS=1: --first-touch-stamps for every program, the suite's too)
-        .first_touch_stamps = getenv("TTTT_FIRST_TOUCH_STAMPS") != nullptr,
+        .first_touch_stamps = getenv("TTTT_FIRST_TOUCH_STAMPS") && strcmp(getenv("TTTT_FIRST_TOUCH_STAMPS"), "0"),
         .checker_memory_cap = UINT64_MAX,
         .checker_memory_shared = UINT64_MAX,
     });
@@ -3920,7 +3920,9 @@ void program_set_shared_graph(Program* me, bool shared) {
     // (A shared graph hands out type ids in scheduling order, and deep nesting decides by "newer" types: by id, one
     // worker's relation cache was poisoned by the schedule and measured every later variance as unreliable, plan 86 4e
     // item 1. Stamps make "newer" this worker's history; at one checker they equal the ids)
-    if (shared) my first_touch_stamps = true;
+    // (TTTT_FIRST_TOUCH_STAMPS=0: not, to test what needs them)
+    char const* stamps = getenv("TTTT_FIRST_TOUCH_STAMPS");
+    if (shared && !(stamps && !strcmp(stamps, "0"))) my first_touch_stamps = true;
 }
 
 struct TypeDirectory* program_type_directory(Program const* me) {
@@ -4705,6 +4707,7 @@ static Checker* check_file_or_give_up(Program* me, Checker* checker, SourceFile*
     __atomic_store_n(&checker->file_order, at, __ATOMIC_RELAXED);
     checker->flow_analysis_disabled = false;
     deferred_bodies_acquire(me, source, nullptr);
+    if (checker->graph) graph_memo_file_start(checker);
     jmp_buf redo;
     // A file that may be given up reports into a context of its own (its parent the checker's, which error_ctx_find()
     // looks in too), merged into the checker's once it's checked: the checker's errors are kept in span order, so what a
