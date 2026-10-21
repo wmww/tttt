@@ -7,8 +7,17 @@
 // better priority replace worse ones, and a call picks the common supertype of the candidates where a conditional type
 // takes their union.
 
+// Zeroed but for the walk's stacks, read only below their depths: they are most of its ~900 bytes, and there are half
+// a million inferences on vscode
+static void inference_zero(Inference* inf) {
+    char* bytes = (char*)inf;
+    memset(bytes, 0, offsetof(Inference, visiting_sources));
+    memset(bytes + offsetof(Inference, visited), 0, offsetof(Inference, object_sources) - offsetof(Inference, visited));
+    memset(bytes + offsetof(Inference, object_depth), 0, sizeof(Inference) - offsetof(Inference, object_depth));
+}
+
 void inference_init(Inference* inf, TyList params) {
-    *inf = (Inference){0};
+    inference_zero(inf);
     inf->cap = params.len > 4 ? params.len : 4;
     inf->params = calloc(inf->cap, sizeof(InferParam));
     panic_if(!inf->params, "out of memory");
@@ -18,17 +27,20 @@ void inference_init(Inference* inf, TyList params) {
 }
 
 void inference_drop(Inference* inf) {
+    // (Most of these are null: no call for them)
     for (u32 i = 0; i < inf->len; i++) {
-        free(inf->params[i].co);
-        free(inf->params[i].contra);
+        if (inf->params[i].co) free(inf->params[i].co);
+        if (inf->params[i].contra) free(inf->params[i].contra);
     }
     free(inf->params);
-    free(inf->visited);
-    free(inf->visited_priority);
-    free(inf->circular);
-    free(inf->array_literals);
-    free(inf->inferred_type_params);
-    *inf = (Inference){0};
+    if (inf->visited) {
+        free(inf->visited);
+        free(inf->visited_priority);
+    }
+    if (inf->circular) free(inf->circular);
+    if (inf->array_literals) free(inf->array_literals);
+    if (inf->inferred_type_params) free(inf->inferred_type_params);
+    inference_zero(inf);
 }
 
 // The key's slot in `visited` (its priority in visited_priority), added if it wasn't there (`*existed` says)
@@ -114,8 +126,13 @@ static void candidates_push(Ty const*** list, u32* len, Ty const* candidate) {
     for (u32 i = 0; i < *len; i++) {
         if ((*list)[i] == candidate) return;
     }
-    *list = realloc(*list, (*len + 1) * sizeof(Ty const*));
-    panic_if(!*list, "out of memory");
+    // (Room for 4, then doubling: the capacity follows from the length, which a better priority resets to 0 with the
+    // list kept)
+    u32 n = *len;
+    if (n == 0 || (n >= 4 && !(n & (n - 1)))) {
+        *list = realloc(*list, (n ? n * 2 : 4) * sizeof(Ty const*));
+        panic_if(!*list, "out of memory");
+    }
     (*list)[(*len)++] = candidate;
 }
 
@@ -2154,7 +2171,8 @@ Ty const* inference_call_result_fallback(Checker* me, Inference* inf, u32 i, boo
     if (param->fixed) return param->fixed;
     Ty const* co = nullptr;
     if (param->co_len) {
-        Ty const** candidates = malloc(sizeof(Ty const*) * param->co_len);
+        Ty const* candidates_small[8]; // (Most parameters have a few candidates: no allocation for them)
+        Ty const** candidates = param->co_len <= c_arraylen(candidates_small) ? candidates_small : malloc(sizeof(Ty const*) * param->co_len);
         // tsc's getCovariantInference: under a primitive constraint the candidates are regular, else (fresh) literals
         // widen if every inference was at the top level and keep_literals doesn't say otherwise
         // (So does a `const` type parameter)
@@ -2173,7 +2191,8 @@ Ty const* inference_call_result_fallback(Checker* me, Inference* inf, u32 i, boo
         // literals aren't told apart from other arrays here)
         u32 len = param->co_len;
         if (len > 1) {
-            Ty const** literals = malloc(sizeof(Ty const*) * len);
+            Ty const* literals_small[8];
+            Ty const** literals = len <= c_arraylen(literals_small) ? literals_small : malloc(sizeof(Ty const*) * len);
             u32 literal_count = 0;
             for (u32 j = 0; j < len; j++) {
                 if (is_literal_candidate(inf, candidates[j])) literals[literal_count++] = candidates[j];
@@ -2188,14 +2207,14 @@ Ty const* inference_call_result_fallback(Checker* me, Inference* inf, u32 i, boo
                 candidates[kept++] = merged;
                 len = kept;
             }
-            free(literals);
+            if (literals != literals_small) free(literals);
         }
         // (A combining priority unions them with subtype reduction: tsgo's getCovariantInference, UnionReductionSubtype)
         co = (param->priority & INFER_PRIORITY_IMPLIES_COMBINATION) ?
             (len > 1 ? ty_union_subtype_reduced(me, candidates, len) : candidates[0]) :
             common_supertype(me, candidates, len);
         co = ty_widened_nullable(me, ty_widened_objects(me, co)); // (tsc's getWidenedType of the inference)
-        free(candidates);
+        if (candidates != candidates_small) free(candidates);
     }
     // (Candidates of a priority that implies combining them are intersected)
     Ty const* contra = !param->contra_len ? nullptr : (param->priority & INFER_PRIORITY_IMPLIES_COMBINATION) ?
