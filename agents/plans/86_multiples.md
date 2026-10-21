@@ -579,6 +579,64 @@ type), and peeks at memo done-ness (`lazy_type_state_peek()`) that don't see a s
   the decisions it changes aren't observable. Stamps are the safe choice for 4d at their cost; ids alone held the gate
   here, so 4d can start without them and keep `--first-touch-stamps` as the oracle for a divergence.
 
+### Stage 4d: the shared graph under real concurrency (design, 2026-10-21)
+Track S showed the ceiling (K12 1.08-1.10x K1, byte-identical) with checkers run one after another and publication
+batched at each share's end. Under real threads that batching is wrong, not just slow: every checker starts at once
+and shares nothing until the first share ends, and a key worker B made privately can meet the same key A published
+later through A's types (two `string[]`s in one union). So 4d publishes **identities at creation and computed values
+at the computation's end**, and makes every field another worker can read safe to read while it is written.
+- **The tables** (types, links, intersection_props, node_links): sharded open addressing (64 shards by hash), reads
+  lock-free (the shard's slot array swapped whole when it grows, entries written block/value first and hash/key last
+  with release, read with acquire), inserts locked per shard, replaced arrays kept until the program ends. The
+  atom table (4c) is the model. Blocks live in the inserting worker's arena, which is never recycled with the flag.
+- **Identity kinds** (graph_kind_class() GRAPH_IDENTITY: constructors, per-symbol/per-node roots like SymbolLinks)
+  have no private table with the flag: lookup shared; on a miss the worker builds the value and `intern_publish()`
+  inserts it under the shard lock, or returns the entry another worker inserted meanwhile (the loser's value is
+  dropped before it escapes: its Ty stays in the arena and the id directory as a dead slot). This needs the
+  constructors' `*slot = ret` (132 intern_slot sites, ~30 ty_link_set sites) turned into `ret = intern_set(me, table,
+  slot, ret)`, a plain store without the flag. Interning is hash-consing, so two workers computing the same memo
+  through published identities get the same pointers.
+- **Memo kinds** keep a private table (tainted or scratch results stay there) and publish at the computation's end
+  with first-wins CAS (the publish_X() functions: publish_variances, publish_base_constraint, publish_reference_args,
+  publish_param_default, publish_members, publish_signature_predicate, publish_function_return, and the inline
+  stores listed under 4a). A loser keeps reading the winner's value from then on (lookup order shared, then private:
+  the reverse of track S, which only worked because nothing was published during a share). Scratch kinds never leave
+  the worker.
+- **Ty-resident lazy states** (members_state, Prop.type_state, Signature.state/ret_state, constraint/fallback state,
+  TyCondBranch.state, reduced_state, base_state, template_state, declared_state, deferred args...): the IN_FLIGHT hint
+  becomes owner-tagged: `IN_FLIGHT | worker << 2` set by CAS from NOT_STARTED, DONE stored with release after the
+  value. A foreign IN_FLIGHT is never a cycle: the reader waits for DONE (or NOT_STARTED: an owner that abandons)
+  unless waiting would close a wait cycle (A waits on B's field while B waits on A's: a global wait-for graph under one
+  mutex, consulted only on a foreign in-flight hit, which G0 says is rare), and then computes privately into its
+  overlay (a per-worker map by field address, read on the slow path only). Without the flag the worker tag is 0 and
+  the states are today's values, so the fast path (`state == DONE`, a plain load on x86) and the K1 behaviour stay.
+  Every `== LAZY_STATE_IN_FLIGHT` test becomes `lazy_in_flight()` (40 sites).
+- **Other writes to published objects** (census A §4): `order_key` (racy-benign word), Members.rare attached late
+  (CAS), TYX_CONSTRAINED_TYPE_VARIABLE (atomic OR, or into the constructor), empty_symbol / rest_binding /
+  conditional.outer (into the constructors), tuple_params (published by pointer swap, grown under a lock).
+- **Ids and singletons**: ids from 4c's blocks; the read path adds a fill-on-null of LazySlots.types from the program
+  directory (a worker meets another's id only through shared types: the null check sits in the slow path of
+  lazy_slots_type(), which needs one). The lib singletons (array targets, global_types, iteration, disposable targets,
+  unknown_signature) are published once: each worker's field is a cache of a graph slot set by CAS, first wins, so
+  lazy TS2318 reports stay where they are today.
+- **Declaration memos**: the shared store by slot, published with CAS when the evaluation ends; a worker evaluating a
+  declaration another worker has in flight evaluates it privately (memos are values of identities, so they converge).
+- **Variances**: published as a group at the outermost measurement's end (the cycle's cold values, track S's finding),
+  never withheld.
+- **Taint**: off. Track S's output was byte-identical without it and changed with it; the compiled-in
+  -DTTTT_GRAPH_TAINT build stays the instrument. If a run-to-run difference shows up, taint is the first suspect to
+  re-enable for that kind only.
+- **Per worker, unshared**: relation caches (the biggest remaining duplication: zod's +0.69 G of +0.91 G at K12, 4e's
+  first item: definite results keyed by global ids could be shared), KEY_GENERIC_RELATION numbering, every scratch kind,
+  expression memos, flow, inference and contextual state, the resolving/barrier/claim stacks, `errs`.
+- **Gates**: K1 with the flag byte-identical and within 1%; K4/K12 on real threads byte-identical to K1 in 20 repeated
+  runs on drizzle, zod, effect, excalidraw (and the rest of the corpora once), per-file sums and callgrind at K12 vs K1,
+  wall/CPU at K4 vs the defaults, peak RSS at the defaults. Without the flag: byte-identical and instruction-flat.
+- **Order of work** (one commit each): the concurrent shared tables; `intern_set()` at every identity site and
+  immediate publication of identities (still at one thread: output must not move); the owner-tagged states and the
+  wait protocol (`lazy_claim()` / `lazy_publish()` helpers per state); memo publication at computation end; the late
+  writes; singletons; then threads on, and the measurements.
+
 ## Validation of the whole plan
 The 12-core table in measurements.md re-run by the human after each stage (`scripts/bench.sh --runs 3 --bun PATH
 --tscrs PATH`, the CPU column included), per-file sums at K1 / K1-with-spinning-cores / K12 on vscode and drizzle
