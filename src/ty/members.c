@@ -5730,19 +5730,14 @@ static LowerCtx predicate_ctx(Signature const* sig) {
     return ctx;
 }
 
-TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) {
-    Signature* sig = (Signature*)const_sig;
-    if (sig->predicate_done) {
-        if (sig->predicate_in_flight) {
-            // tsc's getTypePredicateOfSignature has no guard: asked again while its type is lowered, it lowers it
-            // again, which is where an alias in the middle of resolving finds itself (TS2456). Once
-            sig->predicate_in_flight = false;
-            ty_from_node(me, &sig->function->predicate->type, predicate_ctx(sig));
-        }
-        return sig->predicate;
-    }
-    signature_resolve(me, sig);
-    sig->predicate_done = true;
+// A signature's predicate being computed (CLAIM_PREDICATE, keyed by the Signature): the predicate so far
+typedef struct PredicateClaim {
+    Claim claim;
+    TyPredicate const* predicate;
+    bool lowering; // Its type node is being lowered
+} PredicateClaim;
+
+static TyPredicate const* compute_signature_predicate(Checker* me, Signature* sig, PredicateClaim* claim) {
     if (sig->class_instance) return nullptr;
     if (sig->target) {
         TyPredicate const* target_predicate = signature_predicate(me, sig->target);
@@ -5750,9 +5745,9 @@ TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) 
             TyPredicate* predicate = arena_new(&my arena, TyPredicate);
             *predicate = *target_predicate;
             predicate->type = ty_instantiate(me, target_predicate->type, sig->mapper);
-            sig->predicate = predicate;
+            claim->predicate = predicate;
         } else {
-            sig->predicate = target_predicate;
+            claim->predicate = target_predicate;
         }
     } else if (sig->function && sig->function->predicate) {
         TypePredicateNode const* node = sig->function->predicate;
@@ -5767,33 +5762,62 @@ TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) 
         u32 arg_count = (u32)vec_function_arg_size(&sig->function->args);
         if (predicate->param_index >= 0 && sig->param_count < arg_count) predicate->param_index--;
         if (node->has_type) {
-            sig->predicate_in_flight = true;
+            claim->lowering = true;
             predicate->type = ty_from_node(me, &node->type, predicate_ctx(sig));
-            sig->predicate_in_flight = false;
+            claim->lowering = false;
         }
-        sig->predicate = predicate;
+        claim->predicate = predicate;
     } else if (sig->function && !sig->function->ret_explicit) {
         // A JavaScript function typed by `@type {F}`: the predicate of F's signature (tsc's getTypePredicateOfSignature
         // with getSignatureOfTypeTag), else one inferred from the body
         bool self = false;
         Signature const* tagged = jsdoc_tag_single_signature(me, sig->function, &self);
-        if (tagged && tagged != sig) sig->predicate = signature_predicate(me, tagged);
+        if (tagged && tagged != sig) claim->predicate = signature_predicate(me, tagged);
         // (Only while the return type isn't known to be something other than boolean: tsc's getTypePredicateOfSignature
         // asks `!signature.resolvedReturnType || boolean`. A function expression's is resolved by its first check with a
         // contextual signature, which tttt leaves for later outside inference, so it's asked for now)
         Ty const* known = nullptr;
-        if (!sig->predicate && sig->param_count) {
+        if (!claim->predicate && sig->param_count) {
             known = sig->ret_state == LAZY_STATE_DONE ? sig->ret : ty_function_return_known(me, sig->function);
             if (!known && ty_function_assigned_contextual_signature(me, sig->function) &&
                 !ty_function_return_in_flight(me, sig->function)) {
                 known = ty_function_return_type(me, sig->function);
             }
         }
-        if (!sig->predicate && sig->param_count && (!known || (known->flags & TYF_BOOLEAN))) {
-            sig->predicate = ty_infer_type_predicate(me, sig->function);
+        if (!claim->predicate && sig->param_count && (!known || (known->flags & TYF_BOOLEAN))) {
+            claim->predicate = ty_infer_type_predicate(me, sig->function);
         }
     }
-    return sig->predicate;
+    return claim->predicate;
+}
+
+// The predicate is known
+static TyPredicate const* publish_signature_predicate(Signature* sig, TyPredicate const* predicate) {
+    sig->predicate = predicate;
+    sig->predicate_done = true;
+    return predicate;
+}
+
+TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) {
+    Signature* sig = (Signature*)const_sig;
+    if (sig->predicate_done) return sig->predicate;
+    Claim* in_flight = ty_claim_find(me, CLAIM_PREDICATE, sig, 0);
+    if (in_flight) {
+        PredicateClaim* claim = c_container_of(in_flight, PredicateClaim, claim);
+        if (claim->lowering) {
+            // tsc's getTypePredicateOfSignature has no guard: asked again while its type is lowered, it lowers it
+            // again, which is where an alias in the middle of resolving finds itself (TS2456). Once
+            claim->lowering = false;
+            ty_from_node(me, &sig->function->predicate->type, predicate_ctx(sig));
+        }
+        return claim->predicate;
+    }
+    signature_resolve(me, sig);
+    PredicateClaim claim = {0};
+    ty_claim_push(me, CLAIM_PREDICATE, &claim.claim, sig, 0);
+    TyPredicate const* predicate = compute_signature_predicate(me, sig, &claim);
+    ty_claim_pop(me, CLAIM_PREDICATE, &claim.claim);
+    return publish_signature_predicate(sig, predicate);
 }
 
 // Declared to return `never` (an inferred never doesn't count for control flow)

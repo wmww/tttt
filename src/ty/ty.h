@@ -707,7 +707,6 @@ struct Signature {
     // that is in the middle of being checked
     uint8_t ret_state; // LazyState
     bool predicate_done : 1;
-    bool predicate_in_flight : 1; // signature_predicate() is lowering its type node
     bool drops_mapped_type_params; // Part of an instantiation expression, see Ty.anonymous.applies_type_args
     // Its mapper gives its own type parameters their arguments (ty_signature_instantiation()). Otherwise an outer
     // mapper that has them (a recursive type met again inside its own instantiation) doesn't reach inside: they're
@@ -1029,6 +1028,7 @@ typedef enum ClaimKind {
     CLAIM_PARAM_DEFAULT, // members.c's ParamDefaultClaim: a type parameter's default being lowered
     CLAIM_SIMPLIFIED, // ty_simplified() of (type, writing) in flight: itself meanwhile
     CLAIM_PRIMITIVE_CONSTRAINT, // checker.c's primitive_constraint_of() of a type variable in flight: none meanwhile
+    CLAIM_PREDICATE, // members.c's PredicateClaim: a signature's predicate being computed
     CLAIM_MENTIONS, // conditional.c's compute_mentions() of a type in flight (KEY_FUNCTION_TYPE_MENTIONS): unknown meanwhile
     CLAIM_KIND_COUNT,
 } ClaimKind;
