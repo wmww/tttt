@@ -95,6 +95,8 @@ typedef struct Program {
     ErrorCtx* errs; // unowned
     Fs const* fs; // cached_fs's
     CachedFs* cached_fs;
+    struct Preresolved** preresolved_garbage; // Taken from loaded files, freed when loading is over
+    u32 preresolved_garbage_count, preresolved_garbage_cap;
     double loader_parse_ms; // TTTT_LOAD_POOL_STATS without a pool: program_make_source()'s time
     cstr cwd; // program_cwd()
     Binder* binder;
@@ -286,8 +288,19 @@ static void drop_source_files(Program* me) {
     free(drops.files);
 }
 
+typedef struct Preresolved Preresolved;
+static void preresolved_destroy(Preresolved* me);
+
+static void program_free_preresolved(Program* me) {
+    for (u32 i = 0; i < my preresolved_garbage_count; i++) preresolved_destroy(my preresolved_garbage[i]);
+    free(my preresolved_garbage);
+    my preresolved_garbage = nullptr;
+    my preresolved_garbage_count = my preresolved_garbage_cap = 0;
+}
+
 static void program_drop(Program* me) {
     load_pool_destroy(my pool);
+    program_free_preresolved(me);
     content_mapper_host_drop(atomic_load(&my content_mapper_host));
     // First, its memos point into the AST and the scopes
     for (u32 i = 1; i < my checker_count; i++) checker_drop(my checkers[i]);
@@ -649,7 +662,19 @@ static csview program_cwd(Program const* me) {
 // relative_path_of(program_cwd(me), path), which every lookup of a file by path does: without normalizing (two
 // allocations and a segment walk) a path that is already normalized and in the working directory, the common case. A
 // view of path then, else of *storage (which the caller drops)
+// The loader's hint (program_load_module_ref()): a load pool worker's canonical view of the path whose characters are at
+// buf, a resolution's (the resolver's, not moved meanwhile). The worker scanned the path, the loader needn't
+static thread_local struct { char const* buf; isize size; csview canonical; } canonical_hint;
+
+// The last source_files_map lookup by a view whose characters are at buf (the loader asks for one path two or three
+// times per import: whether it's new, then to add it). Forgotten at every insert
+static thread_local struct { Program const* program; char const* buf; isize size; SourceFile* found; } lookup_memo;
+
+typedef struct SourceFile SourceFile;
+static SourceFile* program_lookup_canonical(Program const* me, csview canonical);
+
 static csview program_canonical_view(Program const* me, csview path, cstr* storage) {
+    if (path.buf == canonical_hint.buf && path.size == canonical_hint.size && path.buf) return canonical_hint.canonical;
     csview cwd = program_cwd(me);
     if (path_is_normalized(path)) {
         if (path.buf[0] != '/') return path;
@@ -798,6 +823,7 @@ typedef struct PreresolvedEntry {
     ModuleRef const* ref;
     ResolutionMode mode;
     ResolvedModule const* resolved; // The resolver's (module_resolver_resolve_shared())
+    csview canonical; // Of resolved->path when it's a view of it (program_canonical_view() without storage), else empty
 } PreresolvedEntry;
 
 typedef struct Preresolved {
@@ -811,8 +837,8 @@ static void preresolved_destroy(Preresolved* me) {
     free(me);
 }
 
-// The worker's resolution of ref in mode, if it made one
-static ResolvedModule const* preresolved_take(Preresolved* me, ModuleRef const* ref, ResolutionMode mode) {
+// The worker's resolution of ref in mode, if it made one (and its path's canonical view, see PreresolvedEntry)
+static ResolvedModule const* preresolved_take(Preresolved* me, ModuleRef const* ref, ResolutionMode mode, csview* canonical) {
     if (!me) return nullptr;
     for (u32 n = 0; n < my count; n++) {
         u32 i = (my next + n) % my count;
@@ -821,6 +847,7 @@ static ResolvedModule const* preresolved_take(Preresolved* me, ModuleRef const* 
         if (entry->mode != mode) return nullptr;
         entry->ref = nullptr;
         my next = i + 1;
+        *canonical = entry->canonical;
         return entry->resolved;
     }
     return nullptr;
@@ -838,16 +865,22 @@ static csview program_resolution_containing(Program const* me, SourceFile const*
 }
 
 // A resolved TypeScript file becomes part of the program, anything else is remembered on the ref as why there's no file
-static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* ref) {
+static void program_load_module_ref_inner(Program* me, SourceFile* source, ModuleRef* ref) {
     program_resolver(me);
     ModuleResolver* resolver = program_resolver_of(me, source);
     csview containing = program_resolution_containing(me, source);
     ResolutionMode mode = program_module_ref_mode(me, source, ref);
-    ResolvedModule const* shared = preresolved_take(source->preresolved, ref, mode);
+    csview canonical = {0};
+    ResolvedModule const* shared = preresolved_take(source->preresolved, ref, mode, &canonical);
     if (!shared) shared = module_resolver_resolve_shared(resolver, cstr_sv(&ref->path), containing, mode);
     // (The resolver's, unless a referenced project's output may replace what it found: then a copy to change)
     bool owned = my redirects;
     ResolvedModule resolved = owned ? resolved_module_clone(shared) : *shared;
+    if (!owned && canonical.size) {
+        canonical_hint.buf = cstr_str(&resolved.path);
+        canonical_hint.size = cstr_size(&resolved.path);
+        canonical_hint.canonical = canonical;
+    }
     program_learn_symlink(me, &resolved);
     csview unbuilt = program_output_of_resolved(me, &resolved);
     if (unbuilt.size && resolved.kind == RESOLVED_JS) {
@@ -921,6 +954,14 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
         ref->rewrite_crosses_projects = program_rewrite_crosses_projects(me, ref->file);
     }
     if (owned) resolved_module_drop(&resolved);
+}
+
+static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* ref) {
+    program_load_module_ref_inner(me, source, ref);
+    // (The hint is good for this resolution only: its path may be freed, and the address reused, after loading)
+    canonical_hint.buf = nullptr;
+    canonical_hint.size = 0;
+    lookup_memo.buf = nullptr;
 }
 
 // The same version of a package installed twice is one package (tsc's packageIdToSourceFile), unless
@@ -1137,59 +1178,59 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
             }
             break;
 
-        case STATEMENT_IMPORT_EXPORT: {
-            PortStatement* port = statement->import_export;
-            // (`export as namespace` is no indicator: tsc's isAnExternalModuleIndicatorNode)
-            if ((port->main.tag != PORT_IMPORT_ALIAS || port->main.export_import) && port->main.tag != PORT_EXPORT_AS_NAMESPACE &&
-                !port->jsdoc
-            ) {
+        default:
+            break;
+    }
+}
+
+// What of a file's top-level statements makes it a module (tsc's isAnExternalModuleIndicatorNode): set once, on the
+// thread that parsed it (a load pool worker), so the loader doesn't walk a file's statements for it
+static void source_scan_module_indicators(SourceFile* source) {
+    if (source->module_indicators_scanned) return;
+    source->module_indicators_scanned = true;
+    for_each (i, vec_statement, &source->ast.statements) {
+        Statement* statement = (Statement*)i;
+        switch (statement->tag) {
+            case STATEMENT_IMPORT_EXPORT: {
+                PortStatement* port = statement->import_export;
+                // (`export as namespace` is no indicator: tsc's isAnExternalModuleIndicatorNode)
+                if ((port->main.tag != PORT_IMPORT_ALIAS || port->main.export_import) && port->main.tag != PORT_EXPORT_AS_NAMESPACE &&
+                    !port->jsdoc
+                ) {
+                    source->is_module = true;
+                    if (!span_valid(source->module_indicator)) source->module_indicator = statement->span;
+                }
+            }   break;
+
+            case STATEMENT_EXPORT_DEFAULT_EXPR:
                 source->is_module = true;
                 if (!span_valid(source->module_indicator)) source->module_indicator = statement->span;
-            }
-        }   break;
+                break;
 
-        case STATEMENT_EXPORT_DEFAULT_EXPR:
-            source->is_module = true;
-            if (!span_valid(source->module_indicator)) source->module_indicator = statement->span;
-            break;
-
-        case STATEMENT_DECL_NAMESPACE:
-        case STATEMENT_DECL_VARIABLE:
-        case STATEMENT_DECL_FUNCTION:
-        case STATEMENT_DECL_ENUM:
-        case STATEMENT_DECL_CLASS:
-        case STATEMENT_DECL_TYPE:
-        case STATEMENT_DECL_INTERFACE:
-            // (A JSDoc `@enum` of `exports.C = {}` is exported, but no module syntax)
-            if (statement->decl.props.exported && !(statement->tag == STATEMENT_DECL_TYPE && statement->decl.type->jsdoc)) {
-                source->is_module = true;
-                if (!span_valid(source->module_indicator)) {
-                    Span name = statement->tag == STATEMENT_DECL_CLASS ? statement->decl.class->name :
-                        statement->tag == STATEMENT_DECL_FUNCTION ? statement->decl.function.impl->name :
-                        statement->tag == STATEMENT_DECL_ENUM ? statement->decl.enum_->name :
-                        statement->tag == STATEMENT_DECL_INTERFACE ? statement->decl.interface->name :
-                        statement->tag == STATEMENT_DECL_TYPE ? statement->decl.type->name :
-                        statement->tag == STATEMENT_DECL_NAMESPACE ? statement->decl.namespace->name : span_null;
-                    source->module_indicator = span_valid(name) ? name : statement->span;
+            case STATEMENT_DECL_NAMESPACE:
+            case STATEMENT_DECL_VARIABLE:
+            case STATEMENT_DECL_FUNCTION:
+            case STATEMENT_DECL_ENUM:
+            case STATEMENT_DECL_CLASS:
+            case STATEMENT_DECL_TYPE:
+            case STATEMENT_DECL_INTERFACE:
+                // (A JSDoc `@enum` of `exports.C = {}` is exported, but no module syntax)
+                if (statement->decl.props.exported && !(statement->tag == STATEMENT_DECL_TYPE && statement->decl.type->jsdoc)) {
+                    source->is_module = true;
+                    if (!span_valid(source->module_indicator)) {
+                        Span name = statement->tag == STATEMENT_DECL_CLASS ? statement->decl.class->name :
+                            statement->tag == STATEMENT_DECL_FUNCTION ? statement->decl.function.impl->name :
+                            statement->tag == STATEMENT_DECL_ENUM ? statement->decl.enum_->name :
+                            statement->tag == STATEMENT_DECL_INTERFACE ? statement->decl.interface->name :
+                            statement->tag == STATEMENT_DECL_TYPE ? statement->decl.type->name :
+                            statement->tag == STATEMENT_DECL_NAMESPACE ? statement->decl.namespace->name : span_null;
+                        source->module_indicator = span_valid(name) ? name : statement->span;
+                    }
                 }
-            }
-            break;
-
-        case STATEMENT_NOOP:
-        case STATEMENT_BLOCK:
-        case STATEMENT_IF_ELSE:
-        case STATEMENT_FOR_LOOP:
-        case STATEMENT_FOR_EACH_LOOP:
-        case STATEMENT_SWITCH:
-        case STATEMENT_TRY_CATCH:
-        case STATEMENT_LABELED:
-        case STATEMENT_WITH:
-        case STATEMENT_BREAK:
-        case STATEMENT_CONTINUE:
-        case STATEMENT_EXPR:
-        case STATEMENT_RETURN_EXPR:
-        case STATEMENT_THROW_EXPR:
-            break;
+                break;
+            default:
+                break;
+        }
     }
 }
 
@@ -1599,6 +1640,7 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
         !source_file->is_declaration && !is_stdlib && !source_file->unchecked && !source_file->content_mapped;
     parse_file(source_file, errs);
     source_collect_commonjs_candidates(source_file);
+    source_scan_module_indicators(source_file);
     cstr_drop(&virtual_path);
     return source_file;
 }
@@ -1611,11 +1653,46 @@ static void source_file_free(void* ctx, SourceFile* file) {
     free(file);
 }
 
-static void program_queue_path(Program* me, LoadPool* pool, csview absolute, bool is_stdlib) {
+// What a file queues, queued under one lock once it's all known (the pool's lock is the loader's too)
+typedef struct QueueBatch {
+    csview* paths; // Canonical
+    cstr* storage; // What a path is a view of when the batch owns it, else null
+    bool* is_stdlib;
+    isize count, cap;
+} QueueBatch;
+
+// canonical stays valid until program_queue_batch() unless storage (taken) owns it
+static void queue_batch_push(QueueBatch* batch, csview canonical, cstr storage, bool is_stdlib) {
+    if (batch->count == batch->cap) {
+        batch->cap = batch->cap ? batch->cap * 2 : 16;
+        batch->paths = realloc(batch->paths, sizeof(csview) * (size_t)batch->cap);
+        batch->storage = realloc(batch->storage, sizeof(cstr) * (size_t)batch->cap);
+        batch->is_stdlib = realloc(batch->is_stdlib, sizeof(bool) * (size_t)batch->cap);
+        panic_if(!batch->paths || !batch->storage || !batch->is_stdlib, "out of memory");
+    }
+    batch->storage[batch->count] = storage;
+    batch->paths[batch->count] = cstr_size(&storage) ? cstr_sv(&batch->storage[batch->count]) : canonical;
+    batch->is_stdlib[batch->count++] = is_stdlib;
+}
+
+static void program_queue_path(Program* me, QueueBatch* batch, csview absolute, bool is_stdlib) {
     cstr storage = cstr_null;
     csview canonical = program_canonical_view(me, absolute, &storage);
-    load_pool_queue(pool, canonical, is_stdlib);
-    cstr_drop(&storage);
+    if (!cstr_size(&storage)) storage = cstr_from_sv(canonical);
+    queue_batch_push(batch, canonical, storage, is_stdlib);
+}
+
+static void program_queue_batch(LoadPool* pool, QueueBatch* batch) {
+    // (A short string's characters are in the cstr itself: the views are taken once the array stops moving)
+    for (isize i = 0; i < batch->count; i++) {
+        if (cstr_size(&batch->storage[i])) batch->paths[i] = cstr_sv(&batch->storage[i]);
+    }
+    load_pool_queue_each(pool, batch->paths, batch->is_stdlib, batch->count);
+    for (isize i = 0; i < batch->count; i++) cstr_drop(&batch->storage[i]);
+    free(batch->paths);
+    free(batch->storage);
+    free(batch->is_stdlib);
+    *batch = (QueueBatch){0};
 }
 
 // Queues what the loader will probably load from a parsed file: a guess (the loader decides with what it learns after
@@ -1623,6 +1700,7 @@ static void program_queue_path(Program* me, LoadPool* pool, csview absolute, boo
 // Resolutions go to the shared resolver's cache, and to the file (SourceFile.preresolved), where the loader finds them
 static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* file) {
     if (my options.no_resolve) return;
+    QueueBatch batch = {0};
     ModuleResolver* resolver = program_resolver_of(me, file);
     csview containing = program_resolution_containing(me, file);
     // (In the loader's order, which the pool's ranks follow: the directives, then the imports)
@@ -1636,7 +1714,7 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* fil
                     csview path = cstr_sv(&directive->path);
                     cstr full = path.size && path.buf[0] == '/' ? cstr_from_sv(path) :
                         cstr_d(dirname_of(containing), "/", path);
-                    program_queue_path(me, pool, cstr_sv(&full), file->is_stdlib);
+                    program_queue_path(me, &batch, cstr_sv(&full), file->is_stdlib);
                     cstr_drop(&full);
                 }
                 break;
@@ -1651,7 +1729,7 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* fil
                     resolver, cstr_sv(&directive->path), containing, has_mode ? &mode : nullptr
                 );
                 program_redirect_resolved(me, &resolved);
-                if (resolved.kind != RESOLVED_NONE) program_queue_path(me, pool, cstr_sv(&resolved.path), false);
+                if (resolved.kind != RESOLVED_NONE) program_queue_path(me, &batch, cstr_sv(&resolved.path), false);
                 resolved_module_drop(&resolved);
             }   break;
             case SOURCE_DIRECTIVE_REFERENCE_LIB: {
@@ -1660,7 +1738,7 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* fil
                 cstr replacement = program_lib_replacement(me, csview_slice(cstr_sv(&name), 0, cstr_size(&name) - 5));
                 cstr path = cstr_size(&replacement) ? cstr_clone(replacement) : file->is_stdlib ? cstr_d(dirname_of(containing), "/", name) :
                     cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", name);
-                program_queue_path(me, pool, cstr_sv(&path), !cstr_size(&replacement));
+                program_queue_path(me, &batch, cstr_sv(&path), !cstr_size(&replacement));
                 c_drop(cstr, &path, &replacement);
                 cstr_drop(&name);
             }   break;
@@ -1674,14 +1752,22 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* fil
         if (ref->is_declaration || ref->ambient_only) continue;
         ResolutionMode mode = program_module_ref_mode(me, file, ref);
         ResolvedModule const* shared = module_resolver_resolve_shared(resolver, cstr_sv(&ref->path), containing, mode);
-        preresolved->entries[preresolved->count++] = (PreresolvedEntry){ .ref = ref, .mode = mode, .resolved = shared };
+        cstr storage = cstr_null;
+        csview canonical = program_canonical_view(me, cstr_sv(&shared->path), &storage);
+        if (cstr_size(&storage)) canonical = (csview){0};
+        cstr_drop(&storage);
+        preresolved->entries[preresolved->count++] = (PreresolvedEntry){
+            .ref = ref, .mode = mode, .resolved = shared, .canonical = canonical,
+        };
         bool owned = my redirects;
         ResolvedModule resolved = owned ? resolved_module_clone(shared) : *shared;
         program_redirect_resolved(me, &resolved);
         bool load = resolved.kind == RESOLVED_TS || resolved.kind == RESOLVED_DTS || resolved.kind == RESOLVED_JSON ||
             (resolved.kind == RESOLVED_JS && my options.allow_js && !(resolved.is_external_library &&
                 csview_contains(cstr_sv(&resolved.path), "/node_modules/")));
-        if (load) program_queue_path(me, pool, cstr_sv(&resolved.path), false);
+        // (The canonical view of the resolver's path stays put: no copy)
+        if (load && !owned && canonical.size) queue_batch_push(&batch, canonical, cstr_null, false);
+        else if (load) program_queue_path(me, &batch, cstr_sv(&resolved.path), false);
         if (owned) resolved_module_drop(&resolved);
     }
     if (preresolved && !preresolved->count) {
@@ -1690,6 +1776,7 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* fil
     }
     preresolved_destroy(file->preresolved);
     file->preresolved = preresolved;
+    program_queue_batch(pool, &batch);
 }
 // A load pool worker's job
 static SourceFile* program_parse_ahead(void* ctx, LoadPool* pool, csview path, bool is_stdlib, ErrorCtx* errs) {
@@ -1749,7 +1836,7 @@ static void program_note_loaded(Program* me, SourceFile* file) {
 static void record_include_reason(Program* me, SourceFile* file) {
     if (!my include_kind) return;
     if (file->include_reason_count == file->include_reason_cap) {
-        file->include_reason_cap = file->include_reason_cap ? file->include_reason_cap * 2 : 2;
+        file->include_reason_cap = file->include_reason_cap ? file->include_reason_cap * 2 : 8;
         file->include_reasons = realloc(file->include_reasons, sizeof(IncludeReason) * file->include_reason_cap);
         panic_if(!file->include_reasons, "out of memory");
     }
@@ -1759,17 +1846,33 @@ static void record_include_reason(Program* me, SourceFile* file) {
     my include_kind = INCLUDE_NONE;
 }
 
+static SourceFile* program_lookup_canonical(Program const* me, csview canonical) {
+    if (lookup_memo.buf && lookup_memo.buf == canonical.buf && lookup_memo.size == canonical.size && lookup_memo.program == me) {
+        return lookup_memo.found;
+    }
+    auto found = hmap_box_source_file_get(&my source_files_map, canonical);
+    SourceFile* ret = found ? found->second.get : nullptr;
+    // (Only during loading, and for a view the hint gave: a resolution's characters, which stay put until then)
+    if (my phase == PROGRAM_PHASE_LOADING && canonical_hint.buf && canonical.buf == canonical_hint.canonical.buf) {
+        lookup_memo.program = me;
+        lookup_memo.buf = canonical.buf;
+        lookup_memo.size = canonical.size;
+        lookup_memo.found = ret;
+    }
+    return ret;
+}
+
 static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
 
     cstr storage = cstr_null;
     csview canonical_view = program_canonical_view(me, path, &storage);
-    auto cached_source = hmap_box_source_file_get(&my source_files_map, canonical_view);
+    SourceFile* cached_source = program_lookup_canonical(me, canonical_view);
     if (cached_source) {
-        record_include_reason(me, cached_source->second.get);
+        record_include_reason(me, cached_source);
         // A source file is already created for this path
         cstr_drop(&storage);
-        SourceFile* found = cached_source->second.get;
+        SourceFile* found = cached_source;
         program_note_loaded(me, found);
         if (found->found_searching_node_modules && !my node_modules_depth) program_found_outside_node_modules(found);
         return found;
@@ -1807,6 +1910,7 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
     my loading_parent = source_file;
 
     hmap_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
+    lookup_memo.buf = nullptr;
     source_file->found_searching_node_modules = my node_modules_depth > 0;
     // (Before what it refers to is loaded, which may refer back to it: tsc adds the file's include reason first)
     record_include_reason(me, source_file);
@@ -1821,9 +1925,11 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
         }
     }
     for_each (i, vec_statement, &source_file->ast.statements) {
-        if (i->tag == STATEMENT_SOURCE_DIRECTIVE && i->source_directive->tag == SOURCE_DIRECTIVE_REFERENCE_PATH) continue;
+        if (i->tag != STATEMENT_SOURCE_DIRECTIVE || i->source_directive->tag == SOURCE_DIRECTIVE_REFERENCE_PATH) continue;
         program_handle_statement(me, source_file, i);
     }
+    // (Made where it was parsed, unless something else made it: a content mapper's supplemental output)
+    source_scan_module_indicators(source_file);
     // tsc's setCommonJsModuleIndicator: ES imports and exports win
     if (source_file->is_js && source_file->has_commonjs && !source_file->is_module) {
         source_file->is_module = true;
@@ -1878,6 +1984,8 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
 
     // Every module the file mentions, wherever (the parser lists them), the declarations' first (tsc's order of
     // file.imports, which decides the order of the program's files). By index: loading parses, never this file
+    // (The refs are a worker's, not in this core's cache: the first pass fetches them ahead)
+    for (u32 i = 0; i < source_file->module_ref_count; i++) __builtin_prefetch(source_file->module_refs[i]);
     for (u32 n = 0; n < 2 * source_file->module_ref_count; n++) {
         u32 i = n % source_file->module_ref_count;
         ModuleRef* ref = source_file->module_refs[i];
@@ -1899,7 +2007,15 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
         program_add_made_source(me, cstr_clone(supplemental->canonical_path), supplemental);
     }
 
-    preresolved_destroy(source_file->preresolved);
+    // (A worker's blocks: freed once loading is over, not here, where it would wait on the worker's malloc arena)
+    if (source_file->preresolved) {
+        if (my preresolved_garbage_count == my preresolved_garbage_cap) {
+            my preresolved_garbage_cap = my preresolved_garbage_cap ? my preresolved_garbage_cap * 2 : 256;
+            my preresolved_garbage = realloc(my preresolved_garbage, sizeof(Preresolved*) * my preresolved_garbage_cap);
+            panic_if(!my preresolved_garbage, "out of memory");
+        }
+        my preresolved_garbage[my preresolved_garbage_count++] = source_file->preresolved;
+    }
     source_file->preresolved = nullptr;
 
     // Add here so imports come before importing file
@@ -2026,11 +2142,11 @@ SourceFile* program_source_at(Program const* me, u32 index) {
 
 SourceFile* program_find_source(Program const* me, csview path) {
     cstr storage = cstr_null;
-    auto found = hmap_box_source_file_get(&my source_files_map, program_canonical_view(me, path, &storage));
+    SourceFile* found = program_lookup_canonical(me, program_canonical_view(me, path, &storage));
     cstr_drop(&storage);
     // (A redirect as itself: what refers to it says what it stands for)
-    if (found && found->second.get->excluded && !found->second.get->package_redirect) return nullptr;
-    return found ? found->second.get : nullptr;
+    if (found && found->excluded && !found->package_redirect) return nullptr;
+    return found;
 }
 
 failable program_load_stdlib(Program* me, csview name, returns SourceFile*) {
@@ -2058,13 +2174,15 @@ void program_load_ahead(Program* me, csview const* libs, isize lib_count, csview
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     LoadPool* pool = program_pool(me);
     if (!pool) return;
+    QueueBatch batch = {0};
     for (isize i = 0; i < lib_count; i++) {
         cstr replacement = program_lib_replacement(me, libs[i]);
         cstr path = cstr_size(&replacement) ? cstr_clone(replacement) :
             cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", libs[i], ".d.ts");
-        program_queue_path(me, pool, cstr_sv(&path), !cstr_size(&replacement));
+        program_queue_path(me, &batch, cstr_sv(&path), !cstr_size(&replacement));
         c_drop(cstr, &path, &replacement);
     }
+    program_queue_batch(pool, &batch);
     // (Under one lock: the workers are already taking the libs)
     csview* canonical = c_new_n(csview, root_count + 1);
     cstr* storage = c_new_n(cstr, root_count + 1);
@@ -2078,10 +2196,11 @@ void program_load_ahead(Program* me, csview const* libs, isize lib_count, csview
     StrList names = module_resolver_automatic_types(my resolver);
     for (isize i = 0; i < names.count; i++) {
         ResolvedModule resolved = module_resolver_resolve_type_reference(my resolver, cstr_sv(&names.items[i]), c_sv(""), nullptr);
-        if (resolved.kind != RESOLVED_NONE) program_queue_path(me, pool, cstr_sv(&resolved.path), false);
+        if (resolved.kind != RESOLVED_NONE) program_queue_path(me, &batch, cstr_sv(&resolved.path), false);
         resolved_module_drop(&resolved);
     }
     str_list_drop(&names);
+    program_queue_batch(pool, &batch);
 }
 
 // program_collect_files()'s walk: tsgo's collectFiles, depth first from the roots in the order the loader reached
@@ -3618,6 +3737,7 @@ void program_resolve_names(Program* me) {
     if (!my pool && getenv("TTTT_LOAD_POOL_STATS")) eprintln("load: no pool, the loader read and parsed for ", my loader_parse_ms, " ms");
     load_pool_destroy(my pool);
     my pool = nullptr;
+    program_free_preresolved(me);
     program_verify_options(me);
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
     set_compiler_options(&my options);

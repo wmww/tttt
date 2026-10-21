@@ -12,8 +12,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#define DEPTH 48
-#define MAX_SAMPLES 200000
+#define DEPTH 1024
+#define MAX_SAMPLES 20000
 
 static void* samples[MAX_SAMPLES][DEPTH];
 static int depths[MAX_SAMPLES];

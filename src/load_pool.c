@@ -309,6 +309,13 @@ void load_pool_queue(LoadPool* me, csview path, bool is_stdlib) {
     pthread_mutex_unlock(&my lock);
 }
 
+void load_pool_queue_each(LoadPool* me, csview const* paths, bool const* is_stdlib, isize count) {
+    if (!count) return;
+    pthread_mutex_lock(&my lock);
+    for (isize i = 0; i < count; i++) load_pool_queue_locked(me, paths[i], is_stdlib[i]);
+    pthread_mutex_unlock(&my lock);
+}
+
 void load_pool_queue_many(LoadPool* me, csview const* paths, isize count, bool is_stdlib) {
     pthread_mutex_lock(&my lock);
     for (isize i = 0; i < count; i++) load_pool_queue_locked(me, paths[i], is_stdlib);

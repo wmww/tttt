@@ -160,6 +160,7 @@ typedef struct SourceFile {
     Span included_at;
     // Every reason the file is in the program, in tsc's order (its fileIncludeReasons: the loader's depth-first walk,
     // every edge), for the chains of diagnostics explaining the file (program_error_explaining_file()). malloc'd
+    bool module_indicators_scanned; // is_module and module_indicator from the statements (program.c)
     struct IncludeReason* include_reasons;
     u32 include_reason_count;
     u32 include_reason_cap;

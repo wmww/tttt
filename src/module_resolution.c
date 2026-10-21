@@ -1,3 +1,5 @@
+// pthread_rwlock_t, which strict -std=c2x hides
+#define _XOPEN_SOURCE 700
 #include "module_resolution.h"
 #include "json.h"
 #include "content_mapper.h"
@@ -70,7 +72,9 @@ typedef ResolvedModule const* ResolvedModulePtr;
 enum { RESOLVER_SHARDS = 64 };
 
 typedef struct ResolverShard {
-    pthread_mutex_t lock;
+    // (A reader-writer lock: nearly every use is a lookup that finds, and a thread preempted holding it for one, on a
+    // loaded machine, then blocks no other lookup)
+    pthread_rwlock_t lock;
     HMapPackageJsonBox package_jsons; // By directory
     // module_resolver_resolve()'s results by containing directory, mode and specifier (resolution_key()): the files of
     // a directory import the same packages, each a walk up the node_modules directories
@@ -140,7 +144,7 @@ ResolvedModule resolved_module_clone(ResolvedModule const* me) {
 ModuleResolver* module_resolver_new(Fs const* fs, CompilerOptions const* options) {
     ModuleResolver* ret = c_new(ModuleResolver, { .fs = fs, .options = options });
     pthread_mutex_init(&ret->cwd_lock, nullptr);
-    for (int i = 0; i < RESOLVER_SHARDS; i++) pthread_mutex_init(&ret->shards[i].lock, nullptr);
+    for (int i = 0; i < RESOLVER_SHARDS; i++) pthread_rwlock_init(&ret->shards[i].lock, nullptr);
     return ret;
 }
 
@@ -182,7 +186,7 @@ void module_resolver_destroy(ModuleResolver* me) {
     module_resolver_forget_resolutions(me);
     for (int i = 0; i < RESOLVER_SHARDS; i++) {
         hmap_package_json_box_drop(&my shards[i].package_jsons);
-        pthread_mutex_destroy(&my shards[i].lock);
+        pthread_rwlock_destroy(&my shards[i].lock);
     }
     pthread_mutex_destroy(&my cwd_lock);
     free(me);
@@ -460,10 +464,10 @@ static bool load_file(State* me, csview candidate, int extensions, Found* out) {
 static PackageJson const* package_json_of(State* me, csview directory) {
     ModuleResolver* resolver = my resolver;
     ResolverShard* shard = resolver_shard(resolver, directory);
-    pthread_mutex_lock(&shard->lock);
+    pthread_rwlock_rdlock(&shard->lock);
     auto cached = hmap_package_json_box_get(&shard->package_jsons, directory);
     PackageJson const* known = cached ? cached->second : nullptr;
-    pthread_mutex_unlock(&shard->lock);
+    pthread_rwlock_unlock(&shard->lock);
     if (known) return known->exists ? known : nullptr;
     PackageJson package = {0};
     cstr path = cstr_d(directory, "/package.json");
@@ -484,11 +488,11 @@ static PackageJson const* package_json_of(State* me, csview directory) {
     }
     cstr_drop(&path);
     PackageJson* box = c_new(PackageJson, package);
-    pthread_mutex_lock(&shard->lock);
+    pthread_rwlock_wrlock(&shard->lock);
     // (If another thread's read of the same file got there first, the same contents: insert drops ours)
     auto inserted = hmap_package_json_box_insert(&shard->package_jsons, cstr_from_sv(directory), box);
     known = inserted.ref->second;
-    pthread_mutex_unlock(&shard->lock);
+    pthread_rwlock_unlock(&shard->lock);
     return known->exists ? known : nullptr;
 }
 
@@ -568,20 +572,20 @@ static cstr package_id_of(State* me, csview path, csview package_dir, cstr* pack
     cstr ret = cstr_d(name, csview_from_n(path.buf + end, path.size - end), "@", version);
     // (Under the lock of the shard the package.json is in)
     ResolverShard* shard = resolver_shard(my resolver, csview_from_n(path.buf, end));
-    pthread_mutex_lock(&shard->lock);
+    pthread_rwlock_rdlock(&shard->lock);
     bool computed = package->peer_suffix_computed;
-    pthread_mutex_unlock(&shard->lock);
+    pthread_rwlock_unlock(&shard->lock);
     if (!computed) {
         cstr suffix = cstr_null;
         append_peer_dependencies(me, csview_from_n(path.buf, end), package, &suffix);
-        pthread_mutex_lock(&shard->lock);
+        pthread_rwlock_wrlock(&shard->lock);
         PackageJson* mut = (PackageJson*)package;
         if (!mut->peer_suffix_computed) {
             mut->peer_suffix = suffix;
             suffix = cstr_null;
             mut->peer_suffix_computed = true;
         }
-        pthread_mutex_unlock(&shard->lock);
+        pthread_rwlock_unlock(&shard->lock);
         cstr_drop(&suffix);
     }
     // (Written once under the lock, read-only after)
@@ -1704,10 +1708,10 @@ ResolvedModule const* module_resolver_resolve_shared(
     resolver_init_cwd(me);
     cstr key = resolution_key(me, containing_file, mode, specifier);
     ResolverShard* shard = resolver_shard(me, cstr_sv(&key));
-    pthread_mutex_lock(&shard->lock);
+    pthread_rwlock_rdlock(&shard->lock);
     auto cached = hmap_resolved_module_ptr_get(&shard->resolutions, cstr_sv(&key));
     ResolvedModule const* ret = cached ? cached->second : nullptr;
-    pthread_mutex_unlock(&shard->lock);
+    pthread_rwlock_unlock(&shard->lock);
     if (ret) {
         cstr_drop(&key);
         return ret;
@@ -1722,26 +1726,26 @@ ResolvedModule const* module_resolver_resolve_shared(
         joined_key = cstr_d(joined, "\r", (char)('0' + mode));
         cstr_drop(&joined);
         joined_shard = resolver_shard(me, cstr_sv(&joined_key));
-        pthread_mutex_lock(&joined_shard->lock);
+        pthread_rwlock_rdlock(&joined_shard->lock);
         auto by_path = hmap_resolved_module_ptr_get(&joined_shard->resolutions, cstr_sv(&joined_key));
         ret = by_path ? by_path->second : nullptr;
-        pthread_mutex_unlock(&joined_shard->lock);
+        pthread_rwlock_unlock(&joined_shard->lock);
         if (ret) {
-            pthread_mutex_lock(&shard->lock);
+            pthread_rwlock_wrlock(&shard->lock);
             ret = shard_insert(shard, key, ret);
-            pthread_mutex_unlock(&shard->lock);
+            pthread_rwlock_unlock(&shard->lock);
             c_drop(cstr, &dir, &joined_key);
             return ret;
         }
     }
     ResolvedModule resolved = resolve_uncached(me, specifier, cstr_sv(&dir), mode);
-    pthread_mutex_lock(&shard->lock);
+    pthread_rwlock_wrlock(&shard->lock);
     ret = shard_insert(shard, key, shard_box(shard, resolved));
-    pthread_mutex_unlock(&shard->lock);
+    pthread_rwlock_unlock(&shard->lock);
     if (joined_shard) {
-        pthread_mutex_lock(&joined_shard->lock);
+        pthread_rwlock_wrlock(&joined_shard->lock);
         shard_insert(joined_shard, joined_key, ret);
-        pthread_mutex_unlock(&joined_shard->lock);
+        pthread_rwlock_unlock(&joined_shard->lock);
     }
     cstr_drop(&dir);
     return ret;

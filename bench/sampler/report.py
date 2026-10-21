@@ -4,26 +4,26 @@ report.py SAMPLER_OUT [--top N] [--callers FUNC] [--under FUNC]"""
 import argparse, bisect, collections, subprocess, sys
 
 ap = argparse.ArgumentParser()
-ap.add_argument('out')
+ap.add_argument('out', nargs='+', help='one or more SAMPLER_OUT files (each with its own maps)')
 ap.add_argument('--top', type=int, default=40)
 ap.add_argument('--under', help='only samples with FUNC on the stack')
 ap.add_argument('--exclude', action='append', default=[], help='drop samples with FUNC on the stack')
 ap.add_argument('--callers', help='what calls FUNC (the frame above its first occurrence)')
+ap.add_argument('--lines', help='self samples of FUNC by source line (needs a -g build: addr2line)')
 args = ap.parse_args()
 
-maps, samples = [], []
-for line in open(args.out):
-    if line.startswith('M '):
-        parts = line[2:].split()
-        if len(parts) >= 6:
-            lo, hi = (int(x, 16) for x in parts[0].split('-'))
-            maps.append((lo, hi, int(parts[2], 16), parts[5]))
-    elif line.startswith('S'):
-        samples.append([int(x, 16) for x in line[1:].split()])
+def load(path):
+    maps, samples = [], []
+    for line in open(path):
+        if line.startswith('M '):
+            parts = line[2:].split()
+            if len(parts) >= 6:
+                lo, hi = (int(x, 16) for x in parts[0].split('-'))
+                maps.append((lo, hi, int(parts[2], 16), parts[5]))
+        elif line.startswith('S'):
+            samples.append([int(x, 16) for x in line[1:].split()])
+    return maps, samples
 
-bases = {}
-for lo, hi, off, path in maps:
-    if off == 0 and path not in bases: bases[path] = lo
 symtabs = {}
 def symtab(path):
     if path not in symtabs:
@@ -37,8 +37,7 @@ def symtab(path):
         except Exception: pass
         symtabs[path] = ([a for a, _ in syms], [n for _, n in syms])
     return symtabs[path]
-cache = {}
-def name(addr):
+def name(addr, maps, bases, cache):
     if addr in cache: return cache[addr]
     ret = '?'
     for lo, hi, off, path in maps:
@@ -52,10 +51,28 @@ def name(addr):
     cache[addr] = ret
     return ret
 
-stacks = []
-for s in samples:
-    # (A return address points past the call: -1 for the caller frames)
-    stacks.append([name(a if i == 0 else a - 1) for i, a in enumerate(s)])
+stacks, leaf_addrs = [], []  # leaf_addrs: (address, maps, bases) of each sample's leaf, for --lines
+for out in args.out:
+    maps, samples = load(out)
+    bases, cache = {}, {}
+    for lo, hi, off, path in maps:
+        if off == 0 and path not in bases: bases[path] = lo
+    for s in samples:
+        # (A return address points past the call: -1 for the caller frames)
+        stacks.append([name(a if i == 0 else a - 1, maps, bases, cache) for i, a in enumerate(s)])
+        leaf_addrs.append((s[0], maps, bases) if s else None)
+if args.lines:
+    by_line = collections.Counter()
+    for st, leaf in zip(stacks, leaf_addrs):
+        if not leaf or not st or st[0] != args.lines: continue
+        a, maps, bases = leaf
+        for lo, hi, off, path in maps:
+            if lo <= a < hi:
+                out = subprocess.run(['addr2line', '-e', path, '-i', hex(a - bases.get(path, lo))], capture_output=True, text=True).stdout.split('\n')
+                by_line[out[0].split('/')[-1]] += 1
+                break
+    for l, n in by_line.most_common(args.top): print(f'{n:7d}  {l}')
+    sys.exit()
 if args.under: stacks = [s for s in stacks if args.under in s]
 for x in args.exclude: stacks = [s for s in stacks if x not in s]
 total = len(stacks)

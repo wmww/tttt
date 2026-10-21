@@ -29,6 +29,8 @@ void load_pool_destroy(LoadPool* me);
 void load_pool_queue(LoadPool* me, csview path, bool is_stdlib);
 // load_pool_queue() of each path, under one lock
 void load_pool_queue_many(LoadPool* me, csview const* paths, isize count, bool is_stdlib);
+// The same with each path's own is_stdlib
+void load_pool_queue_each(LoadPool* me, csview const* paths, bool const* is_stdlib, isize count);
 
 // The loader: the file for path if a worker parsed it (or is parsing it: waits, parsing queued files meanwhile) as
 // is_stdlib, with its parse errors moved to errs; null if the loader has to parse it itself, and then no worker will.
