@@ -164,6 +164,36 @@ defaults.
   Left: **link** (~50-60 ms on vscode at 12 cores: `binder_link()`'s alias resolution is order-dependent: TS2303
   cycles, placeholders by index), the 411 serial files (libs), and the walk's serial files.
 
+**Stage 3: the link step, a design (2026-10-21, worker "frontend"; not implemented)**. vscode at T12 (`TTTT_RESOLVE_TIMES=1`
+prints link's steps now): link ~60 ms on a quiet run = module refs ~15 (`binder_module_of_ref()` per ref, 124k refs),
+type/resolved exports ~5, **aliases ~40-70** (`binder_link()`'s loop over `Binder.symbols`: `symbol_resolve_alias()`
+on each of ~200k aliases, then the alias checks: TS2440/TS2484/TS2865 conflicts, `export_value`, ambient const enum,
+isolatedModules). Callgrind: binder_link 160 M instructions of which resolve_alias 117 M; ~1 instruction per ns, so it
+is cache misses (every alias, its module's export table entry, the target), not compute.
+- *Order-dependent*: (1) TS2303: `symbol_resolve_alias()` marks every alias on `alias_stack` from the re-entered one to
+  the innermost CIRCULAR, and each reports when it finishes, so which aliases of a cycle report depends on where the walk
+  entered it (tsc's findResolutionCycleStartIndex: the same rule, entered in tsc's order); (2) placeholders
+  (`binder_new_placeholder()`) are appended to `Binder.symbols` in resolution order, which later loops (`binder_resolve_
+  remaining_aliases()`) and anything iterating symbols see; (3) reports are appended in resolution order (TS2305/TS2614
+  /TS2306/TS1192... in `resolve_alias_target()`, the checks in the loop), and same-position ties keep that order;
+  (4) `module_export_equals()` and the namespace-import interop build symbols lazily (`export_equals_clone`, gather
+  targets), first resolver wins. Targets themselves are order-independent (a pure function of the tables, which are
+  complete after module_resolved_exports()) except through (1).
+- *Parallel resolution* (per-alias locks or CAS on `alias->state`, threads resolving disjoint aliases and recursing into
+  shared ones) would need a deterministic cycle rule independent of entry (not tsc's: TS2303 positions would change)
+  and deferred, re-ordered reports and placeholders. High risk, every alias-related baseline at stake.
+- *Two-phase* (the cleaner one): phase A on threads, read-only, computes each alias's first step (the module, the
+  export table entry or `export=` it names, or "needs the general path"); phase B, serial in `Binder.symbols` order,
+  runs today's recursion but takes phase A's step instead of looking it up, so order, cycles, placeholders and reports
+  are exactly today's. The risk is replicating `resolve_alias_target()`'s first step (250 lines: default/namespace
+  interop, `export =`, entity names, CommonJS, shorthand ambient modules, type-only, wrong-context items...) without
+  writes; the fallback "general path" keeps any doubtful case serial. Gain: phase B still touches each alias and its
+  target (the misses it can't avoid); measured bound: the hash lookups and table walks are ~40% of resolve_alias's
+  instructions, so perhaps 40-70 -> 25-40 ms. **Not worth it now**: < 1.5% of vscode's 2.5 s wall at 12 cores, for the
+  riskiest code in the binder. Revisit if link becomes the front end's floor after the loader.
+- Module refs (~15 ms) are per-ref lookups that only write the ref (`program_link_module_refs()` runs them on threads
+  unless a pattern has augmentations, whose lookup sets a parent table).
+
 ## Stage 4: a shared concurrent type graph (~25 sessions over several windows, gates G0-G2: "The design" below)
 The paste's "declarations first, bodies second" idea, built where the duplication actually is: **one hash-consed
 intern table for every kind of type, grown concurrently by all checkers**, instantiations included; once-published

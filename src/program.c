@@ -3732,6 +3732,43 @@ static void program_mark_init_resolved_imports(Program* me) {
     }
 }
 
+// What every module name refers to (binder_module_of_ref()): a lookup per ref that writes only the ref, in the
+// ambient modules, the file's module symbol or the patterns, all complete by now, so on --threads threads. Except
+// when a pattern has augmentations, whose lookup sets the augmentation's parent table (serial then)
+typedef struct ModuleRefsLane {
+    Program* program;
+    atomic_uint next;
+} ModuleRefsLane;
+
+static void* module_refs_lane_run(void* arg) {
+    ModuleRefsLane* lane = arg;
+    Program* me = lane->program;
+    u32 count = (u32)vec_source_file_ptr_size(&my source_files_ordered);
+    // (In chunks: a file has a handful of refs)
+    for (u32 start; (start = atomic_fetch_add(&lane->next, 64)) < count;) {
+        for (u32 i = start; i < start + 64 && i < count; i++) {
+            SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, i);
+            for (u32 j = 0; j < source->module_ref_count; j++) binder_module_of_ref(my binder, source->module_refs[j]);
+        }
+    }
+    return nullptr;
+}
+
+static void program_link_module_refs(Program* me) {
+    u32 count = (u32)vec_source_file_ptr_size(&my source_files_ordered);
+    u32 threads = my threads ? my threads : 1;
+    if (threads > count / 256 && !debug_env.parallel_resolve) threads = count / 256 ? count / 256 : 1;
+    if (my binder->pattern_augmentations.count) threads = 1;
+    ModuleRefsLane lane = { .program = me };
+    atomic_init(&lane.next, 0);
+    pthread_t* workers = threads > 1 ? c_new_n(pthread_t, threads - 1) : nullptr;
+    u32 started = 0;
+    while (started + 1 < threads && !pthread_create(&workers[started], nullptr, module_refs_lane_run, &lane)) started++;
+    module_refs_lane_run(&lane);
+    for (u32 t = 0; t < started; t++) pthread_join(workers[t], nullptr);
+    free(workers);
+}
+
 void program_resolve_names(Program* me) {
     program_report_content_mapper_options(me);
     program_collect_files(me);
@@ -3816,12 +3853,8 @@ void program_resolve_names(Program* me) {
     program_mark_init_resolved_imports(me);
     resolve_step_done("between declare and link", &last);
     // Link: what every module name refers to (ambient modules are all declared now), `export *` tables and every alias. Nothing writes to a symbol after this
-    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-        SourceFile* source = *i;
-        for (u32 j = 0; j < source->module_ref_count; j++) {
-            binder_module_of_ref(my binder, source->module_refs[j]);
-        }
-    }
+    program_link_module_refs(me);
+    resolve_step_done("link: module refs", &last);
     binder_link(my binder);
     binder_check_export_star_conflicts(my binder, my errs);
     resolve_step_done("link", &last);

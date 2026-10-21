@@ -4789,22 +4789,38 @@ static void binder_link_alias_merges(Binder* me) {
     my alias_merges_done = true;
 }
 
+// TTTT_RESOLVE_TIMES: binder_link()'s steps
+static void link_step(char const* name, double* last) {
+    if (!debug_env.resolve_times) return;
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    double now = (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1000000.0;
+    if (*last) eprintln("link: ", name, " ", now - *last, " ms");
+    *last = now;
+}
+
 void binder_link(Binder* me) {
+    double last = 0;
+    link_step("", &last);
     for (u32 i = 0; i < my pending_file_conflict_count; i++) report_file_conflict(me, &my pending_file_conflicts[i]);
     my pending_file_conflict_count = 0;
     binder_link_alias_merges(me);
     // (tsc's initializeTypeChecker merges the globals, a UMD global's `declare global` namespaces with it, before the
     // module augmentations)
     merge_into_umd_globals(me);
+    link_step("conflicts, alias merges, UMD globals", &last);
     for (u32 i = 0, count = my symbol_count; i < count; i++) {
         if (my symbols[i]->is_module) bind_type_exports(me, my symbols[i]);
     }
+    link_step("type exports", &last);
     merge_augmentations(me);
+    link_step("augmentations", &last);
     // Resolving makes placeholder symbols: by index
     for (u32 i = 0; i < my symbol_count; i++) {
         Symbol* symbol = my symbols[i];
         if (symbol->is_module) module_resolved_exports(symbol);
     }
+    link_step("resolved exports", &last);
     for (u32 i = 0; i < my symbol_count; i++) {
         Symbol* symbol = my symbols[i];
         if (!(symbol->flags & SYMBOL_ALIAS) || !symbol->alias->scope) continue;
@@ -4895,6 +4911,7 @@ void binder_link(Binder* me) {
                 "Import declaration conflicts with local declaration of '", item->decl_name, "'.");
         }
     }
+    link_step("aliases", &last);
     for (u32 i = 0; i < my pending_export_merge_count; i++) {
         PendingExportMerge const* pending = &my pending_export_merges[i];
         check_export_merge(pending->scope, pending->block, pending->local, true);
@@ -4902,6 +4919,7 @@ void binder_link(Binder* me) {
     free(my pending_export_merges);
     my pending_export_merges = nullptr;
     my pending_export_merge_count = my pending_export_merge_cap = 0;
+    link_step("export merges", &last);
 }
 
 // Lookup

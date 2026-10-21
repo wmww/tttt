@@ -91,7 +91,14 @@ typedef struct LoadPool {
     // TTTT_LOAD_POOL_STATS (TTTT_LOAD_POOL_WAITS: each wait over 2 ms)
     isize taken, inline_parses, inline_unqueued; // (Parsed by the loader: of those, never queued)
     double wait_ms, busy_ms, started_at, helped_ms, inline_ms;
+    double loader_cpu_at; // The loader's CPU time when the pool started (it makes and destroys it)
 } LoadPool;
+
+static double thread_cpu_ms(void) {
+    struct timespec now;
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &now);
+    return (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6;
+}
 
 static double pool_now_ms(void) {
     struct timespec now;
@@ -264,6 +271,7 @@ LoadPool* load_pool_new(
     struct timespec now;
     timespec_get(&now, TIME_UTC);
     my started_at = (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6;
+    my loader_cpu_at = thread_cpu_ms();
     for (u32 t = 0; t < threads; t++) {
         panic_if(pthread_create(&my threads[t], &attr, load_pool_worker, me), "couldn't start a loader thread");
     }
@@ -407,6 +415,8 @@ void load_pool_destroy(LoadPool* me) {
             " ms of it); workers busy ", my busy_ms, " ms of ", lifetime * my thread_count);
         eprintln("load pool: the loader parsed ", my inline_ms, " ms itself; its own work the rest of the pool's ",
             lifetime, " ms: ", lifetime - my wait_ms - my inline_ms);
+        // (CPU time, which a loaded machine's preemption and lock waits don't inflate: what the loader did)
+        eprintln("load pool: the loader's CPU time ", thread_cpu_ms() - my loader_cpu_at, " ms");
     }
     vec_load_entry_ptr_drop(&my entries);
     free(my big.items);
