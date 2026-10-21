@@ -271,6 +271,27 @@ uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value,
     return value;
 }
 
+bool sw_mine_in_flight(Checker const* me, SharedWord const* w, uint8_t const* state) {
+    if (!my graph) return *state == LAZY_STATE_IN_FLIGHT;
+    uintptr_t own;
+    return overlay_get(me, (uintptr_t)w, &own) && !own;
+}
+
+void sw_unclaim(Checker* me, SharedWord const* w) {
+    if (my graph && __builtin_expect(__atomic_load_n(&debug_publish, __ATOMIC_RELAXED) > 0, 0)) debug_finish(me, w, true);
+}
+
+uintptr_t sw_peek(Checker const* me, SharedWord const* w) {
+    if (!my graph) return __atomic_load_n(&w->v, __ATOMIC_RELAXED);
+    uintptr_t own;
+    if (overlay_get(me, (uintptr_t)w, &own)) {
+        if (own) TAINT_EVENT(TAINT_READ_TAINTED);
+        return own;
+    }
+    uintptr_t v = sw_load(w);
+    return v > SW_POISON ? v : SW_EMPTY;
+}
+
 void overlay_print_stats(void) {
     eprintln("graph: shared words published ", (u64)stat_published, ", adopted ", (u64)stat_adopted, ", poisoned ",
         (u64)stat_poisoned, ", computed privately after poison ", (u64)stat_private, ", shadowed ", (u64)stat_shadowed,

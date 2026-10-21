@@ -98,9 +98,12 @@ void taint_flow_change(void); // flow_uncached is about to change: what is done 
 #endif
 typedef struct TaintFrame { char unused; } TaintFrame;
 void graph_fp_result(unsigned kind, void const* subject, void const* result);
-#define TAINT_EVENT(reason) ((void)0)
+// (The 4f counter stays: the shared words publish only clean values, and their sites fingerprint only those, SW_CLEAN())
+extern thread_local uint64_t graph_taint_now;
+[[gnu::cold, gnu::noinline]] void graph_taint_bump(void);
+#define TAINT_EVENT(reason) graph_taint_bump()
 #define TAINT_FLOW() ((void)0)
-#define TAINT_IF(reason, condition) (condition)
+#define TAINT_IF(reason, condition) ((reason) == TAINT_PEEK ? (condition) : (condition) ? (graph_taint_bump(), true) : false)
 #define TAINT_BEGIN(name) ((void)0)
 #define TAINT_END(name, kind, object, subject, result) graph_fp_result(kind, subject, result)
 #define TAINT_READ(kind, object) ((void)0)

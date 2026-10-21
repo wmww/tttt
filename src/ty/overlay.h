@@ -52,6 +52,20 @@ SwLook sw_look(struct Checker* me, SharedWord const* w, uint8_t const* state, ui
 uint64_t sw_claim(struct Checker* me, SharedWord* w, uint8_t* state);
 // The value this worker uses from now on (its own, or the winner's)
 uintptr_t sw_finish(struct Checker* me, SharedWord* w, uint8_t* state, uintptr_t value, uint64_t taint);
+// Whether this worker's claim of `w` is still unfinished: false once a nested computation of the same word (a re-entry
+// that computes again, like function_return_type()'s) finished it. No taint event
+bool sw_mine_in_flight(struct Checker const* me, SharedWord const* w, uint8_t const* state);
+// The end of a claim whose word a nested computation finished (sw_mine_in_flight() false): its own result is dropped
+void sw_unclaim(struct Checker* me, SharedWord const* w);
+// A done-ness peek (TAINT_PEEK, no event): the value this worker sees if the word is finished for it (published, or
+// its own private value: that read is an event), else SW_EMPTY (not computed, poisoned, or in flight here). It looks
+// only at the word's final value and the caller's own Overlay/ClaimSet: another worker's in flight is never seen (it
+// leaves the word empty)
+uintptr_t sw_peek(struct Checker const* me, SharedWord const* w);
+
+// Whether a computation that started at `taint` (sw_claim()'s) is clean: always without a graph. The fingerprint build
+// (-DTTTT_GRAPH_FINGERPRINT) checks only those against K1's record: `if (SW_CLEAN(me, taint)) TAINT_END(...)`
+#define SW_CLEAN(me, taint) (!(me)->graph || graph_taint_now == (taint))
 
 // TTTT_DEBUG_PUBLISH=1: aborts if `ref`, held by a value being published, was made by a computation whose result stayed
 // private (overlay.c). For the kinds whose values hold non-identity objects (Props, Signatures, Members: P1's walks)
