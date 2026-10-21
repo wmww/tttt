@@ -1,0 +1,21 @@
+a.ts(1,31): error TS2694: Namespace '_default' has no exported member 'Config'.
+a.ts(2,31): error TS2694: Namespace '_default' has no exported member 'DOMPurify'.
+
+
+==== node_modules/dp/index.d.ts (0 errors) ====
+    interface Config { a?: string }
+    interface DOMPurify { sanitize(s: string, c?: Config): string }
+    declare const _default: DOMPurify;
+    export { type Config, type DOMPurify };
+    // @ts-ignore
+    export = _default;
+==== a.ts (2 errors) ====
+    export type C1 = import('dp').Config;
+                                  ~~~~~~
+!!! error TS2694: Namespace '_default' has no exported member 'Config'.
+    export type C2 = import('dp').DOMPurify;
+                                  ~~~~~~~~~
+!!! error TS2694: Namespace '_default' has no exported member 'DOMPurify'.
+    import type { Config } from 'dp';
+    export type C3 = Config;
+    

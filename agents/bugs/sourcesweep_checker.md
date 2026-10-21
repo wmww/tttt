@@ -156,8 +156,10 @@ subtype pass). Left:
 - **es-toolkit/tests/types `compat.spec-d.ts:34` -TS2344** (flattenDeep vs lodash's, `Flat<T>` against es-toolkit's
   inline conditional): tsc's own order artifact. tsc reports it only with the whole spec file checked; the same line
   alone, or with the flatMap lines before it, is clean in tsc and tttt alike.
-- tttt misses tsc's TS2694 `Namespace '_default' has no exported member 'Config'` for
-  `import('<abs path>/node_modules/dompurify').Config` (a CJS package's default namespace) in a probe; not looked at.
+- tsc's TS2694 `Namespace '_default' has no exported member 'Config'` for `import('dompurify').Config`: fixed
+  2026-10-21 (worker "filler", ttttImportTypeExportEqualsOtherExports): an import type looked a name up in the module's
+  own exports next to any `export =`; tsgo does that only for a JavaScript `module.exports =` (its typedefs), and only
+  when the assigned value has none of the name.
 
 ## History dependences recycling exposes (plan 67 stage 1, 2026-10-15)
 `scripts/kdiff.py -k 1 -m 0` (a fresh checker per file against one that never recycles; `scripts/oracles.py`'s

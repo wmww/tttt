@@ -167,11 +167,20 @@ static bool import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
     }
 
     if (container != module) {
-        // A CommonJS module's other exports (its `@typedef`s) are found next to what `module.exports =` assigns
-        // (tsgo's getExportsOfModuleWorker: the original module's type exports)
+        // A CommonJS module's other exports (its `@typedef`s) are found next to what `module.exports =` assigns, when
+        // what it assigns has none of the name (tsgo's getTypeFromImportTypeNode: the immediate module symbol's
+        // exports when one of its declarations is a `module.exports =`). Not a TypeScript `export =`'s: a `.d.ts` with
+        // `export { type Config }` next to `export = _default` (dompurify's) is TS2694 on `import("dompurify").Config`
         bool qualified = ast_spans_size(&rare->namespaces);
-        Symbol const* own = symbol_get_export(module, span_sv((qualified ? *rare->namespaces.data : my name)));
-        if (own && symbol_for_meaning(own, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) container = module;
+        csview first = span_sv(qualified ? *rare->namespaces.data : my name);
+        u32 meaning = qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE;
+        Symbol const* export_equals = symbol_get_export(module, c_sv("export="));
+        bool commonjs = export_equals && export_equals->decl_count && span_source(export_equals->decls[0].full) &&
+            span_source(export_equals->decls[0].full)->is_js;
+        Symbol const* namespace = symbol_for_meaning(container, SYMBOL_NAMESPACE);
+        bool in_target = namespace && symbol_for_meaning(symbol_namespace_member(namespace, first), meaning);
+        Symbol const* own = commonjs && !in_target ? symbol_get_export(module, first) : nullptr;
+        if (own && symbol_for_meaning(own, meaning)) container = module;
     }
     Symbol const* shown = nullptr;
     for_each (i, ast_spans, &rare->namespaces) {

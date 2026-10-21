@@ -1,0 +1,35 @@
+//// [test/cases/ttttImportTypeExportEqualsOtherExports.ts] ////
+
+=== node_modules/dp/index.d.ts ===
+interface Config { a?: string }
+>a : string | undefined
+
+interface DOMPurify { sanitize(s: string, c?: Config): string }
+>sanitize : (s: string, c?: Config) => string
+>s : string
+>c : Config | undefined
+
+declare const _default: DOMPurify;
+>_default : DOMPurify
+
+export { type Config, type DOMPurify };
+>Config : any
+>DOMPurify : any
+
+// @ts-ignore
+export = _default;
+>_default : DOMPurify
+
+=== a.ts ===
+export type C1 = import('dp').Config;
+>C1 : any
+
+export type C2 = import('dp').DOMPurify;
+>C2 : any
+
+import type { Config } from 'dp';
+>Config : Config
+
+export type C3 = Config;
+>C3 : Config
+

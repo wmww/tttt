@@ -1,0 +1,40 @@
+//// [test/cases/ttttImportTypeExportEqualsOtherExports.ts] ////
+
+=== node_modules/dp/index.d.ts ===
+interface Config { a?: string }
+>Config : Symbol(Config, Decl(index.d.ts, 0, 0))
+>a : Symbol(Config.a, Decl(index.d.ts, 0, 18))
+
+interface DOMPurify { sanitize(s: string, c?: Config): string }
+>DOMPurify : Symbol(DOMPurify, Decl(index.d.ts, 0, 31))
+>sanitize : Symbol(DOMPurify.sanitize, Decl(index.d.ts, 1, 21))
+>s : Symbol(s, Decl(index.d.ts, 1, 31))
+>c : Symbol(c, Decl(index.d.ts, 1, 41))
+>Config : Symbol(Config, Decl(index.d.ts, 0, 0))
+
+declare const _default: DOMPurify;
+>_default : Symbol(_default, Decl(index.d.ts, 2, 13))
+>DOMPurify : Symbol(DOMPurify, Decl(index.d.ts, 0, 31))
+
+export { type Config, type DOMPurify };
+>Config : Symbol(Config, Decl(index.d.ts, 3, 8))
+>DOMPurify : Symbol(DOMPurify, Decl(index.d.ts, 3, 21))
+
+// @ts-ignore
+export = _default;
+>_default : Symbol(_default, Decl(index.d.ts, 2, 13))
+
+=== a.ts ===
+export type C1 = import('dp').Config;
+>C1 : Symbol(C1, Decl(a.ts, 0, 0))
+
+export type C2 = import('dp').DOMPurify;
+>C2 : Symbol(C2, Decl(a.ts, 0, 37))
+
+import type { Config } from 'dp';
+>Config : Symbol(Config, Decl(a.ts, 2, 13))
+
+export type C3 = Config;
+>C3 : Symbol(C3, Decl(a.ts, 2, 33))
+>Config : Symbol(Config, Decl(a.ts, 2, 13))
+

@@ -1165,6 +1165,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttImportTypeExportEqualsOtherExports': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttImportTypeJsxNotSet': {
         errors: true,
         symbols: true,
