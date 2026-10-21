@@ -854,7 +854,9 @@ bool lazy_wait_slow(Checker* me, void* field, size_t size) {
             me->graph_fallbacks++;
             // A redo instead (plan 86 4d): the worker gives its file up, its claims become nobody's, and the file is
             // checked again by a fresh checker once the other side has finished (check_share())
-            if (me->redo_jmp) {
+            // (Not while materializing deferred bodies: that holds the list's lock and the AST thread state. None seen:
+            // a materialization parses and walks, it doesn't reach a lazy type field; the old fallback if it ever does)
+            if (me->redo_jmp && !program_thread_materializing()) {
                 pthread_mutex_lock(&graph->wait_lock);
                 graph->waiting_on[me->graph_worker] = 0;
                 pthread_mutex_unlock(&graph->wait_lock);

@@ -739,3 +739,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   ~2% of runs by a mechanism not yet found (plan 86 4d, task 3). Costs drizzle +54% K12 wall; plan 86 4e item 1.
 - `lazy_wait_slow()` (graph.c): 64 pauses, then 50 sched_yield()s, then doubling sleeps; the 50 was tuned on a loaded
   16-vCPU box against a convoy of waiters (TTTT_GRAPH_WAIT_YIELDS).
+- `check_file_or_give_up()` (program.c), `--shared-graph` redo: the longjmp out of `lazy_wait_slow()` leaks the
+  malloc'd temporaries of the abandoned stack (TyBufs, long keys: KBs per redo, drizzle 0-4 redos a run with the
+  variance lock) and the retired checker stays allocated until the program ends (its arena holds published types).
+  A break while materializing deferred bodies falls back to computing through the cycle instead of the redo
+  (`program_thread_materializing()`; never seen: materialization doesn't reach lazy type fields).

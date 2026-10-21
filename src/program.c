@@ -4137,6 +4137,7 @@ static void check_deferred(DeferredCheck deferred, ErrorCtx* errs) {
 
 // The file whose deferred bodies the thread is parsing and walking: their readers there take them as they are
 static thread_local SourceFile const* materializing_file;
+bool program_thread_materializing(void) { return materializing_file != nullptr; }
 
 // A deferred function's scope and the outer walk's flow nodes the body's walk refers to (their reference counts, the
 // return label's list), as the walk of its signature left them (DeferredBodies.snapshots)
