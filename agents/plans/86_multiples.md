@@ -707,6 +707,55 @@ at the computation's end**, and makes every field another worker can read safe t
   identity entry holds the winner, a memo entry its own value. At one thread nothing is ever lost and the output
   doesn't move.
 
+### 4e's first item: a shared relation cache (measured and designed 2026-10-21, not built)
+**Measurement** (`agents/plans/86_relation_share_probe.patch`, a scratch patch to relate.c's recursive_related():
+`TTTT_RS=1` keeps a program-wide map of every clean definitive cache put, keyed by relation, intersection-state bits
+and the global type-id pair, and counts, at `--shared-graph --checkers 12 --threads 1`, the pairs a checker computes
+that an earlier checker already concluded, with everything computed beneath them; default build, so variances are
+always published). Relation pairs computed (recursive_related() past its cache and maybe-stack checks, a
+machine-independent proxy for relation work; the box was at load 20+, cycle counts were noise):
+| corpus | K1 pairs | K12 pairs | K12 pairs under an already-concluded pair (heads + beneath) | share of K12 | values disagreeing |
+|---|---|---|---|---|---|
+| excalidraw | 168 386 | 284 148 | 47 336 + 67 760 = 115 096 | 40% | 0 of 114 414 duplicate puts |
+| zod | 267 712 | 276 635 | 10 904 + 19 371 = 30 275 | 11% | 0 of 29 742 |
+| drizzle | 283 800 | 278 724 | 14 485 + 12 695 = 27 180 | 10% | 0 of 26 872 |
+| effect | 275 527 | 286 778 | 11 534 + 9 182 = 20 716 | 7% | 0 of 20 252 |
+| nest | 7 107 | 8 002 | 481 + 419 = 900 | 11% | 0 of 899 |
+On excalidraw the recomputed-but-concluded work is the whole K12 excess (115k of 116k extra pairs); elsewhere K12
+does about K1's relation work already (zod +3%, drizzle -2%: the shared graph changes histories) and a shared cache
+would take 7-11% off. Track S's "check_related +0.69 G of zod's +0.91 G" was taint-on, where withheld variances were
+measured again by every checker; with variances always published that duplication is gone. Two workers that conclude
+the same pair never disagreed (0 in ~186k duplicate definitive puts).
+**tsc's semantics** (relater.go): one relation map per relation kind for the whole program, entries Succeeded /
+Failed plus ReportsUnreliable / ReportsUnmeasurable and Overflow. A failure goes "straight into the global cache (when
+something is false under assumptions it will also be false without assumptions)"; successes under Maybe assumptions
+are recorded only when the outermost pair concludes (resetMaybeStack), never a Ternary.Unknown. A cached failure is
+computed again when errors are reported (reportErrors, unless it was an overflow), so the cache never decides an
+elaboration. Cached flags are re-reported into the variance measurement in progress (reliabilityFlags). So a tsgo
+result is reused by every later comparison whatever its context: sharing definitive results across workers is tsc's
+own single-checker semantics, provided only definitive, context-free entries are shared.
+**Design**:
+- Per relation kind, a shared table keyed like the private one (the global type-id pair; the intersection-state bits
+  62-63), values SUCCEEDED or FAILED only. Same concurrent structure as 4d's intern tables (sharded open addressing,
+  lock-free reads, insert-if-absent; the value byte written before the key with release). First wins; a loser's value
+  is equal (measured).
+- Published at the private puts in recursive_related(): FAILED at a pair's failure (and fails_common_properties()),
+  SUCCEEDED for each maybe-stack key when the outermost pair concludes. Not published: anything with
+  CACHE_UNRELIABLE / CACHE_UNMEASURABLE (they must reach the measuring worker's variance reports as flags; a flagged
+  entry stays private, so a shared hit never hides an unreliability), CACHE_OVERFLOW (depends on the top-level
+  relation's budget), CACHE_INDEX_INFERRED (depends on the IntersectionState twin), and generic relation keys (bit 61:
+  KEY_GENERIC_RELATION numbers them per checker; 1-2% of pairs. Sharing them needs the numbering table shared, keyed by
+  the key words: a later step if worth it). Results computed while a variance measurement is in flight are already
+  marked through the flags.
+- Lookup: private cache first (its in-progress and flagged entries are this worker's), then the maybe stack as now,
+  then the shared table: a shared SUCCEEDED returns true; a shared FAILED returns false unless `report`, which
+  computes again privately exactly as a private CACHE_FAILED does today (elaboration and errors stay per worker, never
+  read from or written to the shared table). The maybe stack, relation budgets, depth and deeply-nested stacks, and
+  `lines` stay per worker.
+- Gates: K1 with the flag byte-identical and flat; K4/K12 byte-identical to K1 on the corpora; the probe's
+  disagreement counter stays 0; excalidraw's K12 relation pairs within ~5% of K1's.
+- Cost at K1: one more probe per private miss that reaches computation (~280k per corpus): a few ms.
+
 ## Validation of the whole plan
 The 12-core table in measurements.md re-run by the human after each stage (`scripts/bench.sh --runs 3 --bun PATH
 --tscrs PATH`, the CPU column included), per-file sums at K1 / K1-with-spinning-cores / K12 on vscode and drizzle
