@@ -250,6 +250,7 @@ static void const** intern_put(Checker* me, InternTable* table, InternEntry* ent
     // (--shared-graph: the hash goes in the word before the block, for intern_set()'s publication)
     u64* block;
     if (__builtin_expect(table->shared != nullptr, 0)) {
+        panic_if(current_checker != me, "a checker's table used off its thread");
         block = arena_new_n(&my arena, u64, 2 + long_key + count) + 1;
         block[-1] = hash;
     } else {
@@ -313,6 +314,12 @@ static bool intern_needs_growth(InternTable const* table) {
     return block;
 }
 
+[[gnu::noinline]] static bool intern_slot_shares(InternTable const* table, u64 const* words, u32 count) {
+    Checker const* checker = current_checker;
+    if (!count || !checker || table == &checker->intersection_props) return false;
+    return graph_kind_class((u32)(words[0] & 255)) == GRAPH_IDENTITY;
+}
+
 // The returned slot is null if the key is new. It is in the key's arena block, so it stays valid (callers that intern
 // while computing the value look it up again all the same, from when the slots were in the table).
 void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 count) {
@@ -322,7 +329,10 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
     u64 hash = hash_words(words, count);
     InternEntry* entry = intern_find(table, hash, words, count);
     if (!entry->hash) {
-        void const** shared = table->shared ? intern_shared_find(table, hash, words, count) : nullptr;
+        // (--shared-graph: an identity's slot is the shared one; a memo kind's is the checker's own, which its caller may
+        // write whatever it finds there: never another checker's published value)
+        void const** shared = table->shared && intern_slot_shares(table, words, count) ?
+            intern_shared_find(table, hash, words, count) : nullptr;
         return shared ? shared : intern_put(me, table, entry, hash, words, count);
     }
 #ifdef TTTT_TAINT
@@ -1837,13 +1847,16 @@ Ty const* ty_reduced_slow(Checker* me, Ty const* ty) {
     if (ty->kind == TY_INTERSECTION) {
         TyObjectState* state = ty->composite.state;
         if (!state) return ty; // (A union's origin)
-        if (state->reduced_state == REDUCED_NOT_STARTED) {
-            state->reduced_state = REDUCED_IN_FLIGHT;
+        again:;
+        LAZY_SNAP(me, state->reduced_state, seen, again);
+        if (seen == REDUCED_NOT_STARTED) {
+            if (!LAZY_CLAIM(me, state->reduced_state)) goto again;
             bool private_conflict;
             bool never = never_reduced_prop(me, ty->composite.types.data, ty->composite.types.len, &private_conflict) != nullptr;
-            state->reduced_state = never ? REDUCED_NEVER : REDUCED_ITSELF;
+            __atomic_store_n(&state->reduced_state, never ? REDUCED_NEVER : REDUCED_ITSELF, __ATOMIC_RELEASE);
         }
-        return state->reduced_state == REDUCED_NEVER ? my intrinsics[TY_NEVER] : ty;
+        // (In flight here: itself)
+        return LAZY_LOAD(state->reduced_state) == REDUCED_NEVER ? my intrinsics[TY_NEVER] : ty;
     }
     if (ty->kind != TY_UNION || !(ty->xflags & TYX_CONTAINS_INTERSECTIONS)) return ty;
     u64 key[2] = { KEY_REDUCED_UNION, ty->id };
@@ -2551,16 +2564,20 @@ Ty const* ty_type_param(Checker* me, Symbol const* decl) {
 Ty const* ty_distributed_type_param(Checker* me, Ty const* param) {
     param = ty_non_distributed(param);
     TyParamState* state = param->param.state;
-    if (!state->distributed) {
+    Ty const* known = __atomic_load_n(&state->distributed, __ATOMIC_ACQUIRE);
+    if (!known) {
         Ty* twin = (Ty*)make_type_param(me, param->param.symbol, param->param.name);
         twin->param.state->distributed_of = param;
         twin->param.state->constraint = param;
         twin->param.state->constraint_state = LAZY_STATE_DONE;
         twin->param.state->is_infer = state->is_infer;
         twin->param.state->circular = 1;
-        state->distributed = twin;
+        // (An identity: with --shared-graph the first checker's twin is everyone's)
+        known = twin;
+        Ty const* expected = nullptr;
+        if (!__atomic_compare_exchange_n(&state->distributed, &expected, known, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) known = expected;
     }
-    return state->distributed;
+    return known;
 }
 
 Ty const* ty_synthetic_type_param(Checker* me, csview name) {
@@ -4067,15 +4084,18 @@ Ty const* ty_optional_prop_type(Checker* me, Ty const* ty) {
 }
 
 Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch) {
-    if ((!branch->node && !branch->source) || branch->state == LAZY_STATE_DONE) return branch->type;
-    if (branch->state == LAZY_STATE_IN_FLIGHT) {
+    again:
+    if ((!branch->node && !branch->source) || LAZY_LOAD(branch->state) == LAZY_STATE_DONE) return branch->type;
+    LAZY_SNAP(me, branch->state, seen, again);
+    if (seen == LAZY_STATE_DONE) return branch->type;
+    if (LAZY_IN_FLIGHT(seen)) {
         TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
         return ty_intrinsic(me, TY_ERROR);
     }
-    branch->state = LAZY_STATE_IN_FLIGHT;
+    if (!LAZY_CLAIM(me, branch->state)) goto again;
     Ty const* source = branch->node ? ty_from_node(me, branch->node, branch->ctx) : branch->source;
     branch->type = ty_instantiate_tail(me, source, branch->mapper);
-    branch->state = LAZY_STATE_DONE;
+    LAZY_DONE(branch->state);
     return branch->type;
 }
 

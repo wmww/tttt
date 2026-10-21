@@ -81,16 +81,34 @@ void lazy_slots_add_type(LazySlots* me, Ty const* ty) {
             panic_if(!my own, "out of memory");
         }
         my own[my own_len++] = index;
-        if (my directory) atomic_store_explicit(&my directory->chunks[index], *chunk, memory_order_release);
+        if (my directory) {
+            atomic_store_explicit(&my directory->chunks[index], *chunk, memory_order_release);
+            u32 readers = atomic_load_explicit(&my directory->reader_count, memory_order_acquire);
+            for (u32 i = 0; i < readers; i++) {
+                LazySlots* reader = my directory->readers[i];
+                if (reader != me) __atomic_store_n(&reader->types[index], *chunk, __ATOMIC_RELEASE);
+            }
+        }
     }
     (*chunk)[ty->id & ((1 << LAZY_TYPE_CHUNK_BITS) - 1)] = ty;
 }
+
 
 void lazy_slots_sync(LazySlots* me) {
     if (!my directory) return;
     for (size_t i = 0; i < c_arraylen(my types); i++) {
         if (!my types[i]) my types[i] = (Ty const**)atomic_load_explicit(&my directory->chunks[i], memory_order_acquire);
     }
+}
+
+void lazy_slots_share(LazySlots* me) {
+    if (!my directory) return;
+    // (Before the checkers run: the graph adopts them as it makes them)
+    u32 at = atomic_load_explicit(&my directory->reader_count, memory_order_relaxed);
+    panic_if(at >= c_arraylen(my directory->readers), "too many checkers on one graph");
+    my directory->readers[at] = me;
+    atomic_store_explicit(&my directory->reader_count, at + 1, memory_order_release);
+    lazy_slots_sync(me);
 }
 
 static u32 lazy_type_id(Ty const* ty) {

@@ -35,6 +35,7 @@ TyGraph* graph_new(Checker* first);
 void graph_drop(TyGraph* me); // After every checker
 // Makes the checker the graph's current holder (checker_make_current()); null: none
 void graph_enter(TyGraph* me, Checker* checker);
+void graph_set_concurrent(TyGraph* me, bool concurrent); // Checkers on threads of their own: no hand-over
 // A new checker of the graph (checker_new()): the first one's intrinsics, the graph's tables as its shared ones
 void graph_adopt(TyGraph* me, Checker* checker);
 // Before checker_drop() frees what it doesn't own

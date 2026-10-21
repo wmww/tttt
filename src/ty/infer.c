@@ -437,6 +437,7 @@ Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, T
     *slot = ret;
     signature_resolve(me, ret);
     ret->type_params = (TyList){0};
+    *slot = nullptr;
     return intern_set(me, &my links, slot, ret);
 }
 
@@ -540,6 +541,8 @@ Signature const* ty_signature_with_type_params(Checker* me, Signature const* sig
     signature_predicate(me, sig);
     Signature* ret = arena_new(&my arena, Signature);
     *ret = *sig;
+    LAZY_COPIED(me, ret->state);
+    LAZY_COPIED(me, ret->ret_state);
     ret->type_params = type_params;
     return ret;
 }

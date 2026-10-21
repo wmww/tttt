@@ -346,8 +346,10 @@ Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol) {
 bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function) {
     if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body) return false;
     FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
-    if (memo && memo->state == LAZY_STATE_IN_FLIGHT) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-    return memo && memo->state == LAZY_STATE_IN_FLIGHT;
+    // (Another worker's in flight isn't one here)
+    bool in_flight = memo && LAZY_MINE_IN_FLIGHT(me, LAZY_LOAD(memo->state));
+    if (in_flight) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+    return in_flight;
 }
 
 static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer);
@@ -356,7 +358,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
 Ty const* ty_function_return_known(Checker* me, FunctionImpl const* function) {
     if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body) return nullptr;
     FunctionReturn const* memo = ty_link_get(me, KEY_FUNCTION_RETURN, function);
-    if (TAINT_IF(TAINT_PEEK, !(memo && memo->state == LAZY_STATE_DONE))) return nullptr;
+    if (TAINT_IF(TAINT_PEEK, !(memo && LAZY_LOAD(memo->state) == LAZY_STATE_DONE))) return nullptr;
     return memo->type;
 }
 
@@ -377,7 +379,7 @@ static void publish_function_return(FunctionReturn* memo, Ty const* type, bool p
     memo->type = type;
     memo->promise_missing = promise_missing;
     memo->circular = circular;
-    memo->state = LAZY_STATE_DONE;
+    LAZY_DONE(memo->state);
 }
 
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
@@ -411,7 +413,9 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     if (!memo) {
         memo = (FunctionReturn*)ty_link_publish(me, KEY_FUNCTION_RETURN, function, arena_new(&my arena, FunctionReturn));
     }
-    switch (memo->state) {
+    again:;
+    LAZY_SNAP(me, memo->state, seen, again);
+    switch (LAZY_STATE_OF(seen)) {
         case LAZY_STATE_DONE:
             TAINT_READ(TK_FUNCTION_RETURN, memo);
             report_promise_missing(me, function, memo);
@@ -429,7 +433,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
             return ty_intrinsic(me, TY_CIRCULAR);
         case LAZY_STATE_NOT_STARTED: break;
     }
-    memo->state = LAZY_STATE_IN_FLIGHT;
+    if (!LAZY_CLAIM(me, memo->state)) goto again;
     TAINT_BEGIN(taint_frame);
     ty_resolving_push(me, RESOLVING_FUNCTION_RETURN, function);
     FlowIsolation isolation = ty_flow_isolate(me);
@@ -446,7 +450,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     bool circular = ty_resolving_pop(me);
     my outer_inference = outer;
     ty_flow_restore(me, isolation);
-    if (memo->state != LAZY_STATE_DONE) {
+    if (LAZY_LOAD(memo->state) != LAZY_STATE_DONE) {
         // A return type that depends on itself is any, whatever else the body says (tsc: popTypeResolution() failing)
         publish_function_return(memo, circular ? ty_intrinsic(me, TY_ANY) : type, promise_missing, circular);
     } else if (circular && !memo->circular) {

@@ -4995,7 +4995,8 @@ void program_typecheck(Program* me) {
     if (my shared_graph && !my graph) {
         my graph = graph_new(my checker);
         my checker_budget = my checker_start_budget = UINT64_MAX;
-        my threads = 1;
+        // (On threads: the checkers run at once, each its own lib singletons, plan 86 4d)
+        graph_set_concurrent(my graph, (my threads ? my threads : 1) > 1);
     }
     my binder->frozen = true;
     my errs->frozen = true;

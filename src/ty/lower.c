@@ -217,7 +217,7 @@ static Ty const* make_declared(Checker* me, Symbol const* symbol, TyDeclaredKind
 void ty_set_declared_type(Checker* me, Symbol const* symbol, Ty const* type) {
     SymbolLinks* links = symbol_links(me, symbol);
     links->declared_type = type;
-    links->declared_state = LAZY_STATE_DONE;
+    LAZY_DONE(links->declared_state);
 }
 
 // An enum member's type is made when its enum's is
@@ -225,7 +225,7 @@ static Ty const* enum_member_type(Checker* me, Symbol const* symbol) {
     if (!symbol->parent || !(symbol->parent->flags & SYMBOL_ENUM)) return ty_intrinsic(me, TY_ERROR);
     ty_declared_type_of(me, symbol->parent);
     SymbolLinks* links = symbol_links(me, symbol);
-    if (links->declared_state == LAZY_STATE_DONE) return links->declared_type;
+    if (LAZY_LOAD(links->declared_state) == LAZY_STATE_DONE) return links->declared_type;
     // The enum is being resolved further up the stack and hasn't got to this member yet
     return nullptr;
 }
@@ -270,7 +270,13 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     symbol = canonical(me, symbol);
     if (symbol->is_placeholder) return ty_intrinsic(me, TY_ERROR);
     SymbolLinks* links = symbol_links(me, symbol);
-    switch (links->declared_state) {
+    again:
+    if (__builtin_expect(LAZY_LOAD(links->declared_state) == LAZY_STATE_DONE, 1)) {
+        TAINT_READ(TK_SYMBOL_DECLARED, links);
+        return links->declared_type;
+    }
+    LAZY_SNAP(me, links->declared_state, seen, again);
+    switch (LAZY_STATE_OF(seen)) {
         case LAZY_STATE_DONE:
             TAINT_READ(TK_SYMBOL_DECLARED, links);
             return links->declared_type;
@@ -287,7 +293,7 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
             return ty_intrinsic(me, TY_ERROR);
         case LAZY_STATE_NOT_STARTED: break;
     }
-    links->declared_state = LAZY_STATE_IN_FLIGHT;
+    if (!LAZY_CLAIM(me, links->declared_state)) goto again;
     TAINT_BEGIN(taint_frame);
     Ty const* ret;
     bool alias_circular = false;
@@ -300,7 +306,10 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     } else if (symbol->flags & SYMBOL_ENUM_MEMBER) {
         ret = enum_member_type(me, symbol);
         if (!ret) {
-            links->declared_state = LAZY_STATE_NOT_STARTED;
+            // (Unless the enum's resolution set it meanwhile)
+            unsigned mine = LAZY_STATE_IN_FLIGHT | (unsigned)my graph_worker << 2;
+            __atomic_compare_exchange_n(&links->declared_state, &(LazyState){ (LazyState)mine }, LAZY_STATE_NOT_STARTED, false,
+                __ATOMIC_RELEASE, __ATOMIC_RELAXED);
             return ty_intrinsic(me, TY_ERROR);
         }
     } else if (symbol->flags & SYMBOL_TYPE_PARAMETER) {
@@ -352,10 +361,10 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     // resolution of an alias that re-entered may have finished first: its type and circularity stay, tsc's `if
     // links.declaredType == nil`; tsc's typeParameters aren't unset by a later failure either, and this one's TS2456 is
     // said above)
-    if (links->declared_state != LAZY_STATE_DONE) {
+    if (LAZY_LOAD(links->declared_state) != LAZY_STATE_DONE) {
         links->declared_type = ret;
         links->circular = alias_circular;
-        links->declared_state = LAZY_STATE_DONE;
+        LAZY_DONE(links->declared_state);
     }
     TAINT_END(taint_frame, TK_SYMBOL_DECLARED, links, symbol, links->declared_type);
     return links->declared_type;
@@ -368,7 +377,7 @@ bool ty_alias_is_circular(Checker* me, Symbol const* symbol) {
     // (Asked for every alias reference: one lookup when the alias is resolved, as it nearly always is by then. Links are
     // arena-allocated, the pointer stays valid)
     SymbolLinks* links = symbol_links(me, canonical(me, symbol));
-    if (links->declared_state != LAZY_STATE_DONE) ty_declared_type_of(me, symbol);
+    if (LAZY_LOAD(links->declared_state) != LAZY_STATE_DONE) ty_declared_type_of(me, symbol);
     return links->circular;
 }
 
@@ -376,12 +385,14 @@ bool ty_alias_is_circular(Checker* me, Symbol const* symbol) {
 Ty const* ty_static_type_of(Checker* me, Symbol const* symbol) {
     symbol = canonical(me, symbol);
     SymbolLinks* links = symbol_links(me, symbol);
-    if (!links->static_type) {
-        links->static_type = make_declared(
-            me, symbol, symbol->flags & SYMBOL_CLASS ? TY_DECLARED_CLASS_STATIC : TY_DECLARED_ENUM_OBJECT
-        );
+    Ty const* known = __atomic_load_n(&links->static_type, __ATOMIC_ACQUIRE);
+    if (!known) {
+        // (An identity: made whole first, then published, the first checker's winning with --shared-graph)
+        Ty const* made = make_declared(me, symbol, symbol->flags & SYMBOL_CLASS ? TY_DECLARED_CLASS_STATIC : TY_DECLARED_ENUM_OBJECT);
+        known = nullptr;
+        if (__atomic_compare_exchange_n(&links->static_type, &known, made, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) known = made;
     }
-    return links->static_type;
+    return known;
 }
 
 // Whether a class or interface reference is in a JavaScript file (tsc's getTypeFromClassOrInterfaceReference passes
@@ -2710,7 +2721,7 @@ typedef struct DeferredArgsClaim {
 // The deferred reference's arguments are done
 static TyList publish_reference_args(TyDeferredRef* deferred, Ty const** args, u32 len) {
     deferred->args = (TyList){ .data = args, .len = len };
-    deferred->state = LAZY_STATE_DONE;
+    LAZY_DONE(deferred->state);
     return deferred->args;
 }
 
@@ -2718,10 +2729,12 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     check(reference->kind == TY_REFERENCE);
     TyDeferredRef* deferred = reference->reference.deferred;
     if (!deferred) return reference->reference.args;
-    if (deferred->state == LAZY_STATE_DONE) return deferred->args;
+    again:;
+    LAZY_SNAP(me, deferred->state, seen, again);
+    if (seen == LAZY_STATE_DONE) return deferred->args;
     u32 len = reference->reference.target->declared.type_params.len;
     Ty const** args = arena_new_n(&my arena, Ty const*, len ? len : 1);
-    if (deferred->state == LAZY_STATE_IN_FLIGHT) {
+    if (LAZY_IN_FLIGHT(seen)) {
         TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
         // Only an illegal cycle gets here (its arguments need its arguments)
         Claim* claim = ty_claim_find(me, CLAIM_DEFERRED_ARGS, deferred, 0);
@@ -2729,7 +2742,7 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
         circular_reference_args(me, args, len);
         return (TyList){ .data = args, .len = len };
     }
-    deferred->state = LAZY_STATE_IN_FLIGHT;
+    if (!LAZY_CLAIM(me, deferred->state)) goto again;
     DeferredArgsClaim claim = {0};
     ty_claim_push(me, CLAIM_DEFERRED_ARGS, &claim.claim, deferred, 0);
     TypeNode const* node = deferred->node;
@@ -4057,16 +4070,22 @@ static Ty const* conditional_flow_type(Checker* me, TypeNode const* node, Ty con
         }
         if (!flow->covariant && !type_variable) continue;
         ImpliedConstraint* implied = implied_constraint(me, flow->ternary);
-        if (implied->check_state == LAZY_STATE_IN_FLIGHT) continue;
-        if (implied->check_state == LAZY_STATE_NOT_STARTED) {
-            implied->check_state = LAZY_STATE_IN_FLIGHT;
+        retry_check:;
+        LAZY_SNAP(me, implied->check_state, seen, retry_check);
+        if (LAZY_IN_FLIGHT(seen)) continue;
+        if (seen == LAZY_STATE_NOT_STARTED) {
+            if (!LAZY_CLAIM(me, implied->check_state)) goto retry_check;
             Ty const* check = ty_from_node(me, implied->check_node, (LowerCtx){ .generic = true });
             implied->check = ty_actual_type_variable(me, check);
-            implied->check_state = LAZY_STATE_DONE;
+            LAZY_DONE(implied->check_state);
         }
         if (!actual) actual = ty_actual_type_variable(me, ty);
         if (implied->check != actual) continue;
-        if (!implied->extends) implied->extends = ty_from_node(me, implied->extends_node, (LowerCtx){ .generic = true });
+        if (!__atomic_load_n(&implied->extends, __ATOMIC_ACQUIRE)) {
+            Ty const* extends = ty_from_node(me, implied->extends_node, (LowerCtx){ .generic = true });
+            Ty const* unset = nullptr;
+            __atomic_compare_exchange_n(&implied->extends, &unset, extends, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED);
+        }
         ty_buf_push(&constraints, implied->extends);
     }
     if (constraints.len) {
@@ -4229,7 +4248,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 return param;
             }
             Ty const* param = ty_type_param(me, node->inferred->owned_symbol);
-            param->param.state->is_infer = true;
+            if (!param->param.state->is_infer) __atomic_store_n(&param->param.state->is_infer, true, __ATOMIC_RELAXED);
             return param;
         }
 

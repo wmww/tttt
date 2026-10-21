@@ -80,7 +80,17 @@ static PropDeclRare* prop_decl_rare_mut(Checker* me, PropDecl* decl) {
 
 // `*to = *from`, with a declaration of its own to add to
 static void prop_copy_into(Checker* me, Prop* to, Prop const* from) {
+    // (With --shared-graph `from` may be another checker's, its type in flight there: the copy's type is its own to
+    // resolve, unless it was done before the copy)
+    unsigned state = LAZY_LOAD(from->type_state);
     *to = *from;
+    to->type_state = (uint8_t)state;
+    if (state == LAZY_STATE_DONE) {
+        to->type = from->type;
+    } else if (LAZY_IN_FLIGHT(state) && !LAZY_MINE_IN_FLIGHT(me, state)) {
+        to->type_state = LAZY_STATE_NOT_STARTED;
+        to->type = nullptr;
+    }
     if (prop_decl_shared(from->decl)) return;
     to->decl = arena_new(&my arena, PropDecl);
     *to->decl = *from->decl;
@@ -107,14 +117,14 @@ static MembersClaim* members_claim_of(Checker* me, TyObjectState const* state) {
 
 // What a state in flight has published so far (null: nothing, or not in flight here)
 static Members const* early_members(Checker* me, TyObjectState const* state) {
-    if (state->members_state != LAZY_STATE_IN_FLIGHT) return nullptr;
+    if (!LAZY_IN_FLIGHT(state->members_state)) return nullptr;
     MembersClaim* claim = members_claim_of(me, state);
     return claim ? claim->early : nullptr;
 }
 
 // Whether the state is in flight here with nothing published yet
 static bool early_members_wanted(Checker* me, TyObjectState const* state) {
-    if (!state || state->members_state != LAZY_STATE_IN_FLIGHT) return false;
+    if (!state || !LAZY_IN_FLIGHT(state->members_state)) return false;
     MembersClaim* claim = members_claim_of(me, state);
     return claim && !claim->early;
 }
@@ -133,7 +143,7 @@ static void members_claim_push(Checker* me, MembersClaim* claim, TyObjectState c
 static Members const* publish_members(Checker* me, MembersClaim* claim, TyObjectState* state, Members const* members) {
     ty_claim_pop(me, CLAIM_MEMBERS, &claim->claim);
     state->members = members;
-    state->members_state = LAZY_STATE_DONE;
+    LAZY_DONE(state->members_state);
     return members;
 }
 
@@ -1378,12 +1388,14 @@ Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol) {
     // (A class name isn't a type variable: no need to type the expression)
     if (extends->tag == EXPR_IDENTIFIER && symbol_for_meaning(extends->identifier.target, SYMBOL_CLASS)) return nullptr;
     SymbolLinks* links = ty_symbol_links(me, class_symbol);
-    if (links->base_variable_state == LAZY_STATE_DONE) return links->base_variable;
-    if (links->base_variable_state == LAZY_STATE_IN_FLIGHT) {
+    again:;
+    LAZY_SNAP(me, links->base_variable_state, seen, again);
+    if (seen == LAZY_STATE_DONE) return links->base_variable;
+    if (LAZY_IN_FLIGHT(seen)) {
         TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
         return nullptr;
     } // The extends expression mentions the class
-    links->base_variable_state = LAZY_STATE_IN_FLIGHT;
+    if (!LAZY_CLAIM(me, links->base_variable_state)) goto again;
     Ty const* type = ty_expr_type(me, extends);
     Ty const* variable = nullptr;
     if ((type->flags & TYF_TYPE_PARAM) || type->kind == TY_INDEXED) {
@@ -1399,7 +1411,7 @@ Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol) {
     }
     links = ty_symbol_links(me, class_symbol);
     links->base_variable = variable;
-    links->base_variable_state = LAZY_STATE_DONE;
+    LAZY_DONE(links->base_variable_state);
     return variable;
 }
 
@@ -1494,15 +1506,17 @@ Ty const* ty_non_augmenting_base(Checker* me, Ty const* ty) {
         return nullptr;
     }
     if (!state) return nullptr;
-    if (state->base_state == LAZY_STATE_DONE) return state->equivalent_base;
-    if (state->base_state == LAZY_STATE_IN_FLIGHT) {
+    again:;
+    LAZY_SNAP(me, state->base_state, seen, again);
+    if (seen == LAZY_STATE_DONE) return state->equivalent_base;
+    if (LAZY_IN_FLIGHT(seen)) {
         TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
         return nullptr;
     }
-    state->base_state = LAZY_STATE_IN_FLIGHT;
+    if (!LAZY_CLAIM(me, state->base_state)) goto again;
     Ty const* base = non_augmenting_base_uncached(me, ty);
     state->equivalent_base = base;
-    state->base_state = LAZY_STATE_DONE;
+    LAZY_DONE(state->base_state);
     return base;
 }
 
@@ -3177,7 +3191,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             builder.skip_computed = builder.only_late = false;
             if (index_signatures) {
                 TyObjectState* state = object_state(ty);
-                if (state && state->members_state == LAZY_STATE_IN_FLIGHT && members_claim_of(me, state)) {
+                if (state && LAZY_IN_FLIGHT(state->members_state) && members_claim_of(me, state)) {
                     Members* partial = arena_new(&my arena, Members);
                     Prop** props = arena_new_n(&my arena, Prop*, builder.props_count ? builder.props_count : 1);
                     memcpy(props, builder.props, sizeof(Prop*) * builder.props_count);
@@ -3430,6 +3444,7 @@ static void mapped_key_circular(Checker* me, MappedInfo const* source, MappedInf
 MappedInfo const* ty_mapped_info_instantiate(Checker* me, MappedInfo const* source, TyMapper const* mapper) {
     MappedInfo* mapped = arena_new(&my arena, MappedInfo);
     *mapped = *source;
+    LAZY_COPIED(me, mapped->template_state);
     // tsc's instantiateMappedType makes a fresh key parameter constrained by the instantiated constraint, whose base
     // constraint (getResolvedBaseConstraint, pushed) is resolved when the constraint is asked for: a cycle through it
     // (`interface Y extends X<Y>` with `type X<T> = { [K in keyof T]: ... }`: `keyof Y` needs Y's bases, in flight)
@@ -3688,7 +3703,9 @@ static void probe_reference(Checker* me, Ty const* ty, u32 depth) {
 // The raw members of a class or interface (see resolve_declared_members()), memoised in Ty.declared.raw
 static Members const* declared_raw_members(Checker* me, Ty const* declared) {
     TyObjectState* state = declared->declared.raw;
-    switch (state->members_state) {
+    again:;
+    LAZY_SNAP(me, state->members_state, seen, again);
+    switch (LAZY_STATE_OF(seen)) {
         case LAZY_STATE_DONE:
             TAINT_READ(TK_DECLARED_RAW, state);
             return state->members;
@@ -3701,9 +3718,9 @@ static Members const* declared_raw_members(Checker* me, Ty const* declared) {
             return &empty_members;
         case LAZY_STATE_NOT_STARTED: break;
     }
+    if (!LAZY_CLAIM(me, state->members_state)) goto again;
     MembersClaim claim;
     members_claim_push(me, &claim, state);
-    state->members_state = LAZY_STATE_IN_FLIGHT;
     TAINT_BEGIN(taint_frame);
     members_in_flight_push(me, declared);
     Members const* members = resolve_declared_members(me, declared);
@@ -4887,22 +4904,25 @@ static Members const* resolve_members(Checker* me, Ty const* ty) {
 MappedInfo const* ty_mapped_info_unexpanded(Checker* me, Ty const* ty) {
     TyObjectState* state = object_state(ty);
     if (!state) return nullptr;
-    if (state->members_state == LAZY_STATE_DONE) return state->members->mapped ? state->members->mapped : members_rare(state->members)->expanded_from;
-    if (state->members_state == LAZY_STATE_IN_FLIGHT) {
+    again:;
+    LAZY_SNAP(me, state->members_state, seen, again);
+    if (seen == LAZY_STATE_DONE) return state->members->mapped ? state->members->mapped : members_rare(state->members)->expanded_from;
+    if (LAZY_IN_FLIGHT(seen)) {
         TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
         return nullptr;
     }
-    if (!state->unexpanded) {
+    if (!__atomic_load_n(&state->unexpanded, __ATOMIC_ACQUIRE)) {
         // (In flight meanwhile: the members are asked for as they would be while they are resolved, with nothing early)
+        if (!LAZY_CLAIM(me, state->members_state)) goto again;
         MembersClaim claim;
         members_claim_push(me, &claim, state);
-        state->members_state = LAZY_STATE_IN_FLIGHT;
         Members const* unexpanded = resolve_members_inner(me, ty);
         ty_claim_pop(me, CLAIM_MEMBERS, &claim.claim);
-        state->members_state = LAZY_STATE_NOT_STARTED;
-        if (!state->unexpanded) state->unexpanded = unexpanded;
+        Members const* expected = nullptr;
+        __atomic_compare_exchange_n(&state->unexpanded, &expected, unexpanded, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED);
+        __atomic_store_n(&state->members_state, LAZY_STATE_NOT_STARTED, __ATOMIC_RELEASE);
     }
-    return state->unexpanded->mapped;
+    return __atomic_load_n(&state->unexpanded, __ATOMIC_ACQUIRE)->mapped;
 }
 
 // A mapped type node's members before expansion (its declaration's MappedInfo), what an instantiation of it is
@@ -5106,6 +5126,7 @@ static Members const* resolve_intersection_members(Checker* me, Ty const* ty) {
                     Signature* clone = arena_new(&my arena, Signature);
                     signature_resolve(me, sig);
                     *clone = *sig;
+                    LAZY_COPIED(me, clone->state);
                     clone->ret = ty_intersection(me, mixed, mixed_len, nullptr, (TyList){0});
                     clone->ret_state = LAZY_STATE_DONE;
                     free(mixed);
@@ -5145,7 +5166,9 @@ static TyObjectState* object_state(Ty const* ty) {
 Members const* ty_members_resolving(Checker* me, Ty const* ty) {
     TyObjectState* state = object_state(ty);
     if (!state) return &empty_members;
-    switch (state->members_state) {
+    again:;
+    LAZY_SNAP(me, state->members_state, seen, again);
+    switch (LAZY_STATE_OF(seen)) {
         case LAZY_STATE_DONE:
             TAINT_READ(TK_MEMBERS, state);
             return state->members;
@@ -5178,14 +5201,14 @@ Members const* ty_members_resolving(Checker* me, Ty const* ty) {
             // A deferred reference's arguments come first, before its members are in flight (tsc's
             // resolveTypeReferenceMembers starts with getTypeArguments): arguments that need these members find
             // their own resolution in flight (TS4109), not the members'
-            if (ty->kind == TY_REFERENCE && ty->reference.deferred && ty->reference.deferred->state != LAZY_STATE_DONE) {
+            if (ty->kind == TY_REFERENCE && ty->reference.deferred && LAZY_LOAD(ty->reference.deferred->state) != LAZY_STATE_DONE) {
                 ty_reference_args(me, ty);
-                if (state->members_state != LAZY_STATE_NOT_STARTED) return ty_members(me, ty);
+                if (LAZY_LOAD(state->members_state) != LAZY_STATE_NOT_STARTED) return ty_members(me, ty);
             }
             if (my eager_probe_depth && ty->kind == TY_REFERENCE && !ty->reference.deferred) members_reentered_unguarded(me, ty);
+            if (!LAZY_CLAIM(me, state->members_state)) goto again;
             MembersClaim claim;
             members_claim_push(me, &claim, state);
-            state->members_state = LAZY_STATE_IN_FLIGHT;
             TAINT_BEGIN(taint_frame);
             Members const* members;
             if (ty->kind == TY_DECLARED || ty->kind == TY_REFERENCE) {
@@ -5207,7 +5230,7 @@ Members const* ty_members_resolving(Checker* me, Ty const* ty) {
 
 bool ty_members_done(Ty const* ty) {
     TyObjectState* state = object_state(ty);
-    return !state || state->members_state == LAZY_STATE_DONE;
+    return !state || LAZY_LOAD(state->members_state) == LAZY_STATE_DONE;
 }
 
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name) {
@@ -5321,7 +5344,7 @@ bool ty_prop_is_accessor(Prop const* prop) {
 
 Ty const* prop_type(Checker* me, Prop const* const_prop) {
     Prop* prop = (Prop*)const_prop; // The lazily resolved type is the one mutable thing about a Prop
-    if (prop->type_state == LAZY_STATE_DONE) {
+    if (prop->type_state == LAZY_STATE_DONE) { // (A plain load, see ty_members())
         TAINT_READ(TK_PROP_TYPE, prop);
         return prop->type;
     }
@@ -5330,7 +5353,9 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
 
 // (Out of line: the resolved case above is what nearly every call is)
 static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* prop) {
-    switch (prop->type_state) {
+    again:;
+    LAZY_SNAP(me, prop->type_state, seen, again);
+    switch (LAZY_STATE_OF(seen)) {
         case LAZY_STATE_DONE: return prop->type;
         case LAZY_STATE_IN_FLIGHT:
             TAINT_EVENT(TAINT_IN_FLIGHT_PROP);
@@ -5366,7 +5391,7 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
             return ty_intrinsic(me, TY_CIRCULAR);
         case LAZY_STATE_NOT_STARTED: break;
     }
-    prop->type_state = LAZY_STATE_IN_FLIGHT;
+    if (!LAZY_CLAIM(me, prop->type_state)) goto again;
     TAINT_BEGIN(taint_frame);
     bool resolving = !prop->target || prop->mapped;
     if (resolving) ty_resolving_push(me, RESOLVING_PROP, prop);
@@ -5416,7 +5441,7 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
     if (circular && prop->mapped) {
         // tsc's getTypeOfMappedSymbol when popTypeResolution fails
         prop->type = ty_intrinsic(me, TY_ERROR);
-        prop->type_state = LAZY_STATE_DONE;
+        LAZY_DONE(prop->type_state);
         TAINT_END(taint_frame, TK_PROP_TYPE, prop, prop, prop->type);
         cstr name = ty_prop_written_name(me, prop);
         Ty const* mapped_type = intern_get(&my links, (u64[]){ KEY_PROP_MAPPED_TYPE, (u64)(uintptr_t)prop }, 2);
@@ -5442,7 +5467,7 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
         ty_error_at(me, name, 2502, cstr_d("'", span_sv(name), "' is referenced directly or indirectly in its own type annotation."));
     }
     prop->type = type;
-    prop->type_state = LAZY_STATE_DONE;
+    LAZY_DONE(prop->type_state);
     TAINT_END(taint_frame, TK_PROP_TYPE, prop, prop, type);
     return type;
 }
@@ -5587,11 +5612,19 @@ static void report_renamed_bodiless_elements(Checker* me, Binding const* pattern
     }
 }
 
-void signature_resolve(Checker* me, Signature const* const_sig) {
+void signature_resolve_slow(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
-    if (sig->state != LAZY_STATE_NOT_STARTED) return;
-    sig->state = LAZY_STATE_IN_FLIGHT;
-    if (!sig->target && sig->function) sig->target = jsdoc_tag_signature(me, sig->function);
+    again:
+    if (LAZY_LOAD(sig->state) == LAZY_STATE_DONE) return;
+    LAZY_SNAP(me, sig->state, seen, again);
+    // (Done, or in flight here: what is resolved so far)
+    if (seen != LAZY_STATE_NOT_STARTED) return;
+    if (!LAZY_CLAIM(me, sig->state)) goto again;
+    if (!sig->target && sig->function) {
+        // (Written only when there is one: other checkers read `target` of signatures they don't resolve)
+        Signature const* tagged = jsdoc_tag_signature(me, sig->function);
+        if (tagged) sig->target = tagged;
+    }
     if (sig->target) {
         Signature const* target = sig->target;
         signature_resolve(me, target);
@@ -5694,15 +5727,15 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
     if (sig->class_instance) {
         sig->type_params = sig->class_type_params;
         sig->ret = sig->class_instance;
-        sig->ret_state = LAZY_STATE_DONE;
+        LAZY_DONE(sig->ret_state);
     }
     if (!sig->class_instance && sig->target && sig->target->class_instance && sig->mapper) {
         // An instantiated construct signature of a class (not one a derived class without a constructor inherits: that
         // makes the derived class)
         sig->ret = ty_instantiate(me, sig->target->class_instance, sig->mapper);
-        sig->ret_state = LAZY_STATE_DONE;
+        LAZY_DONE(sig->ret_state);
     }
-    sig->state = LAZY_STATE_DONE;
+    LAZY_DONE(sig->state);
 }
 
 // Whether the signature has a `this` type (Signature.this_type), read off its declaration while it isn't resolved: an
@@ -5711,8 +5744,8 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
 // whose instantiated signatures have lazily typed parameters, never looks at
 bool ty_signature_has_this(Checker* me, Signature const* sig) {
     Signature const* root = sig;
-    while (root->state != LAZY_STATE_DONE && root->target) root = root->target;
-    if (root->state == LAZY_STATE_DONE) return root->this_type != nullptr;
+    while (LAZY_LOAD(root->state) != LAZY_STATE_DONE && root->target) root = root->target;
+    if (LAZY_LOAD(root->state) == LAZY_STATE_DONE) return root->this_type != nullptr;
     // (A function expression can take its contextual signature's, a JavaScript one its `@type` tag's)
     FunctionImpl const* function = root->function;
     if (!function || function->is_expression || !span_source(function->full_span) || span_source(function->full_span)->is_js) {
@@ -5728,7 +5761,13 @@ bool ty_signature_has_this(Checker* me, Signature const* sig) {
 Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
     signature_resolve(me, sig);
-    switch (sig->ret_state) {
+    again:
+    if (__builtin_expect(LAZY_LOAD(sig->ret_state) == LAZY_STATE_DONE, 1)) {
+        TAINT_READ(TK_SIGNATURE_RETURN, sig);
+        return sig->ret;
+    }
+    LAZY_SNAP(me, sig->ret_state, seen, again);
+    switch (LAZY_STATE_OF(seen)) {
         case LAZY_STATE_DONE:
             TAINT_READ(TK_SIGNATURE_RETURN, sig);
             return sig->ret;
@@ -5740,7 +5779,7 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
             return ty_intrinsic(me, TY_CIRCULAR);
         case LAZY_STATE_NOT_STARTED: break;
     }
-    sig->ret_state = LAZY_STATE_IN_FLIGHT;
+    if (!LAZY_CLAIM(me, sig->ret_state)) goto again;
     TAINT_BEGIN(taint_frame);
     ty_resolving_push(me, RESOLVING_SIGNATURE_RETURN, sig);
     Ty const* ret;
@@ -5768,15 +5807,16 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
         }
     }
     sig->ret = ret;
-    sig->ret_state = LAZY_STATE_DONE;
+    LAZY_DONE(sig->ret_state);
     TAINT_END(taint_frame, TK_SIGNATURE_RETURN, sig, sig, ret);
     return ret;
 }
 
 static bool signature_return_in_flight(Checker* me, Signature const* sig, bool above_barrier) {
     for (u32 depth = 0; sig && depth < 64; depth++) {
-        if (sig->ret_state == LAZY_STATE_DONE) return false;
-        if (sig->ret_state == LAZY_STATE_IN_FLIGHT) {
+        if (LAZY_LOAD(sig->ret_state) == LAZY_STATE_DONE) return false;
+        // (Another worker's in flight isn't one here)
+        if (LAZY_MINE_IN_FLIGHT(me, LAZY_LOAD(sig->ret_state))) {
             TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
             return true;
         }
@@ -5869,15 +5909,22 @@ static TyPredicate const* compute_signature_predicate(Checker* me, Signature* si
 }
 
 // The predicate is known
+// (With --shared-graph two checkers may infer it at once, both the same: the predicate is written before `done`, with
+// release, and read after it with acquire. A second publisher keeps the first one's)
 static TyPredicate const* publish_signature_predicate(Signature* sig, TyPredicate const* predicate) {
+    // (`predicate_writing` claims the write: a second publisher keeps the first one's)
+    if (__atomic_exchange_n(&sig->predicate_writing, true, __ATOMIC_ACQ_REL)) {
+        while (!__atomic_load_n(&sig->predicate_done, __ATOMIC_ACQUIRE)) __builtin_ia32_pause();
+        return sig->predicate;
+    }
     sig->predicate = predicate;
-    sig->predicate_done = true;
+    __atomic_store_n(&sig->predicate_done, true, __ATOMIC_RELEASE);
     return predicate;
 }
 
 TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
-    if (sig->predicate_done) return sig->predicate;
+    if (__atomic_load_n(&sig->predicate_done, __ATOMIC_ACQUIRE)) return sig->predicate;
     Claim* in_flight = ty_claim_find(me, CLAIM_PREDICATE, sig, 0);
     if (in_flight) {
         PredicateClaim* claim = c_container_of(in_flight, PredicateClaim, claim);
@@ -6467,18 +6514,20 @@ Ty const* ty_signature_type(Checker* me, Signature const* sig) {
 static Ty const* declared_param_constraint(Checker* me, Ty const* param) {
     check(param->kind == TY_TYPE_PARAM);
     TyParamState* state = param->param.state;
-    if (state->constraint_state == LAZY_STATE_DONE) TAINT_READ(TK_PARAM_CONSTRAINT, state);
-    if (state->constraint_state == LAZY_STATE_IN_FLIGHT) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-    if (state->constraint_state == LAZY_STATE_NOT_STARTED && state->clone_of) {
-        state->constraint_state = LAZY_STATE_IN_FLIGHT;
+    again:;
+    LAZY_SNAP(me, state->constraint_state, seen, again);
+    if (seen == LAZY_STATE_DONE) TAINT_READ(TK_PARAM_CONSTRAINT, state);
+    if (LAZY_IN_FLIGHT(seen)) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+    if (seen == LAZY_STATE_NOT_STARTED && state->clone_of) {
+        if (!LAZY_CLAIM(me, state->constraint_state)) goto again;
         TAINT_BEGIN(taint_frame);
         Ty const* constraint = ty_param_constraint(me, state->clone_of);
         state->constraint = constraint ? ty_instantiate(me, constraint, state->clone_mapper) : nullptr;
-        state->constraint_state = LAZY_STATE_DONE;
+        LAZY_DONE(state->constraint_state);
         TAINT_END(taint_frame, TK_PARAM_CONSTRAINT, state, param, state->constraint);
     }
-    if (state->constraint_state == LAZY_STATE_NOT_STARTED) {
-        state->constraint_state = LAZY_STATE_IN_FLIGHT;
+    if (seen == LAZY_STATE_NOT_STARTED && !state->clone_of) {
+        if (!LAZY_CLAIM(me, state->constraint_state)) goto again;
         TAINT_BEGIN(taint_frame);
         TypeNode const* node = state->constraint_node;
         if (state->item) {
@@ -6500,11 +6549,11 @@ static Ty const* declared_param_constraint(Checker* me, Ty const* param) {
             state->constraint = ty_intrinsic(me, TY_UNKNOWN_);
         }
         if (!node && state->is_infer) state->constraint = ty_implied_infer_constraint(me, param, false);
-        state->constraint_state = LAZY_STATE_DONE;
+        LAZY_DONE(state->constraint_state);
         TAINT_END(taint_frame, TK_PARAM_CONSTRAINT, state, param, state->constraint);
     }
     // In flight means the constraint is circular (`T extends T`), tsc reports TS2313 and carries on without one
-    return state->constraint_state == LAZY_STATE_DONE ? state->constraint : nullptr;
+    return LAZY_LOAD(state->constraint_state) == LAZY_STATE_DONE ? state->constraint : nullptr;
 }
 
 
@@ -6513,17 +6562,19 @@ static Ty const* declared_param_constraint(Checker* me, Ty const* param) {
 bool ty_param_constraint_is_circular(Checker* me, Ty const* param) {
     check(param->kind == TY_TYPE_PARAM);
     TyParamState* state = param->param.state;
-    if (!state->circular) {
+    // (Relaxed atomics: with --shared-graph checkers that ask at once compute it the same)
+    if (!__atomic_load_n(&state->circular, __ATOMIC_RELAXED)) {
         if (state->clone_of) {
-            state->circular = ty_param_constraint_is_circular(me, state->clone_of) ? 2 : 1;
+            __atomic_store_n(&state->circular, ty_param_constraint_is_circular(me, state->clone_of) ? 2 : 1, __ATOMIC_RELAXED);
         } else {
             bool circular = !ty_has_non_circular_base_constraint(me, param);
             // (Asked while its base constraint is computed: circular for now, the answer is known once that's done)
             if (ty_base_constraint_in_flight(me, param)) return circular;
-            if (!state->circular) state->circular = circular ? 2 : 1;
+            unsigned char unset = 0;
+            __atomic_compare_exchange_n(&state->circular, &unset, circular ? 2 : 1, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
         }
     }
-    return state->circular == 2;
+    return __atomic_load_n(&state->circular, __ATOMIC_RELAXED) == 2;
 }
 
 Ty const* ty_declared_param_constraint(Checker* me, Ty const* param) { return declared_param_constraint(me, param); }
@@ -6531,7 +6582,7 @@ Ty const* ty_declared_param_constraint(Checker* me, Ty const* param) { return de
 Ty const* ty_param_constraint(Checker* me, Ty const* param) {
     // The declared constraint is lowered under the base constraint's push (tsc's getResolvedBaseConstraint)
     if (!param->param.state->circular && !param->param.state->clone_of && !param->param.state->is_this &&
-        param->param.state->constraint_state == LAZY_STATE_NOT_STARTED) {
+        LAZY_LOAD(param->param.state->constraint_state) == LAZY_STATE_NOT_STARTED) {
         ty_param_constraint_is_circular(me, param);
     }
     Ty const* constraint = declared_param_constraint(me, param);
@@ -6569,19 +6620,21 @@ typedef struct ParamDefaultClaim {
 static void publish_param_default(TyParamState* state, Ty const* fallback, bool circular) {
     state->fallback = fallback;
     state->fallback_circular = circular;
-    state->fallback_state = LAZY_STATE_DONE;
+    LAZY_DONE(state->fallback_state);
 }
 
 Ty const* ty_param_default(Checker* me, Ty const* param) {
     check(param->kind == TY_TYPE_PARAM);
     TyParamState* state = param->param.state;
-    if (state->fallback_state == LAZY_STATE_NOT_STARTED && state->clone_of) {
-        state->fallback_state = LAZY_STATE_IN_FLIGHT;
+    again:;
+    LAZY_SNAP(me, state->fallback_state, seen, again);
+    if (seen == LAZY_STATE_NOT_STARTED && state->clone_of) {
+        if (!LAZY_CLAIM(me, state->fallback_state)) goto again;
         Ty const* fallback = ty_param_default(me, state->clone_of);
         publish_param_default(state, fallback ? ty_instantiate(me, fallback, state->clone_mapper) : nullptr, false);
     }
-    if (state->fallback_state == LAZY_STATE_NOT_STARTED) {
-        state->fallback_state = LAZY_STATE_IN_FLIGHT;
+    else if (seen == LAZY_STATE_NOT_STARTED) {
+        if (!LAZY_CLAIM(me, state->fallback_state)) goto again;
         ParamDefaultClaim claim = {0};
         ty_claim_push(me, CLAIM_PARAM_DEFAULT, &claim.claim, state, 0);
         GenericItem const* item = state->item ? default_item(param) : nullptr;
@@ -6589,12 +6642,12 @@ Ty const* ty_param_default(Checker* me, Ty const* param) {
         ty_claim_pop(me, CLAIM_PARAM_DEFAULT, &claim.claim);
         // (tsc's getResolvedTypeParameterDefault: asked for while being resolved, it's circularConstraintType)
         publish_param_default(state, claim.circular ? nullptr : fallback, claim.circular);
-    } else if (state->fallback_state == LAZY_STATE_IN_FLIGHT && !state->clone_of) {
+    } else if (LAZY_IN_FLIGHT(seen) && !state->clone_of) {
         TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
         Claim* claim = ty_claim_find(me, CLAIM_PARAM_DEFAULT, state, 0);
         if (claim) c_container_of(claim, ParamDefaultClaim, claim)->circular = true;
     }
-    return state->fallback_state == LAZY_STATE_DONE ? state->fallback : nullptr;
+    return LAZY_LOAD(state->fallback_state) == LAZY_STATE_DONE ? state->fallback : nullptr;
 }
 
 static Ty const* compute_mapped_template(Checker* me, MappedInfo const* mapped) {
@@ -6617,16 +6670,18 @@ Ty const* ty_mapped_template_instantiated(Checker* me, MappedInfo const* mapped,
 
 Ty const* ty_mapped_template(Checker* me, MappedInfo const* mapped) {
     MappedInfo* state = (MappedInfo*)mapped; // The lazy part is private to this function
-    if (state->template_state == LAZY_STATE_DONE) return state->template_;
+    again:;
+    LAZY_SNAP(me, state->template_state, seen, again);
+    if (seen == LAZY_STATE_DONE) return state->template_;
     // Re-entered while in flight: compute again without remembering (tsc has no guard here either, the instantiation
     // limits end a runaway; an error type would lose the recursive types that do terminate)
-    if (state->template_state == LAZY_STATE_IN_FLIGHT) {
+    if (LAZY_IN_FLIGHT(seen)) {
         TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
         return compute_mapped_template(me, mapped);
     }
-    state->template_state = LAZY_STATE_IN_FLIGHT;
+    if (!LAZY_CLAIM(me, state->template_state)) goto again;
     Ty const* template = compute_mapped_template(me, mapped);
     state->template_ = template;
-    state->template_state = LAZY_STATE_DONE;
+    LAZY_DONE(state->template_state);
     return template;
 }

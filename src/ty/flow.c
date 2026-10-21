@@ -168,7 +168,7 @@ static Ty const* evolving_element(Checker* me, Ty const* ty) {
 // tsc's finalizeEvolvingArrayType: the array type of what was pushed, subtype reduced (the auto array if nothing was)
 static Ty const* final_array_type(Checker* me, Ty const* ty) {
     if (ty->kind != TY_EVOLVING_ARRAY) return ty;
-    if (!ty->evolving_array.final_array) {
+    if (!__atomic_load_n(&ty->evolving_array.final_array, __ATOMIC_ACQUIRE)) {
         Ty const* element = ty->evolving_array.element;
         Ty const* final_array;
         if (element->flags & TYF_NEVER) {
@@ -179,7 +179,9 @@ static Ty const* final_array_type(Checker* me, Ty const* ty) {
             }
             final_array = ty_array(me, element, false);
         }
-        ((Ty*)ty)->evolving_array.final_array = final_array; // (A cache: this checker's own type)
+        // (A cache; with --shared-graph another checker's may be there first, the same)
+        Ty const* unset = nullptr;
+        __atomic_compare_exchange_n(&((Ty*)ty)->evolving_array.final_array, &unset, final_array, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED);
     }
     return ty->evolving_array.final_array;
 }

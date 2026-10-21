@@ -706,6 +706,35 @@ at the computation's end**, and makes every field another worker can read safe t
   literal_instance_is_itself() first, signature instantiations resolve first. Lookup stays private first: a private
   identity entry holds the winner, a memo entry its own value. At one thread nothing is ever lost and the output
   doesn't move.
+  Step 3 (threads on, waiting): the flag no longer forces one thread. Every Ty-resident lazy state (members, the raw
+  members, mapped `unexpanded`, prop types, signature resolution and return, constraints, defaults, mapped templates,
+  conditional branches, deferred args, reduced intersections, equivalent bases, class base variables, declared types,
+  inferred return types, implied constraints: 18 claim sites) is claimed by CAS with the worker's number in the bits
+  above the state (LAZY_CLAIM()), published with a release store after its value (LAZY_DONE()), and read through a
+  snapshot (LAZY_SNAP()): another worker's in-flight state is waited for (lazy_wait_slow(): 64 pauses, then sleeps
+  doubling from 2 us to 1 ms, a global wait-for graph under one mutex; a worker whose wait would close a cycle and that
+  has the highest number in it treats the field as its own cycle, counted). Copies of objects with such states
+  (`*copy = *original` of signatures, props, mapped infos) drop another worker's in-flight marks (LAZY_COPIED()).
+  Without the flag the worker number is 0 and the values are LazyState's. Also: the lib singletons are the inflight
+  worker's TySingletons (graph_adopt()), every checker's id table is told of each new chunk (lazy_slots_share()), the
+  first checker's pre-graph entries are published when the graph is made (the intrinsics' literals and typeof's union:
+  without that every worker made its own `"string"` and comparisons said "no overlap"), identities found by intern_slot()
+  are shared but memo kinds' slots stay private (callers write them), and a dozen lazily written fields became
+  first-wins CAS or atomics (class static types, distributed twins, predicates, evolving arrays' final arrays, implied
+  extends, a type parameter's circularity, `unexpanded`, ty_erased_signature()'s read of the mapper before the state).
+  The lib warm-up argument for waiting (all K workers start at once on Array, String, Promise...) holds: waits are
+  ~100-1200 per run, fallbacks 0 on drizzle, zod, effect, excalidraw.
+  **Not deterministic yet**: K12 on 12 threads gives K1's output in 24 of 32 runs (drizzle 7/8, zod 6/8 and one
+  segfault, effect 6/8, excalidraw 5/8); the differing runs add or drop a few diagnostics (members of a type missing
+  properties, a constraint not satisfied, a TS2589). Mechanism (main suspect, not yet proven): results computed while
+  their computation read something in flight (early members, a re-entered conditional branch, a variance claim: G0's
+  tainted results, ~0.1% of entries) are published into the shared Ty-resident field like clean ones. At K1 and in
+  track S every checker computed each such result in its own history; on threads, whether the tainted value (one
+  checker's in-flight view) or a clean one is what everyone reads depends on timing. Also known: the conditional
+  instance key reads whether the root's branch is lowered yet (instantiate_branch(): two instances of one type when
+  two workers race; keying by the node always cost drizzle +10% at K1). Next: the cheap taint on in shared mode and
+  tainted Ty-resident results kept in a per-worker overlay (slow path only), then rerun the 20-run gate.
+  Default path (callgrind, flag off) against the step 2 tree: nest +0.0%, drizzle +0.37%, zod +0.35%.
 
 ### 4e's first item: a shared relation cache (measured and designed 2026-10-21, not built)
 **Measurement** (`agents/plans/86_relation_share_probe.patch`, a scratch patch to relate.c's recursive_related():

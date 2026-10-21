@@ -73,6 +73,10 @@ typedef struct LazySlots {
 typedef struct TypeDirectory {
     _Atomic u32 next_block;
     struct Ty const** _Atomic chunks[1 << LAZY_TYPE_DIR_BITS];
+    // --shared-graph: the checkers' tables, each told of a new chunk when it is made (before any of its types can be
+    // published), so that reading another checker's id costs nothing more
+    struct LazySlots* readers[64];
+    _Atomic u32 reader_count;
 } TypeDirectory;
 
 TypeDirectory* type_directory_new(void);
@@ -84,6 +88,8 @@ u32 type_directory_block(TypeDirectory* me);
 void lazy_slots_add_type(LazySlots* me, struct Ty const* ty);
 // Copies the directory's chunks it doesn't have yet (--shared-graph: another checker's types are read)
 void lazy_slots_sync(LazySlots* me);
+// --shared-graph: the table reads every checker's ids from now on (each new chunk is put in it as it is made)
+void lazy_slots_share(LazySlots* me);
 
 static inline struct Ty const* lazy_slots_type(LazySlots const* me, u32 id) {
     return id ? my types[id >> LAZY_TYPE_CHUNK_BITS][id & ((1 << LAZY_TYPE_CHUNK_BITS) - 1)] : nullptr;

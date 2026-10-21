@@ -709,7 +709,8 @@ struct Signature {
     // The return type is lazier than the rest, use signature_return_type(): it's often inferred from a function body
     // that is in the middle of being checked
     uint8_t ret_state; // LazyState
-    bool predicate_done : 1;
+    bool predicate_done; // (A byte of its own: published with release, see publish_signature_predicate())
+    bool predicate_writing; // publish_signature_predicate() has started writing it
     bool drops_mapped_type_params; // Part of an instantiation expression, see Ty.anonymous.applies_type_args
     // Its mapper gives its own type parameters their arguments (ty_signature_instantiation()). Otherwise an outer
     // mapper that has them (a recursive type met again inside its own instantiation) doesn't reach inside: they're
@@ -1298,7 +1299,44 @@ struct Checker {
     u64 stamp_decisions;
     u32* graph_memo_slots;
     u32 graph_memo_len, graph_memo_cap;
+    // Its worker number on the graph (1..63, the tag of what it has in flight: LAZY_FOREIGN()), 0 without one
+    uint8_t graph_worker;
+    u64 graph_waits, graph_wait_ns, graph_fallbacks; // lazy_wait_slow() (TTTT_GRAPH_STATS)
 };
+
+// Lazily computed fields on shared objects (plan 86 4d): a LazyState in the low two bits, and while in flight the
+// worker that has it in the bits above (0 without --shared-graph, so the values are LazyState's). A field another worker
+// has in flight is waited for (LAZY_AWAIT()), claimed with LAZY_CLAIM(), published with LAZY_DONE() after its value
+#define LAZY_STATE_OF(v) ((v) & 3)
+#define LAZY_IN_FLIGHT(v) (((v) & 3) == LAZY_STATE_IN_FLIGHT)
+#define LAZY_LOAD(field) __atomic_load_n(&(field), __ATOMIC_ACQUIRE)
+// In flight to this worker (its own, or any without --shared-graph)
+#define LAZY_MINE_IN_FLIGHT(me, v) (LAZY_IN_FLIGHT(v) && (unsigned)((v) >> 2) == (me)->graph_worker)
+#define LAZY_FOREIGN(me, field) ((me)->graph_worker && LAZY_IN_FLIGHT(LAZY_LOAD(field)) && \
+    (unsigned)(LAZY_LOAD(field) >> 2) != (me)->graph_worker)
+// Waits while another worker has `field` in flight, then goes to `again` (look at it again). If waiting would close a
+// cycle of waits this worker is the one to break (lazy_wait_slow()), it goes on: the field is in flight to it as if
+// its own (a cycle), counted in Checker.graph_fallbacks
+#define LAZY_AWAIT(me, field, again) do { \
+    if (LAZY_FOREIGN(me, field) && lazy_wait_slow((me), &(field), sizeof(field))) goto again; \
+} while (0)
+// The field's state as of now in `v`, a declaration: what the code after it decides by (another worker can claim the
+// field the moment after: LAZY_CLAIM() is what finds out). If another worker has it in flight, waits and goes to `again`;
+// if that would close a wait cycle this worker breaks, `v` stays in flight: the code treats it as its own (a cycle)
+#define LAZY_SNAP(me, field, v, again) \
+    unsigned v = LAZY_LOAD(field); \
+    if (__builtin_expect(LAZY_IN_FLIGHT(v), 0) && (me)->graph_worker && (unsigned)(v >> 2) != (me)->graph_worker && \
+        lazy_wait_slow((me), &(field), sizeof(field))) goto again
+// Marks it in flight (not started, or its own already): false if another worker got there first (look again)
+#define LAZY_CLAIM(me, field) ((me)->graph_worker ? lazy_claim_slow((me), &(field), sizeof(field)) : \
+    ((field) = LAZY_STATE_IN_FLIGHT, true))
+// A field of a copy (`*copy = *original`): in flight on another worker, which won't finish the copy's, it isn't started
+#define LAZY_COPIED(me, field) do { \
+    if (LAZY_IN_FLIGHT(field) && !LAZY_MINE_IN_FLIGHT(me, (field))) (field) = LAZY_STATE_NOT_STARTED; \
+} while (0)
+#define LAZY_DONE(field) __atomic_store_n(&(field), LAZY_STATE_DONE, __ATOMIC_RELEASE)
+bool lazy_wait_slow(Checker* me, void* field, size_t size); // (graph.c) false: break the cycle, don't wait
+bool lazy_claim_slow(Checker* me, void* field, size_t size);
 
 // checker.c
 Checker* checker_new(Program* program);
@@ -1346,10 +1384,17 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
 // Sets a new entry's value (`*slot = value`): with --shared-graph an identity is published at once, and the value is
 // then whichever checker's came first (plan 86 4d). Constructors set their result through this and return what it gives
 void const* intern_publish(Checker* me, InternTable* table, void const** slot);
+// (With the flag a slot can be another checker's published entry already, found in the shared table after the
+// constructor's lookup missed: it keeps its value, which is the winner)
 static inline void const* intern_set(Checker* me, InternTable* table, void const** slot, void const* value) {
-    (void)me;
+    if (__builtin_expect(table->shared != nullptr, 0)) {
+        void const* there = __atomic_load_n(slot, __ATOMIC_ACQUIRE);
+        if (there) return there;
+        *slot = value;
+        return intern_publish(me, table, slot);
+    }
     *slot = value;
-    return __builtin_expect(table->shared != nullptr, 0) ? intern_publish(me, table, slot) : value;
+    return value;
 }
 // A lookup that missed: where intern_insert() puts the key without probing the table from the start again (the probe
 // is a cache miss in a big table: the value's computation in between evicts it, drizzle 1M misses)
@@ -1429,7 +1474,7 @@ enum { REDUCED_NOT_STARTED, REDUCED_IN_FLIGHT, REDUCED_ITSELF, REDUCED_NEVER };
 Ty const* ty_reduced_slow(Checker* me, Ty const* ty);
 static inline Ty const* ty_reduced(Checker* me, Ty const* ty) {
     if (ty->kind == TY_INTERSECTION) {
-        if (!ty->composite.state || ty->composite.state->reduced_state == REDUCED_ITSELF) return ty;
+        if (!ty->composite.state || LAZY_LOAD(ty->composite.state->reduced_state) == REDUCED_ITSELF) return ty;
     } else if (ty->kind != TY_UNION || !(ty->xflags & TYX_CONTAINS_INTERSECTIONS)) {
         return ty;
     }
@@ -1634,11 +1679,13 @@ static inline Members const* ty_members(Checker* me, Ty const* ty) {
     // (Not TAINT_READ here: --shared-graph's taint counts tainted members read only on the slow path, to keep this one
     // as it is without the flag; under -DTTTT_TAINT they are counted in ty_members_resolving())
 #ifdef TTTT_TAINT
-    if (state && state->members_state == LAZY_STATE_DONE) {
+    if (state && LAZY_LOAD(state->members_state) == LAZY_STATE_DONE) {
         TAINT_READ(TK_MEMBERS, state);
         return state->members;
     }
 #else
+    // (A plain load: on x86 a store-ordered publication (LAZY_DONE() after the value) is seen in order; an acquire here
+    // cost the default path ~0.3% of its instructions in the code it stops the compiler from combining)
     if (state && state->members_state == LAZY_STATE_DONE) return state->members;
 #endif
     return ty_members_resolving(me, ty);
@@ -1691,7 +1738,12 @@ Ty const* ty_non_augmenting_base(Checker* me, Ty const* ty);
 // The type variable a mixin class extends (`class C extends Base` with `Base: T`, or `T & U`): its value is `typeof C & T`
 // (tsc's getBaseTypeVariableOfClass). Null for any other class
 Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol);
-void signature_resolve(Checker* me, Signature const* sig);
+void signature_resolve_slow(Checker* me, Signature const* sig);
+// (Resolved ones inline: the done test is what nearly every call is)
+static inline void signature_resolve(Checker* me, Signature const* sig) {
+    if (__builtin_expect(LAZY_LOAD(sig->state) == LAZY_STATE_DONE, 1)) return;
+    signature_resolve_slow(me, sig);
+}
 Ty const* signature_return_type(Checker* me, Signature const* sig);
 bool ty_signature_return_in_flight(Checker* me, Signature const* sig); // Its return type is being inferred up the stack
 // The same, but an inferred return type in flight only counts above the barrier of a call being resolved: below it, asking

@@ -2171,8 +2171,11 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
     // parameters any (tsc's getErasedSignature of an instantiated signature, whose parameters are lazily typed): resolving
     // it first instantiates every parameter type with clones of the type parameters, evaluating the conditional types in
     // them (typesaurus's 10 overloads of `field` per Builder<Def, X>, in every variance measurement of the update API)
+    // (The mapper before the state: with --shared-graph another checker resolving it replaces the mapper,
+    // clone_type_params(), and what this erases from is the one it had while not started)
+    TyMapper const* unresolved_mapper = __atomic_load_n(&sig->mapper, __ATOMIC_ACQUIRE);
     Signature const* target = sig->target;
-    if (sig->state == LAZY_STATE_NOT_STARTED && target && sig->mapper && !sig->function && !sig->instantiates_own_params &&
+    if (LAZY_LOAD(sig->state) == LAZY_STATE_NOT_STARTED && target && unresolved_mapper && !sig->function && !sig->instantiates_own_params &&
         !sig->drops_mapped_type_params && !sig->fresh_type_params && !sig->class_instance && !(sig->flags & SIGNATURE_CONSTRUCT)
     ) {
         signature_resolve(me, target);
@@ -2189,7 +2192,7 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
             void const** slot = intern_slot(me, &my links, key, key_len);
             if (key != stack_key) free(key);
             if (*slot) return *slot;
-            TyMapper const* outer = sig->mapper;
+            TyMapper const* outer = unresolved_mapper;
             Ty const** sources = arena_new_n(&my arena, Ty const*, outer->len + own);
             Ty const** targets = arena_new_n(&my arena, Ty const*, outer->len + own);
             u32 len = 0;
@@ -2215,6 +2218,7 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
             *slot = ret;
             signature_resolve(me, ret);
             ret->type_params = (TyList){0};
+            *slot = nullptr;
             return intern_set(me, &my links, slot, ret);
         }
     }
@@ -2262,6 +2266,7 @@ bool ty_implementation_compatible_with_overload(Checker* me, Signature const* im
     // isSignatureAssignableTo with IgnoreReturnTypes: the target returning any compares nothing more
     Signature* copy = arena_new(&my arena, Signature);
     *copy = *target;
+    LAZY_COPIED(me, copy->state);
     copy->ret = ty_intrinsic(me, TY_ANY);
     copy->ret_state = LAZY_STATE_DONE;
     copy->predicate = nullptr;
@@ -2272,6 +2277,8 @@ bool ty_implementation_compatible_with_overload(Checker* me, Signature const* im
     if (source->flags & SIGNATURE_CONSTRUCT) {
         Signature* source_copy = arena_new(&my arena, Signature);
         *source_copy = *source;
+        LAZY_COPIED(me, source_copy->state);
+        LAZY_COPIED(me, source_copy->ret_state);
         source_copy->flags &= ~(u32)SIGNATURE_CONSTRUCT;
         source = source_copy;
     }
@@ -2803,7 +2810,7 @@ static Ternary props_related_impl(
             // TTransform's `static`, itself that conditional type, before failing on the missing [TransformKind])
             if (prop && !unmatched_checked &&
                 // (Not a taint: which order it checks in, the answer is the same)
-                (prop->type_state != LAZY_STATE_DONE || target_prop->type_state != LAZY_STATE_DONE)
+                (LAZY_LOAD(prop->type_state) != LAZY_STATE_DONE || LAZY_LOAD(target_prop->type_state) != LAZY_STATE_DONE)
             ) {
                 unmatched_checked = true;
                 if (has_unmatched_target_prop(me, source, target_members, i + 1, require_optional)) {

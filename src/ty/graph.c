@@ -8,20 +8,6 @@
 #include <stdatomic.h>
 #include <time.h>
 
-// The state handed to whichever checker is current (graph_enter()): sequentially one checker at a time makes atoms and
-// types. In 4d: shared structures of their own (4c's global atoms and ids)
-typedef struct GraphHeld {
-    Ty const* array_target;
-    Ty const* auto_array;
-    Ty const* readonly_array_target;
-    TyList tuple_params;
-    struct Signature** unknown_signature;
-    Ty const* global_types[14];
-    bool global_types_resolved[14];
-    struct IterationState const* iteration;
-    Ty const* disposable_targets[2];
-    bool disposable_looked_up[2];
-} GraphHeld;
 
 typedef struct KindStats {
     u64 shared_hits; // Lookups a checker's own table missed and the shared one had
@@ -36,8 +22,8 @@ typedef struct KindStats {
 enum { GRAPH_STAT_KINDS = 512, GRAPH_STAT_MEMOS = 500 };
 
 struct TyGraph {
-    Checker* owner; // The checker holding `held` (current), null: the graph holds it
-    GraphHeld held;
+    bool concurrent; // On several threads (graph_set_concurrent())
+    TySingletons* singletons; // The lib singletons, published once (ty.h)
     // The first checker's, which every other one shares (checker_new() makes them only for the first)
     Ty const* intrinsics[TY_INTRINSIC_COUNT];
     Ty const* typeof_type;
@@ -55,6 +41,11 @@ struct TyGraph {
     u64 memo_hits;
     KindStats stats[GRAPH_STAT_KINDS];
     u32 checkers;
+    Checker* workers[64]; // By Checker.graph_worker
+    // Who waits for whom (lazy_wait_slow()): a worker's number -> the worker whose field it waits for, 0 if none. Read
+    // and written under wait_lock, only when a worker meets another's field in flight
+    uint8_t waiting_on[64];
+    pthread_mutex_t wait_lock;
 };
 
 
@@ -68,7 +59,7 @@ GraphClass graph_kind_class(u32 kind) {
     case KEY_INDEXED: case KEY_CONDITIONAL: case KEY_SUBSTITUTION: case KEY_ANONYMOUS_INSTANCE: case KEY_UNIQUE_SYMBOL:
     case KEY_TEMPLATE_LITERAL: case KEY_STRING_MAPPING: case KEY_NODE: case KEY_DEFERRED_OUTER:
     case KEY_DEFERRED_REFERENCE: case KEY_STRUCTURAL: case KEY_RESTRICTIVE_PARAM: case KEY_MARKER: case KEY_CHECK_MARKER:
-    case KEY_FUNCTION: case KEY_UNIQUE_SYMBOL_NAME: case KEY_UNDEFINED_PROPERTY: case KEY_FUNCTION_RETURN:
+    case KEY_FUNCTION: case KEY_UNIQUE_SYMBOL_NAME: case KEY_FUNCTION_RETURN: case KEY_INSTANTIATION_QUERY:
     case KEY_IMPLEMENTATION_SIGNATURE: case KEY_SIGNATURE_INSTANCE: case KEY_SIGNATURE_TYPE:
     case KEY_MODULE_CLONE: case KEY_FRESH_LITERAL:
         return GRAPH_IDENTITY;
@@ -87,49 +78,25 @@ GraphClass graph_kind_class(u32 kind) {
     case KEY_INTERSECTION_OF: case KEY_REVERSE_MAPPED: case KEY_UNION_KEY_NAME: case KEY_UNION_KEY_MEMBER: case KEY_FLOW_NOT_UNIT:
     case KEY_EVOLVING_ARRAY: case KEY_REDUCED_UNION: case KEY_FUNCTION_FREE_PARAMS: case KEY_FUNCTION_TYPE_MENTIONS:
     case KEY_ARRAY_THIS_PROPS: case KEY_TUPLE_NAME_ORDER: case KEY_INDEX_NAME_ORDER: case KEY_DECIMAL_ORDER:
-    case KEY_THISLESS_SIGNATURES: case KEY_INSTANTIATION_QUERY: case GRAPH_KIND_INTERSECTION_PROPS:
+    case KEY_THISLESS_SIGNATURES: case GRAPH_KIND_INTERSECTION_PROPS:
         return GRAPH_MEMO;
-    // KEY_GENERIC_RELATION numbers relations per checker; the rest is per expression, per call, flow, inference,
-    // report-once
+    // KEY_GENERIC_RELATION numbers relations per checker; KEY_UNDEFINED_PROPERTY is a first-need cache whose candidates
+    // print differently (shared, which came first would be the schedule's); the rest is per expression, per call, flow,
+    // inference, report-once
     default:
         return GRAPH_SCRATCH;
     }
 }
 
-static void held_take(GraphHeld* held, Checker const* from) {
-    held->array_target = from->array_target;
-    held->auto_array = from->auto_array;
-    held->readonly_array_target = from->readonly_array_target;
-    held->tuple_params = from->tuple_params;
-    held->unknown_signature = from->unknown_signature;
-    memcpy(held->global_types, from->global_types, sizeof(held->global_types));
-    memcpy(held->global_types_resolved, from->global_types_resolved, sizeof(held->global_types_resolved));
-    held->iteration = from->iteration;
-    memcpy(held->disposable_targets, from->disposable_targets, sizeof(held->disposable_targets));
-    memcpy(held->disposable_looked_up, from->disposable_looked_up, sizeof(held->disposable_looked_up));
-}
-
-static void held_give(GraphHeld const* held, Checker* to) {
-    // (The other checkers' types it may read: the directory's chunks, in its own table)
-    lazy_slots_sync(&to->lazy);
-    to->array_target = held->array_target;
-    to->auto_array = held->auto_array;
-    to->readonly_array_target = held->readonly_array_target;
-    to->tuple_params = held->tuple_params;
-    to->unknown_signature = held->unknown_signature;
-    memcpy(to->global_types, held->global_types, sizeof(held->global_types));
-    memcpy(to->global_types_resolved, held->global_types_resolved, sizeof(held->global_types_resolved));
-    to->iteration = held->iteration;
-    memcpy(to->disposable_targets, held->disposable_targets, sizeof(held->disposable_targets));
-    memcpy(to->disposable_looked_up, held->disposable_looked_up, sizeof(held->disposable_looked_up));
-}
-
 static void graph_link_tables(TyGraph* me, Checker* checker) {
     checker->graph = me;
+    lazy_slots_share(&checker->lazy);
     checker->types.shared = my types;
     checker->links.shared = my links;
     checker->intersection_props.shared = my intersection_props;
 }
+
+void graph_publish(TyGraph* me, Checker* checker);
 
 TyGraph* graph_new(Checker* first) {
     TyGraph* me = calloc(1, sizeof(TyGraph));
@@ -145,10 +112,16 @@ TyGraph* graph_new(Checker* first) {
     my atom_prototype = first->atom_prototype;
     my atom_bind = first->atom_bind;
     graph_link_tables(me, first);
+    my singletons = ty_singletons_new();
+    first->singletons = my singletons;
+    ty_singletons_sync(first);
     my checkers = 1;
-    // (It holds the state now; the graph's copy is taken when it stops being current)
-    my owner = first;
-    if (current_checker != first) graph_enter(me, nullptr);
+    pthread_mutex_init(&my wait_lock, nullptr);
+    first->graph_worker = 1;
+    my workers[1] = first;
+    // (What it made before the graph, the intrinsics' literals and typeof's union among them, is everyone's from the start:
+    // on threads the other checkers don't wait for its share's end)
+    graph_publish(me, first);
     return me;
 }
 
@@ -159,18 +132,26 @@ void graph_adopt(TyGraph* me, Checker* checker) {
     checker->atom_prototype = my atom_prototype;
     checker->atom_bind = my atom_bind;
     graph_link_tables(me, checker);
+    checker->singletons = my singletons;
+    ty_singletons_sync(checker);
     my checkers++;
+    panic_if(my checkers > 63, "--shared-graph: at most 63 checkers");
+    checker->graph_worker = (uint8_t)my checkers;
+    my workers[my checkers] = checker;
 }
 
+void graph_set_concurrent(TyGraph* me, bool concurrent) {
+    my concurrent = concurrent;
+}
+
+// (Nothing is handed over any more: atoms and ids are the program's (4c), the singletons the graph's (TySingletons),
+// and a checker's id table is told of every chunk (lazy_slots_share()))
 void graph_enter(TyGraph* me, Checker* checker) {
-    if (my owner == checker) return;
-    if (my owner) held_take(&my held, my owner);
-    if (checker) held_give(&my held, checker);
-    my owner = checker;
+    (void)me, (void)checker;
 }
 
 void graph_release(TyGraph* me, Checker* checker) {
-    if (my owner == checker) graph_enter(me, nullptr);
+    if (checker->graph_worker < 64 && my workers[checker->graph_worker] == checker) my workers[checker->graph_worker] = nullptr;
     // (The graph's: freed by graph_drop())
     free(checker->graph_memo_slots);
     checker->graph_memo_slots = nullptr;
@@ -178,12 +159,12 @@ void graph_release(TyGraph* me, Checker* checker) {
 
 void graph_drop(TyGraph* me) {
     if (!me) return;
-    if (my owner) graph_release(me, my owner);
     shared_table_drop(my types);
     shared_table_drop(my links);
     shared_table_drop(my intersection_props);
     shared_links_drop(my node_links);
     pthread_mutex_destroy(&my memo_lock);
+    pthread_mutex_destroy(&my wait_lock);
     for (size_t i = 0; i < c_arraylen(my memos); i++) {
         if (!my memos[i]) continue;
         for (size_t j = 0; j < (1 << LAZY_DIR_BITS); j++) free(my memos[i][j]);
@@ -198,7 +179,7 @@ void graph_count_shared_hit(InternTable const* table, u64 const* words, u32 coun
     Checker* checker = current_checker;
     if (!checker || !checker->graph || !count) return;
     u32 kind = table == &checker->intersection_props ? GRAPH_KIND_INTERSECTION_PROPS : (u32)(words[0] & 255);
-    checker->graph->stats[kind].shared_hits++;
+    __atomic_fetch_add(&checker->graph->stats[kind].shared_hits, 1, __ATOMIC_RELAXED);
 }
 
 #ifdef TTTT_GRAPH_TAINT
@@ -445,19 +426,19 @@ static void publish_table(TyGraph* me, Checker* checker, InternTable* private_ta
         KindStats* stats = &my stats[kind];
         GraphClass class = graph_kind_class(kind);
         if (class == GRAPH_SCRATCH) {
-            stats->scratch++;
+            __atomic_fetch_add(&stats->scratch, 1, __ATOMIC_RELAXED);
             continue;
         }
         if (!entry->block[0]) {
-            stats->unfinished++;
+            __atomic_fetch_add(&stats->unfinished, 1, __ATOMIC_RELAXED);
             continue;
         }
         if (class == GRAPH_MEMO && entry_tainted(kind, entry->block)) {
-            stats->tainted++;
+            __atomic_fetch_add(&stats->tainted, 1, __ATOMIC_RELAXED);
             continue;
         }
         void const** there;
-        if (shared_table_insert(shared, entry->hash, entry->block, count, &there)) stats->published++;
+        if (shared_table_insert(shared, entry->hash, entry->block, count, &there)) __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
     }
 }
 
@@ -469,18 +450,18 @@ static void publish_link(void* arg, u32 kind, void const* subject, void const* v
     TyGraph* me = ((LinkPublish*)arg)->graph;
     KindStats* stats = &my stats[256 + (kind & 255)];
     if (graph_kind_class(kind) == GRAPH_SCRATCH) {
-        stats->scratch++;
+        __atomic_fetch_add(&stats->scratch, 1, __ATOMIC_RELAXED);
         return;
     }
     if (!value) {
-        stats->unfinished++;
+        __atomic_fetch_add(&stats->unfinished, 1, __ATOMIC_RELAXED);
         return;
     }
     if (graph_kind_class(kind) == GRAPH_MEMO && link_tainted(kind, subject, value)) {
-        stats->tainted++;
+        __atomic_fetch_add(&stats->tainted, 1, __ATOMIC_RELAXED);
         return;
     }
-    if (shared_links_insert(my node_links, graph_link_key(kind, subject), value) == value) stats->published++;
+    if (shared_links_insert(my node_links, graph_link_key(kind, subject), value) == value) __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
 }
 
 // (Pages are made by CAS: a loser frees its own)
@@ -528,7 +509,7 @@ void graph_publish(TyGraph* me, Checker* checker) {
     for (u32 i = 0; i < checker->graph_memo_len; i++) {
         u32 slot = checker->graph_memo_slots[i] & ~(1u << 31);
         if (checker->graph_memo_slots[i] >> 31 && !publish_tainted(GRAPH_STAT_MEMOS)) {
-            stats->tainted++;
+            __atomic_fetch_add(&stats->tainted, 1, __ATOMIC_RELAXED);
             continue;
         }
         LazyType lazy = { .tag = LAZY_TYPE_EVALUATED, .slot = slot };
@@ -537,7 +518,7 @@ void graph_publish(TyGraph* me, Checker* checker) {
         LazyMemo const* memo = lazy_type_state_peek(&lazy);
         current_lazy_slots = saved;
         if (!memo || !memo->done) {
-            stats->unfinished++;
+            __atomic_fetch_add(&stats->unfinished, 1, __ATOMIC_RELAXED);
             continue;
         }
         LazyMemo* shared = memo_at(me, slot, true);
@@ -550,7 +531,7 @@ void graph_publish(TyGraph* me, Checker* checker) {
             *shared = copy;
             atomic_thread_fence(memory_order_release);
             shared->done = true;
-            stats->published++;
+            __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
         }
         pthread_mutex_unlock(&my memo_lock);
     }
@@ -559,18 +540,94 @@ void graph_publish(TyGraph* me, Checker* checker) {
 
 void const* graph_link_get(TyGraph const* me, u32 kind, void const* subject) {
     void const* ret = shared_links_get(my node_links, graph_link_key(kind, subject));
-    if (ret) ((TyGraph*)me)->stats[256 + (kind & 255)].shared_hits++;
+    if (ret) __atomic_fetch_add(&((TyGraph*)me)->stats[256 + (kind & 255)].shared_hits, 1, __ATOMIC_RELAXED);
     return ret;
 }
 
 void graph_count_lost(TyGraph* me, u32 kind) {
-    my stats[kind < GRAPH_STAT_KINDS ? kind : 0].lost++;
+    __atomic_fetch_add(&my stats[kind < GRAPH_STAT_KINDS ? kind : 0].lost, 1, __ATOMIC_RELAXED);
 }
 
 void const* graph_link_insert(TyGraph* me, u32 kind, void const* subject, void const* value) {
     void const* there = shared_links_insert(my node_links, graph_link_key(kind, subject), value);
-    if (there == value) my stats[256 + (kind & 255)].published++;
+    if (there == value) __atomic_fetch_add(&my stats[256 + (kind & 255)].published, 1, __ATOMIC_RELAXED);
     return there;
+}
+
+// Lazy fields in flight on another worker (ty.h's LAZY_AWAIT(), plan 86 4d)
+
+static unsigned lazy_field_load(void* field, size_t size) {
+    return size == 1 ? __atomic_load_n((uint8_t*)field, __ATOMIC_ACQUIRE) : __atomic_load_n((unsigned*)field, __ATOMIC_ACQUIRE);
+}
+
+bool lazy_claim_slow(Checker* me, void* field, size_t size) {
+    unsigned mine = LAZY_STATE_IN_FLIGHT | (unsigned)me->graph_worker << 2;
+    unsigned seen = lazy_field_load(field, size);
+    if (seen == mine) return true;
+    if (seen != LAZY_STATE_NOT_STARTED) return false;
+    if (size == 1) {
+        uint8_t expected = LAZY_STATE_NOT_STARTED;
+        return __atomic_compare_exchange_n((uint8_t*)field, &expected, (uint8_t)mine, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+    }
+    unsigned expected = LAZY_STATE_NOT_STARTED;
+    return __atomic_compare_exchange_n((unsigned*)field, &expected, mine, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+}
+
+// Whether `me` waiting for `owner` closes a cycle of waits, and if so, whether `me` has the highest number in it: the
+// one that breaks it, whichever saw it first (under wait_lock)
+static bool breaks_wait_cycle(TyGraph const* me, unsigned waiter, unsigned owner) {
+    unsigned highest = waiter;
+    for (unsigned at = owner, n = 0; at && n < 64; at = my waiting_on[at], n++) {
+        if (at == waiter) return highest == waiter;
+        if (at > highest) highest = at;
+    }
+    return false;
+}
+
+static u64 now_ns(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return (u64)t.tv_sec * 1000000000ull + (u64)t.tv_nsec;
+}
+
+// Waits until the field isn't the same worker's in flight any more: true (look at it again). False: waiting would close
+// a cycle of waits this worker is the one to break; it goes on as if the field were its own in flight. A short spin,
+// then sleeps growing to a millisecond: a worker blocked behind a long computation doesn't burn a core
+bool lazy_wait_slow(Checker* me, void* field, size_t size) {
+    TyGraph* graph = me->graph;
+    unsigned seen = lazy_field_load(field, size);
+    unsigned owner = seen >> 2;
+    if (!LAZY_IN_FLIGHT(seen) || !owner || owner == me->graph_worker) return true;
+    u64 start = now_ns();
+    bool ret = true;
+    pthread_mutex_lock(&graph->wait_lock);
+    graph->waiting_on[me->graph_worker] = (uint8_t)owner;
+    pthread_mutex_unlock(&graph->wait_lock);
+    u64 sleep_ns = 2000;
+    for (u32 round = 0;; round++) {
+        if (lazy_field_load(field, size) != seen) break;
+        if (round < 64) {
+            __builtin_ia32_pause();
+            continue;
+        }
+        pthread_mutex_lock(&graph->wait_lock);
+        bool breaks = breaks_wait_cycle(graph, me->graph_worker, owner);
+        pthread_mutex_unlock(&graph->wait_lock);
+        if (breaks) {
+            me->graph_fallbacks++;
+            ret = false;
+            break;
+        }
+        struct timespec pause = { 0, (long)sleep_ns };
+        nanosleep(&pause, nullptr);
+        if (sleep_ns < 1000000) sleep_ns *= 2;
+    }
+    pthread_mutex_lock(&graph->wait_lock);
+    graph->waiting_on[me->graph_worker] = 0;
+    pthread_mutex_unlock(&graph->wait_lock);
+    me->graph_waits++;
+    me->graph_wait_ns += now_ns() - start;
+    return ret;
 }
 
 bool graph_memo_take(TyGraph* me, u32 slot, LazyMemo* memo) {
@@ -578,7 +635,7 @@ bool graph_memo_take(TyGraph* me, u32 slot, LazyMemo* memo) {
     if (!shared || !shared->done) return false;
     atomic_thread_fence(memory_order_acquire);
     *memo = *shared;
-    my stats[GRAPH_STAT_MEMOS].shared_hits++;
+    __atomic_fetch_add(&my stats[GRAPH_STAT_MEMOS].shared_hits, 1, __ATOMIC_RELAXED);
     return true;
 }
 
@@ -625,6 +682,13 @@ void graph_print_stats(TyGraph const* me) {
     eprintln("graph: ", my checkers, " checkers, ", shared_table_len(my types), " types entries, ", shared_table_len(my links),
         " links, ", shared_table_len(my intersection_props), " intersection props, ", shared_links_len(my node_links),
         " node links shared");
+    for (u32 w = 1; w <= my checkers && w < 64; w++) {
+        Checker const* c = my workers[w];
+        if (c && (c->graph_waits || c->graph_fallbacks)) {
+            eprintln("graph: worker ", w, " waited ", c->graph_waits, " times, ", (double)c->graph_wait_ns / 1e6, " ms, ",
+                c->graph_fallbacks, " wait cycles broken (fallbacks)");
+        }
+    }
     eprintln("graph: kind  shared-hits  published  tainted  scratch  unfinished");
     KindStats total = {0};
     for (u32 k = 0; k < GRAPH_STAT_KINDS; k++) {
