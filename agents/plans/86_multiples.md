@@ -1339,6 +1339,29 @@ in parallel only where the file sets are disjoint):
   signature_resolve(). Touches call.c, relate.c, infer.c, members.c, expr.c, check.c, ty_display.c, decl_emit and
   the rest that read `params`, `param_count`, `min_args`, `type_params`, `this_type`. Still published as today; no
   semantic change. It goes alone because it touches every file.
+  **S1 done** (ff5038d11, 23a1ac999, 21ec4186b; byte-identical on every gate, callgrind +0.04-0.12%). What P1 needs:
+  - The record (`SigResolved`, 56 B: type_params, params, this_type, param_count, min_args, and the *effective*
+    target and mapper) is allocated at the claim and filled in place in the old order. `r->target`/`r->mapper` start
+    as Signature's made ones, and the JSDoc `@type` tag (target) and clone_type_params() (mapper) replace them later.
+    Signature.target/mapper are as made and never written after. Readers use sig_target()/sig_mapper(), or the plain
+    fields where `!sig->function` guards (a JSDoc target is only a function's) and in ty_erased_signature().
+    Unresolved signatures point at `&sig_resolved_none`: **every maker must set `res`** (9 makers and expr.c's
+    context_checked_none sentinel; a miss is a null deref).
+  - **Re-entries that see the partial record** (probed: 3 in the suite, 2 on the corpora at K1): a binding's assigned
+    type reaching ty_quick_expr_type() (flow.c, reads type_params of a signature resolving its params, then its
+    return), and applies_to_signature() via ty_instantiation_keeps_signature() (ty/expr.c, type_params). P1's private
+    fill must keep showing them what is resolved so far (the ClaimSet record).
+  - **sig_resolved_mut()**, a fresh signature's maker changing its own record after resolving it:
+    ty_signature_instantiation() (infer.c) and ty_erased_signature()'s any-instantiation (relate.c) clear
+    type_params; ty_union_signature() (relate.c) and decorator_call()'s mutator (call.c) set this_type.
+    ty_signature_with_type_params() (infer.c) makes a new record. All before publication; P1 can build these
+    records whole instead.
+  - **signature_copied()** at the four `*copy = *sig` sites: ty_signature_with_type_params() (infer.c),
+    ty_implementation_compatible_with_overload()'s two copies (relate.c), the mixin construct-signature clone in
+    members.c's intersection members. A copy of a signature in flight here gets a snapshot of the record; one that
+    restarts (in flight elsewhere) gets none.
+  - Still in place on Signature, each its own word in the table above: ret/ret_state (including a class signature's
+    ret, set by signature_resolve_slow()) and predicate/predicate_done/predicate_writing.
 - **Then three in parallel:**
   - **P1, members.c** (members, raw, unexpanded, equivalent base, prop types and write types, signature resolution
     and return and predicate, param constraint, default and circularity, mapped templates and MappedInfo copies, class
