@@ -261,6 +261,11 @@ void binder_destroy(Binder* me) {
     free(my pending_export_merges);
     free(my pending_alias_merges);
     free(my pending_file_conflicts);
+    for (u32 i = 0; i < my unreported_errs_count; i++) {
+        error_ctx_drop(my unreported_errs[i]);
+        free(my unreported_errs[i]);
+    }
+    free(my unreported_errs);
     if (my discarded_errs) {
         error_ctx_drop(my discarded_errs);
         free(my discarded_errs);
@@ -3669,11 +3674,41 @@ typedef struct Suggestion {
     bool export_local;
 } Suggestion;
 
-static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion* out);
+static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion* out, ErrorCtx* errs);
+
+static Symbol* resolve_alias_target_in(Symbol* me, ErrorCtx* errs);
 
 static Symbol* resolve_alias_target(Symbol* me) {
     PortItem* item = my alias->item;
-    ErrorCtx* errs = item && (item->wrong_context || item->clause_unchecked) ? nullptr : my alias->scope->binder->errs;
+    if (item && item->clause_unchecked) return resolve_alias_target_in(me, nullptr);
+    Binder* binder = my alias->scope->binder;
+    if (!item || !item->wrong_context || binder_shard(binder)) return resolve_alias_target_in(me, binder->errs);
+    // A misplaced import or export: kept for a spelling suggestion to report (SymbolRare.unreported_errs)
+    ErrorCtx* kept = c_new(ErrorCtx, error_ctx_scratch(binder->errs));
+    Symbol* target = resolve_alias_target_in(me, kept);
+    if (error_ctx_empty(kept)) {
+        error_ctx_drop(kept);
+        free(kept);
+        return target;
+    }
+    symbol_rare_mut(me)->unreported_errs = kept;
+    *(ErrorCtx**)list_push((void**)&binder->unreported_errs, &binder->unreported_errs_count, &binder->unreported_errs_cap,
+        sizeof(ErrorCtx*)) = kept;
+    return target;
+}
+
+// What a spelling suggestion that looks at the alias `candidate` reports (tsgo's tryResolveAlias of a candidate): what
+// resolving a misplaced import or export said, once
+static void report_unreported_alias_errs(Symbol const* candidate, ErrorCtx* errs) {
+    if (!errs || !candidate->rare || !candidate->rare->unreported_errs) return;
+    ErrorCtx* kept = __atomic_exchange_n(&((SymbolRare*)candidate->rare)->unreported_errs, nullptr, __ATOMIC_ACQ_REL);
+    if (!kept) return;
+    for_each (i, vec_error, &kept->errors) i->phase = errs->phase;
+    error_ctx_merge(errs, kept);
+}
+
+static Symbol* resolve_alias_target_in(Symbol* me, ErrorCtx* errs) {
+    PortItem* item = my alias->item;
     if (my alias->class_expr) return my alias->class_expr->symbol;
     if (my alias->entity) return resolve_entity_alias(me);
     if (!item) {
@@ -3702,7 +3737,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
             // aliases among the candidates: one that reaches this alias in flight makes it TS2303. The TS2304 itself
             // comes from the expression)
             Suggestion ignored = {0};
-            scope_suggest(my alias->scope, span_sv(my alias->name), SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE, &ignored);
+            scope_suggest(my alias->scope, span_sv(my alias->name), SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE, &ignored, nullptr);
         }
         // A local type and an exported value of the name are one symbol in tsc, the local one, which has the exported
         // one as its exportSymbol: `interface F {}` + `export const F = ...` + `export default F` exports that local
@@ -3737,7 +3772,15 @@ static Symbol* resolve_alias_target(Symbol* me) {
         module = binder_module_of_ref(my binder, item->module_ref);
         if (!module) {
             // No file: TS2307 comes from the statement. (An `@import` tag too: tsgo's reparser makes it an import
-            // declaration, whose checkImportBinding resolves it)
+            // declaration, whose checkImportBinding resolves it.) A misplaced one's statement reports nothing in a
+            // function or namespace (port_statement_lookup_names()): its resolution does (resolveExternalModuleName)
+            if (item->wrong_context && !item->module_ref->file && errs) {
+                Scope const* container = my alias->scope;
+                while (container && container->kind == SCOPE_BLOCK) container = container->parent;
+                if (!container || (container->kind != SCOPE_MODULE && container->kind != SCOPE_SCRIPT)) {
+                    module_ref_report_unresolved(item->module_ref, errs);
+                }
+            }
             if (item->module_ref->file) {
                 cstr shown = module_ref_file_message_path(item->module_ref);
                 error_ctx_error_d(errs, item->module_ref->span, 2306, "File '", shown, "' is not a module.");
@@ -5117,7 +5160,7 @@ static int suggest_compare_symbols(void* ctx, isize a, isize b) {
 // tsc's getSuggestionForSymbolNameLookup on one table
 // `exports`: a module's or namespace's exports, where `export default <expr>` is tsc's SymbolFlags.Property (no module
 // member)
-static bool suggest_in_table(SymbolTable const* table, bool globals, bool exports, csview name, u32 meaning, Suggestion* out) {
+static bool suggest_in_table(SymbolTable const* table, bool globals, bool exports, csview name, u32 meaning, Suggestion* out, ErrorCtx* errs) {
     u32 count = 0;
     SymbolEntry* entries = symbol_table_collect(table, &count);
     // (tsc's globals start with its undefinedSymbol, a value)
@@ -5161,6 +5204,10 @@ static bool suggest_in_table(SymbolTable const* table, bool globals, bool export
             fits = !expression;
         }
         names[extra + i] = fits ? candidate : (csview){0};
+        if (!symbol->is_placeholder && !builtin && candidate.size && candidate.buf[0] != '"' && candidate.buf[0] != '\'' &&
+            (symbol->flags & SYMBOL_ALIAS) && !(symbol->flags & meaning)) {
+            report_unreported_alias_errs(symbol, errs);
+        }
     }
     SuggestCompare cmp = { .names = names, .entries = entries, .extra = extra };
     isize best = spelling_suggestion_ex(name, names, count + extra, suggest_compare_symbols, &cmp);
@@ -5183,12 +5230,12 @@ bool function_local_hidden(Symbol const* found, u32 meaning, bool from_parameter
         (meaning & found->flags & SYMBOL_FUNCTION_SCOPED_VARIABLE));
 }
 
-static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion* out) {
+static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion* out, ErrorCtx* errs) {
     bool from_parameters = false, from_return_type = false;
     for (Scope const* scope = me; scope; scope = scope->parent) {
         bool globals = scope->kind == SCOPE_GLOBAL;
         SymbolTable const* table = globals ? &scope->binder->globals : scope_locals(scope);
-        if ((table->count || table->parent || globals) && suggest_in_table(table, globals, false, name, meaning, out)) {
+        if ((table->count || table->parent || globals) && suggest_in_table(table, globals, false, name, meaning, out, errs)) {
             // (A suggestion the signature can't see is none: tsc's resolveNameHelper filters it like a name found, and
             // looks on outside)
             if (!out->symbol || !function_local_hidden(out->symbol, meaning, from_parameters, from_return_type)) return true;
@@ -5203,7 +5250,7 @@ static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion*
         u32 exports_meaning = scope->container && (scope->container->flags & SYMBOL_ENUM) &&
             !(scope->container->flags & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE)) ? meaning & SYMBOL_ENUM_MEMBER : meaning & module_member;
         if (scope->container && scope->container->exports && scope->kind != SCOPE_GLOBAL && exports_meaning &&
-            suggest_in_table(scope->container->exports, false, true, name, exports_meaning, out)
+            suggest_in_table(scope->container->exports, false, true, name, exports_meaning, out, errs)
         ) {
             // (A value meaning: the type meaning has no variables. Only the declaration block's own locals have the
             // local: another block of a merged namespace finds the export itself)
@@ -5396,7 +5443,7 @@ static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning
     // (Not where nothing is reported, a skipLibCheck declaration file's: a suggestion looks at every name in scope)
     if (!errs || (span_source(at) && !source_file_is_checked(span_source(at)))) return false;
     Suggestion suggestion = {0};
-    if (!scope_suggest(me, name, meaning, &suggestion)) return false;
+    if (!scope_suggest(me, name, meaning, &suggestion, errs)) return false;
     Error* error = namespace ?
         error_ctx_error_d(errs, at, 2833, "Cannot find namespace '", name, "'. Did you mean '", suggestion.name, "'?") :
         error_ctx_error_d(errs, at, 2552, "Cannot find name '", name, "'. Did you mean '", suggestion.name, "'?");

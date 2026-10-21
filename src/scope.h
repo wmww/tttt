@@ -305,6 +305,11 @@ typedef struct SymbolRare {
     // of the file's declarations of the name, into what the earlier files made), each with that symbol of its own,
     // which the file's later declarations of the name join (declare_file_conflict())
     struct FileConflict* file_conflicts;
+    // An alias of a misplaced import or export (TS1232/TS1233, PortItem.wrong_context): what its resolution said. tsgo's
+    // checker never resolves it for the statement, only a spelling suggestion that looks at it as a candidate does
+    // (getSpellingSuggestionForName's tryResolveAlias), and that reports it then. Taken (atomically) by the first one;
+    // the binder owns it (Binder.unreported_errs)
+    ErrorCtx* unreported_errs;
 } SymbolRare;
 
 typedef struct FileConflict {
@@ -676,6 +681,11 @@ typedef struct Binder {
     struct PendingFileConflict* pending_file_conflicts; // malloc'd
     u32 pending_file_conflict_count;
     u32 pending_file_conflict_cap;
+    // What resolving the aliases of misplaced imports and exports (PortItem.wrong_context) said, which only a spelling
+    // suggestion's look at them reports (SymbolRare.unreported_errs): owned here, malloc'd
+    ErrorCtx** unreported_errs;
+    u32 unreported_errs_count;
+    u32 unreported_errs_cap;
     // What `require` is in `require("m")` in a JavaScript file where nothing else is called that (tsc's requireSymbol:
     // any). Made when first needed
     Symbol* require_symbol;

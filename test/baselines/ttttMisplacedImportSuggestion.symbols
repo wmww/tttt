@@ -1,0 +1,55 @@
+//// [test/cases/ttttMisplacedImportSuggestion.ts] ////
+
+=== ttttMisplacedImportSuggestion.ts ===
+// Imports and exports in a function or block (TS1232/TS1233) are never resolved by their statement's check, but the
+// spelling suggestion of an unresolved name looks at every alias in scope and resolves it: what that resolution says
+// (TS2307, TS2305) is reported then, and only then.
+function f() {
+>f : Symbol(f, Decl(ttttMisplacedImportSuggestion.ts, 0, 0))
+
+    declare module "nested" {
+>"nested" : Symbol("nested", Decl(ttttMisplacedImportSuggestion.ts, 3, 14))
+
+        export const a: number;
+>a : Symbol(a, Decl(ttttMisplacedImportSuggestion.ts, 5, 20))
+    }
+    import * as Foo from "nested";
+>Foo : Symbol(Foo, Decl(ttttMisplacedImportSuggestion.ts, 7, 10))
+
+    import { baz } from "nested";
+>baz : Symbol(baz, Decl(ttttMisplacedImportSuggestion.ts, 8, 12))
+
+    import I2 = require("missing");
+>I2 : Symbol(I2, Decl(ttttMisplacedImportSuggestion.ts, 8, 33))
+
+    export { qux as q } from "nested";
+>q : Symbol(q, Decl(ttttMisplacedImportSuggestion.ts, 10, 12))
+
+    missingName;
+}
+function g() {
+>g : Symbol(g, Decl(ttttMisplacedImportSuggestion.ts, 12, 1))
+
+    // Nothing unresolved here: nothing resolves these.
+    import * as Foo from "nested2";
+>Foo : Symbol(Foo, Decl(ttttMisplacedImportSuggestion.ts, 15, 10))
+
+    import { baz } from "nested2";
+>baz : Symbol(baz, Decl(ttttMisplacedImportSuggestion.ts, 16, 12))
+}
+{
+    declare module "ambient" {
+>"ambient" : Symbol("ambient", Decl(ttttMisplacedImportSuggestion.ts, 18, 1))
+
+        export const a: number;
+>a : Symbol(a, Decl(ttttMisplacedImportSuggestion.ts, 20, 20))
+    }
+    import { baz } from "ambient";
+>baz : Symbol(baz, Decl(ttttMisplacedImportSuggestion.ts, 22, 12))
+
+    export { qux as q } from "ambient";
+>q : Symbol(q, Decl(ttttMisplacedImportSuggestion.ts, 23, 12))
+
+    otherMissingName;
+}
+

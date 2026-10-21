@@ -1,0 +1,84 @@
+ttttMisplacedImportSuggestion.ts(5,5): error TS1234: An ambient module declaration is only allowed at the top level in a file.
+ttttMisplacedImportSuggestion.ts(8,5): error TS1232: An import declaration can only be used at the top level of a namespace or module.
+ttttMisplacedImportSuggestion.ts(8,26): error TS2307: Cannot find module 'nested' or its corresponding type declarations.
+ttttMisplacedImportSuggestion.ts(9,5): error TS1232: An import declaration can only be used at the top level of a namespace or module.
+ttttMisplacedImportSuggestion.ts(9,25): error TS2307: Cannot find module 'nested' or its corresponding type declarations.
+ttttMisplacedImportSuggestion.ts(10,5): error TS1232: An import declaration can only be used at the top level of a namespace or module.
+ttttMisplacedImportSuggestion.ts(10,25): error TS2307: Cannot find module 'missing' or its corresponding type declarations.
+ttttMisplacedImportSuggestion.ts(11,5): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+ttttMisplacedImportSuggestion.ts(11,30): error TS2307: Cannot find module 'nested' or its corresponding type declarations.
+ttttMisplacedImportSuggestion.ts(12,5): error TS2304: Cannot find name 'missingName'.
+ttttMisplacedImportSuggestion.ts(16,5): error TS1232: An import declaration can only be used at the top level of a namespace or module.
+ttttMisplacedImportSuggestion.ts(17,5): error TS1232: An import declaration can only be used at the top level of a namespace or module.
+ttttMisplacedImportSuggestion.ts(20,5): error TS1234: An ambient module declaration is only allowed at the top level in a file.
+ttttMisplacedImportSuggestion.ts(23,5): error TS1232: An import declaration can only be used at the top level of a namespace or module.
+ttttMisplacedImportSuggestion.ts(23,14): error TS2305: Module '"ambient"' has no exported member 'baz'.
+ttttMisplacedImportSuggestion.ts(24,5): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+ttttMisplacedImportSuggestion.ts(24,14): error TS2305: Module '"ambient"' has no exported member 'qux'.
+ttttMisplacedImportSuggestion.ts(25,5): error TS2304: Cannot find name 'otherMissingName'.
+
+
+==== ttttMisplacedImportSuggestion.ts (18 errors) ====
+    // Imports and exports in a function or block (TS1232/TS1233) are never resolved by their statement's check, but the
+    // spelling suggestion of an unresolved name looks at every alias in scope and resolves it: what that resolution says
+    // (TS2307, TS2305) is reported then, and only then.
+    function f() {
+        declare module "nested" {
+        ~~~~~~~
+!!! error TS1234: An ambient module declaration is only allowed at the top level in a file.
+            export const a: number;
+        }
+        import * as Foo from "nested";
+        ~~~~~~
+!!! error TS1232: An import declaration can only be used at the top level of a namespace or module.
+                             ~~~~~~~~
+!!! error TS2307: Cannot find module 'nested' or its corresponding type declarations.
+        import { baz } from "nested";
+        ~~~~~~
+!!! error TS1232: An import declaration can only be used at the top level of a namespace or module.
+                            ~~~~~~~~
+!!! error TS2307: Cannot find module 'nested' or its corresponding type declarations.
+        import I2 = require("missing");
+        ~~~~~~
+!!! error TS1232: An import declaration can only be used at the top level of a namespace or module.
+                            ~~~~~~~~~
+!!! error TS2307: Cannot find module 'missing' or its corresponding type declarations.
+        export { qux as q } from "nested";
+        ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+                                 ~~~~~~~~
+!!! error TS2307: Cannot find module 'nested' or its corresponding type declarations.
+        missingName;
+        ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'missingName'.
+    }
+    function g() {
+        // Nothing unresolved here: nothing resolves these.
+        import * as Foo from "nested2";
+        ~~~~~~
+!!! error TS1232: An import declaration can only be used at the top level of a namespace or module.
+        import { baz } from "nested2";
+        ~~~~~~
+!!! error TS1232: An import declaration can only be used at the top level of a namespace or module.
+    }
+    {
+        declare module "ambient" {
+        ~~~~~~~
+!!! error TS1234: An ambient module declaration is only allowed at the top level in a file.
+            export const a: number;
+        }
+        import { baz } from "ambient";
+        ~~~~~~
+!!! error TS1232: An import declaration can only be used at the top level of a namespace or module.
+                 ~~~
+!!! error TS2305: Module '"ambient"' has no exported member 'baz'.
+        export { qux as q } from "ambient";
+        ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+                 ~~~
+!!! error TS2305: Module '"ambient"' has no exported member 'qux'.
+        otherMissingName;
+        ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'otherMissingName'.
+    }
+    

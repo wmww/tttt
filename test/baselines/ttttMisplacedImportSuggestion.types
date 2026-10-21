@@ -1,0 +1,59 @@
+//// [test/cases/ttttMisplacedImportSuggestion.ts] ////
+
+=== ttttMisplacedImportSuggestion.ts ===
+// Imports and exports in a function or block (TS1232/TS1233) are never resolved by their statement's check, but the
+// spelling suggestion of an unresolved name looks at every alias in scope and resolves it: what that resolution says
+// (TS2307, TS2305) is reported then, and only then.
+function f() {
+>f : () => void
+
+    declare module "nested" {
+>"nested" : typeof import("nested")
+
+        export const a: number;
+>a : number
+    }
+    import * as Foo from "nested";
+>Foo : any
+
+    import { baz } from "nested";
+>baz : any
+
+    import I2 = require("missing");
+>I2 : any
+
+    export { qux as q } from "nested";
+>qux : any
+>q : any
+
+    missingName;
+>missingName : any
+}
+function g() {
+>g : () => void
+
+    // Nothing unresolved here: nothing resolves these.
+    import * as Foo from "nested2";
+>Foo : any
+
+    import { baz } from "nested2";
+>baz : any
+}
+{
+    declare module "ambient" {
+>"ambient" : typeof import("ambient")
+
+        export const a: number;
+>a : number
+    }
+    import { baz } from "ambient";
+>baz : any
+
+    export { qux as q } from "ambient";
+>qux : any
+>q : any
+
+    otherMissingName;
+>otherMissingName : any
+}
+

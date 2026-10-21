@@ -1712,6 +1712,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMisplacedImportSuggestion': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMissingInitializerImplicitAny': {
         errors: true,
         symbols: true,
