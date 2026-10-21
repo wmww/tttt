@@ -168,7 +168,7 @@ typedef struct Program {
     _Atomic bool graph_epoch_due;
     struct AtomTable* atoms; // Every checker's atoms (ty/atom_table.h)
     struct TypeDirectory* type_directory; // Every checker's types by id (lazy_type.h)
-    u32 checker_cap; // program_set_checker_cap(), 0: the threads
+    u32 checker_cap; // program_set_checker_cap(), 0: the threads (past it only for a big program, auto_checker_count())
     u64 checker_memory; // program_set_checker_memory(), bytes: UINT64_MAX never recycles
     u64 checker_memory_cap; // program_set_checker_memory_cap(), bytes: UINT64_MAX none
     u64 checker_memory_shared; // program_set_checker_memory_shared(), bytes: UINT64_MAX none
@@ -3906,6 +3906,12 @@ void program_make_current(Program* me) {
 // RSS; measured on a twelfth of the source sweep 2026-10-14, plan 62 stage 3. Bytes are a rough proxy for check time:
 // nestjs-boilerplate checks 240 KB in 110 ms where most projects of that size take 25)
 enum { CHECKER_BYTES = 64 << 10 };
+// Past program_set_checker_cap()'s physical cores, one more checker (a second hardware thread's) per SMT_CHECKER_BYTES
+// of checked source, up to the threads: a checker on a core's second thread pays for itself only when each checker has
+// enough to check to win back the global and library types it builds again. On 12 cores / 24 threads vscode (138 MB,
+// 5.8 MB a checker at K24) is 17% faster at K24 than at K12; webpack (21 MB) ties and drizzle (2.4 MB) and xstate
+// (1.5 MB) lose 9-23% (2026-10-21). No project of the source sweep or the corpora lies between 21 and 138 MB
+enum { SMT_CHECKER_BYTES = 4 << 20 };
 
 void program_set_first_touch_stamps(Program* me, bool stamps) {
     my first_touch_stamps = stamps;
@@ -5097,11 +5103,15 @@ u64 program_checked_source_bytes(Program const* me) {
 
 // program_set_checkers(0): one checker per thread, but not more than one per CHECKER_BYTES of checked source (the
 // default library's files aside): each checker builds the global and library types it uses again, which a small
-// project's few files don't win back
+// project's few files don't win back. Past the cap (the physical cores), one per SMT_CHECKER_BYTES
 static u32 auto_checker_count(Program const* me) {
-    u64 count = program_checked_source_bytes(me) / CHECKER_BYTES;
+    u64 bytes = program_checked_source_bytes(me);
+    u64 count = bytes / CHECKER_BYTES;
     u32 threads = my threads ? my threads : 1;
-    if (my checker_cap && my checker_cap < threads) threads = my checker_cap;
+    if (my checker_cap && my checker_cap < threads) {
+        u64 smt = bytes / SMT_CHECKER_BYTES;
+        threads = smt > threads ? threads : smt > my checker_cap ? (u32)smt : my checker_cap;
+    }
     return count < 1 ? 1 : count > threads ? threads : (u32)count;
 }
 

@@ -1277,9 +1277,9 @@ static void print_help(void) {
         "  --listFilesOnly  print the program's files and stop\n"
         "  --listEmittedFiles  print the written declaration files after the diagnostics\n"
         "  -v, --version print the version of TypeScript tttt checks like\n"
-        "  --checkers K  check with K checkers (default: one per thread, at most one per physical core past 4\n"
-        "                and one per 64 KB of checked source). Each gets contiguous runs of the files; the output\n"
-        "                doesn't depend on K\n"
+        "  --checkers K  check with K checkers (default: one per thread, but at most one per 64 KB of checked\n"
+        "                source, and past 4 one per physical core or per 4 MB, whichever is more). Each gets\n"
+        "                contiguous runs of the files; the output doesn't depend on K\n"
         "  --builders J  with -b, check J projects at once, each on threads/J threads (default: 2 with\n"
         "                4 threads, else 1). The output doesn't depend on it\n"
         "  --singleThreaded  one checker on one thread, one project at a time\n"
@@ -1341,7 +1341,8 @@ static u32 physical_cores(void) {
 // to 4. A second hardware thread checking on a core doubles the checkers' CPU and memory (each builds the declared
 // world again) for little: on 12 cores / 24 threads K12 -> K24 bought 0-11% wall, while 24 threads oversubscribed on
 // 4 vCPUs spent 6-26% more CPU at K24 than at K12 on the corpora (dokploy 42%, monkeytype 31%) and 0.2-2 GB more
-// peak. Below 4 hardware threads the second one is worth it (4 vCPUs on 2 cores: K2 is 10-26% slower than K4)
+// peak. Below 4 hardware threads the second one is worth it (4 vCPUs on 2 cores: K2 is 10-26% slower than K4). A big
+// program goes past it (program.c's auto_checker_count(): vscode is 17% faster at K24 there)
 static u32 default_checker_cap(u32 threads) {
     u32 cores = physical_cores();
     if (!cores) return 0;
