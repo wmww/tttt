@@ -1891,7 +1891,7 @@ static u32 intersection_props(Checker* me, Ty const* ty, ObjectLiteralProp** out
 
 // `{ default: T }`, with T's own properties too if `spread` (tsc's createDefaultPropertyWrapperForModule, and
 // getSpreadType of the type with it in getTypeWithSyntheticDefaultImportType)
-static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread) {
+static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread, ObjectLiteralKind kind) {
     Atom const* default_name = checker_atom(me, c_sv("default"));
     ObjectLiteralProp* from = nullptr;
     u32 from_count = 0;
@@ -1929,7 +1929,7 @@ static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread
     }
     free(from);
     return ty_object_literal(me, props, n, members ? members->index : nullptr, members ? members->index_count : 0,
-        OBJECT_SYNTHETIC);
+        OBJECT_SYNTHETIC | kind);
 }
 
 // tsc's cloneTypeAsModuleType of a type that gets no synthetic default: its members as they are, in a type of its
@@ -1977,7 +1977,7 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
     bool esm_usage = node && importer && importer->is_esm;
     Ty const* type = ty_type_of_symbol(me, assigned);
     if (type->flags & TYF_ERROR) return nullptr;
-    if (esm_usage && target && target->is_json) return with_synthetic_default(me, type, false);
+    if (esm_usage && target && target->is_json) return with_synthetic_default(me, type, false, 0);
     // (tsc's isESMFormatImportImportingCommonjsFormatFile: the import's emit syntax and the target's format for emit,
     // with any module setting)
     ModuleKind usage = importer ? source_file_emit_module_kind(importer) : MODULE_KIND_NONE;
@@ -2012,8 +2012,8 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
         }
     }
     bool structured = type->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED);
-    if (!structured) return with_synthetic_default(me, type, false);
-    return synthetic ? with_synthetic_default(me, type, true) : nullptr;
+    if (!structured) return with_synthetic_default(me, type, false, 0);
+    return synthetic ? with_synthetic_default(me, type, true, 0) : nullptr;
 }
 
 Ty const* ty_namespace_import_original(Checker* me, Symbol const* alias) {
@@ -2254,17 +2254,14 @@ Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module, SourceFile 
     SourceFile const* target = module->module ? module->module->file : nullptr;
     bool node = options->module >= MODULE_KIND_NODE16 && options->module <= MODULE_KIND_NODENEXT;
     if (node && target && target->is_json) {
-        Ty const* ret = with_synthetic_default(me, type, false);
-        if (ret->kind == TY_ANONYMOUS) ((Ty*)ret)->anonymous.empty_symbol = true;
-        return ret;
+        return with_synthetic_default(me, type, false, OBJECT_EMPTY_SYMBOL);
     }
     if (!dynamic_import_has_synthetic_default(module, importer)) return type;
     // (tsc's isValidSpreadType: an object spreads, anything else is only the default; any spread is any)
     if (type->flags & TYF_ANY) return type;
     bool structured = type->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED);
-    Ty const* ret = with_synthetic_default(me, type, structured);
-    if (ret->kind == TY_ANONYMOUS) ((Ty*)ret)->anonymous.empty_symbol = true;
-    return ret;
+    // (Its empty_symbol is set by its constructor: a type of its own, not a mark on a shared structural one)
+    return with_synthetic_default(me, type, structured, OBJECT_EMPTY_SYMBOL);
 }
 
 

@@ -2161,6 +2161,9 @@ typedef enum ObjectLiteralKind {
     // Or'ed with OBJECT_SYNTHETIC: tsc's type has no symbol at all, so its node builder prints it straight from its
     // members (createAnonymousTypeNodeEx), past the truncation length `{ ...; }` rather than `...`
     OBJECT_NO_SYMBOL = 1 << 7,
+    // Or'ed with OBJECT_SYNTHETIC: `import("m")`'s synthetic default object, TyAnonymous.empty_symbol (a type of its own,
+    // keyed apart from the same shape made without it)
+    OBJECT_EMPTY_SYMBOL = 1 << 8,
 } ObjectLiteralKind;
 Ty const* ty_object_literal(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind

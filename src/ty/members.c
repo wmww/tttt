@@ -5980,7 +5980,8 @@ Ty const* ty_object_literal_alternative(
     bool no_inferable_index = kind & OBJECT_NO_INFERABLE_INDEX;
     bool contains_spread = kind & OBJECT_CONTAINS_SPREAD;
     bool no_symbol = kind & OBJECT_NO_SYMBOL;
-    kind &= ~(OBJECT_JS | OBJECT_NO_INFERABLE_INDEX | OBJECT_CONTAINS_SPREAD | OBJECT_NO_SYMBOL);
+    bool empty_symbol = kind & OBJECT_EMPTY_SYMBOL;
+    kind &= ~(OBJECT_JS | OBJECT_NO_INFERABLE_INDEX | OBJECT_CONTAINS_SPREAD | OBJECT_NO_SYMBOL | OBJECT_EMPTY_SYMBOL);
     if (!ret) {
         MembersBuilder builder = {0};
         bool widens = kind == OBJECT_LITERAL_FRESH || kind == OBJECT_JSX_ATTRIBUTES_FRESH || kind == OBJECT_LITERAL_REGULAR;
@@ -6042,6 +6043,7 @@ Ty const* ty_object_literal_alternative(
         fresh->anonymous.no_inferable_index = no_inferable_index;
         fresh->anonymous.contains_spread = contains_spread;
         fresh->anonymous.no_symbol = no_symbol;
+        fresh->anonymous.empty_symbol = empty_symbol;
         fresh->anonymous.regular = kind == OBJECT_LITERAL_REGULAR;
         fresh->anonymous.spread_alternative = (uint16_t)alternative;
         fresh->anonymous.jsx_attributes = kind == OBJECT_JSX_ATTRIBUTES || kind == OBJECT_JSX_ATTRIBUTES_FRESH;
