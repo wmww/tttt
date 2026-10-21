@@ -1572,111 +1572,118 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
     return find_prop_in(me, ty, name, depth, false);
 }
 
+// (The intersection and union cases out of find_prop_in()'s frame: their buffers gave every lookup it, 11M on vscode)
+[[gnu::noinline]] static FoundProp find_prop_in_intersection(Checker* me, Ty const* ty, Atom const* name, u32 depth, bool skip_augment) {
+    FoundProp ret = {0};
+    // The property of an intersection is a type of its own (tsc makes a synthetic symbol per name as well)
+    u64 key[2] = { ty->id << 1 | skip_augment, (u64)(uintptr_t)name };
+    FoundProp const* cached = intern_get(&my intersection_props, key, 2);
+    if (cached) return *cached;
+    // (Every member's: an intersection of many objects that all have the property, UnionToIntersection of a big
+    // union, has as many parts)
+    Ty const* stack_buf[16];
+    Ty const** parts = stack_buf;
+    u32 cap = c_arraylen(stack_buf);
+    u32 len = 0;
+    bool all_optional = true, any_member = false, all_readonly = true, any_public = false;
+    u32 flags = 0;
+    // (The members' own properties first, Object's and Function's only if none has one)
+    bool own_only = true;
+    again:
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        // Its members see the whole intersection as their `this` (tsc's getApparentTypeOfIntersectionType):
+        // `(R & { T: X })['component']` with `component: (props: this['T']) => void` in R takes X
+        Ty const* member = ty->composite.types.data[i];
+        // (One that has a `this` already keeps it, `RefI<this = DB>` of a class's base: tsc's
+        // getTypeWithThisArgument leaves a reference with its this-argument as it is)
+        if (member->kind != TY_TYPE_PARAM && !(member->kind == TY_REFERENCE && member->reference.this_arg)) {
+            member = ty_with_this_arg(me, member, ty);
+        }
+        FoundProp part = find_prop_in(me, apparent_type(me, member), name, depth + 1, own_only);
+        if (!part.found) continue;
+        if (!ret.prop) ret.prop = part.prop;
+        if (len == cap) {
+            u32 grown = cap * 2;
+            Ty const** more = malloc(sizeof(Ty const*) * grown);
+            panic_if(!more, "out of memory");
+            memcpy(more, parts, sizeof(Ty const*) * len);
+            if (parts != stack_buf) free(parts);
+            parts = more;
+            cap = grown;
+        }
+        parts[len++] = part.type;
+        // Only class members (properties, methods, accessors) have a say: a variable of a namespace or of
+        // `typeof globalThis` is neither optional nor required (tsc's createUnionOrIntersectionProperty)
+        bool class_member = !part.prop || !part.prop->decl->symbol;
+        if (class_member) all_optional &= (part.flags & PROP_OPTIONAL) != 0;
+        any_member |= class_member;
+        flags |= part.flags & ~(u32)PROP_OPTIONAL;
+        all_readonly &= (part.flags & PROP_READONLY) != 0;
+        any_public |= !(part.flags & (PROP_PRIVATE | PROP_PROTECTED));
+    }
+    // (Readonly only if every member's is: tsc's createUnionOrIntersectionProperty)
+    if (!all_readonly) flags &= ~(u32)PROP_READONLY;
+    // (Private if any member's is, else public if any is: tsc's getDeclarationModifierFlagsFromSymbol of a synthetic
+    // property)
+    if (!(flags & PROP_PRIVATE) && any_public) flags &= ~(u32)PROP_PROTECTED;
+    if (!len && own_only && !skip_augment) {
+        own_only = false;
+        goto again;
+    }
+    if (len) {
+        ret.found = true;
+        // tsc intersects the members' getTypeOfSymbol, which includes an optional property's undefined: in
+        // `{ name?: X } & { name: undefined }` the property is required and `undefined`, not `X & undefined`
+        ret.type = ty_intersection(me, parts, len, nullptr, (TyList){0});
+        ret.flags = flags | (all_optional && any_member ? PROP_OPTIONAL : 0);
+        ret.synthetic = len > 1;
+    }
+    if (parts != stack_buf) free(parts);
+    FoundProp* memo = arena_new(&my arena, FoundProp);
+    *memo = ret;
+    // (Release: a nested lookup of the same property may have published its memo already, which this one replaces,
+    // --shared-graph's other checkers reading it)
+    __atomic_store_n(intern_slot(me, &my intersection_props, key, 2), (void const*)memo, __ATOMIC_RELEASE);
+    return ret;
+}
+
+[[gnu::noinline]] static FoundProp find_prop_in_union(Checker* me, Ty const* ty, Atom const* name, u32 depth, bool skip_augment) {
+    FoundProp ret = {0};
+    // A member of an intersection whose apparent type is a union (`T & X` with `T extends A | B`): every member
+    // has to have it (tsc's createUnionOrIntersectionProperty, reached through getPropertyOfType of the union)
+    TyList members = ty->composite.types;
+    Ty const* stack_buf[16];
+    Ty const** types = members.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * members.len);
+    u32 flags = 0;
+    bool missing = false;
+    u32 len = 0;
+    for (u32 i = 0; i < members.len && !missing; i++) {
+        // (A member whose apparent type is the error type says nothing)
+        if (ty_union_member_apparent_is_error(me, members.data[i])) continue;
+        FoundProp part = find_prop_in(me, apparent_type(me, members.data[i]), name, depth + 1, skip_augment);
+        missing = !part.found;
+        if (missing) break;
+        if (!ret.prop) ret.prop = part.prop;
+        types[len++] = part.type;
+        flags |= part.flags;
+    }
+    if (!missing && len) {
+        ret.found = true;
+        ret.type = ty_union(me, types, len, nullptr, (TyList){0});
+        ret.flags = flags;
+    } else {
+        ret.prop = nullptr;
+    }
+    if (types != stack_buf) free(types);
+    return ret;
+}
+
 static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 depth, bool skip_augment) {
     FoundProp ret = {0};
     if (depth > 8) return ret;
     if (ty->kind == TY_INTERSECTION && ty_reduced(me, ty) != ty) return ret; // (tsc's getReducedApparentType)
-    if (ty->kind == TY_INTERSECTION) {
-        // The property of an intersection is a type of its own (tsc makes a synthetic symbol per name as well)
-        u64 key[2] = { ty->id << 1 | skip_augment, (u64)(uintptr_t)name };
-        FoundProp const* cached = intern_get(&my intersection_props, key, 2);
-        if (cached) return *cached;
-        // (Every member's: an intersection of many objects that all have the property, UnionToIntersection of a big
-        // union, has as many parts)
-        Ty const* stack_buf[16];
-        Ty const** parts = stack_buf;
-        u32 cap = c_arraylen(stack_buf);
-        u32 len = 0;
-        bool all_optional = true, any_member = false, all_readonly = true, any_public = false;
-        u32 flags = 0;
-        // (The members' own properties first, Object's and Function's only if none has one)
-        bool own_only = true;
-        again:
-        for (u32 i = 0; i < ty->composite.types.len; i++) {
-            // Its members see the whole intersection as their `this` (tsc's getApparentTypeOfIntersectionType):
-            // `(R & { T: X })['component']` with `component: (props: this['T']) => void` in R takes X
-            Ty const* member = ty->composite.types.data[i];
-            // (One that has a `this` already keeps it, `RefI<this = DB>` of a class's base: tsc's
-            // getTypeWithThisArgument leaves a reference with its this-argument as it is)
-            if (member->kind != TY_TYPE_PARAM && !(member->kind == TY_REFERENCE && member->reference.this_arg)) {
-                member = ty_with_this_arg(me, member, ty);
-            }
-            FoundProp part = find_prop_in(me, apparent_type(me, member), name, depth + 1, own_only);
-            if (!part.found) continue;
-            if (!ret.prop) ret.prop = part.prop;
-            if (len == cap) {
-                u32 grown = cap * 2;
-                Ty const** more = malloc(sizeof(Ty const*) * grown);
-                panic_if(!more, "out of memory");
-                memcpy(more, parts, sizeof(Ty const*) * len);
-                if (parts != stack_buf) free(parts);
-                parts = more;
-                cap = grown;
-            }
-            parts[len++] = part.type;
-            // Only class members (properties, methods, accessors) have a say: a variable of a namespace or of
-            // `typeof globalThis` is neither optional nor required (tsc's createUnionOrIntersectionProperty)
-            bool class_member = !part.prop || !part.prop->decl->symbol;
-            if (class_member) all_optional &= (part.flags & PROP_OPTIONAL) != 0;
-            any_member |= class_member;
-            flags |= part.flags & ~(u32)PROP_OPTIONAL;
-            all_readonly &= (part.flags & PROP_READONLY) != 0;
-            any_public |= !(part.flags & (PROP_PRIVATE | PROP_PROTECTED));
-        }
-        // (Readonly only if every member's is: tsc's createUnionOrIntersectionProperty)
-        if (!all_readonly) flags &= ~(u32)PROP_READONLY;
-        // (Private if any member's is, else public if any is: tsc's getDeclarationModifierFlagsFromSymbol of a synthetic
-        // property)
-        if (!(flags & PROP_PRIVATE) && any_public) flags &= ~(u32)PROP_PROTECTED;
-        if (!len && own_only && !skip_augment) {
-            own_only = false;
-            goto again;
-        }
-        if (len) {
-            ret.found = true;
-            // tsc intersects the members' getTypeOfSymbol, which includes an optional property's undefined: in
-            // `{ name?: X } & { name: undefined }` the property is required and `undefined`, not `X & undefined`
-            ret.type = ty_intersection(me, parts, len, nullptr, (TyList){0});
-            ret.flags = flags | (all_optional && any_member ? PROP_OPTIONAL : 0);
-            ret.synthetic = len > 1;
-        }
-        if (parts != stack_buf) free(parts);
-        FoundProp* memo = arena_new(&my arena, FoundProp);
-        *memo = ret;
-        // (Release: a nested lookup of the same property may have published its memo already, which this one replaces,
-        // --shared-graph's other checkers reading it)
-        __atomic_store_n(intern_slot(me, &my intersection_props, key, 2), (void const*)memo, __ATOMIC_RELEASE);
-        return ret;
-    }
-    if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
-        // A member of an intersection whose apparent type is a union (`T & X` with `T extends A | B`): every member
-        // has to have it (tsc's createUnionOrIntersectionProperty, reached through getPropertyOfType of the union)
-        TyList members = ty->composite.types;
-        Ty const* stack_buf[16];
-        Ty const** types = members.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * members.len);
-        u32 flags = 0;
-        bool missing = false;
-        u32 len = 0;
-        for (u32 i = 0; i < members.len && !missing; i++) {
-            // (A member whose apparent type is the error type says nothing)
-            if (ty_union_member_apparent_is_error(me, members.data[i])) continue;
-            FoundProp part = find_prop_in(me, apparent_type(me, members.data[i]), name, depth + 1, skip_augment);
-            missing = !part.found;
-            if (missing) break;
-            if (!ret.prop) ret.prop = part.prop;
-            types[len++] = part.type;
-            flags |= part.flags;
-        }
-        if (!missing && len) {
-            ret.found = true;
-            ret.type = ty_union(me, types, len, nullptr, (TyList){0});
-            ret.flags = flags;
-        } else {
-            ret.prop = nullptr;
-        }
-        if (types != stack_buf) free(types);
-        return ret;
-    }
+    if (ty->kind == TY_INTERSECTION) return find_prop_in_intersection(me, ty, name, depth, skip_augment);
+    if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) return find_prop_in_union(me, ty, name, depth, skip_augment);
     if (!(ty->flags & TYF_OBJECT)) return ret;
     Prop const* prop = skip_augment ? ty_get_prop(me, ty, name) : ty_get_object_prop(me, ty, name);
     if (prop) {
