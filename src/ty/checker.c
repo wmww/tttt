@@ -3765,13 +3765,11 @@ deferred:;
 }
 
 // tsc's isGenericTupleType: a tuple with a variadic element, a spread of something generic (`[...T]`, not `[...T[]]`).
-// A deferred reference whose arguments aren't resolved yet goes by its syntax, like tsc's tuple target does
+// A deferred reference's arguments are resolved for it (plan 86 4f, rule 5: going by the syntax while they weren't known
+// yet made the answer depend on what this worker had computed; computing them changes no output of the suite or the
+// corpora)
 bool ty_is_generic_tuple(Checker* me, Ty const* ty) {
     if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || !ty_is_tuple(ty)) return false;
-    TyDeferredRef const* deferred = ty->reference.deferred;
-    if (deferred && TY_PEEK_FAILED(me, !ty_reference_args_known(me, ty))) {
-        return deferred->node->tag == TYPE_TUPLE && ty_tuple_node_has_variadic(deferred->node);
-    }
     TupleShape const* shape = ty_tuple_shape(ty);
     TyList args = ty_reference_args(me, ty);
     for (u32 i = 0; i < shape->arity && i < args.len; i++) {
