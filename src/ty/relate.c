@@ -420,29 +420,6 @@ void ty_init_global_types(Checker* me) {
     }
 }
 
-// --shared-graph on threads (plan 86 4d): before the workers start, the first checker resolves the members of the lib
-// types every worker needs first, so that they don't all enter those types' cycles at once (each entering from another
-// side, a wait cycle one of them breaks: K1's answer only by luck). TTTT_GRAPH_WARM_UP=0 skips it
-void ty_graph_warm_up(Checker* me) {
-    static char const* const names[] = {
-        "Object", "Function", "CallableFunction", "NewableFunction", "String", "Number", "Boolean", "Symbol", "BigInt",
-        "RegExp", "Array", "ReadonlyArray", "ArrayLike", "Promise", "PromiseLike", "Iterable", "Iterator", "IterableIterator",
-        "AsyncIterable", "AsyncIterator", "Map", "ReadonlyMap", "Set", "ReadonlySet", "WeakMap", "Date", "Error", "JSON",
-        "Math", "IArguments", "TemplateStringsArray",
-    };
-    ty_init_global_types(me);
-    ty_array(me, ty_intrinsic(me, TY_ANY), false);
-    for (u32 i = 0; i < c_arraylen(names); i++) {
-        Symbol const* decl = program_get_global(my program, csview_from(names[i]), SYMBOL_TYPE);
-        if (!decl || !(decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS))) continue;
-        Ty const* declared = ty_declared_type_of(me, decl);
-        if (declared->kind != TY_DECLARED) continue;
-        Members const* members = ty_members(me, declared);
-        // (And what their properties are: the lib's signatures, which mention each other)
-        for (u32 p = 0; p < members->prop_count; p++) prop_type(me, members->props[p]);
-    }
-}
-
 Ty const* ty_global_function_type(Checker* me) { return global_type(me, GLOBAL_FUNCTION); }
 Ty const* ty_global_object_type(Checker* me) { return global_type(me, GLOBAL_OBJECT); }
 Ty const* ty_empty_object_type(Checker* me) { return global_type(me, GLOBAL_EMPTY_OBJECT); }

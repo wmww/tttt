@@ -4818,7 +4818,7 @@ static u32 steal_file(Program* me, u32 c, u32 count) {
 // --shared-graph on threads: the graph-wide recycle (plan 86 4e item 3). When what the checkers hold together passes
 // the budget, every worker stops at its next file boundary, where nothing of its is in flight; the last to arrive drops
 // every checker (their deferred bodies go with their holds), the retired ones and the graph, makes a fresh graph and
-// checkers, warms the lib up again and lets the others go on. A worker that runs out of files leaves the barrier's
+// checkers and lets the others go on. A worker that runs out of files leaves the barrier's
 // count instead (graph_epoch_leave()), so finished shares never hold it up. Today's per-checker recycle, for the
 // whole graph at once
 enum { GRAPH_BUDGET_MB = 800 };
@@ -4854,12 +4854,6 @@ static void graph_epoch_rebuild(Program* me, u32 count) {
         atomic_store(&my graph_held[c], 0);
     }
     my checker = first;
-    char const* warm = getenv("TTTT_GRAPH_WARM_UP");
-    if (!warm || strcmp(warm, "0")) {
-        checker_make_current(first);
-        ty_graph_warm_up(first);
-        checker_make_current(nullptr);
-    }
     my graph_recycles++;
 }
 
@@ -5467,15 +5461,6 @@ void program_typecheck(Program* me) {
         checker_errs[c] = (ErrorCtx){ .phase = ERROR_PHASE_TYPECHECK, .parent = my errs };
         my checkers[c] = c ? checker_new(me) : my checker;
         my checkers[c]->errs = &checker_errs[c];
-    }
-    // (--shared-graph on threads: the lib's hot types before the workers start, see ty_graph_warm_up())
-    if (my graph && count > 1 && (my threads ? my threads : 1) > 1) {
-        char const* warm = getenv("TTTT_GRAPH_WARM_UP");
-        if (!warm || strcmp(warm, "0")) {
-            checker_make_current(my checkers[0]);
-            ty_graph_warm_up(my checkers[0]);
-            checker_make_current(nullptr);
-        }
     }
     // (--shared-graph: the graph-wide recycle's budget, what the checkers hold together (their arenas and
     // tables; the deferred bodies they hold come on top, about as much again on vscode). 800 MB recycles vscode twice
