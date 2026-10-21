@@ -758,12 +758,12 @@ at the computation's end**, and makes every field another worker can read safe t
   subject. TSan on effect at K12 and K32 (btsan) reports only formal races now: ty_param_constraint() reading
   `circular` plainly next to its CAS, SymbolLinks.base_cycle's flag RMW (two workers' bits can be lost: a real one,
   benign so far), Prop's write_type_known bitfield next to its neighbours, MappedInfo's struct copy.
-  **Resume notes of 4d (historical; the current ones are at the top of Stage 4e).** Scratch is /tmp/wt-shared-scratch (delete when done): `paths.sh` (corpus -> tsconfig), `ref.X`
+  **Resume notes of 4d (historical; the current ones are at the top of Stage 4e).** The scripts are now in scripts/sharedgraph/ (README.md; outputs in $SG_OUT, default /tmp/tttt-sharedgraph): `paths.sh` (corpus -> tsconfig), `ref.X`
   (K1 output: `release/tttt --threads 1 --checkers 1 --checker-memory off --noEmit --pretty false -p P`), `rep.sh BIN N
   corpus...` (N runs at --shared-graph K12 T12 against ref.X: same/diff/crash, differing outputs kept as diffout.X.I),
-  `crashrate.sh N VAR=VAL...` (effect crash count, env passed through), `hunt2.sh CORPUS N` (gdb runs of tttt-dbg, each
-  crash's stacks kept as crash2.X.I), `hang.sh CORPUS N SECS` (a run past SECS interrupted under gdb, all threads'
-  stacks), `tsan.py ERR` (TSan reports grouped by both sites). Builds there: `bdbg` (debugoptimized
+  `crashrate.sh N VAR=VAL...` (effect crash count, env passed through), `hunt.sh BIN CORPUS N` (gdb runs of a -g build, each
+  crash's stacks kept as crash.X.I), `hang.sh BIN CORPUS N SECS` (a run past SECS interrupted under gdb, all threads'
+  stacks), `tsan.py ERR` (TSan reports grouped by both sites). Builds (scratch, deleted; rebuild with meson setup as named): `bdbg` (debugoptimized
   -DTTTT_DEBUG_IDS: id lookups that miss abort, intern tables used off their checker abort, type-valued kinds hold
   types, identities never publish null), `btsan` (-Db_sanitize=thread), `basan` (address), `bpoison`
   (-DTTTT_TY_POISON). Tools in the tree: TTTT_GRAPH_NOSHARE=k,k / =all-but:k,k (kinds kept private: sharing nothing
@@ -898,8 +898,8 @@ TTTT_GRAPH_MEMO_LATE=k,k, TTTT_GRAPH_WAIT_YIELDS=N, TTTT_GRAPH_REDO=0, TTTT_GRAP
 redone files, limit hits, relation pairs and shared hits, graph-wide recycles), TTTT_DEBUG_UNSHARED=1 (identities left
 private at a share's end), TTTT_DEBUG_MEMO_PUBLISH=1, TTTT_GRAPH_LOUD_FALLBACKS=1. The stress loop: drizzle at K12 T12
 beside an effect K12 loop for load, 100-150 runs (~4-6 min), each run's verdict against K1's output, redos, redone
-files and limit hits (`/tmp/wt-shared-scratch/t3loop.sh BIN N ENV...` with `paths.sh` and `ref.X`, K1 outputs made with
-`--threads 1 --checkers 1 --checker-memory off --noEmit --pretty false -p REALPATH`); `rep3.sh BIN N "VAR=VAL" corpus...`
+files and limit hits (`scripts/sharedgraph/t3loop.sh BIN N ENV...` against `ref.X`, the K1 outputs `scripts/sharedgraph/refs.sh`
+writes; scripts/sharedgraph/README.md lists the rest); `rep3.sh BIN N "VAR=VAL" corpus...`
 for 20-run tables; `cgtc.sh BIN corpus K` for callgrind work in the typecheck and worker threads.
 
 In order; each item its own commit, gated like 4d (K1 byte-identical and flat with the flag, K4/K12 K1's output on
