@@ -145,11 +145,18 @@ static Binding const* lazy_type_pattern_root(LazyType const* me) {
     return binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT ? binding : nullptr;
 }
 
+// A declaration's evaluation in flight (its RESOLVING_DECLARATION entry's record): what the memo mustn't hold
+typedef struct DeclarationRecord {
+    bool reevaluating; // Evaluated again from below a call's barrier: the nested evaluation shares this record
+} DeclarationRecord;
+
 static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     if (my tag == LAZY_TYPE_EVALUATED) return ty_intrinsic(current_checker, TY_ANY);
 
     // THREADSAFETY: slots belong to one checker, which belongs to one thread
     LazyMemo* state = lazy_type_state(me);
+    DeclarationRecord own = {0};
+    DeclarationRecord* record = &own;
 
     if (state->evaluation_started) {
         TAINT_EVENT(TAINT_IN_FLIGHT_LAZY);
@@ -162,9 +169,14 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
         bool below_barrier = my tag != LAZY_TYPE_EXPR && !lazy_type_pattern_root(me) &&
             ty_resolving_reenters(current_checker, RESOLVING_DECLARATION, me);
         if (below_barrier) {
-            if (debug_env.debug_reentry) ty_debug_reentry(current_checker, state->reevaluating ? "ONCE 0 call" : "REENTER 0 call", span_null);
-            if (state->reevaluating) goto circular;
-            state->reevaluating = true;
+            DeclarationRecord* outer = ty_in_flight_record(current_checker, RESOLVING_DECLARATION, me);
+            bool reevaluating = outer && outer->reevaluating;
+            if (debug_env.debug_reentry) ty_debug_reentry(current_checker, reevaluating ? "ONCE 0 call" : "REENTER 0 call", span_null);
+            if (reevaluating) goto circular;
+            if (outer) {
+                outer->reevaluating = true;
+                record = outer;
+            }
             goto evaluate;
         }
         circular:
@@ -205,7 +217,8 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     TaintFrame taint_frame = taint_begin();
     unsigned taint_kind = my tag == LAZY_TYPE_EXPR ? TK_LAZY_EXPR : TK_LAZY_DECL + my tag;
 #endif
-    if (resolving) ty_resolving_push(current_checker, lazy_type_pattern_root(me) ? RESOLVING_PATTERN : RESOLVING_DECLARATION, me);
+    if (resolving && lazy_type_pattern_root(me)) ty_resolving_push(current_checker, RESOLVING_PATTERN, me);
+    else if (resolving) ty_resolving_push_record(current_checker, RESOLVING_DECLARATION, me, record);
     Ty const* result = nullptr;
     switch (my tag) {
         case LAZY_TYPE_UNINITIALIZED: panic("LazyType is uninitialized");

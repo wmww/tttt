@@ -12,11 +12,12 @@ typedef struct LazyMemo {
     u32 context;
     bool evaluation_started : 1;
     bool is_self_referential : 1;
-    bool reevaluating : 1; // Evaluated again from below a call's barrier, see lazy_type_evaluate_inner()
     bool done : 1;
     // A destructuring pattern found circular once: not remembered, see lazy_type_evaluate_inner()
     bool pattern_retried : 1;
-    unsigned char hits; // Expressions: re-entrant evaluations so far
+    // Expressions: re-entrant evaluations so far. (In-flight state, but an expression's memo is the checker's own,
+    // never shared: a declaration's in-flight state is its RESOLVING_DECLARATION record, lazy_type_evaluate_inner())
+    unsigned char hits;
 } LazyMemo;
 
 typedef struct LazyType {
