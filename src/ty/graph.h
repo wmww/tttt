@@ -28,6 +28,16 @@ typedef enum GraphClass {
 enum { GRAPH_KIND_INTERSECTION_PROPS = 254 };
 
 GraphClass graph_kind_class(u32 kind);
+char const* graph_kind_name(u32 kind); // KEY_* by name
+
+#ifdef TTTT_GRAPH_FINGERPRINT
+// The fingerprint-at-publish oracle (graph_debug.c): record mode for the K1 check, then check mode for the workers
+void graph_fp_start(bool record);
+bool graph_fp_on(void);
+void graph_fp_memo(u32 kind, void const** block, u64 const* words, u32 count); // a memo entry published
+void graph_fp_record_tables(Checker* checker); // the K1 checker's memo entries, at its end
+void graph_fp_print(void);
+#endif
 
 // Made by program_typecheck() before its other checkers, from its first one (current, holding the state)
 TyGraph* graph_new(Checker* first);

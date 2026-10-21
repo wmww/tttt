@@ -87,6 +87,24 @@ void taint_flow_change(void); // flow_uncached is about to change: what is done 
 #define TAINT_END(name, kind, object, subject, result) taint_end(name, kind, object, subject, result)
 #define TAINT_READ(kind, object) taint_read(kind, object)
 
+#elif defined(TTTT_GRAPH_FINGERPRINT)
+
+// --shared-graph's fingerprint-at-publish oracle (plan 86 4f's gates, graph_debug.c): no taint events; every result
+// TAINT_END() names (members, property types, signature returns, constraints, declared types, inferred returns,
+// variances, base constraints) is fingerprinted by its kind (fingerprint.inc), recorded by a private K1 check made first
+// in the same process, then checked against the record when a worker computes and publishes it
+#ifdef TTTT_GRAPH_TAINT
+#error "-DTTTT_GRAPH_FINGERPRINT is a build of its own (not with -DTTTT_GRAPH_TAINT)"
+#endif
+typedef struct TaintFrame { char unused; } TaintFrame;
+void graph_fp_result(unsigned kind, void const* subject, void const* result);
+#define TAINT_EVENT(reason) ((void)0)
+#define TAINT_FLOW() ((void)0)
+#define TAINT_IF(reason, condition) (condition)
+#define TAINT_BEGIN(name) ((void)0)
+#define TAINT_END(name, kind, object, subject, result) graph_fp_result(kind, subject, result)
+#define TAINT_READ(kind, object) ((void)0)
+
 #elif defined(TTTT_GRAPH_TAINT)
 
 // --shared-graph's cheap taint (plan 86 stage 4 track S, ty/graph.c): the G0 rule's events (TTTT_TAINT_LENIENT's:

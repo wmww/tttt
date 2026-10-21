@@ -5181,6 +5181,31 @@ static void* materialize_ahead_thread(void* arg) {
 // cache, plan 86 4e item 1). `private` gives it no graph: a K1 check in the same process, which every file must
 // match. On stderr: `recheck: N of M files differ`, then the first differing file in program order with both lists
 // (TTTT_GRAPH_RECHECK_ALL=1: every differing file). The output itself is the workers'. Debug only: it doubles the work
+#ifdef TTTT_GRAPH_FINGERPRINT
+// The fingerprint oracle's record (graph_debug.c): every file checked by one private checker first, in program order,
+// its results' fingerprints recorded; its errors are dropped and the checker is kept to the end (never dropped: what it
+// materialized stays where it is, so the AST addresses the fingerprints hash are the workers' too)
+static void graph_fingerprint_record(Program* me) {
+    Checker* saved = current_checker;
+    graph_fp_start(true);
+    Checker* k1 = checker_new(me);
+    ErrorCtx errs = { .phase = ERROR_PHASE_TYPECHECK, .parent = my errs };
+    k1->errs = &errs;
+    checker_make_current(k1);
+    ty_init_global_types(k1);
+    // (deal_files()'s list, made later)
+    u32 at = 0;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        if (source_file_is_checked(*i) && !my declarations_only) check_file_or_give_up(me, k1, *i, at++, false);
+    }
+    graph_fp_record_tables(k1);
+    error_ctx_drop(&errs);
+    k1->errs = my errs;
+    checker_make_current(saved);
+    graph_fp_start(false);
+}
+#endif
+
 static char const* recheck_file_name(SourceFile const* source) {
     return cstr_str(&source->canonical_path);
 }
@@ -5297,6 +5322,9 @@ void program_typecheck(Program* me) {
     my checker_start_budget = count > 1 && my checker_memory_shared < my checker_budget ? my checker_memory_shared : my checker_budget;
     ErrorCtx* checker_errs = c_new_n(ErrorCtx, count);
     // --shared-graph (plan 86 stage 4, ty/graph.h): one checker after another, never recycled, sharing one graph
+#ifdef TTTT_GRAPH_FINGERPRINT
+    if (my shared_graph && !my graph && getenv("TTTT_GRAPH_FINGERPRINT")) graph_fingerprint_record(me);
+#endif
     if (my shared_graph && !my graph) {
         my graph = graph_new(my checker);
         my checker_budget = my checker_start_budget = UINT64_MAX;
@@ -5403,6 +5431,9 @@ void program_typecheck(Program* me) {
     my binder->frozen = false;
     my errs->frozen = false;
     if (my graph && getenv("TTTT_GRAPH_STATS")) graph_print_stats(my graph);
+#ifdef TTTT_GRAPH_FINGERPRINT
+    graph_fp_print();
+#endif
     if (getenv("TTTT_DEBUG_VARIANCE")) { extern void vlog_dump(void); vlog_dump(); }
     if (my graph && getenv("TTTT_DEBUG_DISAGREE")) {
         extern void graph_print_disagreements(Checker* checker);

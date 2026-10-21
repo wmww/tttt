@@ -1079,6 +1079,9 @@ void graph_memo_flush(Checker* checker) {
             __atomic_fetch_add(&stats->tainted, 1, __ATOMIC_RELAXED);
             continue;
         }
+#ifdef TTTT_GRAPH_FINGERPRINT
+        if ((entry & 3) != 2) graph_fp_memo(kind, block, key, count);
+#endif
         void const** there;
         if (shared_table_insert(memo_log_table(me, entry & 3), hash, block, count, &there)) {
             __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
@@ -1125,6 +1128,10 @@ void graph_memo_done(Checker* checker, u32 slot, bool tainted) {
         panic_if(!checker->graph_memo_slots, "out of memory");
     }
     checker->graph_memo_slots[checker->graph_memo_len++] = slot | (u32)tainted << 31;
+}
+
+char const* graph_kind_name(u32 kind) {
+    return kind_name(kind);
 }
 
 static char const* kind_name(u32 kind) {

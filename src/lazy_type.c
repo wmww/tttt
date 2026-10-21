@@ -349,6 +349,9 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 #ifdef TTTT_TAINT
     taint_end(taint_frame, taint_kind, me, me, lazy_memo_evaluated(state));
 #endif
+#ifdef TTTT_GRAPH_FINGERPRINT
+    if (resolving) graph_fp_result(TK_LAZY_DECL + my tag, me, lazy_memo_evaluated(state));
+#endif
 #ifndef TTTT_TAINT
     if (graph && resolving && my tag != LAZY_TYPE_FOR_EACH_LOOP_VAR) {
 #ifdef TTTT_GRAPH_TAINT
