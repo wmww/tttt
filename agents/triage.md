@@ -10,4 +10,4 @@ HasNeverType (fixed). The combined import's member symbols went to bugs/binder_m
 intersection's property symbol to bugs/type_core.md. Plan 86's done stage 1 condensed.
 
 
-- tttt -b on TypeScript6/src reserves ~12 GB of address space on 16 cores (ast_alloc.c:83 panic under ulimit -v 12 GB; realworld.py's cap raised to 24): look at the per-thread/per-builder AST and arena reservation sizes, they scale with the core count.
+- tttt -b on TypeScript6/src reserves ~12 GB of address space on 16 cores (ast_alloc.c:83 panic under ulimit -v 12 GB; realworld.py's and clidiff.py's caps raised to 48: typescript-eslint's -b reserves 22-28 GB, the same at 4eadfcc74, varying run to run with the load): look at the per-thread/per-builder AST and arena reservation sizes, they scale with the core count.
