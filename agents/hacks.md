@@ -407,13 +407,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 ## Type core (`src/ty/`)
 - Re-entry below resolution barriers (plan 88): tsc re-enters anything in flight below `resolutionStart` (a call's
   first resolution, the outermost variance measurement) and stops only when a request is above a barrier; tttt
-  approximates per site: declarations and inferred return types re-enter below the call barrier once
-  (`reevaluating` in lazy_type_evaluate_inner(), function_return_type()), aliases only below the variance barrier
+  approximates per site: declarations and inferred return types re-enter below the call barrier every time, as tsc
+  does (plan 88 stage B, 2026-10-21), aliases only below the variance barrier
   (alias_reenters()), symbol properties to depth 4 (prop_type_slow()'s `prop_reentry_depth`), base types find their
   cycle across barriers (ty_resolving_cycle_across_calls()), a call re-resolved while in flight drops the nested result
   (call_return_type()), and members never re-enter (members_reentered_unguarded() synthesizes the TS5115). The
   barriers are one stack now (`Checker.barriers`) and every per-kind rule is in ty_resolving_reenters(). Correct:
-  barrier termination, nested results winning. Oracle: `scripts/reentrytrace.py` (tsgo's events
+  barrier termination everywhere (properties' depth 4 included), nested results winning. Oracle: `scripts/reentrytrace.py` (tsgo's events
   against tttt's), mikro-orm/tests and classVarianceResolveCircularity2 (what a partial generalization broke).
 - **An alias body's homomorphic mapped instance is re-instantiated only where met directly** (`ty_alias_body_mapped_instance()`,
   `alias_body_twin` in `ty_instantiate()`): `type N = Readonly<{...}>` is a twin of the ordinary instance (tsc caches it

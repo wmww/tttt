@@ -386,11 +386,6 @@ Ty const* ty_iife_return_type(Checker* me, FunctionImpl const* function) {
     return function_return_type(me, function, true);
 }
 
-// A return type's inference in flight (its RESOLVING_FUNCTION_RETURN entry's record): what the memo mustn't hold
-typedef struct FunctionReturnRecord {
-    bool reevaluating; // Asked for again from below a call's barrier: the nested inference shares this record
-} FunctionReturnRecord;
-
 static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer) {
     if (function_impl_rare(function)->constructed_class) return ty_class_instance_type(me, function_impl_rare(function)->constructed_class);
     // (A getter without an annotation is its setter's parameter annotation, body or not: tsc's getTypeOfAccessors)
@@ -408,8 +403,6 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
         memo = arena_new(&my arena, FunctionReturn);
         ty_link_set(me, KEY_FUNCTION_RETURN, function, memo);
     }
-    FunctionReturnRecord own = {0};
-    FunctionReturnRecord* record = &own;
     switch (memo->state) {
         case LAZY_STATE_DONE:
             TAINT_READ(TK_FUNCTION_RETURN, memo);
@@ -417,19 +410,11 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
             return memo->type;
         case LAZY_STATE_IN_FLIGHT:
             TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-            // Asked again from below a call's barrier, it isn't circular yet: it's inferred again, once, and the inner
-            // result is the one remembered (tsc's getReturnTypeOfSignature, like declarations: lazy_type_evaluate_inner())
-            bool reenters = ty_resolving_reenters(me, RESOLVING_FUNCTION_RETURN, function);
-            FunctionReturnRecord* outer = reenters ? ty_in_flight_record(me, RESOLVING_FUNCTION_RETURN, function) : nullptr;
-            bool reevaluating = outer && outer->reevaluating;
-            if (debug_env.debug_reentry && reenters) {
-                ty_debug_reentry(me, reevaluating ? "ONCE 3 call" : "REENTER 3 call", span_null);
-            }
-            if (!reevaluating && reenters) {
-                if (outer) {
-                    outer->reevaluating = true;
-                    record = outer;
-                }
+            // Asked again from below a call's barrier, it isn't circular yet: it's inferred again, nested, and the inner
+            // result is the one remembered (tsc's getReturnTypeOfSignature, like declarations: lazy_type_evaluate_inner(),
+            // which says why that ends)
+            if (ty_resolving_reenters(me, RESOLVING_FUNCTION_RETURN, function)) {
+                if (debug_env.debug_reentry) ty_debug_reentry(me, "REENTER 3 call", span_null);
                 break;
             }
             ty_resolving_cycle(me, RESOLVING_FUNCTION_RETURN, function);
@@ -438,7 +423,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     }
     memo->state = LAZY_STATE_IN_FLIGHT;
     TAINT_BEGIN(taint_frame);
-    ty_resolving_push_record(me, RESOLVING_FUNCTION_RETURN, function, record);
+    ty_resolving_push(me, RESOLVING_FUNCTION_RETURN, function);
     FlowIsolation isolation = ty_flow_isolate(me);
     // (An object literal getter a call's resolution types: nothing in its body is remembered, see
     // ty_object_literal_accessor_type())

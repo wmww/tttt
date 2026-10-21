@@ -2204,9 +2204,6 @@ typedef struct MembersInFlight {
 } MembersInFlight;
 typedef struct Resolving {
     void const* key;
-    // The computation's in-flight record (plan 86 4a): what it knows about itself while it runs that the shared object
-    // it computes mustn't hold (re-entered once, a placeholder...), per kind, on the computing C frame. Null if none
-    void* record;
     u32 kind;
     bool circular;
 } Resolving;
@@ -2215,19 +2212,12 @@ static inline void ty_resolving_push(Checker* me, ResolvingKind kind, void const
     if (my resolving_len == my resolving_cap) ty_resolving_grow(me);
     my resolving[my resolving_len++] = (Resolving){ .key = key, .kind = kind };
 }
-// The same, with the computation's in-flight record
-static inline void ty_resolving_push_record(Checker* me, ResolvingKind kind, void const* key, void* record) {
-    if (my resolving_len == my resolving_cap) ty_resolving_grow(me);
-    my resolving[my resolving_len++] = (Resolving){ .key = key, .record = record, .kind = kind };
-}
 // This checker's innermost entry of `key` anywhere on the stack, barriers or not: whether the computation is the
-// checker's own (a lazy field's IN_FLIGHT state only says that someone has it in flight), and its record. Null if it
-// isn't in flight here. Only asked on an in-flight hit, which is rare
+// checker's own (a lazy field's IN_FLIGHT state only says that someone has it in flight), and the entry is its in-flight
+// record (its `circular`: prop_type()'s). Null if it isn't in flight here. Only asked on an in-flight hit, which is rare.
+// (Plan 88 stage B left the kinds that push an entry no other payload: a `void* record` on the entry was tried and
+// dropped, plan 86 "4a's overlay")
 Resolving* ty_in_flight_entry(Checker* me, ResolvingKind kind, void const* key);
-static inline void* ty_in_flight_record(Checker* me, ResolvingKind kind, void const* key) {
-    Resolving* entry = ty_in_flight_entry(me, kind, key);
-    return entry ? entry->record : nullptr;
-}
 
 // In-flight records of the computations that push no Resolving entry (they aren't part of tsc's cycles), a list per
 // ClaimKind, innermost first: the header of a per-kind record on the computing C frame, like relate.c's VarianceClaim.
@@ -2303,7 +2293,8 @@ u32 ty_barrier_outer_call_start(Checker* me);
 // kind, so it is resolved again rather than being a cycle. Each kind's rule is tttt's approximation of tsc's (plan 88):
 // declarations, return types and properties see the call barriers, aliases only the variance barrier (what else is in
 // flight there isn't re-entered by tttt, so the variance barrier would hide its cycles: TS7022 in
-// classVarianceResolveCircularity2). How often it is resolved again is the caller's (`reevaluating`, prop_type())
+// classVarianceResolveCircularity2). Resolved again every time (plan 88 stage B), but for a symbol's property:
+// prop_type() re-enters 4 deep at most (its symbol's type may have no in-flight state of its own to stop it)
 bool ty_resolving_reenters(Checker* me, ResolvingKind kind, void const* key);
 
 // Control flow queries (ty/flow.c)

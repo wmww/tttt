@@ -21,8 +21,6 @@ sides run single-threaded (tttt --checkers 1) and print `TTTT EVENT file:line`:
     NESTEDCALL      a call asked for again while it is being resolved, resolved again without a barrier
     MEMBERS         (tsgo) resolveStructuredTypeMembers of a type whose members are being resolved (tsc has no
                     in-flight state there; tttt has, never re-enters)
-    ONCE K call     (tttt) a declaration or return type re-entered below the barrier a second time: tttt says
-                    circular (lazy_type_evaluate_inner's `reevaluating`), tsc would re-enter again
 
 tsgo's lines are at its currentNode (the statement or expression being checked), tttt's at Checker.current_node:
 lines can differ by a statement. Logs land in /tmp/tsgo-reentry.

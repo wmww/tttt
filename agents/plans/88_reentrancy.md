@@ -35,8 +35,7 @@ Per-site approximations, each tuned to the tests that needed it:
   re-resolution's doesn't move it, `resolving_nested_call`) and the outermost variance measurement;
   `resolved_return_type()` reads the return type outside the barrier. Each site's rule is in ty_resolving_reenters().
 - Declarations (lazy_type_evaluate_inner()) and inferred return types (function_return_type()) re-enter below the
-  call barrier **once** (`reevaluating`), then say circular. tsc has no "once": it re-enters until the request is
-  above a barrier.
+  call barrier every time, like tsc (stage B, below); until 2026-10-21 they did so **once** (`reevaluating`).
 - Aliases re-enter only below the outermost variance measurement (BARRIER_VARIANCE, alias_reenters(), the apollo fix
   7238e629e). Nothing else sees the variance barrier.
 - Symbol properties re-enter below the call barrier up to depth 4, instantiated properties up to 200
@@ -111,6 +110,20 @@ TAINT_IN_FLIGHT_* events already mark these). The model, in order of dependency:
   the faithful version). Gate: the suite, mikro-orm/tests, classVarianceResolveCircularity2, apollo's
   ttttAliasReentersBelowVarianceBarrier, and `scripts/reentrytrace.py` on the corpora (tttt's REENTER counts should
   start to appear where tsgo's are, ONCE should disappear).
+  **Decision (2026-10-21, plan 86 4a session 2): done for declarations and return types, not for symbol properties.**
+  The "once" flags were the only payload 4a's records would have carried for those two kinds, so B makes the records
+  vanish rather than move. Evidence that it is safe: the suite never fires ONCE (TTTT_DEBUG_REENTRY over the whole
+  suite: 14 REENTER 0, 13 REENTER 3, no ONCE), and with the flags gone the suite (both body modes), the five corpora
+  (zod, drizzle, effect, excalidraw, nest) and every source sweep project of mikro-orm, crawlee, angular-components,
+  tiptap, karakeep, dyad, solid, b4run, better-auth, apollo-client and arktype (437 projects) print byte-identical
+  output. Termination: the nested computation's entry is above the innermost call barrier, so a third request there
+  is a cycle; another round needs another call's first resolution (a re-entered call pushes BARRIER_NESTED_CALL,
+  which doesn't move it), and calls are finite. `prop_reentry_depth < 4` stays: a symbol property re-enters through
+  ty_type_of_symbol(), which for some symbols has no in-flight state of its own, so without a bound only the barrier
+  would stop it and the property's own entry stays below it (no oracle moved without the bound either, but the
+  argument doesn't hold). It is a thread-local counter, not state on a shared object, so plan 86 doesn't need it
+  moved. Experiment 1 (aliases below the call barrier) is still to redo on top of this: B removed the ONCE that made it
+  report circular on mikro-orm/tests.
 - **C. Nested call results supersede.** call_return_type()'s nested resolution stores its CallResolution; the outer
   resolution, finishing later, keeps the nested one (tsc's `links.resolvedSignature != resolvingSignature`), and the
   nested resolution's diagnostics are reported (verify what tsc keeps of the outer one's). Together with tsc's chooseOverload rule for a

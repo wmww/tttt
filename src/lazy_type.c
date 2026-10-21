@@ -147,18 +147,11 @@ static Binding const* lazy_type_pattern_root(LazyType const* me) {
     return binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT ? binding : nullptr;
 }
 
-// A declaration's evaluation in flight (its RESOLVING_DECLARATION entry's record): what the memo mustn't hold
-typedef struct DeclarationRecord {
-    bool reevaluating; // Evaluated again from below a call's barrier: the nested evaluation shares this record
-} DeclarationRecord;
-
 static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     if (my tag == LAZY_TYPE_EVALUATED) return ty_intrinsic(current_checker, TY_ANY);
 
     // THREADSAFETY: slots belong to one checker, which belongs to one thread
     LazyMemo* state = lazy_type_state(me);
-    DeclarationRecord own = {0};
-    DeclarationRecord* record = &own;
     // (--shared-graph: a tainted declaration, read)
     if (state->done) {
         TAINT_EVENT(TAINT_READ_TAINTED);
@@ -176,22 +169,16 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
         // flight, a declaration is any, and it and everything resolved since is part of the cycle (tsc's
         // pushTypeResolution failing, see ty_resolving_push()). What they reach finds out when it finishes.
         // In flight only below the barrier of a call being resolved (tsc's findResolutionCycleStartIndex from
-        // resolutionStart), it isn't a cycle: it's evaluated again, once, and the inner evaluation's result is the one
-        // remembered (tsc's getTypeOfVariableOrParameterOrProperty)
+        // resolutionStart), it isn't a cycle: it's evaluated again, nested, and the inner evaluation's result is the one
+        // remembered (tsc's getTypeOfVariableOrParameterOrProperty). The nested evaluation is above the barrier, where
+        // a third request is a cycle; it is evaluated yet again only from below another call's first resolution, and
+        // calls are finitely many (plan 88 stage B: no "once" flag)
         bool below_barrier = my tag != LAZY_TYPE_EXPR && !lazy_type_pattern_root(me) &&
             ty_resolving_reenters(current_checker, RESOLVING_DECLARATION, me);
         if (below_barrier) {
-            DeclarationRecord* outer = ty_in_flight_record(current_checker, RESOLVING_DECLARATION, me);
-            bool reevaluating = outer && outer->reevaluating;
-            if (debug_env.debug_reentry) ty_debug_reentry(current_checker, reevaluating ? "ONCE 0 call" : "REENTER 0 call", span_null);
-            if (reevaluating) goto circular;
-            if (outer) {
-                outer->reevaluating = true;
-                record = outer;
-            }
+            if (debug_env.debug_reentry) ty_debug_reentry(current_checker, "REENTER 0 call", span_null);
             goto evaluate;
         }
-        circular:
         if (my tag != LAZY_TYPE_EXPR) {
             Binding const* pattern = lazy_type_pattern_root(me);
             if (pattern) ty_resolving_pattern_cycle(current_checker, me, pattern);
@@ -231,8 +218,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 #else
     TAINT_BEGIN(taint_frame);
 #endif
-    if (resolving && lazy_type_pattern_root(me)) ty_resolving_push(current_checker, RESOLVING_PATTERN, me);
-    else if (resolving) ty_resolving_push_record(current_checker, RESOLVING_DECLARATION, me, record);
+    if (resolving) ty_resolving_push(current_checker, lazy_type_pattern_root(me) ? RESOLVING_PATTERN : RESOLVING_DECLARATION, me);
     Ty const* result = nullptr;
     switch (my tag) {
         case LAZY_TYPE_UNINITIALIZED: panic("LazyType is uninitialized");
