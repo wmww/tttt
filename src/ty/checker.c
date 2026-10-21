@@ -358,6 +358,32 @@ bool intern_table_has(InternTable const* table, InternEntry const* entry, u32 co
     return found && found->hash;
 }
 
+// Grows the table so that `more` keys go in without growing again: publishing walks a private table in the order of
+// its slots, which is the order of the keys' hashes, and growing on the way would cluster them (every key put past the
+// growing run of the ones before it, quadratic: zod 30 s)
+void intern_table_reserve(InternTable* table, u32 more) {
+    while ((u64)(table->len + more + 1) * 4 > (u64)table->cap * 3) intern_grow(table);
+}
+
+static u32 link_index(u64 key, u32 cap);
+
+void link_table_reserve(LinkTable* table, u32 more) {
+    while ((u64)(table->len + more + 1) * 4 > (u64)table->cap * 3) {
+        LinkTable bigger = { .cap = table_grown(table->cap, 1024), .len = table->len };
+        bigger.entries = zeroed_table(bigger.cap, sizeof(LinkEntry));
+        panic_if(!bigger.entries, "out of memory");
+        for (u32 i = 0; i < table->cap; i++) {
+            LinkEntry entry = table->entries[i];
+            if (!entry.key) continue;
+            u32 j = link_index(entry.key, bigger.cap);
+            while (bigger.entries[j].key) j = table_next(j, bigger.cap);
+            bigger.entries[j] = entry;
+        }
+        free(table->entries);
+        *table = bigger;
+    }
+}
+
 void intern_table_publish(InternTable* shared, InternEntry const* entry, u32 count) {
     (void)count;
     if (intern_needs_growth(shared)) intern_grow(shared);

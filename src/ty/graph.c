@@ -3,6 +3,7 @@
 #include "ty/ty_internal.h"
 #include "lazy_type.h"
 #include "program.h"
+#include <time.h>
 
 // The state handed to whichever checker is current (graph_enter()): sequentially one checker at a time makes atoms and
 // types. In 4d: shared structures of their own (4c's global atoms and ids)
@@ -411,6 +412,7 @@ static u32 block_kind(InternTable const* table, Checker const* checker, InternEn
 }
 
 static void publish_table(TyGraph* me, Checker* checker, InternTable* private_table, InternTable* shared) {
+    intern_table_reserve(shared, private_table->len);
     for (u32 i = 0; i < private_table->cap; i++) {
         InternEntry const* entry = &private_table->entries[i];
         if (!entry->hash) continue;
@@ -476,12 +478,25 @@ static LazyMemo* memo_at(TyGraph* me, u32 slot, bool create) {
     return &(*page)[slot & ((1 << LAZY_PAGE_BITS) - 1)];
 }
 
+static double now_ms(void) {
+    struct timespec t;
+    timespec_get(&t, TIME_UTC);
+    return (double)t.tv_sec * 1e3 + (double)t.tv_nsec / 1e6;
+}
+
 void graph_publish(TyGraph* me, Checker* checker) {
+    double t0 = now_ms();
     publish_table(me, checker, &checker->types, &my types);
+    double t1 = now_ms();
     publish_table(me, checker, &checker->links, &my links);
+    double t2 = now_ms();
     publish_table(me, checker, &checker->intersection_props, &my intersection_props);
+    double t3 = now_ms();
     LinkPublish arg = { me };
+    link_table_reserve(&my node_links, checker->node_links.len);
     link_table_each(&checker->node_links, publish_link, &arg);
+    double t4 = now_ms();
+    if (getenv("TTTT_GRAPH_STATS")) eprintln("graph: publish types ", t1 - t0, " links ", t2 - t1, " iprops ", t3 - t2, " node links ", t4 - t3);
     KindStats* stats = &my stats[GRAPH_STAT_MEMOS];
     for (u32 i = 0; i < checker->graph_memo_len; i++) {
         u32 slot = checker->graph_memo_slots[i] & ~(1u << 31);

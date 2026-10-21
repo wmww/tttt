@@ -53,6 +53,8 @@ void graph_memo_done(Checker* checker, u32 slot, bool tainted);
 
 void graph_print_stats(TyGraph const* me);
 // The shared tables' insertion and node_links' (checker.c)
+void intern_table_reserve(InternTable* table, u32 more);
+void link_table_reserve(LinkTable* table, u32 more);
 void intern_table_publish(InternTable* shared, InternEntry const* entry, u32 count);
 bool intern_table_has(InternTable const* table, InternEntry const* entry, u32 count);
 void link_table_each(LinkTable const* table, void (*each)(void* arg, u32 kind, void const* subject, void const* value), void* arg);
