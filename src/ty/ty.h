@@ -1309,6 +1309,7 @@ struct Checker {
     u32 graph_variance_claims_len, graph_variance_claims_cap;
     // Its worker number on the graph (1..63, the tag of what it has in flight: LAZY_FOREIGN()), 0 without one
     uint8_t graph_worker;
+    u64 relation_pairs; // Pairs recursive_related() computed (TTTT_GRAPH_STATS: plan 86 4e's relation sharing)
     bool graph_memo_on; // --shared-graph with another checker to read them: memo kinds published as they finish
     u64 graph_waits, graph_wait_ns, graph_fallbacks; // lazy_wait_slow() (TTTT_GRAPH_STATS)
     // --shared-graph on threads: a jmp_buf the file being checked can be given up through (a broken wait cycle,

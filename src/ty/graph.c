@@ -42,6 +42,8 @@ struct TyGraph {
     SharedTable* intersection_props;
     SharedLinks* node_links;
     SharedLinks* variance_slots; // By subject (graph_variance_slot())
+    SharedLinks* relations[TY_RELATION_COUNT]; // graph_relation_get()
+    _Atomic u64 relation_hits, relation_puts;
     unsigned variance_lock; // The worker measuring variances, owner-tagged (graph_variance_lock())
     // Declaration memos by slot, like LazySlots.top (pages made by CAS, a memo written flags last under memo_lock)
     LazyMemo** _Atomic memos[1 << LAZY_TOP_BITS];
@@ -142,6 +144,7 @@ TyGraph* graph_new(Checker* first) {
     my intersection_props = shared_table_new();
     my node_links = shared_links_new();
     my variance_slots = shared_links_new();
+    for (u32 i = 0; i < TY_RELATION_COUNT; i++) my relations[i] = shared_links_new();
     pthread_mutex_init(&my memo_lock, nullptr);
     memcpy(my intrinsics, first->intrinsics, sizeof(my intrinsics));
     my typeof_type = first->typeof_type;
@@ -226,6 +229,7 @@ void graph_drop(TyGraph* me) {
     shared_table_drop(my intersection_props);
     shared_links_drop(my node_links);
     shared_links_drop(my variance_slots);
+    for (u32 i = 0; i < TY_RELATION_COUNT; i++) shared_links_drop(my relations[i]);
     pthread_mutex_destroy(&my memo_lock);
     pthread_mutex_destroy(&my wait_lock);
     for (size_t i = 0; i < c_arraylen(my memos); i++) {
@@ -644,6 +648,18 @@ void graph_publish(TyGraph* me, Checker* checker) {
         publish_declaration_memo(me, checker, slot);
     }
     checker->graph_memo_len = 0;
+}
+
+unsigned graph_relation_get(TyGraph* me, u32 relation, u64 key) {
+    unsigned ret = (unsigned)(uintptr_t)shared_links_get(my relations[relation], key);
+    if (ret) atomic_fetch_add_explicit(&my relation_hits, 1, memory_order_relaxed);
+    return ret;
+}
+
+void graph_relation_put(TyGraph* me, u32 relation, u64 key, unsigned value) {
+    if (shared_links_insert(my relations[relation], key, (void const*)(uintptr_t)value) == (void const*)(uintptr_t)value) {
+        atomic_fetch_add_explicit(&my relation_puts, 1, memory_order_relaxed);
+    }
 }
 
 unsigned* graph_variance_lock(Checker* checker) {
@@ -1092,6 +1108,10 @@ static char const* kind_name(u32 kind) {
 void graph_print_stats(TyGraph const* me) {
     if (debug_memo_publish > 0) debug_memo_check();
     eprintln("graph: ", (u32)atomic_load(&((TyGraph*)me)->redos), " files checked again after a broken wait cycle");
+    u64 pairs = 0;
+    for (u32 w = 1; w <= my checkers && w < 64; w++) if (my workers[w]) pairs += my workers[w]->relation_pairs;
+    eprintln("graph: relation pairs computed ", pairs);
+    eprintln("graph: relations shared ", (u64)atomic_load(&((TyGraph*)me)->relation_puts), ", hits ", (u64)atomic_load(&((TyGraph*)me)->relation_hits));
     eprintln("graph: ", my checkers, " checkers, ", shared_table_len(my types), " types entries, ", shared_table_len(my links),
         " links, ", shared_table_len(my intersection_props), " intersection props, ", shared_links_len(my node_links),
         " node links shared");

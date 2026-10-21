@@ -913,6 +913,17 @@ every `-p` corpus, 20-run tables on the four, no default-path cost until the fla
    (110k of 450k intern memo entries and 45 of 4900 declaration memos withheld on drizzle): still 2 of 150 differ.
    Not testable that way: Ty-resident results (members, prop and signature return types), which have no private home.
 2. **Shared relation cache (2 sessions)**, as designed below. Gate as there; excalidraw's K12 pairs within 5% of K1.
+   **Done (2026-10-21).** recursive_related(): after the private cache and the maybe stack, a pair the private cache
+   doesn't have is looked up in the graph's table for its relation kind (graph_relation_get(), SharedLinks keyed like
+   the private cache); SUCCEEDED returns true, FAILED false unless reporting (then computed again, as a private
+   failure is). Published (graph_relation_put(), first wins): the maybe stack's keys when the outermost pair concludes
+   and failures, only without CACHE_UNRELIABLE / UNMEASURABLE / INDEX_INFERRED, never a generic relation key (bit 61),
+   never from inside a variance measurement; overflowed top-level pairs stay private. TTTT_GRAPH_SHARE_RELATIONS=0
+   turns it off; TTTT_GRAPH_STATS prints pairs computed (Checker.relation_pairs) and shared puts/hits. Pairs computed
+   at K12 / K1: excalidraw 169k / 168k (287k before), zod 237k / 234k (269k), drizzle 259k / 247k (278k), effect 266k /
+   263k (289k). Callgrind K12: excalidraw 7.40 -> 7.21 G (1.10x K1), zod and drizzle within noise. Wall at K12 (load 4.5,
+   mean of 5) unchanged within noise. 20/20 K12 runs on drizzle, zod, effect, excalidraw, nest; sequential K4/K12 K1's.
+   Default path +0.05-0.1% (the pair counter and the flag tests).
 3. **Memory: per-worker private state recycled, the shared graph kept (3-4 sessions).** With the flag nothing is
    freed: a worker's arena holds both what it published and its private state (relation caches, scratch kinds,
    expression memos, flow and inference results, private memo entries). Split each checker's arena into a published

@@ -6893,6 +6893,21 @@ static void maybe_truncate(RelationState* st, u32 len) {
     }
 }
 
+// --shared-graph (plan 86 4e item 2): definitive, clean results are shared between the checkers, first wins (tsc keeps
+// one relation map per program). Not a pair keyed by a generic relation number (KEY_GENERIC_RELATION numbers them per
+// checker), and only what is computed outside variance measurements is published. TTTT_GRAPH_SHARE_RELATIONS=0: off
+static bool relation_shares(u64 key) {
+    static int off = -1;
+    if (__builtin_expect(off < 0, 0)) off = getenv("TTTT_GRAPH_SHARE_RELATIONS") && !strcmp(getenv("TTTT_GRAPH_SHARE_RELATIONS"), "0");
+    return !off && !(key & (1ull << 61));
+}
+
+static void relation_publish(Checker* me, RelationState* st, u64 key, unsigned value) {
+    if (__builtin_expect(my graph_memo_on, 0) && !my variance_depth && relation_shares(key)) {
+        graph_relation_put(my graph, st->relation, key, value);
+    }
+}
+
 static Ternary recursive_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     RelationCache* cache = &my relations[st->relation];
     bool constrained;
@@ -6955,8 +6970,21 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
         bool unused;
         if (maybe_contains(st, generic_relation_key(me, source, target, true, &unused) ^ intersection_bits)) return TERNARY_MAYBE;
     }
+    if (__builtin_expect(my graph_memo_on, 0) && !cached && relation_shares(key)) {
+        unsigned shared = graph_relation_get(my graph, st->relation, key);
+        if (shared == CACHE_SUCCEEDED) {
+            relation_cache_put(cache, key, CACHE_SUCCEEDED);
+            return TERNARY_TRUE;
+        }
+        // (A failure is computed again to explain it, as a private one is)
+        if (shared == CACHE_FAILED && !report) {
+            relation_cache_put(cache, key, CACHE_FAILED);
+            return TERNARY_FALSE;
+        }
+    }
     if (fails_common_properties(me, st, source, target, report)) {
         relation_cache_put(cache, key, CACHE_FAILED);
+        relation_publish(me, st, key, CACHE_FAILED);
         return TERNARY_FALSE;
     }
     if (st->relation_count <= 0) {
@@ -6966,6 +6994,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     // 100 levels deep: assumed related, silently (tsgo 7.1's recursiveTypeRelatedTo backstop, no TS2321 any more)
     if (st->depth == MAX_RELATION_DEPTH) return TERNARY_MAYBE;
     u32 maybe_start = st->maybe_count;
+    my relation_pairs++;
     maybe_push(st, key);
     unsigned saved_expanding = st->expanding;
     bool push_source = !(st->skip_push & 1), push_target = !(st->skip_push & 2);
@@ -7036,6 +7065,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
             if (result != TERNARY_UNKNOWN) {
                 for (u32 i = maybe_start; i < st->maybe_count; i++) {
                     relation_cache_put(cache, st->maybe_keys[i], CACHE_SUCCEEDED | unreliable | inferred);
+                    if (!unreliable && !inferred) relation_publish(me, st, st->maybe_keys[i], CACHE_SUCCEEDED);
                 }
                 st->relation_count -= st->maybe_count - maybe_start;
             }
@@ -7043,6 +7073,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
         }
     } else {
         relation_cache_put(cache, key, CACHE_FAILED | unreliable);
+        if (!unreliable) relation_publish(me, st, key, CACHE_FAILED);
         st->relation_count--;
         maybe_truncate(st, maybe_start);
     }

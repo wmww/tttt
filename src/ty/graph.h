@@ -80,6 +80,11 @@ void graph_variance_claimed(Checker* checker, VarianceSlot* slot);
 void graph_variances_publish(Checker* checker, void const* (*value_of)(Checker* checker, VarianceSlot const* slot));
 
 void graph_check_unshared(TyGraph* me, Checker* checker); // TTTT_DEBUG_UNSHARED=1 (program.c)
+// Relation results shared (plan 86 4e item 2): definitive and clean only (SUCCEEDED or FAILED, 1 or 2; nothing
+// unreliable, unmeasurable, overflowed, index-inferred or keyed by a per-checker generic relation number), first wins.
+// 0: none
+unsigned graph_relation_get(TyGraph* me, u32 relation, u64 key);
+void graph_relation_put(TyGraph* me, u32 relation, u64 key, unsigned value);
 void graph_print_stats(TyGraph const* me);
 // The shared tables' insertion and node_links' (checker.c)
 void link_table_each(LinkTable const* table, void (*each)(void* arg, u32 kind, void const* subject, void const* value), void* arg);
