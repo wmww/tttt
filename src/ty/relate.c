@@ -4938,8 +4938,9 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
         return cached == &base_constraint_circular || cached == &base_constraint_none ? nullptr : cached;
     }
     // Asked for again while computed: circular (tsc's pushTypeResolution failing), unless that was below the resolution
-    // barrier, where it's computed again
-    if (ty_resolving_find(me, RESOLVING_BASE_CONSTRAINT, ty)) {
+    // barrier, where it's computed again: a call's, or the outermost variance measurement's (tsc moves resolutionStart
+    // for both; a variance restart is outermost again)
+    if (!ty_resolving_reenters(me, RESOLVING_BASE_CONSTRAINT, ty)) {
         TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
         ty_resolving_cycle(me, RESOLVING_BASE_CONSTRAINT, ty);
         return nullptr;

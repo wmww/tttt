@@ -2272,6 +2272,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttVarianceRestartReentersBaseConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttWidenedNullableLiteralNotLiteral': {
         errors: true,
         symbols: true,

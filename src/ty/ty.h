@@ -2753,7 +2753,8 @@ void ty_barrier_pop(Checker* me);
 u32 ty_barrier_outer_call_start(Checker* me);
 // Whether `key`, in flight (its own state says so), is in flight only below the innermost barrier that applies to its
 // kind, so it is resolved again rather than being a cycle. Each kind's rule is tttt's approximation of tsc's (plan 88):
-// declarations, return types and properties see the call barriers, aliases only the variance barrier (what else is in
+// declarations, return types and properties see the call barriers, aliases only the variance barrier, base constraints
+// both (the innermost: ttttVarianceRestartReentersBaseConstraint) (what else is in
 // flight there isn't re-entered by tttt, so the variance barrier would hide its cycles: TS7022 in
 // classVarianceResolveCircularity2). Resolved again every time (plan 88 stage B), but for a symbol's property:
 // prop_type() re-enters 4 deep at most (its symbol's type may have no in-flight state of its own to stop it)
