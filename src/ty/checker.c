@@ -1271,8 +1271,10 @@ static Ty const* union_with_origin(
     bool includes_error = false, includes_non_widening = false;
     for (u32 i = 0; i < buf.len; i++) {
         includes |= buf.data[i]->flags;
-        xincludes |= buf.data[i]->xflags;
-        if ((buf.data[i]->flags & TYF_NULLABLE) && !(buf.data[i]->xflags & TYX_CONTAINS_WIDENING)) includes_non_widening = true;
+        // (Relaxed: a member intersection's TYX_CONSTRAINED_TYPE_VARIABLE may be set late, see intersection())
+        u32 xflags = __atomic_load_n(&buf.data[i]->xflags, __ATOMIC_RELAXED);
+        xincludes |= xflags;
+        if ((buf.data[i]->flags & TYF_NULLABLE) && !(xflags & TYX_CONTAINS_WIDENING)) includes_non_widening = true;
         // (An unresolved name's any too: tsc's isErrorType, IncludesError)
         includes_error |= (buf.data[i]->flags & TYF_ERROR) != 0;
     }
@@ -2115,18 +2117,23 @@ static Ty const* compute_type_variable_reduction(Checker* me, Ty const* variable
     return nullptr;
 }
 
+// TYX_CONSTRAINED_TYPE_VARIABLE, which intersection() may set on a published intersection
+static inline bool constrained_type_variable(Ty const* t) {
+    return __atomic_load_n(&t->xflags, __ATOMIC_RELAXED) & TYX_CONSTRAINED_TYPE_VARIABLE;
+}
+
 // tsc's removeConstrainedTypeVariables: `(T & "a") | (T & "b")` with `T extends "a" | "b"` is T. `types` is sorted
 // by id, and stays so; returns the new length
 static u32 remove_constrained_type_variables(Checker* me, Ty const** types, u32 len) {
     for (u32 v = 0; v < len; v++) {
         Ty const* t = types[v];
-        if (t->kind != TY_INTERSECTION || !(t->xflags & TYX_CONSTRAINED_TYPE_VARIABLE) || t->composite.types.len != 2) continue;
+        if (t->kind != TY_INTERSECTION || !constrained_type_variable(t) || t->composite.types.len != 2) continue;
         Ty const* variable = is_type_variable(t->composite.types.data[0]) ? t->composite.types.data[0] : t->composite.types.data[1];
         // The primitives it's intersected with in this union
         TyBuf primitives = {0};
         for (u32 i = 0; i < len; i++) {
             Ty const* u = types[i];
-            if (u->kind != TY_INTERSECTION || !(u->xflags & TYX_CONSTRAINED_TYPE_VARIABLE) || u->composite.types.len != 2) continue;
+            if (u->kind != TY_INTERSECTION || !constrained_type_variable(u) || u->composite.types.len != 2) continue;
             TyList pair = u->composite.types;
             if (pair.data[0] == variable) ty_buf_push(&primitives, pair.data[1]);
             else if (pair.data[1] == variable) ty_buf_push(&primitives, pair.data[0]);
@@ -2148,7 +2155,7 @@ static u32 remove_constrained_type_variables(Checker* me, Ty const** types, u32 
             u32 out = 0;
             for (u32 i = 0; i < len; i++) {
                 Ty const* u = types[i];
-                bool drop = u->kind == TY_INTERSECTION && (u->xflags & TYX_CONSTRAINED_TYPE_VARIABLE) &&
+                bool drop = u->kind == TY_INTERSECTION && constrained_type_variable(u) &&
                     u->composite.types.len == 2 && (u->composite.types.data[0] == variable || u->composite.types.data[1] == variable);
                 if (!drop && u != variable) types[out++] = u;
             }
@@ -2454,7 +2461,13 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
                 ret = reduced;
             } else {
                 ret = intern_composite(me, TY_INTERSECTION, buf.data, out, alias, alias_args);
-                if (constrained) ((Ty*)ret)->xflags |= TYX_CONSTRAINED_TYPE_VARIABLE;
+                // (Also on an intersection another path made first, which lacks it until one that reduces gets here:
+                // a write to a published type, history-like the way K1's order is. An atomic OR of a bit that only goes
+                // on, read relaxed by remove_constrained_type_variables(); the other readers of xflags look at other
+                // bits, which never change after construction)
+                if (constrained && !(__atomic_load_n(&ret->xflags, __ATOMIC_RELAXED) & TYX_CONSTRAINED_TYPE_VARIABLE)) {
+                    __atomic_or_fetch(&((Ty*)ret)->xflags, TYX_CONSTRAINED_TYPE_VARIABLE, __ATOMIC_RELAXED);
+                }
             }
         }
     }
