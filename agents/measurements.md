@@ -426,8 +426,11 @@ and recycle 3 (rxjs/packages/rxjs, sequelize, sequelize/packages/core: tsgo-shar
 (lit tsserver-plugin). **With `TTTT_SHARED_GRAPH=1`** (the merger's double run at 9032ae214): the same everywhere but
 kdiff 16 / 3814 at that commit (flag-only: mikro-orm x3 (C), trpc x3 and dokploy (V), folo renderer, trpc/examples/nuxt
 (W), renovate, react-navigation x2, folo ssr, redux-toolkit), 8 / 3814 at the end state (plan 86 "Stage 4f: done");
-the release criterion wants them equal. The full plain and flagged runs at the final head are the next coordinator's
-first measurement (plan 90 section 3 item 2). Instructions: `test/instrcount.txt`. `scripts/oracles.py` reprints all
+the release criterion wants them equal. **The final double run at 8d693aeb5** (the end state, code-identical to 5f2cd6996):
+plain exactly as above; the flagged run identical on every line but two: the effect corpus 21 / 0 spurious once (the
+Schema.tst.ts(2936,39) cascade, ~1% of loaded runs, residue C+V) and kdiff 8 / 3814 (plain's 3 plus folo/apps/desktop/
+layer/renderer, mikro-orm x3, trpc/examples/nuxt). Beside it: TSan drizzle+effect T12 clean 3 / 3 runs (pair union
+empty), fingerprint 5 runs each zod 0, drizzle 1 (the union-order tie-break), effect 0, output K1's in all 15. Instructions: `test/instrcount.txt`. `scripts/oracles.py` reprints all
 of these (20-30 minutes when the box is loaded: a generous background timeout); compare against its output, not this
 paragraph, once it's stale.
 

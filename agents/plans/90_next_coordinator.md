@@ -61,7 +61,7 @@ this file, then CLAUDE.md, then plan 89 §1 (the workflow: it still holds, verba
    200/200, effect loaded 100/100, fingerprint silent. V shows in no project today (trpc/dokploy went with the
    signature-return words) but the rule is recorded: fix it when C's work touches the same code or a project shows it.
 2. **The release criterion** (plan 89 §3 item 4): the full `scripts/oracles.py` plain and with the flag identical
-   (the merger runs it; ~20 min each from a worktree), a seeded-run bound (`scripts/sharedgraph/seeds.sh`: thousands
+   (done once at the end state, 8d693aeb5: identical but effect's 21 / 0 cascade once and kdiff 8 vs 3; measurements.md "Oracle totals"; rerun it after the residues), a seeded-run bound (`scripts/sharedgraph/seeds.sh`: thousands
    across drizzle/zod/effect/excalidraw/nest and a source-sweep sample), the 300 loaded drizzle + 100 effect runs,
    TSan zero groups on every corpus at T4/T12, then the human's laptop bench (`scripts/bench.sh --runs 3 --bun PATH
    --tscrs PATH`, with and without `TTTT_SHARED_GRAPH=1`).
