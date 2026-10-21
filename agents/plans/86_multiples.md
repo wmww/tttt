@@ -883,7 +883,7 @@ at the computation's end**, and makes every field another worker can read safe t
   here. Next: 4e below.
 
 ### Stage 4e: making `--shared-graph` the default (plan, 2026-10-21; ~9-13 sessions)
-**Resume from here (2026-10-21, worker "shared2").** Built: 4d complete (shared tables, identities at creation, memo
+**Superseded by "Stage 4f: by construction" below (2026-10-22): its design replaces the waiting, the redo and the owner-tagged states; the build-out steps S0, S1, P1-P3 and D are there.** **Resume from here (2026-10-21, worker "shared2").** Built: 4d complete (shared tables, identities at creation, memo
 kinds published when their value is there, owner-tagged lazy states with waiting, wait-cycle redo, variance slots,
 conditional instances keyed by root and mapper, KEY_NODE published at creation). 4e: item 2 (shared relation cache),
 item 3 (the graph-wide recycle) and item 4 (the redo's gaps) done. Open: item 1, the global variance lock (one worker
@@ -1106,6 +1106,257 @@ own single-checker semantics, provided only definitive, context-free entries are
 - Gates: K1 with the flag byte-identical and flat; K4/K12 byte-identical to K1 on the corpora; the probe's
   disagreement counter stays 0; excalidraw's K12 relation pairs within ~5% of K1's.
 - Cost at K1: one more probe per private miss that reaches computation (~280k per corpus): a few ms.
+
+### Stage 4f: by construction (design, 2026-10-22)
+The ruling (plan 89 section 3): the shared graph's determinism must follow from its design, and testing is only a
+regression gate. This section is the design the build-out implements. It replaces 4d's claimed-and-waited lazy states.
+**Item 1 of 4e is done first** (66a06b563: the variance lock is deleted, stamps are on under the flag; numbers in
+measurements.md "Plan 86 4e item 1"). **The residue it leaves**, for the fingerprint oracle to target: about 1.5% of
+loaded effect K12 runs add a `TS7006 Parameter 'x' implicitly has an 'any' type` (`src/internal/fiber.ts(293,21)`
+`interruptAsFork: (id) =>`, or `test/Schema/TestUtils.ts(45,20)`). The same rate shows with the lock and without the
+stamps, and the differing runs have no wait, redo or broken cycle. A contextual parameter type is lost, so a
+contextual signature (a signature return or a members result read while another worker had it in flight) came out
+different.
+
+**The decision: write-once shared words, private overlays, no waiting.** It takes B's invariant with A's storage.
+- Every lazily computed value reachable from a shared object (the 18 sites below, variance slots, declaration memos)
+  lives in one **shared word** on the object. A word goes null -> final once, by CAS with release, and is read with
+  acquire. Final is either a clean value or POISON. Nothing else on a shared object is ever written after
+  publication: no in-flight marks, no owner tags, no bits set later.
+- **What is in flight lives only in the computing worker**: a per-worker ClaimSet keyed by the word's address (claim,
+  re-entry and cycle detection, early members: today's MembersClaim, Resolving and VarianceClaim records, found by
+  address instead of by the field's state) and a per-worker Overlay (word address -> value) for results that are not
+  published. **No worker reads, waits for, or learns of another worker's in-flight state.** A worker that finds a word
+  null computes. It never waits, so no wait cycle can form.
+- At a computation's end: if it is **clean**, the worker CASes null -> value. If the CAS wins, the value is published.
+  If it loses to another worker's clean value, the worker adopts the winner's value and drops its own, which nothing
+  has referenced (proof below). If it loses to POISON, the value goes to the worker's Overlay. If the computation is
+  **tainted**, the worker CASes null -> POISON and the value goes to its Overlay.
+- **Intern-table memo kinds keep a private-first table** (the lookup is private table, then shared), so private
+  priority comes for free there. A tainted entry stays private and is never inserted into the shared table; nothing
+  needs poisoning. Only the shared-first words need POISON.
+- **Reading a word**: the fast path is `v = acquire(word); if (v > POISON && !my shadowed) return v;` (POISON is 1,
+  NONE is 2 for "computed: no value", so null still means not computed). The slow path is the Overlay (a hit is a
+  taint event, see "clean" below), then the ClaimSet (my own in-flight: a cycle, as today), then compute. Without the
+  flag there is one worker, so a tainted result can be published into the word as it is today (it is the only
+  history), and the Overlay and ClaimSet are never touched: the default path keeps today's semantics. Its cost is
+  measured below.
+- **POISON** is final: nobody overwrites it, and a recycle drops the whole graph. A worker that reads it computes
+  privately, without waiting, and keeps the result in its Overlay forever, clean or not. Each worker then has its own
+  history for that key, exactly the default path's K private checkers. Measured share of POISON (G0 rule, taint build
+  `-DTTTT_GRAPH_TAINT` at K12): intern memo kinds tainted 74 of 0.81 M published on effect, 44 of 0.89 M on drizzle,
+  684 of 0.48 M on zod (0.01-0.14%). The Ty-resident kinds per G0's table: members and prop types 99.7-100% clean on
+  every corpus. The sharing lost is under 0.2% of entries. The main exception is zod's tainted time, which is
+  variances, and those have their own rule.
+
+**"Clean", precisely** (one per-worker counter, `Checker.taint`, not thread-local; a frame records it at the start and
+compares at the end, so taint propagates outward for free):
+1. The computation read nothing in flight to this worker: no ClaimSet hit (its own cycle, early members, a variance
+   claim of an enclosing measurement it isn't part of), no in-flight intern slot, no TY_CIRCULAR, no
+   `ty_resolving_cycle()`.
+2. It read no private value: every Overlay hit and every private-table hit of a memo kind whose entry is marked
+   tainted is an event. There are no clean-but-unpublished values: a clean result is published or adopted at its
+   end. So "depends on a private, not-yet-published value" can't arise for clean values, and every private value is
+   tainted by definition. A shadowed word (below) is in the Overlay, so reading it is an event too.
+3. It moved no limit counter (instantiation depth or count, relation depth or complexity, constraint depth 50, the
+   conditional epoch). No relation it asked for ended at a **deeply-nested cut** or a depth limit
+   (is_deeply_nested_as() answering Maybe at a level where the stamps decided, the relation's overflow): bun's
+   `keeps_relations_for_this_task`, and the mechanism of 4e item 1's (b). Ordinary maybe-stack assumptions resolved by
+   the top-level pair's end don't taint. They are tsc's context-free rule, the same one the shared relation cache
+   already relies on. A private relation-cache entry made under a deeply-nested cut is marked, and hitting it later is
+   an event.
+4. It reported nothing at the current node (diagnostics as data on the memo otherwise, as `CallResolutionRare.errs`
+   does). It ended with `flow_uncached == 0` if it is an expression kind (the G0 rule: declarations are flow-isolated).
+   It ran in the typecheck phase.
+5. Done-ness peeks (TAINT_PEEK) don't count (G0's lenient rule, cleandiff-checked).
+
+**Why it is deterministic by construction.** A clean value is a function of published clean values and identities.
+Identities are hash-consed and pure (4b), and history-like ones carry a written reason. So any worker computing that
+key cleanly computes the same value, and whoever publishes first doesn't matter. A worker's view is its own history
+(everything it computed: tainted values in its Overlay, clean ones published or adopted), plus clean values computed
+elsewhere, which it would have computed the same way. This is the view of a sequential checker that had computed
+those keys earlier: the class of histories that checker recycling, stealing and K already produce (kdiff, the recycle
+oracle). Nothing in flight elsewhere is ever seen, so a cycle is always entered from this worker's own stack, exactly
+as one sequential checker enters it. This is what the redo emulated.
+
+**Identity of lost-race objects (the rule).** A loser's objects never escape:
+- Clean means nothing read the result before its end, because every read of a value under construction goes through
+  the ClaimSet and is an event (rule 1).
+- A computation may store its fresh objects only in its result, or in entries keyed by those fresh objects
+  (KEY_PROP_WRITE_TYPE, KEY_SYNTHETIC_PROP_PARTS, KEY_PROP_MAPPED_TYPE, KEY_SIGNATURE_INSTANCE/TYPE of its own
+  signatures, KEY_STRUCTURAL with its `reuse` prop). After a loss these are orphans that no key reachable by anyone
+  names.
+- Nested computations publish or adopt at their own end, before the outer one goes on, so an outer result only ever
+  points at winners.
+- Tainted results reach only the worker's Overlay and private tables: anything that reads them is tainted by rule 2,
+  so no published value can point at a private object.
+
+The census of pointer-identity uses (class 3 back-pointers: instantiate_members' `target`, builder_add_inherited, the
+mapped `mapped_from`, FoundProp.prop, KEY_ARRAY_THIS_PROPS, the 4R root-prop comparisons of private/protected checks)
+only meets winners or the worker's own private objects. The enforcement is a **debug-build publish check**, not a
+release cost. TTTT_DEBUG_PUBLISH tags each arena chunk's allocations with (worker, computation serial). A tainted or
+lost computation's allocation range, minus its nested published sub-ranges, is recorded as private. Each publication
+walks the value one level deep (Members' props, signatures and index infos; a SigResolved's params; Prop.target) and
+aborts with both stacks on a reference into a private range, or into a range not yet published that isn't the
+publishing computation's. The release path pays nothing. Forwarding a loser's objects to the winner's was rejected:
+once a tainted value's objects escape, there is nothing left to forward.
+
+**Shadowed words (the one place priority needs care).** A worker can end a tainted computation of word w after
+another worker published a clean value there (both were computing w at once). Its own tainted value has escaped
+into its private state, so it must keep reading its own value, but the fast path would return the shared one.
+Then the worker records w in its Overlay and sets `my shadowed`, and its fast paths take the slow path (Overlay first)
+until its current file ends. At that file boundary nothing is in flight, so it retires its private state: a fresh
+checker on the same graph and worker number, today's graph_epoch machinery for one worker. The next file starts in
+the recycle class of history. Cost: one byte test on each fast path, measured below. Expected frequency: a race
+between a clean and a tainted computation of one key, which needs a counter (TTTT_GRAPH_STATS) in step S0.
+
+**Variances (the exception, by kind).** A variance group (the subjects one outermost measurement claims) is one
+computation:
+- Reads of the group's own claims are internal: restart-from-min (measured_variances()) makes the result independent
+  of the entry point. Reads of anything else in flight on the worker taint it.
+- Results are pure data, with no identity, so a loser can compare. Two workers measuring one group at once both
+  measure; the first CAS of each slot wins. A loser whose values are equal adopts; one whose values differ (the
+  VARIANCE_UNRELIABLE bit is known to differ run to run) is shadowed for those slots, like a tainted word.
+- A tainted group publishes its slots as POISON. Each worker that needs them measures them in its own history: the
+  default path's semantics, at the default path's cost.
+- Track S's warning (withheld variances measured again in a warm graph changed excalidraw's output) concerned
+  withholding *clean-by-group* results, so the group rule doesn't withhold them. Gate: the excalidraw 20-run table
+  with the variance group rule on.
+
+**The 18 lazy sites** (4d step 3), each as a shared word:
+| site | file: function | word on | value | notes |
+|---|---|---|---|---|
+| members | members.c ty_members_resolving(), early members | TyObjectState | `Members const*` | early members live in the ClaimSet record (they already live in the MembersClaim) |
+| raw members | members.c declared_raw_members() | TyObjectState (raw) | `Members const*` | Members.rare is written before publication (no late CAS) |
+| mapped unexpanded | members.c ty_mapped_info_unexpanded() | TyObjectState.unexpanded | `Members const*` | |
+| equivalent base | members.c ty_non_augmenting_base() | TyObjectState | `Ty const*`, NONE for none | base_state byte deleted |
+| reduced | checker.c ty_reduced_slow() | TyObjectState | REDUCED_* as a small tagged value | reduced_state byte deleted |
+| prop type | members.c prop_type() | Prop.type | `Ty const*` | write_type_known moves into the KEY_PROP_WRITE_TYPE entry's presence (TSan B) |
+| signature resolution | members.c signature_resolve_slow() | Signature.res | `SigResolved const*` (params, counts, type params, this, ret if a class's) | readers go through `SigResolved const* r = signature_resolve(me, sig)`, ~500 reads in ~15 files (step S1) |
+| signature return | members.c signature_return_type() | SigResolved or Signature | `Ty const*` | its own word: inferred returns are lazier |
+| predicate | members.c signature_predicate() | Signature | `TyPredicate const*`, NONE | predicate_done/_writing bytes deleted |
+| param constraint | members.c declared_param_constraint() | TyParamState | `Ty const*`, NONE | `circular` becomes a word as well, or part of the value record (TSan A) |
+| param default | members.c ty_param_default() | TyParamState | record {type, circular} | fallback_circular folded in |
+| mapped template | members.c ty_mapped_template() | MappedInfo | `Ty const*` | MappedInfo copies copy only immutable fields plus the word's acquire-loaded value (TSan D) |
+| class base variable | members.c ty_class_base_type_variable() | SymbolLinks | `Ty const*`, NONE | |
+| cond branch | checker.c ty_cond_branch_type() | TyCondBranch | `Ty const*` | instantiate_branch() copies field by field already |
+| declared type | lower.c ty_declared_type_of() | SymbolLinks | `Ty const*` | |
+| reference args | lower.c ty_reference_args() | deferred record | `TyList const*` (boxed) | |
+| implied constraint | lower.c conditional_flow_type() | implied record | `Ty const*` | |
+| function return | function.c function_return_type() | memo | `Ty const*` | KEY_FUNCTION_RETURN stays an intern kind |
+Plus declaration memos (lazy_type.c, graph.c: the shared memo store's slot becomes a word to an immutable LazyMemo
+copy, so the bitfield `done` read without the lock goes: TSan B), variance slots (relate.c, graph.c: as above), and
+the singletons (already first-wins CAS).
+
+**TSan inventory (the tooling worker's categories, 55 groups on de94e1179) and what removes each:**
+- A, mixed atomic and plain access of one lazily written field (TyParamState.circular, item, predicates, reference
+  args, base_cycle): removed by construction. A word is a typed `SharedWord` (a struct around an `_Atomic` pointer)
+  accessed only through sw_load() and sw_publish(), so a plain access doesn't compile. SymbolLinks.base_cycle becomes
+  a word or a byte of its own.
+- B, bitfield RMW on published objects (Prop.write_type_known, LazyMemo.done): removed. Nothing on a shared object is
+  written after publication except words; flags move into the word's value record or into a side entry.
+- C, fresh objects reached before their stores are visible (ty_alloc fields, TyObjectState, literal twins, order
+  keys, the type directory's chunk slots): removed where the path goes through a word or a shared table. Those are
+  the only cross-worker hand-offs: release at the CAS or insert, acquire at the read. Order keys get computed at
+  construction or become a word. The id directory's chunk slots get atomic stores and loads (lazy_slots_add_type /
+  lazy_slots_type). Any hand-off path TSan still finds is a bug against the rule, not a formal race to waive.
+- D, structs copied while another worker writes them (MappedInfo): removed. The copied struct's mutable part is a
+  word, read with sw_load().
+- E, data mutated in place after publication (ty_function_type_mentions() into members and signatures,
+  ty_function_type() initializing a visible type): forbidden by the rule. It is computed before publication or
+  becomes a word of its own (the mention set as a value).
+- The two "x86 saves us" fast paths: gone, replaced by the single acquire load of the word. Measured below.
+
+**What gets deleted, and why the rule makes it unnecessary:**
+- The wait protocol (lazy_wait_slow(), LAZY_SNAP's wait, the global wait-for graph and its mutex, wait yields and
+  sleeps, graph_fallback_hook): nobody waits for another worker, so there is no wait.
+- The redo (check_file_or_give_up(), Checker.redo_jmp, graph_retire(), MAX_FILE_REDOS, the retired checkers and
+  their leaks, the given-up file's ErrorCtx): it existed to break wait cycles.
+- The owner-tagged states (LAZY_CLAIM/LAZY_DONE/LAZY_COPIED, `IN_FLIGHT | worker << 2`, the 40 lazy_in_flight
+  sites): in-flight is per-worker state.
+- The variance lock: already gone. The lib warm-up (ty_graph_warm_up()) is no longer needed for correctness; it was
+  there to cut wait cycles. It stays only if measuring shows it saves duplicated work at the start (12 workers
+  computing Array's members at once all publish-or-adopt) and goes otherwise.
+- TTTT_GRAPH_WITHHOLD and the -DTTTT_GRAPH_TAINT build: the cheap taint is always on with the flag.
+- The plain-load hacks.md entry.
+
+**Measured costs** (callgrind whole process, release build, K1 default path, against de94e1179; throwaway probes in
+/tmp, deleted):
+| probe | nest | drizzle | zod |
+|---|---|---|---|
+| base | 1.144 G | 6.719 G | 4.991 G |
+| per-worker shadow byte test on four fast paths (ty_members, prop_type, signature_resolve, signature_return_type) | +0.09% | +0.49% | +0.44% |
+| + acquire instead of the plain loads | +0.17% | +0.63% | +0.54% |
+| B's hot path: per-worker dense table by type id for members, plus a hash probe by Prop for prop types (two kinds only) | +0.26% | +2.96% | +1.94% |
+| the cheap taint compiled in (-DTTTT_GRAPH_TAINT, includes TAINT_READ bitmap tests on fast paths, which the hybrid drops) | +0.09% | +1.00% | +0.70% |
+- **The hybrid's default-path cost**, estimated at +0.5-1.0% on drizzle and zod, under 0.2% on nest. Of that, about
+  0.5% is the shadow test plus acquire. The word design removes the state load (one load instead of state and
+  value), which should give some of it back. The taint frames come in at slow-path boundaries only (no
+  TAINT_READ on fast paths: private reads are slow-path Overlay hits), well under the taint build's 0.7-1.0%. Step
+  S0 measures the real number. The budget: K1 default path within 1% in total. Over that, the coordinator decides
+  (proposal: the shadow test only with the flag, through a per-checker fast-path function pointer, is not worth its
+  indirect call; the alternative is dropping the per-file shadow and making a shadowed word end the worker's file at
+  once with a fresh checker for the rest).
+- **B costs 4-6x as much on the hot path** for two kinds, and needs every kind keyed by table. Memory: a dense
+  per-worker array by global id is K copies of the id space.
+- **The sharing lost**: per-computation publication is what 4d step 4 already does (work K12/K1 1.10-1.12, track S's
+  per-share 1.08-1.10 as the reference). POISON adds under 0.2% of entries (above). Work K12/K1 after 4e item 1:
+  drizzle 1.117, zod 1.097, effect 1.078.
+- **Effect's +10% wall** at K12 against the defaults is not waits or redos: TTTT_GRAPH_STATS shows 12-120 waits
+  (0.7-2 ms in all) and no redo, and work is 1.078x K1. Types are K1's (553k vs 552k), CPU 2.97 s against def12's 2.63.
+  So it is per-instruction cost on a shared, unrecycled graph: claim CASes write to shared cache lines at every
+  computation's start and end, and the RSS is 826 against 561 MB. The hybrid writes a shared line once per value, at
+  publication, so this should shrink, but it isn't proven: measure at S0 and at D. Drizzle's waits (170-680, 0.55-0.65 s
+  summed) and redos (2-4) go with D.
+
+**Build-out** (each step one commit or a few, default path byte-identical, every gate below green at its end; owners
+in parallel only where the file sets are disjoint):
+- **S0, the primitives (one worker, first; ~1 session).** `SharedWord`, sw_load/sw_publish/POISON/NONE, the per-worker
+  ClaimSet and Overlay (new `src/ty/overlay.{h,c}`), `my shadowed` and the file-boundary retire, the always-on cheap
+  taint in `Checker` (taint.h's GRAPH branch made runtime, intern hooks in checker.c's intern_put/intern_get behind
+  `my graph`), the deeply-nested-cut event (relate.c is_deeply_nested_as() call sites only), TTTT_GRAPH_STATS
+  counters (POISON, adopts, shadows), TTTT_DEBUG_PUBLISH. Files: ty.h (lazy macros), taint.h, overlay.{h,c},
+  checker.c (intern hooks), relate.c (one call site). Measure the default path here.
+- **S1, SigResolved (one worker, alone, mechanical, Sonnet-able with an Opus review; ~1 session).** Signature's
+  resolved fields move into an immutable record behind `Signature.res`, and every reader takes it from
+  signature_resolve(). Touches call.c, relate.c, infer.c, members.c, expr.c, check.c, ty_display.c, decl_emit and
+  the rest that read `params`, `param_count`, `min_args`, `type_params`, `this_type`. Still published as today; no
+  semantic change. It goes alone because it touches every file.
+- **Then three in parallel:**
+  - **P1, members.c** (members, raw, unexpanded, equivalent base, prop types and write types, signature resolution
+    and return and predicate, param constraint, default and circularity, mapped templates and MappedInfo copies, class
+    base variable, Members.rare, ty_function_type_mentions()). One worker, the biggest share, ~2 sessions.
+  - **P2, checker.c + lower.c + function.c + instantiate.c** (reduced, cond branches, declared types, reference args,
+    implied constraints, function returns, ty_alloc and the directory's chunk slots (lazy_type.c's lazy_slots_*),
+    order keys, literal twins: TSan C). ~1-2 sessions.
+  - **P3, relate.c + graph.c + lazy_type.c + shared_table.c** (variance groups without waiting, declaration memos as
+    words, memo kinds publishing only clean entries in graph_memo_flush(), the shared relation cache's deeply-nested
+    rule). ~1-2 sessions. The tooling worker's hooks in graph.c and shared_table.c are its neighbours: rebase often.
+- **D, the deletions (one worker, last; ~1 session).** program.c, graph.c, ty.h: everything in the list above, then
+  the gates. A mechanism that can't be deleted at D means a site isn't converted.
+
+**Gates** (regression gates, not the proof):
+- the default path byte-identical on every oracle and within 1% K1 instructions in total;
+- TSan clean with the flag on every `-p` corpus at T4 and T12 (zero groups);
+- the 20-run tables and 300 loaded drizzle runs identical to K1, plus 100 loaded effect runs (the TS7006 residue);
+- the fingerprint-at-publish oracle silent;
+- both full oracle runs identical with and without the flag;
+- K12 work within 1.15x K1;
+- drizzle and effect K12 wall at or below the defaults, with the load stated;
+- the recheck tool (every file checked again by a fresh checker after the join) agreeing per file.
+
+**Rejected: B, immutable types with per-worker lazy tables published at quiescent points.** (1) The hot path: a
+per-worker table probe for every lazy read costs 4-6x the hybrid's measured overhead, two kinds already +2-3% on
+drizzle and zod, and needs Props given ids or hash probes. (2) Identity: per-file publication lets a worker use its
+own objects (declared Props, Signatures) for a whole file before learning it lost. By then they have escaped into its
+published values' back-pointers (instantiate_members' `target`, builder_add_inherited), and the private/protected
+checks compare root props across types (relate.c modifiers_related(), check.c synthetic_access(), checker.c
+has_conflicting_private(): the census's 4R sites). Repairing that needs a transitive drop of everything that
+references a loser at each publication, or bun's discard-and-recheck of the file. (3) What B gets right, the
+hybrid keeps: no in-flight state is ever visible to another worker. Also rejected: **A as plan 89 wrote it** (claimed
+and waited fields, tainted values reset to not-started). Waiting makes the wait cycles the redo exists for, and a
+breaker's history is no sequential checker's. Resetting a tainted word lets another worker publish a clean value
+that the tainter, which keeps its own, then disagrees with on every later read.
 
 ## Validation of the whole plan
 The 12-core table in measurements.md re-run by the human after each stage (`scripts/bench.sh --runs 3 --bun PATH

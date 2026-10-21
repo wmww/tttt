@@ -400,7 +400,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   done tests read the state with a plain load (LAZY_FAST_LOAD(), an acquire only in a ThreadSanitizer build), while
   the writer publishes the value and then the state with a release store (LAZY_DONE()). An acquire there cost the
   default path ~1% of its instructions (it stops the compiler combining the loads around it). Formally a data race; on
-  a weakly ordered CPU those two need the acquire back.
+  a weakly ordered CPU those two need the acquire back. Plan 86 stage 4f replaces both with one acquire load of a
+  write-once value word (measured +0.1% over the plain load on drizzle/zod, 2026-10-22).
 - `--shared-graph` (ty/graph.c, plan 86 stage 4d) runs its checkers on threads but isn't deterministic yet (plan 86's
   4d status). Identities go out at creation (intern_set()), memo kinds only at a share's end (graph_publish()), so
   what a checker finds of another's depends on the schedule. A side table entry that describes a shared object (a
@@ -736,9 +737,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   files (unchecked since tttt emits declarations, plan 64), `-b`'s tsbuildinfo `contentMapperIdentities`.
 - `node_in_mapped_file()` (ty_display.c, declaration maps): a reused TypeNode doesn't know its file; found from one of
   its spans, a keyword by comparing the text at its offset. Correct: TypeNodes knowing their file. Shown by: dtsdiff.py.
-- `claim_and_measure()` (relate.c), `--shared-graph` on threads: one graph-wide variance lock serializes every
-  outermost variance measurement, because measurements running at once on two workers made drizzle differ from K1 in
-  ~2% of runs by a mechanism not yet found (plan 86 4d, task 3). Costs drizzle +54% K12 wall; plan 86 4e item 1.
 - `lazy_wait_slow()` (graph.c): 64 pauses, then 50 sched_yield()s, then doubling sleeps; the 50 was tuned on a loaded
   16-vCPU box against a convoy of waiters (TTTT_GRAPH_WAIT_YIELDS).
 - `check_file_or_give_up()` (program.c), `--shared-graph` redo: the longjmp out of `lazy_wait_slow()` leaks the
