@@ -351,7 +351,7 @@ static u64 fp_ty_inner(Checker* c, Ty const* ty) {
             h = M(h, fp_ty(ty->conditional.check));
             h = M(h, fp_ty(ty->conditional.extends));
             h = M(h, ty->conditional.distributive | ty->conditional.check_tuples << 1);
-            if (ty->conditional.outer) h = M(h, (u64)(uintptr_t)ty->conditional.outer->node.buf);
+            if (ty_root_outer(ty)) h = M(h, (u64)(uintptr_t)ty_root_outer(ty)->node.buf);
             return M(h, fp_mapper(ty->conditional.mapper));
         }
         case TY_SUBSTITUTION:

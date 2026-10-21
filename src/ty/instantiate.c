@@ -142,7 +142,8 @@ TyMapper const* ty_compose_mappers(Checker* me, TyMapper const* inner, TyMapper 
 // B}` ? [A, ...Split<B, D>] : [S]` gets the outer B for its check type, not for its own `infer B`
 TyList ty_conditional_own_infers(Checker* me, Ty const* root) {
     (void)me;
-    return root->conditional.outer ? root->conditional.outer->infers : (TyList){0};
+    TyConditionalOuter const* outer = ty_root_outer(root);
+    return outer ? outer->infers : (TyList){0};
 }
 
 TyMapper const* ty_mapper_without(Checker* me, TyMapper const* mapper, TyList params) {
@@ -209,7 +210,7 @@ static Ty const* conditional_from_root(Checker* me, Ty const* root, Ty const* ch
     TyCondBranch if_false = instantiate_branch(me, &root->conditional.branches[0], mapper);
     return ty_conditional(
         me, check_type, ty_instantiate(me, root->conditional.extends, mapper), &if_true, &if_false, root, mapper,
-        root->conditional.distributive, root->conditional.check_tuples, ty_conditional_own_infers(me, root)
+        root->conditional.distributive, root->conditional.check_tuples, ty_conditional_own_infers(me, root), nullptr
     );
 }
 
@@ -991,7 +992,7 @@ static Ty const* distribute_conditional(Checker* me, Ty const* root, TyMapper co
             // A member that stays deferred goes by the root's alias (tsc's getConditionalType: root.aliasSymbol with
             // its arguments instantiated): `Awaited<T | Yadda>` is `Yadda | Awaited<T>`
             if (results[i]->kind == TY_CONDITIONAL && !results[i]->alias && results[i]->conditional.root == root) {
-                Ty const* root_aliased = root->conditional.root_aliased;
+                Ty const* root_aliased = ty_root_aliased(root);
                 if (root_aliased) results[i] = instantiate_alias(me, root_aliased, results[i], results[i]->conditional.mapper);
             }
         }
@@ -1243,7 +1244,7 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
             // (tsc's getConditionalType names it by its root's alias, instantiated from the root, whatever alias this
             // one had: `type W<O> = Extract<O, string>` declares W<O>, but W<X> is Extract<X, string>)
             // (Only one that goes by an alias asks: one without keeps none, as before)
-            Ty const* root_aliased = ty->alias ? root->conditional.root_aliased : nullptr;
+            Ty const* root_aliased = ty->alias ? ty_root_aliased(root) : nullptr;
             if (root_aliased) {
                 // (The alias arguments through the mapper the result was made from the root with, tsc's
                 // instantiateTypes(root.aliasTypeArguments, mapper): instantiating this one's own alias arguments, or

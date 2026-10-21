@@ -1294,8 +1294,9 @@ static TyConditionalOuter* collect_outer_params(Checker* me, TypeNode const* nod
     return outer;
 }
 
-static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* node, TyList alias_args, TyList infers) {
-    if (root->conditional.outer) return;
+TyConditionalOuter const* ty_root_outer_of_node(Checker* me, Ty const* root, TyRootSpec const* spec, TyList infers) {
+    TypeNode const* node = spec->node;
+    TyList alias_args = spec->alias_args;
     TyConditionalOuter* outer = collect_outer_params(me, node);
     outer->infers = ty_list_copy(me, infers.data, infers.len);
     // An alias's body keeps the alias's type parameters it doesn't mention too (tsc's getTypeFromConditionalTypeNode
@@ -1323,7 +1324,7 @@ static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* n
         outer->check_outside_block = block >= text.buf && block < text.buf + text.size && decl.buf < block;
     }
     outer->node = node->ternary->span;
-    ((Ty*)root)->conditional.outer = outer; // (Set once, right after lowering it: a root is never shared between checkers)
+    return outer;
 }
 
 // The type parameters declared outside a deferred reference's node that it mentions: what its instantiations are
@@ -1338,7 +1339,7 @@ static TyConditionalOuter const* deferred_node_outer(Checker* me, TypeNode const
 
 TyConditionalOuter const* ty_conditional_outer(Checker* me, Ty const* root) {
     (void)me;
-    return root->conditional.outer;
+    return ty_root_outer(root);
 }
 
 Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args) {
@@ -4336,17 +4337,15 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             // (tsc's checkTuples looks at the nodes: `T extends [infer A]` with T a tuple doesn't defer on its elements)
             bool check_tuples = node->ternary->maybe_sub.tag == TYPE_TUPLE && extends_node->tag == TYPE_TUPLE &&
                 ty_conditional_simple_tuples(check_type, extends);
+            // (The root's outer type parameters, and its own infers, which instantiation must leave alone whatever an
+            // outer one of the same declaration inferred (`Split<B, D>` in the true branch of Split, see instantiate.c),
+            // are made with it: ty_root_outer_of_node(). A root is only made here, keyed by the branches' nodes, so one
+            // found again is this node's, with them)
+            TyRootSpec spec = { .node = node, .alias_args = alias ? alias_args : (TyList){0} };
             Ty const* ret = ty_conditional(
                 me, check_type, extends, &if_true, &if_false, nullptr, nullptr, distributive, check_tuples,
-                (TyList){ .data = infers.data, .len = infers.len }
+                (TyList){ .data = infers.data, .len = infers.len }, &spec
             );
-            if (ret->kind == TY_CONDITIONAL && ret->conditional.root == ret) {
-                // Instantiation must leave them alone: they're this conditional type's own, whatever an outer one of
-                // the same declaration inferred (`Split<B, D>` in the true branch of Split, see instantiate.c)
-                conditional_set_outer(
-                    me, ret, node, alias ? alias_args : (TyList){0}, (TyList){ .data = infers.data, .len = infers.len }
-                );
-            }
             ty_buf_drop(&infers);
             // (Only the conditional type this node makes goes by the alias: a branch it resolved to that is another
             // conditional type is that one, tsc's getConditionalType passes the alias to the deferred type alone)
@@ -4356,7 +4355,11 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 return ret;
             }
             Ty const* aliased = ty_realias(me, ret, alias, alias_args);
-            if (ret->conditional.root == ret && !ret->conditional.root_aliased) ((Ty*)ret)->conditional.root_aliased = aliased;
+            // (The first alias to lower the root names it: a CAS, another worker's may have won)
+            if (ret->conditional.root == ret && !ty_root_aliased(ret)) {
+                Ty const* expected = nullptr;
+                __atomic_compare_exchange_n(&((Ty*)ret)->conditional.root_aliased, &expected, aliased, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+            }
             return aliased;
         }
 

@@ -447,7 +447,8 @@ struct Ty {
             TyMapper const* mapper;
             // Of a root lowered from a node (lower.c; null otherwise and on instances): the type parameters declared
             // outside it that instantiations are keyed by, and the root as the type alias declaring it names it (tsc's
-            // root.aliasSymbol and aliasTypeArguments)
+            // root.aliasSymbol and aliasTypeArguments). Set after the root is interned, by whoever lowers the node first:
+            // first wins (a CAS), read through ty_root_outer() / ty_root_aliased()
             struct TyConditionalOuter const* outer;
             Ty const* root_aliased;
         } conditional;
@@ -849,6 +850,14 @@ typedef struct MembersRare {
     // is there twice
     u32 const* by_name_order;
 } MembersRare;
+
+// A conditional root's outer type parameters and alias (Ty.conditional.outer, root_aliased: published after the root)
+static inline struct TyConditionalOuter const* ty_root_outer(Ty const* root) {
+    return __atomic_load_n(&root->conditional.outer, __ATOMIC_ACQUIRE);
+}
+static inline Ty const* ty_root_aliased(Ty const* root) {
+    return __atomic_load_n(&root->conditional.root_aliased, __ATOMIC_ACQUIRE);
+}
 
 static inline MembersRare const* members_rare(Members const* me) {
     static const MembersRare none = {0};
@@ -1510,13 +1519,22 @@ static inline bool ty_is_no_infer(Ty const* ty) {
 Ty const* ty_substitution_intersection(Checker* me, Ty const* ty);
 // tsc's getActualTypeVariable: a substitution type's base, also inside an indexed access
 Ty const* ty_actual_type_variable(Checker* me, Ty const* ty);
+// A root lowered from a node (lower.c): what its outer type parameters (Ty.conditional.outer) are made from, when the
+// constructor makes it
+typedef struct TyRootSpec {
+    struct TypeNode const* node;
+    TyList alias_args;
+} TyRootSpec;
 Ty const* ty_conditional(
     Checker* me, Ty const* check, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,
     Ty const* root, TyMapper const* mapper, // null for a root
     bool distributive,
     bool check_tuples, // (Of a root: instances take the root's)
-    TyList infers // The `infer` type parameters its extends type declares (ty_conditional_own_infers of the root)
+    TyList infers, // The `infer` type parameters its extends type declares (ty_conditional_own_infers of the root)
+    TyRootSpec const* spec // A root's node, or null
 );
+// The outer type parameters of a root made from spec's node, before it is published (lower.c)
+struct TyConditionalOuter const* ty_root_outer_of_node(Checker* me, Ty const* root, TyRootSpec const* spec, TyList infers);
 Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args);
 // An alias body's homomorphic mapped instance, its own type by the same name (instantiate.c)
 bool ty_mapped_names_itself(Checker* me, Ty const* instance); // See instantiate.c

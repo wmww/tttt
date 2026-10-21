@@ -725,8 +725,8 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
             Ty const* xa = a->conditional.root;
             Ty const* xb = b->conditional.root;
             if (xa != xb) {
-                TyConditionalOuter const* oa = xa->conditional.outer;
-                TyConditionalOuter const* ob = xb->conditional.outer;
+                TyConditionalOuter const* oa = ty_root_outer(xa);
+                TyConditionalOuter const* ob = ty_root_outer(xb);
                 int c = cmp_node_spans(oa ? oa->node : span_null, ob ? ob->node : span_null, oa != nullptr, ob != nullptr);
                 if (c) return c;
                 if (!oa || !ob || oa->node.buf != ob->node.buf) return cmp_ids(ID_SITE_CONDITIONAL_ROOT, a->kind, xa->id, xb->id);

@@ -4000,7 +4000,7 @@ static u32 cond_branch_key(u64* key, TyCondBranch const* branch) {
 // Resolves right away unless the check type is generic (conditional.c)
 Ty const* ty_conditional(
     Checker* me, Ty const* check_type, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,
-    Ty const* root, TyMapper const* mapper, bool distributive, bool check_tuples, TyList infers
+    Ty const* root, TyMapper const* mapper, bool distributive, bool check_tuples, TyList infers, TyRootSpec const* spec
 ) {
     if (root) check_tuples = root->conditional.check_tuples;
     if (check_type == my intrinsics[TY_WILDCARD] || extends == my intrinsics[TY_WILDCARD]) return my intrinsics[TY_WILDCARD];
@@ -4038,6 +4038,8 @@ Ty const* ty_conditional(
         fresh->conditional.check_tuples = check_tuples;
         fresh->conditional.root = root ? root : fresh;
         fresh->conditional.mapper = root ? mapper : nullptr;
+        // (A root's outer type parameters are part of it before anyone else can see it: union order reads them)
+        if (!root && spec) fresh->conditional.outer = ty_root_outer_of_node(me, fresh, spec, infers);
         ret = intern_set(me, &my types, slot, fresh);
     }
     return ret;
