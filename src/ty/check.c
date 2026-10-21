@@ -1853,6 +1853,15 @@ static cstr entity_name_text(Span span) {
 }
 
 // A union whose members are all tuples without a rest element
+// Whether a member of the union has the property itself (tsc's union property of a name no member has, only their
+// number index signatures, is none)
+static bool some_member_has_prop(Checker* me, Ty const* ty, Atom const* name) {
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (ty_find_prop(me, ty->composite.types.data[i], name).found) return true;
+    }
+    return false;
+}
+
 static bool is_union_of_fixed_tuples(Ty const* ty) {
     if (ty->kind != TY_UNION || (ty->flags & TYF_BOOLEAN)) return false;
     for (u32 i = 0; i < ty->composite.types.len; i++) {
@@ -2056,13 +2065,21 @@ static void check_access(
         }
         // Past the end of every member of a union of tuples without rest elements (tsc's getPropertyTypeForIndexType:
         // everyType(objectType, isTupleType), with or without noImplicitAny)
-        if (!opaque && is_union_of_fixed_tuples(object) && (index->flags & TYF_NUMBER_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) &&
-            !ty_access(me, object, index)
+        // (A numeric string literal too, `t["2"]`: tsc's isNumericLiteralName(propName))
+        bool numeric_name = (index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) && index->literal.string &&
+            ty_is_numeric_name(index->literal.string);
+        if (!opaque && is_union_of_fixed_tuples(object) && (((index->flags & TYF_NUMBER_LITERAL) && !(index->flags & TYF_ENUM_LITERAL)) ||
+            numeric_name) && !some_member_has_prop(me, object, numeric_name ? index->literal.string : ty_literal_name(me, index))
         ) {
             // (No elaboration naming a member)
             cstr object_str = ty_to_cstr(me, object);
-            error_ctx_error_d(errs, index_span, 2339, "Property '", &index->literal.value, "' does not exist on type '",
-                object_str, "'.");
+            if (numeric_name) {
+                error_ctx_error_d(errs, index_span, 2339, "Property '", atom_sv(index->literal.string), "' does not exist on type '",
+                    object_str, "'.");
+            } else {
+                error_ctx_error_d(errs, index_span, 2339, "Property '", &index->literal.value, "' does not exist on type '",
+                    object_str, "'.");
+            }
             cstr_drop(&object_str);
             return;
         }
@@ -2120,7 +2137,7 @@ static void check_access(
         ) {
             error_ctx_error_d(errs, index_span, 2514, "A tuple type cannot be indexed with a negative value.");
         } else if ((index->flags & TYF_NUMBER_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) && !has_rest &&
-            index->literal.value.number >= shape->arity
+            (index->literal.value.number >= shape->arity || index->literal.value.number != (double)(i64)index->literal.value.number)
         ) {
             cstr object_str = ty_to_cstr(me, object);
             error_ctx_error_d(errs, index_span, 2493,
@@ -2644,7 +2661,12 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
                 if (!(object->composite.types.data[i]->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_NON_PRIMITIVE | primitive))) return;
             }
         }
-        if ((ty_tuple_shape(object) || is_union_of_fixed_tuples(object)) && (index->flags & TYF_NUMBER_LITERAL)) return; // TS2493, TS2339
+        // (A numeric string literal too: tsc's getPropertyTypeForIndexType takes `"2"` as the element's name)
+        if ((ty_tuple_shape(object) || is_union_of_fixed_tuples(object)) && ((index->flags & TYF_NUMBER_LITERAL) ||
+            ((index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) && ty_is_numeric_name(index->literal.string)))
+        ) {
+            return; // TS2493, TS2339
+        }
         if (ty_mapped_members_incomplete(me, object)) return; // HACK: see MembersRare.index_signatures_incomplete
         if (object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_ENUM_OBJECT && object->declared.symbol &&
             (object->declared.symbol->flags & SYMBOL_CONST_ENUM)

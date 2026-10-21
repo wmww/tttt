@@ -2162,6 +2162,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTupleNumericStringIndex': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTypeMemberGetterBody': {
         errors: true,
         symbols: true,

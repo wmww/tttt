@@ -5893,8 +5893,89 @@ static Ty const* check_yield(Checker* me, UnaryOpExpr const* yield, ExprCtx ctx)
 }
 
 // `t[5]` of tuples (every member of a union) with no element there: undefined after the error
+// A numeric name (a number literal, or a string literal that is one) that no tuple of the object has as an element,
+// every member being a tuple (tsc's getPropertyTypeForIndexType, isNumericLiteralName(propName)): from index 0 on what
+// the tuples have past their leading elements (getTupleElementTypeOutOfStartCount: their rest and trailing elements,
+// undefined for one without a rest element), a negative one undefined of one tuple without rest elements and else what
+// the index signatures say. Null where the ordinary access decides
+static Ty const* tuple_numeric_name_access(Checker* me, Ty const* object, Ty const* key, bool reading) {
+    double index;
+    Atom const* name;
+    if ((key->flags & TYF_NUMBER_LITERAL) && !(key->flags & TYF_ENUM_LITERAL)) {
+        index = key->literal.value.number;
+        name = ty_literal_name(me, key);
+    } else if ((key->flags & TYF_STRING_LITERAL) && !(key->flags & TYF_ENUM_LITERAL) && key->literal.string &&
+        ty_is_numeric_name(key->literal.string)
+    ) {
+        name = key->literal.string;
+        char buf[64];
+        snprintf(buf, sizeof buf, "%.*s", (int)name->len, name->str);
+        index = strtod(buf, nullptr);
+    } else {
+        return nullptr;
+    }
+    if (!name) return nullptr;
+    TyList types = object->kind == TY_UNION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
+    bool variable = false;
+    for (u32 i = 0; i < types.len; i++) {
+        Ty const* t = types.data[i];
+        // (Generic ones are indexed access types: tsc's isGenericObjectType comes first)
+        if (!ty_is_tuple(t) || ty_is_generic_tuple(me, t)) return nullptr;
+        if (ty_find_prop(me, t, name).found) return nullptr;
+        TupleShape const* shape = t->reference.target->declared.tuple;
+        for (u32 j = 0; j < shape->arity; j++) variable |= (shape->flags[j] & TUPLE_ELEMENT_REST) != 0;
+    }
+    if (index < 0) {
+        if (types.len == 1 && !variable) return ty_intrinsic(me, TY_UNDEFINED); // TS2514
+        return ty_access(me, object, ty_intrinsic(me, TY_NUMBER)); // (TS2339 on a union, then its index signature)
+    }
+    TyBuf parts = {0};
+    for (u32 i = 0; i < types.len; i++) {
+        Ty const* t = types.data[i];
+        TupleShape const* shape = t->reference.target->declared.tuple;
+        TyList args = ty_reference_args(me, t);
+        u32 first_rest = shape->arity;
+        for (u32 j = 0; j < shape->arity; j++) {
+            if (shape->flags[j] & TUPLE_ELEMENT_REST) {
+                first_rest = j;
+                break;
+            }
+        }
+        if (first_rest == shape->arity) {
+            ty_buf_push(&parts, ty_intrinsic(me, TY_UNDEFINED));
+            continue;
+        }
+        for (u32 j = first_rest; j < shape->arity && j < args.len; j++) {
+            // (A rest element's argument is its array: the element type is what's read)
+            Ty const* arg = args.data[j];
+            if (shape->flags[j] & TUPLE_ELEMENT_REST) {
+                // (Not an array: a variadic element, generic; the ordinary access decides)
+                if (!ty_is_array(me, arg) && !(arg->kind == TY_REFERENCE && arg->reference.target == ty_readonly_array_target(me))) {
+                    ty_buf_drop(&parts);
+                    return nullptr;
+                }
+                arg = ty_reference_args(me, arg).data[0];
+            }
+            ty_buf_push(&parts, arg);
+        }
+        // (Past as many elements as are fixed, leading and trailing, with noUncheckedIndexedAccess:
+        // AccessFlags.IncludeUndefined's missing type, getTotalFixedElementCount)
+        u32 fixed = 0;
+        for (u32 j = 0; j < shape->arity; j++) fixed += !(shape->flags[j] & TUPLE_ELEMENT_REST); // (ElementFlagsFixed: optional ones too)
+        if (reading && compiler_options()->no_unchecked_indexed_access && index >= fixed) {
+            ty_buf_push(&parts, ty_intrinsic(me, TY_UNDEFINED));
+        }
+    }
+    Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+    ty_buf_drop(&parts);
+    return ret;
+}
+
 static bool tuple_past_the_end(Checker* me, Ty const* object, Ty const* key) {
-    if (!(key->flags & TYF_NUMBER_LITERAL)) return false;
+    // (A numeric string literal names an element too: tsc's isNumericLiteralName(propName))
+    bool numeric_name = (key->flags & TYF_STRING_LITERAL) && !(key->flags & TYF_ENUM_LITERAL) && key->literal.string &&
+        ty_is_numeric_name(key->literal.string);
+    if (!(key->flags & TYF_NUMBER_LITERAL) && !numeric_name) return false;
     TyList types = object->kind == TY_UNION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
     for (u32 i = 0; i < types.len; i++) {
         Ty const* apparent = ty_apparent_type(me, types.data[i]);
@@ -6185,7 +6266,10 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // 1]` of `[...T, F]` is `[...T, F][number]`, tsc's getIndexedAccessTypeOrUndefined with an access node)
             bool deferred_tuple = expr->property->form == PROPERTY_EXPR_BRACKET && ty_is_tuple(object) &&
                 ty_is_generic_tuple(me, object) && !(key->flags & (TYF_ANY | TYF_ERROR));
-            Ty const* ret = deferred_never ? nullptr :
+            Ty const* numeric_tuple = expr->property->form == PROPERTY_EXPR_BRACKET && !deferred_never && !deferred_tuple ?
+                tuple_numeric_name_access(me, object, ty_regular(me, key),
+                    expr->property->assignment_target != FLOW_TARGET_DEFINITE) : nullptr;
+            Ty const* ret = numeric_tuple ? numeric_tuple : deferred_never ? nullptr :
                 deferred_tuple ? ty_indexed_include_undefined(me, object, ty_regular(me, key),
                     compiler_options()->no_unchecked_indexed_access && expr->property->assignment_target != FLOW_TARGET_DEFINITE) :
                 expr->property->form == PROPERTY_EXPR_BRACKET ?

@@ -1,0 +1,89 @@
+ttttTupleNumericStringIndex.ts(8,12): error TS2339: Property '2' does not exist on type 'T2'.
+ttttTupleNumericStringIndex.ts(9,12): error TS2493: Tuple type 'T1' of length '2' has no element at index '2'.
+ttttTupleNumericStringIndex.ts(10,12): error TS2339: Property '2' does not exist on type 'T2'.
+ttttTupleNumericStringIndex.ts(11,12): error TS2493: Tuple type 'T1' of length '2' has no element at index '5'.
+ttttTupleNumericStringIndex.ts(13,12): error TS2339: Property '-1' does not exist on type 'T2'.
+ttttTupleNumericStringIndex.ts(14,12): error TS2339: Property '1.5' does not exist on type 'T2'.
+ttttTupleNumericStringIndex.ts(15,12): error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+ttttTupleNumericStringIndex.ts(16,12): error TS2514: A tuple type cannot be indexed with a negative value.
+ttttTupleNumericStringIndex.ts(19,14): error TS2339: Property '1.5' does not exist on type 'T2'.
+ttttTupleNumericStringIndex.ts(20,14): error TS2339: Property '-1' does not exist on type 'T2'.
+ttttTupleNumericStringIndex.ts(21,14): error TS2514: A tuple type cannot be indexed with a negative value.
+ttttTupleNumericStringIndex.ts(22,14): error TS2493: Tuple type 'T1' of length '2' has no element at index '1.5'.
+ttttTupleNumericStringIndex.ts(23,14): error TS2339: Property '1.5' does not exist on type 'T2'.
+ttttTupleNumericStringIndex.ts(24,14): error TS2339: Property '-1' does not exist on type 'T2'.
+ttttTupleNumericStringIndex.ts(25,14): error TS2514: A tuple type cannot be indexed with a negative value.
+ttttTupleNumericStringIndex.ts(26,14): error TS2493: Tuple type 'T1' of length '2' has no element at index '1.5'.
+ttttTupleNumericStringIndex.ts(30,13): error TS2339: Property '2' does not exist on type 'T2'.
+ttttTupleNumericStringIndex.ts(31,13): error TS2493: Tuple type 'T1' of length '2' has no element at index '2'.
+
+
+==== ttttTupleNumericStringIndex.ts (18 errors) ====
+    // A numeric name (a number literal or a string literal that is one) that no tuple has as an element, every member
+    // being a tuple: TS2493 / TS2514 for one tuple, TS2339 for a union, never TS7015, and the access reads what the
+    // tuples have past their leading elements, undefined without a rest element (tsc's getPropertyTypeForIndexType,
+    // isNumericLiteralName(propName), getTupleElementTypeOutOfStartCount; mutation testing, unionsOfTupleTypes1)
+    type T1 = [string, number];
+    type T2 = [boolean] | [string, number];
+    declare const t1: T1, t2: T2;
+    let a = t2["2"];
+               ~~~
+!!! error TS2339: Property '2' does not exist on type 'T2'.
+    let b = t1["2"];
+               ~~~
+!!! error TS2493: Tuple type 'T1' of length '2' has no element at index '2'.
+    let c = t2[2];
+               ~
+!!! error TS2339: Property '2' does not exist on type 'T2'.
+    let d = t1["5"];
+               ~~~
+!!! error TS2493: Tuple type 'T1' of length '2' has no element at index '5'.
+    let e = t2["1"];
+    let f = t2["-1"];
+               ~~~~
+!!! error TS2339: Property '-1' does not exist on type 'T2'.
+    let g = t2["1.5"];
+               ~~~~~
+!!! error TS2339: Property '1.5' does not exist on type 'T2'.
+    let h = t2["01"];
+               ~~~~
+!!! error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+    let i = t1["-1"];
+               ~~~~
+!!! error TS2514: A tuple type cannot be indexed with a negative value.
+    type T4 = [boolean] | [string, ...number[]];
+    declare const t4: T4;
+    let na1 = t2[1.5];
+                 ~~~
+!!! error TS2339: Property '1.5' does not exist on type 'T2'.
+    let na2 = t2[-1];
+                 ~~
+!!! error TS2339: Property '-1' does not exist on type 'T2'.
+    let na3 = t1[-1];
+                 ~~
+!!! error TS2514: A tuple type cannot be indexed with a negative value.
+    let na4 = t1[1.5];
+                 ~~~
+!!! error TS2493: Tuple type 'T1' of length '2' has no element at index '1.5'.
+    let nb1 = t2["1.5"];
+                 ~~~~~
+!!! error TS2339: Property '1.5' does not exist on type 'T2'.
+    let nb2 = t2["-1"];
+                 ~~~~
+!!! error TS2339: Property '-1' does not exist on type 'T2'.
+    let nb3 = t1["-1"];
+                 ~~~~
+!!! error TS2514: A tuple type cannot be indexed with a negative value.
+    let nb4 = t1["1.5"];
+                 ~~~~~
+!!! error TS2493: Tuple type 'T1' of length '2' has no element at index '1.5'.
+    let nc1 = t4["5"];
+    let nc2 = t4[5];
+    let nc3 = t4["-1"];
+    type X = T2["2"];
+                ~~~
+!!! error TS2339: Property '2' does not exist on type 'T2'.
+    type Y = T1["2"];
+                ~~~
+!!! error TS2493: Tuple type 'T1' of length '2' has no element at index '2'.
+    

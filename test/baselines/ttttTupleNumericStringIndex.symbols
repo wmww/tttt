@@ -1,0 +1,115 @@
+//// [test/cases/ttttTupleNumericStringIndex.ts] ////
+
+=== ttttTupleNumericStringIndex.ts ===
+// A numeric name (a number literal or a string literal that is one) that no tuple has as an element, every member
+// being a tuple: TS2493 / TS2514 for one tuple, TS2339 for a union, never TS7015, and the access reads what the
+// tuples have past their leading elements, undefined without a rest element (tsc's getPropertyTypeForIndexType,
+// isNumericLiteralName(propName), getTupleElementTypeOutOfStartCount; mutation testing, unionsOfTupleTypes1)
+type T1 = [string, number];
+>T1 : Symbol(T1, Decl(ttttTupleNumericStringIndex.ts, 0, 0))
+
+type T2 = [boolean] | [string, number];
+>T2 : Symbol(T2, Decl(ttttTupleNumericStringIndex.ts, 4, 27))
+
+declare const t1: T1, t2: T2;
+>t1 : Symbol(t1, Decl(ttttTupleNumericStringIndex.ts, 6, 13))
+>T1 : Symbol(T1, Decl(ttttTupleNumericStringIndex.ts, 0, 0))
+>t2 : Symbol(t2, Decl(ttttTupleNumericStringIndex.ts, 6, 21))
+>T2 : Symbol(T2, Decl(ttttTupleNumericStringIndex.ts, 4, 27))
+
+let a = t2["2"];
+>a : Symbol(a, Decl(ttttTupleNumericStringIndex.ts, 7, 3))
+>t2 : Symbol(t2, Decl(ttttTupleNumericStringIndex.ts, 6, 21))
+
+let b = t1["2"];
+>b : Symbol(b, Decl(ttttTupleNumericStringIndex.ts, 8, 3))
+>t1 : Symbol(t1, Decl(ttttTupleNumericStringIndex.ts, 6, 13))
+
+let c = t2[2];
+>c : Symbol(c, Decl(ttttTupleNumericStringIndex.ts, 9, 3))
+>t2 : Symbol(t2, Decl(ttttTupleNumericStringIndex.ts, 6, 21))
+
+let d = t1["5"];
+>d : Symbol(d, Decl(ttttTupleNumericStringIndex.ts, 10, 3))
+>t1 : Symbol(t1, Decl(ttttTupleNumericStringIndex.ts, 6, 13))
+
+let e = t2["1"];
+>e : Symbol(e, Decl(ttttTupleNumericStringIndex.ts, 11, 3))
+>t2 : Symbol(t2, Decl(ttttTupleNumericStringIndex.ts, 6, 21))
+>"1" : Symbol(1)
+
+let f = t2["-1"];
+>f : Symbol(f, Decl(ttttTupleNumericStringIndex.ts, 12, 3))
+>t2 : Symbol(t2, Decl(ttttTupleNumericStringIndex.ts, 6, 21))
+
+let g = t2["1.5"];
+>g : Symbol(g, Decl(ttttTupleNumericStringIndex.ts, 13, 3))
+>t2 : Symbol(t2, Decl(ttttTupleNumericStringIndex.ts, 6, 21))
+
+let h = t2["01"];
+>h : Symbol(h, Decl(ttttTupleNumericStringIndex.ts, 14, 3))
+>t2 : Symbol(t2, Decl(ttttTupleNumericStringIndex.ts, 6, 21))
+
+let i = t1["-1"];
+>i : Symbol(i, Decl(ttttTupleNumericStringIndex.ts, 15, 3))
+>t1 : Symbol(t1, Decl(ttttTupleNumericStringIndex.ts, 6, 13))
+
+type T4 = [boolean] | [string, ...number[]];
+>T4 : Symbol(T4, Decl(ttttTupleNumericStringIndex.ts, 15, 17))
+
+declare const t4: T4;
+>t4 : Symbol(t4, Decl(ttttTupleNumericStringIndex.ts, 17, 13))
+>T4 : Symbol(T4, Decl(ttttTupleNumericStringIndex.ts, 15, 17))
+
+let na1 = t2[1.5];
+>na1 : Symbol(na1, Decl(ttttTupleNumericStringIndex.ts, 18, 3))
+>t2 : Symbol(t2, Decl(ttttTupleNumericStringIndex.ts, 6, 21))
+
+let na2 = t2[-1];
+>na2 : Symbol(na2, Decl(ttttTupleNumericStringIndex.ts, 19, 3))
+>t2 : Symbol(t2, Decl(ttttTupleNumericStringIndex.ts, 6, 21))
+
+let na3 = t1[-1];
+>na3 : Symbol(na3, Decl(ttttTupleNumericStringIndex.ts, 20, 3))
+>t1 : Symbol(t1, Decl(ttttTupleNumericStringIndex.ts, 6, 13))
+
+let na4 = t1[1.5];
+>na4 : Symbol(na4, Decl(ttttTupleNumericStringIndex.ts, 21, 3))
+>t1 : Symbol(t1, Decl(ttttTupleNumericStringIndex.ts, 6, 13))
+
+let nb1 = t2["1.5"];
+>nb1 : Symbol(nb1, Decl(ttttTupleNumericStringIndex.ts, 22, 3))
+>t2 : Symbol(t2, Decl(ttttTupleNumericStringIndex.ts, 6, 21))
+
+let nb2 = t2["-1"];
+>nb2 : Symbol(nb2, Decl(ttttTupleNumericStringIndex.ts, 23, 3))
+>t2 : Symbol(t2, Decl(ttttTupleNumericStringIndex.ts, 6, 21))
+
+let nb3 = t1["-1"];
+>nb3 : Symbol(nb3, Decl(ttttTupleNumericStringIndex.ts, 24, 3))
+>t1 : Symbol(t1, Decl(ttttTupleNumericStringIndex.ts, 6, 13))
+
+let nb4 = t1["1.5"];
+>nb4 : Symbol(nb4, Decl(ttttTupleNumericStringIndex.ts, 25, 3))
+>t1 : Symbol(t1, Decl(ttttTupleNumericStringIndex.ts, 6, 13))
+
+let nc1 = t4["5"];
+>nc1 : Symbol(nc1, Decl(ttttTupleNumericStringIndex.ts, 26, 3))
+>t4 : Symbol(t4, Decl(ttttTupleNumericStringIndex.ts, 17, 13))
+
+let nc2 = t4[5];
+>nc2 : Symbol(nc2, Decl(ttttTupleNumericStringIndex.ts, 27, 3))
+>t4 : Symbol(t4, Decl(ttttTupleNumericStringIndex.ts, 17, 13))
+
+let nc3 = t4["-1"];
+>nc3 : Symbol(nc3, Decl(ttttTupleNumericStringIndex.ts, 28, 3))
+>t4 : Symbol(t4, Decl(ttttTupleNumericStringIndex.ts, 17, 13))
+
+type X = T2["2"];
+>X : Symbol(X, Decl(ttttTupleNumericStringIndex.ts, 28, 19))
+>T2 : Symbol(T2, Decl(ttttTupleNumericStringIndex.ts, 4, 27))
+
+type Y = T1["2"];
+>Y : Symbol(Y, Decl(ttttTupleNumericStringIndex.ts, 29, 17))
+>T1 : Symbol(T1, Decl(ttttTupleNumericStringIndex.ts, 0, 0))
+
