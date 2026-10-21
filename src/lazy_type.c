@@ -71,10 +71,12 @@ u32 type_directory_block(TypeDirectory* me) {
 void lazy_slots_add_type(LazySlots* me, Ty const* ty) {
     u32 index = ty->id >> LAZY_TYPE_CHUNK_BITS;
     Ty const*** chunk = &my types[index];
-    if (!*chunk) {
+    // (The chunk pointers and slots are read by other workers with acquire, lazy_slots_type(): released here)
+    if (!__atomic_load_n(chunk, __ATOMIC_RELAXED)) {
         // (Its own block's: nobody else writes this chunk)
-        *chunk = malloc(sizeof(Ty const*) << LAZY_TYPE_CHUNK_BITS);
-        panic_if(!*chunk, "out of memory");
+        Ty const** fresh = malloc(sizeof(Ty const*) << LAZY_TYPE_CHUNK_BITS);
+        panic_if(!fresh, "out of memory");
+        __atomic_store_n(chunk, fresh, __ATOMIC_RELEASE);
         if (my own_len == my own_cap) {
             my own_cap = my own_cap ? my own_cap * 2 : 16;
             my own = realloc(my own, sizeof(u32) * my own_cap);
@@ -92,7 +94,7 @@ void lazy_slots_add_type(LazySlots* me, Ty const* ty) {
             }
         }
     }
-    (*chunk)[ty->id & ((1 << LAZY_TYPE_CHUNK_BITS) - 1)] = ty;
+    __atomic_store_n(&(*chunk)[ty->id & ((1 << LAZY_TYPE_CHUNK_BITS) - 1)], ty, __ATOMIC_RELEASE);
 }
 
 
@@ -110,7 +112,11 @@ void lazy_slots_missing(LazySlots const* me, u32 id) {
 void lazy_slots_sync(LazySlots* me) {
     if (!my directory) return;
     for (size_t i = 0; i < c_arraylen(my types); i++) {
-        if (!my types[i]) my types[i] = (Ty const**)atomic_load_explicit(&my directory->chunks[i], memory_order_seq_cst);
+        // (Another worker may store the same chunk here meanwhile, lazy_slots_add_type(): atomic both)
+        if (!__atomic_load_n(&my types[i], __ATOMIC_RELAXED)) {
+            Ty const** chunk = (Ty const**)atomic_load_explicit(&my directory->chunks[i], memory_order_seq_cst);
+            if (chunk) __atomic_store_n(&my types[i], chunk, __ATOMIC_RELEASE);
+        }
     }
 }
 

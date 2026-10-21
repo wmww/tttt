@@ -95,14 +95,18 @@ void lazy_slots_share(LazySlots* me);
 void lazy_slots_missing(LazySlots const* me, u32 id); // (lazy_type.c: aborts saying why)
 static inline struct Ty const* lazy_slots_type(LazySlots const* me, u32 id) {
     if (!id) return nullptr;
-    struct Ty const** chunk = my types[id >> LAZY_TYPE_CHUNK_BITS];
-    struct Ty const* ret = chunk ? chunk[id & ((1 << LAZY_TYPE_CHUNK_BITS) - 1)] : nullptr;
+    struct Ty const** chunk = __atomic_load_n(&my types[id >> LAZY_TYPE_CHUNK_BITS], __ATOMIC_ACQUIRE);
+    struct Ty const* ret = chunk ? __atomic_load_n(&chunk[id & ((1 << LAZY_TYPE_CHUNK_BITS) - 1)], __ATOMIC_ACQUIRE) : nullptr;
     if (!ret) lazy_slots_missing(me, id);
     return ret;
 }
 #else
+// (--shared-graph: a chunk and its slots are another worker's hand-off, stored with release, lazy_slots_add_type(); an
+// acquire load is a plain one on x86)
 static inline struct Ty const* lazy_slots_type(LazySlots const* me, u32 id) {
-    return id ? my types[id >> LAZY_TYPE_CHUNK_BITS][id & ((1 << LAZY_TYPE_CHUNK_BITS) - 1)] : nullptr;
+    if (!id) return nullptr;
+    struct Ty const** chunk = __atomic_load_n(&my types[id >> LAZY_TYPE_CHUNK_BITS], __ATOMIC_ACQUIRE);
+    return __atomic_load_n(&chunk[id & ((1 << LAZY_TYPE_CHUNK_BITS) - 1)], __ATOMIC_ACQUIRE);
 }
 #endif
 
