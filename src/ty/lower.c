@@ -2745,6 +2745,7 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
         return (TyList){ .data = args, .len = len };
     }
     if (!LAZY_CLAIM(me, deferred->state)) goto again;
+    TAINT_BEGIN(taint_frame);
     DeferredArgsClaim claim = {0};
     ty_claim_push(me, CLAIM_DEFERRED_ARGS, &claim.claim, deferred, 0);
     TypeNode const* node = deferred->node;
@@ -2797,7 +2798,9 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
             ty_error_at_current_node_d(me, 4110, "Tuple type arguments circularly reference themselves.");
         }
     }
-    return publish_reference_args(deferred, args, len);
+    TyList published = publish_reference_args(deferred, args, len);
+    TAINT_END(taint_frame, TK_DEFERRED_ARGS, deferred, deferred, deferred);
+    return published;
 }
 
 // `[a, b, ...rest]`: what `rest` gets out of a tuple, `start` being its index in the pattern. Mutable even of a readonly
@@ -4077,8 +4080,10 @@ static Ty const* conditional_flow_type(Checker* me, TypeNode const* node, Ty con
         if (LAZY_IN_FLIGHT(seen)) continue;
         if (seen == LAZY_STATE_NOT_STARTED) {
             if (!LAZY_CLAIM(me, implied->check_state)) goto retry_check;
+            TAINT_BEGIN(taint_frame);
             Ty const* check = ty_from_node(me, implied->check_node, (LowerCtx){ .generic = true });
             implied->check = ty_actual_type_variable(me, check);
+            TAINT_END(taint_frame, TK_IMPLIED_CHECK, implied, implied, implied->check);
             LAZY_DONE(implied->check_state);
         }
         if (!actual) actual = ty_actual_type_variable(me, ty);

@@ -25,6 +25,7 @@
 //     }
 //     u64 taint = sw_claim(me, &state->word, &state->state);
 //     ... compute `value` ...
+//     SW_FP(TK_KIND, subject, value, taint);          // the fingerprint oracle's point (taint.h's TK_*)
 //     return SW_PTR(sw_finish(me, &state->word, &state->state, SW_VAL(value), taint));
 
 #include <stdint.h>
@@ -66,6 +67,15 @@ uintptr_t sw_peek(struct Checker const* me, SharedWord const* w);
 // Whether a computation that started at `taint` (sw_claim()'s) is clean: always without a graph. The fingerprint build
 // (-DTTTT_GRAPH_FINGERPRINT) checks only those against K1's record: `if (SW_CLEAN(me, taint)) TAINT_END(...)`
 #define SW_CLEAN(me, taint) (!(me)->graph || graph_taint_now == (taint))
+
+// -DTTTT_GRAPH_FINGERPRINT's publication point of a converted site (graph_debug.c): the result is compared with K1's
+// only if it is clean, so only if it is published
+#ifdef TTTT_GRAPH_FINGERPRINT
+void graph_fp_result(unsigned kind, void const* subject, void const* result, bool tainted);
+#define SW_FP(kind, subject, result, taint) graph_fp_result((kind), (subject), (result), graph_taint_now != (taint))
+#else
+#define SW_FP(kind, subject, result, taint) ((void)0)
+#endif
 
 // TTTT_DEBUG_PUBLISH=1: aborts if `ref`, held by a value being published, was made by a computation whose result stayed
 // private (overlay.c). For the kinds whose values hold non-identity objects (Props, Signatures, Members: P1's walks)

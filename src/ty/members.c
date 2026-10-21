@@ -1416,6 +1416,7 @@ Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol) {
         return nullptr;
     } // The extends expression mentions the class
     if (!LAZY_CLAIM(me, links->base_variable_state)) goto again;
+    TAINT_BEGIN(taint_frame);
     Ty const* type = ty_expr_type(me, extends);
     Ty const* variable = nullptr;
     if ((type->flags & TYF_TYPE_PARAM) || type->kind == TY_INDEXED) {
@@ -1430,6 +1431,7 @@ Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol) {
         }
     }
     links = ty_symbol_links(me, class_symbol);
+    TAINT_END(taint_frame, TK_BASE_VARIABLE, class_symbol, class_symbol, variable);
     links->base_variable = variable;
     LAZY_DONE(links->base_variable_state);
     return variable;
@@ -1536,6 +1538,7 @@ Ty const* ty_non_augmenting_base(Checker* me, Ty const* ty) {
     }
     u64 taint = sw_claim(me, &state->equivalent_base, &state->base_state);
     Ty const* base = non_augmenting_base_uncached(me, ty);
+    SW_FP(TK_EQUIVALENT_BASE, ty, base, taint);
     return SW_PTR(sw_finish(me, &state->equivalent_base, &state->base_state, SW_VAL(base), taint));
 }
 
@@ -5660,6 +5663,7 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
     // (Done, or in flight here: what is resolved so far)
     if (seen != LAZY_STATE_NOT_STARTED) return sig_res(sig);
     if (!LAZY_CLAIM(me, sig->state)) goto again;
+    TAINT_BEGIN(taint_frame);
     // (Allocated first and filled in place: a re-entry while in flight reads what is resolved so far)
     SigResolved* r = arena_new(&my arena, SigResolved);
     r->target = sig->target;
@@ -5780,6 +5784,7 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
         sig->ret = ty_instantiate(me, r->target->class_instance, r->mapper);
         LAZY_DONE(sig->ret_state);
     }
+    TAINT_END(taint_frame, TK_SIG_RESOLVED, sig, sig, r);
     LAZY_DONE(sig->state);
     return r;
 }
@@ -6901,17 +6906,22 @@ Ty const* ty_param_default(Checker* me, Ty const* param) {
     LAZY_SNAP(me, state->fallback_state, seen, again);
     if (seen == LAZY_STATE_NOT_STARTED && state->clone_of) {
         if (!LAZY_CLAIM(me, state->fallback_state)) goto again;
+        TAINT_BEGIN(taint_frame);
         Ty const* fallback = ty_param_default(me, state->clone_of);
-        publish_param_default(state, fallback ? ty_instantiate(me, fallback, state->clone_mapper) : nullptr, false);
+        fallback = fallback ? ty_instantiate(me, fallback, state->clone_mapper) : nullptr;
+        TAINT_END(taint_frame, TK_PARAM_DEFAULT, param, param, fallback);
+        publish_param_default(state, fallback, false);
     }
     else if (seen == LAZY_STATE_NOT_STARTED) {
         if (!LAZY_CLAIM(me, state->fallback_state)) goto again;
+        TAINT_BEGIN(taint_frame);
         ParamDefaultClaim claim = {0};
         ty_claim_push(me, CLAIM_PARAM_DEFAULT, &claim.claim, state, 0);
         GenericItem const* item = state->item ? default_item(param) : nullptr;
         Ty const* fallback = item ? ty_from_node(me, item->fallback, (LowerCtx){ .generic = true }) : nullptr;
         ty_claim_pop(me, CLAIM_PARAM_DEFAULT, &claim.claim);
         // (tsc's getResolvedTypeParameterDefault: asked for while being resolved, it's circularConstraintType)
+        TAINT_END(taint_frame, TK_PARAM_DEFAULT, param, param, claim.circular ? nullptr : fallback);
         publish_param_default(state, claim.circular ? nullptr : fallback, claim.circular);
     } else if (LAZY_IN_FLIGHT(seen) && !state->clone_of) {
         TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
@@ -6951,7 +6961,9 @@ Ty const* ty_mapped_template(Checker* me, MappedInfo const* mapped) {
         return compute_mapped_template(me, mapped);
     }
     if (!LAZY_CLAIM(me, state->template_state)) goto again;
+    TAINT_BEGIN(taint_frame);
     Ty const* template = compute_mapped_template(me, mapped);
+    TAINT_END(taint_frame, TK_MAPPED_TEMPLATE, mapped, mapped, template);
     state->template_ = template;
     LAZY_DONE(state->template_state);
     return template;

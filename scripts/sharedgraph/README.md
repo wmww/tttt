@@ -34,3 +34,19 @@ ones in `paths.sh` (drizzle, zod, excalidraw, effect, nest, vscode; `ALL` is eve
 | `fb.gdb` | `gdb -x fb.gdb --args BIN ...`: a backtrace at every `graph_fallback_hook` (broken wait cycle) |
 | `tsan.sh [corpus...]` | the standing race check: a TSan build of the tree (`$TSAN_BUILD`, default `$OUT/btsan-<hash>`), every `-p` corpus (default `ALL`) at `THREADS` (default "4 12") with `TTTT_SHARED_GRAPH=1`; one line per run (clean / N report groups, output against `ref.X`), then every group over all runs; exit 1 if any. ~25 min for all, vscode T12 ~25 GB (`SKIP=vscode`); `TSAN_ENV=`, `EXTRA=` |
 | `tsan.py LOG... [--brief]` | groups ThreadSanitizer reports by the unordered pair (access, previous access), innermost non-TSan frames, with the runs each group occurs in and both stacks of its first report |
+
+**Fingerprint coverage** (graph_debug.c's header has the details). Fingerprinted, clean results only (the taint counter
+around each computation; `TTTT_GRAPH_FINGERPRINT_TAINTED=1` compares tainted ones too, counted apart): members and
+declared raw members, property types, signature returns, signature resolution (the SigResolved record), type
+parameter constraints, defaults and base constraints, symbols' declared types, inferred return types, variances,
+declaration memos, conditional branches, mapped templates, deferred references' arguments, implied constraints' check
+types, class base type variables, equivalent bases (a shared word: SW_FP() in overlay.h, the point every converted site
+should call), whether an intersection reduces to never, the relation results the workers share, and the intern memo
+kinds fingerprint.inc's fp_key() knows (regular unions, widened objects, conditional instances, distributive
+constraints, union pairs, keyof properties, normalized intersections, reduced unions, indexed, simplified,
+definitely-related). Not fingerprinted, and why: identities (the value is the key), scratch kinds and expression memos
+(never published), the other memo kinds (KEY_ALIAS_INSTANCE, KEY_UNION_NODE, KEY_BASE_SIGNATURE, KEY_ITERATION_TYPES,
+KEY_REVERSE_MAPPED, KEY_INTERSECTION_PROP_CONTEXT, intersection properties...: fp_key() doesn't know their key words;
+each needs a case there), TK_FREE_PARAMS (a node_links set of type parameters, no fingerprint written), a signature's
+predicate (published by CAS beside the return, no frame), the lib singletons (made once before the workers). A kind
+converted to shared words later needs its SW_FP() at the sw_finish() call.

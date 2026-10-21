@@ -1952,8 +1952,10 @@ Ty const* ty_reduced_slow(Checker* me, Ty const* ty) {
         LAZY_SNAP(me, state->reduced_state, seen, again);
         if (seen == REDUCED_NOT_STARTED) {
             if (!LAZY_CLAIM(me, state->reduced_state)) goto again;
+            TAINT_BEGIN(taint_frame);
             bool private_conflict;
             bool never = never_reduced_prop(me, ty->composite.types.data, ty->composite.types.len, &private_conflict) != nullptr;
+            TAINT_END(taint_frame, TK_REDUCED, ty, ty, (void const*)(uintptr_t)(never ? 2 : 1));
             __atomic_store_n(&state->reduced_state, never ? REDUCED_NEVER : REDUCED_ITSELF, __ATOMIC_RELEASE);
         }
         // (In flight here: itself)
@@ -4196,8 +4198,10 @@ Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch) {
         return ty_intrinsic(me, TY_ERROR);
     }
     if (!LAZY_CLAIM(me, branch->state)) goto again;
+    TAINT_BEGIN(taint_frame);
     Ty const* source = branch->node ? ty_from_node(me, branch->node, branch->ctx) : branch->source;
     branch->type = ty_instantiate_tail(me, source, branch->mapper);
+    TAINT_END(taint_frame, TK_COND_BRANCH, branch, branch, branch->type);
     LAZY_DONE(branch->state);
     return branch->type;
 }

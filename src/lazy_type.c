@@ -292,6 +292,8 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 #elif defined(TTTT_GRAPH_TAINT)
     // (Only a declaration's, only with --shared-graph)
     u64 taint_start = graph && resolving ? graph_taint_now : 0;
+#elif defined(TTTT_GRAPH_FINGERPRINT)
+    u64 fp_taint_start = graph_taint_now;
 #endif
     if (resolving) ty_resolving_push(current_checker, lazy_type_pattern_root(me) ? RESOLVING_PATTERN : RESOLVING_DECLARATION, me);
     Ty const* result = nullptr;
@@ -350,7 +352,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     taint_end(taint_frame, taint_kind, me, me, lazy_memo_evaluated(state));
 #endif
 #ifdef TTTT_GRAPH_FINGERPRINT
-    if (resolving) graph_fp_result(TK_LAZY_DECL + my tag, me, lazy_memo_evaluated(state));
+    if (resolving) graph_fp_result(TK_LAZY_DECL + my tag, me, lazy_memo_evaluated(state), graph_taint_now != fp_taint_start);
 #endif
 #ifndef TTTT_TAINT
     if (graph && resolving && my tag != LAZY_TYPE_FOR_EACH_LOOP_VAR) {

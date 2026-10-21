@@ -6947,6 +6947,10 @@ static bool relation_shares(u64 key) {
 }
 
 static void relation_publish(Checker* me, RelationState* st, u64 key, unsigned value) {
+#ifdef TTTT_GRAPH_FINGERPRINT
+    // (What is shared, at both K1 and K: the oracle records K1's and checks every worker's, graph_debug.c)
+    if (!my variance_depth && relation_shares(key)) graph_fp_relation(st->relation, key, value);
+#endif
     if (__builtin_expect(my graph_memo_on, 0) && !my variance_depth && relation_shares(key)) {
         graph_relation_put(my graph, st->relation, key, value);
     }

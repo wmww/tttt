@@ -11,16 +11,23 @@
 // - the TAINT_END() results: members and declared raw members (key: the type), property types (the property),
 //   signature returns (the signature), type parameter constraints and base constraints (the type), declared types of
 //   symbols (the symbol), inferred return types (the function), variances (the type; VARIANCE_UNRELIABLE masked: it
-//   varies run to run without the output moving, plan 86 4e item 1), declaration memos (the LazyType);
+//   varies run to run without the output moving, plan 86 4e item 1), declaration memos (the LazyType), conditional
+//   branches (node, source, mapper), mapped templates (the MappedInfo's parts), type parameter defaults, deferred
+//   references' arguments (node, mapper), implied constraints' check types (the node), signature resolution (the
+//   whole SigResolved record), class base type variables (the symbol), whether an intersection reduces to never;
+//   converted sites' SW_FP() (overlay.h: the equivalent base so far);
 // - memo kinds of the intern tables that fingerprint.inc's fp_key() knows (anonymous and conditional instances,
 //   indexed access, union pairs, definitely-related, keyof properties, normalized intersections, distributive
 //   constraints, reduced unions, simplified, regular unions, widened objects): recorded from the K1 checker's tables
-//   at its end, checked at graph_memo_flush()'s publication (winners and losers alike).
-// Not fingerprinted: identities (the value is what the key is), the other memo kinds (fp_key() doesn't know their
-// words: KEY_ALIAS_INSTANCE, KEY_UNION_NODE, KEY_BASE_SIGNATURE, KEY_ITERATION_TYPES, KEY_REVERSE_MAPPED...),
-// TK_FREE_PARAMS, TK_SIMPLIFIED's frame (the KEY_SIMPLIFIED entry is), relation cache results, Ty-resident fields
-// without a TAINT_END (conditional branches, mapped templates, deferred args, reduced intersections, equivalent bases,
-// class base variables, signature resolution, implied constraints). A key whose K1 values disagree among themselves is
+//   at its end, checked at graph_memo_flush()'s publication (winners and losers alike);
+// - relation results the workers share (relation_publish(): the pair by its types' fingerprints and the relation).
+// Only clean results count (the taint counter compared around each computation; the memo kinds' and relations' are
+// what is published, so clean by the publisher's rules): a tainted one stays private once its site is converted to a
+// shared word, and a K1 value that was tainted is no reference. TTTT_GRAPH_FINGERPRINT_TAINTED=1 compares those too,
+// counted apart ("tainted equal / differ"). Not fingerprinted: identities (the value is what the key is), the other
+// memo kinds (fp_key() doesn't know their words: KEY_ALIAS_INSTANCE, KEY_UNION_NODE, KEY_BASE_SIGNATURE,
+// KEY_ITERATION_TYPES, KEY_REVERSE_MAPPED...), TK_FREE_PARAMS, TK_SIMPLIFIED's frame (the KEY_SIMPLIFIED entry is),
+// expression memos and every scratch kind (never published). A key whose K1 values disagree among themselves is
 // ambiguous and skipped; one K1 never computed is counted as unrecorded.
 // TTTT_GRAPH_FINGERPRINT=1: abort with a backtrace at the first difference; =count: count them all, print up to 5 per
 // kind with their backtraces; =print adds the types printed (perturbs: printing resolves);
@@ -72,9 +79,11 @@ enum { K1_FRAMES = 24 };
 // TTTT_GRAPH_FINGERPRINT_ONLY=substring: only differences found while checking a file whose path has it are reported
 // (the others counted as filtered): FP_MODE=1 then aborts at the first one there
 static char const* only_file;
+static bool compare_tainted; // TTTT_GRAPH_FINGERPRINT_TAINTED=1
 
 typedef struct FpStats {
     _Atomic u64 recorded, ambiguous, checked, matched, unrecorded, skipped, differ, stale, filtered, unfingerprinted;
+    _Atomic u64 tainted, k1_tainted, tainted_equal, tainted_differ; // (TTTT_GRAPH_FINGERPRINT_TAINTED: the last two)
 } FpStats;
 static FpStats stats[TK_COUNT];
 
@@ -83,7 +92,12 @@ static char const* kind_label(unsigned kind, char* buf, size_t size) {
         "members", "declared raw members", "property type", "signature return", "type parameter constraint",
         "symbol declared type", "inferred return type", "base constraint", "simplified", "variances", "free params",
     };
+    static char const* const later[] = {
+        "conditional branch", "mapped template", "type parameter default", "deferred reference args", "implied check",
+        "signature resolution", "class base variable", "equivalent base", "reduced intersection", "relation",
+    };
     if (kind >= TK_MEMBERS && kind < TK_MEMBERS + c_arraylen(names)) return names[kind - TK_MEMBERS];
+    if (kind >= TK_COND_BRANCH && kind < TK_COND_BRANCH + c_arraylen(later)) return later[kind - TK_COND_BRANCH];
     if (kind >= TK_LAZY_DECL && kind < TK_LAZY_EXPR) snprintf(buf, size, "declaration memo (tag %u)", kind - TK_LAZY_DECL);
     else snprintf(buf, size, "%s", graph_kind_name(kind));
     return buf;
@@ -99,11 +113,36 @@ void graph_fp_start(bool record) {
     trace_kind = t && strcmp(t, "1") ? atoi(t) : -1;
     keep_stacks = getenv("TTTT_GRAPH_FINGERPRINT_STACKS") != nullptr;
     only_file = getenv("TTTT_GRAPH_FINGERPRINT_ONLY");
+    compare_tainted = getenv("TTTT_GRAPH_FINGERPRINT_TAINTED") != nullptr;
     mode = record ? FP_RECORD : FP_CHECK;
 }
 
 bool graph_fp_on(void) {
     return mode != FP_OFF;
+}
+
+// What signature_resolve_slow() fills in (SigResolved): the type parameters, parameters, this type, target and mapper
+static u64 fp_resolved(SigResolved const* r) {
+    u64 h = M(47, r->param_count | (u64)r->min_args << 32);
+    h = fp_list(h, r->type_params);
+    for (u32 i = 0; i < r->param_count; i++) {
+        h = M(h, fp_atom(r->params[i].name));
+        h = M(h, fp_ty(r->params[i].type));
+        h = M(h, r->params[i].optional | r->params[i].rest << 1);
+    }
+    h = M(h, fp_ty(r->this_type));
+    h = M(h, r->target ? fp_signature(r->target, 0) : 59);
+    return M(h, fp_mapper(r->mapper));
+}
+
+// A MappedInfo by its parts (an instantiated one by what it is instantiated from)
+static u64 fp_mapped_info(MappedInfo const* mapped, u32 depth) {
+    u64 h = M(61, fp_ty(mapped->type_param));
+    h = M(h, fp_ty(mapped->constraint));
+    h = M(h, fp_ty(mapped->name_type));
+    h = M(h, (u64)(uintptr_t)mapped->template_node);
+    if (mapped->template_from && depth < 32) h = M(h, fp_mapped_info(mapped->template_from, depth + 1));
+    return M(h, fp_mapper(mapped->template_mapper));
 }
 
 // A result's fingerprint by its kind (the key is the caller's)
@@ -125,6 +164,13 @@ static u64 value_of(unsigned kind, void const* result) {
             }
             return fp_bytes(masked, len);
         }
+        case TK_DEFERRED_ARGS:
+            return fp_list(53, ((TyDeferredRef const*)result)->args);
+        case TK_SIG_RESOLVED:
+            return fp_resolved(result);
+        case TK_REDUCED:
+        case TK_RELATION:
+            return (u64)(uintptr_t)result << 2;
         default:
             return fp_ty(result);
     }
@@ -185,14 +231,16 @@ static void describe(Checker* c, unsigned kind, void const* subject, void const*
     }
 }
 
-static void note(unsigned kind, u64 key, u64 value, void const* subject, void const* result) {
+// (A recorded value's low bit: K1's computation was tainted)
+static void note(unsigned kind, u64 key, u64 value, void const* subject, void const* result, bool tainted) {
+    value &= ~(u64)1;
     u64 slot = fp_mix(key, kind) | 1;
     FpStats* s = &stats[kind < TK_COUNT ? kind : TK_COUNT - 1];
     if (mode == FP_RECORD) {
         bool inserted;
         u64* known = map_find(&recorded, slot, true, true, &inserted);
         if (inserted) {
-            *known = value, s->recorded++;
+            *known = value | tainted, s->recorded++;
             if (keep_traces && (trace_kind < 0 || (int)kind == trace_kind)) {
                 cstr fields = cstr_init();
                 value_fresh(kind, result, &fields);
@@ -206,14 +254,26 @@ static void note(unsigned kind, u64 key, u64 value, void const* subject, void co
                 *map_find(&stacks, slot, true, true, nullptr) = (u64)(uintptr_t)frames;
             }
         }
-        else if (*known != value && !map_find(&ambiguous, slot, false, false, nullptr)) {
+        else if ((*known & ~(u64)1) != value && !map_find(&ambiguous, slot, false, false, nullptr)) {
             map_find(&ambiguous, slot, true, false, nullptr);
             s->ambiguous++;
         }
         return;
     }
+    if (tainted && !compare_tainted) {
+        atomic_fetch_add_explicit(&s->tainted, 1, memory_order_relaxed);
+        return;
+    }
     atomic_fetch_add_explicit(&s->checked, 1, memory_order_relaxed);
-    u64* known = map_find(&recorded, slot, false, true, nullptr);
+    u64* known_slot = map_find(&recorded, slot, false, true, nullptr);
+    u64 known_value = known_slot ? *known_slot & ~(u64)1 : 0;
+    u64* known = known_slot ? &known_value : nullptr;
+    bool k1_tainted = known_slot && (*known_slot & 1);
+    if (k1_tainted && !compare_tainted) {
+        atomic_fetch_add_explicit(&s->k1_tainted, 1, memory_order_relaxed);
+        return;
+    }
+    tainted = tainted || k1_tainted;
     if (!known) {
         atomic_fetch_add_explicit(&s->unrecorded, 1, memory_order_relaxed);
         return;
@@ -223,11 +283,11 @@ static void note(unsigned kind, u64 key, u64 value, void const* subject, void co
         return;
     }
     if (*known == value) {
-        atomic_fetch_add_explicit(&s->matched, 1, memory_order_relaxed);
+        atomic_fetch_add_explicit(tainted ? &s->tainted_equal : &s->matched, 1, memory_order_relaxed);
         return;
     }
     // (Fingerprinted again from scratch: if that is K1's, the memo of type fingerprints was stale, not the result)
-    if (value_fresh(kind, result, nullptr) == *known) {
+    if ((value_fresh(kind, result, nullptr) & ~(u64)1) == *known) {
         atomic_fetch_add_explicit(&s->stale, 1, memory_order_relaxed);
         return;
     }
@@ -236,13 +296,13 @@ static void note(unsigned kind, u64 key, u64 value, void const* subject, void co
         atomic_fetch_add_explicit(&s->filtered, 1, memory_order_relaxed);
         return;
     }
-    u64 n = atomic_fetch_add_explicit(&s->differ, 1, memory_order_relaxed);
+    u64 n = atomic_fetch_add_explicit(tainted ? &s->tainted_differ : &s->differ, 1, memory_order_relaxed);
     if (on_difference && n >= 5) return;
     static pthread_mutex_t print_lock = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_lock(&print_lock);
     Checker* c = current_checker;
     char buf[48];
-    eprintln("fingerprint: differs from K1: ", kind_label(kind, buf, sizeof buf), " [", kind, "] key ", key, " K1 ", *known, " now ", value,
+    eprintln("fingerprint: differs from K1: ", kind_label(kind, buf, sizeof buf), " [", kind, "]", tainted ? " (tainted)" : "", " key ", key, " K1 ", *known, " now ", value,
         " (worker ", c ? (u32)c->graph_worker : 0u, ", checking ",
         c && c->checking_file ? cstr_str(&c->checking_file->canonical_path) : "(no file)", ")");
     describe(c, kind, subject, result);
@@ -271,7 +331,7 @@ static void note(unsigned kind, u64 key, u64 value, void const* subject, void co
     pthread_mutex_unlock(&print_lock);
 }
 
-void graph_fp_result(unsigned kind, void const* subject, void const* result) {
+void graph_fp_result(unsigned kind, void const* subject, void const* result, bool tainted) {
     if (__builtin_expect(mode == FP_OFF, 1)) return;
     Checker* c = current_checker;
     if (!c || kind >= TK_COUNT) return;
@@ -318,6 +378,44 @@ void graph_fp_result(unsigned kind, void const* subject, void const* result) {
             key = (u64)(uintptr_t)subject;
             value = fp_ty(result);
             break;
+        case TK_COND_BRANCH: {
+            TyCondBranch const* branch = subject;
+            key = fp_mix(fp_mix((u64)(uintptr_t)branch->node, fp_ty(branch->source)), fp_mapper(branch->mapper));
+            value = fp_ty(result);
+            break;
+        }
+        case TK_MAPPED_TEMPLATE:
+            key = fp_mapped_info(subject, 0);
+            value = fp_ty(result);
+            break;
+        case TK_PARAM_DEFAULT:
+        case TK_EQUIVALENT_BASE:
+            key = fp_ty(subject);
+            value = fp_ty(result);
+            break;
+        case TK_DEFERRED_ARGS: {
+            TyDeferredRef const* deferred = subject;
+            key = fp_mix((u64)(uintptr_t)deferred->node, fp_mapper(deferred->mapper));
+            value = value_of(kind, result);
+            break;
+        }
+        case TK_IMPLIED_CHECK:
+            // (lower.c's ImpliedConstraint, its check node first)
+            key = (u64)(uintptr_t)*(void const* const*)subject;
+            value = fp_ty(result);
+            break;
+        case TK_SIG_RESOLVED:
+            key = fp_signature(subject, 0);
+            value = value_of(kind, result);
+            break;
+        case TK_BASE_VARIABLE:
+            key = (u64)(uintptr_t)subject;
+            value = fp_ty(result);
+            break;
+        case TK_REDUCED:
+            key = fp_ty(subject);
+            value = value_of(kind, result);
+            break;
         default:
             if (kind >= TK_LAZY_DECL && kind < TK_LAZY_EXPR) {
                 key = (u64)(uintptr_t)subject;
@@ -329,14 +427,14 @@ void graph_fp_result(unsigned kind, void const* subject, void const* result) {
         atomic_fetch_add_explicit(&stats[kind].unfingerprinted, 1, memory_order_relaxed);
         return;
     }
-    note(kind, key, value, subject, result);
+    note(kind, key, value, subject, result, tainted);
 }
 
 // A memo kind's intern entry (its block: the value, then the key's words) with its value
 static void memo_entry(Checker* c, u32 kind, void const** block, u64 const* words, u32 count) {
     u64 key = fp_key(c, kind, words, count);
     if (!key) return;
-    note(kind, key, fp_value(kind, block[0]), block, block[0]);
+    note(kind, key, fp_value(kind, block[0]), block, block[0], false);
 }
 
 void graph_fp_memo(u32 kind, void const** block, u64 const* words, u32 count) {
@@ -365,17 +463,35 @@ void graph_fp_record_tables(Checker* c) {
     record_table(c, &c->links);
 }
 
+// A relation result shared: (relation, source, target, the intersection bits) -> value. K1 makes the same calls
+// (relation_publish() runs without a graph too)
+void graph_fp_relation(u32 relation, u64 key, unsigned value) {
+    if (mode == FP_OFF) return;
+    Checker* c = current_checker;
+    if (!c) return;
+    Ty const* source = key_type(c, (key >> 32) & 0x1fffffffu);
+    Ty const* target = key_type(c, key & 0xffffffffu);
+    if (!source || !target) {
+        atomic_fetch_add_explicit(&stats[TK_RELATION].unfingerprinted, 1, memory_order_relaxed);
+        return;
+    }
+    u64 fp = fp_mix(fp_mix(fp_mix(67, relation), fp_ty(source)), fp_ty(target));
+    note(TK_RELATION, fp_mix(fp, key >> 61), value_of(TK_RELATION, (void const*)(uintptr_t)value), source, nullptr, false);
+}
+
 void graph_fp_print(void) {
     if (mode == FP_OFF) return;
     u64 differ = 0;
     for (u32 kind = 0; kind < TK_COUNT; kind++) {
         FpStats* s = &stats[kind];
-        if (!s->recorded && !s->checked && !s->unfingerprinted) continue;
+        if (!s->recorded && !s->checked && !s->unfingerprinted && !s->tainted) continue;
         char buf[48];
         eprint("fingerprint: ", kind_label(kind, buf, sizeof buf), ": recorded ", (u64)s->recorded, " (ambiguous ",
             (u64)s->ambiguous, "), checked ", (u64)s->checked, ": matched ", (u64)s->matched);
         eprintln(", differ ", (u64)s->differ, " (and ", (u64)s->stale, " a stale memo's, ", (u64)s->filtered, " filtered), unrecorded ", (u64)s->unrecorded,
-            ", ambiguous ", (u64)s->skipped, "; unfingerprinted ", (u64)s->unfingerprinted);
+            ", ambiguous ", (u64)s->skipped, "; unfingerprinted ", (u64)s->unfingerprinted, "; tainted ", (u64)s->tainted,
+            ", K1's tainted ", (u64)s->k1_tainted);
+        if (compare_tainted) eprintln("fingerprint:   tainted: equal ", (u64)s->tainted_equal, ", differ ", (u64)s->tainted_differ);
         differ += s->differ;
     }
     eprintln("fingerprint: ", differ, " differences from K1");

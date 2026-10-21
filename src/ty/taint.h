@@ -44,6 +44,17 @@ enum {
     TK_FREE_PARAMS,         // ty_function_free_params() (KEY_FUNCTION_FREE_PARAMS, a node_links kind)
     TK_LAZY_DECL = 176,     // + LazyType tag: a declaration's LazyType (not expressions')
     TK_LAZY_EXPR = 184,     // an expression's LazyType
+    // The Ty-resident results without one of the above (the shared graph's fingerprint oracle, graph_debug.c)
+    TK_COND_BRANCH = 185,   // ty_cond_branch_type(): a conditional's branch, lowered and instantiated
+    TK_MAPPED_TEMPLATE,     // ty_mapped_template()
+    TK_PARAM_DEFAULT,       // ty_param_default(): a type parameter's default (TyParamState.fallback)
+    TK_DEFERRED_ARGS,       // ty_reference_args(): a deferred reference's arguments
+    TK_IMPLIED_CHECK,       // an implied constraint's check type (lower.c, implied->check)
+    TK_SIG_RESOLVED,        // signature_resolve_slow(): the SigResolved record
+    TK_BASE_VARIABLE,       // ty_class_base_type_variable() (SymbolLinks.base_variable)
+    TK_EQUIVALENT_BASE,     // ty_non_augmenting_base(): a shared word (overlay.h)
+    TK_REDUCED,             // ty_reduced_slow(): whether an intersection reduces to never
+    TK_RELATION,            // a relation result shared between workers (relate.c relation_publish())
     TK_COUNT = 256,
 };
 
@@ -91,21 +102,22 @@ void taint_flow_change(void); // flow_uncached is about to change: what is done 
 
 // --shared-graph's fingerprint-at-publish oracle (plan 86 4f's gates, graph_debug.c): no taint events; every result
 // TAINT_END() names (members, property types, signature returns, constraints, declared types, inferred returns,
-// variances, base constraints) is fingerprinted by its kind (fingerprint.inc), recorded by a private K1 check made first
-// in the same process, then checked against the record when a worker computes and publishes it
+// variances, base constraints, the TK_* kinds from TK_COND_BRANCH on) and every SW_FP() (overlay.h) is fingerprinted by
+// its kind (fingerprint.inc), recorded by a private K1 check made first in the same process, then checked against the
+// record when a worker computes it, if it was clean (published; tainted ones only with TTTT_GRAPH_FINGERPRINT_TAINTED=1)
 #ifdef TTTT_GRAPH_TAINT
 #error "-DTTTT_GRAPH_FINGERPRINT is a build of its own (not with -DTTTT_GRAPH_TAINT)"
 #endif
-typedef struct TaintFrame { char unused; } TaintFrame;
-void graph_fp_result(unsigned kind, void const* subject, void const* result);
-// (The 4f counter stays: the shared words publish only clean values, and their sites fingerprint only those, SW_CLEAN())
+// (The always-on counter of the default build, see below: a frame compares it, so a result knows whether it was clean)
 extern thread_local uint64_t graph_taint_now;
 [[gnu::cold, gnu::noinline]] void graph_taint_bump(void);
+typedef struct TaintFrame { uint64_t taint; } TaintFrame;
+void graph_fp_result(unsigned kind, void const* subject, void const* result, bool tainted);
 #define TAINT_EVENT(reason) graph_taint_bump()
 #define TAINT_FLOW() ((void)0)
 #define TAINT_IF(reason, condition) ((reason) == TAINT_PEEK ? (condition) : (condition) ? (graph_taint_bump(), true) : false)
-#define TAINT_BEGIN(name) ((void)0)
-#define TAINT_END(name, kind, object, subject, result) graph_fp_result(kind, subject, result)
+#define TAINT_BEGIN(name) TaintFrame name = { graph_taint_now }
+#define TAINT_END(name, kind, object, subject, result) graph_fp_result(kind, subject, result, graph_taint_now != (name).taint)
 #define TAINT_READ(kind, object) ((void)0)
 
 #elif defined(TTTT_GRAPH_TAINT)

@@ -49,6 +49,7 @@ bool graph_fp_on(void);
 void graph_fp_memo(u32 kind, void const** block, u64 const* words, u32 count); // a memo entry published
 void graph_fp_record_tables(Checker* checker); // the K1 checker's memo entries, at its end
 void graph_fp_print(void);
+void graph_fp_relation(u32 relation, u64 key, unsigned value); // a relation result shared (relation_publish())
 #endif
 
 // Made by program_typecheck() before its other checkers, from its first one (current, holding the state)
