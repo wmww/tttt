@@ -3297,6 +3297,7 @@ static bool resolves_in_parallel(SourceFile const* source) {
 // The TypeScript files' walks, shared by the resolve threads
 typedef struct ResolveLane {
     Program* program;
+    void (*run)(SourceFile* source, ErrorCtx* errs); // A file's job: resolve_file(), declare_file()
     SourceFile** files; // Biggest first
     u32* shard_of; // Index into shards, by files' index
     ResolveShard* shards;
@@ -3316,7 +3317,7 @@ static void resolve_lane_run(ResolveLane* me, u32 thread) {
             .discarded = error_ctx_scratch(my program->errs),
         };
         resolve_shard = shard;
-        resolve_file(my files[i], &shard->errs);
+        my run(my files[i], &shard->errs);
         resolve_shard = nullptr;
     }
 }
@@ -3360,10 +3361,148 @@ static void resolve_step_done(char const* name, double* last) {
     *last = now;
 }
 
+// Runs the lane on `threads` threads, the calling one among them (with Binder.arena), the program's error context frozen
+// meanwhile (every file reports into its shard's)
+static void resolve_lane_threads(Program* me, ResolveLane* lane, u32 threads) {
+    my errs->frozen = true;
+    if (threads <= 1) {
+        resolve_lane_run(lane, 0);
+    } else {
+        // Workers get the main thread's stack size: the walk recurses
+        pthread_attr_t attr;
+        pthread_attr_init(&attr);
+        pthread_attr_setstacksize(&attr, worker_stack_size());
+        pthread_t* workers = c_new_n(pthread_t, threads - 1);
+        ResolveThread* args = c_new_n(ResolveThread, threads - 1);
+        for (u32 t = 1; t < threads; t++) binder_thread_arena(my binder, t);
+        for (u32 t = 0; t < threads - 1; t++) {
+            args[t] = (ResolveThread){ lane, t + 1 };
+            panic_if(pthread_create(&workers[t], &attr, resolve_lane_thread, &args[t]), "couldn't start a resolve thread");
+        }
+        resolve_lane_run(lane, 0);
+        for (u32 t = 0; t < threads - 1; t++) pthread_join(workers[t], nullptr);
+        free(workers);
+        free(args);
+        pthread_attr_destroy(&attr);
+    }
+    my errs->frozen = false;
+}
+
+// A file's declarations (program_resolve_names()'s declare step)
+static void declare_file(SourceFile* source, ErrorCtx* errs) {
+    ignore errs; // (binder_errs(): the shard's on a declare thread)
+    block_add_names(&source->ast, source->scope);
+    scope_add_commonjs_module(source->scope);
+    scope_check_export_merges(source->scope, block_span(&source->ast));
+    if (source->is_module) scope_check_duplicate_exports(source->scope);
+}
+
+// An assignment scope_add_expandos() takes for an expando's (`f.x = v`, a chain): its host is found by name, maybe in the
+// globals, and gets the member
+static bool is_expando_candidate(Expr const* e) {
+    return e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(e);
+}
+
+// Whether the block (a file's, a namespace's) declares something outside its file: `declare global`, `declare module
+// "m"` (an ambient module or an augmentation), `export as namespace` (a UMD global), an expando assignment (whose host
+// may be anyone's). A labeled statement says yes
+static bool block_declares_outside(Block const* block) {
+    for_each (i, vec_statement, &block->statements) {
+        switch (i->tag) {
+            case STATEMENT_EXPR:
+                if (is_expando_candidate(&i->expr)) return true;
+                break;
+            case STATEMENT_DECL_VARIABLE:
+                for_each (j, vec_initialized_binding, &i->decl.variable.initializers) {
+                    Expr const* value = initialized_binding_value(j);
+                    if (value && is_expando_candidate(value)) return true;
+                }
+                break;
+            case STATEMENT_DECL_NAMESPACE: {
+                NamespaceDecl const* namespace = i->decl.namespace;
+                if (namespace->is_global || namespace->is_invalid_global || namespace->is_ambient_module ||
+                    namespace->is_augmentation || block_declares_outside(&namespace->contents)
+                ) {
+                    return true;
+                }
+            }   break;
+            case STATEMENT_IMPORT_EXPORT:
+                if (i->import_export->main.tag == PORT_EXPORT_AS_NAMESPACE) return true;
+                break;
+            case STATEMENT_LABELED:
+                return true;
+            default:
+                break;
+        }
+    }
+    return false;
+}
+
+// Whether a file's declare step only writes its own tables (plan 86 stage 3): a TypeScript module that declares nothing
+// outside itself. Its declarations go nowhere another file's do and it reads nothing another file declares, so it
+// declares on a thread, into a ResolveShard of its own (the binder's guards say if one reaches a shared table)
+static bool declares_in_isolation(SourceFile const* source) {
+    return source->is_module && !source->is_js && !source->is_json && !source->is_stdlib &&
+        !block_declares_outside(&source->ast);
+}
+
+// The declare step of every file: the files that declare in isolation on --threads threads (biggest first) into a
+// shard each, then in program order each one's shard merged and every other file declared. The binder sees the same
+// symbols, reports and pending merges in the same order at any thread count
+static void program_declare_files(Program* me) {
+    u32 file_count = (u32)vec_source_file_ptr_size(&my source_files_ordered);
+    u32 threads = my threads ? my threads : 1;
+    bool* isolated = c_new_n(bool, file_count ? file_count : 1);
+    ResolveOrder* order = c_new_n(ResolveOrder, file_count ? file_count : 1);
+    u32 count = 0;
+    for (u32 i = 0; i < file_count; i++) {
+        SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, i);
+        isolated[i] = threads > 1 && declares_in_isolation(source);
+        if (isolated[i]) order[count++] = (ResolveOrder){ cstr_size(&source->contents), i };
+    }
+    // (Few files aren't worth a thread each)
+    if (threads > count / 8 && !debug_env.parallel_resolve) threads = count / 8 ? count / 8 : 1;
+    if (debug_env.resolve_times) eprintln("resolve: ", count, " of ", file_count, " files declare in isolation");
+    if (threads <= 1) {
+        for (u32 i = 0; i < file_count; i++) declare_file(*vec_source_file_ptr_at(&my source_files_ordered, i), my errs);
+        free(isolated);
+        free(order);
+        return;
+    }
+    qsort(order, count, sizeof(ResolveOrder), resolve_order_cmp);
+    ResolveShard* shards = c_new_n(ResolveShard, file_count ? file_count : 1);
+    ResolveLane lane = {
+        .program = me, .run = declare_file, .shards = shards, .count = count,
+        .files = c_new_n(SourceFile*, count ? count : 1), .shard_of = c_new_n(u32, count ? count : 1),
+    };
+    for (u32 i = 0; i < count; i++) {
+        lane.files[i] = *vec_source_file_ptr_at(&my source_files_ordered, order[i].index);
+        lane.shard_of[i] = order[i].index;
+    }
+    free(order);
+    atomic_init(&lane.next, 0);
+    double last = 0;
+    resolve_step_done("", &last);
+    my binder->isolated_declares = true;
+    resolve_lane_threads(me, &lane, threads);
+    my binder->isolated_declares = false;
+    resolve_step_done("declare in isolation", &last);
+    for (u32 i = 0; i < file_count; i++) {
+        SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, i);
+        if (isolated[i]) resolve_shard_merge(&shards[i]);
+        else declare_file(source, my errs);
+    }
+    resolve_step_done("declare shard merge and the other files", &last);
+    free(lane.files);
+    free(lane.shard_of);
+    free(shards);
+    free(isolated);
+}
+
 static void program_resolve_walk(Program* me) {
     isize file_count = vec_source_file_ptr_size(&my source_files_ordered);
     ResolveShard* shards = c_new_n(ResolveShard, file_count ? file_count : 1);
-    ResolveLane lane = { .program = me, .shards = shards };
+    ResolveLane lane = { .program = me, .run = resolve_file, .shards = shards };
     double last = 0;
     resolve_step_done("", &last);
     binder_mark_serial_resolves(my binder);
@@ -3391,28 +3530,7 @@ static void program_resolve_walk(Program* me) {
     // (Few files aren't worth a thread each)
     if (threads > lane.count / 8 && !debug_env.parallel_resolve) threads = lane.count / 8 ? lane.count / 8 : 1;
     // Nothing reports into the program's context meanwhile, every file into its own
-    my errs->frozen = true;
-    if (threads <= 1) {
-        resolve_lane_run(&lane, 0);
-    } else {
-        // The main thread works too, with Binder.arena. Workers get the main thread's stack size: the walk recurses
-        pthread_attr_t attr;
-        pthread_attr_init(&attr);
-        pthread_attr_setstacksize(&attr, worker_stack_size());
-        pthread_t* workers = c_new_n(pthread_t, threads - 1);
-        ResolveThread* args = c_new_n(ResolveThread, threads - 1);
-        for (u32 t = 1; t < threads; t++) binder_thread_arena(my binder, t);
-        for (u32 t = 0; t < threads - 1; t++) {
-            args[t] = (ResolveThread){ &lane, t + 1 };
-            panic_if(pthread_create(&workers[t], &attr, resolve_lane_thread, &args[t]), "couldn't start a resolve thread");
-        }
-        resolve_lane_run(&lane, 0);
-        for (u32 t = 0; t < threads - 1; t++) pthread_join(workers[t], nullptr);
-        free(workers);
-        free(args);
-        pthread_attr_destroy(&attr);
-    }
-    my errs->frozen = false;
+    resolve_lane_threads(me, &lane, threads);
     resolve_step_done("parallel walk", &last);
     for (isize i = 0; i < file_count; i++) {
         SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, i);
@@ -3515,13 +3633,8 @@ void program_resolve_names(Program* me) {
             while (ref->is_declaration && ref->file && ref->file->package_redirect_target) ref->file = ref->file->package_redirect_target;
         }
     }
-    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-        SourceFile* source = *i;
-        block_add_names(&source->ast, source->scope);
-        scope_add_commonjs_module(source->scope);
-        scope_check_export_merges(source->scope, block_span(&source->ast));
-        if (source->is_module) scope_check_duplicate_exports(source->scope);
-    }
+    resolve_step_done("file scopes", &last);
+    program_declare_files(me);
     binder_declare_global_augmentations(my binder);
     program_check_builtin_global_names(me);
     binder_check_ambient_module_exports(my binder, my errs);

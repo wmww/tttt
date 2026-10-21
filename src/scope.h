@@ -681,6 +681,9 @@ typedef struct Binder {
     Symbol* require_symbol;
     // Set while the program is typechecked: nothing makes symbols anymore (several checkers share them)
     bool frozen;
+    // Set while files that declare in isolation do so on threads (program_declare_files()): a shard that reaches a
+    // table or list other files declare into log_error()s (isolated_declare_guard())
+    bool isolated_declares;
     // Values not found in class members, reported once types are known (scope_report_missing_prefixes())
     struct PendingNotFound* pending_not_found; // malloc'd
     u32 pending_not_found_count;

@@ -152,6 +152,13 @@ static ResolveShard* binder_shard(Binder const* me) {
     return resolve_shard && resolve_shard->binder == me ? resolve_shard : nullptr;
 }
 
+// A file declaring in isolation (Binder.isolated_declares) reached something other files declare into
+static void isolated_declare_guard(Binder const* me, char const* what) {
+    if (my isolated_declares && binder_shard(me)) {
+        log_error("A file declaring in isolation reached ", what, ": declares_in_isolation() should have said no");
+    }
+}
+
 static DeferredSignatureName* deferred_signature_name(DeferredBody* body, Binder* binder, csview name) {
     for (u32 i = 0; i < body->signature_name_count; i++) {
         if (csview_equals_sv(body->signature_names[i].name, name)) return &body->signature_names[i];
@@ -372,6 +379,7 @@ void binder_add_module_declaration(Symbol* module, NamespaceDecl const* decl) {
 }
 
 static void add_pattern_module(Binder* me, Symbol* module) {
+    isolated_declare_guard(me, "the pattern modules");
     if (my pattern_module_count == my pattern_module_cap) {
         my pattern_module_cap = my pattern_module_cap ? my pattern_module_cap * 2 : 4;
         my pattern_modules = realloc(my pattern_modules, sizeof(Symbol*) * my pattern_module_cap);
@@ -382,6 +390,7 @@ static void add_pattern_module(Binder* me, Symbol* module) {
 static bool attributes_identical(TypeNode const* a, TypeNode const* b);
 
 Symbol* binder_ambient_module(Binder* me, csview name, Span name_span, TypeNode const* attributes) {
+    isolated_declare_guard(me, "the ambient modules");
     bool pattern = memchr(name.buf, '*', (size_t)name.size);
     // `with {}` is the attributes of a pattern without any (tsgo merges patterns of identical attribute types)
     if (attributes && !vec_interface_member_size(&attributes->interface.members)) attributes = nullptr;
@@ -1412,6 +1421,7 @@ static Symbol* declare_symbol_split(
         *merged = true;
         return existing;
     }
+    if (table == &binder->globals) isolated_declare_guard(binder, "the globals");
     Symbol* ret = binder_new_symbol(binder, name, includes);
     symbol_table_insert(table, binder_arena(binder), name, hash, ret);
     return ret;
@@ -4068,6 +4078,7 @@ static PortItem const* type_only_declaration_at(Symbol const* me, int depth, Sym
 // Module augmentations (tsc's mergeModuleAugmentation)
 
 void binder_defer_global_augmentation(Binder* me, NamespaceDecl* decl) {
+    isolated_declare_guard(me, "the global augmentations");
     if (my global_augmentation_count == my global_augmentation_cap) {
         my global_augmentation_cap = my global_augmentation_cap ? my global_augmentation_cap * 2 : 4;
         my global_augmentations = realloc(my global_augmentations, sizeof(NamespaceDecl*) * my global_augmentation_cap);
@@ -4080,6 +4091,7 @@ void binder_declare_global_augmentations(Binder* me) {
 }
 
 void binder_add_augmentation(Binder* me, NamespaceDecl* decl) {
+    isolated_declare_guard(me, "the module augmentations");
     if (my augmentation_count == my augmentation_cap) {
         my augmentation_cap = my augmentation_cap ? my augmentation_cap * 2 : 4;
         my augmentations = realloc(my augmentations, sizeof(NamespaceDecl*) * my augmentation_cap);
@@ -5279,6 +5291,8 @@ static ErrorCtx* shard_lasting_errs(ResolveShard* shard, ErrorCtx* errs) {
 }
 
 static DeferredEvent* defer_event(ResolveShard* shard, DeferredKind kind, Scope const* scope, ErrorCtx* errs) {
+    // (A report waits for the merge, whose program order is the serial declare's; a member declared elsewhere can't)
+    if (kind != DEFERRED_NOT_FOUND && kind != DEFERRED_MISSPELLED) isolated_declare_guard(shard->binder, "an assignment declaration");
     DeferredEvent* ret = list_push((void**)&shard->deferred, &shard->deferred_count, &shard->deferred_cap, sizeof(DeferredEvent));
     *ret = (DeferredEvent){ .kind = kind, .scope = (Scope*)scope, .errs = shard_lasting_errs(shard, errs) };
     return ret;
