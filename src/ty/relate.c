@@ -1384,8 +1384,15 @@ static MappedInfo const* mapped_info_of(Checker* me, Ty const* ty, bool* generic
 // homomorphic variable is the uninstantiated mapped type's (`CP<Parameters<T>>` with `CP<A> = { [K in keyof A]: X }` is
 // CP's declaration over Parameters<T>'s constraint); a modifiers type that is itself a generic mapped type contributes its
 // own apparent type (`Identity<UnboxArray<T>>`)
-static Ty const* apparent_type_of_mapped_at(Checker* me, Ty const* ty, u32 depth) {
+[[gnu::noinline]] static Ty const* apparent_type_of_generic_mapped(Checker* me, Ty const* ty, u32 depth);
+// (The test inline: most types aren't generic anonymous ones, and the rest's frame and stack protector check would be
+// every call's, 5M on vscode)
+static inline Ty const* apparent_type_of_mapped_at(Checker* me, Ty const* ty, u32 depth) {
     if (ty->kind != TY_ANONYMOUS || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || depth > 8) return ty;
+    return apparent_type_of_generic_mapped(me, ty, depth);
+}
+
+static Ty const* apparent_type_of_generic_mapped(Checker* me, Ty const* ty, u32 depth) {
     bool generic = false;
     MappedInfo const* mapped = mapped_info_of(me, ty, &generic);
     if (!mapped || !generic || !mapped->keyof_constraint || mapped->name_type || !mapped->modifiers_type) return ty;
@@ -4931,6 +4938,8 @@ static void publish_base_constraint(Checker* me, Ty const* ty, Ty const* constra
     ty_link_set_memo(me, KEY_BASE_CONSTRAINT, ty, circular ? &base_constraint_circular : constraint ? constraint : &base_constraint_none, start);
 }
 
+static Ty const* compute_resolved_base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack);
+
 static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack) {
     // (Nothing generic in it: itself, but for `Uppercase<string>`, which is a string, also inside a template literal,
     // and a substitution type (`NoInfer<X>` is X). tsc also replaces those in unions and intersections, which tttt
@@ -4945,6 +4954,11 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
         TAINT_READ(TK_BASE_CONSTRAINT, ty);
         return cached == &base_constraint_circular || cached == &base_constraint_none ? nullptr : cached;
     }
+    return compute_resolved_base_constraint(me, ty, stack);
+}
+
+// (resolved_base_constraint()'s miss: its stack frame out of the hits' way, 4.5M calls on vscode)
+[[gnu::noinline]] static Ty const* compute_resolved_base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack) {
     // Asked for again while computed: circular (tsc's pushTypeResolution failing), unless that was below the resolution
     // barrier, where it's computed again: a call's, or the outermost variance measurement's (tsc moves resolutionStart
     // for both; a variance restart is outermost again)
