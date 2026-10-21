@@ -371,8 +371,6 @@ Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
 - **TS2590 where an intersection is first normalized** (seed 41 normalizedIntersectionTooComplex ann-string-number):
   tttt also reports it at the call (36,14), tsgo only at the callback parameter. Which node is current when the
   too-complex intersection is first built; tttt may build it twice.
-- seed 41 moduleElementsInWrongContext delete-stmt: TS2305 for `baz` of a `declare module "ambient"` inside a block
-  appears in tsgo only once `export default v` has nothing to resolve; check order.
 - seed 41 noCircularitySelfReferentialGetter2 str-to-num: a getter's circular type prints `any` in tttt's message,
   `ZodOptional<ZodType>` in tsgo (circularity resolution order).
 - **Missing circularity errors** (seed 42): TS4109 "Type arguments for 'Array' circularly reference themselves" when a
@@ -436,3 +434,10 @@ is declared here" for `(string[] | number[]).splice`). Left, each looked at:
   no errors baseline for that file. Not a tttt bug.
 - Known: noCircularitySelfReferentialGetter3 (satisfies elaboration), conditionalContextualReturnSubstitutionCache
   (TS2208), complicatedIndexedAccess... (position, seed 2026102101).
+
+## Mutation seed 1022 (2026-10-21, cor2, -n 8000: 8 -> 6 / 4185 differ)
+Fixed: misplaced imports/exports' alias errors (TS2305/TS2307) reported when a spelling suggestion resolves them
+(SymbolRare.unreported_errs); lone surrogates and line-breaking characters escaped in template literal type text. Left,
+all known: arrayFrom return-void, recursiveClassBaseType return-void (TS2310), noCircularitySelfReferentialGetter4
+(satisfies elaboration), typeGuardsAsAssertions str-to-num (loop partial types), unicodeLineSeparatorInMultilineComment
+never-const (harness writes no errors baseline).
