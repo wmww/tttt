@@ -5173,6 +5173,106 @@ static void* materialize_ahead_thread(void* arg) {
     return nullptr;
 }
 
+// TTTT_GRAPH_RECHECK=1 (or =graph, =private; --shared-graph only, plan 86 4f's gates): after the workers join, every
+// checked file is checked again, in program order, by one fresh checker, and each file's diagnostics are compared with
+// what the workers reported for it (both sorted and deduplicated like the CLI's, printed `--pretty false`). `graph`
+// (the default) adopts the fresh checker into the finished graph, so it reads what the workers published: a file whose
+// errors differ was checked in a history the published graph doesn't give (the redo's lost errors, a poisoned relation
+// cache, plan 86 4e item 1). `private` gives it no graph: a K1 check in the same process, which every file must
+// match. On stderr: `recheck: N of M files differ`, then the first differing file in program order with both lists
+// (TTTT_GRAPH_RECHECK_ALL=1: every differing file). The output itself is the workers'. Debug only: it doubles the work
+static char const* recheck_file_name(SourceFile const* source) {
+    return cstr_str(&source->canonical_path);
+}
+
+static void recheck_texts(VecError* errors, cstr* texts, u32 slots) {
+    error_vec_sort_and_dedupe(errors, source_file_message_path);
+    for_each (e, vec_error, errors) {
+        SourceFile const* source = span_valid(e->span) ? span_source(e->span) : nullptr;
+        u32 at = source && source->id < slots - 1 ? source->id : slots - 1;
+        cstr line = cstr_init();
+        error_format_plain(&line, e, "\n", recheck_file_name);
+        cstr_append_s(&texts[at], line);
+        cstr_drop(&line);
+    }
+}
+
+static void graph_recheck(Program* me, ErrorCtx const* checker_errs, u32 count) {
+    char const* mode = getenv("TTTT_GRAPH_RECHECK");
+    bool private_ = !strcmp(mode, "private");
+    TyGraph* graph = my graph;
+    if (private_) my graph = nullptr;
+    Checker* fresh = checker_new(me);
+    my graph = graph;
+    ErrorCtx errs = { .phase = ERROR_PHASE_TYPECHECK, .parent = my errs };
+    fresh->errs = &errs;
+    checker_make_current(fresh);
+    ty_init_global_types(fresh);
+    u32 files = (u32)vec_source_file_ptr_size(&my check_files);
+    for (u32 at = 0; at < files; at++) {
+        SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
+        check_file_or_give_up(me, fresh, source, at, false);
+    }
+    for (u32 at = 0; at < files; at++) {
+        SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
+        if (!source->is_declaration && !source->unchecked) unused_report(source, fresh->errs);
+    }
+    checker_make_current(nullptr);
+    VecError first = vec_error_init(), again = vec_error_init();
+    u32 slots = 1;
+    for (u32 c = 0; c < count; c++) {
+        for_each (e, vec_error, &checker_errs[c].errors) {
+            vec_error_push(&first, error_clone(*e));
+            if (span_valid(e->span) && span_source(e->span)->id + 2 > slots) slots = span_source(e->span)->id + 2;
+        }
+    }
+    for_each (e, vec_error, &errs.errors) {
+        vec_error_push(&again, error_clone(*e));
+        if (span_valid(e->span) && span_source(e->span)->id + 2 > slots) slots = span_source(e->span)->id + 2;
+    }
+    cstr* first_texts = c_new_n(cstr, slots);
+    cstr* again_texts = c_new_n(cstr, slots);
+    for (u32 i = 0; i < slots; i++) first_texts[i] = cstr_init(), again_texts[i] = cstr_init();
+    recheck_texts(&first, first_texts, slots);
+    recheck_texts(&again, again_texts, slots);
+    bool all = getenv("TTTT_GRAPH_RECHECK_ALL") != nullptr;
+    u32 differ = 0, shown = 0;
+    // (Program order, then the diagnostics of files not checked and those without a file)
+    for (u32 at = 0; at <= files; at++) {
+        u32 slot = slots - 1;
+        if (at < files) {
+            u32 id = vec_source_file_ptr_at(&my check_files, at)[0]->id;
+            if (id >= slots - 1) continue;
+            slot = id;
+        }
+        if (cstr_equals_sv(&first_texts[slot], cstr_sv(&again_texts[slot]))) continue;
+        differ++;
+        if (shown++ && !all) continue;
+        eprintln("recheck: differs: ", at < files ? cstr_str(&vec_source_file_ptr_at(&my check_files, at)[0]->canonical_path) : "(other files)");
+        eprint("recheck: --- the workers' (", count, " checkers):\n", first_texts[slot]);
+        eprint("recheck: +++ the recheck's (", private_ ? "private" : "in the graph", "):\n", again_texts[slot]);
+    }
+    eprintln("recheck: ", differ, " of ", files, " files differ (", private_ ? "private" : "in the graph", ")");
+    for (u32 i = 0; i < slots; i++) cstr_drop(&first_texts[i]), cstr_drop(&again_texts[i]);
+    free(first_texts);
+    free(again_texts);
+    vec_error_drop(&first);
+    vec_error_drop(&again);
+    error_ctx_drop(&errs);
+    fresh->errs = my errs;
+    // (In the graph it may hold what others point to: kept to the end like a redo's retired checker)
+    if (private_) {
+        checker_drop(fresh);
+    } else {
+        if (my retired_count == my retired_cap) {
+            my retired_cap = my retired_cap ? my retired_cap * 2 : 8;
+            my retired = realloc(my retired, sizeof(Checker*) * my retired_cap);
+            panic_if(!my retired, "out of memory");
+        }
+        my retired[my retired_count++] = fresh;
+    }
+}
+
 void program_typecheck(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_NAMES_RESOLVED, PROGRAM_PHASE_TYPECHECKING);
     my errs->phase = ERROR_PHASE_TYPECHECK;
@@ -5316,6 +5416,7 @@ void program_typecheck(Program* me) {
         eprintln("stamps: ", decisions, " deep nesting decisions, ", disagreements, " the type ids would have made otherwise");
     }
     error_ctx_keep_first_once(checker_errs, count);
+    if (my graph && getenv("TTTT_GRAPH_RECHECK")) graph_recheck(me, checker_errs, count);
     for (u32 c = 0; c < count; c++) {
         error_ctx_merge(my errs, &checker_errs[c]);
         error_ctx_drop(&checker_errs[c]);

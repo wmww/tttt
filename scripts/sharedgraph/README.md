@@ -17,6 +17,7 @@ ones in `paths.sh` (drizzle, zod, excalidraw, effect, nest, vscode; `ALL` is eve
 | `refs.sh [BIN] [corpus...]` | the K1 references `ref.X` |
 | `rep.sh BIN N corpus...` | N runs at K12 T12 against `ref.X`: same / diff / crash; `diffout.X.I`, `crashlog.X.I` kept (`EXTRA=` adds arguments) |
 | `rep3.sh BIN N "VAR=VAL ..." corpus...` | rep.sh with an environment and `TTTT_GRAPH_STATS=1` kept per run (`stats.TAG.X.I`): the 20-run tables |
+| (rep3.sh with `TTTT_GRAPH_RECHECK=1`) | the recheck gate: after the workers join, every file checked again by one fresh checker in the finished graph (`=private`: without the graph, a K1 check in the same process) and each file's errors compared with the workers' (program.c graph_recheck()); stderr says `recheck: N of M files differ` and shows the first differing file with both lists (`TTTT_GRAPH_RECHECK_ALL=1`: every one); rep3.sh counts the runs where a file differs and names its first file. Doubles the check's work. Found plan 86 4e item 1's redo and relation-cache bugs |
 | `summ.sh TAG` | tabulates rep3.sh's stats files: same/diff and the broken wait cycles (fallbacks) per corpus |
 | `quick.sh BIN N corpus...` | rep.sh with the last run's graph totals printed |
 | `t3loop.sh BIN N [VAR=VAL...]` | the stress loop's measuring side: drizzle runs (K, T from the environment, default 12), verdict, redos, redone files, limit hits, first differing codes. Run an effect K12 loop beside it for load (`while :; do release/tttt --shared-graph --threads 12 --checkers 12 --noEmit -p ...effect...; done`) |
