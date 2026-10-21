@@ -432,7 +432,10 @@ bool ty_function_type_mentions(Checker* me, Ty const* ty, TyList* out) {
     signature_resolve(me, sig);
     if (sig_target(me, sig) || sig->function != ty->anonymous.function) return false;
     FunctionImpl const* function = sig->function;
-    if (TAINT_IF(TAINT_PEEK, sig->ret_state != LAZY_STATE_DONE && !function->ret_explicit && function->has_body && !ty_function_return_known(me, function))) return false;
+    // (The return type not inferred yet: unknown. A peek that selects between results, so an event (rule 5); inferring
+    // it here instead changed the default path's output: a suite test, excalidraw)
+    if (TAINT_IF(TAINT_IN_FLIGHT_OTHER, !sig_return_known(me, sig) && !function->ret_explicit && function->has_body &&
+        !ty_function_return_known(me, function))) return false;
     return compute_mentions(me, ty, key, out);
 }
 

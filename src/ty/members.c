@@ -5217,8 +5217,7 @@ static Members const* resolve_intersection_members(Checker* me, Ty const* ty) {
                     signature_resolve(me, sig);
                     *clone = *sig;
                     signature_copied(me, clone, sig);
-                    clone->ret = ty_intersection(me, mixed, mixed_len, nullptr, (TyList){0});
-                    clone->ret_state = LAZY_STATE_DONE;
+                    sig_ret_init(clone, ty_intersection(me, mixed, mixed_len, nullptr, (TyList){0}));
                     free(mixed);
                     sig = clone;
                 }
@@ -5754,7 +5753,23 @@ SigResolved const* sig_res_slow(Checker* me, Signature const* sig) {
     return &sig_resolved_none;
 }
 
+// A word of a copy (`*to = *from` of its holder): its value as this worker knows it; in flight here, in flight in the
+// copy too for good (a read of it is a cycle, as a copied LazyState byte was); else (not computed, or in flight
+// elsewhere, or poisoned without a value of its own) not computed
+static void copy_word(Checker* me, SharedWord* to, uint8_t* to_state, SharedWord const* from, uint8_t const* from_state,
+    bool keep_in_flight
+) {
+    uintptr_t v = my graph ? sw_peek(me, from) : __atomic_load_n(&from->v, __ATOMIC_RELAXED);
+    bool in_flight = keep_in_flight && !v && sw_mine_in_flight(me, from, from_state);
+    __atomic_store_n(&to->v, v, __ATOMIC_RELAXED);
+    *to_state = LAZY_STATE_NOT_STARTED;
+    if (in_flight) sw_copy_in_flight(me, to, to_state);
+}
+
 void signature_copied(Checker* me, Signature* copy, Signature const* original) {
+    // (A predicate in flight is its claim's, which the copy doesn't have: not computed)
+    copy_word(me, &copy->ret, &copy->ret_flight, &original->ret, &original->ret_flight, true);
+    copy_word(me, &copy->predicate, &copy->predicate_flight, &original->predicate, &original->predicate_flight, false);
     copy->res_flight = LAZY_STATE_NOT_STARTED;
     uintptr_t v = me->graph ? sw_peek(me, &original->res) : __atomic_load_n(&original->res.v, __ATOMIC_RELAXED);
     if (!v && sw_mine_in_flight(me, &original->res, &original->res_flight)) {
@@ -5891,19 +5906,24 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
     }
     if (sig->class_instance) {
         r->type_params = sig->class_type_params;
-        sig->ret = sig->class_instance;
-        LAZY_DONE(sig->ret_state);
+        r->class_ret = sig->class_instance;
     }
     if (!sig->class_instance && r->target && r->target->class_instance && r->mapper) {
         // An instantiated construct signature of a class (not one a derived class without a constructor inherits: that
         // makes the derived class)
-        sig->ret = ty_instantiate(me, r->target->class_instance, r->mapper);
-        LAZY_DONE(sig->ret_state);
+        r->class_ret = ty_instantiate(me, r->target->class_instance, r->mapper);
     }
     // (An instantiation of its own type parameters has none left: ty_signature_instantiation())
     if (sig->instantiates_own_params) r->type_params = (TyList){0};
     my sig_resolving = frame.outer;
     if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_SIG_RESOLVED, sig, sig, r);
+    if (my graph) {
+        // (TTTT_DEBUG_PUBLISH: what the record holds that isn't an identity: its arrays, mapper and target)
+        sw_debug_check_ref(r->params, "SigResolved's params");
+        sw_debug_check_ref(r->type_params.data, "SigResolved's type parameters");
+        sw_debug_check_ref(r->mapper, "SigResolved's mapper");
+        sw_debug_check_ref(r->target, "SigResolved's target");
+    }
     return (SigResolved const*)sw_finish_fast(me, &sig->res, &sig->res_flight, (uintptr_t)r, taint);
 }
 
@@ -5931,41 +5951,52 @@ static Ty const* signature_return_type_slow(Checker* me, Signature* sig);
 
 Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
-    // (Resolved and its return type known: what nearly every call is)
-    uintptr_t res = sw_load(&sig->res);
-    if (__builtin_expect(res > SW_NONE && !my graph_shadowed && LAZY_LOAD(sig->ret_state) == LAZY_STATE_DONE, 1)) {
+    // (Resolved and its return type known: what nearly every call is. Neither is ever NONE. A copy made with its return
+    // type, relate.c's, is resolved first all the same)
+    uintptr_t v = sw_load(&sig->ret);
+    if (__builtin_expect(v > SW_NONE && sw_load(&sig->res) > SW_NONE && !my graph_shadowed, 1)) {
         TAINT_READ(TK_SIGNATURE_RETURN, sig);
-        return sig->ret;
+        return (Ty const*)v;
     }
     return signature_return_type_slow(me, sig);
 }
 
+// The return type as this worker knows it (a done-ness peek), null if it isn't
+static Ty const* sig_return_peek(Checker* me, Signature const* sig) {
+    uintptr_t v = my graph ? sw_peek(me, &sig->ret) : __atomic_load_n(&sig->ret.v, __ATOMIC_RELAXED);
+    return v ? SW_PTR(v) : sig_res(me, sig)->class_ret;
+}
+
+bool sig_return_known(Checker* me, Signature const* sig) {
+    return sig_return_peek(me, sig) != nullptr;
+}
+
 static __attribute__((noinline)) Ty const* signature_return_type_slow(Checker* me, Signature* sig) {
     SigResolved const* sig_rs = signature_resolve(me, sig);
-    again:
-    if (__builtin_expect(LAZY_LOAD(sig->ret_state) == LAZY_STATE_DONE, 1)) {
-        TAINT_READ(TK_SIGNATURE_RETURN, sig);
-        return sig->ret;
-    }
-    LAZY_SNAP(me, sig->ret_state, seen, again);
-    switch (LAZY_STATE_OF(seen)) {
-        case LAZY_STATE_DONE:
+    uintptr_t v;
+    switch (sw_look_fast(me, &sig->ret, &sig->ret_flight, &v)) {
+        case SW_LOOK_DONE:
             TAINT_READ(TK_SIGNATURE_RETURN, sig);
-            return sig->ret;
-        case LAZY_STATE_IN_FLIGHT:
-            TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+            return SW_PTR(v);
+        case SW_LOOK_MINE:
+            // (sw_look() counted the taint event)
             // An inferred return type in progress: asking it says so, it becomes any (see ty_function_return_type())
             if (!sig_target(me, sig) && sig->function && !sig->function->is_type) ty_function_return_type(me, sig->function);
             ty_resolving_cycle(me, RESOLVING_SIGNATURE_RETURN, sig);
             return ty_intrinsic(me, TY_CIRCULAR);
-        case LAZY_STATE_NOT_STARTED: break;
+        case SW_LOOK_COMPUTE: break;
     }
-    if (!LAZY_CLAIM(me, sig->ret_state)) goto again;
+    u64 taint = sw_claim_fast(me, &sig->ret, &sig->ret_flight);
+    if (sig_rs->class_ret) {
+        // (A class's construct signature: its resolution made it, without the resolving push of the others)
+        return SW_PTR(sw_finish_fast(me, &sig->ret, &sig->ret_flight, SW_VAL(sig_rs->class_ret), taint));
+    }
     TAINT_BEGIN(taint_frame);
     ty_resolving_push(me, RESOLVING_SIGNATURE_RETURN, sig);
     Ty const* ret;
-    if (sig_target(me, sig)) {
-        ret = ty_instantiate(me, signature_return_type(me, sig_target(me, sig)), sig_mapper(me, sig));
+    Signature const* target = sig_target(me, sig);
+    if (target) {
+        ret = ty_instantiate(me, signature_return_type(me, target), sig_mapper(me, sig));
     } else if (sig->function && sig->function->is_type) {
         LowerCtx ctx = sig->ctx;
         ctx.generic |= sig_rs->type_params.len > 0;
@@ -5987,17 +6018,15 @@ static __attribute__((noinline)) Ty const* signature_return_type_slow(Checker* m
             ty_error_at(me, function_impl_ret_span(function), 2577, cstr_from("Return type annotation circularly references itself."));
         }
     }
-    sig->ret = ret;
-    LAZY_DONE(sig->ret_state);
-    TAINT_END(taint_frame, TK_SIGNATURE_RETURN, sig, sig, ret);
-    return ret;
+    if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_SIGNATURE_RETURN, sig, sig, ret);
+    return SW_PTR(sw_finish_fast(me, &sig->ret, &sig->ret_flight, SW_VAL(ret), taint));
 }
 
 static bool signature_return_in_flight(Checker* me, Signature const* sig, bool above_barrier) {
     for (u32 depth = 0; sig && depth < 64; depth++) {
-        if (LAZY_LOAD(sig->ret_state) == LAZY_STATE_DONE) return false;
+        if (sig_return_known(me, sig)) return false;
         // (Another worker's in flight isn't one here)
-        if (LAZY_MINE_IN_FLIGHT(me, LAZY_LOAD(sig->ret_state))) {
+        if (sw_mine_in_flight(me, &sig->ret, &sig->ret_flight)) {
             TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
             return true;
         }
@@ -6077,7 +6106,8 @@ static TyPredicate const* compute_signature_predicate(Checker* me, Signature* si
         // contextual signature, which tttt leaves for later outside inference, so it's asked for now)
         Ty const* known = nullptr;
         if (!claim->predicate && sig_res(me, sig)->param_count) {
-            known = sig->ret_state == LAZY_STATE_DONE ? sig->ret : ty_function_return_known(me, sig->function);
+            known = sig_return_peek(me, sig);
+            if (!known) known = ty_function_return_known(me, sig->function);
             if (!known && ty_function_assigned_contextual_signature(me, sig->function) &&
                 !ty_function_return_in_flight(me, sig->function)) {
                 known = ty_function_return_type(me, sig->function);
@@ -6090,25 +6120,13 @@ static TyPredicate const* compute_signature_predicate(Checker* me, Signature* si
     return claim->predicate;
 }
 
-// The predicate is known
-// (With --shared-graph two checkers may infer it at once, both the same: the predicate is written before `done`, with
-// release, and read after it with acquire. A second publisher keeps the first one's)
-static TyPredicate const* publish_signature_predicate(Signature* sig, TyPredicate const* predicate) {
-    // (`predicate_writing` claims the write: a second publisher keeps the first one's)
-    if (__atomic_exchange_n(&sig->predicate_writing, true, __ATOMIC_ACQ_REL)) {
-        while (!__atomic_load_n(&sig->predicate_done, __ATOMIC_ACQUIRE)) __builtin_ia32_pause();
-        return sig->predicate;
-    }
-    sig->predicate = predicate;
-    __atomic_store_n(&sig->predicate_done, true, __ATOMIC_RELEASE);
-    return predicate;
-}
-
 static TyPredicate const* signature_predicate_slow(Checker* me, Signature* sig);
 
+// A shared word (NONE for none); in flight is the CLAIM_PREDICATE claim, which holds what is known so far
 TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
-    if (__atomic_load_n(&sig->predicate_done, __ATOMIC_ACQUIRE)) return sig->predicate;
+    uintptr_t v = sw_load(&sig->predicate);
+    if (__builtin_expect(v > SW_POISON && !my graph_shadowed, 1)) return SW_PTR(v);
     return signature_predicate_slow(me, sig);
 }
 
@@ -6125,12 +6143,27 @@ static __attribute__((noinline)) TyPredicate const* signature_predicate_slow(Che
         }
         return claim->predicate;
     }
+    uintptr_t v;
+    switch (sw_look_fast(me, &sig->predicate, &sig->predicate_flight, &v)) {
+        case SW_LOOK_DONE: return SW_PTR(v);
+        case SW_LOOK_MINE: return nullptr; // (In flight here is its claim, found above)
+        case SW_LOOK_COMPUTE: break;
+    }
     signature_resolve(me, sig);
+    if (sw_look_fast(me, &sig->predicate, &sig->predicate_flight, &v) == SW_LOOK_DONE) {
+        // (Resolving it asked for it and got it: computed again, as before, and the first one kept)
+        PredicateClaim again = {0};
+        ty_claim_push(me, CLAIM_PREDICATE, &again.claim, sig, 0);
+        compute_signature_predicate(me, sig, &again);
+        ty_claim_pop(me, CLAIM_PREDICATE, &again.claim);
+        return SW_PTR(v);
+    }
+    u64 taint = sw_claim_fast(me, &sig->predicate, &sig->predicate_flight);
     PredicateClaim claim = {0};
     ty_claim_push(me, CLAIM_PREDICATE, &claim.claim, sig, 0);
     TyPredicate const* predicate = compute_signature_predicate(me, sig, &claim);
     ty_claim_pop(me, CLAIM_PREDICATE, &claim.claim);
-    return publish_signature_predicate(sig, predicate);
+    return SW_PTR(sw_finish_fast(me, &sig->predicate, &sig->predicate_flight, SW_VAL(predicate), taint));
 }
 
 // Declared to return `never` (an inferred never doesn't count for control flow)

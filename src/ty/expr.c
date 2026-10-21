@@ -232,8 +232,8 @@ static Ty const* return_only_type(Checker* me, FunctionImpl const* function, Ty 
 
     Signature* sig = arena_new(&my arena, Signature);
     *sig = (Signature){
-        .flags = SIGNATURE_NON_INFERRABLE, .res = { (uintptr_t)&sig_resolved_none }, .ret_state = LAZY_STATE_DONE, .ret = body,
-        .predicate_done = true,
+        .flags = SIGNATURE_NON_INFERRABLE, .res = { (uintptr_t)&sig_resolved_none }, .ret = { SW_VAL(body) },
+        .predicate = { SW_NONE },
     };
     Ty* type = (Ty*)ty_signature_type(me, sig);
     type->flags |= TYF_NON_INFERRABLE;

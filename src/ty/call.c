@@ -2206,9 +2206,8 @@ static Signature const* overload_failure_union_signature(Checker* me, Signature*
             .min_args = min_args,
             .this_type = this_type,
         }) },
-        .ret_state = LAZY_STATE_DONE,
-        .ret = ret,
-        .predicate_done = true,
+        .ret = { SW_VAL(ret) },
+        .predicate = { SW_NONE },
     };
     return sig;
 }
@@ -2515,7 +2514,7 @@ static Resolution resolve_with_signatures_inner(
             ParamShape shape = call_param_shape(me, info, failure, nullptr);
             check_args(me, &shape, args, false);
             free(shape.types);
-            ret.ret = failure->ret;
+            ret.ret = signature_return_type(me, failure);
         } else if (unfit_count) {
             // Inferred again from what doesn't depend on the candidate: context-sensitive and generic function
             // arguments left out (tsc's inferSignatureInstantiationForOverloadFailure). Which one: tsc's
@@ -3119,9 +3118,8 @@ static Signature* jsx_synthetic_signature(Checker* me, Ty const* param, Ty const
     Signature* sig = arena_new(&my arena, Signature);
     *sig = (Signature){
         .res = { (uintptr_t)sig_resolved_new(me, (SigResolved){ .params = params, .param_count = param ? 1 : 0, .min_args = param ? 1 : 0 }) },
-        .ret_state = LAZY_STATE_DONE,
-        .ret = ret,
-        .predicate_done = true,
+        .ret = { SW_VAL(ret) },
+        .predicate = { SW_NONE },
     };
     return sig;
 }
@@ -4000,7 +3998,7 @@ static Signature* decorator_signature(Checker* me, Ty const* const* params, char
     Signature* sig = arena_new(&my arena, Signature);
     *sig = (Signature){
         .res = { (uintptr_t)sig_resolved_new(me, (SigResolved){ .params = sig_params, .param_count = count, .min_args = count }) },
-        .ret_state = LAZY_STATE_DONE, .ret = ret, .predicate_done = true,
+        .ret = { SW_VAL(ret) }, .predicate = { SW_NONE },
     };
     return sig;
 }

@@ -1572,6 +1572,33 @@ in parallel only where the file sets are disjoint):
       Left: object literals (object_literal_type_mentions()'s property-type peek and literal_instance_is_itself()'s
       peeks still choose an identity; a literal has no scope pointer) and JavaScript function expressions (JSDoc
       `@template`s aren't in OuterGenerics): hacks.md.
+    - **IDENT step 2: the signature return and predicate words landed** (wt-s1's c1862b802 re-made on ai-main with
+      SW_VAL()). Gates: default path byte-identical (suite, five corpora at K1); callgrind against step 1 at
+      `--checker-memory off` drizzle +0.12%, zod +0.16% (at the default 256 MB drizzle +0.68%: SigResolved's 56 -> 64
+      bytes moves the recycle point, the second checker's history does more work; types identical without recycling);
+      rep3 20/20 on drizzle, zod, effect, excalidraw, nest; effect seeds 100/100; TSan T12 drizzle and effect clean
+      (the class signature's in-place return write is gone); checkerdiff -k 4 xstate identical; folo/apps/ssr's
+      flag-only kdiff (K1 vs K16 T1, present at step 1) is gone with it. **Drizzle seeds 191/200** (96, 98, 137, 156,
+      158, 175, 176, 179, 180: the same set before and after the rebase): query.ts(139)'s spurious TS2322. Fingerprint
+      of seed 96 (FINGERPRINT_ONLY=singlestore-core, clean results): nothing differs; with
+      TTTT_GRAPH_FINGERPRINT_TAINTED=1 the first difference is a *tainted* base constraint of
+      `Assume<TPreparedQueryHKT["type"], SingleStorePreparedQuery<... & { execute: TResult }>>` (K1 a union of both
+      branches' constraints, the worker a distributive constraint's single SingleStorePreparedQuery<Config>), whose
+      first taint event is a hit of a tainted KEY_VARIANCES entry (get_variances() from definitely_unrelated() inside
+      the distributive constraint's instantiation). Over the whole run the clean differences are conditional
+      instances (KEY_CONDITIONAL_INSTANCE, _FOR_CONSTRAINT, identity-valued memo kinds published whatever their taint)
+      flushed by the same worker from inside a variance measurement (type-tests/mysql/delete.ts), and (4)'s
+      KEY_UNION_PAIR. So the leak is a conditional instance made inside a private (poisoned-group) variance
+      measurement: P3's/CONDP's area (identity-valued memo kinds), not the return words, which only move the schedule.
+    - **react-navigation's flag-only kdiff** (K16 T1 differs, K2 and K4 don't; getStateFromPath.tsx(1249) TS2375):
+      the first fingerprint difference, BaseNavigationContainer.tsx:111's destructured `useSyncState<State>(...)`
+      result, is an instance of useSyncState.tsx's returned object literal under {T: State} whose
+      TYF_COULD_CONTAIN_TYPE_VARIABLES differs (K1 known mentions, K16 unknown): divergence (2)'s mechanism for object
+      literals, object_literal_type_mentions()'s property-type peek (the members are function expressions whose
+      inferred returns aren't known yet). Owner: IDENT (instantiate.c). Fix by the same rule as functions: key an
+      object literal's instances by its outer type parameters (needs the literal's scope, which Expr doesn't keep;
+      literal_instance_is_itself() must go the same way, and zod's recursive-types.test.ts and drizzle's TS2589 copies
+      are what its hacks.md entry says depend on it). Not done (budget).
   - **P2, checker.c + lower.c + function.c + instantiate.c** (reduced, cond branches, declared types, reference args,
     implied constraints, function returns, ty_alloc and the directory's chunk slots (lazy_type.c's lazy_slots_*),
     order keys, literal twins: TSan C). ~1-2 sessions.

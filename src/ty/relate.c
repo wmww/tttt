@@ -2318,10 +2318,8 @@ bool ty_implementation_compatible_with_overload(Checker* me, Signature const* im
     Signature* copy = arena_new(&my arena, Signature);
     *copy = *target;
     signature_copied(me, copy, target);
-    copy->ret = ty_intrinsic(me, TY_ANY);
-    copy->ret_state = LAZY_STATE_DONE;
-    copy->predicate = nullptr;
-    copy->predicate_done = true;
+    sig_ret_init(copy, ty_intrinsic(me, TY_ANY));
+    sig_predicate_init(copy, nullptr);
     // (compareSignaturesRelated, not signaturesRelatedTo: a constructor's accessibility or abstractness doesn't matter,
     // so both are compared as call signatures)
     copy->flags &= ~(u32)SIGNATURE_CONSTRUCT;
@@ -2329,7 +2327,6 @@ bool ty_implementation_compatible_with_overload(Checker* me, Signature const* im
         Signature* source_copy = arena_new(&my arena, Signature);
         *source_copy = *source;
         signature_copied(me, source_copy, source);
-        LAZY_COPIED(me, source_copy->ret_state);
         source_copy->flags &= ~(u32)SIGNATURE_CONSTRUCT;
         source = source_copy;
     }
@@ -8432,10 +8429,8 @@ static Signature* union_signature(Checker* me, Signature const* base, Signature*
             .min_args = base_r->min_args,
             .this_type = union_this_type(me, composites, count),
         }) },
-        .ret_state = LAZY_STATE_DONE,
-        .ret = ty_union_subtype_reduced(me, return_types, count),
-        .predicate_done = true,
-        .predicate = union_predicate(me, composites, count),
+        .ret = { SW_VAL(ty_union_subtype_reduced(me, return_types, count)) },
+        .predicate = { SW_VAL(union_predicate(me, composites, count)) },
         // (A clone of the base, tsc's createUnionSignature: declared where it is, its `this` parameter's)
         .declared_by = base->declared_by ? base->declared_by : base,
     };
@@ -8539,10 +8534,9 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
             .min_args = left_res->min_args > right_res->min_args ? left_res->min_args : right_res->min_args,
             .this_type = this_type,
         }) },
-        .ret_state = LAZY_STATE_DONE,
-        .ret = intersection ? ty_intersection(me, return_types, 2, nullptr, (TyList){0}) :
-            ty_instantiate(me, ty_union_subtype_reduced(me, return_types, 2), mapper),
-        .predicate_done = true,
+        .ret = { SW_VAL(intersection ? ty_intersection(me, return_types, 2, nullptr, (TyList){0}) :
+            ty_instantiate(me, ty_union_subtype_reduced(me, return_types, 2), mapper)) },
+        .predicate = { SW_NONE },
     };
     return ret;
 }
@@ -8600,7 +8594,7 @@ Signature* const* ty_union_signatures(Checker* me, TyList members, bool construc
             if (!my unknown_signature) {
                 Signature* unknown = arena_new(&my arena, Signature);
                 *unknown = (Signature){
-                    .res = { (uintptr_t)&sig_resolved_none }, .ret_state = LAZY_STATE_DONE, .ret = ty_intrinsic(me, TY_ERROR), .predicate_done = true,
+                    .res = { (uintptr_t)&sig_resolved_none }, .ret = { SW_VAL(ty_intrinsic(me, TY_ERROR)) }, .predicate = { SW_NONE },
                 };
                 Signature** list = arena_new_n(&my arena, Signature*, 1);
                 list[0] = unknown;

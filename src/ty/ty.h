@@ -769,10 +769,13 @@ struct SigResolved {
     // mapper (clone_type_params()). Read them through sig_target() and sig_mapper()
     Signature const* target;
     TyMapper const* mapper;
+    // A class's construct signature's return type, which resolution makes (the class's instance type, instantiated);
+    // signature_return_type() publishes it as the return type. Null for other signatures
+    Ty const* class_ret;
     u32 param_count;
     u32 min_args;
 };
-static_assert(sizeof(SigResolved) == 56);
+static_assert(sizeof(SigResolved) == 64);
 
 struct Signature {
     u32 flags;
@@ -780,10 +783,9 @@ struct Signature {
     // byte, overlay.h)
     uint8_t res_flight;
     // The return type is lazier than the rest, use signature_return_type(): it's often inferred from a function body
-    // that is in the middle of being checked
-    uint8_t ret_state; // LazyState
-    bool predicate_done; // (A byte of its own: published with release, see publish_signature_predicate())
-    bool predicate_writing; // publish_signature_predicate() has started writing it
+    // that is in the middle of being checked. `ret`'s default-path byte (NOT_STARTED / IN_FLIGHT, overlay.h)
+    uint8_t ret_flight;
+    uint8_t predicate_flight; // `predicate`'s (in flight is its CLAIM_PREDICATE claim, signature_predicate())
     bool drops_mapped_type_params; // Part of an instantiation expression, see Ty.anonymous.applies_type_args
     // Its mapper gives its own type parameters their arguments (ty_signature_instantiation()). Otherwise an outer
     // mapper that has them (a recursive type met again inside its own instantiation) doesn't reach inside: they're
@@ -813,8 +815,8 @@ struct Signature {
     // has its record from the start, sig_res_init()). Read it through signature_resolve(), or sig_res() where the
     // signature is known resolved or the zeros of an unresolved one are what the reader wants
     SharedWord res;
-    Ty const* ret;
-    TyPredicate const* predicate; // Use signature_predicate()
+    SharedWord ret; // A Ty: use signature_return_type(), sig_ret_init() for a signature being made
+    SharedWord predicate; // A TyPredicate, NONE for none: use signature_predicate(), sig_predicate_init()
 };
 static_assert(sizeof(Signature) == 128);
 
@@ -2048,6 +2050,17 @@ SigResolved const* sig_resolved_new(Checker* me, SigResolved init);
 static inline void sig_res_init(Signature* sig, SigResolved const* res) {
     __atomic_store_n(&sig->res.v, (uintptr_t)res, __ATOMIC_RELAXED);
 }
+// The return type and predicate of a signature being made (known: signature_return_type() and signature_predicate()
+// don't compute them)
+static inline void sig_ret_init(Signature* sig, Ty const* ret) {
+    __atomic_store_n(&sig->ret.v, SW_VAL(ret), __ATOMIC_RELAXED);
+}
+static inline void sig_predicate_init(Signature* sig, TyPredicate const* predicate) {
+    __atomic_store_n(&sig->predicate.v, SW_VAL(predicate), __ATOMIC_RELAXED);
+}
+// Its return type is known to this worker (a done-ness peek): published, its own private one, or a class's that its
+// resolution made
+bool sig_return_known(Checker* me, Signature const* sig);
 Ty const* signature_return_type(Checker* me, Signature const* sig);
 bool ty_signature_return_in_flight(Checker* me, Signature const* sig); // Its return type is being inferred up the stack
 // The same, but an inferred return type in flight only counts above the barrier of a call being resolved: below it, asking

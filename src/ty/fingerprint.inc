@@ -372,7 +372,7 @@ static u64 fp_signature(Signature const* sig, u32 depth) {
             h = M(h, fp_ty(r->params[i].type));
             h = M(h, r->params[i].optional | r->params[i].rest << 1);
         }
-        if (FP_LAZY_PARTS && sig->ret_state == LAZY_STATE_DONE) h = M(h, fp_ty(sig->ret));
+        if (FP_LAZY_PARTS && sw_load(&sig->ret) > SW_NONE) h = M(h, fp_ty((Ty const*)sw_load(&sig->ret)));
     }
     return h;
 }
