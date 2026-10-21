@@ -38,7 +38,7 @@ typedef struct PackageJson {
     bool exists;
     JsonValue json;
     // The package id's `+peer@version` part (append_peer_dependencies()), computed by the first package_id_of() of the
-    // package (under the resolver's lock once computed: several threads may get there)
+    // package (under its resolver shard's lock once computed: several threads may get there)
     bool peer_suffix_computed;
     cstr peer_suffix;
 } PackageJson;
@@ -65,6 +65,17 @@ static void package_json_box_drop(PackageJsonBox* me) {
 #define g_no_clone
 #include <cleat/generic/hmap.h>
 
+// Sharded by key hash: the load pool's workers all resolve at once
+enum { RESOLVER_SHARDS = 64 };
+
+typedef struct ResolverShard {
+    pthread_mutex_t lock;
+    HMapPackageJsonBox package_jsons; // By directory
+    // module_resolver_resolve()'s results by containing directory, mode and specifier (resolution_key()): the files of
+    // a directory import the same packages, each a walk up the node_modules directories
+    HMapResolvedModule resolutions;
+} ResolverShard;
+
 typedef struct ModuleResolver {
     Fs const* fs;
     CompilerOptions const* options;
@@ -73,13 +84,11 @@ typedef struct ModuleResolver {
     bool cwd_normalized; // An absolute path_is_normalized() one: containing files are joined to it as they are
     RealpathFn realpath;
     void* realpath_ctx;
-    // Resolutions may run on several threads at once (a program's load pool): the caches are shared, under lock (the
-    // filesystem probing between a miss and the insert isn't; two threads may both do a lookup, and agree)
-    pthread_mutex_t lock;
-    HMapPackageJsonBox package_jsons; // By directory
-    // module_resolver_resolve()'s results by containing directory, mode and specifier (resolution_key()): the files of
-    // a directory import the same packages, each a walk up the node_modules directories
-    HMapResolvedModule resolutions;
+    pthread_mutex_t cwd_lock;
+    // Resolutions may run on several threads at once (a program's load pool): the caches are shared, sharded by key
+    // under a lock each (the filesystem probing between a miss and the insert isn't; two threads may both do a lookup,
+    // and agree). One lock was the loader's main wait with a dozen workers resolving
+    ResolverShard shards[RESOLVER_SHARDS];
 } ModuleResolver;
 
 // One resolution in progress
@@ -127,8 +136,15 @@ ResolvedModule resolved_module_clone(ResolvedModule const* me) {
 
 ModuleResolver* module_resolver_new(Fs const* fs, CompilerOptions const* options) {
     ModuleResolver* ret = c_new(ModuleResolver, { .fs = fs, .options = options });
-    pthread_mutex_init(&ret->lock, nullptr);
+    pthread_mutex_init(&ret->cwd_lock, nullptr);
+    for (int i = 0; i < RESOLVER_SHARDS; i++) pthread_mutex_init(&ret->shards[i].lock, nullptr);
     return ret;
+}
+
+static ResolverShard* resolver_shard(ModuleResolver* me, csview key) {
+    uint32_t hash = 2166136261u;
+    for (isize i = 0; i < key.size; i++) hash = (hash ^ (uint8_t)key.buf[i]) * 16777619u;
+    return &my shards[hash % RESOLVER_SHARDS];
 }
 
 void module_resolver_set_realpath(ModuleResolver* me, RealpathFn realpath, void* ctx) {
@@ -160,16 +176,21 @@ static void apply_realpath(ModuleResolver* me, ResolvedModule* resolved) {
 void module_resolver_destroy(ModuleResolver* me) {
     if (!me) return;
     cstr_drop(&my cwd);
-    hmap_package_json_box_drop(&my package_jsons);
-    hmap_resolved_module_drop(&my resolutions);
-    pthread_mutex_destroy(&my lock);
+    for (int i = 0; i < RESOLVER_SHARDS; i++) {
+        hmap_package_json_box_drop(&my shards[i].package_jsons);
+        hmap_resolved_module_drop(&my shards[i].resolutions);
+        pthread_mutex_destroy(&my shards[i].lock);
+    }
+    pthread_mutex_destroy(&my cwd_lock);
     free(me);
 }
 
 void module_resolver_forget_resolutions(ModuleResolver* me) {
     if (!me) return;
-    hmap_resolved_module_drop(&my resolutions);
-    my resolutions = (HMapResolvedModule){0};
+    for (int i = 0; i < RESOLVER_SHARDS; i++) {
+        hmap_resolved_module_drop(&my shards[i].resolutions);
+        my shards[i].resolutions = (HMapResolvedModule){0};
+    }
 }
 
 // ---- Paths ----
@@ -427,10 +448,11 @@ static bool load_file(State* me, csview candidate, int extensions, Found* out) {
 
 static PackageJson const* package_json_of(State* me, csview directory) {
     ModuleResolver* resolver = my resolver;
-    pthread_mutex_lock(&resolver->lock);
-    auto cached = hmap_package_json_box_get(&resolver->package_jsons, directory);
+    ResolverShard* shard = resolver_shard(resolver, directory);
+    pthread_mutex_lock(&shard->lock);
+    auto cached = hmap_package_json_box_get(&shard->package_jsons, directory);
     PackageJson const* known = cached ? cached->second : nullptr;
-    pthread_mutex_unlock(&resolver->lock);
+    pthread_mutex_unlock(&shard->lock);
     if (known) return known->exists ? known : nullptr;
     PackageJson package = {0};
     cstr path = cstr_d(directory, "/package.json");
@@ -451,11 +473,11 @@ static PackageJson const* package_json_of(State* me, csview directory) {
     }
     cstr_drop(&path);
     PackageJson* box = c_new(PackageJson, package);
-    pthread_mutex_lock(&resolver->lock);
+    pthread_mutex_lock(&shard->lock);
     // (If another thread's read of the same file got there first, the same contents: insert drops ours)
-    auto inserted = hmap_package_json_box_insert(&resolver->package_jsons, cstr_from_sv(directory), box);
+    auto inserted = hmap_package_json_box_insert(&shard->package_jsons, cstr_from_sv(directory), box);
     known = inserted.ref->second;
-    pthread_mutex_unlock(&resolver->lock);
+    pthread_mutex_unlock(&shard->lock);
     return known->exists ? known : nullptr;
 }
 
@@ -533,21 +555,22 @@ static cstr package_id_of(State* me, csview path, csview package_dir, cstr* pack
     if (!name.size || !version.size) return cstr_null;
     *package_name = cstr_from_sv(name);
     cstr ret = cstr_d(name, csview_from_n(path.buf + end, path.size - end), "@", version);
-    ModuleResolver* resolver = my resolver;
-    pthread_mutex_lock(&resolver->lock);
+    // (Under the lock of the shard the package.json is in)
+    ResolverShard* shard = resolver_shard(my resolver, csview_from_n(path.buf, end));
+    pthread_mutex_lock(&shard->lock);
     bool computed = package->peer_suffix_computed;
-    pthread_mutex_unlock(&resolver->lock);
+    pthread_mutex_unlock(&shard->lock);
     if (!computed) {
         cstr suffix = cstr_null;
         append_peer_dependencies(me, csview_from_n(path.buf, end), package, &suffix);
-        pthread_mutex_lock(&resolver->lock);
+        pthread_mutex_lock(&shard->lock);
         PackageJson* mut = (PackageJson*)package;
         if (!mut->peer_suffix_computed) {
             mut->peer_suffix = suffix;
             suffix = cstr_null;
             mut->peer_suffix_computed = true;
         }
-        pthread_mutex_unlock(&resolver->lock);
+        pthread_mutex_unlock(&shard->lock);
         cstr_drop(&suffix);
     }
     // (Written once under the lock, read-only after)
@@ -1470,14 +1493,14 @@ static void add_condition(State* me, const char* condition) {
 // The working directory as of the first resolution: whoever made the resolver may still have been setting up
 static void resolver_init_cwd(ModuleResolver* resolver) {
     if (atomic_load_explicit(&resolver->cwd_known, memory_order_acquire)) return;
-    pthread_mutex_lock(&resolver->lock);
+    pthread_mutex_lock(&resolver->cwd_lock);
     if (!cstr_size(&resolver->cwd)) {
         try (fs_get_cwd(resolver->fs, &resolver->cwd)) or_panic;
         resolver->cwd_normalized = cstr_size(&resolver->cwd) && cstr_str(&resolver->cwd)[0] == '/' &&
             path_is_normalized(cstr_sv(&resolver->cwd));
     }
     atomic_store_explicit(&resolver->cwd_known, true, memory_order_release);
-    pthread_mutex_unlock(&resolver->lock);
+    pthread_mutex_unlock(&resolver->cwd_lock);
 }
 
 static State state_make(ModuleResolver* resolver, ResolutionMode mode) {
@@ -1649,10 +1672,11 @@ ResolvedModule module_resolver_resolve(
     if (!specifier.size) return (ResolvedModule){0};
     resolver_init_cwd(me);
     cstr key = resolution_key(me, containing_file, mode, specifier);
-    pthread_mutex_lock(&my lock);
-    auto cached = hmap_resolved_module_get(&my resolutions, cstr_sv(&key));
+    ResolverShard* shard = resolver_shard(me, cstr_sv(&key));
+    pthread_mutex_lock(&shard->lock);
+    auto cached = hmap_resolved_module_get(&shard->resolutions, cstr_sv(&key));
     ResolvedModule ret = cached ? resolved_module_clone(&cached->second) : (ResolvedModule){0};
-    pthread_mutex_unlock(&my lock);
+    pthread_mutex_unlock(&shard->lock);
     if (cached) {
         cstr_drop(&key);
         return ret;
@@ -1665,23 +1689,29 @@ ResolvedModule module_resolver_resolve(
         cstr joined = join(cstr_sv(&dir), specifier);
         joined_key = cstr_d(joined, "\r", (char)('0' + mode));
         cstr_drop(&joined);
-        pthread_mutex_lock(&my lock);
-        auto by_path = hmap_resolved_module_get(&my resolutions, cstr_sv(&joined_key));
+        ResolverShard* joined_shard = resolver_shard(me, cstr_sv(&joined_key));
+        pthread_mutex_lock(&joined_shard->lock);
+        auto by_path = hmap_resolved_module_get(&joined_shard->resolutions, cstr_sv(&joined_key));
+        if (by_path) ret = resolved_module_clone(&by_path->second);
+        pthread_mutex_unlock(&joined_shard->lock);
         if (by_path) {
-            ret = resolved_module_clone(&by_path->second);
-            hmap_resolved_module_insert(&my resolutions, key, resolved_module_clone(&ret));
-        }
-        pthread_mutex_unlock(&my lock);
-        if (by_path) {
+            pthread_mutex_lock(&shard->lock);
+            hmap_resolved_module_insert(&shard->resolutions, key, resolved_module_clone(&ret));
+            pthread_mutex_unlock(&shard->lock);
             c_drop(cstr, &dir, &joined_key);
             return ret;
         }
     }
     ret = resolve_uncached(me, specifier, cstr_sv(&dir), mode);
-    pthread_mutex_lock(&my lock);
-    hmap_resolved_module_insert(&my resolutions, key, resolved_module_clone(&ret));
-    if (cstr_size(&joined_key)) hmap_resolved_module_insert(&my resolutions, joined_key, resolved_module_clone(&ret));
-    pthread_mutex_unlock(&my lock);
+    pthread_mutex_lock(&shard->lock);
+    hmap_resolved_module_insert(&shard->resolutions, key, resolved_module_clone(&ret));
+    pthread_mutex_unlock(&shard->lock);
+    if (cstr_size(&joined_key)) {
+        ResolverShard* joined_shard = resolver_shard(me, cstr_sv(&joined_key));
+        pthread_mutex_lock(&joined_shard->lock);
+        hmap_resolved_module_insert(&joined_shard->resolutions, joined_key, resolved_module_clone(&ret));
+        pthread_mutex_unlock(&joined_shard->lock);
+    }
     cstr_drop(&dir);
     return ret;
 }

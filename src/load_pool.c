@@ -42,6 +42,11 @@ typedef struct LoadPool {
     // The queued entries (and ones taken since), a max-heap by size: the biggest file is the longest parse, and one
     // big file started last would be the loader's critical path (tsc's checker.ts, lib.dom.d.ts)
     VecLoadEntryPtr heap;
+    // Queued entries whose size isn't known yet, from unsized_next on (when there's a size function)
+    VecLoadEntryPtr unsized;
+    isize unsized_next;
+    i64 (*size)(void* ctx, csview path);
+    void* size_ctx;
     bool stop;
     pthread_t* threads;
     u32 thread_count;
@@ -118,10 +123,33 @@ static void load_pool_run(LoadPool* me, LoadEntry* entry) {
     pthread_cond_broadcast(&my done);
 }
 
+// Sizes a batch of the unsized entries, unlocking meanwhile: true if there were some. (The stats are the workers', not
+// the loader's: a root list of thousands, and every new path a worker finds)
+static bool load_pool_size_batch(LoadPool* me) {
+    isize pending = vec_load_entry_ptr_size(&my unsized) - my unsized_next;
+    if (!pending) return false;
+    enum { SIZE_BATCH = 32 };
+    LoadEntry* batch[SIZE_BATCH];
+    isize count = pending < SIZE_BATCH ? pending : SIZE_BATCH;
+    for (isize i = 0; i < count; i++) batch[i] = my unsized.data[my unsized_next++];
+    if (my unsized_next == vec_load_entry_ptr_size(&my unsized)) {
+        vec_load_entry_ptr_clear(&my unsized);
+        my unsized_next = 0;
+    }
+    pthread_mutex_unlock(&my lock);
+    // (path and size are this batch's until it's in the heap: nobody else writes them)
+    for (isize i = 0; i < count; i++) batch[i]->size = my size(my size_ctx, cstr_sv(&batch[i]->path));
+    pthread_mutex_lock(&my lock);
+    for (isize i = 0; i < count; i++) heap_push(me, batch[i]);
+    if (count > 1) pthread_cond_broadcast(&my work);
+    return true;
+}
+
 static void* load_pool_worker(void* arg) {
     LoadPool* me = arg;
     pthread_mutex_lock(&my lock);
     while (!my stop) {
+        if (load_pool_size_batch(me)) continue;
         LoadEntry* entry = load_pool_next(me);
         if (entry) load_pool_run(me, entry);
         else pthread_cond_wait(&my work, &my lock);
@@ -130,9 +158,13 @@ static void* load_pool_worker(void* arg) {
     return nullptr;
 }
 
-LoadPool* load_pool_new(u32 threads, LoadPoolParse parse, LoadPoolDrop drop, void* ctx) {
+LoadPool* load_pool_new(
+    u32 threads, LoadPoolParse parse, LoadPoolDrop drop, void* ctx, i64 (*size)(void* ctx, csview path), void* size_ctx
+) {
     check(threads > 0);
-    LoadPool* me = c_new(LoadPool, { .parse = parse, .drop = drop, .ctx = ctx, .thread_count = threads });
+    LoadPool* me = c_new(LoadPool, {
+        .parse = parse, .drop = drop, .ctx = ctx, .thread_count = threads, .size = size, .size_ctx = size_ctx,
+    });
     pthread_mutex_init(&my lock, nullptr);
     pthread_cond_init(&my work, nullptr);
     pthread_cond_init(&my done, nullptr);
@@ -161,12 +193,25 @@ static LoadEntry* load_pool_add(LoadPool* me, csview path, bool is_stdlib, i64 s
     return entry;
 }
 
-void load_pool_queue(LoadPool* me, csview path, bool is_stdlib, i64 size) {
+// Under the lock. A new path waits for its size (a stat) in the unsized list, which workers take in batches
+static void load_pool_queue_locked(LoadPool* me, csview path, bool is_stdlib) {
+    if (hmap_load_entry_ptr_get(&my by_path, path)) return;
+    LoadEntry* entry = load_pool_add(me, path, is_stdlib, 0, LOAD_QUEUED);
+    if (my size) vec_load_entry_ptr_push(&my unsized, entry);
+    else heap_push(me, entry);
+    pthread_cond_signal(&my work);
+}
+
+void load_pool_queue(LoadPool* me, csview path, bool is_stdlib) {
     pthread_mutex_lock(&my lock);
-    if (!hmap_load_entry_ptr_get(&my by_path, path)) {
-        heap_push(me, load_pool_add(me, path, is_stdlib, size, LOAD_QUEUED));
-        pthread_cond_signal(&my work);
-    }
+    load_pool_queue_locked(me, path, is_stdlib);
+    pthread_mutex_unlock(&my lock);
+}
+
+void load_pool_queue_many(LoadPool* me, csview const* paths, isize count, bool is_stdlib) {
+    pthread_mutex_lock(&my lock);
+    for (isize i = 0; i < count; i++) load_pool_queue_locked(me, paths[i], is_stdlib);
+    pthread_cond_broadcast(&my work);
     pthread_mutex_unlock(&my lock);
 }
 
@@ -246,6 +291,7 @@ void load_pool_destroy(LoadPool* me) {
     }
     vec_load_entry_ptr_drop(&my entries);
     vec_load_entry_ptr_drop(&my heap);
+    vec_load_entry_ptr_drop(&my unsized);
     hmap_load_entry_ptr_drop(&my by_path);
     pthread_cond_destroy(&my work);
     pthread_cond_destroy(&my done);

@@ -1603,10 +1603,10 @@ static void source_file_free(void* ctx, SourceFile* file) {
 }
 
 static void program_queue_path(Program* me, LoadPool* pool, csview absolute, bool is_stdlib) {
-    cstr canonical = program_canonical_path(me, absolute);
-    i64 size = my file_size ? my file_size(my file_size_ctx, cstr_sv(&canonical)) : 0;
-    load_pool_queue(pool, cstr_sv(&canonical), is_stdlib, size);
-    cstr_drop(&canonical);
+    cstr storage = cstr_null;
+    csview canonical = program_canonical_view(me, absolute, &storage);
+    load_pool_queue(pool, canonical, is_stdlib);
+    cstr_drop(&storage);
 }
 
 // Queues what the loader will probably load from a parsed file: a guess (the loader decides with what it learns after
@@ -1702,7 +1702,7 @@ static LoadPool* program_pool(Program* me) {
         program_resolver(me);
         program_cwd(me);
         // (As many workers as threads: the loader mostly waits for them, and parses queued files meanwhile)
-        my pool = load_pool_new(my threads, program_parse_ahead, source_file_free, me);
+        my pool = load_pool_new(my threads, program_parse_ahead, source_file_free, me, my file_size, my file_size_ctx);
     }
     return my pool;
 }
@@ -2055,7 +2055,15 @@ void program_load_ahead(Program* me, csview const* libs, isize lib_count, csview
         program_queue_path(me, pool, cstr_sv(&path), !cstr_size(&replacement));
         c_drop(cstr, &path, &replacement);
     }
-    for (isize i = 0; i < root_count; i++) program_queue_path(me, pool, roots[i], false);
+    // (Under one lock: the workers are already taking the libs)
+    csview* canonical = c_new_n(csview, root_count + 1);
+    cstr* storage = c_new_n(cstr, root_count + 1);
+    for (isize i = 0; i < root_count; i++) storage[i] = cstr_null;
+    for (isize i = 0; i < root_count; i++) canonical[i] = program_canonical_view(me, roots[i], &storage[i]);
+    load_pool_queue_many(pool, canonical, root_count, false);
+    for (isize i = 0; i < root_count; i++) cstr_drop(&storage[i]);
+    c_free_n(storage, root_count + 1);
+    c_free_n(canonical, root_count + 1);
     // The automatic types (program_load_automatic_types() resolves them again)
     StrList names = module_resolver_automatic_types(my resolver);
     for (isize i = 0; i < names.count; i++) {

@@ -1,8 +1,10 @@
-// realpath() and PATH_MAX, which strict -std=c2x hides
+// realpath(), PATH_MAX and readdir()'s d_type, which strict -std=c2x hides
 #define _XOPEN_SOURCE 700
+#define _DEFAULT_SOURCE
 #include <limits.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <dirent.h>
 
 #include "tsconfig.h"
 #include "string_helpers.h"
@@ -908,14 +910,60 @@ static bool resolves_json(CompilerOptions const* options) {
         options->module_set && options->module == MODULE_KIND_PRESERVE;
 }
 
+typedef struct ListedEntry {
+    cstr name;
+    signed char is_directory; // -1: the listing doesn't say
+} ListedEntry;
+
+static int listed_entry_compare(void const* a, void const* b) {
+    return strcmp(cstr_str(&((ListedEntry const*)a)->name), cstr_str(&((ListedEntry const*)b)->name));
+}
+
+// dir's entries sorted by name (fs_listdir_sorted's order), each a directory or not where the listing says so: readdir's
+// d_type on the real filesystem (a symlink's isn't its target's: unknown). A stat per entry was most of vscode's walk
+static ListedEntry* list_directory(Fs const* in, csview dir, isize* count) {
+    isize cap = 16, n = 0;
+    ListedEntry* ret = malloc(sizeof(ListedEntry) * (size_t)cap);
+    DIR* directory = nullptr;
+    if (in == fs && dir.size < PATH_MAX) {
+        char path[PATH_MAX];
+        memcpy(path, dir.buf, (size_t)dir.size);
+        path[dir.size] = 0;
+        directory = opendir(path);
+    }
+    if (directory) {
+        for (struct dirent* item; (item = readdir(directory));) {
+            if (item->d_name[0] == '.' && (!item->d_name[1] || (item->d_name[1] == '.' && !item->d_name[2]))) continue;
+            if (n == cap) ret = realloc(ret, sizeof(ListedEntry) * (size_t)(cap *= 2));
+            ret[n++] = (ListedEntry){
+                .name = cstr_from(item->d_name),
+                .is_directory = item->d_type == DT_DIR ? 1 : item->d_type == DT_REG ? 0 : -1,
+            };
+        }
+        closedir(directory);
+    } else if (in != fs) {
+        for_each (item, fs_listdir, in, dir) {
+            if (n == cap) ret = realloc(ret, sizeof(ListedEntry) * (size_t)(cap *= 2));
+            ret[n++] = (ListedEntry){ .name = cstr_from_sv(item.name), .is_directory = -1 };
+        }
+    }
+    panic_if(!ret, "out of memory");
+    qsort(ret, (size_t)n, sizeof(ListedEntry), listed_entry_compare);
+    *count = n;
+    return ret;
+}
+
 // The files of dir (and below) the include patterns match, each into the bucket of the first pattern that matches it
 // (tsgo's matchFileNames: one result list per include pattern, flattened in include order)
 static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrList* buckets, int depth) {
     if (depth > 64) return;
     StrList subdirs = {0};
-    for_each (item, fs_listdir_sorted, my fs, dir) {
+    isize entry_count = 0;
+    ListedEntry* entries = list_directory(my fs, dir, &entry_count);
+    for (isize e = 0; e < entry_count; e++) {
+        struct { csview name; } item = { cstr_sv(&entries[e].name) };
         cstr path = path_join(dir, item.name);
-        if (fs_is_directory(my fs, cstr_sv(&path))) {
+        if (entries[e].is_directory >= 0 ? entries[e].is_directory : fs_is_directory(my fs, cstr_sv(&path))) {
             bool wanted = false;
             for (isize i = 0; i < patterns->include.count && !wanted; i++) {
                 wanted = glob_may_match_inside(cstr_sv(&patterns->include.items[i]), cstr_sv(&path));
@@ -945,6 +993,8 @@ static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrLis
         }
         cstr_drop(&path);
     }
+    for (isize e = 0; e < entry_count; e++) cstr_drop(&entries[e].name);
+    free(entries);
     for (isize i = 0; i < subdirs.count; i++) collect_files(me, patterns, cstr_sv(&subdirs.items[i]), buckets, depth + 1);
     str_list_drop(&subdirs);
 }

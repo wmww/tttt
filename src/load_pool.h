@@ -17,13 +17,18 @@ typedef SourceFile* (*LoadPoolParse)(void* ctx, LoadPool* pool, csview path, boo
 // Drops a parsed file nobody took
 typedef void (*LoadPoolDrop)(void* ctx, SourceFile* file);
 
-LoadPool* load_pool_new(u32 threads, LoadPoolParse parse, LoadPoolDrop drop, void* ctx);
+// size (null: none) guesses a queued file's size, called by the workers (workers take the biggest queued file first;
+// without sizes in queue order)
+LoadPool* load_pool_new(
+    u32 threads, LoadPoolParse parse, LoadPoolDrop drop, void* ctx, i64 (*size)(void* ctx, csview path), void* size_ctx
+);
 // Stops the workers and drops what nobody took
 void load_pool_destroy(LoadPool* me);
 
-// Queues a path unless it's already known (queued, parsed or taken), with a guess of its size (workers take the
-// biggest queued file first; 0 when unknown: then in queue order). Any thread
-void load_pool_queue(LoadPool* me, csview path, bool is_stdlib, i64 size);
+// Queues a path unless it's already known (queued, parsed or taken). Any thread
+void load_pool_queue(LoadPool* me, csview path, bool is_stdlib);
+// load_pool_queue() of each path, under one lock
+void load_pool_queue_many(LoadPool* me, csview const* paths, isize count, bool is_stdlib);
 
 // The loader: the file for path if a worker parsed it (or is parsing it: waits, parsing queued files meanwhile) as
 // is_stdlib, with its parse errors moved to errs; null if the loader has to parse it itself, and then no worker will.
