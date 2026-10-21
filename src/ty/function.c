@@ -382,6 +382,18 @@ static void publish_function_return(FunctionReturn* memo, Ty const* type, bool p
     LAZY_DONE(memo->state);
 }
 
+// (The withholding experiment's: graph_withhold())
+#if defined(TTTT_GRAPH_TAINT) && !defined(TTTT_TAINT)
+#define PUBLISH_FUNCTION_RETURN_CLEAN(memo, type_, promise_missing_, circular_, frame) do { \
+    (memo)->type = (type_); \
+    (memo)->promise_missing = (promise_missing_); \
+    (memo)->circular = (circular_); \
+    LAZY_DONE_CLEAN((memo)->state, frame, TK_FUNCTION_RETURN); \
+} while (0)
+#else
+#define PUBLISH_FUNCTION_RETURN_CLEAN(memo, type, promise_missing, circular, frame) publish_function_return(memo, type, promise_missing, circular)
+#endif
+
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
     return function_return_type(me, function, false);
 }
@@ -452,7 +464,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     ty_flow_restore(me, isolation);
     if (LAZY_LOAD(memo->state) != LAZY_STATE_DONE) {
         // A return type that depends on itself is any, whatever else the body says (tsc: popTypeResolution() failing)
-        publish_function_return(memo, circular ? ty_intrinsic(me, TY_ANY) : type, promise_missing, circular);
+        PUBLISH_FUNCTION_RETURN_CLEAN(memo, circular ? ty_intrinsic(me, TY_ANY) : type, promise_missing, circular, taint_frame);
     } else if (circular && !memo->circular) {
         // A nested inference published first and this outer one turned out circular: the type stays (tsc's), the
         // TS7023 tsc reports here is this checker's to say (ty_function_return_circular())

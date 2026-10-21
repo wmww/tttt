@@ -107,6 +107,7 @@ static inline void graph_taint_tick(void) {
     if (graph_taint_pending) graph_taint_sweep();
 }
 typedef struct TaintFrame { uint64_t taint; } TaintFrame;
+bool graph_withhold(unsigned kind, TaintFrame frame); // (graph.c: TTTT_GRAPH_WITHHOLD's experiment)
 
 #define TAINT_EVENT(reason) graph_taint_tick()
 #define TAINT_FLOW() ((void)0)

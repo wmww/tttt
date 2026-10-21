@@ -147,6 +147,21 @@ static Members const* publish_members(Checker* me, MembersClaim* claim, TyObject
     return members;
 }
 
+// (The withholding experiment's: graph_withhold())
+#if defined(TTTT_GRAPH_TAINT) && !defined(TTTT_TAINT)
+static Members const* publish_members_clean(Checker* me, MembersClaim* claim, TyObjectState* state, Members const* members,
+    TaintFrame frame, unsigned kind
+) {
+    ty_claim_pop(me, CLAIM_MEMBERS, &claim->claim);
+    state->members = members;
+    LAZY_DONE_CLEAN(state->members_state, frame, kind);
+    return members;
+}
+#define PUBLISH_MEMBERS_CLEAN(me, claim, state, members, frame, kind) publish_members_clean(me, claim, state, members, frame, kind)
+#else
+#define PUBLISH_MEMBERS_CLEAN(me, claim, state, members, frame, kind) publish_members(me, claim, state, members)
+#endif
+
 // The signatures among a class's or interface's raw members that its bases give it without a this-argument
 typedef struct ThislessSignatures {
     Signature const* const* sigs;
@@ -3727,7 +3742,7 @@ static Members const* declared_raw_members(Checker* me, Ty const* declared) {
     members_in_flight_push(me, declared);
     Members const* members = resolve_declared_members(me, declared);
     my members_in_flight_len--;
-    publish_members(me, &claim, state, members);
+    PUBLISH_MEMBERS_CLEAN(me, &claim, state, members, taint_frame, TK_DECLARED_RAW);
     TAINT_END(taint_frame, TK_DECLARED_RAW, state, declared, members);
     return members;
 }
@@ -5225,7 +5240,7 @@ Members const* ty_members_resolving(Checker* me, Ty const* ty) {
             } else {
                 members = resolve_members(me, ty);
             }
-            publish_members(me, &claim, state, members);
+            PUBLISH_MEMBERS_CLEAN(me, &claim, state, members, taint_frame, TK_MEMBERS);
             TAINT_END(taint_frame, TK_MEMBERS, state, ty, members);
             return members;
     }
@@ -5445,7 +5460,7 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
     if (circular && prop->mapped) {
         // tsc's getTypeOfMappedSymbol when popTypeResolution fails
         prop->type = ty_intrinsic(me, TY_ERROR);
-        LAZY_DONE(prop->type_state);
+        LAZY_DONE_CLEAN(prop->type_state, taint_frame, TK_PROP_TYPE);
         TAINT_END(taint_frame, TK_PROP_TYPE, prop, prop, prop->type);
         cstr name = ty_prop_written_name(me, prop);
         Ty const* mapped_type = intern_get(&my links, (u64[]){ KEY_PROP_MAPPED_TYPE, (u64)(uintptr_t)prop }, 2);
@@ -5471,7 +5486,7 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
         ty_error_at(me, name, 2502, cstr_d("'", span_sv(name), "' is referenced directly or indirectly in its own type annotation."));
     }
     prop->type = type;
-    LAZY_DONE(prop->type_state);
+    LAZY_DONE_CLEAN(prop->type_state, taint_frame, TK_PROP_TYPE);
     TAINT_END(taint_frame, TK_PROP_TYPE, prop, prop, type);
     return type;
 }
@@ -5814,7 +5829,7 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
         }
     }
     sig->ret = ret;
-    LAZY_DONE(sig->ret_state);
+    LAZY_DONE_CLEAN(sig->ret_state, taint_frame, TK_SIGNATURE_RETURN);
     TAINT_END(taint_frame, TK_SIGNATURE_RETURN, sig, sig, ret);
     return ret;
 }
@@ -6530,7 +6545,7 @@ static Ty const* declared_param_constraint(Checker* me, Ty const* param) {
         TAINT_BEGIN(taint_frame);
         Ty const* constraint = ty_param_constraint(me, state->clone_of);
         state->constraint = constraint ? ty_instantiate(me, constraint, state->clone_mapper) : nullptr;
-        LAZY_DONE(state->constraint_state);
+        LAZY_DONE_CLEAN(state->constraint_state, taint_frame, TK_PARAM_CONSTRAINT);
         TAINT_END(taint_frame, TK_PARAM_CONSTRAINT, state, param, state->constraint);
     }
     if (seen == LAZY_STATE_NOT_STARTED && !state->clone_of) {
@@ -6556,7 +6571,7 @@ static Ty const* declared_param_constraint(Checker* me, Ty const* param) {
             state->constraint = ty_intrinsic(me, TY_UNKNOWN_);
         }
         if (!node && state->is_infer) state->constraint = ty_implied_infer_constraint(me, param, false);
-        LAZY_DONE(state->constraint_state);
+        LAZY_DONE_CLEAN(state->constraint_state, taint_frame, TK_PARAM_CONSTRAINT);
         TAINT_END(taint_frame, TK_PARAM_CONSTRAINT, state, param, state->constraint);
     }
     // In flight means the constraint is circular (`T extends T`), tsc reports TS2313 and carries on without one

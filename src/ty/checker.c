@@ -3193,17 +3193,19 @@ static void array_target_resolve(Checker* me, bool readonly) {
     void const* known;
     if (slot && ty_singleton_known(slot, &known)) {
         *target = known;
-        if (!readonly) ty_singleton_known(&shared->auto_array, (void const**)&my auto_array);
-        return;
+    } else {
+        Ty const* made = global_generic_target(me, readonly ? "ReadonlyArray" : "Array");
+        *target = slot ? ty_singleton_publish(slot, made) : made;
     }
-    Ty const* made = global_generic_target(me, readonly ? "ReadonlyArray" : "Array");
-    *target = slot ? ty_singleton_publish(slot, made) : made;
     // tsc makes autoArrayType first thing: of the arrays it has the lowest id, so it's the `any[]` that survives
     // subtype reduction
-    if (!readonly) {
+    // (--shared-graph: also when another worker published the target but not yet its auto array, which this worker
+    // would otherwise go without: every `[]` it evolves would be a never[], `push(x)` TS2345 against never. The
+    // reference is an identity, so it's that worker's)
+    if (!readonly && !(slot && ty_singleton_known(&shared->auto_array, (void const**)&my auto_array))) {
         Ty const* auto_element = ty_intrinsic(me, TY_AUTO);
-        Ty const* auto_array = ty_reference(me, *target, (TyList){ .data = &auto_element, .len = 1 });
-        my auto_array = slot ? ty_singleton_publish(&shared->auto_array, auto_array) : auto_array;
+        Ty const* auto_array = *target ? ty_reference(me, *target, (TyList){ .data = &auto_element, .len = 1 }) : nullptr;
+        my auto_array = slot && auto_array ? ty_singleton_publish(&shared->auto_array, auto_array) : auto_array;
     }
 }
 

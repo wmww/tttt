@@ -1342,6 +1342,16 @@ struct Checker {
     if (LAZY_IN_FLIGHT(field) && !LAZY_MINE_IN_FLIGHT(me, (field))) (field) = LAZY_STATE_NOT_STARTED; \
 } while (0)
 #define LAZY_DONE(field) __atomic_store_n(&(field), LAZY_STATE_DONE, __ATOMIC_RELEASE)
+// LAZY_DONE(), unless --shared-graph's withholding experiment keeps a result its computation's taint frame saw an event
+// in from the other workers: then not started again (graph_withhold(), -DTTTT_GRAPH_TAINT builds only)
+#if defined(TTTT_GRAPH_TAINT) && !defined(TTTT_TAINT)
+#define LAZY_DONE_CLEAN(field, frame, kind) do { \
+    if (graph_withhold((kind), (frame))) __atomic_store_n(&(field), LAZY_STATE_NOT_STARTED, __ATOMIC_RELEASE); \
+    else LAZY_DONE(field); \
+} while (0)
+#else
+#define LAZY_DONE_CLEAN(field, frame, kind) LAZY_DONE(field)
+#endif
 bool lazy_wait_slow(Checker* me, void* field, size_t size); // (graph.c) false: break the cycle, don't wait
 bool lazy_claim_slow(Checker* me, void* field, size_t size);
 
