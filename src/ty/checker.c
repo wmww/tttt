@@ -285,7 +285,7 @@ static inline void const** intern_hit(InternTable const* table, void const** blo
 }
 
 static bool intern_needs_growth(InternTable const* table) {
-    return (table->len + 1) * 4 > table->cap * 3;
+    return (table->len + 1) * 8 > table->cap * 5;
 }
 
 #ifdef TTTT_DEBUG_IDS
