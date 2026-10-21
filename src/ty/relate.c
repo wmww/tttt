@@ -4073,17 +4073,24 @@ Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing) {
     InternMiss miss;
     Ty const* cached = intern_lookup(&my links, key, 3, &miss);
     if (cached) return cached;
-    // (Itself while in flight, like tsc's circularConstraintType marker)
-    void const** slot = intern_insert(me, &my links, &miss, key, 3);
-    *slot = ty;
+    // (Itself while in flight, like tsc's circularConstraintType marker: the computation's claim says so, the links
+    // only ever hold the answer)
+    if (ty_claim_find(me, CLAIM_SIMPLIFIED, ty, writing)) {
+#ifdef TTTT_TAINT
+        taint_event(TAINT_IN_FLIGHT_SLOT);
+#endif
+        return ty;
+    }
+    Claim claim;
+    ty_claim_push(me, CLAIM_SIMPLIFIED, &claim, ty, writing);
 #ifdef TTTT_TAINT
     TaintFrame taint_frame = taint_begin();
-    taint_slot_begin(slot);
 #endif
     Ty const* ret = ty->kind == TY_CONDITIONAL ? compute_simplified_conditional(me, ty, writing) : compute_simplified(me, ty, writing);
+    ty_claim_pop(me, CLAIM_SIMPLIFIED, &claim);
+    void const** slot = intern_insert(me, &my links, &miss, key, 3);
     *slot = ret;
 #ifdef TTTT_TAINT
-    taint_slot_end(slot);
     taint_end(taint_frame, TK_SIMPLIFIED, slot, ty, ret);
 #endif
     return ret;

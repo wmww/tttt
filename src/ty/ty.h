@@ -1027,6 +1027,8 @@ typedef enum ClaimKind {
     CLAIM_VARIANCES, // relate.c's VarianceClaim: a declared type's or alias's variances being measured
     CLAIM_DEFERRED_ARGS, // lower.c's DeferredArgsClaim: a deferred reference's arguments being resolved
     CLAIM_PARAM_DEFAULT, // members.c's ParamDefaultClaim: a type parameter's default being lowered
+    CLAIM_SIMPLIFIED, // ty_simplified() of (type, writing) in flight: itself meanwhile
+    CLAIM_PRIMITIVE_CONSTRAINT, // checker.c's primitive_constraint_of() of a type variable in flight: none meanwhile
     CLAIM_KIND_COUNT,
 } ClaimKind;
 
