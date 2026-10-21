@@ -434,19 +434,17 @@ bool ty_function_type_mentions(Checker* me, Ty const* ty, TyList* out) {
     return compute_mentions(me, ty, key, out);
 }
 
+// (Computed each time, not remembered in the branch: what it is in this resolution, the constraint root's context
+// included. It took the branch's remembered type when there was one, and this resolution's otherwise: history, whose
+// removal moved nothing on the suite and 12 corpora, plan 86 "P2 progress")
 static Ty const* branch_type(Checker* me, TyCondBranch const* branch) {
-    TyCondBranch copy = *branch;
-    return ty_cond_branch_type(me, &copy);
+    return ty_cond_branch_compute(me, branch, branch->mapper);
 }
 
 // The branch instantiated with the `infer` results too: in one go with what the branch has been instantiated with so
 // far, like tsc's combinedMapper (a substitution type in it resolves differently in two steps)
 static Ty const* branch_type_with(Checker* me, TyCondBranch const* branch, TyMapper const* mapper) {
-    if (mapper && (branch->node || branch->source) && branch->state != LAZY_STATE_DONE) {
-        TyCondBranch copy = *branch;
-        copy.mapper = ty_compose_mappers(me, branch->mapper, mapper);
-        return ty_cond_branch_type(me, &copy);
-    }
+    if (mapper && (branch->node || branch->source)) return ty_cond_branch_compute(me, branch, ty_compose_mappers(me, branch->mapper, mapper));
     return ty_instantiate_tail(me, branch_type(me, branch), mapper);
 }
 
@@ -781,7 +779,7 @@ Ty const* ty_conditional_resolve(
     // (A conditional type written as the false branch goes on for the constraint too, tsc's tail loop in
     // getConditionalType: `T extends null ? null : T extends string ? "" : ...`)
     Ty const* falsy = nullptr;
-    if (for_constraint && if_false->node && if_false->node->tag == TYPE_TERNARY && if_false->state != LAZY_STATE_DONE) {
+    if (for_constraint && if_false->node && if_false->node->tag == TYPE_TERNARY) {
         Ty const* nested = ty_from_node(me, if_false->node, if_false->ctx);
         if (nested->kind == TY_CONDITIONAL &&
             (!nested->conditional.distributive ||

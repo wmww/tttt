@@ -4924,9 +4924,11 @@ static Ty const* compute_base_constraint(Checker* me, Ty const* ty, ConstraintSt
 }
 
 // A branch of a conditional type, as instantiated if it is already, else as written: whether it could be never
-static bool cond_branch_may_be_never(TyCondBranch const* branch) {
-    bool done = LAZY_LOAD(branch->state) == LAZY_STATE_DONE || (!branch->node && !branch->source);
-    if (done) return branch->type && (branch->type->flags & TYF_NEVER);
+// (ty_cond_branch_known(): a done-ness peek that selects the answer, rule 5's kind; not an event yet, plan 86 "P2
+// progress")
+static bool cond_branch_may_be_never(Checker* me, TyCondBranch const* branch) {
+    Ty const* known = ty_cond_branch_known(me, branch);
+    if (known) return known->flags & TYF_NEVER;
     if (branch->source) {
         Ty const* type = branch->source;
         // (Something generic other than an object type may instantiate to never)
@@ -4942,9 +4944,9 @@ static bool cond_branch_may_be_never(TyCondBranch const* branch) {
 }
 
 // Whether a branch of a conditional type is (or as written could be) its check type
-static bool cond_branch_may_be_check(Ty const* ty, TyCondBranch const* branch) {
-    bool done = LAZY_LOAD(branch->state) == LAZY_STATE_DONE || (!branch->node && !branch->source);
-    if (done) return branch->type && actual_type_variable(branch->type) == actual_type_variable(ty->conditional.check);
+static bool cond_branch_may_be_check(Checker* me, Ty const* ty, TyCondBranch const* branch) {
+    Ty const* known = ty_cond_branch_known(me, branch);
+    if (known) return actual_type_variable(known) == actual_type_variable(ty->conditional.check);
     Ty const* root = ty->conditional.root ? ty->conditional.root : ty;
     if (branch->source) return actual_type_variable(branch->source) == actual_type_variable(root->conditional.check);
     // (A type parameter's name, not an alias applied to arguments)
@@ -4956,11 +4958,11 @@ static bool cond_branch_may_be_check(Ty const* ty, TyCondBranch const* branch) {
 // type once its branches are instantiated, judged by the branches as written where they aren't yet: instantiating
 // them resolves what they mention, which tsc's lazier types don't (mikro-orm/packages/seeder went 2.3x types).
 // (Approximate: a branch written as another type parameter that the mapper makes the check type is missed)
-static bool may_simplify_conditional(Ty const* ty) {
+static bool may_simplify_conditional(Checker* me, Ty const* ty) {
     TyCondBranch const* if_false = &ty->conditional.branches[0];
     TyCondBranch const* if_true = &ty->conditional.branches[1];
-    return (cond_branch_may_be_never(if_false) && cond_branch_may_be_check(ty, if_true)) ||
-        (cond_branch_may_be_never(if_true) && cond_branch_may_be_check(ty, if_false));
+    return (cond_branch_may_be_never(me, if_false) && cond_branch_may_be_check(me, ty, if_true)) ||
+        (cond_branch_may_be_never(me, if_true) && cond_branch_may_be_check(me, ty, if_false));
 }
 
 // tsc's getResolvedBaseConstraint, without the sentinels: cached like its resolvedBaseConstraint, whatever the stack
@@ -5014,7 +5016,7 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
     TAINT_BEGIN(taint_frame);
     u64 start = graph_taint_now;
     ty_resolving_push(me, RESOLVING_BASE_CONSTRAINT, ty);
-    Ty const* ret = deep ? nullptr : compute_base_constraint(me, ty->kind == TY_INDEXED || (ty->kind == TY_CONDITIONAL && may_simplify_conditional(ty)) ?
+    Ty const* ret = deep ? nullptr : compute_base_constraint(me, ty->kind == TY_INDEXED || (ty->kind == TY_CONDITIONAL && may_simplify_conditional(me, ty)) ?
         ty_simplified(me, ty, false) : ty, &inner);
     bool circular = ty_resolving_pop(me);
     // (The first answer stays: one computed again below the barrier answered already)

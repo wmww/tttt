@@ -197,21 +197,16 @@ TyMapper const* ty_mapper_with(Checker* me, TyMapper const* mapper, Ty const* so
 // (Whether the root's branch is lowered yet is history: an instance's key is its root and mapper, not this, see
 // ty_conditional(). Instantiating every branch from the node instead cost drizzle 10% more instructions at K1, each
 // instance lowering its branch again)
+// (A done-ness peek that decides an identity's representation: plan 86 4f's "known identity-history holes", the two
+// paths aren't equivalent)
 static TyCondBranch instantiate_branch(Checker* me, TyCondBranch const* branch, TyMapper const* mapper) {
-    unsigned state = LAZY_LOAD(branch->state);
-    // (Field by field: with --shared-graph another checker may be lowering the branch, writing its type)
-    TyCondBranch ret = { .node = branch->node, .source = branch->source, .ctx = branch->ctx, .mapper = branch->mapper };
-    if ((branch->node || branch->source) && state != LAZY_STATE_DONE) {
-        ret.mapper = ty_compose_mappers(me, branch->mapper, mapper);
-        ret.state = LAZY_STATE_NOT_STARTED;
-        return ret;
+    Ty const* lowered = ty_cond_branch_known(me, branch);
+    if (!lowered) {
+        return (TyCondBranch){ .node = branch->node, .source = branch->source, .ctx = branch->ctx,
+            .mapper = ty_compose_mappers(me, branch->mapper, mapper) };
     }
-    ret.type = branch->type;
-    ret.state = state;
-    if (branch->type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
-        ret = (TyCondBranch){ .source = branch->type, .mapper = mapper };
-    }
-    return ret;
+    if (lowered->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) return (TyCondBranch){ .source = lowered, .mapper = mapper };
+    return (TyCondBranch){ .type = lowered };
 }
 
 static Ty const* conditional_from_root(Checker* me, Ty const* root, Ty const* check_type, TyMapper const* mapper) {

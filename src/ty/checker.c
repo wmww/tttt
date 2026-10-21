@@ -4222,22 +4222,31 @@ Ty const* ty_optional_prop_type(Checker* me, Ty const* ty) {
     return ty_union(me, (Ty const*[]){ ty, add }, 2, nullptr, (TyList){0});
 }
 
-Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch) {
-    again:
-    if ((!branch->node && !branch->source) || LAZY_LOAD(branch->state) == LAZY_STATE_DONE) return branch->type;
-    LAZY_SNAP(me, branch->state, seen, again);
-    if (seen == LAZY_STATE_DONE) return branch->type;
-    if (LAZY_IN_FLIGHT(seen)) {
-        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-        return ty_intrinsic(me, TY_ERROR);
-    }
-    if (!LAZY_CLAIM(me, branch->state)) goto again;
-    TAINT_BEGIN(taint_frame);
+Ty const* ty_cond_branch_known(Checker const* me, TyCondBranch const* branch) {
+    if (!branch->node && !branch->source) return branch->type;
+    return SW_PTR(sw_peek_fast(me, &branch->lowered));
+}
+
+Ty const* ty_cond_branch_compute(Checker* me, TyCondBranch const* branch, TyMapper const* mapper) {
+    if (!branch->node && !branch->source) return branch->type;
     Ty const* source = branch->node ? ty_from_node(me, branch->node, branch->ctx) : branch->source;
-    branch->type = ty_instantiate_tail(me, source, branch->mapper);
-    TAINT_END(taint_frame, TK_COND_BRANCH, branch, branch, branch->type);
-    LAZY_DONE(branch->state);
-    return branch->type;
+    return ty_instantiate_tail(me, source, mapper);
+}
+
+Ty const* ty_cond_branch_type(Checker* me, TyCondBranch const* branch) {
+    if (!branch->node && !branch->source) return branch->type;
+    TyCondBranch* mut = (TyCondBranch*)branch; // (The word and its default-path byte only)
+    uintptr_t v = sw_get(me, &branch->lowered);
+    if (__builtin_expect(v != 0, 1)) return SW_PTR(v);
+    switch (sw_look_fast(me, &branch->lowered, &branch->state, &v)) {
+        case SW_LOOK_DONE: return SW_PTR(v);
+        case SW_LOOK_MINE: return ty_intrinsic(me, TY_ERROR); // (Its own cycle: a taint event)
+        case SW_LOOK_COMPUTE: break;
+    }
+    u64 taint = sw_claim_fast(me, &mut->lowered, &mut->state);
+    Ty const* ret = ty_cond_branch_compute(me, branch, branch->mapper);
+    SW_FP(TK_COND_BRANCH, branch, ret, taint);
+    return SW_PTR(sw_finish_fast(me, &mut->lowered, &mut->state, SW_VAL(ret), taint));
 }
 
 static u32 cond_branch_key_len(TyCondBranch const* branch) {

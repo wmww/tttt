@@ -1547,6 +1547,13 @@ in parallel only where the file sets are disjoint):
       distributiveConditionalTypeConstraints, recursiveConditionalCrash4); then the choice and the hole vanish. P3's
       fingerprint divergence (1) (zod `$replace`'s distributive constraint) starts at a conditional branch: probably
       this.
+      tsc has only the node path (getConditionalTypeInstantiation re-evaluates getConditionalType from root.node with
+      the combined mapper, cached by type-argument ids), so tttt's "instantiate the root's lowered type" path is an
+      optimization whose non-equivalence is a fidelity bug: the type-fest TS2344 under the node path is tttt's node
+      path differing from tsc, the 3 suite tests failing with the root lowered first are the lowered path's. Branches
+      as landed (A): TyCondBranch.lowered is the word, conditional.c's branch_type()/branch_type_with() compute fresh
+      (their peeks deleted: no output change), instantiate_branch() keeps the creation-time choice through
+      ty_cond_branch_known() (the hole), relate.c's cond_branch_may_be_never/_check() peek it (selecting, no event yet).
   - **P3, relate.c + graph.c + lazy_type.c + shared_table.c** (variance groups without waiting, declaration memos as
     words, memo kinds publishing only clean entries in graph_memo_flush(), the shared relation cache's deeply-nested
     rule). ~1-2 sessions. The tooling worker's hooks in graph.c and shared_table.c are its neighbours: rebase often.

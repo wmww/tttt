@@ -490,16 +490,21 @@ static_assert(sizeof(Ty) == 144);
 // is never copied whole (ty_copy())
 size_t ty_size_of_kind(TyKind kind);
 
+// A conditional type's branch: immutable but for `lowered`, a lazy branch's type once picked through its conditional
+// type (ty_cond_branch_type(), plan 86 stage 4f's shared word)
 struct TyCondBranch {
-    Ty const* type; // null until lowered if `node` or `source` is set
+    Ty const* type; // The branch, if neither `node` nor `source` is set (eager)
     TypeNode const* node;
     // Or a type to instantiate with `mapper` when the branch is picked: instantiating both branches of a conditional
     // up front would resolve what the untaken one mentions (`Awaited<V>` inside `Awaited<number>`) and never end
     Ty const* source;
     LowerCtx ctx;
     TyMapper const* mapper;
-    LazyState state;
+    uint8_t state; // `lowered` in flight without --shared-graph (overlay.h)
+    SharedWord lowered;
 };
+// The branch's type if this worker knows it without computing it (eager, or lowered: a done-ness peek), else null
+Ty const* ty_cond_branch_known(Checker const* me, TyCondBranch const* branch);
 
 typedef struct TyDeferredRef {
     TypeNode const* node; // TYPE_ARRAY, TYPE_TUPLE or TYPE_IDENTIFIER (a generic interface or class)
@@ -1832,7 +1837,10 @@ Ty const* ty_remove_optional_marker(Checker* me, Ty const* ty); // tsc's removeO
 // only the rest of an optional chain sees, so no need to ask whether the expression is one). `optional` (may be null):
 // whether that took something out, so that what the access or call evaluates to may be undefined
 Ty const* ty_optional_expression_type(Checker* me, Ty const* object, bool is_root, bool* optional);
-Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch);
+// The branch picked, remembered in the branch (a conditional type's own); ty_cond_branch_compute() computes it each time,
+// with `mapper` instead of its own (any branch, a local copy too)
+Ty const* ty_cond_branch_type(Checker* me, TyCondBranch const* branch);
+Ty const* ty_cond_branch_compute(Checker* me, TyCondBranch const* branch, TyMapper const* mapper);
 static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional, bool which) {
     return ty_cond_branch_type(me, &conditional->conditional.branches[which]);
 }
