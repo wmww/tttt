@@ -1470,11 +1470,17 @@ in parallel only where the file sets are disjoint):
       drizzle select.ts createIterator, dialect.ts mapToDriverValue), persists. It isn't prop_type()'s word: it comes
       through ty_function_type_mentions()'s instantiation identity, a later group. The fingerprint build segfaulted on
       effect in graph_debug's describe() of KEY reference args (fixed on ai-main by 04c1f100b).
-    - **Signature return and predicate (held, wip 5ffd63edc)**: Signature.ret and .predicate are words, the class
-      signature's return in SigResolved.class_ret. Gated except excalidraw: 20/20 runs differ, because App.tsx's
-      `perform` returns lose their contextual return type. A worker that no longer waits for another's in-flight
-      signature return infers the function's return itself, context-free, and that counts as clean. Lands after
-      wt-ctx (the contextual signature as a function of the node).
+    - **Signature return and predicate**: Signature.ret and .predicate are words, the class signature's return in
+      SigResolved.class_ret (signature_return_type() publishes it on first use). Held while excalidraw differed (a
+      worker inferred a function's return context-free); it landed after wt-ctx's on-demand context settle
+      (35a132166). ty_function_type_mentions()'s return-type peek is a taint event with it. **Still held**: it passes
+      excalidraw, effect and the others 20/20 (effect 19/20 is ai-main's own Schema.tst.ts residue), effect seeds
+      100/100, TSan on five corpora clean, fingerprint effect 2 and excalidraw 10-17. But drizzle seeds fail 5 of 200
+      (26, 92, 134, 145, 151) where its parent fails none of the same 200: query.ts(139) `this.prepare().execute()` is
+      `Promise<unknown>`. The recheck's fresh checker gets it right, so it is a worker's own history, not a published
+      value. prepare() returns PreparedQueryKind<...>, whose `execute`/`createIterator` methods are divergence (2)'s
+      family (below), so the guess is the mention-trimming identity made output-visible by return types now being
+      known per worker. Neither dropping the mentions event nor publishing class_ret at resolution settles it.
     - **Type parameter constraint, default and circularity**: TyParamState.constraint (a Ty, NONE if unconstrained),
       .fallback (a Ty, NONE, or the ty_param_default_circular_marker: fallback_circular folded in) and .circular
       (PARAM_NOT_CIRCULAR/PARAM_CIRCULAR, no in-flight state: a re-entry computes it again, the first answer stays,
@@ -1531,7 +1537,23 @@ in parallel only where the file sets are disjoint):
       on none.
     - **Natural shadowing**: nest shadowed 11 times over 20 K12 runs with the members group in, the first natural
       shadowing seen (drizzle 0, zod 0, effect 1, excalidraw 0). This bears on step D's lever of retiring a shadowed
-      worker at once.
+      worker at once. On the base_cycle commit's tables drizzle shadowed 65 times over 20 runs (0-12 a run; that
+      commit's message says 0, wrongly) and nest 11; 5-run samples gave ai-main alone 1 and that commit 2, so the count
+      follows the machine's load, not the commit.
+    - **Divergence (2)** (methods' property types: excalidraw App.tsx's `getSceneElementsIncludingDeleted = () => ...`,
+      effect tagStartsWith, drizzle createIterator). Traced with a probe: at K1 the class property arrow's function type
+      is instantiated by App's `this` mapper while its inferred return type isn't known yet. ty_function_type_mentions()
+      answers unknown (its return-type peek), the instantiation keeps the whole mapper, and the instance is an identity
+      (cached by that key). In K12 a worker that met it after the return was inferred has the mention set known (empty)
+      and keeps the type itself. Both are clean where they are made: the instance identity is fixed by the first
+      instantiation's history. The peek is an event now, but the identity's cache entry is published whatever its taint
+      (identities must be), so later hits aren't tainted. Fixes, none taken yet:
+      (a) infer the return type there instead of peeking: changes the default path (one suite test fails, excalidraw's
+      output moves);
+      (b) key such instantiations by the declaration's syntactic in-scope type parameters (tsc's
+      getObjectTypeInstantiation) whatever is inferred: loses the plan 51 trimming that kysely's builders need;
+      (c) the oracle compares only where K1's own computation was clean, and counts identity-cache hits made under a
+      taint as tainted.
   - **P2, checker.c + lower.c + function.c + instantiate.c** (reduced, cond branches, declared types, reference args,
     implied constraints, function returns, ty_alloc and the directory's chunk slots (lazy_type.c's lazy_slots_*),
     order keys, literal twins: TSan C). ~1-2 sessions.
