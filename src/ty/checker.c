@@ -1129,10 +1129,20 @@ static bool sorted_contains(TyBuf const* buf, u32 len, Ty const* t) {
 }
 
 Ty const* ty_string_literal(Checker* me, csview sv) {
-    Value value = { .tag = VALUE_STRING, .string = cstr_from_sv(name_cooked(sv)) }; // (maybe an identifier's name)
-    Ty const* ret = ty_literal(me, &value);
-    value_drop(&value);
-    return ret;
+    // (literal_type()'s string case, without a Value: its string would be copied only to be looked up as an atom.
+    // Hundreds of thousands per checker, a property access's key mostly)
+    Atom const* string = checker_atom(me, sv); // (maybe an identifier's name: cooked)
+    u64 key[4] = { KEY_LITERAL, VALUE_STRING, (u64)(uintptr_t)string, 0 };
+    void const** slot = intern_slot(me, &my types, key, 4);
+    if (!*slot) {
+        Ty* ret = ty_alloc(me, TY_LITERAL, TYF_STRING_LITERAL);
+        ret->literal.value = (Value){ .tag = VALUE_STRING, .string = cstr_null };
+        ret->literal.string = string;
+        ret->literal.enum_decl = nullptr;
+        ret->literal.enum_member = nullptr;
+        intern_set(me, &my types, slot, ret);
+    }
+    return *slot;
 }
 
 // Unions and intersections

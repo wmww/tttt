@@ -49,6 +49,10 @@ static LazyMemo* lazy_type_state(LazyType* me) {
     return &(*page)[my slot & ((1 << LAZY_PAGE_BITS) - 1)];
 }
 
+LazyMemo* lazy_type_memo(LazyType* me) {
+    return lazy_type_state(me);
+}
+
 TypeDirectory* type_directory_new(void) {
     TypeDirectory* me = zeroed_table(1, sizeof(TypeDirectory));
     panic_if(!me, "out of memory");

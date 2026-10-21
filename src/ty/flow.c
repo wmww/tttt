@@ -118,6 +118,7 @@ typedef struct FlowQuery {
     Checker* me;
     Expr const* reference;
     Symbol const* symbol; // Identifier references: the variable
+    bool identifier; // The reference is an identifier (not a keyword) under its `!`s and `satisfies`, `symbol` its target
     // A binding pattern as a pseudo reference (reference is then a placeholder that matches nothing): what its sibling
     // elements' discriminants say about the destructured value (tsc's getNarrowedTypeOfSymbol)
     Binding const* pattern;
@@ -1179,7 +1180,8 @@ static Ty const* initial_or_assigned_type_raw(FlowQuery* q, FlowAssign const* as
 
 static bool assign_matches(FlowQuery* q, FlowAssign const* assign) {
     if (assign->kind == FLOW_ASSIGN_DECLARATION) {
-        return assign->binding->tag == BINDING_IDENTIFIER && symbol_matches_reference(q->reference, assign->binding->symbol);
+        // (symbol_matches_reference(), worked out once per query)
+        return assign->binding->tag == BINDING_IDENTIFIER && q->identifier && q->symbol == assign->binding->symbol;
     }
     return assign->target && is_matching_reference(q->me, q->reference, assign->target);
 }
@@ -1476,6 +1478,10 @@ void ty_check_assertion_call_statement(Checker* me, Expr const* expr, ErrorCtx* 
 // tsc's getEffectsSignature(), remembered per call like there
 static CallEffects call_effects(Checker* me, Expr const* call_expr, bool is_statement) {
     u32 kind = is_statement ? KEY_FLOW_CALL : KEY_FLOW_CALL_IN_EXPR;
+    // (Most calls have no effects: that's a bit in the call's memo, see LazyMemo.no_call_effects)
+    LazyType* memo_of = call_expr->lazy_type.slot ? (LazyType*)&call_expr->lazy_type : nullptr;
+    LazyMemo const* memo = memo_of ? lazy_type_state_peek(memo_of) : nullptr;
+    if (memo && (is_statement ? memo->no_call_effects : memo->no_call_effects_in_expr)) return (CallEffects){0};
     CallEffects const* cached = ty_link_get(me, kind, call_expr);
     if (cached) return *cached;
     CallExpr const* call = call_expr->call;
@@ -1500,6 +1506,15 @@ static CallEffects call_effects(Checker* me, Expr const* call_expr, bool is_stat
     CallEffects effects = ty_call_effects(me, callee, call);
     TAINT_FLOW();
     my flow_uncached--;
+    TyPredicate const* pr = &effects.predicate;
+    bool none = !effects.has_predicate && !effects.returns_never && !pr->is_this && !pr->asserts && !pr->param_index &&
+        !pr->param_name && !pr->type;
+    if (memo_of && none) {
+        LazyMemo* fresh = lazy_type_memo(memo_of);
+        if (is_statement) fresh->no_call_effects = true;
+        else fresh->no_call_effects_in_expr = true;
+        return effects;
+    }
     CallEffects* stored = arena_new(&my arena, CallEffects);
     *stored = effects;
     ty_link_set(me, kind, call_expr, stored);
@@ -3577,6 +3592,7 @@ Ty const* ty_flow_type(Checker* me, Expr const* reference, Ty const* declared, T
         .me = me,
         .reference = reference,
         .symbol = inner->tag == EXPR_IDENTIFIER && !inner->identifier.keyword ? inner->identifier.target : nullptr,
+        .identifier = inner->tag == EXPR_IDENTIFIER && !inner->identifier.keyword,
         .declared = declared,
         .initial = initial,
         .shared_start = my flow_shared_count,

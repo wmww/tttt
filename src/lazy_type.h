@@ -18,6 +18,10 @@ typedef struct LazyMemo {
     bool pattern_retried : 1;
     // --shared-graph: its evaluation was tainted (ty/graph.c), so reading it is a taint event (lazy_type_evaluate())
     bool tainted : 1;
+    // Call expressions: tsc's getEffectsSignature found nothing for it as a statement's call / an expression's (flow.c
+    // call_effects(): read at every flow query that walks past it, a memo next to the type's is cheaper than node links)
+    bool no_call_effects : 1;
+    bool no_call_effects_in_expr : 1;
     // Expressions: re-entrant evaluations so far. (In-flight state, but an expression's memo is the checker's own,
     // never shared: a declaration's in-flight state is its RESOLVING_DECLARATION record, lazy_type_evaluate_inner())
     unsigned char hits;
@@ -137,6 +141,8 @@ static inline LazyMemo* lazy_type_state_peek(LazyType* me) {
 }
 
 void lazy_type_drop(LazyType* me);
+// The memo, allocated if it wasn't (the slot must be bound)
+LazyMemo* lazy_type_memo(LazyType* me);
 
 // Stores a result computed by someone who knows more than lazy_type_evaluate() would (the contextual type of an
 // expression). Replaces the memo if there is one
