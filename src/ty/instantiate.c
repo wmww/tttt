@@ -958,7 +958,13 @@ Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alia
             fresh->indexed = ty->indexed;
         } else if (ty->kind == TY_CONDITIONAL) {
             // The root stays the unnamed one; instantiation puts the name back on (instantiate_inner)
-            fresh->conditional = ty->conditional;
+            // (Field by field: a root's outer and root_aliased are set after it is interned, by a CAS another worker
+            // may be making now; the copy is no root, it reads its root's)
+            fresh->conditional = (typeof(fresh->conditional)){
+                .check = ty->conditional.check, .extends = ty->conditional.extends, .branches = ty->conditional.branches,
+                .distributive = ty->conditional.distributive, .check_tuples = ty->conditional.check_tuples,
+                .root = ty->conditional.root, .mapper = ty->conditional.mapper,
+            };
         } else if (ty->kind == TY_REFERENCE) {
             fresh->reference = ty->reference; // (The same node and mapper: the same arguments)
             fresh->reference.state = arena_new(&my arena, TyObjectState);

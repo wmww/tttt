@@ -60,6 +60,9 @@ static inline Symbol const* canonical(Checker* me, Symbol const* symbol) {
 // left it null on the suite or the corpora; if one ever does, the first item to get here is it, by a CAS (another
 // worker may be setting it from another of the merged declarations)
 static void set_param_item(Ty const* param, GenericItem const* item) {
+    // (Set already, as always for a symbol's: no write at all to a published parameter, which other workers read
+    // plainly)
+    if (__atomic_load_n(&param->param.state->item, __ATOMIC_ACQUIRE)) return;
     GenericItem const* expected = nullptr;
     __atomic_compare_exchange_n(&param->param.state->item, &expected, item, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
 }
@@ -3349,7 +3352,10 @@ static Ty const* binding_element_implied_type(Checker* me, Binding const* elemen
 static Ty* clone_with_new_id(Checker* me, Ty const* ty) {
     Ty* ret = ty_alloc(me, (TyKind)ty->kind, ty->flags);
     u32 id = ret->id;
-    memcpy(ret, ty, ty_size_of_kind((TyKind)ty->kind));
+    // (Around order_key, which another worker may be caching in the original meanwhile: an atomic word, plan 86 4f)
+    size_t at = offsetof(Ty, order_key), size = ty_size_of_kind((TyKind)ty->kind);
+    memcpy(ret, ty, at);
+    memcpy((char*)ret + at + sizeof ret->order_key, (char const*)ty + at + sizeof ret->order_key, size - at - sizeof ret->order_key);
     ret->id = id;
     ret->order_key = 0;
     return ret;
@@ -4033,12 +4039,13 @@ static TyCondBranch lower_branch(TypeNode const* node, LowerCtx ctx) {
 
 // The check and extends types of a conditional type as they imply a constraint on the types in its true branch (tsc's
 // getImpliedConstraint): `[A] extends [B]` implies what `A extends B` does
+// (A node link memo: published when its making saw no event, which it can't. Its two types are shared words, plan 86 4f)
 typedef struct ImpliedConstraint {
     TypeNode const* check_node;
     TypeNode const* extends_node;
-    LazyState check_state;
-    Ty const* check; // ty_actual_type_variable() of it
-    Ty const* extends; // Lowered when first needed
+    uint8_t check_state, extends_state; // In flight without --shared-graph (overlay.h)
+    SharedWord check; // ty_actual_type_variable() of it
+    SharedWord extends; // Lowered when first needed
 } ImpliedConstraint;
 
 static bool is_unary_tuple_node(TypeNode const* node) {
@@ -4048,8 +4055,9 @@ static bool is_unary_tuple_node(TypeNode const* node) {
 }
 
 static ImpliedConstraint* implied_constraint(Checker* me, TernaryType const* ternary) {
-    ImpliedConstraint* cached = (ImpliedConstraint*)ty_link_get(me, KEY_IMPLIED_CONSTRAINT, ternary);
+    ImpliedConstraint* cached = (ImpliedConstraint*)ty_link_get_memo(me, KEY_IMPLIED_CONSTRAINT, ternary);
     if (cached) return cached;
+    u64 start = graph_taint_now;
     ImpliedConstraint* ret = arena_new(&my arena, ImpliedConstraint);
     TypeNode const* check_node = &ternary->maybe_sub;
     TypeNode const* extends_node = &ternary->maybe_super;
@@ -4059,7 +4067,7 @@ static ImpliedConstraint* implied_constraint(Checker* me, TernaryType const* ter
     }
     ret->check_node = check_node;
     ret->extends_node = extends_node;
-    ty_link_set(me, KEY_IMPLIED_CONSTRAINT, ternary, ret);
+    ty_link_set_memo(me, KEY_IMPLIED_CONSTRAINT, ternary, ret, start);
     return ret;
 }
 
@@ -4103,25 +4111,30 @@ static Ty const* conditional_flow_type(Checker* me, TypeNode const* node, Ty con
         }
         if (!flow->covariant && !type_variable) continue;
         ImpliedConstraint* implied = implied_constraint(me, flow->ternary);
-        retry_check:;
-        LAZY_SNAP(me, implied->check_state, seen, retry_check);
-        if (LAZY_IN_FLIGHT(seen)) continue;
-        if (seen == LAZY_STATE_NOT_STARTED) {
-            if (!LAZY_CLAIM(me, implied->check_state)) goto retry_check;
-            TAINT_BEGIN(taint_frame);
-            Ty const* check = ty_from_node(me, implied->check_node, (LowerCtx){ .generic = true });
-            implied->check = ty_actual_type_variable(me, check);
-            TAINT_END(taint_frame, TK_IMPLIED_CHECK, implied, implied, implied->check);
-            LAZY_DONE(implied->check_state);
+        uintptr_t v = sw_get(me, &implied->check);
+        if (!v) {
+            SwLook look = sw_look_fast(me, &implied->check, &implied->check_state, &v);
+            if (look == SW_LOOK_MINE) continue; // (Its own cycle: a taint event)
+            if (look == SW_LOOK_COMPUTE) {
+                u64 taint = sw_claim_fast(me, &implied->check, &implied->check_state);
+                Ty const* check = ty_actual_type_variable(me, ty_from_node(me, implied->check_node, (LowerCtx){ .generic = true }));
+                SW_FP(TK_IMPLIED_CHECK, implied, check, taint);
+                v = sw_finish_fast(me, &implied->check, &implied->check_state, (uintptr_t)check, taint);
+            }
         }
         if (!actual) actual = ty_actual_type_variable(me, ty);
-        if (implied->check != actual) continue;
-        if (!__atomic_load_n(&implied->extends, __ATOMIC_ACQUIRE)) {
-            Ty const* extends = ty_from_node(me, implied->extends_node, (LowerCtx){ .generic = true });
-            Ty const* unset = nullptr;
-            __atomic_compare_exchange_n(&implied->extends, &unset, extends, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED);
+        if ((Ty const*)v != actual) continue;
+        uintptr_t e = sw_get(me, &implied->extends);
+        if (!e) {
+            SwLook look = sw_look_fast(me, &implied->extends, &implied->extends_state, &e);
+            if (look == SW_LOOK_MINE) continue; // (Its own cycle: a taint event)
+            if (look == SW_LOOK_COMPUTE) {
+                u64 taint = sw_claim_fast(me, &implied->extends, &implied->extends_state);
+                Ty const* extends = ty_from_node(me, implied->extends_node, (LowerCtx){ .generic = true });
+                e = sw_finish_fast(me, &implied->extends, &implied->extends_state, (uintptr_t)extends, taint);
+            }
         }
-        ty_buf_push(&constraints, __atomic_load_n(&implied->extends, __ATOMIC_ACQUIRE));
+        ty_buf_push(&constraints, (Ty const*)e);
     }
     if (constraints.len) {
         Ty const* constraint = constraints.len == 1 ? constraints.data[0] :
