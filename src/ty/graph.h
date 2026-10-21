@@ -30,6 +30,18 @@ enum { GRAPH_KIND_INTERSECTION_PROPS = 254 };
 GraphClass graph_kind_class(u32 kind);
 char const* graph_kind_name(u32 kind); // KEY_* by name
 
+// TTTT_GRAPH_SEED=N (graph_sched.c): one worker runs at a time, handing off in a seeded order at the scheduling points
+extern bool graph_sched_on;
+void graph_sched_init(u32 threads); // before the threads start
+void graph_sched_enter(void); // a worker thread starts (waits for its turn)
+void graph_sched_leave(void); // and is done
+void graph_sched_point_slow(bool waiting);
+void graph_sched_print(void);
+// A scheduling point: `waiting` for another worker (the token always goes on then)
+static inline void graph_sched_point(bool waiting) {
+    if (__builtin_expect(graph_sched_on, 0)) graph_sched_point_slow(waiting);
+}
+
 #ifdef TTTT_GRAPH_FINGERPRINT
 // The fingerprint-at-publish oracle (graph_debug.c): record mode for the K1 check, then check mode for the workers
 void graph_fp_start(bool record);

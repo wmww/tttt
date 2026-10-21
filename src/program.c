@@ -4937,6 +4937,7 @@ static void check_share(Program* me, u32 c, u32 count) {
             if (at != UINT32_MAX && !stolen++ && my checker_budget != UINT64_MAX && segment_count) recycle_due = true;
         }
         if (at == UINT32_MAX) break;
+        graph_sched_point(false);
         SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
         // (A failed materialization means a run without deferral: what's left needn't be checked, plan 78)
         if (atomic_load_explicit(&my defer_failed, memory_order_relaxed)) continue;
@@ -5128,7 +5129,9 @@ static u32 auto_checker_count(Program const* me) {
 }
 
 static void check_shares_run(CheckShares* me) {
+    graph_sched_enter();
     for (u32 c; (c = atomic_fetch_add(&my next, 1)) < my count;) check_share(my program, c, my count);
+    graph_sched_leave();
 }
 
 static void* check_shares_thread(void* shares) {
@@ -5395,6 +5398,11 @@ void program_typecheck(Program* me) {
         pthread_attr_destroy(&attr);
     }
     if (threads > count) threads = count;
+    if (my graph && getenv("TTTT_GRAPH_SEED")) {
+        panic_if(my graph_budget != UINT64_MAX, "TTTT_GRAPH_SEED needs --checker-memory off (the graph-wide recycle blocks outside the token)");
+        panic_if(helpers, "TTTT_GRAPH_SEED needs --threads equal to --checkers (no materialize-ahead helpers)");
+        graph_sched_init(threads);
+    }
     if (threads <= 1) {
         check_shares_run(&shares);
     } else {
@@ -5431,6 +5439,10 @@ void program_typecheck(Program* me) {
     my binder->frozen = false;
     my errs->frozen = false;
     if (my graph && getenv("TTTT_GRAPH_STATS")) graph_print_stats(my graph);
+    if (graph_sched_on) {
+        if (getenv("TTTT_GRAPH_STATS")) graph_sched_print();
+        graph_sched_on = false;
+    }
 #ifdef TTTT_GRAPH_FINGERPRINT
     graph_fp_print();
 #endif

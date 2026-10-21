@@ -454,6 +454,7 @@ static u64 const* intern_key_words(void const** block, u32 count) {
 // 4d: before the value escapes). If another checker's is there already, the private entry takes that one's value:
 // the winner's, which intern_set() returns (the loser's value stays in the arena, unreferenced)
 void const* intern_publish(Checker* me, InternTable* table, void const** slot) {
+    graph_sched_point(false);
     u64 hash = ((u64 const*)slot)[-1];
     u32 count = (u32)(hash >> 48);
     if (count == INTERN_LONG_KEY) count = (u32)((u64 const*)slot)[1];

@@ -986,7 +986,23 @@ every `-p` corpus, 20-run tables on the four, no default-path cost until the fla
    ty_function_type() still initializing a type another worker resolves the members of); F, four trivial ones, fixed
    (1519287bb). (2) The recheck, `TTTT_GRAPH_RECHECK=1|private` (program.c graph_recheck(), rep3.sh counts it): every
    file checked again by one fresh checker after the join, in the finished graph or privately, per-file errors
-   compared, the first differing file printed with both lists.
+   compared, the first differing file printed with both lists. (3) `fingerprint.sh` (a `-DTTTT_GRAPH_FINGERPRINT`
+   build, src/ty/graph_debug.c): a private K1 check in the same process records every result's structural fingerprint
+   by key (in-process because fingerprints hash AST and symbol addresses), then each value the K12 workers compute and
+   publish is compared. 20 runs each (de94e1179): differences in every run of zod (9), excalidraw (35-56), drizzle
+   (7-656), effect (9-1062), nest 0-2; 113 distinct, all with K1's output but one effect run. The repeatable ones: zod
+   `$replace<Meta, S>`'s base constraint published as its check type's constraint; methods' property types published
+   as an anonymous instance of the function type where K1 keeps the type (KEY_FUNCTION_TYPE_MENTIONS /
+   literal_instance_is_itself(), TSan's category E); drizzle's array builder variances; effect inferred returns with
+   `any` (aggregation.test.ts's generator: the TS2769/TS2375 miss). (4) `seeds.sh` (`TTTT_GRAPH_SEED=S`,
+   src/ty/graph_sched.c): one token, handed on in a seeded order at claims, identity publications, memo flushes, file
+   starts and wait rounds, so a schedule is its seed and replays byte for byte (checked: drizzle 397, 320, effect 473).
+   About K1 wall per run (zod 2.3 s, drizzle 4 s). 500 seeds each: drizzle 451 / 500 K1's output (all 49 the
+   singlestore/mysql TS2416/TS2322/TS2430 group, (b) above), with `TTTT_FIRST_TOUCH_STAMPS=1` 500 / 500; effect 488 /
+   500 (fiber.ts:293 TS7006, a contextual parameter lost, and aggregation.test.ts TS2375), with stamps 494 / 500, all
+   fiber.ts TS7006 (replay: `TTTT_FIRST_TOUCH_STAMPS=1 TTTT_GRAPH_SEED=18`; the recheck in the graph doesn't show it:
+   the worker's history). The schedules the seeds explore are far from what the free-running threads produce (the
+   free runs never showed fiber.ts): run both.
 2. **Shared relation cache (2 sessions)**, as designed below. Gate as there; excalidraw's K12 pairs within 5% of K1.
    **Done (2026-10-21).** recursive_related(): after the private cache and the maybe stack, a pair the private cache
    doesn't have is looked up in the graph's table for its relation kind (graph_relation_get(), SharedLinks keyed like

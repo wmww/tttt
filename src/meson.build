@@ -54,6 +54,7 @@ core_files = files(
     'ty/taint.c',
     'ty/graph.c',
     'ty/graph_debug.c',
+    'ty/graph_sched.c',
     'ty/atom_table.c',
     'ty/shared_table.c',
     'ty/survivors.c',

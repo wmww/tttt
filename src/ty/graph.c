@@ -761,6 +761,7 @@ static void lazy_field_reset(void* field, size_t size, unsigned seen) {
 }
 
 bool lazy_claim_slow(Checker* me, void* field, size_t size) {
+    graph_sched_point(false);
     unsigned mine = LAZY_STATE_IN_FLIGHT | (unsigned)me->graph_worker << 2;
     unsigned seen = lazy_field_load(field, size);
     if (seen == mine) return true;
@@ -838,7 +839,10 @@ bool lazy_wait_slow(Checker* me, void* field, size_t size) {
             lazy_field_reset(field, size, seen);
             break;
         }
-        if (round < 64) {
+        // (TTTT_GRAPH_SEED: the token goes to another worker every round, the owner gets to run; no pauses: a cycle is
+        // looked for at once)
+        if (graph_sched_on && round) graph_sched_point(true);
+        if (round < 64 && !graph_sched_on) {
             __builtin_ia32_pause();
             continue;
         }
@@ -871,6 +875,7 @@ bool lazy_wait_slow(Checker* me, void* field, size_t size) {
         // 1.59 s mean wall sleeping at once, 660 and 0.85 s yielding 50 times first. TTTT_GRAPH_WAIT_YIELDS=N)
         static int yields = -1;
         if (yields < 0) yields = getenv("TTTT_GRAPH_WAIT_YIELDS") ? atoi(getenv("TTTT_GRAPH_WAIT_YIELDS")) : 50;
+        if (graph_sched_on) continue;
         if (round < 64 + (u32)yields) {
             sched_yield();
             continue;
@@ -1047,6 +1052,7 @@ void graph_memo_log_unput(Checker* checker, void const** block) {
 void graph_memo_flush(Checker* checker) {
     TyGraph* me = checker->graph;
     if (!me) return;
+    graph_sched_point(false);
     if (__builtin_expect(debug_memo_publish < 0, 0)) debug_memo_publish = getenv("TTTT_DEBUG_MEMO_PUBLISH") != nullptr;
     u32 kept = 0;
     for (u32 i = 0; i < checker->graph_memo_log_len; i++) {
