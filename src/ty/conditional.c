@@ -428,7 +428,7 @@ bool ty_function_type_mentions(Checker* me, Ty const* ty, TyList* out) {
     Members const* members = state->members;
     if (members->call_count != 1 || members->construct_count || members->prop_count || members->index_count || members->mapped) return false;
     Signature const* sig = members->call[0];
-    if (TAINT_IF(TAINT_PEEK, sig->state != LAZY_STATE_DONE) || sig->target || sig->function != ty->anonymous.function) return false;
+    if (TAINT_IF(TAINT_PEEK, sig->state != LAZY_STATE_DONE) || sig_target(sig) || sig->function != ty->anonymous.function) return false;
     FunctionImpl const* function = sig->function;
     if (TAINT_IF(TAINT_PEEK, sig->ret_state != LAZY_STATE_DONE && !function->ret_explicit && function->has_body && !ty_function_return_known(me, function))) return false;
     return compute_mentions(me, ty, key, out);

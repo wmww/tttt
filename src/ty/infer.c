@@ -431,6 +431,7 @@ Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, T
         .flags = sig->flags,
         .target = sig,
         .mapper = ty_mapper_new(me, sig_res(sig)->type_params, (TyList){ .data = targets, .len = args.len }),
+        .res = &sig_resolved_none,
         .instantiates_own_params = true,
     };
     // (Its own until resolved: published with --shared-graph once it is)
@@ -543,8 +544,9 @@ Signature const* ty_signature_with_type_params(Checker* me, Signature const* sig
     *ret = *sig;
     signature_copied(me, ret);
     LAZY_COPIED(me, ret->ret_state);
-    ret->res = sig_resolved_new(me, (SigResolved){ .type_params = type_params, .params = sig_res(ret)->params,
-        .this_type = sig_res(ret)->this_type, .param_count = sig_res(ret)->param_count, .min_args = sig_res(ret)->min_args });
+    SigResolved res = *sig_res(ret);
+    res.type_params = type_params;
+    ret->res = sig_resolved_new(me, res);
     return ret;
 }
 

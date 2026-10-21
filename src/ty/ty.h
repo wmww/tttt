@@ -712,10 +712,15 @@ struct SigResolved {
     TyList type_params;
     SigParam const* params;
     Ty const* this_type; // `this: T`, not among params. Null if not declared
+    // What it is an instantiation of, and through what: Signature.target and Signature.mapper as made, but a JSDoc
+    // `@type` tag's signature is a function's target, and an instantiation's own type parameters' clones join its
+    // mapper (clone_type_params()). Read them through sig_target() and sig_mapper()
+    Signature const* target;
+    TyMapper const* mapper;
     u32 param_count;
     u32 min_args;
 };
-static_assert(sizeof(SigResolved) == 40);
+static_assert(sizeof(SigResolved) == 56);
 
 struct Signature {
     u32 flags;
@@ -747,11 +752,13 @@ struct Signature {
     // A combination of signatures (tsc's combineSignaturesOfUnionMembers): the one whose declaration it has, whose
     // parameters' declarations its own (synthesized) parameters don't have
     struct Signature const* declared_by;
+    // As made (an instantiation's), see SigResolved.target and sig_target()/sig_mapper() for what it is now. Nothing
+    // writes them after it is made
     Signature const* target;
     TyMapper const* mapper;
-    // What signature_resolve() made of it, null before (a signature made resolved has its own from the start). Read it
-    // through signature_resolve(), or sig_res() where the signature is known resolved or the zeros of an unresolved one
-    // are what the reader wants
+    // What signature_resolve() made of it, &sig_resolved_none before (a signature made resolved has its own from the
+    // start; every maker sets it). Read it through signature_resolve(), or sig_res() where the signature is known resolved
+    // or the zeros of an unresolved one are what the reader wants
     SigResolved const* res;
     Ty const* ret;
     TyPredicate const* predicate; // Use signature_predicate()
@@ -1793,7 +1800,14 @@ static inline SigResolved const* signature_resolve(Checker* me, Signature const*
 }
 // The record as it is, without resolving: an unresolved signature's is zeros (sig_resolved_none)
 static inline SigResolved const* sig_res(Signature const* sig) {
-    return sig->res ? sig->res : &sig_resolved_none;
+    return sig->res;
+}
+// Its target and mapper as of now: as made until resolution starts, then the record's (see SigResolved.target)
+static inline Signature const* sig_target(Signature const* sig) {
+    return sig->res != &sig_resolved_none ? sig->res->target : sig->target;
+}
+static inline TyMapper const* sig_mapper(Signature const* sig) {
+    return sig->res != &sig_resolved_none ? sig->res->mapper : sig->mapper;
 }
 // After `*copy = *original`: its state as LAZY_COPIED() leaves it, and a record of its own if the original's is still
 // being written (in flight here: the copy keeps what is resolved so far, as when it copied the fields; in flight

@@ -868,7 +868,8 @@ Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, 
     // tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod)
     if (sig_res(sig)->param_count && sig_res(sig)->params[sig_res(sig)->param_count - 1].rest && sig_res(sig)->params[sig_res(sig)->param_count - 1].type->kind == TY_TYPE_PARAM) {
         Signature* instantiated = arena_new(&my arena, Signature);
-        *instantiated = (Signature){ .flags = sig->flags, .target = sig, .mapper = inference_mapper(me, outer->sig, inf, true), .fresh_type_params = true };
+        *instantiated = (Signature){ .flags = sig->flags, .target = sig, .mapper = inference_mapper(me, outer->sig, inf, true),
+            .res = &sig_resolved_none, .fresh_type_params = true };
         signature_resolve(me, instantiated);
         return instantiated;
     }
@@ -884,7 +885,7 @@ Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, 
     }
     TyMapper const* mapper = inference_mapper(me, outer->sig, inf, true);
     Signature* fixed = arena_new(&my arena, Signature);
-    *fixed = (Signature){ .flags = sig->flags, .target = sig, .mapper = mapper, .fresh_type_params = true };
+    *fixed = (Signature){ .flags = sig->flags, .target = sig, .mapper = mapper, .res = &sig_resolved_none, .fresh_type_params = true };
     signature_resolve(me, fixed);
     return fixed;
 }
@@ -2017,7 +2018,7 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
     Span call_span, Error* error
 ) {
     Signature const* failed = candidate->sig;
-    while (failed->target) failed = failed->target;
+    while (sig_target(failed)) failed = sig_target(failed);
     if (!error || !failed->function) return;
     Symbol const* symbol = failed->function->symbol;
     FunctionImpl const* impl = function_impl_rare(failed->function)->overload_implementation;
@@ -2050,11 +2051,11 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
 
 // Where a signature is declared, as tsc's createDiagnosticForNode(signature.declaration) points at it
 static Span signature_decl_span(Signature const* sig) {
-    while (sig->target) sig = sig->target;
+    while (sig_target(sig)) sig = sig_target(sig);
     // (A union's signature is declared by the one it was made from: tsc's createUnionSignature clones it)
     while (!sig->function && sig->declared_by && sig->declared_by != sig) {
         sig = sig->declared_by;
-        while (sig->target) sig = sig->target;
+        while (sig_target(sig)) sig = sig_target(sig);
     }
     // (A JSDoc `@overload`: its tag name, where tsgo's reparsed declaration is)
     if (sig->function && sig->function->jsdoc_callback && span_valid(sig->function->full_span) &&
@@ -2675,7 +2676,7 @@ static bool is_super_call(CallExpr const* call) {
 
 // A parameter of the declaration is written as a literal type (`method: "stop"`, tsc's SignatureFlags.HasLiteralTypes)
 static bool signature_has_literal_types(Signature const* sig) {
-    while (sig->target) sig = sig->target;
+    while (sig_target(sig)) sig = sig_target(sig);
     if (!sig->function) return false;
     for_each (arg, vec_function_arg, &sig->function->args) {
         Binding const* binding = &arg->initializer.binding;
@@ -2691,7 +2692,7 @@ static bool signature_has_literal_types(Signature const* sig) {
 // The (merged symbol, declaration block) group of a signature, which reorder_candidates() orders by (tsc's
 // reorderCandidates)
 static TyDeclGroup const* signature_decl_group(Checker* me, Signature const* sig) {
-    while (sig->target) sig = sig->target;
+    while (sig_target(sig)) sig = sig_target(sig);
     return sig->function ? ty_decl_group(me, sig->function) : nullptr;
 }
 

@@ -1383,7 +1383,7 @@ static Ty const* apparent_contextual_type(Checker* me, Ty const* ty) {
 }
 
 // KEY_CONTEXT_CHECKED of a function whose first check had no contextual signature
-static Signature const context_checked_none;
+static Signature const context_checked_none = { .res = &sig_resolved_none };
 
 Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
     // A JavaScript `@type {F}` gives its signature's `this` (tsc's getThisTypeOfDeclaration of a type tag's signature)
@@ -1468,7 +1468,7 @@ Ty const* ty_contextual_return_type_self(Checker* me, FunctionImpl const* functi
             if (composite_own) *self = CONTEXT_COMPOSITE_OWN;
             if (!sig) return nullptr;
             // (Its own: none while it is inferred, else what it was inferred as)
-            if (sig->function == function && !sig->target) {
+            if (sig->function == function && !sig_target(sig)) {
                 *self = CONTEXT_OWN;
                 if (ty_function_return_in_flight(me, function)) {
                     if (debug_env.debug_reentry && ty_resolving_reenters(me, RESOLVING_FUNCTION_RETURN, function)) ty_debug_reentry(me, "RETINFLIGHT call", span_null);
@@ -1482,7 +1482,7 @@ Ty const* ty_contextual_return_type_self(Checker* me, FunctionImpl const* functi
     }
     Signature const* sig = ty_link_get(me, KEY_CONTEXT_RETURN, function);
     if (!sig) return nullptr;
-    if (sig->function == function && !sig->target) {
+    if (sig->function == function && !sig_target(sig)) {
         *self = CONTEXT_OWN;
         if (ty_function_return_in_flight(me, function)) {
             if (debug_env.debug_reentry && ty_resolving_reenters(me, RESOLVING_FUNCTION_RETURN, function)) ty_debug_reentry(me, "RETINFLIGHT call", span_null);
@@ -2156,7 +2156,7 @@ void ty_function_decide_widening_reportable(Checker* me, FunctionImpl const* fun
     if (compiler_options()->strict_null_checks || !compiler_options()->no_implicit_any) return;
     Signature const* sig = contextual_signature_now(me, function);
     // (Its own signature: that is TS7023/TS7024's circularity, ty_function_context_is_self())
-    if (sig && sig->function == function && !sig->target) return;
+    if (sig && sig->function == function && !sig_target(sig)) return;
     uintptr_t bits = 1 | (widening_reportable_with(me, function, sig, false) ? 2 : 0) |
         (function->is_generator && widening_reportable_with(me, function, sig, true) ? 4 : 0);
     *intern_slot(me, &my links, (u64[]){ KEY_RETURN_REPORTABLE, (u64)(uintptr_t)function }, 2) = (void const*)bits;

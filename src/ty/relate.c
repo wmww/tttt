@@ -1864,9 +1864,9 @@ typedef enum CallbackMode {
 
 // tsc's isInstantiatedGenericParameter: the parameter was generic before the signature was instantiated
 static bool is_instantiated_generic_param(Checker* me, Signature const* sig, u32 i) {
-    if (!sig->target) return false;
-    signature_resolve(me, sig->target);
-    Ty const* type = param_type_at(me, sig->target, i);
+    if (!sig_target(sig)) return false;
+    signature_resolve(me, sig_target(sig));
+    Ty const* type = param_type_at(me, sig_target(sig), i);
     if (!type) return false;
     if (ty_is_generic_index(type)) return true;
     return (type->flags & TYF_OBJECT) && (type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_generic_mapped(me, type);
@@ -2229,9 +2229,9 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
     // parameters any (tsc's getErasedSignature of an instantiated signature, whose parameters are lazily typed): resolving
     // it first instantiates every parameter type with clones of the type parameters, evaluating the conditional types in
     // them (typesaurus's 10 overloads of `field` per Builder<Def, X>, in every variance measurement of the update API)
-    // (The mapper before the state: with --shared-graph another checker resolving it replaces the mapper,
-    // clone_type_params(), and what this erases from is the one it had while not started)
-    TyMapper const* unresolved_mapper = __atomic_load_n(&sig->mapper, __ATOMIC_ACQUIRE);
+    // (Signature.mapper and target as made: resolving puts its own type parameters' clones in the record's mapper,
+    // clone_type_params(), and this erases from what it had while not started)
+    TyMapper const* unresolved_mapper = sig->mapper;
     Signature const* target = sig->target;
     if (LAZY_LOAD(sig->state) == LAZY_STATE_NOT_STARTED && target && unresolved_mapper && !sig->function && !sig->instantiates_own_params &&
         !sig->drops_mapped_type_params && !sig->fresh_type_params && !sig->class_instance && !(sig->flags & SIGNATURE_CONSTRUCT)
@@ -2270,6 +2270,7 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
                 .flags = sig->flags,
                 .target = target,
                 .mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len }),
+                .res = &sig_resolved_none,
                 .instantiates_own_params = true,
             };
             // (Its own until resolved: published with --shared-graph once it is)
@@ -2306,6 +2307,7 @@ static Signature const* erase_constructor_class_params(Checker* me, Signature co
         .flags = sig->flags,
         .target = sig,
         .mapper = ty_mapper_new(me, params, (TyList){ .data = anys, .len = params.len }),
+        .res = &sig_resolved_none,
     };
     signature_resolve(me, ret);
     return ret;

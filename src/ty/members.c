@@ -578,6 +578,7 @@ typedef struct BasesFrame {
 
 static Signature* signature_from_function(Checker* me, FunctionImpl const* function, LowerCtx ctx) {
     Signature* ret = arena_new(&my arena, Signature);
+    ret->res = &sig_resolved_none;
     ret->function = function;
     ret->ctx = ctx;
     if (function->is_constructor) ret->flags |= SIGNATURE_CONSTRUCT;
@@ -2154,6 +2155,7 @@ static void builder_add_class_items(
 
 static Signature* class_construct_signature(Checker* me, ClassDecl const* class_decl, Ty const* instance_declared) {
     Signature* sig = arena_new(&my arena, Signature);
+    sig->res = &sig_resolved_none;
     sig->flags = SIGNATURE_CONSTRUCT | (class_decl->is_abstract ? SIGNATURE_ABSTRACT : 0);
     // (The outer type parameters of a local class aren't the signature's: the static side instantiates them)
     sig->class_type_params = ty_local_type_params(instance_declared);
@@ -3530,7 +3532,8 @@ static Members const* instantiate_members(
             }
             Signature* sig = arena_new(&my arena, Signature);
             *sig = (Signature){
-                .flags = sigs[i]->flags, .target = sigs[i], .mapper = mapper, .drops_mapped_type_params = applies_type_args,
+                .flags = sigs[i]->flags, .target = sigs[i], .mapper = mapper, .res = &sig_resolved_none,
+                .drops_mapped_type_params = applies_type_args,
                 .name_span = sigs[i]->name_span, .decl_span = sigs[i]->decl_span,
             };
             if (pass) {
@@ -5518,7 +5521,7 @@ Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
 // instantiated away (see ty_signature_instantiation()) and stay
 static void clone_type_params(Checker* me, Signature* sig, SigResolved* r) {
     TyList params = r->type_params;
-    TyMapper const* outer = sig->mapper;
+    TyMapper const* outer = r->mapper;
     // (Its own type parameters in the outer mapper: being instantiated away, else shadowing the outer ones, tsc's
     // instantiateSignature maps them to fresh ones first)
     bool keep_mapped = sig->instantiates_own_params || sig->drops_mapped_type_params || (sig->flags & SIGNATURE_CONSTRUCT);
@@ -5554,8 +5557,7 @@ static void clone_type_params(Checker* me, Signature* sig, SigResolved* r) {
     for (u32 i = 0; i < params.len; i++) {
         if (fresh[i] != params.data[i]) ((Ty*)fresh[i])->param.state->clone_mapper = mapper;
     }
-    // (Atomic: ty_erased_signature() reads the mapper of a signature another checker may be resolving)
-    __atomic_store_n(&sig->mapper, mapper, __ATOMIC_RELEASE);
+    r->mapper = mapper;
     r->type_params = (TyList){ .data = fresh, .len = params.len };
 }
 
@@ -5603,7 +5605,7 @@ static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl con
     Members const* members = ty_members(me, type);
     if (members->call_count != 1 || members->construct_count || members->index_count || members->prop_count) return nullptr;
     // (Not the function's own signature: `@type {MyClass}` on `function MyClass`, which is TS8030)
-    for (Signature const* i = members->call[0]; i; i = i->target) {
+    for (Signature const* i = members->call[0]; i; i = sig_target(i)) {
         if (i->function == function) {
             *self = true;
             return nullptr;
@@ -5645,8 +5647,8 @@ SigResolved const* sig_resolved_new(Checker* me, SigResolved init) {
 void signature_copied(Checker* me, Signature* copy) {
     unsigned before = copy->state;
     LAZY_COPIED(me, copy->state);
-    if (before == LAZY_STATE_DONE || !copy->res) return;
-    copy->res = copy->state == LAZY_STATE_NOT_STARTED ? nullptr : sig_resolved_new(me, *copy->res);
+    if (before == LAZY_STATE_DONE || copy->res == &sig_resolved_none) return;
+    copy->res = copy->state == LAZY_STATE_NOT_STARTED ? &sig_resolved_none : sig_resolved_new(me, *copy->res);
 }
 
 SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_sig) {
@@ -5659,14 +5661,16 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
     if (!LAZY_CLAIM(me, sig->state)) goto again;
     // (Allocated first and filled in place: a re-entry while in flight reads what is resolved so far)
     SigResolved* r = arena_new(&my arena, SigResolved);
+    r->target = sig->target;
+    r->mapper = sig->mapper;
     sig->res = r;
-    if (!sig->target && sig->function) {
-        // (Written only when there is one: other checkers read `target` of signatures they don't resolve)
+    if (!r->target && sig->function) {
+        // (A JSDoc `@type` tag's signature: the function's target from now on, sig_target())
         Signature const* tagged = jsdoc_tag_signature(me, sig->function);
-        if (tagged) sig->target = tagged;
+        if (tagged) r->target = tagged;
     }
-    if (sig->target) {
-        Signature const* target = sig->target;
+    if (r->target) {
+        Signature const* target = r->target;
         SigResolved const* t = signature_resolve(me, target);
         r->type_params = t->type_params;
         if (sig->drops_mapped_type_params && r->type_params.len) {
@@ -5674,23 +5678,23 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
             u32 kept_count = 0;
             for (u32 i = 0; i < t->type_params.len; i++) {
                 bool mapped = false;
-                for (u32 j = 0; j < sig->mapper->len; j++) mapped |= sig->mapper->sources[j] == t->type_params.data[i];
+                for (u32 j = 0; j < r->mapper->len; j++) mapped |= r->mapper->sources[j] == t->type_params.data[i];
                 if (!mapped) kept[kept_count++] = t->type_params.data[i];
             }
             r->type_params = (TyList){ .data = kept, .len = kept_count };
         }
-        if (sig->mapper) clone_type_params(me, sig, r);
+        if (r->mapper) clone_type_params(me, sig, r);
         SigParam* params = arena_new_n(&my arena, SigParam, t->param_count);
         for (u32 i = 0; i < t->param_count; i++) {
             params[i] = t->params[i];
-            params[i].type = ty_instantiate(me, params[i].type, sig->mapper);
+            params[i].type = ty_instantiate(me, params[i].type, r->mapper);
         }
         r->params = params;
         r->param_count = t->param_count;
         r->min_args = t->min_args;
-        r->this_type = t->this_type ? ty_instantiate(me, t->this_type, sig->mapper) : nullptr;
+        r->this_type = t->this_type ? ty_instantiate(me, t->this_type, r->mapper) : nullptr;
     }
-    if (!sig->target && sig->function) {
+    if (!r->target && sig->function) {
         FunctionImpl const* function = sig->function;
         r->type_params = ty_type_params_of(me, &function->generic);
         if (!r->type_params.len && function->is_expression && ty_function_is_context_sensitive(function)) {
@@ -5769,10 +5773,10 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
         sig->ret = sig->class_instance;
         LAZY_DONE(sig->ret_state);
     }
-    if (!sig->class_instance && sig->target && sig->target->class_instance && sig->mapper) {
+    if (!sig->class_instance && r->target && r->target->class_instance && r->mapper) {
         // An instantiated construct signature of a class (not one a derived class without a constructor inherits: that
         // makes the derived class)
-        sig->ret = ty_instantiate(me, sig->target->class_instance, sig->mapper);
+        sig->ret = ty_instantiate(me, r->target->class_instance, r->mapper);
         LAZY_DONE(sig->ret_state);
     }
     LAZY_DONE(sig->state);
@@ -5785,7 +5789,7 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
 // whose instantiated signatures have lazily typed parameters, never looks at
 bool ty_signature_has_this(Checker* me, Signature const* sig) {
     Signature const* root = sig;
-    while (LAZY_LOAD(root->state) != LAZY_STATE_DONE && root->target) root = root->target;
+    while (LAZY_LOAD(root->state) != LAZY_STATE_DONE && sig_target(root)) root = sig_target(root);
     if (LAZY_LOAD(root->state) == LAZY_STATE_DONE) return sig_res(root)->this_type != nullptr;
     // (A function expression can take its contextual signature's, a JavaScript one its `@type` tag's)
     FunctionImpl const* function = root->function;
@@ -5815,7 +5819,7 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
         case LAZY_STATE_IN_FLIGHT:
             TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
             // An inferred return type in progress: asking it says so, it becomes any (see ty_function_return_type())
-            if (!sig->target && sig->function && !sig->function->is_type) ty_function_return_type(me, sig->function);
+            if (!sig_target(sig) && sig->function && !sig->function->is_type) ty_function_return_type(me, sig->function);
             ty_resolving_cycle(me, RESOLVING_SIGNATURE_RETURN, sig);
             return ty_intrinsic(me, TY_CIRCULAR);
         case LAZY_STATE_NOT_STARTED: break;
@@ -5824,8 +5828,8 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
     TAINT_BEGIN(taint_frame);
     ty_resolving_push(me, RESOLVING_SIGNATURE_RETURN, sig);
     Ty const* ret;
-    if (sig->target) {
-        ret = ty_instantiate(me, signature_return_type(me, sig->target), sig->mapper);
+    if (sig_target(sig)) {
+        ret = ty_instantiate(me, signature_return_type(me, sig_target(sig)), sig_mapper(sig));
     } else if (sig->function && sig->function->is_type) {
         LowerCtx ctx = sig->ctx;
         ctx.generic |= sig_res(sig)->type_params.len > 0;
@@ -5841,7 +5845,7 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
         // one's TS7023 is ty_function_return_type()'s, an accessor's TS2502 prop_type()'s)
         ret = ty_intrinsic(me, TY_ANY);
         FunctionImpl const* function = sig->function;
-        if (!sig->target && function && !function->accessor && (function->is_type || function->ret_explicit) &&
+        if (!sig_target(sig) && function && !function->accessor && (function->is_type || function->ret_explicit) &&
             span_valid(function_impl_ret_span(function))
         ) {
             ty_error_at(me, function_impl_ret_span(function), 2577, cstr_from("Return type annotation circularly references itself."));
@@ -5861,12 +5865,12 @@ static bool signature_return_in_flight(Checker* me, Signature const* sig, bool a
             TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
             return true;
         }
-        if (!sig->target) {
+        if (!sig_target(sig)) {
             if (!sig->function || sig->function->is_type) return false;
             return above_barrier ? ty_resolving_find(me, RESOLVING_FUNCTION_RETURN, sig->function) :
                 ty_function_return_in_flight(me, sig->function);
         }
-        sig = sig->target;
+        sig = sig_target(sig);
     }
     return false;
 }
@@ -5897,12 +5901,12 @@ typedef struct PredicateClaim {
 
 static TyPredicate const* compute_signature_predicate(Checker* me, Signature* sig, PredicateClaim* claim) {
     if (sig->class_instance) return nullptr;
-    if (sig->target) {
-        TyPredicate const* target_predicate = signature_predicate(me, sig->target);
-        if (target_predicate && target_predicate->type && sig->mapper) {
+    if (sig_target(sig)) {
+        TyPredicate const* target_predicate = signature_predicate(me, sig_target(sig));
+        if (target_predicate && target_predicate->type && sig_mapper(sig)) {
             TyPredicate* predicate = arena_new(&my arena, TyPredicate);
             *predicate = *target_predicate;
-            predicate->type = ty_instantiate(me, target_predicate->type, sig->mapper);
+            predicate->type = ty_instantiate(me, target_predicate->type, sig_mapper(sig));
             claim->predicate = predicate;
         } else {
             claim->predicate = target_predicate;
@@ -5987,7 +5991,7 @@ TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) 
 
 // Declared to return `never` (an inferred never doesn't count for control flow)
 bool signature_declared_never(Signature const* sig) {
-    while (sig->target) sig = sig->target;
+    while (sig_target(sig)) sig = sig_target(sig);
     return sig->function && sig->function->ret_explicit && !sig->function->predicate && sig->function->ret.tag == TYPE_NEVER;
 }
 

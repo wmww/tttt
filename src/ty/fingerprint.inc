@@ -347,7 +347,7 @@ static u64 fp_signature(Signature const* sig, u32 depth) {
     h = fp_list(h, sig->class_type_params);
     if (!sig->function && sig->target && depth < 32) h = M(h, fp_signature(sig->target, depth + 1));
     // (Resolving a generic one adds its own type parameters' clones to the mapper, clone_type_params(): not those)
-    TyMapper const* mapper = sig->mapper;
+    TyMapper const* mapper = sig_mapper(sig);
     for (u32 i = 0; mapper && i < mapper->len; i++) {
         Ty const* target = mapper->targets[i];
         if (target->kind == TY_TYPE_PARAM && target->param.state->clone_mapper == mapper) continue;

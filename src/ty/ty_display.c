@@ -1743,9 +1743,9 @@ static bool name_means_same(Checker* me, Symbol const* found, Symbol const* symb
 
 // A type of the uninstantiated signature at the root of `sig` as `sig` has it
 static Ty const* instantiate_for(Checker* me, Signature const* sig, Ty const* ty) {
-    if (!sig || !sig->target) return ty;
-    ty = instantiate_for(me, sig->target, ty);
-    return sig->mapper ? ty_instantiate(me, ty, sig->mapper) : ty;
+    if (!sig || !sig_target(sig)) return ty;
+    ty = instantiate_for(me, sig_target(sig), ty);
+    return sig_mapper(sig) ? ty_instantiate(me, ty, sig_mapper(sig)) : ty;
 }
 
 // The type of an annotation, the way the checker lowered it (and instantiated, see TyDisplay.mapped_by)
@@ -3962,12 +3962,12 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
 // outer type parameters the declaration may reference): it prints as declared, fresh type parameters and all
 static bool mentions_mapped(Checker* me, Signature const* sig, Signature const* root) {
     u32 count = 0;
-    for (Signature const* i = sig; i != root; i = i->target) count += i->mapper ? i->mapper->len : 0;
+    for (Signature const* i = sig; i != root; i = sig_target(i)) count += sig_mapper(i) ? sig_mapper(i)->len : 0;
     Ty const** sources = arena_new_n(&my arena, Ty const*, count ? count : 1);
     u32 len = 0;
-    for (Signature const* i = sig; i != root; i = i->target) {
-        for (u32 j = 0; i->mapper && j < i->mapper->len; j++) {
-            Ty const* source = i->mapper->sources[j];
+    for (Signature const* i = sig; i != root; i = sig_target(i)) {
+        for (u32 j = 0; sig_mapper(i) && j < sig_mapper(i)->len; j++) {
+            Ty const* source = sig_mapper(i)->sources[j];
             bool own = false;
             for (u32 k = 0; k < sig_res(root)->type_params.len; k++) own |= sig_res(root)->type_params.data[k] == source;
             if (!own) sources[len++] = source;
@@ -4012,9 +4012,9 @@ static bool mentions_mapped(Checker* me, Signature const* sig, Signature const* 
 // `value: Iterator<T> | Iterable<T>` prints its type, not the annotation
 static bool maps_merged_type_param(Checker* me, Signature const* sig, Signature const* root) {
     Binder const* binder = program_get_binder(my program);
-    for (Signature const* i = sig; i && i != root; i = i->target) {
-        for (u32 j = 0; i->mapper && j < i->mapper->len; j++) {
-            Ty const* source = i->mapper->sources[j];
+    for (Signature const* i = sig; i && i != root; i = sig_target(i)) {
+        for (u32 j = 0; sig_mapper(i) && j < sig_mapper(i)->len; j++) {
+            Ty const* source = sig_mapper(i)->sources[j];
             if (source->kind != TY_TYPE_PARAM) continue;
             // (`this` is declared by its class or interface: IteratorConstructor's two interfaces)
             Symbol const* symbol = source->param.symbol;
@@ -4088,10 +4088,10 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     Signature const* root = sig;
     bool this_only = true; // Instantiated only with what `this` is (every method of a class): no fresh type parameters
     bool class_default = false; // (A class's default constructor returns the class, whatever its base signature returns)
-    for (; root->target; root = root->target) {
+    for (; sig_target(root); root = sig_target(root)) {
         class_default |= root->class_instance != nullptr;
-        for (u32 i = 0; root->mapper && i < root->mapper->len; i++) {
-            Ty const* source = root->mapper->sources[i];
+        for (u32 i = 0; sig_mapper(root) && i < sig_mapper(root)->len; i++) {
+            Ty const* source = sig_mapper(root)->sources[i];
             this_only &= source->kind == TY_TYPE_PARAM && source->param.state->is_this;
         }
     }
@@ -4907,7 +4907,7 @@ static bool pseudo_is_this_param(PseudoParam const* param) {
 // names one doesn't say the instantiated type
 static TyDisplay pseudo_enter_signature(Checker* me, TyDisplay d, Signature const* sig) {
     Signature const* root = sig;
-    while (root->target) root = root->target;
+    while (sig_target(root)) root = sig_target(root);
     if (root == sig || !sig_res(root)->type_params.len) return d;
     Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + sig_res(root)->type_params.len);
     if (d.fresh_params.len) memcpy(both, d.fresh_params.data, sizeof(Ty const*) * d.fresh_params.len);
@@ -5799,7 +5799,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     TyDisplay sig_d = d;
     for (u32 i = 0; i < members->call_count && members->call_count > 1 && (d.types_baseline || d.reuse_nodes) && !sig_d.sibling_mentions_mapped; i++) {
         Signature const* root = members->call[i];
-        while (root->target) root = root->target;
+        while (sig_target(root)) root = sig_target(root);
         sig_d.sibling_mentions_mapped = root != members->call[i] && mentions_mapped(me, members->call[i], root);
     }
     for (u32 i = 0; i < members->call_count; i++) {
