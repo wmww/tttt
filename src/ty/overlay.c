@@ -73,6 +73,7 @@ static bool overlay_get(Checker const* me, uintptr_t key, uintptr_t* value) {
 
 static void overlay_remove(Checker* me, uintptr_t key) {
     Overlay* o = my overlay;
+    if (!o || !o->len) return; // (sw_finish() without a claim: ty_set_declared_type())
     u32 i = overlay_find(o, key);
     if (!o->keys[i]) return;
     o->keys[i] = 0;
@@ -279,6 +280,15 @@ bool sw_mine_in_flight(Checker const* me, SharedWord const* w, uint8_t const* st
 
 void sw_unclaim(Checker* me, SharedWord const* w) {
     if (my graph && __builtin_expect(__atomic_load_n(&debug_publish, __ATOMIC_RELAXED) > 0, 0)) debug_finish(me, w, true);
+}
+
+void sw_abandon(Checker* me, SharedWord const* w, uint8_t* state) {
+    if (!my graph) {
+        *state = LAZY_STATE_NOT_STARTED;
+        return;
+    }
+    overlay_remove(me, (uintptr_t)w);
+    sw_unclaim(me, w);
 }
 
 uintptr_t sw_peek(Checker const* me, SharedWord const* w) {

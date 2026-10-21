@@ -214,10 +214,15 @@ static Ty const* make_declared(Checker* me, Symbol const* symbol, TyDeclaredKind
     return ret;
 }
 
-void ty_set_declared_type(Checker* me, Symbol const* symbol, Ty const* type) {
+#define SYMBOL_DECLARED_CIRCULAR ((uintptr_t)1)
+static_assert(_Alignof(Ty) >= 2, "SymbolLinks.declared tags a Ty's low bit");
+#define DECLARED_TYPE(v) ((Ty const*)((v) & ~SYMBOL_DECLARED_CIRCULAR))
+
+// An enum member's declared type, finished by its enum's resolution (which started at `taint`: what it made so far is
+// clean if that is, whatever comes after), whether the member's own computation has it in flight here or not
+void ty_set_declared_type(Checker* me, Symbol const* symbol, Ty const* type, u64 taint) {
     SymbolLinks* links = symbol_links(me, symbol);
-    links->declared_type = type;
-    LAZY_DONE(links->declared_state);
+    sw_finish(me, &links->declared, &links->declared_state, (uintptr_t)type, taint);
 }
 
 // An enum member's type is made when its enum's is
@@ -225,9 +230,9 @@ static Ty const* enum_member_type(Checker* me, Symbol const* symbol) {
     if (!symbol->parent || !(symbol->parent->flags & SYMBOL_ENUM)) return ty_intrinsic(me, TY_ERROR);
     ty_declared_type_of(me, symbol->parent);
     SymbolLinks* links = symbol_links(me, symbol);
-    if (LAZY_LOAD(links->declared_state) == LAZY_STATE_DONE) return links->declared_type;
-    // The enum is being resolved further up the stack and hasn't got to this member yet
-    return nullptr;
+    uintptr_t v = sw_peek(me, &links->declared);
+    // (Null: the enum is being resolved further up the stack and hasn't got to this member yet)
+    return v ? DECLARED_TYPE(v) : nullptr;
 }
 
 // `type X = intrinsic` (the lib's Uppercase<S> & co.): the builtin name, not a type called `intrinsic`
@@ -270,48 +275,43 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     symbol = canonical(me, symbol);
     if (symbol->is_placeholder) return ty_intrinsic(me, TY_ERROR);
     SymbolLinks* links = symbol_links(me, symbol);
-    again:
-    if (__builtin_expect(LAZY_LOAD(links->declared_state) == LAZY_STATE_DONE, 1)) {
-        TAINT_READ(TK_SYMBOL_DECLARED, links);
-        return links->declared_type;
-    }
-    LAZY_SNAP(me, links->declared_state, seen, again);
-    switch (LAZY_STATE_OF(seen)) {
-        case LAZY_STATE_DONE:
-            TAINT_READ(TK_SYMBOL_DECLARED, links);
-            return links->declared_type;
-        case LAZY_STATE_IN_FLIGHT:
+    // (A shared word, plan 86 stage 4f: published when clean, this worker's own otherwise)
+    uintptr_t v = sw_get(me, &links->declared);
+    if (__builtin_expect(v != 0, 1)) return DECLARED_TYPE(v);
+    switch (sw_look(me, &links->declared, &links->declared_state, &v)) {
+        case SW_LOOK_DONE: return DECLARED_TYPE(v);
+        case SW_LOOK_MINE:
             // An alias in flight below the resolution barrier (a variance measurement's, a call's) is resolved again,
             // nested, and the first to finish is its type (tsc's findResolutionCycleStartIndex looks no further down)
-            // (Its own only: one in flight on another worker that this one doesn't wait for, a wait cycle it breaks
-            // (lazy_wait_slow()), can't be claimed again, and is a cycle like any)
-            if ((!my graph_worker || LAZY_MINE_IN_FLIGHT(me, seen)) && alias_reenters(me, symbol)) {
+            if (alias_reenters(me, symbol)) {
                 if (debug_env.debug_reentry) ty_debug_reentry(me, "REENTER 2 variance", span_null);
                 break;
             }
-            TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
             // tsc's pushTypeResolution: every alias from this one on is part of the cycle, and fails when it finishes
             ty_resolving_cycle(me, RESOLVING_ALIAS, symbol);
             return ty_intrinsic(me, TY_ERROR);
-        case LAZY_STATE_NOT_STARTED: break;
+        case SW_LOOK_COMPUTE: break;
     }
-    if (!LAZY_CLAIM(me, links->declared_state)) goto again;
+    u64 taint = sw_claim(me, &links->declared, &links->declared_state);
     TAINT_BEGIN(taint_frame);
     Ty const* ret;
     bool alias_circular = false;
+    // An interface's, a class's and a type parameter's declared type is an identity made of identities (the symbol's
+    // type parameters): published whatever happened meanwhile, or each worker would have its own interface (a loser's
+    // fresh one is referenced by nothing but its own this-type parameter)
+    bool identity = (symbol->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) ||
+        (!(symbol->flags & (SYMBOL_ENUM | SYMBOL_ENUM_MEMBER)) && (symbol->flags & SYMBOL_TYPE_PARAMETER));
     if (symbol->flags & SYMBOL_INTERFACE) {
         ret = make_declared(me, symbol, TY_DECLARED_INTERFACE);
     } else if (symbol->flags & SYMBOL_CLASS) {
         ret = make_declared(me, symbol, TY_DECLARED_CLASS_INSTANCE);
     } else if (symbol->flags & SYMBOL_ENUM) {
-        ret = ty_resolve_enum(me, symbol);
+        ret = ty_resolve_enum(me, symbol, taint);
     } else if (symbol->flags & SYMBOL_ENUM_MEMBER) {
         ret = enum_member_type(me, symbol);
         if (!ret) {
-            // (Unless the enum's resolution set it meanwhile)
-            unsigned mine = LAZY_STATE_IN_FLIGHT | (unsigned)my graph_worker << 2;
-            __atomic_compare_exchange_n(&links->declared_state, &(LazyState){ (LazyState)mine }, LAZY_STATE_NOT_STARTED, false,
-                __ATOMIC_RELEASE, __ATOMIC_RELAXED);
+            // (Its enum is in flight above: not computed, a cycle like any, and the taint event was counted)
+            sw_abandon(me, &links->declared, &links->declared_state);
             return ty_intrinsic(me, TY_ERROR);
         }
     } else if (symbol->flags & SYMBOL_TYPE_PARAMETER) {
@@ -363,13 +363,17 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     // resolution of an alias that re-entered may have finished first: its type and circularity stay, tsc's `if
     // links.declaredType == nil`; tsc's typeParameters aren't unset by a later failure either, and this one's TS2456 is
     // said above)
-    if (LAZY_LOAD(links->declared_state) != LAZY_STATE_DONE) {
-        links->declared_type = ret;
-        links->circular = alias_circular;
-        LAZY_DONE(links->declared_state);
+    if (identity) taint = graph_taint_now;
+    if (sw_mine_in_flight(me, &links->declared, &links->declared_state)) {
+        v = sw_finish(me, &links->declared, &links->declared_state, (uintptr_t)ret | (alias_circular ? SYMBOL_DECLARED_CIRCULAR : 0), taint);
+    } else {
+        // (Finished by a nested resolution, or an enum member by its enum's)
+        sw_unclaim(me, &links->declared);
+        v = sw_peek(me, &links->declared);
+        check(v);
     }
-    TAINT_END(taint_frame, TK_SYMBOL_DECLARED, links, symbol, links->declared_type);
-    return links->declared_type;
+    if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_SYMBOL_DECLARED, links, symbol, DECLARED_TYPE(v));
+    return DECLARED_TYPE(v);
 }
 
 // Whether a type alias's resolution reached itself (TS2456): tsc's getDeclaredTypeOfTypeAlias then never sets
@@ -379,8 +383,12 @@ bool ty_alias_is_circular(Checker* me, Symbol const* symbol) {
     // (Asked for every alias reference: one lookup when the alias is resolved, as it nearly always is by then. Links are
     // arena-allocated, the pointer stays valid)
     SymbolLinks* links = symbol_links(me, canonical(me, symbol));
-    if (LAZY_LOAD(links->declared_state) != LAZY_STATE_DONE) ty_declared_type_of(me, symbol);
-    return links->circular;
+    uintptr_t v = sw_get(me, &links->declared);
+    if (!v) {
+        ty_declared_type_of(me, symbol);
+        v = sw_peek(me, &links->declared);
+    }
+    return (v & SYMBOL_DECLARED_CIRCULAR) != 0;
 }
 
 // The static side of a class, the object of an enum: what the symbol is as a value, before any merging
@@ -4179,13 +4187,12 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 // An object type takes the new name when instantiated (tsc's getObjectTypeInstantiation), except a
                 // homomorphic mapped type; anything else keeps a name only if it still is what the alias names
                 SymbolLinks const* links = symbol_links(me, canonical(me, decl));
-                (void)TAINT_IF(TAINT_PEEK, links->declared_state != LAZY_STATE_DONE);
-                bool object = links->declared_state == LAZY_STATE_DONE ?
-                    links->declared_type->kind == TY_ANONYMOUS : body->tag == TYPE_INTERFACE || body->tag == TYPE_CALLABLE;
+                uintptr_t declared_v = sw_peek(me, &links->declared); // (A done-ness peek)
+                Ty const* declared = declared_v ? DECLARED_TYPE(declared_v) : nullptr;
+                bool object = declared ? declared->kind == TY_ANONYMOUS : body->tag == TYPE_INTERFACE || body->tag == TYPE_CALLABLE;
                 // (The declared type's node when there is one: `{ [K in keyof T]: T[K] } & {}` is the mapped type;
                 // `type GP<T> = Partial<T>` declares an instantiation of Partial's, which is homomorphic too)
-                Ty const* declared_object = links->declared_state == LAZY_STATE_DONE &&
-                    links->declared_type->kind == TY_ANONYMOUS ? links->declared_type : nullptr;
+                Ty const* declared_object = declared && declared->kind == TY_ANONYMOUS ? declared : nullptr;
                 if (declared_object && !declared_object->anonymous.node && declared_object->anonymous.target) {
                     declared_object = declared_object->anonymous.target;
                 }
@@ -4193,7 +4200,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                     declared_object->anonymous.node ? declared_object->anonymous.node : body;
                 // (A union is instantiated under the new name whatever name it had: tsc's instantiateTypeWorker passes the
                 // alias to getUnionType, `type T05 = T02<A>` with `T02<T> = keyof (T & B)`, the union `keyof T | "b"`)
-                bool union_body = links->declared_state == LAZY_STATE_DONE && links->declared_type->kind == TY_UNION &&
+                bool union_body = declared && declared->kind == TY_UNION &&
                     ret->kind == TY_UNION;
                 // (Homomorphic as tsc's getHomomorphicTypeVariable sees the lowered constraint when it's known:
                 // `[K in keyof Helper<T>]` with a mapped Helper is `keyof T`)
@@ -4204,7 +4211,6 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 homomorphic_object = object && homomorphic && ret->kind == TY_ANONYMOUS;
                 // An indexed access distributed over a union index is that union by the new name (getIndexedAccessType),
                 // and so is a conditional type distributed over a union (getConditionalTypeInstantiation's mapTypeWithAlias)
-                Ty const* declared = links->declared_state == LAZY_STATE_DONE ? links->declared_type : nullptr;
                 Ty const* distributes_over = !declared ? nullptr :
                     declared->kind == TY_INDEXED ? declared->indexed.index :
                     declared->kind == TY_CONDITIONAL && declared->conditional.distributive ? declared->conditional.check : nullptr;

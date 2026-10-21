@@ -913,10 +913,11 @@ typedef enum TyVariance {
 
 // What the checker knows about a symbol (nothing in a Symbol is written during checking)
 typedef struct SymbolLinks {
-    LazyState declared_state;
-    Ty const* declared_type;
+    uint8_t declared_state; // `declared` in flight without --shared-graph (overlay.h)
+    // The declared type (ty_declared_type_of(), plan 86 stage 4f's shared word): a Ty, tagged with
+    // SYMBOL_DECLARED_CIRCULAR for a type alias whose resolution reached itself (TS2456 when it finishes)
+    SharedWord declared;
     Ty const* static_type; // See ty_static_type_of()
-    bool circular; // A type alias whose resolution reached itself (TS2456 when it finishes, see ty_declared_type_of())
     uint8_t base_cycle; // BASE_CYCLE_* flags, see ty_interface_in_base_cycle()
     LazyState base_variable_state;
     Ty const* base_variable; // See ty_class_base_type_variable()
@@ -2078,7 +2079,7 @@ u32 ty_merged_value_entries(Checker* me, Symbol const* symbol, Ty const*** out);
 Atom const* ty_qualified_name(Checker* me, Symbol const* decl); // `A.B.name`
 // The symbol's name as printed: its name_span, but an anonymous class expression is called what it's assigned to
 Span ty_symbol_display_name(Symbol const* symbol);
-void ty_set_declared_type(Checker* me, Symbol const* decl, Ty const* type);
+void ty_set_declared_type(Checker* me, Symbol const* decl, Ty const* type, uint64_t taint);
 TyList ty_type_params_of(Checker* me, Generic const* generic);
 TyList ty_outer_type_params(Checker* me, OuterGenerics const* outer);
 // The type parameters of a class or interface that type arguments are written for (tsc's localTypeParameters)
@@ -2089,7 +2090,9 @@ static inline TyList ty_local_type_params(Ty const* declared) {
 Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args);
 
 // enums.c
-Ty const* ty_resolve_enum(Checker* me, Symbol const* decl); // Only ty_declared_type_of() should call this
+// Only ty_declared_type_of() should call this, `taint` its sw_claim()'s: the members' declared types are published as
+// they are made (ty_set_declared_type())
+Ty const* ty_resolve_enum(Checker* me, Symbol const* decl, uint64_t taint);
 typedef struct EnumCase EnumCase;
 // TS2565/TS2651 for the enum members an initializer of `member` refers to (tsc's evaluateEnumMember)
 void ty_check_enum_initializer_references(Checker* me, EnumCase const* member, Expr const* expr, ErrorCtx* errs);

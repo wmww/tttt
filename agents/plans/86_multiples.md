@@ -1434,6 +1434,29 @@ in parallel only where the file sets are disjoint):
   - **P2, checker.c + lower.c + function.c + instantiate.c** (reduced, cond branches, declared types, reference args,
     implied constraints, function returns, ty_alloc and the directory's chunk slots (lazy_type.c's lazy_slots_*),
     order keys, literal twins: TSan C). ~1-2 sessions.
+    **P2 progress (wt-p2).** Done: function returns (FunctionReturn's word, a Ty tagged FR_CIRCULAR/FR_PROMISE_MISSING)
+    and declared types (SymbolLinks.declared, a Ty tagged SYMBOL_DECLARED_CIRCULAR; links->circular folded in).
+    Findings:
+    - **Identities must publish whatever their taint.** An interface's, a class's and a type parameter's declared type
+      is a fresh TY_DECLARED made of identities. Poisoned, every worker would make its own interface: forcing every
+      declared type private (a throwaway knob) gave 62k differing lines on effect. ty_declared_type_of() treats those
+      branches as clean (`identity`), and the same knob then keeps K1's output. Any other site whose value is a fresh
+      identity rather than hash-consed (P1: members' Props and Signatures are values, not this) needs the same review.
+    - **An argument's return inferred under its call's inference is in flight** (rule 1: it reads the outer
+      inference). Published, it was the TS7006 residue under seeds (fiber.ts `interruptAsFork: (id) =>`): effect 2 of
+      100 seeds, 0 with the event. The event is at function_return_type()'s keep_outer; at the reads of the outer
+      inference (call.c's outer_inference_mapper() & co., expr.c) it would poison less (effect's poisoned words 2.9k ->
+      20k with it, summed K12 types unchanged).
+    - **Divergence 5 (Pretty.ts) is a peek that decides an identity**, not the function return's publication:
+      ty_instantiate() of a function expression's anonymous type trims the mapper to what ty_function_type_mentions()
+      says it mentions, and that answers "unknown" (keep every source) unless the members, the signature and the
+      inferred return are already done: done-ness peeks (TAINT_PEEK) that the lenient rule doesn't count. The same
+      printed type then has two identities (mapper of 3 sources in K1, of 1 in K12). Rule 5 needs an exception: a peek
+      whose answer changes an identity (an instantiation's key) is an event when it fails, or the trimming must not
+      depend on done-ness. Owner: whoever takes ty_function_type_mentions() (P1's divergence 2 is the same function).
+    - The enum's members are finished from inside the enum's resolution (ty_set_declared_type(), sw_finish() without
+      a claim, with the enum's start taint: a clean prefix is clean). The member's own claim, if any, sees
+      sw_mine_in_flight() false and takes the value, as the nested re-entries do.
   - **P3, relate.c + graph.c + lazy_type.c + shared_table.c** (variance groups without waiting, declaration memos as
     words, memo kinds publishing only clean entries in graph_memo_flush(), the shared relation cache's deeply-nested
     rule). ~1-2 sessions. The tooling worker's hooks in graph.c and shared_table.c are its neighbours: rebase often.

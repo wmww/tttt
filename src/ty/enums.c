@@ -299,7 +299,7 @@ int ty_enum_member_constant(Checker* me, EnumCase const* member, double* number)
     return ret;
 }
 
-Ty const* ty_resolve_enum(Checker* me, Symbol const* decl) {
+Ty const* ty_resolve_enum(Checker* me, Symbol const* decl, u64 taint) {
     Ty const** members = nullptr;
     u32 count = 0, cap = 0;
     for (u32 decl_index = 0; decl_index < decl->decl_count; decl_index++) {
@@ -339,7 +339,7 @@ Ty const* ty_resolve_enum(Checker* me, Symbol const* decl) {
                 type = ty_enum_computed_member(me, decl, member);
             }
             // Members of the same name (TS2300) are symbols of their own. A member's type is fresh, the enum's are regular
-            if (member) ty_set_declared_type(me, member, ty_fresh_literal(me, type));
+            if (member) ty_set_declared_type(me, member, ty_fresh_literal(me, type), taint);
             if (count == cap) {
                 cap = cap ? cap * 2 : 16;
                 members = realloc(members, sizeof(Ty const*) * cap);
@@ -360,7 +360,7 @@ Ty const* ty_resolve_enum(Checker* me, Symbol const* decl) {
         if (decl->decls[decl_index].kind != SYMBOL_DECL_ENUM) continue;
         EnumDecl const* enum_decl = decl->decls[decl_index].node;
         for_each (i, vec_enum_case, &enum_decl->cases) {
-            if (i->computed_name && i->symbol) ty_set_declared_type(me, i->symbol, ret);
+            if (i->computed_name && i->symbol) ty_set_declared_type(me, i->symbol, ret, taint);
         }
     }
     return ret;

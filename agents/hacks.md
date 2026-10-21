@@ -4,6 +4,11 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 `bugs/*.md`, triage.md or a plan. `grep -rn HACK src` finds the code-side markers.
 
 ## Global state, memory, parallelism
+- **Plan 86 4f's shared words keep a state byte each for the default path** (`FunctionReturn.state`,
+  `SymbolLinks.declared_state`, `TyObjectState.base_state`...): without --shared-graph in flight is that byte, as S0
+  designed (overlay.h); with it the byte is never touched. Correct: the Overlay for both (one map probe per claim, the
+  measured reason it wasn't). And function_return_type() counts an argument's return inferred under an outer inference
+  as tainted wholesale (keep_outer), where only the reads of the outer inference need to be (plan 86 "P2 progress").
 - `ast_free()` / `ast_delete()` (ast_alloc.c): the AST arenas trust the size they're given, and a too-big one hands
   the next allocation of that size someone else's bytes. `ast_delete()` takes `sizeof(*p)`, so a box allocated short
   (`property_dot_new()`, `require_ports` arrays) needs its real size at every free; nothing checks it. Correct: a

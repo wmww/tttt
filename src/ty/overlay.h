@@ -58,6 +58,8 @@ uintptr_t sw_finish(struct Checker* me, SharedWord* w, uint8_t* state, uintptr_t
 bool sw_mine_in_flight(struct Checker const* me, SharedWord const* w, uint8_t const* state);
 // The end of a claim whose word a nested computation finished (sw_mine_in_flight() false): its own result is dropped
 void sw_unclaim(struct Checker* me, SharedWord const* w);
+// A claim given up without a value (still in flight here: a cycle found the computation can't finish): not computed
+void sw_abandon(struct Checker* me, SharedWord const* w, uint8_t* state);
 // A done-ness peek (TAINT_PEEK, no event): the value this worker sees if the word is finished for it (published, or
 // its own private value: that read is an event), else SW_EMPTY (not computed, poisoned, or in flight here). It looks
 // only at the word's final value and the caller's own Overlay/ClaimSet: another worker's in flight is never seen (it
