@@ -21,41 +21,19 @@ Keep notes for future agent sessions in `agents/`, including:
 
 `agents/` should be committed to git just like code. Create, edit and delete files in `agents/` freely. Remove files that are no longer relevant (eg solved bugs, completed plans) and clean up confusing and unimportant references to previous state.
 
-## Session types
-You are to work on this project highly autonomously over many sessions. To facilitate that, you are one of the following types of agents:
-
-### Insights
-You are a high level manager. Don't get bogged down in the details of any one problem or refactor. Review vision.md, todo.md, hacks.md and the git log, and keep the project on track. Be on the lookout for patterns spanning many past sessions. Is a particular area of the code base repeatedly more troublesome than expected? Are we accumulating tech debt? Does something *almost* work in a way that's tempting to keep charging forwards, but actually demands a significant refactor? Is the scope or focus of the project drifting from the true goal? These are the sorts of things you need to be thinking about and correcting for. Don't be afraid to make bold decisions.
-
-Delegate to sub-agents or future sessions as needed. For example, instead of doing your own refactor, or even doing a detailed code investigation to write a refactor plan, you could instead write a simple plan that instructs another agent to investigate, make a decision, and write up the real refactor plan if needed. You might spend a lot of time in one session to get things right, or exit quickly if everything's going well. Your main deliverable is maintaining vision.md to the highest quality, and writing todo.md to map out the next window: 1-5 sessions of normal tasks (3 is a good default), then a triage session, then the next insights session.
-
-Each insights session add an entry to a repo-toplevel file: report.md. This is for human consumption, so keep it brief and comprehendable (a 1-4 SHORT paragraphs). Explain what's happened since the last entry, giving a high-level overview of the state of the project, what direction it's going and any concerns you may have.
-
-### Planning
-You are to research, derisk and write up the specified plan(s). Be reasonably detailed, but leave things up to the execution agent if they truly depend on information we don't have yet. Include how to validate that the plan has been completed.
-
-### Execution
-You're given a plan file (or in some cases just a specified task) and you execute it. Deliverable might be a new feature, a perf improvement, a measurement, a dev tool or a refactor.
-
-### Triage
-You're in charge of draining triage.md and otherwise maintaining the repo. Validate and write up bugs, research and write plans, update todo.md based on new information, delete or consolidate old files, etc.
-
 ## Workflow
-- **Ending your turn ends the session**: nothing wakes you up again. Never end a turn waiting on a background job; run long jobs (`findcrash.py`, `bench.sh`, full suites) in the foreground with a timeout, and commit before starting anything long.
-- `todo.md` has a fixed number of sessions before the next insights session. Don't insert sessions ahead of it; new work goes into plans, triage.md, or after the insights entry, which the next insights session reorders.
 - When you fix a divergence found outside tsc's suite (corpora, sweeps, a probe), add a cut-down repro to `test/cases/` (`scripts/owntests.sh` for its baselines) that fails without the fix.
 - Commit at the end of every session. Commit messages should be a summary of what you did and what happened, generally a paragraph or two. Include doubts and things that went wrong, these will be helpful later.
 - Don't use feature branches. If you change branch, always change back by end of session.
-- There is no strict chain of command or scoping of agents. An insights agent may write some code, an execution agent may edit vision.md. The structure is just to keep everyone focused on what's usually most useful to them.
+- Work is organized by a coordinator agent that spawns workers in worktrees (`scripts/worktree.sh NAME`), merges their branches into `ai-main` and runs the oracles at each merge. Workers get a narrow brief and report back; the coordinator owns `agents/` and the commits. There is no strict chain of command: anyone may write code or edit vision.md when it's the most useful thing to do.
 - Any agent may "fail", if that's best for the project. If half way through implementing a plan you discover the plan takes the wrong approach, cancel your implementation and report that rather than pushing through.
 - Feel free to build tools and scripts, and share them with future agents if they're generally useful. The workflow of this project was originally optimized for humans, so the tooling might need adapting to be optimal for agents.
-- If you're a toplevel agent without additional instructions, determine your session type and task based on todo.md. If it's empty/complete, congrats! You're an insights agent.
+- If you're a toplevel agent without additional instructions, pick up from todo.md and vision.md.
 - Feel free to delegate easy/mechanical/repetitive work to a smaller model sub-agent.
 - Disk is shared and filled up once (2026-10-14: a 50 GB Go build cache, now capped by `ensure-typescript.sh`). At session end `git worktree list` shows only the repo (every worktree's commits merged or deliberately dropped, said in the commit message) and your /tmp scratch (dumps, probe trees, `go-build*`) is deleted.
-- Sub-agents running in parallel with you or each other must not experiment in the shared tree: give them a worktree (`git worktree add /tmp/wt-x HEAD`, then symlink the untracked `thirdparty/{typescript,typescript-gopath,go,corpora,sources}` into it). The symlinked corpora are shared: probes go elsewhere. Parallel agents must never `git stash` (shared by all worktrees) nor wait on `pgrep -f` patterns (they match each other's builds).
+- Sub-agents running in parallel with you or each other must not experiment in the shared tree: give them a worktree (`scripts/worktree.sh NAME`: `/tmp/wt-NAME` with the untracked `thirdparty/` checkouts symlinked in). The symlinked corpora are shared: probes go elsewhere. Parallel agents must never `git stash` (shared by all worktrees) nor wait on `pgrep -f` patterns (they match each other's builds).
 - Be conservative with Fable sub-agents, don't fan out to many of them.
-- If you're using Anthropic models, Opus is the smallest model you should use for anything. If only Opus is available, ignore stuff about chosing a model.
-- When you are unable to move forward or the project is 100% complete and as performant as its reasonably going to get, create a file `claude-stop` in the project loop to end the dev cycle
+- If you're using Anthropic models: Opus for anything needing judgment (checker semantics, perf analysis, debugging); Sonnet is fine for mechanical refactors and long iteration loops with a clear oracle. If only Opus is available, ignore stuff about choosing a model.
 - You may edit this file (CLAUDE.md; AGENTS.md is a symlink to it), but keep it compact and meaningful. Favor other files which can be read as-needed for all but the most important content.
 - Pull --rebase and push at the end of each session
 
