@@ -508,12 +508,21 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `structured_related_impl()` TY_TYPE_PARAM: a type parameter source against a union takes its hoisted constraint
   (`constraint & T`) only on a definite True, because tttt relates a generic intersection member by member (meeting the
   outer T relation as Maybe). Right rule: tsc's whole-intersection comparison; flagflip/sweep would show misses.
-- Instantiation keys by mentions, not by outer type parameters (tsc's getObjectTypeInstantiation):
-  `ty_function_type_mentions()` / `object_literal_type_mentions()` (contextual parameters can carry a call's type
-  parameters, plan 51); unknown mentions fall back to the whole mapper (perf: docmost 2.2M types), and
-  `declared_inside()` (`instantiate_anonymous()`) drops only parameters declared inside the node. An object literal
-  with a getter has instances of both kinds (zod's recursive-types.test.ts depends on which meet). Right rule: key by
-  outer parameters once contextual parameters stop carrying call type parameters; perfsweep types ratio and zod show it.
+- Instantiation keys of object literals and JavaScript function expressions by mentions, not by outer type parameters
+  (tsc's getObjectTypeInstantiation): `object_literal_type_mentions()` / `ty_function_type_mentions()` (contextual
+  parameters could carry a call's type parameters, plan 51); unknown mentions fall back to the whole mapper (perf:
+  docmost 2.2M types), and `declared_inside()` (`instantiate_anonymous()`) drops only parameters declared inside the
+  node. An object literal with a getter has instances of both kinds (zod's recursive-types.test.ts depends on which
+  meet). The identity depends on history: "unknown" is a peek (a property type not computed yet), and so is
+  `literal_instance_is_itself()` (members and property types peeked); under `--shared-graph` the first instantiator
+  fixes it for everyone (plan 86 4f, the IDENT note). TypeScript function expressions are keyed by
+  `ty_function_outer_type_params()` now (tsc's way; on drizzle, effect, excalidraw, zod and nest no function's computed
+  mentions were outside that set). Right rule: the same for object literals (needs the literal's scope) and JavaScript
+  (JSDoc `@template`s aren't in the scopes' OuterGenerics); perfsweep types ratio and zod show it.
+- `ty_function_outer_type_params()` takes the type parameters of an enclosing context-sensitive function's generic
+  contextual signature from KEY_CONTEXT_CHECKED (a peek of this checker's contextual-check state, like
+  `ty_function_closed()`): tsc resolves that function's signature (getOuterTypeParameters). Right rule: the settled
+  context (CTX's `ty_settle_function_context()`), if instantiating an unsettled one ever shows.
 - Stable type ordering (`ty/order.c`) ties still broken by tttt ids: roots without `outer`, deferred references with no
   cheap node position (`type_node_start()`), two nodes at one token, position-less unique symbols, intrinsic variants,
   same-symbol anonymous types with equal mappers. Shows as union order (displaydiff, expecttypes "union order"); `TTTT_ORDER_STATS=1` counts

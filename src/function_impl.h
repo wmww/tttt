@@ -251,6 +251,9 @@ typedef struct FunctionImpl {
     // typed by a generic contextual signature takes that signature's type parameters, which the functions inside it
     // may mention (tsc's getOuterTypeParameters), see ty_function_closed()
     struct FunctionImpl const* contextual_ancestor;
+    // The scope the function is declared in (set by the resolve walk): what encloses it, for the type parameters in
+    // scope there (tsc's getOuterTypeParameters, ty_function_outer_type_params())
+    struct Scope const* outer_scope;
     // A function expression: where its contextual type comes from, as the typecheck walk would check it (set by the
     // resolve walk, FlowBuilder.context_root; 0 if nothing gives it one): a tagged pointer, see ContextRootKind. The
     // checker checks that root first when something asks for the function's contextual signature before anything

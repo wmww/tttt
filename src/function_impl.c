@@ -270,6 +270,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         !(span_source(my full_span) && span_source(my full_span)->is_js);
     my no_enclosing_type_params = !names->generics && !(span_source(my full_span) && span_source(my full_span)->is_js) &&
         !scope_enclosing_class(names);
+    my outer_scope = names;
     FunctionImpl const* enclosing = names->function;
     my contextual_ancestor = !enclosing ? nullptr :
         enclosing->is_expression && ty_function_is_context_sensitive(enclosing) ? enclosing : enclosing->contextual_ancestor;

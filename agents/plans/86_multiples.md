@@ -1554,6 +1554,24 @@ in parallel only where the file sets are disjoint):
       getObjectTypeInstantiation) whatever is inferred: loses the plan 51 trimming that kysely's builders need;
       (c) the oracle compares only where K1's own computation was clean, and counts identity-cache hits made under a
       taint as tainted.
+    - **IDENT: divergence (2) closed by (b) (2026-10-22, wt-ident).** A TypeScript function expression's instances
+      are keyed by ty_function_outer_type_params() (function.c): the type parameter lists of the scopes around it
+      (FunctionImpl.outer_scope, set by the resolve walk), the `this` types of the classes around it, and an enclosing
+      context-sensitive function's generic contextual signature's type parameters: tsc's getOuterTypeParameters with
+      includeThisTypes, unfiltered for functions as in getObjectTypeInstantiation. The fingerprint also showed the
+      flag half of it: effect tagStartsWith's instance had the same key but TYF_COULD_CONTAIN_TYPE_VARIABLES set or not
+      by whether the mentions were known at creation. Plan 51's worry (contextual parameters carrying a call's type
+      parameters, so the syntactic set would miss some) measured: on drizzle, effect, excalidraw, zod and nest no
+      computed mention set had a parameter outside the outer set. The trimming's cost: types +0.0-0.1% (excalidraw
+      153027 -> 153200; perfsweep's kysely, better-auth, inbox-zero, karakeep, docmost/client, feathers and 50 more
+      projects +0.01% in all, kysely 80760 -> 80768). Default path byte-identical (suite; drizzle, zod, effect, nest,
+      excalidraw, type-fest, xstate, react, valibot), callgrind drizzle +0.12%, zod +0.06%, nest +0.09%. With the flag:
+      fingerprint 2 runs each effect, excalidraw, drizzle: divergence (2)'s keys gone (excalidraw 65-94 -> 0), the rest
+      the `[any, ...any[]]` family (one effect run, 910) and (4)'s KEY_UNION_PAIR; rep3 20/20 on drizzle, zod,
+      excalidraw, nest, effect 19/20 (the Schema.tst.ts(2936,39) residue); seeds drizzle 200/200, effect 100/100.
+      Left: object literals (object_literal_type_mentions()'s property-type peek and literal_instance_is_itself()'s
+      peeks still choose an identity; a literal has no scope pointer) and JavaScript function expressions (JSDoc
+      `@template`s aren't in OuterGenerics): hacks.md.
   - **P2, checker.c + lower.c + function.c + instantiate.c** (reduced, cond branches, declared types, reference args,
     implied constraints, function returns, ty_alloc and the directory's chunk slots (lazy_type.c's lazy_slots_*),
     order keys, literal twins: TSan C). ~1-2 sessions.

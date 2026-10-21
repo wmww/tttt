@@ -3,6 +3,8 @@
 #include "source_file.h"
 #include "statement.h"
 #include "compiler_options.h"
+#include "scope.h"
+#include "class_decl.h"
 
 // The types of functions: declarations, function expressions, methods, accessors and constructors. A function's type is
 // an anonymous object type with one signature that is read straight off the FunctionImpl (members.c); what's here is
@@ -21,6 +23,32 @@ bool ty_function_closed(Checker* me, FunctionImpl const* function) {
         if (contextual && sig_res(me, contextual)->type_params.len) return false;
     }
     return true;
+}
+
+// The type parameters in scope where a function is declared (tsc's getOuterTypeParameters with includeThisTypes): the
+// lists of what encloses it, outermost first, the `this` types of the classes around it, and the type parameters of a
+// generic contextual signature an enclosing context-sensitive function expression takes (see ty_function_closed())
+TyList ty_function_outer_type_params(Checker* me, FunctionImpl const* function) {
+    TyBuf out = {0};
+    Scope const* scope = function->outer_scope;
+    if (scope) {
+        TyList generics = ty_outer_type_params(me, scope->generics);
+        for (u32 i = 0; i < generics.len; i++) ty_buf_push(&out, generics.data[i]);
+        for (ClassDecl const* c = scope_enclosing_class(scope); c; c = c->outer_class) {
+            if (!c->symbol) continue;
+            Ty const* declared = ty_declared_type_of(me, c->symbol);
+            if (declared && declared->kind == TY_DECLARED && declared->declared.this_param) ty_buf_push(&out, declared->declared.this_param);
+        }
+    }
+    for (FunctionImpl const* outer = function->contextual_ancestor; outer; outer = outer->contextual_ancestor) {
+        Signature const* contextual = ty_function_assigned_contextual_signature(me, outer);
+        if (!contextual) continue;
+        TyList params = sig_res(me, contextual)->type_params;
+        for (u32 i = 0; i < params.len; i++) ty_buf_push(&out, params.data[i]);
+    }
+    TyList ret = ty_list_copy(me, out.data, out.len);
+    ty_buf_drop(&out);
+    return ret;
 }
 
 Ty const* ty_function_type(Checker* me, FunctionImpl const* function) {

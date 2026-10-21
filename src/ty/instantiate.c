@@ -1,5 +1,6 @@
 #include "scope.h"
 #include "ty/ty_internal.h"
+#include "source_file.h"
 #include "error.h"
 #include "program.h"
 
@@ -659,12 +660,23 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
     u32 len = 0;
     TyList free_params = target->anonymous.free_params;
     bool free_params_unknown = target->anonymous.free_params_unknown;
-    // A function expression's type mentions what its resolved signature does (tsc: its outer type parameters), not
-    // whatever the mapper has: a callback in a class method otherwise got a new instance for every composed mapper
-    // that reached it (kysely's builders, docmost)
-    if (free_params_unknown && (target->anonymous.function || target->anonymous.object_literal) &&
-        ty_function_type_mentions(me, target, &free_params)
+    // A function expression's type by the type parameters in scope where it is written, `this` types included (tsc's
+    // getObjectTypeInstantiation: getOuterTypeParameters, not filtered for a function), not by whatever the mapper has:
+    // a callback in a class method otherwise got a new instance for every composed mapper that reached it (kysely's
+    // builders, docmost). A function of the declaration, never of what was resolved or inferred yet: it went by what
+    // the resolved signature and the inferred return type mention, and asked before the return type was inferred, by
+    // the whole mapper, so the instance's identity depended on when it was first made (plan 86 4f, IDENT)
+    FunctionImpl const* function = target->anonymous.function;
+    if (free_params_unknown && function && function->is_expression && !target->anonymous.node &&
+        !target->anonymous.overload_count && !target->anonymous.merged_value && !target->anonymous.is_reverse &&
+        !target->anonymous.applies_type_args && span_source(function->full_span) && !span_source(function->full_span)->is_js
     ) {
+        free_params = ty_function_outer_type_params(me, function);
+        free_params_unknown = false;
+    }
+    // An object literal's by what its properties' types mention (see object_literal_type_mentions()); a JavaScript
+    // function expression's by what its signature does (its JSDoc type parameters aren't in the scopes)
+    if (free_params_unknown && (function || target->anonymous.object_literal) && ty_function_type_mentions(me, target, &free_params)) {
         free_params_unknown = false;
     }
     // Whatever it mentions, it doesn't mention a type parameter declared inside it from outside: those are bound in it
