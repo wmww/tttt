@@ -178,10 +178,6 @@ size on real code, each with an example:
   interfaces, a.ts `class A { m(prop: OP | OM): prop is typeof prop & { key: string } }` (a union parameter
   matters), c.ts `export const v = new A().m;` with `--checkers 3`. tsgo single-threaded also differs from its
   default on babel-parser's `parseVarStatement`/`parseExportSpecifier` (`any` by default, as tttt).
-- **babel-parser placeholders/plugin-utils `comments: N.Comment[]` member order**: in the mixins' flattened
-  instance types tsgo splits BaseParser's `declare` fields (`options` ... `comments` in one place, `locData` and the
-  methods after it elsewhere); tttt places `comments` with `locData`. Same with `--singleThreaded`. Unexplained (the
-  "Member order" item above: compareSymbols of each resolved level).
 
 ## 2026-10-18 worktree agent D leftovers
 - **sequelize/packages/core `readonly models: any`** (tsgo) vs tttt's `ModelSetView<Dialect>`: tsgo itself prints

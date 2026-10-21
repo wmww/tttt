@@ -1,0 +1,36 @@
+//// [test/cases/ttttContainedMemberFullStart.ts] ////
+
+=== base.ts ===
+export class Base {
+>Base : Symbol(Base, Decl(base.ts, 0, 0))
+
+    declare a: number;
+>a : Symbol(Base.a, Decl(base.ts, 0, 19))
+
+    // ------------------------------------------------------------ a long comment before b
+    declare b: number;
+>b : Symbol(Base.b, Decl(base.ts, 1, 22))
+
+    declare c: number;
+>c : Symbol(Base.c, Decl(base.ts, 3, 22))
+}
+=== mixin.ts ===
+//xxxxxxxxxxxxxxxx
+import { Base } from "./base";
+>Base : Symbol(Base, Decl(mixin.ts, 1, 8))
+
+export const mix = (sc: typeof Base) =>
+>mix : Symbol(mix, Decl(mixin.ts, 2, 12))
+>sc : Symbol(sc, Decl(mixin.ts, 2, 20))
+>Base : Symbol(Base, Decl(mixin.ts, 1, 8))
+
+    class M extends sc {
+>M : Symbol(M, Decl(mixin.ts, 2, 39))
+>sc : Symbol(sc, Decl(mixin.ts, 2, 20))
+
+        own = 1;
+>own : Symbol(M.own, Decl(mixin.ts, 3, 24))
+
+        // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+    };
+

@@ -384,6 +384,59 @@ static void builder_sort_stable_from(MembersBuilder* builder, u32 from) {
 
 static void builder_sort_stable(MembersBuilder* builder) { builder_sort_stable_from(builder, 0); }
 
+// Where tsgo's node for a declaration starts (its Loc.Pos): the end of the token before it, the whitespace and comments
+// in between included. Found by going back from the declaration's first token: whitespace, a block comment ending
+// there, a line comment on its line (a `//` outside quotes; a template literal over several lines can fool it)
+static isize_t full_start_offset(char const* contents, isize_t at) {
+    for (;;) {
+        isize_t i = at;
+        while (i > 0 && (contents[i - 1] == ' ' || contents[i - 1] == '\t' || contents[i - 1] == '\n' || contents[i - 1] == '\r')) i--;
+        if (i >= 2 && contents[i - 1] == '/' && contents[i - 2] == '*') {
+            isize_t j = i - 2;
+            while (j >= 2 && !(contents[j - 2] == '/' && contents[j - 1] == '*')) j--;
+            if (j >= 2) {
+                at = j - 2;
+                continue;
+            }
+        }
+        isize_t line = i;
+        while (line > 0 && contents[line - 1] != '\n') line--;
+        char quote = 0;
+        isize_t comment = -1;
+        for (isize_t k = line; k + 1 < i && comment < 0; k++) {
+            char c = contents[k];
+            if (quote) {
+                if (c == '\\') k++;
+                else if (c == quote) quote = 0;
+            } else if (c == '\'' || c == '"' || c == '`') {
+                quote = c;
+            } else if (c == '/' && contents[k + 1] == '/') {
+                comment = k;
+            } else if (c == '/' && contents[k + 1] == '*') {
+                break; // (A block comment on the line: not worth parsing, the line is taken as code)
+            }
+        }
+        if (comment >= 0) {
+            at = comment;
+            continue;
+        }
+        return i;
+    }
+}
+
+// Whether tsgo's declaration.Loc.ContainedBy(container.Loc) holds: both ranges from their full starts, files ignored.
+// `*container_full`: the container's full start, -1 until computed
+static bool loc_contained_by(Span d, Span c, isize_t* container_full) {
+    char const* dc = cstr_str(&span_source(d)->contents);
+    char const* cc = cstr_str(&span_source(c)->contents);
+    isize_t start = d.buf - dc, end = start + d.size;
+    isize_t cs = c.buf - cc, ce = cs + c.size;
+    if (end > ce) return false;
+    if (*container_full < 0) *container_full = full_start_offset(cc, cs);
+    if (start < *container_full) return false;
+    return full_start_offset(dc, start) >= *container_full;
+}
+
 // tsgo's getNamedMembers of a class or interface: the members "contained by" the container first, then the others,
 // each group sorted. Its isDeclarationContainedBy compares text ranges without looking at files, so an inherited
 // member of another file whose declaration's offsets fall inside the container's is in the first group too (babel's
@@ -392,17 +445,17 @@ static void builder_sort_stable(MembersBuilder* builder) { builder_sort_stable_f
 static void builder_sort_contained_first(MembersBuilder* builder, u32 own_props, Symbol const* container);
 static void builder_sort_class_members(MembersBuilder* builder, u32 own_props, Symbol const* container) {
     bool joins = false;
+    isize_t container_full[4] = { -1, -1, -1, -1 };
     for (u32 i = own_props; container && i < builder->props_count && !joins; i++) {
         Prop const* prop = builder->props[i];
         while (prop && !prop->decl->decl_span_count && prop->target) prop = prop->target;
         if (!prop || !prop->decl->decl_span_count || !span_source(prop->decl->decl_spans[0])) continue;
         Span d = prop->decl->decl_spans[0];
-        isize_t start = d.buf - cstr_str(&span_source(d)->contents), end = start + d.size;
         for (u32 k = 0; k < container->decl_count && !joins; k++) {
             Span c = container->decls[k].full;
             if (!span_valid(c) || !span_source(c) || span_source(c) == span_source(d)) continue;
-            isize_t cs = c.buf - cstr_str(&span_source(c)->contents), ce = cs + c.size;
-            joins = start >= cs && end <= ce;
+            isize_t unknown = -1;
+            joins = loc_contained_by(d, c, k < 4 ? &container_full[k] : &unknown);
         }
     }
     if (!joins) {
@@ -420,6 +473,7 @@ static void builder_sort_contained_first(MembersBuilder* builder, u32 own_props,
     Prop** rest = malloc(sizeof(Prop*) * n);
     panic_if(!rest, "out of memory");
     u32 first = own_props, others = 0;
+    isize_t container_full[4] = { -1, -1, -1, -1 };
     for (u32 i = own_props; i < builder->props_count; i++) {
         Prop* prop = builder->props[i];
         Prop const* declared = prop;
@@ -427,12 +481,11 @@ static void builder_sort_contained_first(MembersBuilder* builder, u32 own_props,
         bool contained = false;
         if (declared && declared->decl->decl_span_count && span_source(declared->decl->decl_spans[0])) {
             Span d = declared->decl->decl_spans[0];
-            isize_t start = d.buf - cstr_str(&span_source(d)->contents), end = start + d.size;
             for (u32 k = 0; k < container->decl_count && !contained; k++) {
                 Span c = container->decls[k].full;
                 if (!span_valid(c) || !span_source(c)) continue;
-                isize_t cs = c.buf - cstr_str(&span_source(c)->contents), ce = cs + c.size;
-                contained = start >= cs && end <= ce;
+                isize_t unknown = -1;
+                contained = loc_contained_by(d, c, k < 4 ? &container_full[k] : &unknown);
             }
         }
         if (contained) builder->props[first++] = prop;

@@ -241,6 +241,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttContainedMemberFullStart': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttContextRootSettled': {
         errors: true,
         symbols: true,

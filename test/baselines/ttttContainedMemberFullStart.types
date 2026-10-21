@@ -1,0 +1,39 @@
+//// [test/cases/ttttContainedMemberFullStart.ts] ////
+
+=== base.ts ===
+export class Base {
+>Base : Base
+
+    declare a: number;
+>a : number
+
+    // ------------------------------------------------------------ a long comment before b
+    declare b: number;
+>b : number
+
+    declare c: number;
+>c : number
+}
+=== mixin.ts ===
+//xxxxxxxxxxxxxxxx
+import { Base } from "./base";
+>Base : typeof Base
+
+export const mix = (sc: typeof Base) =>
+>mix : (sc: typeof Base) => typeof M
+>(sc: typeof Base) =>    class M extends sc {        own = 1;        // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy    } : (sc: typeof Base) => typeof M
+>sc : typeof Base
+>Base : typeof Base
+
+    class M extends sc {
+>class M extends sc {        own = 1;        // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy    } : typeof M
+>M : typeof M
+>sc : Base
+
+        own = 1;
+>own : number
+>1 : 1
+
+        // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+    };
+
