@@ -4330,8 +4330,11 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 fresh->anonymous.applies_type_args = true;
                 fresh->anonymous.free_params_unknown = true;
                 fresh->anonymous.state = arena_new(&my arena, TyObjectState);
-                *intern_slot(me, &my links, node_key, 3) = fresh;
+                // (The type -> node entry first: `fresh` is this node's alone, so its node is part of what it is, and
+                // must be there before the node -> type entry publishes it. No first-lowerer history: one fresh type per
+                // (node, instantiation), census A section 4's worry)
                 *intern_slot(me, &my links, (u64[]){ KEY_INSTANTIATION_QUERY, fresh->id }, 2) = node;
+                *intern_slot(me, &my links, node_key, 3) = fresh;
                 ret = fresh;
             }
             return ret;
