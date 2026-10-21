@@ -224,6 +224,9 @@ void sw_copy_in_flight(Checker* me, SharedWord* to, uint8_t* to_state) {
 uint64_t sw_claim(Checker* me, SharedWord* w, uint8_t* state) {
     if (!my graph) *state = LAZY_STATE_IN_FLIGHT;
     else {
+        // (A scheduling point of the seeded scheduler (TTTT_GRAPH_SEED), as lazy_claim_slow() is: a claim is where
+        // another worker's computation of the same word can interleave)
+        graph_sched_point(false);
         overlay_put(me, (uintptr_t)w, SW_EMPTY);
         if (__builtin_expect(__atomic_load_n(&debug_publish, __ATOMIC_RELAXED) != 0, 0) && debug_publish_on()) debug_mark(me, w);
     }
