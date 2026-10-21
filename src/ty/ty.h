@@ -23,6 +23,7 @@ typedef struct Checker Checker;
 typedef struct Prop Prop;
 struct ObjectLiteralProp;
 typedef struct Signature Signature;
+typedef struct SigResolved SigResolved;
 typedef struct Members Members;
 typedef struct TyMapper TyMapper;
 typedef struct TyCondBranch TyCondBranch;
@@ -702,6 +703,20 @@ typedef struct TyPredicate {
     Ty const* type; // Null: `asserts x`
 } TyPredicate;
 
+// A signature's resolved parameters (tsc's resolved signature fields), one record behind Signature.res: the step
+// towards a write-once shared word (plan 86 stage 4f, S1). signature_resolve_slow() allocates it when it claims the
+// signature and fills it in place while in flight (a re-entry, a cycle, sees what is resolved so far, as when these were
+// Signature's own fields); once the signature is done nothing writes it, but for a fresh, unpublished signature's
+// maker (sig_resolved_mut())
+struct SigResolved {
+    TyList type_params;
+    SigParam const* params;
+    Ty const* this_type; // `this: T`, not among params. Null if not declared
+    u32 param_count;
+    u32 min_args;
+};
+static_assert(sizeof(SigResolved) == 40);
+
 struct Signature {
     u32 flags;
     // Resolved lazily by signature_resolve()
@@ -720,8 +735,6 @@ struct Signature {
     // skips it where nothing can tell, but a function expression typed by it shows its clones in the types baseline)
     bool fresh_type_params;
     LowerCtx ctx;
-    u32 param_count;
-    u32 min_args;
     // Exactly one source: a function (a declaration/expression, or a function type node, see FunctionImpl.is_type)
     // or a target to instantiate
     FunctionImpl const* function;
@@ -736,13 +749,14 @@ struct Signature {
     struct Signature const* declared_by;
     Signature const* target;
     TyMapper const* mapper;
-    TyList type_params;
-    SigParam const* params;
-    Ty const* this_type; // `this: T`, not among params. Null if not declared
+    // What signature_resolve() made of it, null before (a signature made resolved has its own from the start). Read it
+    // through signature_resolve(), or sig_res() where the signature is known resolved or the zeros of an unresolved one
+    // are what the reader wants
+    SigResolved const* res;
     Ty const* ret;
     TyPredicate const* predicate; // Use signature_predicate()
 };
-static_assert(sizeof(Signature) == 160);
+static_assert(sizeof(Signature) == 128);
 
 // A member with a computed name that an object literal's index signature was made of (`[a]: 1`)
 typedef struct IndexComponent {
@@ -1769,11 +1783,28 @@ Ty const* ty_non_augmenting_base(Checker* me, Ty const* ty);
 // The type variable a mixin class extends (`class C extends Base` with `Base: T`, or `T & U`): its value is `typeof C & T`
 // (tsc's getBaseTypeVariableOfClass). Null for any other class
 Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol);
-void signature_resolve_slow(Checker* me, Signature const* sig);
+extern SigResolved const sig_resolved_none; // An unresolved signature's: zeros
+SigResolved const* signature_resolve_slow(Checker* me, Signature const* sig);
+// Resolves the signature and returns its record: in flight here (a cycle), what is resolved so far
 // (Resolved ones inline: the done test is what nearly every call is)
-static inline void signature_resolve(Checker* me, Signature const* sig) {
-    if (__builtin_expect(LAZY_LOAD(sig->state) == LAZY_STATE_DONE, 1)) return;
-    signature_resolve_slow(me, sig);
+static inline SigResolved const* signature_resolve(Checker* me, Signature const* sig) {
+    if (__builtin_expect(LAZY_LOAD(sig->state) == LAZY_STATE_DONE, 1)) return sig->res;
+    return signature_resolve_slow(me, sig);
+}
+// The record as it is, without resolving: an unresolved signature's is zeros (sig_resolved_none)
+static inline SigResolved const* sig_res(Signature const* sig) {
+    return sig->res ? sig->res : &sig_resolved_none;
+}
+// After `*copy = *original`: its state as LAZY_COPIED() leaves it, and a record of its own if the original's is still
+// being written (in flight here: the copy keeps what is resolved so far, as when it copied the fields; in flight
+// elsewhere: the copy resolves itself)
+void signature_copied(Checker* me, Signature* copy);
+// A record for a signature made resolved (`.state = LAZY_STATE_DONE, .res = sig_resolved_new(me, ...)`)
+SigResolved const* sig_resolved_new(Checker* me, SigResolved init);
+// The record of a fresh signature its maker resolved itself (so the record is its own, not a copy's) and changes before
+// anyone else sees it
+static inline SigResolved* sig_resolved_mut(Signature* sig) {
+    return (SigResolved*)sig->res;
 }
 Ty const* signature_return_type(Checker* me, Signature const* sig);
 bool ty_signature_return_in_flight(Checker* me, Signature const* sig); // Its return type is being inferred up the stack

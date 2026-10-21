@@ -1627,7 +1627,7 @@ static Ty const* define_property_type(Checker* me, Expr const* call) {
     Signature const* set_sig = set ? ty_single_signature(me, set, false, true) : nullptr;
     if (set_sig) {
         signature_resolve(me, set_sig);
-        return set_sig->param_count ? ty_signature_param_type_at(me, set_sig, 0) : ty_intrinsic(me, TY_NEVER);
+        return sig_res(set_sig)->param_count ? ty_signature_param_type_at(me, set_sig, 0) : ty_intrinsic(me, TY_NEVER);
     }
     return ty_intrinsic(me, TY_ANY);
 }

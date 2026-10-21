@@ -311,9 +311,9 @@ static TyIterationTypes const* iteration_types_of_method(Checker* me, Ty const* 
     for (u32 i = 0; i < sigs.len; i++) {
         Signature const* sig = sigs.data[i];
         signature_resolve(me, sig);
-        if (which != METHOD_THROW && sig->param_count) {
-            Ty const* param = sig->params[0].type;
-            if (sig->params[0].rest) {
+        if (which != METHOD_THROW && sig_res(sig)->param_count) {
+            Ty const* param = sig_res(sig)->params[0].type;
+            if (sig_res(sig)->params[0].rest) {
                 Ty const* element = ty_access(me, param, ty_literal(me, &(Value){ .tag = VALUE_NUMBER, .number = 0 }));
                 param = element ? element : ty_intrinsic(me, TY_ANY);
             }
@@ -426,7 +426,7 @@ static TyIterationTypes const* iterable_types_with(Checker* me, Ty const* ty, bo
     TyBuf iterators = {0};
     for (u32 i = 0; i < sigs.len; i++) {
         signature_resolve(me, sigs.data[i]);
-        if (sigs.data[i]->min_args == 0) ty_buf_push(&iterators, signature_return_type(me, sigs.data[i]));
+        if (sig_res(sigs.data[i])->min_args == 0) ty_buf_push(&iterators, signature_return_type(me, sigs.data[i]));
     }
     sig_list_drop(&sigs);
     if (!iterators.len) {
@@ -550,7 +550,7 @@ static void explain_not_iterable_with(Checker* me, Ty const* ty, bool async, Spa
     TyBuf iterators = {0};
     for (u32 i = 0; i < sigs.len; i++) {
         signature_resolve(me, sigs.data[i]);
-        if (sigs.data[i]->min_args == 0) ty_buf_push(&iterators, signature_return_type(me, sigs.data[i]));
+        if (sig_res(sigs.data[i])->min_args == 0) ty_buf_push(&iterators, signature_return_type(me, sigs.data[i]));
     }
     bool any_signature = sigs.len > 0;
     sig_list_drop(&sigs);
@@ -620,7 +620,7 @@ static void report_iterator_methods(Checker* me, Ty const* iterable, bool async,
     TyBuf iterators = {0};
     for (u32 i = 0; i < sigs.len; i++) {
         signature_resolve(me, sigs.data[i]);
-        if (sigs.data[i]->min_args == 0) ty_buf_push(&iterators, signature_return_type(me, sigs.data[i]));
+        if (sig_res(sigs.data[i])->min_args == 0) ty_buf_push(&iterators, signature_return_type(me, sigs.data[i]));
     }
     sig_list_drop(&sigs);
     Ty const* iterator = iterators.len ? ty_intersection(me, iterators.data, iterators.len, nullptr, (TyList){0}) : nullptr;

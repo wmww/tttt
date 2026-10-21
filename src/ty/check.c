@@ -835,7 +835,7 @@ void ty_check_instanceof_has_instance(Checker* me, Ty const* left, Ty const* rig
     if (members->call_count != 1) return;
     Signature const* sig = members->call[0];
     signature_resolve(me, sig);
-    if (sig->type_params.len) return;
+    if (sig_res(sig)->type_params.len) return;
     Ty const* param = ty_contextual_signature_type_at(me, sig, 0, false);
     if (param && !ty_is_related(me, left, param, TY_RELATION_ASSIGNABLE)) {
         VecTyReportLine lines = {0};
@@ -2512,7 +2512,7 @@ static bool suggested_index_method(Checker* me, PropertyExpr const* access, Ty c
     if (!prop.found) return false;
     Signature const* sig = ty_single_signature(me, ty_apparent_type(me, prop.type), false, true);
     if (sig) signature_resolve(me, sig);
-    if (!sig || sig->min_args < 1 || !ty_is_related(me, index, ty_signature_param_type_at(me, sig, 0), TY_RELATION_ASSIGNABLE)) {
+    if (!sig || sig_res(sig)->min_args < 1 || !ty_is_related(me, index, ty_signature_param_type_at(me, sig, 0), TY_RELATION_ASSIGNABLE)) {
         return false;
     }
     *out = cstr_null;
@@ -4470,15 +4470,15 @@ bool ty_has_call_signature_for_arity(Checker* me, Ty const* type, u32 required) 
     for (u32 i = 0; i < members->call_count; i++) {
         Signature const* sig = members->call[i];
         signature_resolve(me, sig);
-        bool rest = sig->param_count && sig->params[sig->param_count - 1].rest;
-        if (!rest && sig->param_count < required) continue;
+        bool rest = sig_res(sig)->param_count && sig_res(sig)->params[sig_res(sig)->param_count - 1].rest;
+        if (!rest && sig_res(sig)->param_count < required) continue;
         if (!applicable) {
             applicable = sig;
             continue;
         }
-        if (applicable->param_count != sig->param_count) return false;
-        for (u32 p = 0; p < sig->param_count; p++) {
-            if (applicable->params[p].type != sig->params[p].type) return false;
+        if (sig_res(applicable)->param_count != sig_res(sig)->param_count) return false;
+        for (u32 p = 0; p < sig_res(sig)->param_count; p++) {
+            if (sig_res(applicable)->params[p].type != sig_res(sig)->params[p].type) return false;
         }
     }
     return applicable != nullptr;

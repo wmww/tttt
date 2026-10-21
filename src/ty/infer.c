@@ -154,7 +154,7 @@ static void infer_with_priority(Checker* me, Inference* inf, Ty const* source, T
 // (once per parameter), what is still left of them is `any`. Outer type parameters stay: `C extends keyof S` in a
 // method of a class over S is `keyof S`
 static TyMapper const* base_signature_mapper(Checker* me, Signature const* sig) {
-    TyList params = sig->type_params;
+    TyList params = sig_res(sig)->type_params;
     if (!params.len) return nullptr;
     u64 key[2] = { KEY_BASE_SIGNATURE, (u64)(uintptr_t)sig };
     TyMapper const* cached = intern_get(&my links, key, 2);
@@ -213,18 +213,18 @@ static Ty const* signature_params_tuple(Checker* me, Signature const* sig, u32 f
     // A rest parameter of a tuple type is its elements (tsc's createTupleType normalizing a variadic tuple element),
     // which `from` may be past the start of (tsc's getRestTypeAtPosition slices the tuple)
     Ty const* rest_tuple = nullptr;
-    if (sig->param_count && sig->params[sig->param_count - 1].rest) {
-        Ty const* rest = ty_instantiate(me, sig->params[sig->param_count - 1].type, mapper);
+    if (sig_res(sig)->param_count && sig_res(sig)->params[sig_res(sig)->param_count - 1].rest) {
+        Ty const* rest = ty_instantiate(me, sig_res(sig)->params[sig_res(sig)->param_count - 1].type, mapper);
         if (ty_is_tuple(rest) && !ty_is_generic_tuple(me, rest)) rest_tuple = rest;
     }
     // Past an array rest parameter: an array of its elements (tsc's getRestTypeAtPosition), `(...z: number[])` from 1
     // is number[]
-    if (!rest_tuple && sig->param_count && sig->params[sig->param_count - 1].rest && from >= sig->param_count) {
-        Ty const* rest = ty_instantiate(me, sig->params[sig->param_count - 1].type, mapper);
+    if (!rest_tuple && sig_res(sig)->param_count && sig_res(sig)->params[sig_res(sig)->param_count - 1].rest && from >= sig_res(sig)->param_count) {
+        Ty const* rest = ty_instantiate(me, sig_res(sig)->params[sig_res(sig)->param_count - 1].type, mapper);
         if (ty_is_array(me, rest)) return ty_array(me, ty_rest_element_type(me, rest), false);
     }
     TupleShape const* rest_shape = rest_tuple ? ty_tuple_shape(rest_tuple) : nullptr;
-    u32 fixed_end = rest_shape ? sig->param_count - 1 : sig->param_count; // (Parameters before the tuple)
+    u32 fixed_end = rest_shape ? sig_res(sig)->param_count - 1 : sig_res(sig)->param_count; // (Parameters before the tuple)
     u32 fixed = fixed_end > from ? fixed_end - from : 0;
     u32 skip = rest_shape && from > fixed_end ? from - fixed_end : 0;
     u32 rest_count = rest_shape && rest_shape->arity > skip ? rest_shape->arity - skip : 0;
@@ -240,7 +240,7 @@ static Ty const* signature_params_tuple(Checker* me, Signature const* sig, u32 f
     // `[_?: void | undefined]`)
     u32 min_args = fixed ? ty_min_argument_count(me, sig) : 0;
     for (u32 j = 0; j < fixed; j++) {
-        SigParam const* param = &sig->params[from + j];
+        SigParam const* param = &sig_res(sig)->params[from + j];
         // Optional past the minimum argument count (an untyped JS function's parameters all are); labelled by
         // parameter declarations with a plain name (getNameableDeclarationAtPosition: not a JS function's
         // synthetic `args`, nor a destructuring)
@@ -288,17 +288,17 @@ static void infer_step(Checker* me, Inference* inf, InferStep step, Ty const* so
 // The type of parameter position i of `sig` instantiated with `mapper` (tsc's getTypeAtPosition, without optionality):
 // a rest parameter stands for every position from its own on, a rest tuple for its elements. Null past the end
 static Ty const* source_type_at(Checker* me, Signature const* sig, u32 i, TyMapper const* mapper) {
-    if (i < sig->param_count && !sig->params[i].rest) {
+    if (i < sig_res(sig)->param_count && !sig_res(sig)->params[i].rest) {
         // (An optional parameter's type has the undefined, tsc's getTypeAtPosition)
-        return ty_instantiate(me, sig->params[i].type, mapper);
+        return ty_instantiate(me, sig_res(sig)->params[i].type, mapper);
     }
-    if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return nullptr;
-    Ty const* rest = ty_instantiate(me, sig->params[sig->param_count - 1].type, mapper);
+    if (!sig_res(sig)->param_count || !sig_res(sig)->params[sig_res(sig)->param_count - 1].rest) return nullptr;
+    Ty const* rest = ty_instantiate(me, sig_res(sig)->params[sig_res(sig)->param_count - 1].type, mapper);
     // (`[]` too, a tuple target rather than a reference: `(...args: Parameters<() => R>)` has no parameter 0)
     TupleShape const* shape = ty_tuple_shape(rest);
     if (shape) {
         TyList elements = shape->arity ? ty_reference_args(me, rest) : (TyList){0};
-        u32 j = i + 1 - sig->param_count;
+        u32 j = i + 1 - sig_res(sig)->param_count;
         bool ends_in_rest = shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
         if (j >= shape->arity) return ends_in_rest ? ty_rest_element_type(me, elements.data[shape->arity - 1]) : nullptr;
         if (shape->flags[j] & TUPLE_ELEMENT_REST) return ty_rest_element_type(me, elements.data[j]);
@@ -306,7 +306,7 @@ static Ty const* source_type_at(Checker* me, Signature const* sig, u32 i, TyMapp
     }
     // A generic rest type: its element by position (tsc's tryGetTypeAtPosition: `A[0]`)
     if (rest->kind == TY_TYPE_PARAM || (rest->flags & TYF_DEFERRED)) {
-        Value index = value_number((double)(i + 1 - sig->param_count));
+        Value index = value_number((double)(i + 1 - sig_res(sig)->param_count));
         return ty_indexed(me, rest, ty_literal(me, &index));
     }
     return ty_rest_element_type(me, rest);
@@ -317,19 +317,19 @@ static Ty const* source_type_at(Checker* me, Signature const* sig, u32 i, TyMapp
 static void infer_from_params(
     Checker* me, Inference* inf, InferStep step, Signature const* source, Signature const* target, TyMapper const* mapper
 ) {
-    if (source->this_type && target->this_type) {
-        infer_step(me, inf, step, ty_instantiate(me, source->this_type, mapper), target->this_type);
+    if (sig_res(source)->this_type && sig_res(target)->this_type) {
+        infer_step(me, inf, step, ty_instantiate(me, sig_res(source)->this_type, mapper), sig_res(target)->this_type);
     }
-    for (u32 i = 0; i < target->param_count; i++) {
-        SigParam const* target_param = &target->params[i];
+    for (u32 i = 0; i < sig_res(target)->param_count; i++) {
+        SigParam const* target_param = &sig_res(target)->params[i];
         if (target_param->rest) {
             // `(...args: A) => any`: the rest of the source's parameters as a tuple
             // (A lone rest parameter as it is, unless it's a tuple: its elements are parameters, and tsc's
             // getRestTypeAtPosition makes a new tuple of them, mutable unless inferring to a const type parameter;
             // only the variable tail tsc's getEffectiveRestType slices off a tuple starting with one is mutable
             // either way: `(...args: readonly [s: string]) => R` infers `[s: string]` for `Fn<infer P>`)
-            Ty const* rest = i < source->param_count && source->params[i].rest && i + 1 == source->param_count ?
-                ty_instantiate(me, source->params[i].type, mapper) : nullptr;
+            Ty const* rest = i < sig_res(source)->param_count && sig_res(source)->params[i].rest && i + 1 == sig_res(source)->param_count ?
+                ty_instantiate(me, sig_res(source)->params[i].type, mapper) : nullptr;
             bool starts_variable = false;
             if (rest && ty_is_tuple(rest) && !ty_is_generic_tuple(me, rest)) {
                 TupleShape const* shape = ty_tuple_shape(rest);
@@ -353,7 +353,7 @@ static void infer_from_params(
         if (!source_type) {
             // Past the source's parameters, a rest parameter of the target still gets the rest of them: none, `[]`
             // (tsc's applyToParameterTypes: getRestTypeAtPosition(source, paramCount))
-            SigParam const* last = target->param_count ? &target->params[target->param_count - 1] : nullptr;
+            SigParam const* last = sig_res(target)->param_count ? &sig_res(target)->params[sig_res(target)->param_count - 1] : nullptr;
             if (last && last->rest) {
                 bool readonly = ty_is_const_type_variable(me, last->type, 0) && !ty_some_mutable_array_like(me, last->type);
                 infer_step(me, inf, step, signature_params_tuple(me, source, i, mapper, readonly), last->type);
@@ -385,14 +385,14 @@ static void infer_from_returns(
 static void infer_from_signatures(Checker* me, Inference* inf, Signature const* source, Signature const* target) {
     signature_resolve(me, source);
     signature_resolve(me, target);
-    if (target->type_params.len) {
+    if (sig_res(target)->type_params.len) {
         // The target's own type parameters are any (tsc's getErasedSignature): they aren't what is being inferred, and
         // walking into them would infer to them (`map<M>` of `N1<X>` compared with itself)
         Ty const* stack_anys[16];
-        Ty const** anys = target->type_params.len <= c_arraylen(stack_anys) ? stack_anys : malloc(sizeof(Ty const*) * target->type_params.len);
+        Ty const** anys = sig_res(target)->type_params.len <= c_arraylen(stack_anys) ? stack_anys : malloc(sizeof(Ty const*) * sig_res(target)->type_params.len);
         panic_if(!anys, "out of memory");
-        for (u32 i = 0; i < target->type_params.len; i++) anys[i] = ty_intrinsic(me, TY_ANY);
-        target = ty_signature_instantiation(me, target, (TyList){ .data = anys, .len = target->type_params.len });
+        for (u32 i = 0; i < sig_res(target)->type_params.len; i++) anys[i] = ty_intrinsic(me, TY_ANY);
+        target = ty_signature_instantiation(me, target, (TyList){ .data = anys, .len = sig_res(target)->type_params.len });
         if (anys != stack_anys) free(anys);
         signature_resolve(me, target);
     }
@@ -413,7 +413,7 @@ static void infer_from_signatures(Checker* me, Inference* inf, Signature const* 
 
 Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, TyList args) {
     signature_resolve(me, sig);
-    check(args.len == sig->type_params.len);
+    check(args.len == sig_res(sig)->type_params.len);
     u64 stack_key[18];
     u32 key_len = 2 + args.len;
     u64* key = key_len <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * key_len);
@@ -430,13 +430,13 @@ Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, T
     *ret = (Signature){
         .flags = sig->flags,
         .target = sig,
-        .mapper = ty_mapper_new(me, sig->type_params, (TyList){ .data = targets, .len = args.len }),
+        .mapper = ty_mapper_new(me, sig_res(sig)->type_params, (TyList){ .data = targets, .len = args.len }),
         .instantiates_own_params = true,
     };
     // (Its own until resolved: published with --shared-graph once it is)
     *slot = ret;
     signature_resolve(me, ret);
-    ret->type_params = (TyList){0};
+    sig_resolved_mut(ret)->type_params = (TyList){0};
     *slot = nullptr;
     return intern_set(me, &my links, slot, ret);
 }
@@ -493,7 +493,7 @@ static TyList unique_type_params(Checker* me, Inference* inf, TyList params) {
 Signature const* inference_propagate_generic(Checker* me, Inference* inf, Signature const* sig, Signature const* contextual) {
     signature_resolve(me, sig);
     signature_resolve(me, contextual);
-    TyList unique = unique_type_params(me, inf, sig->type_params);
+    TyList unique = unique_type_params(me, inf, sig_res(sig)->type_params);
     Signature const* instantiated = ty_signature_instantiation(me, sig, unique);
     // From the instantiated parameters to the contextual ones, into a fresh set of candidates (contravariantly: the
     // contextual signature's parameters receive what the argument's accept)
@@ -541,9 +541,10 @@ Signature const* ty_signature_with_type_params(Checker* me, Signature const* sig
     signature_predicate(me, sig);
     Signature* ret = arena_new(&my arena, Signature);
     *ret = *sig;
-    LAZY_COPIED(me, ret->state);
+    signature_copied(me, ret);
     LAZY_COPIED(me, ret->ret_state);
-    ret->type_params = type_params;
+    ret->res = sig_resolved_new(me, (SigResolved){ .type_params = type_params, .params = sig_res(ret)->params,
+        .this_type = sig_res(ret)->this_type, .param_count = sig_res(ret)->param_count, .min_args = sig_res(ret)->min_args });
     return ret;
 }
 
@@ -553,7 +554,7 @@ Signature const* ty_instantiate_signature_in_context_of(
     signature_resolve(me, sig);
     signature_resolve(me, contextual);
     Inference inf;
-    inference_init(&inf, sig->type_params);
+    inference_init(&inf, sig_res(sig)->type_params);
     inf.within_relation = true;
     // (Parameters to parameters, covariantly: the contextual signature's parameter types are what `sig`'s receive)
     infer_from_params(me, &inf, (InferStep){ .top = true, .priority = INFER_PRIORITY_NORMAL }, contextual, sig, context_mapper);
@@ -562,7 +563,7 @@ Signature const* ty_instantiate_signature_in_context_of(
     }
     TyMapper const* mapper = inference_mapper(me, sig, &inf, false);
     inference_drop(&inf);
-    return ty_signature_instantiation(me, sig, (TyList){ .data = mapper->targets, .len = sig->type_params.len });
+    return ty_signature_instantiation(me, sig, (TyList){ .data = mapper->targets, .len = sig_res(sig)->type_params.len });
 }
 
 static void infer_from_signature_lists(
@@ -2268,7 +2269,7 @@ static TyMapper const* inference_mapper_of(Checker* me, Inference* inf, TyList p
 static void constraint_pass_resolve(Checker* me, ConstraintPass* pass, u32 i) {
     if (pass->state[i]) return;
     pass->state[i] = 1;
-    TyList params = pass->sig->type_params;
+    TyList params = sig_res(pass->sig)->type_params;
     Ty const* constraint = ty_param_constraint(me, params.data[i]);
     // (Silent never, inference_mapper_no_default()'s nothing, fits any constraint)
     if (constraint && constraint != params.data[i] && pass->results[i] != ty_intrinsic(me, TY_SILENT_NEVER)) {
@@ -2338,7 +2339,7 @@ TyMapper const* inference_mapper_no_default(Checker* me, Signature const* sig, I
 }
 
 static TyMapper const* inference_mapper_impl(Checker* me, Signature const* sig, Inference* inf, bool fixing, bool no_default) {
-    TyList params = sig->type_params;
+    TyList params = sig_res(sig)->type_params;
     // (Of a type predicate, its type: tsc's isTypeParameterAtTopLevelInReturnType)
     TyPredicate const* predicate = signature_predicate(me, sig);
     Ty const* return_type = predicate ? predicate->type : signature_return_type(me, sig);

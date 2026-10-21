@@ -18,7 +18,7 @@ bool ty_function_closed(Checker* me, FunctionImpl const* function) {
     if (!function->no_outer_type_params && !function->no_enclosing_type_params) return false;
     for (FunctionImpl const* outer = function->contextual_ancestor; outer; outer = outer->contextual_ancestor) {
         Signature const* contextual = ty_function_assigned_contextual_signature(me, outer);
-        if (contextual && contextual->type_params.len) return false;
+        if (contextual && sig_res(contextual)->type_params.len) return false;
     }
     return true;
 }

@@ -240,13 +240,13 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
                     signature_resolve(me, sig);
                     if (ty_signature_return_in_flight(me, sig)) return true;
                     u32 saved = walk->bound.len;
-                    for (u32 j = 0; j < sig->type_params.len; j++) ty_buf_push(&walk->bound, sig->type_params.data[j]);
-                    bool found = sig->this_type && mentions_type_variables(me, sig->this_type, walk, depth + 1);
-                    for (u32 j = 0; !found && j < sig->param_count; j++) {
-                        found = mentions_type_variables(me, sig->params[j].type, walk, depth + 1);
+                    for (u32 j = 0; j < sig_res(sig)->type_params.len; j++) ty_buf_push(&walk->bound, sig_res(sig)->type_params.data[j]);
+                    bool found = sig_res(sig)->this_type && mentions_type_variables(me, sig_res(sig)->this_type, walk, depth + 1);
+                    for (u32 j = 0; !found && j < sig_res(sig)->param_count; j++) {
+                        found = mentions_type_variables(me, sig_res(sig)->params[j].type, walk, depth + 1);
                     }
-                    for (u32 j = 0; !found && j < sig->type_params.len; j++) {
-                        Ty const* constraint = ty_param_constraint(me, sig->type_params.data[j]);
+                    for (u32 j = 0; !found && j < sig_res(sig)->type_params.len; j++) {
+                        Ty const* constraint = ty_param_constraint(me, sig_res(sig)->type_params.data[j]);
                         found = constraint && mentions_type_variables(me, constraint, walk, depth + 1);
                     }
                     found = found || mentions_type_variables(me, signature_return_type(me, sig), walk, depth + 1);
@@ -586,11 +586,11 @@ static bool callable_definitely_related(Checker* me, Ty const* check_type, Ty co
         }
         Signature const* sig = target->call[0];
         signature_resolve(me, sig);
-        if (sig->type_params.len || sig->this_type || !(signature_return_type(me, sig)->flags & TYF_ANY)) return false;
-        if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return false;
-        for (u32 i = 0; i < sig->param_count; i++) {
-            Ty const* type = sig->params[i].type;
-            if (sig->params[i].rest && !(type->flags & TYF_ANY)) type = ty_is_array(me, type) ? ty_rest_element_type(me, type) : nullptr;
+        if (sig_res(sig)->type_params.len || sig_res(sig)->this_type || !(signature_return_type(me, sig)->flags & TYF_ANY)) return false;
+        if (!sig_res(sig)->param_count || !sig_res(sig)->params[sig_res(sig)->param_count - 1].rest) return false;
+        for (u32 i = 0; i < sig_res(sig)->param_count; i++) {
+            Ty const* type = sig_res(sig)->params[i].type;
+            if (sig_res(sig)->params[i].rest && !(type->flags & TYF_ANY)) type = ty_is_array(me, type) ? ty_rest_element_type(me, type) : nullptr;
             if (!type || !(type->flags & TYF_ANY)) return false;
         }
         any_function = true;

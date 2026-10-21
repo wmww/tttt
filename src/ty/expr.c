@@ -232,7 +232,7 @@ static Ty const* return_only_type(Checker* me, FunctionImpl const* function, Ty 
 
     Signature* sig = arena_new(&my arena, Signature);
     *sig = (Signature){
-        .flags = SIGNATURE_NON_INFERRABLE, .state = LAZY_STATE_DONE, .ret_state = LAZY_STATE_DONE, .ret = body,
+        .flags = SIGNATURE_NON_INFERRABLE, .state = LAZY_STATE_DONE, .res = &sig_resolved_none, .ret_state = LAZY_STATE_DONE, .ret = body,
         .predicate_done = true,
     };
     Ty* type = (Ty*)ty_signature_type(me, sig);
@@ -1182,7 +1182,7 @@ static Signature const* contextual_call_signature(Checker* me, Ty const* type, F
             Signature const* right = applicable[i];
             signature_resolve(me, right);
             if (right == ret) continue;
-            ret = ty_type_params_identical(me, ret->type_params, right->type_params) ?
+            ret = ty_type_params_identical(me, sig_res(ret)->type_params, sig_res(right)->type_params) ?
                 ty_combine_intersection_signatures(me, ret, right) : nullptr;
         }
     }
@@ -1262,8 +1262,8 @@ static Ty const* tuple_slice(Checker* me, Ty const* tuple, u32 from) {
 }
 
 static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index, bool as_rest) {
-    for (u32 i = 0; i < sig->param_count; i++) {
-        SigParam const* param = &sig->params[i];
+    for (u32 i = 0; i < sig_res(sig)->param_count; i++) {
+        SigParam const* param = &sig_res(sig)->params[i];
         if (!param->rest) {
             if (i == index && !as_rest) return param->type;
             continue;
@@ -1777,7 +1777,7 @@ static void assign_contextual_signature_as(
         // it is looked at (tsc's getContextualThisParameterType asks getContextualSignature each time): the last one, of
         // the overload a call settles on after a candidate that gave none checked it first
         Signature const* late = given ? given : contextual_signature(me, ty_instantiate_contextual_type_for(me, contextual, true), function, 0);
-        if (late && late->this_type) *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_THIS, (u64)(uintptr_t)function }, 2) = late->this_type;
+        if (late && sig_res(late)->this_type) *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_THIS, (u64)(uintptr_t)function }, 2) = sig_res(late)->this_type;
         return;
     }
     if (checked) return;
@@ -1788,17 +1788,17 @@ static void assign_contextual_signature_as(
     Signature const* unfixed = sig;
     sig = ty_fix_contextual_signature(me, sig, function);
     ty_link_set(me, KEY_CONTEXT_CHECKED, function, sig);
-    if (sig->this_type) {
+    if (sig_res(sig)->this_type) {
         u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
-        *intern_slot(me, &my links, this_key, 2) = sig->this_type;
+        *intern_slot(me, &my links, this_key, 2) = sig_res(sig)->this_type;
     }
     u32 index = 0;
     for_each (i, vec_function_arg, &function->args) {
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
         if (is_this) {
             // An unannotated `this` parameter takes the contextual signature's (tsc's assignContextualParameterTypes)
-            if (!i->initializer.binding.has_explicit_type && sig->this_type) {
-                ty_link_set(me, KEY_CONTEXT_PARAM, &i->initializer, sig->this_type);
+            if (!i->initializer.binding.has_explicit_type && sig_res(sig)->this_type) {
+                ty_link_set(me, KEY_CONTEXT_PARAM, &i->initializer, sig_res(sig)->this_type);
             }
             continue;
         }
@@ -1859,7 +1859,7 @@ void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function, Ini
     if (ty_function_assigned_contextual_signature(me, function) || function->is_expression || !(type->flags & TYF_OBJECT)) return;
     // (One the arity rules out as a contextual signature: more parameters than it has)
     Members const* members = ty_members(me, type);
-    if (members->call_count == 1 && !members->construct_count && !members->call[0]->type_params.len) {
+    if (members->call_count == 1 && !members->construct_count && !sig_res(members->call[0])->type_params.len) {
         assign_contextual_signature_as(me, function, type, members->call[0], evaluating, nullptr);
     }
 }
@@ -4790,7 +4790,7 @@ Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* acces
         break;
     }
     signature_resolve(me, sig);
-    return sig->param_count ? ty_sig_param_declared_type(me, &sig->params[0]) : any_type(me);
+    return sig_res(sig)->param_count ? ty_sig_param_declared_type(me, &sig_res(sig)->params[0]) : any_type(me);
 }
 
 void ty_check_object_literal_late_members(Checker* me, Expr const* object, ErrorCtx* errs) {
@@ -4921,7 +4921,7 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
             Ty const* ret = signature_return_type(me, sig);
             return item->value.tag == EXPR_FUNCTION && item->value.function->ret_explicit ? ret : widen_literals(me, ret);
         }
-        return sig->param_count ? ty_sig_param_declared_type(me, &sig->params[0]) : any_type(me);
+        return sig_res(sig)->param_count ? ty_sig_param_declared_type(me, &sig_res(sig)->params[0]) : any_type(me);
     }
     return widen_literals(me, value);
 }
@@ -5347,9 +5347,9 @@ bool as_type_is_const(AsTypeExpr const* as_type) {
 // Whether an instantiation expression keeps a signature (tsc's getInstantiatedSignatures: generic, with the right
 // number of type arguments): the type arguments are mapped to the type parameters of exactly those
 static bool applies_to_signature(Signature const* sig, TyMapper const* mapper) {
-    if (!sig->type_params.len) return false;
+    if (!sig_res(sig)->type_params.len) return false;
     for (u32 k = 0; k < mapper->len; k++) {
-        if (mapper->sources[k] == sig->type_params.data[0]) return true;
+        if (mapper->sources[k] == sig_res(sig)->type_params.data[0]) return true;
     }
     return false;
 }
@@ -5430,7 +5430,7 @@ static Ty const* apply_type_arguments_part(Checker* me, Ty const* ty, TyList arg
         Signature* const* sigs = pass ? members->construct : members->call;
         for (u32 i = 0; i < sig_count; i++) {
             signature_resolve(me, sigs[i]);
-            TyList params = sigs[i]->type_params;
+            TyList params = sig_res(sigs[i])->type_params;
             // (tsc's hasCorrectTypeArgumentArity)
             u32 min = 0;
             for (u32 j = 0; j < params.len; j++) {

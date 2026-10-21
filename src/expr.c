@@ -961,8 +961,8 @@ static void instantiation_scan_type(Checker* checker, InstantiationScan* scan, T
 
 // The first type argument that doesn't satisfy its constraint in `sig` (tsc's checkTypeArguments with reportErrors)
 static bool check_type_argument_constraints(Checker* checker, GenericParamsExpr const* me, Signature const* sig, ErrorCtx* errs) {
-    for (u32 i = 0; i < sig->type_params.len && (isize_t)i < vec_spanned_type_size(&my params); i++) {
-        Ty const* constraint = ty_type_argument_constraint(checker, sig->type_params, &my params, i);
+    for (u32 i = 0; i < sig_res(sig)->type_params.len && (isize_t)i < vec_spanned_type_size(&my params); i++) {
+        Ty const* constraint = ty_type_argument_constraint(checker, sig_res(sig)->type_params, &my params, i);
         if (!constraint) continue;
         SpannedType const* arg = vec_spanned_type_at(&my params, i);
         // (Explained like any unassignable pair: tsc's checkTypeArgumentConstraints -> checkTypeAssignableTo, one run)
@@ -994,10 +994,10 @@ static void instantiation_scan_part(Checker* checker, InstantiationScan* scan, T
             scan->has_signatures = true;
             signature_resolve(checker, sig);
             u32 min = 0;
-            for (u32 j = 0; j < sig->type_params.len; j++) {
-                if (!ty_param_default(checker, sig->type_params.data[j])) min = j + 1;
+            for (u32 j = 0; j < sig_res(sig)->type_params.len; j++) {
+                if (!ty_param_default(checker, sig_res(sig)->type_params.data[j])) min = j + 1;
             }
-            if (sig->type_params.len && scan->written >= min && scan->written <= sig->type_params.len) {
+            if (sig_res(sig)->type_params.len && scan->written >= min && scan->written <= sig_res(sig)->type_params.len) {
                 scan->has_applicable = true;
                 if (scan->expr) check_type_argument_constraints(checker, scan->expr, sig, scan->errs);
             }
@@ -1049,10 +1049,10 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
         Signature const* each = i < members->call_count ? members->call[i] : members->construct[i - members->call_count];
         signature_resolve(checker, each);
         u32 min = 0;
-        for (u32 j = 0; j < each->type_params.len; j++) {
-            if (!ty_param_default(checker, each->type_params.data[j])) min = j + 1;
+        for (u32 j = 0; j < sig_res(each)->type_params.len; j++) {
+            if (!ty_param_default(checker, sig_res(each)->type_params.data[j])) min = j + 1;
         }
-        if (!each->type_params.len || written < min || written > each->type_params.len) continue;
+        if (!sig_res(each)->type_params.len || written < min || written > sig_res(each)->type_params.len) continue;
         fits = true;
         if (!check_type_argument_constraints(checker, me, each, errs)) break;
     }

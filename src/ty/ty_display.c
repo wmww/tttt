@@ -3912,8 +3912,8 @@ Atom const* ty_rest_element_label(Checker* me, SigParam const* rest, u32 index, 
 // tsc prints a rest parameter of tuple type as the parameters it stands for (getExpandedParameters), unless a rest
 // element comes before the end. Null when there's nothing to expand
 static SigParam const* expanded_params(Checker* me, Signature const* sig, u32* count_out) {
-    if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return nullptr;
-    SigParam const* rest = &sig->params[sig->param_count - 1];
+    if (!sig_res(sig)->param_count || !sig_res(sig)->params[sig_res(sig)->param_count - 1].rest) return nullptr;
+    SigParam const* rest = &sig_res(sig)->params[sig_res(sig)->param_count - 1];
     TupleShape const* shape = ty_tuple_shape(rest->type);
     if (!shape) return nullptr;
     bool empty = !ty_is_tuple(rest->type);
@@ -3921,19 +3921,19 @@ static SigParam const* expanded_params(Checker* me, Signature const* sig, u32* c
         if (shape->flags[i] & TUPLE_ELEMENT_REST) return nullptr;
     }
     TyList elements = empty ? (TyList){0} : ty_reference_args(me, rest->type);
-    u32 count = sig->param_count - 1 + shape->arity;
+    u32 count = sig_res(sig)->param_count - 1 + shape->arity;
     SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
-    memcpy(params, sig->params, sizeof(SigParam) * (sig->param_count - 1));
+    memcpy(params, sig_res(sig)->params, sizeof(SigParam) * (sig_res(sig)->param_count - 1));
     for (u32 i = 0; i < shape->arity; i++) {
         Atom const* name = shape->names && shape->names[i] ? shape->names[i] : rest_element_label(me, rest, i, shape->flags[i]);
         // Labels are made unique: `[a: A, a: B]` prints `a: A, a_1: B`
         Atom const* base = name;
-        for (u32 counter = 1, j = sig->param_count - 1; j < sig->param_count - 1 + i; j++) {
+        for (u32 counter = 1, j = sig_res(sig)->param_count - 1; j < sig_res(sig)->param_count - 1 + i; j++) {
             if (params[j].name != name) continue;
             name = numbered_name(me, atom_sv(base), "_%u", counter++);
-            j = sig->param_count - 2;
+            j = sig_res(sig)->param_count - 2;
         }
-        params[sig->param_count - 1 + i] = (SigParam){
+        params[sig_res(sig)->param_count - 1 + i] = (SigParam){
             .name = name,
             .type = elements.data[i],
             .optional = (shape->flags[i] & TUPLE_ELEMENT_OPTIONAL) != 0,
@@ -3969,7 +3969,7 @@ static bool mentions_mapped(Checker* me, Signature const* sig, Signature const* 
         for (u32 j = 0; i->mapper && j < i->mapper->len; j++) {
             Ty const* source = i->mapper->sources[j];
             bool own = false;
-            for (u32 k = 0; k < root->type_params.len; k++) own |= root->type_params.data[k] == source;
+            for (u32 k = 0; k < sig_res(root)->type_params.len; k++) own |= sig_res(root)->type_params.data[k] == source;
             if (!own) sources[len++] = source;
         }
     }
@@ -3978,24 +3978,24 @@ static bool mentions_mapped(Checker* me, Signature const* sig, Signature const* 
     // (tsc's isTypeParameterPossiblyReferenced is syntactic: a body without a return type annotation may reference anything)
     FunctionImpl const* function = root->function;
     if (function && function->has_body && !function->ret_explicit) return true;
-    for (u32 i = 0; i < root->param_count; i++) {
-        if (mentions(me, root->params[i].type, mapped)) return true;
+    for (u32 i = 0; i < sig_res(root)->param_count; i++) {
+        if (mentions(me, sig_res(root)->params[i].type, mapped)) return true;
     }
-    for (u32 i = 0; i < root->type_params.len; i++) {
-        Ty const* constraint = ty_param_constraint(me, root->type_params.data[i]);
+    for (u32 i = 0; i < sig_res(root)->type_params.len; i++) {
+        Ty const* constraint = ty_param_constraint(me, sig_res(root)->type_params.data[i]);
         if (constraint && mentions(me, constraint, mapped)) return true;
         // (A default too, `ext<E = Options>()`: printed `<E = string>` for Ext<string>)
-        Ty const* fallback = ty_param_default(me, root->type_params.data[i]);
+        Ty const* fallback = ty_param_default(me, sig_res(root)->type_params.data[i]);
         if (fallback && mentions(me, fallback, mapped)) return true;
     }
     TyPredicate const* predicate = signature_predicate(me, root);
     if (predicate && predicate->type && mentions(me, predicate->type, mapped)) return true;
     Ty const* ret = signature_return_type(me, root);
-    if ((root->this_type && mentions(me, root->this_type, mapped)) || mentions(me, ret, mapped)) return true;
+    if ((sig_res(root)->this_type && mentions(me, sig_res(root)->this_type, mapped)) || mentions(me, ret, mapped)) return true;
     // (An annotation whose type is an error, an unresolved import in it, mentions nothing as a type, but tsc's check is
     // syntactic: `x: Unresolved | ((s: Readonly<S>) => void)` is instantiated, its reused node prints the mapped `S`)
     bool error = (ret->flags & TYF_ERROR) != 0;
-    for (u32 i = 0; i < root->param_count && !error; i++) error = (root->params[i].type->flags & TYF_ERROR) != 0;
+    for (u32 i = 0; i < sig_res(root)->param_count && !error; i++) error = (sig_res(root)->params[i].type->flags & TYF_ERROR) != 0;
     if (!error) return false;
     TyList free_params;
     if (!function || !ty_function_free_params(me, function, &free_params)) return true;
@@ -4053,7 +4053,7 @@ static void display_this_param(
     Binding const* binding = this_decl ? &this_decl->initializer.binding : nullptr;
     if (binding && !(binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this"))) binding = nullptr;
     bool reused = reusable && !jsdoc_this && binding && binding->has_explicit_type &&
-        !mentions(me, sig->this_type, d.fresh_params) && (!instantiated || sig->this_type == root->this_type);
+        !mentions(me, sig_res(sig)->this_type, d.fresh_params) && (!instantiated || sig_res(sig)->this_type == sig_res(root)->this_type);
     // A function expression's `this` from its contextual signature is that signature's parameter (tsc's
     // assignContextualParameterTypes: createSymbolWithType(context.thisParameter)), whose annotation is reused
     Signature const* contextual = function && !binding && reusable ? ty_function_assigned_contextual_signature(me, function) : nullptr;
@@ -4063,12 +4063,12 @@ static void display_this_param(
         vec_function_arg_at(&context_function->args, 0) : nullptr;
     if (context_this && !context_this->jsdoc_this && context_this->initializer.binding.tag == BINDING_IDENTIFIER &&
         span_equals(context_this->initializer.binding.content_span, "this") &&
-        context_this->initializer.binding.has_explicit_type && contextual->this_type == sig->this_type
+        context_this->initializer.binding.has_explicit_type && sig_res(contextual)->this_type == sig_res(sig)->this_type
     ) {
         binding = &context_this->initializer.binding;
         reused = true;
     }
-    display_annotated(me, reused_if(d, false), reused ? binding_type(binding) : nullptr, sig->this_type, false);
+    display_annotated(me, reused_if(d, false), reused ? binding_type(binding) : nullptr, sig_res(sig)->this_type, false);
     approx_add(d, 4 + 3); // (After its type, like the parameters)
 }
 
@@ -4099,7 +4099,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     bool sibling_mapped = d.sibling_mentions_mapped;
     d.sibling_mentions_mapped = false;
     // (Unless its own type parameters were instantiated away: a call's candidate with what was inferred)
-    bool own_instantiated = root->type_params.len && !sig->type_params.len;
+    bool own_instantiated = sig_res(root)->type_params.len && !sig_res(sig)->type_params.len;
     // (A merged declaration's type parameter may be referenced anywhere: tsc instantiates the whole member)
     bool merged_mapped = root != sig && maps_merged_type_param(me, sig, root);
     if (root != sig && !this_only && !class_default && !own_instantiated && !sibling_mapped && !merged_mapped &&
@@ -4112,28 +4112,28 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     bool own_params_fresh = d.own_params_fresh && (!instantiated || this_only) &&
         !(instantiated && (sibling_mapped || merged_mapped || mentions_mapped(me, sig, root)));
     d.own_params_fresh = false;
-    if (own_params_fresh && root->type_params.len) {
+    if (own_params_fresh && sig_res(root)->type_params.len) {
         if (d.fresh_params.len) {
-            Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + root->type_params.len);
+            Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + sig_res(root)->type_params.len);
             memcpy(both, d.fresh_params.data, sizeof(Ty const*) * d.fresh_params.len);
-            memcpy(both + d.fresh_params.len, root->type_params.data, sizeof(Ty const*) * root->type_params.len);
-            d.fresh_params = (TyList){ .data = both, .len = d.fresh_params.len + root->type_params.len };
+            memcpy(both + d.fresh_params.len, sig_res(root)->type_params.data, sizeof(Ty const*) * sig_res(root)->type_params.len);
+            d.fresh_params = (TyList){ .data = both, .len = d.fresh_params.len + sig_res(root)->type_params.len };
         } else {
-            d.fresh_params = root->type_params;
+            d.fresh_params = sig_res(root)->type_params;
         }
     }
     // (Added to an enclosing signature's: a function type in a parameter of `then<U>` of `P<number>` doesn't reuse a
     // `U` it mentions either)
     // (Instantiated for `this` only, it's the same: tsc instantiates a member that mentions `this` (a class or interface
     // reference's members are instantiated with `this` as the reference), with fresh type parameters)
-    if (instantiated && root->type_params.len && (!this_only || sibling_mapped || merged_mapped || mentions_mapped(me, sig, root))) {
+    if (instantiated && sig_res(root)->type_params.len && (!this_only || sibling_mapped || merged_mapped || mentions_mapped(me, sig, root))) {
         if (d.fresh_params.len) {
-            Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + root->type_params.len);
+            Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + sig_res(root)->type_params.len);
             memcpy(both, d.fresh_params.data, sizeof(Ty const*) * d.fresh_params.len);
-            memcpy(both + d.fresh_params.len, root->type_params.data, sizeof(Ty const*) * root->type_params.len);
-            d.fresh_params = (TyList){ .data = both, .len = d.fresh_params.len + root->type_params.len };
+            memcpy(both + d.fresh_params.len, sig_res(root)->type_params.data, sizeof(Ty const*) * sig_res(root)->type_params.len);
+            d.fresh_params = (TyList){ .data = both, .len = d.fresh_params.len + sig_res(root)->type_params.len };
         } else {
-            d.fresh_params = root->type_params;
+            d.fresh_params = sig_res(root)->type_params;
         }
     }
     // (A class's constructor has its parameters reused, but it returns the class)
@@ -4147,42 +4147,42 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     // parameter shadows it, see TyParamNames.value_params)
     SigParam* copies = nullptr;
     u32 copy_count = 0;
-    if (instantiated && sig->type_params.len && d.param_names && !d.param_names->value_param_count) {
-        for (u32 i = 0; i < root->param_count && i < sig->param_count; i++) {
+    if (instantiated && sig_res(sig)->type_params.len && d.param_names && !d.param_names->value_param_count) {
+        for (u32 i = 0; i < sig_res(root)->param_count && i < sig_res(sig)->param_count; i++) {
             bool named_like = false;
-            for (u32 j = 0; j < sig->type_params.len && !named_like; j++) {
-                named_like = sig->type_params.data[j]->param.name == root->params[i].name;
+            for (u32 j = 0; j < sig_res(sig)->type_params.len && !named_like; j++) {
+                named_like = sig_res(sig)->type_params.data[j]->param.name == sig_res(root)->params[i].name;
             }
-            if (!named_like || !mentions(me, root->params[i].type, root->type_params)) continue;
-            if (!copies) copies = arena_new_n(&my arena, SigParam, root->param_count);
-            copies[copy_count++] = root->params[i];
+            if (!named_like || !mentions(me, sig_res(root)->params[i].type, sig_res(root)->type_params)) continue;
+            if (!copies) copies = arena_new_n(&my arena, SigParam, sig_res(root)->param_count);
+            copies[copy_count++] = sig_res(root)->params[i];
         }
         d.param_names->value_params = copies;
         d.param_names->value_param_count = copy_count;
     }
     FunctionImpl const* saved_params_of = d.param_names ? d.param_names->params_of : nullptr;
     if (d.param_names) d.param_names->params_of = root->function;
-    display_type_params(me, d, sig->type_params, reusable, instantiated ? sig : nullptr);
+    display_type_params(me, d, sig_res(sig)->type_params, reusable, instantiated ? sig : nullptr);
     if (d.param_names) d.param_names->params_of = saved_params_of;
     if (copy_count) {
         d.param_names->value_params = nullptr;
         d.param_names->value_param_count = 0;
     }
     out_lit(d, "(");
-    u32 param_count = sig->param_count;
+    u32 param_count = sig_res(sig)->param_count;
     SigParam const* params = expanded_params(me, sig, &param_count);
-    if (!params) params = sig->params;
+    if (!params) params = sig_res(sig)->params;
     TyDisplayParams printed = {
-        .params = params, .count = param_count, .originals = sig->params, .original_count = sig->param_count,
+        .params = params, .count = param_count, .originals = sig_res(sig)->params, .original_count = sig_res(sig)->param_count,
         .function = function, .outer = d.printed_params, .serial = d.printed ? ++d.printed->serial : 0,
     };
     if (d.types_baseline || d.reuse_nodes) d.printed_params = &printed;
     // (tsc's signatureToSignatureDeclarationHelper makes the parameters' nodes before the `this` parameter's: a
     // message counts their length first, so a long `this` type is what gets cut short, `Record<...>`. Printed in
     // place afterwards; not where positions are mapped or comments copied)
-    bool this_later = sig->this_type && d.approx && !d.tracker && !D_MAP(d) && !d.comments;
+    bool this_later = sig_res(sig)->this_type && d.approx && !d.tracker && !D_MAP(d) && !d.comments;
     size_t this_at = cstr_size(d.target);
-    if (sig->this_type && !this_later) {
+    if (sig_res(sig)->this_type && !this_later) {
         display_this_param(me, d, sig, root, function, reusable, jsdoc_this, instantiated);
         if (param_count) out_lit(d, ", ");
     }
@@ -4218,10 +4218,10 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         mapped_param_d.mapped_by = sig;
         // (Its type without the undefined its optionality added: what its annotation says)
         Ty const* declared = ty_sig_param_declared_type(me, param);
-        bool mapped_same = instantiated && binding && binding->has_explicit_type && param->type != root->params[i].type &&
+        bool mapped_same = instantiated && binding && binding->has_explicit_type && param->type != sig_res(root)->params[i].type &&
             node_names_no_type_params(binding_type(binding), 0) && node_type(me, mapped_param_d, binding_type(binding)) == declared;
         bool reused = reusable && binding && binding->has_explicit_type && !contextual_jsdoc &&
-            (mapped_same || (!mentions(me, param->type, d.fresh_params) && (!instantiated || param->type == root->params[i].type))) &&
+            (mapped_same || (!mentions(me, param->type, d.fresh_params) && (!instantiated || param->type == sig_res(root)->params[i].type))) &&
             !(fresh_anonymous && declared->kind == TY_ANONYMOUS) &&
             // (A `@param {T} [x]` tag of a JSDoc signature (`@overload`, `@callback`) declares x without a `?` that
             // would say the undefined its type has: tsc doesn't reuse `T` there)
@@ -4908,11 +4908,11 @@ static bool pseudo_is_this_param(PseudoParam const* param) {
 static TyDisplay pseudo_enter_signature(Checker* me, TyDisplay d, Signature const* sig) {
     Signature const* root = sig;
     while (root->target) root = root->target;
-    if (root == sig || !root->type_params.len) return d;
-    Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + root->type_params.len);
+    if (root == sig || !sig_res(root)->type_params.len) return d;
+    Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + sig_res(root)->type_params.len);
     if (d.fresh_params.len) memcpy(both, d.fresh_params.data, sizeof(Ty const*) * d.fresh_params.len);
-    memcpy(both + d.fresh_params.len, root->type_params.data, sizeof(Ty const*) * root->type_params.len);
-    d.fresh_params = (TyList){ .data = both, .len = d.fresh_params.len + root->type_params.len };
+    memcpy(both + d.fresh_params.len, sig_res(root)->type_params.data, sizeof(Ty const*) * sig_res(root)->type_params.len);
+    d.fresh_params = (TyList){ .data = both, .len = d.fresh_params.len + sig_res(root)->type_params.len };
     return d;
 }
 
@@ -4948,25 +4948,25 @@ static PseudoReporter const* display_reporter(TyDisplay d, PseudoReporter* stora
 static bool pseudo_params_equivalent(Checker* me, TyDisplay d, PseudoParam const* params, u32 count, Signature const* sig,
     PseudoReporter const* rep, PseudoError where, FunctionImpl const* function
 ) {
-    if (sig->this_type) {
+    if (sig_res(sig)->this_type) {
         if (!count || !pseudo_is_this_param(&params[0])) {
             pseudo_report(rep, where); // (a missing `this` parameter)
             return false;
         }
-        if (!pseudo_equivalent(me, d, params[0].type, sig->this_type, params[0].optional, nullptr)) {
+        if (!pseudo_equivalent(me, d, params[0].type, sig_res(sig)->this_type, params[0].optional, nullptr)) {
             pseudo_report(rep, (PseudoError){ .kind = PSEUDO_ERROR_PARAMETER, .function = function, .arg = params[0].arg });
             return false;
         }
         params++;
         count--;
     }
-    if (count != sig->param_count) {
+    if (count != sig_res(sig)->param_count) {
         pseudo_report(rep, where);
         return false;
     }
     for (u32 i = 0; i < count; i++) {
-        if (params[i].optional != sig->params[i].optional ||
-            !pseudo_equivalent(me, d, params[i].type, sig->params[i].type, params[i].optional, nullptr)
+        if (params[i].optional != sig_res(sig)->params[i].optional ||
+            !pseudo_equivalent(me, d, params[i].type, sig_res(sig)->params[i].type, params[i].optional, nullptr)
         ) {
             pseudo_report(rep, (PseudoError){ .kind = PSEUDO_ERROR_PARAMETER, .function = function, .arg = params[i].arg });
             return false;
@@ -5137,7 +5137,7 @@ static bool pseudo_equivalent(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty
             if (!sig) return false;
             signature_resolve(me, sig);
             PseudoError where = { .kind = PSEUDO_ERROR_FUNCTION, .function = pseudo->function };
-            if (sig->type_params.len != (u32)vec_generic_item_size(&pseudo->function->generic.items)) {
+            if (sig_res(sig)->type_params.len != (u32)vec_generic_item_size(&pseudo->function->generic.items)) {
                 pseudo_report(rep, where);
                 return false;
             }
@@ -5309,9 +5309,9 @@ static void display_pseudo_params(Checker* me, TyDisplay d, PseudoParam const* p
         if (i) out_lit(d, ", ");
         Ty const* type = nullptr;
         if (pseudo_is_this_param(&params[i])) {
-            type = sig ? sig->this_type : nullptr;
+            type = sig ? sig_res(sig)->this_type : nullptr;
         } else {
-            type = sig && index < sig->param_count ? ty_sig_param_symbol_type(me, &sig->params[index]) : nullptr;
+            type = sig && index < sig_res(sig)->param_count ? ty_sig_param_symbol_type(me, &sig_res(sig)->params[index]) : nullptr;
             index++;
         }
         param_comments_begin(d, params[i].arg);
@@ -5505,7 +5505,7 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
             Signature const* sig = ty ? ty_single_signature(me, ty, false, false) : nullptr;
             TyDisplay sig_d = reused_if(d, false);
             // (Its parameters are in scope in its return type: tsgo's enterNewScope)
-            TyDisplayParams printed = { .params = sig ? sig->params : nullptr, .count = sig ? sig->param_count : 0,
+            TyDisplayParams printed = { .params = sig ? sig_res(sig)->params : nullptr, .count = sig ? sig_res(sig)->param_count : 0,
                 .function = pseudo->function, .outer = d.printed_params, .serial = d.printed ? ++d.printed->serial : 0 };
             if (sig) sig_d.printed_params = &printed;
             u32 saved = param_names_enter(sig_d); // (Its type parameters are its own: a sibling may reuse their names)
@@ -5559,7 +5559,7 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                         if (is_const) out_lit(member_d, ": ");
                         u32 saved = param_names_enter(member_d); // (Its type parameters are its own)
                         TyDisplay method_d = member_d;
-                        TyDisplayParams printed = { .params = sig ? sig->params : nullptr, .count = sig ? sig->param_count : 0,
+                        TyDisplayParams printed = { .params = sig ? sig_res(sig)->params : nullptr, .count = sig ? sig_res(sig)->param_count : 0,
                             .function = member->function, .outer = member_d.printed_params,
                             .serial = member_d.printed ? ++member_d.printed->serial : 0 };
                         if (sig) method_d.printed_params = &printed;

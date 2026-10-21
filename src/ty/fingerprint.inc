@@ -361,12 +361,13 @@ static u64 fp_signature(Signature const* sig, u32 depth) {
         h = M(h, fp_ty(target));
     }
     if (!sig->function && !sig->target) {
-        h = M(h, sig->param_count | (u64)sig->min_args << 32);
-        h = fp_list(h, sig->type_params);
-        for (u32 i = 0; i < sig->param_count; i++) {
-            h = M(h, fp_atom(sig->params[i].name));
-            h = M(h, fp_ty(sig->params[i].type));
-            h = M(h, sig->params[i].optional | sig->params[i].rest << 1);
+        SigResolved const* r = sig_res(sig);
+        h = M(h, r->param_count | (u64)r->min_args << 32);
+        h = fp_list(h, r->type_params);
+        for (u32 i = 0; i < r->param_count; i++) {
+            h = M(h, fp_atom(r->params[i].name));
+            h = M(h, fp_ty(r->params[i].type));
+            h = M(h, r->params[i].optional | r->params[i].rest << 1);
         }
         if (FP_LAZY_PARTS && sig->ret_state == LAZY_STATE_DONE) h = M(h, fp_ty(sig->ret));
     }

@@ -871,7 +871,7 @@ Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
     if (count != 1 || other) return nullptr;
     Signature const* sig = call->uses_new ? members->construct[0] : members->call[0];
     signature_resolve(me, sig);
-    if (sig->type_params.len) return nullptr;
+    if (sig_res(sig)->type_params.len) return nullptr;
     return signature_return_type(me, sig);
 }
 
@@ -2462,8 +2462,8 @@ static Ty const* has_instance_predicate_type(Checker* me, Ty const* right_type, 
     if (members->call_count != 1) return nullptr;
     Signature const* sig = members->call[0];
     signature_resolve(me, sig);
-    if (sig->type_params.len) {
-        if (sig->type_params.len != 1 || sig->this_type != sig->type_params.data[0]) return nullptr;
+    if (sig_res(sig)->type_params.len) {
+        if (sig_res(sig)->type_params.len != 1 || sig_res(sig)->this_type != sig_res(sig)->type_params.data[0]) return nullptr;
         sig = ty_signature_instantiation(me, sig, (TyList){ .data = &right_type, .len = 1 });
     }
     TyPredicate const* predicate = signature_predicate(me, sig);
@@ -3681,8 +3681,8 @@ Ty const* ty_parameter_narrowed_type(Checker* me, Binding const* binding, FlowNo
     if (vec_function_arg_size(&function->args) < 2 || !parameter_index(function, symbol, &index)) return nullptr;
     if (!ty_function_is_context_sensitive(function)) return nullptr;
     Signature const* sig = ty_function_assigned_contextual_signature(me, function);
-    if (!sig || sig->param_count != 1 || !sig->params[0].rest) return nullptr;
-    Ty const* rest = ty_apparent_type(me, sig->params[0].type);
+    if (!sig || sig_res(sig)->param_count != 1 || !sig_res(sig)->params[0].rest) return nullptr;
+    Ty const* rest = ty_apparent_type(me, sig_res(sig)->params[0].type);
     if (rest->kind != TY_UNION) return nullptr;
     for (u32 i = 0; i < rest->composite.types.len; i++) {
         if (!ty_is_tuple(rest->composite.types.data[i])) return nullptr;

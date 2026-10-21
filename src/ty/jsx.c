@@ -169,7 +169,7 @@ static Ty const* managed_attributes(Checker* me, JsxElement const* element, Ty c
 Ty const* ty_jsx_signature_props(Checker* me, JsxElement const* element, Signature const* sig, TyMapper const* mapper, bool class_component) {
     signature_resolve(me, sig);
     Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
-    Ty const* first_param = sig->param_count ? ty_instantiate(me, ty_signature_param_type_at(me, sig, 0), mapper) : unknown;
+    Ty const* first_param = sig_res(sig)->param_count ? ty_instantiate(me, ty_signature_param_type_at(me, sig, 0), mapper) : unknown;
     Ty const* intrinsic_attributes = ty_jsx_type(me, element, c_sv("IntrinsicAttributes"));
     if (!class_component) return intersect(me, intrinsic_attributes, managed_attributes(me, element, first_param));
 
@@ -562,7 +562,7 @@ bool ty_jsx_tag_arity_fits(Checker* me, JsxElement const* element, Ty const* tag
     u32 min_args = UINT32_MAX;
     for (u32 i = 0; i < tag_members->call_count; i++) {
         signature_resolve(me, tag_members->call[i]);
-        if (tag_members->call[i]->min_args < min_args) min_args = tag_members->call[i]->min_args;
+        if (sig_res(tag_members->call[i])->min_args < min_args) min_args = sig_res(tag_members->call[i])->min_args;
     }
     if (min_args <= max_params) {
         cstr_drop(&entity);
