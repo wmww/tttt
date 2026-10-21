@@ -1839,6 +1839,103 @@ in parallel only where the file sets are disjoint):
     - Not covered (hacks.md): class field initializers, for-in/of iterables, decorators, computed keys have no root.
 - **D, the deletions (one worker, last; ~1 session).** program.c, graph.c, ty.h: everything in the list above, then
   the gates. A mechanism that can't be deleted at D means a site isn't converted.
+  **D progress (2026-10-22, wt-d), step 1** (before the last wait user, the signature return word, lands: wt-ident).
+  Commits: the dead knobs (the -DTTTT_GRAPH_TAINT build, TTTT_GRAPH_WITHHOLD, _PUBLISH_TAINTED, _MEMO_EAGER/_LATE,
+  the share-end publication, the memo log's variance branch); P2's TyParamState.item acquire redone on P1's words;
+  **two rule holes fixed**: (a) a tainted private declaration memo was read without an event (lazy_type_get() ignored
+  LazyMemo.tainted once the old taint build went; poisoned words +2-17%), (b) **in-flight placeholders in memo slots**:
+  iterable_types_with() and ty_union_key_property() wrote "none while worked out" into their own KEY_ITERATION_TYPES /
+  KEY_UNION_KEY_NAME slot, a memo flush in between published it as the value with no event, and the real value then
+  rewrote a published block (the merger's TSan pair graph_memo_flush/remember). Now one scratch kind, KEY_IN_FLIGHT
+  (memo kind + its key), is the marker, a hit an event; TTTT_DEBUG_MEMO_PUBLISH=1 shows 0 rewrites on 12 corpora;
+  checker.c's three selecting peeks (ty_is_generic_tuple(), index_less_than_fixed(), known_objects_constraint()) are
+  events with a graph (TY_PEEK_FAILED()); the lib warm-up is deleted (cgtc K12 with and without it equal within
+  +-0.7%, wall neutral; it had no correctness role left).
+  - **Remaining lazy_wait_slow() callers**: one site, signature_return_type_slow() (LAZY_SNAP/LAZY_CLAIM on
+    Signature.ret_state). K12, 2 runs x 12 corpora: 0-46 waits a run, all there; one react run broke a wait cycle
+    (a redo). The LAZY path also publishes DONE whatever the taint: an unconverted site.
+  - **The flag's K1 cost** (the step's finding; callgrind, --threads 1 --checkers 1, plain against --shared-graph,
+    99164f774): drizzle 4.948 -> 5.671 G (+14.6%), zod 4.164 -> 4.700 G (+12.9%), nest +10.4%, effect 7.853 -> 8.657 G
+    (+10.2%), far above what the steps reported one by one. By function (drizzle / zod, % of plain):
+
+    | group | functions | drizzle | zod |
+    |---|---|---|---|
+    | Overlay/ClaimSet map and the words' slow paths | overlay_put/_remove, sw_look/_finish/_claim/_peek/_mine_in_flight | +5.5% | +5.0% |
+    | shared intern tables (identities inserted at creation, private-then-shared probes) | shared_table_insert/_find, probe, intern_publish, intern_shared_find, intern_slot(_shares), graph_kind_class, shared_links_*, graph_link_get | +5.3% | +4.6% |
+    | the shards' mutexes (~600k shared_table_insert calls) | pthread_mutex_lock/unlock | +0.6% | +0.6% |
+    | memo taint (tainted-hit test on private hits) | graph_memo_hit_cold | +0.6% | +0.5% |
+    | first-touch stamps | is_deeply_nested_stamped, ty_stamp, less is_deeply_nested_max | +0.65% | +0.85% |
+    | memset_chk (callers not attributed) | | +0.76% | +0.55% |
+    | the rest, each under 0.1% | | ~+0.5% | ~+0.7% |
+
+    No fingerprint or stats code is compiled in; variance slots, publication CASes and taint frames are each under
+    0.05%. Next window: a graph of one checker needn't publish (the tables' ~6%); a lock-free shared_table insert; the
+    ClaimSet as a per-worker stack (claims are LIFO: a push and a pop instead of two hash operations, the Overlay map
+    holding only private values) and inline first probes of sw_look/sw_peek (wt-perf's). The flag can't be the
+    default at +10-15% K1: the sweeps' projects are mostly K1-sized.
+  - **Default-path state bytes** (Prop.type_flight, Signature.res_flight/ret_state, TyObjectState's four,
+    MappedInfo.template_flight, TyParamState's three, FunctionReturn.state, SymbolLinks' three, TyCondBranch.state):
+    all sit in padding holes. Retiring them shrinks FunctionReturn 16 -> 8 B and, with repacking, MappedInfo,
+    TyCondBranch and SymbolLinks by 8 B each; Prop, Signature, TyObjectState and TyParamState not at all. Instructions:
+    two byte stores per computation, estimated under 0.1%. Recorded, not retired (decision).
+  - **The shadow lever**: without the per-read shadow test (a throwaway build) zod 5.063 -> 5.033 G (-0.6%), nest
+    -0.17%, drizzle within the layout noise (+-0.8% between builds of identical semantics). Natural shadows: 0-1 a run
+    (drizzle 6 once). Kept (decision: "retire at once" needs the mid-file abort, the longjmp path, its leaks and the
+    per-file error context, alive for that saving); a future lever with these numbers.
+  - **Order keys / KEY_UNION_PAIR** (fingerprint (4), drizzle query.ts `Promise<TResult1 | TResult2>`, 3 of 3 runs):
+    union member ties that tsc breaks by mappers or nodes fall back to type ids (order.c), and ids are global, handed
+    out in schedule order under the flag, so the published union's member order can differ from K1's while every
+    worker in a run agrees. Not observable: TTTT_ORDER_SEED=1..3 (ties permuted) keeps K1's output on drizzle, effect
+    and zod (ties decided by id at K1: drizzle 34 final, effect 1183, zod 418). The fingerprint compares order; it's a
+    false positive of the oracle, not a rule hole.
+  - **The recheck gate's 3 drizzle files** (singlestore/session.ts and two more: the TS2416 elaboration says
+    `with(...).update(...).set(...)` where K1 says `...$dynamic()`): at --checkers 1 --threads 1 with the flag, the
+    in-graph recheck differs, the private one doesn't (0 of 519), and the plain recycle class doesn't
+    (`checkerdiff.py -k 1 -m 0 drizzle`: 0 differing). At K1 the graph has one checker, so no memo, relation, variance
+    or declaration memo is published (graph_memo_on is off), and the knobs that keep them private change nothing:
+    the recheck reads only identities and Ty-resident words. So its history is warm words with cold variances and
+    relations, which neither K1 (both warm) nor a fresh checker (both cold) has: the variance of SingleStoreUpdateBase is
+    first asked for at another point (the words it would have triggered are done), its measurement is in flight where
+    the comparison asks, and the structural fallback finds another first failing member. An entry-point dependence of
+    variance measurement, the same family as kdiff group V below; not in the plain path's recycle class.
+  - **Effect's K12 wall**: now 0.313 s against the defaults' 0.293 (best of 7, load ~10-14; 0.564 / 0.412 at P3).
+    Work K12/K1 is 1.07 and K1 with the flag is +10.2% instructions, so the total is ~1.18x plain K1's; but the wall
+    is the critical path: Schema.ts checks in 167 ms under the flag against 84 at the defaults, stream.ts 121 / 95.
+    Its instructions are only ~10% more; the rest is per-instruction cost on the shared structures (the tables'
+    shard mutexes, ~600k inserts a drizzle run, and the shared cache lines of the tables and words while 12 workers
+    build Schema's types at once). The fix is the K1 table's first two rows, not waits (none).
+  - **kdiff with the flag** (`-f 'dokploy|mikro-orm|renovate|trpc'`, K16 at --threads 1: sequential history, no
+    races): 9 of 78 differ, plain 0. Bisected with throwaway knobs (variance slots off, declaration memo adoption off)
+    and TTTT_GRAPH_NOSHARE on the memo kinds; the next window's items:
+    - **(V) variance slots**: trpc, trpc/packages/react-query, trpc/packages/upgrade (and most likely
+      dokploy/apps/dokploy: the same `coerceAsyncIterableToArray<TData>`). Variance slots off gives K1's output; every
+      memo kind private doesn't. The fingerprint at K16 T1 finds no differing variance publication: the first
+      difference is the declaration `data: coerceAsyncIterableToArray<TData>` (suspenseDestructuring.snap.tsx), then
+      callback parameters gone any. The published variances are K1's, but adopting them instead of measuring changes
+      what the worker does next: side state a measurement leaves behind in the measuring worker (results computed at
+      variance_depth > 0, marker instances) that an adopter never makes. Owner: P3's area. Fix: P2's
+      "self-produced side data" rule for variance groups: the side state as part of the published group, or an
+      adopter measuring again when the group left side state.
+    - **(C) conditional and alias instances**: mikro-orm, mikro-orm/tests, mikro-orm/tests/features/decorators/es.
+      K1's output only with both KEY_CONDITIONAL_INSTANCE and KEY_ALIAS_INSTANCE private; publishing the conditional
+      instances clean-only (instead of identity-valued) alone doesn't. First difference: the members of
+      `typeof IntegerType` (a class's static side, worker 2), then base constraints of
+      `NonNullable<sub-T[string]> extends string ? ...`, KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT,
+      KEY_DISTRIBUTIVE_CONSTRAINT. Mechanism: conditional instances publish whatever their taint (identity-valued,
+      P3's unproven judgment), and alias instances over them go out clean. Owner: CONDP/P3's area. Fix: the instance
+      object an identity published at creation, its resolution a word published only when clean.
+    - **(W) Ty-resident**: renovate, trpc/examples/nuxt. Still differ with memos, relations, variances and
+      declaration memos all private. renovate's first difference is the callback parameter `value`
+      (galaxy-collection/index.ts:68, TS7006) with nothing upstream: the contextual-return shape, most likely the
+      unconverted signature-return word. Recheck after wt-ident's words; trpc/examples/nuxt's mechanism is still open.
+    **Release criterion**: plan 89 section 3 item 4 wants the full oracle set identical plain and with the flag, so the
+    flag stays off by default until V and C are done, whatever the laptop bench says.
+  - **Residues** (the coordinator's list): xstate transition.test.ts(522,40) TS2345 at K4: fixed by d2fd8401b (P3's
+    variance slots whenever memos are shared; bisected, 3/3 at 4de27925f); zod `$replace` (divergence 1): fixed by
+    CONDP's 5c51f2122; effect Schema.tst.ts(2936,39) TS2345 cascade: 0-15% of K12 runs at load 40+, its runs poison
+    ~34.7k words against ~30.8k and the fingerprint is bimodal (4 / 952 differences; the 952-runs' first is the
+    declared type `Known` seen from JSONSchema.test.ts, then deferred reference arguments): held for wt-ident's words;
+    drizzle's bimodal fingerprint (1 / 604): the same; react's one broken wait cycle: the signature return site.
 
 **Gates** (regression gates, not the proof):
 - the default path byte-identical on every oracle and within 1% K1 instructions in total;

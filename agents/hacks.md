@@ -436,8 +436,14 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 
 ## Type core (`src/ty/`)
 - Plan 86 4f's converted words keep a default-path state byte next to each (Prop.type_flight, Signature.res_flight,
-  ret_flight, predicate_flight, TyObjectState.members_flight, MappedInfo.template_flight, TyParamState's three): without --shared-graph in flight is that byte, with it the worker's Overlay. Step D
-  deletes them with the plain path. sw_look_fast() & co (ty.h) inline the default path of overlay.c's functions.
+  ret_flight, predicate_flight, TyObjectState.members_flight, MappedInfo.template_flight, TyParamState's three): without --shared-graph in flight is that byte, with it the worker's Overlay. They
+  go with the plain path, once the flag is the default. Measured at D: all sit in padding holes (only FunctionReturn
+  shrinks, 16 -> 8 B, and MappedInfo, TyCondBranch, SymbolLinks by 8 B with repacking); two byte stores per
+  computation, under 0.1% of instructions.
+- The per-read shadow test (`!my graph_shadowed` on every word's fast path: sw_get(), ty_members(), sig_res() & co):
+  0.2-0.6% of K1 instructions (zod -0.6% without it) for 0-1 shadowed words a K12 run. The alternative, a shadowed
+  worker giving its file up at once to a fresh worker, needs a mid-file abort (the redo's longjmp, its leaks, a
+  per-file error context), deleted at plan 86 4f D; kept as a future lever. sw_look_fast() & co (ty.h) inline the default path of overlay.c's functions.
 - sw_v() (ty.h, with the signature words) and sw_ptr_value() (ty.h, with the type parameter words) are the same
   helper twice, so that each P1 commit applies without the other (the signature return commit is held). One goes at
   step D.
@@ -465,8 +471,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   put through a per-checker direct-mapped miss table (4096 slots; a pushed-out miss leaves its start in a floor bucket
   of 1024 that any put of a key not in the table takes, so it is never taken for clean: at worst a key sharing the
   bucket is taken for tainted, ~20-180 per corpus run; forgotten at each file's start). Puts that miss no recorded
-  miss (intern_slot() straight away) start at the put. The -DTTTT_GRAPH_TAINT build's hooks (graph_taint_miss/put,
-  the global mark set) are the older duplicate, for step D to delete. Identity-valued memo kinds (KEY_MAPPED_KEY_PARAM,
+  miss (intern_slot() straight away) start at the put. Identity-valued memo kinds (KEY_MAPPED_KEY_PARAM,
   KEY_EVOLVING_ARRAY, KEY_REVERSE_MAPPED, KEY_UNION_NODE: their value is a fresh object no key hash-conses; the
   conditional instances, whose inference can make fresh nested objects, by a kdiff bisection rather than a proof)
   publish whatever their taint, like identities: a tainted value of theirs reaches the others. A clean variance group rewinds graph_taint_now to its start
