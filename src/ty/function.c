@@ -58,9 +58,10 @@ static thread_local bool inferred_promise_missing;
 // The return type is asked for by ty_function_return_circular(), which tsc wouldn't do: no TS2705 from it
 static thread_local bool return_type_speculative;
 
-static void report_promise_missing(Checker* me, FunctionImpl const* function, FunctionReturn* memo) {
+// (Every time the type is asked for, not once: the memo is published, nothing may change it afterwards, and the merge
+// drops the duplicates, the way plan 86 has diagnostics computed with a shared result reported)
+static void report_promise_missing(Checker* me, FunctionImpl const* function, FunctionReturn const* memo) {
     if (!memo->promise_missing || return_type_speculative) return;
-    memo->promise_missing = false;
     ty_error_at(me, span_null, 2468, cstr_lit("Cannot find global value 'Promise'."));
     ty_error_at(me, function_error_span(function), 2705, cstr_lit("An async function or method in ES5 requires the "
         "'Promise' constructor.  Make sure you have a declaration for the 'Promise' constructor or include 'ES2015' in "
