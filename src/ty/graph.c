@@ -1,0 +1,379 @@
+// --shared-graph: the type graph checkers share, see graph.h and APPROACH.md
+#include "ty/graph.h"
+#include "ty/ty_internal.h"
+#include "lazy_type.h"
+#include "program.h"
+
+// The state handed to whichever checker is current (graph_enter()): sequentially one checker at a time makes atoms and
+// types. In 4d: shared structures of their own (4c's global atoms and ids)
+typedef struct GraphHeld {
+    InternTable atoms;
+    u32 next_type_id;
+    Ty const** types[1 << LAZY_TYPE_DIR_BITS]; // The id -> Ty table's chunks (LazySlots.types)
+    Ty const* array_target;
+    Ty const* auto_array;
+    Ty const* readonly_array_target;
+    TyList tuple_params;
+    struct Signature** unknown_signature;
+    Ty const* global_types[14];
+    bool global_types_resolved[14];
+    struct IterationState const* iteration;
+    Ty const* disposable_targets[2];
+    bool disposable_looked_up[2];
+} GraphHeld;
+
+typedef struct KindStats {
+    u64 shared_hits; // Lookups a checker's own table missed and the shared one had
+    u64 published; // Entries published
+    u64 tainted; // Entries of memo kinds kept private because their computation was tainted
+    u64 scratch; // Entries of scratch kinds (never published)
+    u64 unfinished; // Entries without a value when their checker's share ended
+} KindStats;
+
+// What a checker made, by GraphClass and by kind (256: node_links kinds 256 + kind)
+enum { GRAPH_STAT_KINDS = 512, GRAPH_STAT_MEMOS = 500 };
+
+struct TyGraph {
+    Checker* owner; // The checker holding `held` (current), null: the graph holds it
+    GraphHeld held;
+    // The first checker's, which every other one shares (checker_new() makes them only for the first)
+    Ty const* intrinsics[TY_INTRINSIC_COUNT];
+    Ty const* typeof_type;
+    struct Atom const* atom_constructor;
+    struct Atom const* atom_prototype;
+    struct Atom const* atom_bind;
+    // The shared tables
+    InternTable types;
+    InternTable links;
+    InternTable intersection_props;
+    LinkTable node_links;
+    LazyMemo** memos[1 << LAZY_TOP_BITS]; // Declaration memos by slot, like LazySlots.top
+    u64 memo_hits;
+    KindStats stats[GRAPH_STAT_KINDS];
+    u32 checkers;
+};
+
+
+GraphClass graph_kind_class(u32 kind) {
+    switch (kind) {
+    // Roots (per symbol, per declaration) and identities (constructors: the value is what the key is)
+    case KEY_TYPE_PARAM: case KEY_SYMBOL_LINKS: case KEY_GENERIC_PARAMS: case KEY_NAMESPACE: case KEY_TYPE_ONLY_EXPORT:
+    case KEY_MERGED_VALUE: case KEY_DECL_GROUP: case KEY_DECL_GROUP_OF: case KEY_PRIVATE_NAME:
+    case KEY_PRIVATE_NAME_CLASS: case KEY_NAMESPACE_IMPORT: case KEY_CLASS_MEMBER_SYMBOLS:
+    case KEY_LITERAL: case KEY_UNION: case KEY_INTERSECTION: case KEY_REFERENCE: case KEY_TUPLE_TARGET: case KEY_KEYOF:
+    case KEY_INDEXED: case KEY_CONDITIONAL: case KEY_SUBSTITUTION: case KEY_ANONYMOUS_INSTANCE: case KEY_UNIQUE_SYMBOL:
+    case KEY_TEMPLATE_LITERAL: case KEY_STRING_MAPPING: case KEY_NODE: case KEY_DEFERRED_OUTER:
+    case KEY_DEFERRED_REFERENCE: case KEY_STRUCTURAL: case KEY_RESTRICTIVE_PARAM: case KEY_MARKER: case KEY_CHECK_MARKER:
+    case KEY_FUNCTION: case KEY_UNIQUE_SYMBOL_NAME: case KEY_UNDEFINED_PROPERTY: case KEY_FUNCTION_RETURN:
+    case KEY_IMPLEMENTATION_SIGNATURE: case KEY_SIGNATURE_INSTANCE: case KEY_SIGNATURE_TYPE:
+    case KEY_MODULE_CLONE: case KEY_FRESH_LITERAL:
+        return GRAPH_IDENTITY;
+    // Computed values (some of them computed while lowering or instantiating: KEY_ALIAS_INSTANCE, KEY_UNION_NODE,
+    // the conditional instances)
+    case KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT: case KEY_CONDITIONAL_INSTANCE: case KEY_ALIAS_INSTANCE:
+    case KEY_UNION_NODE: case KEY_ALIAS_VARIANCES:
+    case KEY_REGULAR_UNION: case KEY_WIDENED_OBJECTS: case KEY_REGULAR_OBJECT_LITERAL: case KEY_MAPPED_KEY_PARAM:
+    case KEY_KEYOF_PROPERTIES: case KEY_SIMPLIFIED: case KEY_NORMALIZED_INTERSECTION: case KEY_MAPPED_FILTERING:
+    case KEY_PROP_MAPPED_TYPE: case KEY_PROP_WRITE_TYPE: case KEY_UNION_ACCESS: case KEY_BASE_CONSTRAINT:
+    case KEY_INFERRED_TRUE_BRANCH: case KEY_DISTRIBUTION_DEPENDENT: case KEY_DISTRIBUTIVE_CONSTRAINT:
+    case KEY_IMPLIED_CONSTRAINT: case KEY_TYPE_VARIABLE_REDUCTION: case KEY_DEFINITELY_RELATED:
+    case KEY_CANONICAL_SIGNATURE: case KEY_BASE_SIGNATURE: case KEY_VARIANCES: case KEY_ALIAS_MARKER:
+    case KEY_CHECK_MARKER_REF: case KEY_ITERATION_TYPES: case KEY_WIDENED_NULLABLE:
+    case KEY_INTERSECTION_PROP_CONTEXT: case KEY_SYNTHETIC_PROP_PARTS: case KEY_UNION_PAIR:
+    case KEY_INTERSECTION_OF: case KEY_REVERSE_MAPPED: case KEY_UNION_KEY_NAME: case KEY_UNION_KEY_MEMBER: case KEY_FLOW_NOT_UNIT:
+    case KEY_EVOLVING_ARRAY: case KEY_REDUCED_UNION: case KEY_FUNCTION_FREE_PARAMS: case KEY_FUNCTION_TYPE_MENTIONS:
+    case KEY_ARRAY_THIS_PROPS: case KEY_TUPLE_NAME_ORDER: case KEY_INDEX_NAME_ORDER: case KEY_DECIMAL_ORDER:
+    case KEY_THISLESS_SIGNATURES: case KEY_INSTANTIATION_QUERY: case GRAPH_KIND_INTERSECTION_PROPS:
+        return GRAPH_MEMO;
+    // KEY_GENERIC_RELATION numbers relations per checker; the rest is per expression, per call, flow, inference,
+    // report-once
+    default:
+        return GRAPH_SCRATCH;
+    }
+}
+
+static void held_take(GraphHeld* held, Checker const* from) {
+    held->atoms = from->atoms;
+    held->next_type_id = from->next_type_id;
+    memcpy(held->types, from->lazy.types, sizeof(held->types));
+    held->array_target = from->array_target;
+    held->auto_array = from->auto_array;
+    held->readonly_array_target = from->readonly_array_target;
+    held->tuple_params = from->tuple_params;
+    held->unknown_signature = from->unknown_signature;
+    memcpy(held->global_types, from->global_types, sizeof(held->global_types));
+    memcpy(held->global_types_resolved, from->global_types_resolved, sizeof(held->global_types_resolved));
+    held->iteration = from->iteration;
+    memcpy(held->disposable_targets, from->disposable_targets, sizeof(held->disposable_targets));
+    memcpy(held->disposable_looked_up, from->disposable_looked_up, sizeof(held->disposable_looked_up));
+}
+
+static void held_give(GraphHeld const* held, Checker* to) {
+    to->atoms = held->atoms;
+    to->next_type_id = held->next_type_id;
+    memcpy(to->lazy.types, held->types, sizeof(held->types));
+    to->array_target = held->array_target;
+    to->auto_array = held->auto_array;
+    to->readonly_array_target = held->readonly_array_target;
+    to->tuple_params = held->tuple_params;
+    to->unknown_signature = held->unknown_signature;
+    memcpy(to->global_types, held->global_types, sizeof(held->global_types));
+    memcpy(to->global_types_resolved, held->global_types_resolved, sizeof(held->global_types_resolved));
+    to->iteration = held->iteration;
+    memcpy(to->disposable_targets, held->disposable_targets, sizeof(held->disposable_targets));
+    memcpy(to->disposable_looked_up, held->disposable_looked_up, sizeof(held->disposable_looked_up));
+}
+
+static void graph_link_tables(TyGraph* me, Checker* checker) {
+    checker->graph = me;
+    checker->types.shared = &my types;
+    checker->links.shared = &my links;
+    checker->intersection_props.shared = &my intersection_props;
+}
+
+TyGraph* graph_new(Checker* first) {
+    TyGraph* me = calloc(1, sizeof(TyGraph));
+    panic_if(!me, "out of memory");
+    memcpy(my intrinsics, first->intrinsics, sizeof(my intrinsics));
+    my typeof_type = first->typeof_type;
+    my atom_constructor = first->atom_constructor;
+    my atom_prototype = first->atom_prototype;
+    my atom_bind = first->atom_bind;
+    graph_link_tables(me, first);
+    my checkers = 1;
+    // (It holds the state now; the graph's copy is taken when it stops being current)
+    my owner = first;
+    if (current_checker != first) graph_enter(me, nullptr);
+    return me;
+}
+
+void graph_adopt(TyGraph* me, Checker* checker) {
+    memcpy(checker->intrinsics, my intrinsics, sizeof(my intrinsics));
+    checker->typeof_type = my typeof_type;
+    checker->atom_constructor = my atom_constructor;
+    checker->atom_prototype = my atom_prototype;
+    checker->atom_bind = my atom_bind;
+    graph_link_tables(me, checker);
+    my checkers++;
+}
+
+void graph_enter(TyGraph* me, Checker* checker) {
+    if (my owner == checker) return;
+    if (my owner) held_take(&my held, my owner);
+    if (checker) held_give(&my held, checker);
+    my owner = checker;
+}
+
+void graph_release(TyGraph* me, Checker* checker) {
+    if (my owner == checker) graph_enter(me, nullptr);
+    // (The graph's: freed by graph_drop())
+    checker->atoms = (InternTable){0};
+    memset(checker->lazy.types, 0, sizeof(checker->lazy.types));
+    free(checker->graph_memo_slots);
+    checker->graph_memo_slots = nullptr;
+}
+
+void graph_drop(TyGraph* me) {
+    if (!me) return;
+    if (my owner) graph_release(me, my owner);
+    free(my held.atoms.entries);
+    for (size_t i = 0; i < c_arraylen(my held.types); i++) free(my held.types[i]);
+    free(my types.entries);
+    free(my links.entries);
+    free(my intersection_props.entries);
+    free(my node_links.entries);
+    for (size_t i = 0; i < c_arraylen(my memos); i++) {
+        if (!my memos[i]) continue;
+        for (size_t j = 0; j < (1 << LAZY_DIR_BITS); j++) free(my memos[i][j]);
+        free(my memos[i]);
+    }
+    free(me);
+}
+
+// Statistics
+
+void graph_count_shared_hit(InternTable const* table, u64 const* words, u32 count) {
+    Checker* checker = current_checker;
+    if (!checker || !checker->graph || !count) return;
+    u32 kind = table == &checker->intersection_props ? GRAPH_KIND_INTERSECTION_PROPS : (u32)(words[0] & 255);
+    checker->graph->stats[kind].shared_hits++;
+}
+
+// Publication
+
+static u32 block_kind(InternTable const* table, Checker const* checker, InternEntry const* entry, u32* count) {
+    u32 n = (u32)(entry->hash >> 48);
+    u64 const* key = (u64 const*)(entry->block + 1);
+    if (n == 0xffffu) n = (u32)*key++;
+    *count = n;
+    if (table == &checker->intersection_props) return GRAPH_KIND_INTERSECTION_PROPS;
+    return n ? (u32)(key[0] & 255) : 0;
+}
+
+static void publish_table(TyGraph* me, Checker* checker, InternTable* private_table, InternTable* shared) {
+    for (u32 i = 0; i < private_table->cap; i++) {
+        InternEntry const* entry = &private_table->entries[i];
+        if (!entry->hash) continue;
+        u32 count;
+        u32 kind = block_kind(private_table, checker, entry, &count);
+        KindStats* stats = &my stats[kind];
+        GraphClass class = graph_kind_class(kind);
+        if (class == GRAPH_SCRATCH) {
+            stats->scratch++;
+            continue;
+        }
+        if (!entry->block[0]) {
+            stats->unfinished++;
+            continue;
+        }
+        if (intern_table_has(shared, entry, count)) continue;
+        intern_table_publish(shared, entry, count);
+        stats->published++;
+    }
+}
+
+typedef struct LinkPublish {
+    TyGraph* graph;
+} LinkPublish;
+
+static void publish_link(void* arg, u32 kind, void const* subject, void const* value) {
+    TyGraph* me = ((LinkPublish*)arg)->graph;
+    KindStats* stats = &my stats[256 + (kind & 255)];
+    if (graph_kind_class(kind) == GRAPH_SCRATCH) {
+        stats->scratch++;
+        return;
+    }
+    if (!value) {
+        stats->unfinished++;
+        return;
+    }
+    if (link_table_get(&my node_links, kind, subject)) return;
+    link_table_set(&my node_links, kind, subject, value);
+    stats->published++;
+}
+
+static LazyMemo* memo_at(TyGraph* me, u32 slot, bool create) {
+    LazyMemo*** dir = &my memos[slot >> (LAZY_PAGE_BITS + LAZY_DIR_BITS)];
+    if (!*dir) {
+        if (!create) return nullptr;
+        *dir = calloc(1 << LAZY_DIR_BITS, sizeof(LazyMemo*));
+        panic_if(!*dir, "out of memory");
+    }
+    LazyMemo** page = &(*dir)[(slot >> LAZY_PAGE_BITS) & ((1 << LAZY_DIR_BITS) - 1)];
+    if (!*page) {
+        if (!create) return nullptr;
+        *page = calloc(1 << LAZY_PAGE_BITS, sizeof(LazyMemo));
+        panic_if(!*page, "out of memory");
+    }
+    return &(*page)[slot & ((1 << LAZY_PAGE_BITS) - 1)];
+}
+
+void graph_publish(TyGraph* me, Checker* checker) {
+    publish_table(me, checker, &checker->types, &my types);
+    publish_table(me, checker, &checker->links, &my links);
+    publish_table(me, checker, &checker->intersection_props, &my intersection_props);
+    LinkPublish arg = { me };
+    link_table_each(&checker->node_links, publish_link, &arg);
+    KindStats* stats = &my stats[GRAPH_STAT_MEMOS];
+    for (u32 i = 0; i < checker->graph_memo_len; i++) {
+        u32 slot = checker->graph_memo_slots[i] & ~(1u << 31);
+        if (checker->graph_memo_slots[i] >> 31) {
+            stats->tainted++;
+            continue;
+        }
+        LazyType lazy = { .tag = LAZY_TYPE_EVALUATED, .slot = slot };
+        LazySlots* saved = current_lazy_slots;
+        current_lazy_slots = &checker->lazy;
+        LazyMemo const* memo = lazy_type_state_peek(&lazy);
+        current_lazy_slots = saved;
+        if (!memo || !memo->done) {
+            stats->unfinished++;
+            continue;
+        }
+        LazyMemo* shared = memo_at(me, slot, true);
+        if (shared->done) continue;
+        *shared = *memo;
+        shared->hits = 0;
+        stats->published++;
+    }
+    checker->graph_memo_len = 0;
+}
+
+void const* graph_link_get(TyGraph const* me, u32 kind, void const* subject) {
+    void const* ret = link_table_get(&my node_links, kind, subject);
+    if (ret) ((TyGraph*)me)->stats[256 + (kind & 255)].shared_hits++;
+    return ret;
+}
+
+bool graph_memo_take(TyGraph* me, u32 slot, LazyMemo* memo) {
+    LazyMemo const* shared = memo_at(me, slot, false);
+    if (!shared || !shared->done) return false;
+    *memo = *shared;
+    my stats[GRAPH_STAT_MEMOS].shared_hits++;
+    return true;
+}
+
+void graph_memo_done(Checker* checker, u32 slot, bool tainted) {
+    if (checker->graph_memo_len == checker->graph_memo_cap) {
+        checker->graph_memo_cap = checker->graph_memo_cap ? checker->graph_memo_cap * 2 : 1024;
+        checker->graph_memo_slots = realloc(checker->graph_memo_slots, sizeof(u32) * checker->graph_memo_cap);
+        panic_if(!checker->graph_memo_slots, "out of memory");
+    }
+    checker->graph_memo_slots[checker->graph_memo_len++] = slot | (u32)tainted << 31;
+}
+
+static char const* kind_name(u32 kind) {
+    switch (kind) {
+#define K(x) case x: return #x;
+    K(KEY_LITERAL) K(KEY_UNION) K(KEY_INTERSECTION) K(KEY_REFERENCE) K(KEY_TUPLE_TARGET) K(KEY_KEYOF) K(KEY_INDEXED)
+    K(KEY_CONDITIONAL) K(KEY_SUBSTITUTION) K(KEY_ANONYMOUS_INSTANCE) K(KEY_UNIQUE_SYMBOL) K(KEY_FRESH_LITERAL)
+    K(KEY_REGULAR_UNION) K(KEY_WIDENED_OBJECTS) K(KEY_REGULAR_OBJECT_LITERAL) K(KEY_TEMPLATE_LITERAL)
+    K(KEY_STRING_MAPPING) K(KEY_MAPPED_KEY_PARAM) K(KEY_INSTANTIATION_QUERY) K(KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT)
+    K(KEY_CONDITIONAL_INSTANCE) K(KEY_TYPE_PARAM) K(KEY_SYMBOL_LINKS) K(KEY_GENERIC_PARAMS) K(KEY_ALIAS_INSTANCE)
+    K(KEY_NODE) K(KEY_NAMESPACE) K(KEY_TYPE_ONLY_EXPORT) K(KEY_MERGED_VALUE) K(KEY_DEFERRED_OUTER)
+    K(KEY_CALL_RESOLUTION) K(KEY_DEFERRED_REFERENCE) K(KEY_STRUCTURAL) K(KEY_KEYOF_PROPERTIES) K(KEY_SIMPLIFIED)
+    K(KEY_NORMALIZED_INTERSECTION) K(KEY_MAPPED_FILTERING) K(KEY_PROP_MAPPED_TYPE) K(KEY_PROP_WRITE_TYPE)
+    K(KEY_UNION_ACCESS) K(KEY_BASE_CONSTRAINT) K(KEY_INFERRED_TRUE_BRANCH) K(KEY_DISTRIBUTION_DEPENDENT)
+    K(KEY_DISTRIBUTIVE_CONSTRAINT) K(KEY_IMPLIED_CONSTRAINT) K(KEY_RESTRICTIVE_PARAM) K(KEY_TYPE_VARIABLE_REDUCTION)
+    K(KEY_DEFINITELY_RELATED) K(KEY_CANONICAL_SIGNATURE) K(KEY_BASE_SIGNATURE) K(KEY_VARIANCES) K(KEY_MARKER)
+    K(KEY_ALIAS_VARIANCES) K(KEY_ALIAS_MARKER) K(KEY_CHECK_MARKER) K(KEY_CHECK_MARKER_REF) K(KEY_GENERIC_RELATION)
+    K(KEY_DECL_GROUP) K(KEY_DECL_GROUP_OF) K(KEY_FUNCTION) K(KEY_ITERATION_TYPES) K(KEY_UNIQUE_SYMBOL_NAME)
+    K(KEY_PRIVATE_NAME) K(KEY_PRIVATE_NAME_CLASS) K(KEY_WIDENED_NULLABLE) K(KEY_INTERSECTION_PROP_CONTEXT)
+    K(KEY_UNDEFINED_PROPERTY) K(KEY_SYNTHETIC_PROP_PARTS) K(KEY_FUNCTION_RETURN) K(KEY_UNION_PAIR)
+    K(KEY_INTERSECTION_OF) K(KEY_REVERSE_MAPPED) K(KEY_UNION_KEY_NAME) K(KEY_UNION_KEY_MEMBER) K(KEY_FLOW_NOT_UNIT)
+    K(KEY_EVOLVING_ARRAY) K(KEY_REDUCED_UNION) K(KEY_SIGNATURE_INSTANCE) K(KEY_SIGNATURE_TYPE)
+    K(KEY_FUNCTION_FREE_PARAMS) K(KEY_FUNCTION_TYPE_MENTIONS) K(KEY_ARRAY_THIS_PROPS) K(KEY_TUPLE_NAME_ORDER)
+    K(KEY_INDEX_NAME_ORDER) K(KEY_DECIMAL_ORDER) K(KEY_UNION_NODE) K(KEY_NAMESPACE_IMPORT) K(KEY_MODULE_CLONE)
+    K(KEY_THISLESS_SIGNATURES) K(KEY_CLASS_MEMBER_SYMBOLS) K(KEY_IMPLEMENTATION_SIGNATURE)
+#undef K
+    case GRAPH_KIND_INTERSECTION_PROPS: return "intersection_props";
+    default: return nullptr;
+    }
+}
+
+// TTTT_GRAPH_STATS=1 (at the end of the typecheck): by kind, what was published, kept private and found shared
+void graph_print_stats(TyGraph const* me) {
+    eprintln("graph: ", my checkers, " checkers, ", (i64)my types.len, " types entries, ", (i64)my links.len, " links, ",
+        (i64)my intersection_props.len, " intersection props, ", (i64)my node_links.len, " node links shared");
+    eprintln("graph: kind  shared-hits  published  tainted  scratch  unfinished");
+    KindStats total = {0};
+    for (u32 k = 0; k < GRAPH_STAT_KINDS; k++) {
+        KindStats const* s = &my stats[k];
+        if (!s->shared_hits && !s->published && !s->tainted && !s->scratch && !s->unfinished) continue;
+        char const* name = k == GRAPH_STAT_MEMOS ? "declaration memos" : kind_name(k & 255);
+        char other[32];
+        if (!name) {
+            snprintf(other, sizeof other, "kind %u", k & 255);
+            name = other;
+        }
+        eprintln("graph: ", k >= 256 && k != GRAPH_STAT_MEMOS ? "N " : "  ", name, " ", s->shared_hits, " ", s->published,
+            " ", s->tainted, " ", s->scratch, " ", s->unfinished);
+        total.shared_hits += s->shared_hits;
+        total.published += s->published;
+        total.tainted += s->tainted;
+        total.scratch += s->scratch;
+        total.unfinished += s->unfinished;
+    }
+    eprintln("graph: total ", total.shared_hits, " ", total.published, " ", total.tainted, " ", total.scratch, " ",
+        total.unfinished);
+}

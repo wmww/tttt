@@ -9,6 +9,7 @@
 #include "interface_decl.h"
 #include "scope.h"
 #include "ty/ty.h"
+#include "ty/graph.h"
 
 thread_local LazySlots* current_lazy_slots;
 
@@ -157,6 +158,11 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     LazyMemo* state = lazy_type_state(me);
     DeclarationRecord own = {0};
     DeclarationRecord* record = &own;
+    // (--shared-graph: a declaration another checker evaluated, cleanly)
+    if (!state->evaluation_started && current_checker->graph && my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FOR_EACH_LOOP_VAR &&
+        graph_memo_take(current_checker->graph, my slot, state)) {
+        return lazy_memo_evaluated(state);
+    }
 
     if (state->evaluation_started) {
         TAINT_EVENT(TAINT_IN_FLIGHT_LAZY);
@@ -274,5 +280,8 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 #ifdef TTTT_TAINT
     taint_end(taint_frame, taint_kind, me, me, lazy_memo_evaluated(state));
 #endif
+    if (current_checker->graph && my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FOR_EACH_LOOP_VAR) {
+        graph_memo_done(current_checker, my slot, false);
+    }
     return lazy_memo_evaluated(state);
 }

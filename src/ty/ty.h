@@ -55,6 +55,8 @@ typedef struct InternTable {
     InternEntry* entries;
     u32 cap; // power of two or 0
     u32 len;
+    // With --shared-graph (ty/graph.h): the graph's table of the same keys, looked up when this one misses. Null otherwise
+    struct InternTable const* shared;
 } InternTable;
 
 // The commonest two-word keys of Checker.links, (kind, AST node or other address) -> value, with the key in the entry
@@ -1241,6 +1243,11 @@ struct Checker {
     bool awaited_reported; // TS2318 for a missing Awaited (tsc's getGlobalAwaitedSymbol(/*reportErrors*/ true))
     bool iterable_iterator_reported[2]; // TS2318 for a missing IterableIterator / AsyncIterableIterator (sync, async)
     bool iterable_reported; // TS2318 for a missing Iterable (an empty or rest-only array pattern's type)
+    // --shared-graph (ty/graph.h): the graph it shares, and the declaration memos it finished (slots, the top bit:
+    // tainted), published with its other results when its share ends
+    struct TyGraph* graph;
+    u32* graph_memo_slots;
+    u32 graph_memo_len, graph_memo_cap;
 };
 
 // checker.c

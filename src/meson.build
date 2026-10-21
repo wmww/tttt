@@ -52,6 +52,7 @@ core_files = files(
     'string_helpers.c',
     'ty/checker.c',
     'ty/taint.c',
+    'ty/graph.c',
     'ty/survivors.c',
     'ty/order.c',
     'ty/members.c',

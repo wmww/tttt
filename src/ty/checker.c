@@ -9,6 +9,7 @@
 #include "scope.h"
 #include "ast_alloc.h"
 #include "source_file.h"
+#include "ty/graph.h"
 
 // Arena
 
@@ -225,7 +226,7 @@ __attribute__((always_inline)) static inline InternEntry* intern_find(InternTabl
 }
 
 static void intern_grow(InternTable* me) {
-    InternTable bigger = { .cap = my cap ? my cap * 2 : 64, .len = my len };
+    InternTable bigger = { .cap = my cap ? my cap * 2 : 64, .len = my len, .shared = my shared };
     bigger.entries = zeroed_table(bigger.cap, sizeof(InternEntry));
     panic_if(!bigger.entries, "out of memory");
     for (u32 i = 0; i < my cap; i++) {
@@ -268,6 +269,14 @@ static bool intern_needs_growth(InternTable const* table) {
     return (table->len + 1) * 4 > table->cap * 3;
 }
 
+// --shared-graph: a key the checker's own table doesn't have, in the graph's (ty/graph.h). Null if none
+[[gnu::noinline]] static void const** intern_shared_find(InternTable const* table, u64 hash, u64 const* words, u32 count) {
+    InternEntry* entry = intern_find(table->shared, hash, words, count);
+    if (!entry || !entry->hash) return nullptr;
+    graph_count_shared_hit(table, words, count);
+    return entry->block;
+}
+
 // The returned slot is null if the key is new. It is in the key's arena block, so it stays valid (callers that intern
 // while computing the value look it up again all the same, from when the slots were in the table).
 void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 count) {
@@ -276,7 +285,10 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
     }
     u64 hash = hash_words(words, count);
     InternEntry* entry = intern_find(table, hash, words, count);
-    if (!entry->hash) return intern_put(me, table, entry, hash, words, count);
+    if (!entry->hash) {
+        void const** shared = table->shared ? intern_shared_find(table, hash, words, count) : nullptr;
+        return shared ? shared : intern_put(me, table, entry, hash, words, count);
+    }
 #ifdef TTTT_TAINT
     void const** taint_block = entry->block;
     taint_intern_hit(taint_block);
@@ -290,6 +302,10 @@ void const* intern_lookup(InternTable const* table, u64 const* words, u32 count,
     u64 hash = hash_words(words, count);
     InternEntry* entry = intern_find(table, hash, words, count);
     *miss = (InternMiss){ .hash = hash, .cap = table->cap, .index = entry ? (u32)(entry - table->entries) : 0 };
+    if ((!entry || !entry->hash) && table->shared) {
+        void const** shared = intern_shared_find(table, hash, words, count);
+        if (shared) return shared[0];
+    }
 #ifdef TTTT_TAINT
     void const** taint_block = entry && entry->hash ? entry->block : nullptr;
     if (taint_block) taint_intern_hit(taint_block);
@@ -319,6 +335,23 @@ void const** intern_insert(Checker* me, InternTable* table, InternMiss const* mi
 #endif
 }
 
+// --shared-graph's publication (graph.c): whether a table has a private table's entry's key, and putting the entry (its
+// block, which stays where it is) into one that doesn't
+bool intern_table_has(InternTable const* table, InternEntry const* entry, u32 count) {
+    u64 const* words = (u64 const*)(entry->block + 1) + (count >= INTERN_LONG_KEY);
+    InternEntry const* found = intern_find(table, entry->hash, words, count);
+    return found && found->hash;
+}
+
+void intern_table_publish(InternTable* shared, InternEntry const* entry, u32 count) {
+    (void)count;
+    if (intern_needs_growth(shared)) intern_grow(shared);
+    u32 i = table_index(entry->hash, shared->cap);
+    while (shared->entries[i].hash) i = table_next(i, shared->cap);
+    shared->entries[i] = *entry;
+    shared->len++;
+}
+
 // The key's words in a block intern_slot() returned
 static u64 const* intern_key_words(void const** block, u32 count) {
     return (u64 const*)block + 1 + (count >= INTERN_LONG_KEY);
@@ -340,8 +373,11 @@ void const* intern_get(InternTable const* table, u64 const* words, u32 count) {
     if (!taint_block || !taint_block[0]) taint_intern_miss(table, hash);
     return taint_block ? taint_block[0] : nullptr;
 #else
-    InternEntry* entry = intern_find(table, hash_words(words, count), words, count);
-    return entry && entry->hash ? entry->block[0] : nullptr;
+    u64 hash = hash_words(words, count);
+    InternEntry* entry = intern_find(table, hash, words, count);
+    if (entry && entry->hash) return entry->block[0];
+    void const** shared = table->shared ? intern_shared_find(table, hash, words, count) : nullptr;
+    return shared ? shared[0] : nullptr;
 #endif
 }
 
@@ -356,6 +392,25 @@ static u32 link_index(u64 key, u32 cap) {
 
 void const* ty_link_get(Checker const* me, u32 kind, void const* subject) {
     LinkTable const* table = &my node_links;
+    if (!table->cap) return my graph ? graph_link_get(my graph, kind, subject) : nullptr;
+    u64 key = link_key(kind, subject);
+    for (u32 i = link_index(key, table->cap);; i = table_next(i, table->cap)) {
+        LinkEntry const* entry = &table->entries[i];
+        if (entry->key == key) return entry->value;
+        if (!entry->key) return my graph ? graph_link_get(my graph, kind, subject) : nullptr;
+    }
+}
+
+// The node link entries of a table (graph.c's publication): calls `each` with every (kind, subject, value)
+void link_table_each(LinkTable const* table, void (*each)(void* arg, u32 kind, void const* subject, void const* value), void* arg) {
+    for (u32 i = 0; i < table->cap; i++) {
+        LinkEntry const* entry = &table->entries[i];
+        if (entry->key) each(arg, (u32)(entry->key >> 56) - 1, (void const*)(uintptr_t)(entry->key & ((1ull << 56) - 1)), entry->value);
+    }
+}
+
+// The shared table's lookup (graph.c)
+void const* link_table_get(LinkTable const* table, u32 kind, void const* subject) {
     if (!table->cap) return nullptr;
     u64 key = link_key(kind, subject);
     for (u32 i = link_index(key, table->cap);; i = table_next(i, table->cap)) {
@@ -366,7 +421,10 @@ void const* ty_link_get(Checker const* me, u32 kind, void const* subject) {
 }
 
 void ty_link_set(Checker* me, u32 kind, void const* subject, void const* value) {
-    LinkTable* table = &my node_links;
+    link_table_set(&my node_links, kind, subject, value);
+}
+
+void link_table_set(LinkTable* table, u32 kind, void const* subject, void const* value) {
     if ((table->len + 1) * 4 > table->cap * 3) {
         LinkTable bigger = { .cap = table_grown(table->cap, 1024), .len = table->len };
         bigger.entries = zeroed_table(bigger.cap, sizeof(LinkEntry));
@@ -557,6 +615,12 @@ Checker* checker_new(Program* program) {
     my binder = program_get_binder(program);
     my errs = program_errors(program);
     my next_type_id = 1;
+    // (--shared-graph: the graph's first checker made the intrinsics, the rest share them)
+    TyGraph* graph = program_graph(program);
+    if (graph) {
+        graph_adopt(graph, me);
+        return me;
+    }
 #ifdef TTTT_TAINT
     taint_checker_new(me);
 #endif
@@ -645,6 +709,9 @@ Atom const* ty_index_atom(Checker* me, u32 index) {
 thread_local Checker* current_checker;
 
 void checker_make_current(Checker* me) {
+    // (--shared-graph: the atoms, the type ids and the lib singletons go to the current checker)
+    TyGraph* graph = me ? my graph : current_checker ? current_checker->graph : nullptr;
+    if (graph) graph_enter(graph, me);
     current_checker = me;
     current_lazy_slots = me ? &my lazy : nullptr;
 }
@@ -676,6 +743,7 @@ void checker_drop(Checker* me) {
     free(my painted_kept);
     // Not current while dropping: memos contain LazyTypes of their own, which mustn't look for slots in here anymore
     if (current_checker == me) checker_make_current(nullptr);
+    if (my graph) graph_release(my graph, me);
     // (The materializations of deferred bodies it held may go now: nothing else of it points into them, plan 78)
     deferred_bodies_release(my held, my held_count);
     free(my held);

@@ -17,6 +17,7 @@
 #include "port_statement.h"
 #include "source_file.h"
 #include "ty/ty.h"
+#include "ty/graph.h"
 #include "module_resolution.h"
 #include "json.h"
 #include "content_mapper.h"
@@ -146,6 +147,8 @@ typedef struct Program {
     u32* share_first; // malloc'd, per checker while typechecking: the file of check_files it starts with (deal_files())
     bool steal_files; // While typechecking: checkers take each other's files (TTTT_NO_STEAL=1: never, to measure)
     u32 requested_checkers; // program_set_checkers()
+    bool shared_graph; // program_set_shared_graph()
+    struct TyGraph* graph; // Its checkers', while they share one (ty/graph.h)
     u32 checker_cap; // program_set_checker_cap(), 0: the threads
     u64 checker_memory; // program_set_checker_memory(), bytes: UINT64_MAX never recycles
     u64 checker_memory_cap; // program_set_checker_memory_cap(), bytes: UINT64_MAX none
@@ -288,6 +291,7 @@ static void program_drop(Program* me) {
     vec_source_file_ptr_drop(&my check_files);
     free(my checkers);
     checker_drop(my checker);
+    graph_drop(my graph);
     drop_source_files(me);
     hmap_box_source_file_drop(&my source_files_map);
     hmap_source_file_ptr_drop(&my files_by_package_id);
@@ -3610,6 +3614,14 @@ void program_make_current(Program* me) {
 // nestjs-boilerplate checks 240 KB in 110 ms where most projects of that size take 25)
 enum { CHECKER_BYTES = 64 << 10 };
 
+void program_set_shared_graph(Program* me, bool shared) {
+    my shared_graph = shared;
+}
+
+TyGraph* program_graph(Program const* me) {
+    return my graph;
+}
+
 void program_set_checkers(Program* me, u32 count) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     my requested_checkers = count;
@@ -4520,6 +4532,8 @@ static void check_share(Program* me, u32 c, u32 count) {
             declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
         }
     }
+    // (--shared-graph: what it computed goes to the checkers after it)
+    if (checker->graph) graph_publish(checker->graph, checker);
     checker_make_current(nullptr);
     timespec_get(&end, TIME_UTC);
     checker->check_ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
@@ -4685,6 +4699,12 @@ void program_typecheck(Program* me) {
     }
     my checker_start_budget = count > 1 && my checker_memory_shared < my checker_budget ? my checker_memory_shared : my checker_budget;
     ErrorCtx* checker_errs = c_new_n(ErrorCtx, count);
+    // --shared-graph (plan 86 stage 4, ty/graph.h): one checker after another, never recycled, sharing one graph
+    if (my shared_graph && !my graph) {
+        my graph = graph_new(my checker);
+        my checker_budget = my checker_start_budget = UINT64_MAX;
+        my threads = 1;
+    }
     my binder->frozen = true;
     my errs->frozen = true;
     // (Declaration emit needs the walk even where its diagnostics won't be reported: --dts-dump under noEmit)
@@ -4759,6 +4779,7 @@ void program_typecheck(Program* me) {
     }
     my binder->frozen = false;
     my errs->frozen = false;
+    if (my graph && getenv("TTTT_GRAPH_STATS")) graph_print_stats(my graph);
     error_ctx_keep_first_once(checker_errs, count);
     for (u32 c = 0; c < count; c++) {
         error_ctx_merge(my errs, &checker_errs[c]);
