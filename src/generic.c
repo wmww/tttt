@@ -49,7 +49,7 @@ static void generic_check_default(GenericItem const* item, Ty const* param, Erro
     if (!param) param = ty_type_param(checker, item->symbol_ref);
     if (param->kind != TY_TYPE_PARAM) return;
     Ty const* fallback = ty_param_default(checker, param);
-    if (param->param.state->fallback_circular) {
+    if (ty_param_default_is_circular(checker, param)) {
         error_ctx_error_d(errs, item->fallback_span, 2716, "Type parameter '", item->name, "' has a circular default.");
     }
     Ty const* constraint = fallback ? ty_param_constraint(checker, param) : nullptr;

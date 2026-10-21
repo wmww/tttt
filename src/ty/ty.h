@@ -258,11 +258,16 @@ typedef struct TyObjectState {
 typedef struct TyParamState {
     GenericItem const* item; // Null for type parameters that were only ever seen by reference (and infer/mapped ones)
     TypeNode const* constraint_node;
-    LazyState constraint_state;
-    Ty const* constraint; // null if unconstrained
-    LazyState fallback_state;
-    bool fallback_circular; // Its default reached itself (TS2716): then it has none. Written with the default only
-    Ty const* fallback;
+    // The default-path bytes of the three words below (NOT_STARTED / IN_FLIGHT, overlay.h)
+    uint8_t constraint_flight;
+    uint8_t fallback_flight;
+    uint8_t circular_flight;
+    // The declared constraint, a shared word (a Ty, NONE if unconstrained): ty_declared_param_constraint(), a fresh
+    // parameter's ty_param_constraint_init()
+    SharedWord constraint;
+    // The default, a shared word: a Ty, NONE for none, or ty_param_default_circular (its default reached itself, TS2716:
+    // then it has none): ty_param_default(), ty_param_default_is_circular()
+    SharedWord fallback;
     bool is_infer; // declared by `infer X` in the extends type of a conditional type
     bool is_this; // The `this` type of a class or interface (Ty.declared.this_param), prints as `this`
     bool is_check_marker; // `sub-T`/`super-T` of a variance annotation check (ty_variance_check_instance())
@@ -271,8 +276,9 @@ typedef struct TyParamState {
     Ty const* clone_of;
     TyMapper const* clone_mapper;
     // Whether the declared constraint reaches the parameter itself (tsc's getResolvedBaseConstraint returning
-    // circularConstraintType, TS2313): then it has none. 0 not known yet, 1 no, 2 yes
-    unsigned char circular;
+    // circularConstraintType, TS2313): then it has none. A shared word: empty not known yet, PARAM_NOT_CIRCULAR,
+    // PARAM_CIRCULAR (ty_param_constraint_is_circular())
+    SharedWord circular;
     // A distributed type parameter (tsgo 7.1's isDistributed, plan 57): the one it is the twin of, which is also its
     // constraint. Mappers, inference and the printer see through it (ty_non_distributed())
     Ty const* distributed_of;
@@ -599,6 +605,10 @@ typedef struct PropDeclRare {
     struct ReverseMapped const* reverse_of;
     Ty const* reverse_source;
     Ty const* reverse_declared;
+    // A reverse mapped property's type no longer says `asserted`'s annotation (prop_type() finds out): a shared word,
+    // PROP_ASSERTED_DROPPED once it doesn't (prop_decl_asserted()), written by the type's computation
+    SharedWord asserted_dropped;
+    uint8_t asserted_dropped_flight; // (Its default-path byte: never in flight, sw_finish() wants one)
     // Types baseline only: a property spread from a module's variable (`{ ...ns }`) is declared by that variable (tsc's
     // getSpreadSymbol keeps the declarations), whose annotation or literal initializer is reused
     Symbol const* spread_variable;
@@ -657,6 +667,14 @@ static inline PropDeclRare const* prop_decl_rare(PropDecl const* decl) {
     return decl->rare ? decl->rare : &none;
 }
 
+enum { PROP_ASSERTED_DROPPED = 3 };
+TypeNode const* prop_decl_asserted_slow(PropDecl const* decl); // members.c
+// PropDecl.asserted as this worker sees it: a reverse mapped property's is null once its type no longer says the
+// annotation's (PropDeclRare.asserted_dropped)
+static inline TypeNode const* prop_decl_asserted(PropDecl const* decl) {
+    if (!decl->asserted || !decl->rare || !decl->rare->reverse_of) return decl->asserted;
+    return prop_decl_asserted_slow(decl);
+}
 extern PropDecl const ty_prop_decl_none;
 // What a tuple element property shares: only name_is_value, read-only like ty_prop_decl_none
 extern PropDecl const ty_prop_decl_value_name;
@@ -2082,6 +2100,25 @@ typedef struct CallEffects {
 CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call);
 TyList ty_reference_args(Checker* me, Ty const* reference);
 Ty const* ty_param_constraint(Checker* me, Ty const* param); // null if unconstrained (or circularly constrained)
+enum { PARAM_NOT_CIRCULAR = 3, PARAM_CIRCULAR = 4 }; // TyParamState.circular's values
+// A word's value for a pointer (SW_VAL() evaluating its argument once; the constraint words', next to the signature
+// words' sw_v(), one of them to go at step D)
+static inline uintptr_t sw_ptr_value(void const* p) {
+    return p ? (uintptr_t)p : (uintptr_t)SW_NONE;
+}
+// A fresh type parameter's constraint (null: unconstrained), known from the start; `circular` false or not known
+static inline void ty_param_constraint_init(TyParamState* state, Ty const* constraint, bool not_circular) {
+    __atomic_store_n(&state->constraint.v, constraint ? (uintptr_t)constraint : (uintptr_t)SW_NONE, __ATOMIC_RELAXED);
+    if (not_circular) __atomic_store_n(&state->circular.v, (uintptr_t)PARAM_NOT_CIRCULAR, __ATOMIC_RELAXED);
+}
+// The declared constraint as published (a done-ness peek without a worker: the printer's and the oracle's), null if
+// none or not known
+static inline Ty const* ty_param_constraint_published(TyParamState const* state) {
+    uintptr_t v = sw_load(&state->constraint);
+    return v > SW_NONE ? (Ty const*)v : nullptr;
+}
+extern Ty const ty_param_default_circular_marker; // TyParamState.fallback's circular value
+bool ty_param_default_is_circular(Checker* me, Ty const* param); // Its default reached itself (TS2716)
 bool ty_param_constraint_is_circular(Checker* me, Ty const* param); // TS2313
 Ty const* ty_declared_param_constraint(Checker* me, Ty const* param); // tsc's getConstraintFromTypeParameter, not gated
 bool ty_has_non_circular_base_constraint(Checker* me, Ty const* ty); // relate.c

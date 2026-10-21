@@ -165,7 +165,9 @@ static u64 fp_ty_inner(Checker* c, Ty const* ty) {
             }
             if (state->distributed_of) h = M(h, fp_ty(state->distributed_of));
             // (Synthetic ones (no symbol: a mapped type's key stand-in, tuple_params' T) are told apart by their constraint)
-            if (state->is_this || (FP_LAZY_PARTS && !ty->param.symbol && state->constraint_state == LAZY_STATE_DONE)) h = M(h, fp_ty(state->constraint));
+            if (state->is_this || (FP_LAZY_PARTS && !ty->param.symbol && sw_load(&state->constraint) > SW_POISON)) {
+                h = M(h, fp_ty(ty_param_constraint_published(state)));
+            }
             return h;
         }
         case TY_DECLARED: {

@@ -2604,7 +2604,7 @@ static bool is_constructed_by(Checker* me, Ty const* source, void const* arg) {
     if (source_class || target_class) {
         // (tsc compares symbols: a class's `this` type has the class's)
         if (source->kind == TY_TYPE_PARAM && source->param.state->is_this && target_class) {
-            Ty const* owner = source->param.state->constraint;
+            Ty const* owner = ty_param_constraint_published(source->param.state); // (`this`'s, made with it)
             if (owner && owner->kind == TY_REFERENCE) owner = owner->reference.target;
             return owner && owner->kind == TY_DECLARED && owner->declared.symbol == target->declared.symbol;
         }

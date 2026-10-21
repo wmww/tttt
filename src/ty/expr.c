@@ -3477,7 +3477,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
         TypeNode const* annotation = origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function &&
             !prop_decl_rare(origin->decl)->overload_count && !origin->decl->symbol && declared_type == prop_type(me, origin) ? origin->decl->node : nullptr;
         // (A property spread in from an object literal reuses what that one reused: `{ ...{ ...b1, z } }`)
-        if (!annotation && origin->decl->asserted && declared_type == prop_type(me, origin)) annotation = origin->decl->asserted;
+        if (!annotation && prop_decl_asserted(origin->decl) && declared_type == prop_type(me, origin)) annotation = prop_decl_asserted(origin->decl);
         // (A mapped type's property is declared where the property it maps is, `{ ...(x as Readonly<A>) }`: tsc's mapped
         // symbol's declarations, whose annotation is reused where it says the same)
         Prop const* mapped_from = prop_decl_rare(prop->decl)->mapped_from;
@@ -5247,7 +5247,7 @@ static Ty const* object_literal_rechecked(Checker* me, Expr const* expr, Ty cons
             .decl_spans = prop->decl->decl_spans,
             .decl_span_count = prop->decl->decl_span_count,
             .name_is_value = prop->decl->name_is_value,
-            .asserted = prop->decl->asserted,
+            .asserted = prop_decl_asserted(prop->decl),
             .item = item,
             .own = true,
             .name_form = ty_prop_name_form_of(prop),

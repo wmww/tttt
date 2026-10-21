@@ -3104,7 +3104,8 @@ static TyList pattern_keys(Checker* me, Binding const* pattern) {
 // the same (ObjectLiteralProp.asserted)
 TypeNode const* ty_prop_annotation(Prop const* prop) {
     PropDecl const* decl = prop->decl;
-    if (decl->asserted) return decl->asserted;
+    TypeNode const* asserted = prop_decl_asserted(decl);
+    if (asserted) return asserted;
     return decl->node && decl->node->parsed && !decl->lazy && !decl->function && !prop_decl_rare(decl)->overload_count && !decl->symbol ? decl->node : nullptr;
 }
 
@@ -4274,8 +4275,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                     position == INFER_POSITION_REST ? ty_array(me, ty_intrinsic(me, TY_UNKNOWN_), false) :
                     position == INFER_POSITION_MAPPED_KEY ? ty_keyof(me, ty_intrinsic(me, TY_ANY)) : nullptr;
                 if (constraint) {
-                    param->param.state->constraint = constraint;
-                    param->param.state->constraint_state = LAZY_STATE_DONE;
+                    ty_param_constraint_init(param->param.state, constraint, false);
                 }
                 return param;
             }

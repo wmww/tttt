@@ -431,6 +431,11 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Plan 86 4f's converted words keep a default-path state byte next to each (Prop.type_flight, Signature.res_flight,
   ret_flight, predicate_flight): without --shared-graph in flight is that byte, with it the worker's Overlay. Step D
   deletes them with the plain path. sw_look_fast() & co (ty.h) inline the default path of overlay.c's functions.
+- sw_v() (ty.h, with the signature words) and sw_ptr_value() (ty.h, with the type parameter words) are the same
+  helper twice, so that each P1 commit applies without the other (the signature return commit is held). One goes at
+  step D.
+- TyParamState.circular (members.c ty_param_constraint_is_circular()) is a word with no in-flight state: a re-entry
+  computes it again and the first answer stays. Without a graph that is a first-wins CAS, as before.
 - signature_copied() (members.c): a copy of a signature whose resolution is in flight here gets a snapshot record
   published as resolved; before the words the copy's state stayed in flight forever with the snapshot, so a done-ness
   peek of the copy now says resolved. No oracle shows it.

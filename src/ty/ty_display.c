@@ -4021,7 +4021,7 @@ static bool maps_merged_type_param(Checker* me, Signature const* sig, Signature 
             // (`this` is declared by its class or interface: IteratorConstructor's two interfaces)
             Symbol const* symbol = source->param.symbol;
             if (source->param.state->is_this) {
-                Ty const* owner = source->param.state->constraint;
+                Ty const* owner = ty_param_constraint_published(source->param.state); // (`this`'s, made with it)
                 if (owner && owner->kind == TY_REFERENCE) owner = owner->reference.target;
                 symbol = owner && owner->kind == TY_DECLARED ? owner->declared.symbol : nullptr;
             }
@@ -6117,7 +6117,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         }
         // (An instantiation's: the annotation its object literal reused, while it still says the same, checked below:
         // tsgo's serializeTypeForDeclaration of the property's declaration, instantiated or not)
-        TypeNode const* annotation = placeholder ? nullptr : prop->decl->asserted ? prop->decl->asserted : origin->decl->asserted;
+        TypeNode const* annotation = placeholder ? nullptr : prop_decl_asserted(prop->decl) ? prop_decl_asserted(prop->decl) : prop_decl_asserted(origin->decl);
         if (origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function && !prop_decl_rare(origin->decl)->overload_count &&
             !origin->decl->symbol
         ) {

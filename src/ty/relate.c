@@ -3439,8 +3439,7 @@ static Ty const* variance_marker(Checker* me, u32 which) {
         marker = ty_synthetic_type_param(me, csview_from(names[which]));
         if (which == 1) {
             Ty const* super = variance_marker(me, 0);
-            marker->param.state->constraint = super;
-            marker->param.state->constraint_state = LAZY_STATE_DONE;
+            ty_param_constraint_init(marker->param.state, super, false);
         }
         marker = intern_set(me, &my links, intern_slot(me, &my links, key, 2), marker);
     }
@@ -3517,8 +3516,7 @@ Ty const* ty_variance_check_instance(Checker* me, Symbol const* owner, u32 index
         cstr_drop(&marker_name);
         markers[which]->param.state->is_check_marker = true;
         if (which == 1) {
-            markers[which]->param.state->constraint = markers[0];
-            markers[which]->param.state->constraint_state = LAZY_STATE_DONE;
+            ty_param_constraint_init(markers[which]->param.state, markers[0], false);
         }
         markers[which] = (Ty*)intern_set(me, &my links, intern_slot(me, &my links, key, 3), (void*)markers[which]);
     }
@@ -4495,8 +4493,7 @@ static TyMapper const* mapped_key_param_mapper(Checker* me, MappedInfo const* ma
     TyMapper const* ret = intern_get(&my links, key, 2);
     if (ret) return ret;
     Ty const* param = ty_synthetic_type_param(me, atom_sv(mapped->type_param->param.name));
-    param->param.state->constraint = mapped->constraint;
-    param->param.state->constraint_state = LAZY_STATE_DONE;
+    ty_param_constraint_init(param->param.state, mapped->constraint, false);
     ret = ty_mapper_new(me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &param, .len = 1 });
     *intern_slot(me, &my links, key, 2) = ret;
     return ret;

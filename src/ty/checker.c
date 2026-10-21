@@ -1816,8 +1816,9 @@ static Ty const* known_objects_constraint(Checker* me, Ty const* ty) {
     Ty const* constraint = nullptr;
     if (ty->kind == TY_TYPE_PARAM) {
         TyParamState const* param = ty_non_distributed(ty)->param.state;
-        if (TAINT_IF(TAINT_PEEK, param->constraint_state != LAZY_STATE_DONE)) return nullptr;
-        constraint = param->constraint;
+        uintptr_t known = me->graph ? sw_peek(me, &param->constraint) : sw_load(&param->constraint);
+        if (TAINT_IF(TAINT_PEEK, !known)) return nullptr;
+        constraint = SW_PTR(known);
     } else if (ty->kind == TY_INDEXED) {
         constraint = ty_apparent_type(me, ty);
     }
@@ -2703,10 +2704,8 @@ Ty const* ty_distributed_type_param(Checker* me, Ty const* param) {
     if (!known) {
         Ty* twin = (Ty*)make_type_param(me, param->param.symbol, param->param.name);
         twin->param.state->distributed_of = param;
-        twin->param.state->constraint = param;
-        twin->param.state->constraint_state = LAZY_STATE_DONE;
+        ty_param_constraint_init(twin->param.state, param, true);
         twin->param.state->is_infer = state->is_infer;
-        twin->param.state->circular = 1;
         // (An identity: with --shared-graph the first checker's twin is everyone's)
         known = twin;
         Ty const* expected = nullptr;
@@ -2731,7 +2730,11 @@ bool ty_param_is_bounded(Ty const* param) {
     TyParamState const* state = param->param.state;
     if (state->clone_of || state->is_this) return true;
     if (state->item) return state->item->extends_explicit || state->item->fallback_explicit;
-    return state->constraint_node || state->constraint || state->fallback;
+    // (A constraint or default as published: the ones made with it, those without an item; plan 86 4f P1: a private
+    // one doesn't count, which only a poisoned word can make differ from one checker's answer)
+    uintptr_t fallback = sw_load(&state->fallback);
+    return state->constraint_node || sw_load(&state->constraint) > SW_NONE ||
+        (fallback > SW_NONE && fallback != (uintptr_t)&ty_param_default_circular_marker);
 }
 
 // tsc's isConstTypeVariable: a `const` type parameter, or a type built on one that stays generic, where an argument's
@@ -2811,9 +2814,8 @@ Ty const* ty_this_type_param(Checker* me, Ty const* declared) {
     Ty const* ret = make_type_param(me, nullptr, checker_atom(me, c_sv("this")));
     TyParamState* state = ret->param.state;
     state->is_this = true;
-    state->constraint = declared->declared.type_params.len ?
-        ty_reference(me, declared, declared->declared.type_params) : declared;
-    state->constraint_state = LAZY_STATE_DONE;
+    ty_param_constraint_init(state, declared->declared.type_params.len ?
+        ty_reference(me, declared, declared->declared.type_params) : declared, false);
     return ret;
 }
 

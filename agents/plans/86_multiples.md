@@ -1470,6 +1470,34 @@ in parallel only where the file sets are disjoint):
       drizzle select.ts createIterator, dialect.ts mapToDriverValue), persists. It isn't prop_type()'s word: it comes
       through ty_function_type_mentions()'s instantiation identity, a later group. The fingerprint build segfaulted on
       effect in graph_debug's describe() of KEY reference args (fixed on ai-main by 04c1f100b).
+    - **Signature return and predicate (held, wip 5ffd63edc)**: Signature.ret and .predicate are words, the class
+      signature's return in SigResolved.class_ret. Gated except excalidraw: 20/20 runs differ, because App.tsx's
+      `perform` returns lose their contextual return type. A worker that no longer waits for another's in-flight
+      signature return infers the function's return itself, context-free, and that counts as clean. Lands after
+      wt-ctx (the contextual signature as a function of the node).
+    - **Type parameter constraint, default and circularity**: TyParamState.constraint (a Ty, NONE if unconstrained),
+      .fallback (a Ty, NONE, or the ty_param_default_circular_marker: fallback_circular folded in) and .circular
+      (PARAM_NOT_CIRCULAR/PARAM_CIRCULAR, no in-flight state: a re-entry computes it again, the first answer stays,
+      sw_finish() with a graph) are words. TSan A for `circular` is gone, and TyParamState.item is read with acquire
+      (set_param_item()'s CAS). Fresh parameters' constraints go through ty_param_constraint_init() (checker.c,
+      lower.c, relate.c, conditional.c). A reverse mapped property's `asserted` drop, which prop_type() wrote into a
+      published PropDecl (TSan E), is a word of its own (PropDeclRare.asserted_dropped), read by prop_decl_asserted().
+    - Fingerprint divergence (1), zod `$replace<Meta, S>`'s distributive constraint, persists with the constraint word:
+      it isn't declared_param_constraint().
+    - **Effect seed 37** fails (the TS7006 `interruptAsFork: (id)` residue) with this group and not without it. The
+      cause is the seeded scheduler, not the conversion: LAZY_CLAIM() was a scheduling point and sw_claim() isn't, so
+      every converted site removes points and a seed's schedule shifts. With graph_sched_point() back in sw_claim()
+      seed 37 passes 2/2. 1d083898f fails seed 152 of seeds 101-200 (TS2375) and this group passes all of 101-200.
+      Proposal for the scheduler's owner: sw_claim() calls graph_sched_point(), so converted sites keep the seeded
+      coverage the claims had.
+    - **Per-worker stores read inside word computations (the coordinator's audit, members.c):** signature_resolve_slow()
+      reads KEY_CONTEXT_CHECKED (ty_function_assigned_contextual_signature(): type parameters from a generic
+      contextual signature, a JavaScript function's minimum arguments) and KEY_CONTEXT_THIS. compute_signature_predicate()
+      reads KEY_CONTEXT_CHECKED. ty_class_base_type_variable() and class_base() read ty_expr_type() of the extends
+      expression (the expression's type as this worker has it). members' resolution reads the worker's own in-flight
+      stacks (MembersClaim's early members, bases_frames, members_in_flight, eager_probe_depth); those are rule 1's
+      in-flight reads, counted by the cycle machinery. Making the two contextual reads taint events doesn't help (a
+      private recompute is context-free all the same: P2's measurement), and that fix is wt-ctx's.
   - **P2, checker.c + lower.c + function.c + instantiate.c** (reduced, cond branches, declared types, reference args,
     implied constraints, function returns, ty_alloc and the directory's chunk slots (lazy_type.c's lazy_slots_*),
     order keys, literal twins: TSan C). ~1-2 sessions.

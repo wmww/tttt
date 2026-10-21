@@ -5431,6 +5431,7 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
     }
     u64 taint = sw_claim_fast(me, &prop->type, &prop->type_flight);
     TAINT_BEGIN(taint_frame);
+    bool clear_asserted = false; // (A reverse mapped property's annotation no longer says its type: after publication)
     bool resolving = !prop->target || prop->mapped;
     if (resolving) ty_resolving_push(me, RESOLVING_PROP, prop);
     Ty const* type;
@@ -5464,7 +5465,7 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
         // same, tsc's serializeTypeForDeclaration)
         // (Or says it with undefined added: an optional one's type has it, see ty_display's annotation_plus_undefined())
         Ty const* declared = prop_decl_rare(prop->decl)->reverse_declared;
-        if (type != declared && ty_without_undefined(me, type) != declared) prop->decl->asserted = nullptr;
+        clear_asserted = type != declared && ty_without_undefined(me, type) != declared;
     } else {
         type = ty_from_node(me, prop->decl->node, prop->decl->ctx);
     }
@@ -5503,9 +5504,22 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
         Span name = prop_annotation_circularity_span(prop);
         ty_error_at(me, name, 2502, cstr_d("'", span_sv(name), "' is referenced directly or indirectly in its own type annotation."));
     }
+    if (clear_asserted) {
+        // (Its own word, settled with the type's taint before the type is: published if clean, else this worker's own)
+        PropDeclRare* rare = (PropDeclRare*)prop->decl->rare;
+        if (my graph) sw_finish(me, &rare->asserted_dropped, &rare->asserted_dropped_flight, PROP_ASSERTED_DROPPED, taint);
+        else __atomic_store_n(&rare->asserted_dropped.v, (uintptr_t)PROP_ASSERTED_DROPPED, __ATOMIC_RELEASE);
+    }
     type = SW_PTR(sw_finish_fast(me, &prop->type, &prop->type_flight, SW_VAL(type), taint));
     if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_PROP_TYPE, prop, prop, type);
     return type;
+}
+
+TypeNode const* prop_decl_asserted_slow(PropDecl const* decl) {
+    Checker* me = current_checker;
+    SharedWord const* w = &decl->rare->asserted_dropped;
+    uintptr_t v = me && my graph ? sw_peek(me, w) : sw_load(w);
+    return v == PROP_ASSERTED_DROPPED ? nullptr : decl->asserted;
 }
 
 Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
@@ -6571,7 +6585,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .decl_spans = prop->decl->decl_spans,
             .decl_span_count = prop->decl->decl_span_count,
             .name_is_value = prop->decl->name_is_value,
-            .asserted = prop->decl->asserted,
+            .asserted = prop_decl_asserted(prop->decl),
             .item = prop->decl->item,
             .spread_variable = prop_decl_rare(prop->decl)->spread_variable,
             .spread_namespace = prop_decl_rare(prop->decl)->spread_namespace,
@@ -6748,7 +6762,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
                 .decl_spans = prop->decl->decl_spans,
                 .decl_span_count = prop->decl->decl_span_count,
                 .name_is_value = prop->decl->name_is_value,
-                .asserted = prop->decl->asserted,
+                .asserted = prop_decl_asserted(prop->decl),
                 .item = prop->decl->item,
                 .own = prop->decl->literal_own,
                 .name_form = ty_prop_name_form_of(prop),
@@ -6823,7 +6837,7 @@ Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
             .decl_spans = prop->decl->decl_spans,
             .decl_span_count = prop->decl->decl_span_count,
             .name_is_value = prop->decl->name_is_value,
-            .asserted = prop->decl->asserted,
+            .asserted = prop_decl_asserted(prop->decl),
             .item = prop->decl->item,
             .spread_variable = prop_decl_rare(prop->decl)->spread_variable,
             .spread_namespace = prop_decl_rare(prop->decl)->spread_namespace,
@@ -6864,28 +6878,35 @@ Ty const* ty_signature_type(Checker* me, Signature const* sig) {
     return intern_set(me, &my links, slot, ret);
 }
 
-// The constraint as declared (tsc's getConstraintFromTypeParameter)
+// The constraint as declared (tsc's getConstraintFromTypeParameter): a shared word (NONE if unconstrained). In flight
+// here means it is circular (`T extends T`): tsc reports TS2313 and carries on without one
 static Ty const* declared_param_constraint(Checker* me, Ty const* param) {
     check(param->kind == TY_TYPE_PARAM);
     TyParamState* state = param->param.state;
-    again:;
-    LAZY_SNAP(me, state->constraint_state, seen, again);
-    if (seen == LAZY_STATE_DONE) TAINT_READ(TK_PARAM_CONSTRAINT, state);
-    if (LAZY_IN_FLIGHT(seen)) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-    if (seen == LAZY_STATE_NOT_STARTED && state->clone_of) {
-        if (!LAZY_CLAIM(me, state->constraint_state)) goto again;
-        TAINT_BEGIN(taint_frame);
-        Ty const* constraint = ty_param_constraint(me, state->clone_of);
-        state->constraint = constraint ? ty_instantiate(me, constraint, state->clone_mapper) : nullptr;
-        LAZY_DONE_CLEAN(state->constraint_state, taint_frame, TK_PARAM_CONSTRAINT);
-        TAINT_END(taint_frame, TK_PARAM_CONSTRAINT, state, param, state->constraint);
+    uintptr_t v = sw_get(me, &state->constraint);
+    if (__builtin_expect(v != SW_EMPTY, 1)) {
+        TAINT_READ(TK_PARAM_CONSTRAINT, state);
+        return SW_PTR(v);
     }
-    if (seen == LAZY_STATE_NOT_STARTED && !state->clone_of) {
-        if (!LAZY_CLAIM(me, state->constraint_state)) goto again;
-        TAINT_BEGIN(taint_frame);
+    switch (sw_look_fast(me, &state->constraint, &state->constraint_flight, &v)) {
+        case SW_LOOK_DONE:
+            TAINT_READ(TK_PARAM_CONSTRAINT, state);
+            return SW_PTR(v);
+        case SW_LOOK_MINE: return nullptr; // (sw_look() counted the taint event)
+        case SW_LOOK_COMPUTE: break;
+    }
+    u64 taint = sw_claim_fast(me, &state->constraint, &state->constraint_flight);
+    TAINT_BEGIN(taint_frame);
+    Ty const* constraint;
+    if (state->clone_of) {
+        Ty const* original = ty_param_constraint(me, state->clone_of);
+        constraint = original ? ty_instantiate(me, original, state->clone_mapper) : nullptr;
+    } else {
         TypeNode const* node = state->constraint_node;
-        if (state->item) {
-            node = state->item->extends_explicit ? &state->item->extends : nullptr;
+        // (Acquire: lower.c's set_param_item() may set it by a CAS on another worker)
+        GenericItem const* own_item = __atomic_load_n(&state->item, __ATOMIC_ACQUIRE);
+        if (own_item) {
+            node = own_item->extends_explicit ? &own_item->extends : nullptr;
             // Merged declarations share the type parameter: the first one that constrains it does (tsc's
             // getConstraintDeclaration)
             Symbol const* symbol = param->param.symbol;
@@ -6895,59 +6916,77 @@ static Ty const* declared_param_constraint(Checker* me, Ty const* param) {
                 if (item && item->extends_explicit) node = &item->extends;
             }
         }
-        state->constraint = node ? ty_from_node(me, node, (LowerCtx){ .generic = true }) : nullptr;
+        constraint = node ? ty_from_node(me, node, (LowerCtx){ .generic = true }) : nullptr;
         // A declared `extends any` is `extends unknown` (tsc's getConstraintFromTypeParameter; its keyofConstraintType for
         // a mapped type's key isn't done here). One that becomes any by instantiation stays any, and any is related to
         // everything: `<T extends E>` of `Ref<any>` takes any other type parameter
-        if (state->constraint == ty_intrinsic(me, TY_ANY) && node != state->constraint_node) {
-            state->constraint = ty_intrinsic(me, TY_UNKNOWN_);
-        }
-        if (!node && state->is_infer) state->constraint = ty_implied_infer_constraint(me, param, false);
-        LAZY_DONE_CLEAN(state->constraint_state, taint_frame, TK_PARAM_CONSTRAINT);
-        TAINT_END(taint_frame, TK_PARAM_CONSTRAINT, state, param, state->constraint);
+        if (constraint == ty_intrinsic(me, TY_ANY) && node != state->constraint_node) constraint = ty_intrinsic(me, TY_UNKNOWN_);
+        if (!node && state->is_infer) constraint = ty_implied_infer_constraint(me, param, false);
     }
-    // In flight means the constraint is circular (`T extends T`), tsc reports TS2313 and carries on without one
-    return LAZY_LOAD(state->constraint_state) == LAZY_STATE_DONE ? state->constraint : nullptr;
+    if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_PARAM_CONSTRAINT, state, param, constraint);
+    return SW_PTR(sw_finish_fast(me, &state->constraint, &state->constraint_flight, sw_ptr_value(constraint), taint));
 }
 
+// TyParamState.circular as this worker knows it (SW_EMPTY: not yet)
+static uintptr_t param_circular_known(Checker* me, TyParamState const* state) {
+    uintptr_t v = sw_get(me, &state->circular);
+    if (v || !my graph) return v;
+    return sw_peek(me, &state->circular);
+}
+
+// The circularity is known: the first answer stays (without a graph a first-wins store, as the relaxed CAS was; with
+// one, sw_finish(): published if clean, else this worker's own)
+static uintptr_t param_circular_publish(Checker* me, TyParamState* state, uintptr_t value, u64 taint, bool first_wins) {
+    if (my graph) return sw_finish(me, &state->circular, &state->circular_flight, value, taint);
+    if (!first_wins) {
+        __atomic_store_n(&state->circular.v, value, __ATOMIC_RELAXED);
+        return value;
+    }
+    uintptr_t unset = SW_EMPTY;
+    if (__atomic_compare_exchange_n(&state->circular.v, &unset, value, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED)) return value;
+    return unset;
+}
 
 // tsc's getConstraintOfTypeParameter: none if the base constraint is circular (`T extends T`, `T extends U, U extends
-// T`, `T extends Foo | T["k"]`). A copy made by instantiation is circular when its original is
+// T`, `T extends Foo | T["k"]`). A copy made by instantiation is circular when its original is. A shared word, without
+// an in-flight state: a re-entry computes it again, the first answer stays
 bool ty_param_constraint_is_circular(Checker* me, Ty const* param) {
     check(param->kind == TY_TYPE_PARAM);
     TyParamState* state = param->param.state;
-    // (Relaxed atomics: with --shared-graph checkers that ask at once compute it the same)
-    if (!__atomic_load_n(&state->circular, __ATOMIC_RELAXED)) {
+    uintptr_t v = param_circular_known(me, state);
+    if (!v) {
+        u64 taint = graph_taint_now;
         if (state->clone_of) {
-            __atomic_store_n(&state->circular, ty_param_constraint_is_circular(me, state->clone_of) ? 2 : 1, __ATOMIC_RELAXED);
+            bool circular = ty_param_constraint_is_circular(me, state->clone_of);
+            v = param_circular_publish(me, state, circular ? PARAM_CIRCULAR : PARAM_NOT_CIRCULAR, taint, false);
         } else {
             bool circular = !ty_has_non_circular_base_constraint(me, param);
             // (Asked while its base constraint is computed: circular for now, the answer is known once that's done)
             if (ty_base_constraint_in_flight(me, param)) return circular;
-            unsigned char unset = 0;
-            __atomic_compare_exchange_n(&state->circular, &unset, circular ? 2 : 1, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+            v = param_circular_publish(me, state, circular ? PARAM_CIRCULAR : PARAM_NOT_CIRCULAR, taint, true);
         }
     }
-    return __atomic_load_n(&state->circular, __ATOMIC_RELAXED) == 2;
+    return v == PARAM_CIRCULAR;
 }
 
 Ty const* ty_declared_param_constraint(Checker* me, Ty const* param) { return declared_param_constraint(me, param); }
 
 Ty const* ty_param_constraint(Checker* me, Ty const* param) {
+    TyParamState* state = param->param.state;
     // The declared constraint is lowered under the base constraint's push (tsc's getResolvedBaseConstraint)
-    if (!param->param.state->circular && !param->param.state->clone_of && !param->param.state->is_this &&
-        LAZY_LOAD(param->param.state->constraint_state) == LAZY_STATE_NOT_STARTED) {
-        ty_param_constraint_is_circular(me, param);
+    if (!state->clone_of && !state->is_this && !param_circular_known(me, state)) {
+        uintptr_t known = my graph ? sw_peek(me, &state->constraint) : sw_load(&state->constraint);
+        if (!known && !sw_mine_in_flight(me, &state->constraint, &state->constraint_flight)) ty_param_constraint_is_circular(me, param);
     }
     Ty const* constraint = declared_param_constraint(me, param);
-    if (!constraint || param->param.state->circular == 1) return constraint;
+    if (!constraint || param_circular_known(me, state) == PARAM_NOT_CIRCULAR) return constraint;
     return ty_param_constraint_is_circular(me, param) ? nullptr : constraint;
 }
 
 // The declaration of a type parameter's default: the first of its declarations that has one (tsc's
 // getResolvedTypeParameterDefault), a later interface declaration's `interface I<T, R = undefined>` too
 static GenericItem const* default_item(Ty const* param) {
-    GenericItem const* item = param->param.state->item;
+    GenericItem const* item = __atomic_load_n(&param->param.state->item, __ATOMIC_ACQUIRE); // (set_param_item()'s CAS)
     if (item && item->fallback_explicit) return item;
     Symbol const* symbol = param->param.symbol;
     for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
@@ -6961,7 +7000,7 @@ bool ty_param_has_default(Ty const* param) {
     check(param->kind == TY_TYPE_PARAM);
     TyParamState const* state = param->param.state;
     if (state->clone_of) return ty_param_has_default(state->clone_of);
-    return state->item && default_item(param);
+    return __atomic_load_n(&state->item, __ATOMIC_ACQUIRE) && default_item(param);
 }
 
 // A type parameter's default being lowered (CLAIM_PARAM_DEFAULT, keyed by its TyParamState)
@@ -6970,43 +7009,53 @@ typedef struct ParamDefaultClaim {
     bool circular; // Asked for meanwhile: it reaches itself (TS2716), and has none
 } ParamDefaultClaim;
 
-// The default is known (with whether it was circular, TS2716)
-static void publish_param_default(TyParamState* state, Ty const* fallback, bool circular) {
-    state->fallback = fallback;
-    state->fallback_circular = circular;
-    LAZY_DONE(state->fallback_state);
+Ty const ty_param_default_circular_marker;
+
+// A shared word: a Ty, NONE for none, or the circular marker (its default reached itself, TS2716: then it has none).
+// In flight here, null (a declared one's claim then says it is circular)
+static uintptr_t param_default_word(Checker* me, Ty const* param) {
+    TyParamState* state = param->param.state;
+    uintptr_t v = sw_get(me, &state->fallback);
+    if (__builtin_expect(v != SW_EMPTY, 1)) return v;
+    switch (sw_look_fast(me, &state->fallback, &state->fallback_flight, &v)) {
+        case SW_LOOK_DONE: return v;
+        case SW_LOOK_MINE:
+            if (!state->clone_of) {
+                Claim* claim = ty_claim_find(me, CLAIM_PARAM_DEFAULT, state, 0);
+                if (claim) c_container_of(claim, ParamDefaultClaim, claim)->circular = true;
+            }
+            return SW_EMPTY;
+        case SW_LOOK_COMPUTE: break;
+    }
+    u64 taint = sw_claim_fast(me, &state->fallback, &state->fallback_flight);
+    TAINT_BEGIN(taint_frame);
+    uintptr_t value;
+    if (state->clone_of) {
+        Ty const* fallback = ty_param_default(me, state->clone_of);
+        fallback = fallback ? ty_instantiate(me, fallback, state->clone_mapper) : nullptr;
+        if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_PARAM_DEFAULT, param, param, fallback);
+        value = sw_ptr_value(fallback);
+    } else {
+        ParamDefaultClaim claim = {0};
+        ty_claim_push(me, CLAIM_PARAM_DEFAULT, &claim.claim, state, 0);
+        GenericItem const* item = __atomic_load_n(&state->item, __ATOMIC_ACQUIRE) ? default_item(param) : nullptr;
+        Ty const* fallback = item ? ty_from_node(me, item->fallback, (LowerCtx){ .generic = true }) : nullptr;
+        ty_claim_pop(me, CLAIM_PARAM_DEFAULT, &claim.claim);
+        // (tsc's getResolvedTypeParameterDefault: asked for while being resolved, it's circularConstraintType)
+        if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_PARAM_DEFAULT, param, param, claim.circular ? nullptr : fallback);
+        value = claim.circular ? (uintptr_t)&ty_param_default_circular_marker : sw_ptr_value(fallback);
+    }
+    return sw_finish_fast(me, &state->fallback, &state->fallback_flight, value, taint);
 }
 
 Ty const* ty_param_default(Checker* me, Ty const* param) {
     check(param->kind == TY_TYPE_PARAM);
-    TyParamState* state = param->param.state;
-    again:;
-    LAZY_SNAP(me, state->fallback_state, seen, again);
-    if (seen == LAZY_STATE_NOT_STARTED && state->clone_of) {
-        if (!LAZY_CLAIM(me, state->fallback_state)) goto again;
-        TAINT_BEGIN(taint_frame);
-        Ty const* fallback = ty_param_default(me, state->clone_of);
-        fallback = fallback ? ty_instantiate(me, fallback, state->clone_mapper) : nullptr;
-        TAINT_END(taint_frame, TK_PARAM_DEFAULT, param, param, fallback);
-        publish_param_default(state, fallback, false);
-    }
-    else if (seen == LAZY_STATE_NOT_STARTED) {
-        if (!LAZY_CLAIM(me, state->fallback_state)) goto again;
-        TAINT_BEGIN(taint_frame);
-        ParamDefaultClaim claim = {0};
-        ty_claim_push(me, CLAIM_PARAM_DEFAULT, &claim.claim, state, 0);
-        GenericItem const* item = state->item ? default_item(param) : nullptr;
-        Ty const* fallback = item ? ty_from_node(me, item->fallback, (LowerCtx){ .generic = true }) : nullptr;
-        ty_claim_pop(me, CLAIM_PARAM_DEFAULT, &claim.claim);
-        // (tsc's getResolvedTypeParameterDefault: asked for while being resolved, it's circularConstraintType)
-        TAINT_END(taint_frame, TK_PARAM_DEFAULT, param, param, claim.circular ? nullptr : fallback);
-        publish_param_default(state, claim.circular ? nullptr : fallback, claim.circular);
-    } else if (LAZY_IN_FLIGHT(seen) && !state->clone_of) {
-        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-        Claim* claim = ty_claim_find(me, CLAIM_PARAM_DEFAULT, state, 0);
-        if (claim) c_container_of(claim, ParamDefaultClaim, claim)->circular = true;
-    }
-    return LAZY_LOAD(state->fallback_state) == LAZY_STATE_DONE ? state->fallback : nullptr;
+    uintptr_t v = param_default_word(me, param);
+    return v == SW_EMPTY || v == (uintptr_t)&ty_param_default_circular_marker ? nullptr : SW_PTR(v);
+}
+
+bool ty_param_default_is_circular(Checker* me, Ty const* param) {
+    return param_default_word(me, param) == (uintptr_t)&ty_param_default_circular_marker;
 }
 
 static Ty const* compute_mapped_template(Checker* me, MappedInfo const* mapped) {
