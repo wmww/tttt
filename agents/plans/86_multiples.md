@@ -655,6 +655,20 @@ at the computation's end**, and makes every field another worker can read safe t
 - **Other writes to published objects** (census A §4): `order_key` (racy-benign word), Members.rare attached late
   (CAS), TYX_CONSTRAINED_TYPE_VARIABLE (atomic OR, or into the constructor), empty_symbol / rest_binding /
   conditional.outer (into the constructors), tuple_params (published by pointer swap, grown under a lock).
+- **Steps 5 and 6 done ahead (2026-10-21, worker "inflight")**. Writes to published objects: an object rest's
+  rest_binding and import()'s empty_symbol (OBJECT_EMPTY_SYMBOL, in the key) and a conditional root's `outer`
+  (ty_conditional() takes a TyRootSpec) are set by their constructors; order_key relaxed atomics; Members.rare attached
+  by CAS (members_rare_published()), by_name_order first-wins, contains_error an atomic set-only flag; the late
+  TYX_CONSTRAINED_TYPE_VARIABLE an atomic OR (history-like: which path made the intersection first, K1's order; its
+  word's other readers race only formally, a byte of its own would settle it); root_aliased and TyParamState.item
+  first-wins CAS (item: never late on the suite or corpora, the constructor sets it); pattern clones keep sharing
+  their state on purpose (the protocol is per state) with their own order_key. from_type_node needs nothing: it is
+  set at construction and first-wins by interning, tsgo's own semantics (whoever instantiates first). Singletons:
+  TySingletons (ty.h), each checker's field a cache, ty_singleton_publish() / ty_singletons_sync(), tuple_params by
+  pointer swap. **Hook for the graph worker**: TyGraph holds a TySingletons (ty_singletons_new()); graph_new() sets
+  `first->singletons` and calls ty_singletons_sync(first), graph_adopt() the same for each checker; held_take() /
+  held_give() drop those fields. Tested with that patch in a scratch build: K4/K12 sequential byte-identical to K1
+  on drizzle, zod, effect, excalidraw, nest, vscode.
 - **Ids and singletons**: ids from 4c's blocks; the read path adds a fill-on-null of LazySlots.types from the program
   directory (a worker meets another's id only through shared types: the null check sits in the slow path of
   lazy_slots_type(), which needs one). The lib singletons (array targets, global_types, iteration, disposable targets,
