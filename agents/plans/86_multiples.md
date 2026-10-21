@@ -2126,6 +2126,106 @@ and waited fields, tainted values reset to not-started). Waiting makes the wait 
 breaker's history is no sequential checker's. Resetting a tainted word lets another worker publish a clean value
 that the tainter, which keeps its own, then disagrees with on every later read.
 
+### Stage 4f: the perf accounting (2026-10-21, wt-sg)
+A diagnosis session, not a build-out. This box (16 vCPUs, other agents' load 7-25; walls are noise, CPU and
+instructions are what to read), release build, `TTTT_SHARED_GRAPH=1` ("flag"), `--checker-memory off` unless said.
+**Fixed on the way** (flag-only): 5f9f1c42d, `link_hash()` was half a murmur finalizer, and linear probing clustered
+dense id-pair grids in the shared relation tables (vue resolveType.ts: 48% of its instructions in shared_links_*,
+~2100 per call). Vue K12 went 0.34 -> 0.21 s (plain 0.16), and that was most of the laptop's vue 2x. 9a3d34368: after a
+graph-wide recycle the rebuilder checks one file before the others start. 6ccddc0e4: the stats counters only with
+TTTT_GRAPH_STATS, plus `TTTT_GRAPH_WORK=1` (cycles of each word computation by outcome).
+**The thrashers' slow runs** (dokploy K12, 2-4 runs in 10). The checkers' summed holdings cross the 800 MB graph budget
+at 65-85% of the files. The sum includes what lockstep races duplicate, which is timing, so whether a run crosses is
+timing too. Then the barrier releases all 12 workers onto an empty graph at once, and each of them builds the same
+tRPC router types: ~420 ms in one fresh checker, 823-850 ms each when 12 do it at once. One run recycled 3 times
+(35 CPU s against 9-10). The same lockstep at the start (7 workers x ~520 ms on that warm-up) is ~40% of dokploy's
+CPU: `TTTT_GRAPH_LEAD=1` (worker 0's first file before the others) gives CPU 9.4 -> 5.7 s and peak 1.82 -> 1.33 GB,
+but wall +8%. The thrasher table (coordinator, pgo at ee9501eb8, wall / CPU / peak): dokploy defaults 1.87 / 13.1 /
+1.9 GB plain -> 0.86 / 6.3 / 1.7 flag, K12 1.85 / 18.7 / 2.7 -> 0.84 / 8.1 / 1.8; monkeytype defaults 0.72 / 5.2 /
+0.8 -> 0.31 / 2.1 / 0.6, K12 0.71 / 7.0 / 1.0 -> 0.29 / 2.8 / 0.7.
+**Work** (callgrind in the typecheck and worker threads, G instructions):
+| corpus | plain K1 | flag K1 | plain K12 | flag K12 T1 | flag K12 T12 | flag K12 / flag K1 |
+|---|---|---|---|---|---|---|
+| drizzle | 4.88 | 5.15 | 10.54 | 6.58 | 6.64 | 1.29 |
+| zod | 4.13 | 4.36 | 6.34 | 5.57 | 5.64 | 1.29 |
+| effect | 7.86 | 8.20 | 9.02 | 9.44 | 9.32 | 1.14 |
+| vscode | - | 77.36 | - | - | 84.38 | 1.09 |
+The flag K12 excess over flag K1, by bucket. The T1 column runs the 12 workers one after another, so it has no races;
+D is graph*.c, shared_table.c, overlay.c, intern_shared_find, intern_publish and the mutexes; "under variances" is the
+instructions inside outermost claim_and_measure(), measured with a CALLGRIND_TOGGLE_COLLECT build at T1:
+- (a) recomputed after POISON. Words: drizzle 3%, excalidraw 3%, effect 1%, vscode 0.7% of CPU (TTTT_GRAPH_WORK).
+  **Variance groups**: drizzle 1.81 -> 2.68 G under measurements (+0.87 G, **60% of the excess**), zod 0.33 -> 0.91
+  (+0.58, **48%**), effect +0.06 (5%). 266 of 397 drizzle groups and 90 of 133 zod groups are tainted, and each
+  worker then measures them again. The relation-pair excess is that: drizzle K1 247k pairs, K12 392k, of which 206k
+  are inside measurements (66k at K1); zod 234k -> 390k (27k -> 167k). The first non-internal taint event of a
+  tainted group is mostly a deep-nesting cut, either directly (relation_deep_cut()) or through a CACHE_DEEP relation
+  hit or a tainted memo hit that came from one: drizzle ~240 of ~450 outermost tainted measurements, zod ~160 of
+  ~370. The rest are nested groups' taint and Overlay reads.
+- (b) races: under 1% of instructions (T1 against T12). In real runs, adopted words' cycles are drizzle 4%, zod 2.3%,
+  excalidraw/vue 0.6-0.7%, effect and vscode ~0; three quarters of it falls in the first ~60 ms. TTTT_GRAPH_LEAD moved
+  CPU by under 2% on drizzle, zod, effect, excalidraw and vue, and cost excalidraw 0.22 -> 0.33 s wall. **The
+  start-of-run lockstep is a dokploy-shape problem (one huge central type), not an ordinary-project one.**
+- (c) relations outside variance measurement: small (drizzle ~+7k pairs). The shared relation cache as built (puts
+  139k, hits 16k on drizzle) doesn't pay: TTTT_GRAPH_SHARE_RELATIONS=0 gives zod 5.617 G against 5.636 G, and CPU -2
+  to -5% on zod, effect and drizzle (excalidraw equal).
+- (d) the flag's own sharing machinery: drizzle 0.72 G (50% of the excess), zod 0.52 (43%), effect 0.75 (61%), vscode
+  4.27 G (61%). Per operation that is ~150-300 instructions for each shared probe after a private miss (1.1-1.6 M
+  shared hits a run), each identity publication (a mutex insert, 0.55 M on drizzle) and each memo flush. On top of it
+  is the flag's K1 cost over plain: +0.27 / +0.24 / +0.34 G.
+- (e) other: zeroed fresh tables (memset) drizzle 0.15, zod 0.11, effect 0.19, vscode 0.69 G; private intern work the
+  rest.
+**Per instruction** (best per-file check-time sum / instructions, ns): drizzle K1 0.141 plain / 0.139 flag, K12 0.193
+plain / **0.314 flag**; zod 0.161 / 0.153, 0.239 / **0.381**; effect 0.163 / 0.155, 0.264 / **0.325**. At K12 a flag
+instruction costs 1.2-1.6x a plain K12 instruction, and 2.0-2.4x a K1 instruction (plain K12: 1.4-1.6x). At K4 the
+flag's premium is 1.19x with the threads on separate cores and 1.14x on SMT siblings. Cachegrind (one simulated cache,
+threads serialized) gives the flag *fewer* last-level misses than plain at K12 (drizzle 17.1 M against 24.2 M, zod
+14.6 against 18.1), and voluntary context switches add only ~1000 a run. So it isn't working-set size or lock
+sleeping. It is what the model can't see: lines written by one core and read by another (shared tables, published
+objects, CAS'd words). That is inferred, not measured: perf counters aren't available in this VM. Schema.ts (effect's
+critical path) alone: 469 M instructions plain, 549 M flag at K12 (+17%, the sharing machinery). In the K12 run it
+takes 117 ms plain and 162-184 flag. So drizzle's flag K12 per-file sum equals plain's (2087 / 2034 ms) on 37% fewer
+instructions, and zod (2150 / 1515) and effect (3033 / 2377) lose.
+**Verdict.** The by-construction design shares well: in steady state races are under 1-4%, and recomputation after
+poison is a few percent, except variances. What it doesn't do is make sharing cheap. Three items, by value:
+1. **Per-instruction cost (the biggest).** Until shared objects stop costing cross-core traffic, even a perfect 1.0x
+   work ratio gives drizzle ~1.6 s of per-file sum against plain's 2.0 (-20%), and effect ~2.6 against 2.4 (worse).
+   First, measure where the stalls are: `perf c2c record`/`perf stat -e cache-misses,...` on the laptop, flag against
+   plain, drizzle K12 (the human's box has counters). Candidates: publication writes into lines that other cores
+   read (words inside TyObjectState and Signatures next to hot read-only fields; shared-table slots written next to
+   probed ones); the private-miss shared probe on every first use; the per-chunk type directory. Risk: low for
+   layout changes, which aren't semantic.
+2. **Variance groups poisoned by deep-nesting cuts**: 48-60% of drizzle's and zod's K12 excess. Under tsc's own
+   semantics the cut's outcome depends on type-id order (isDeeplyNestedType's increasing-id rule), which is the
+   worker's history here (first-touch stamps). So publishing them is not context-free: the taint is correct, not
+   over-conservative. The ways out: stamps that are graph-wide (the first toucher's order, nondeterministic: 4676 of
+   1.36 M dokploy decisions would change; high risk), or measuring a tainted group once and publishing it with the
+   history recorded (the result keyed by the stamps of the types it cut on; medium-high risk, a design session). With
+   it removed, drizzle and zod K12 work would be ~1.12x.
+3. **The sharing machinery's instruction cost** (d): drizzle and zod would go from 1.29x to ~1.2x if it were halved
+   (cache a shared identity in the private table on first hit, so it is probed once per worker and not on every
+   private miss; lock-free insert-if-absent for identities; flush memos in batches). Low-medium risk (intern.c and
+   checker.c are k1's territory). Drop the shared relation cache, or gate it per corpus: as built it costs more than
+   it saves.
+Achievable: drizzle/zod K12 work ~1.05-1.1x K1, vscode ~1.03x. **Wall**: on ordinary projects, nothing until item 1
+is understood. Plain K12's per-instruction cost is the floor (all-core clocks), and the flag's own premium (1.2-1.6x)
+is larger than the duplication it removes everywhere except drizzle-like projects (plain K12 2.16x K1 work).
+**The real win today is the thrashers**: dokploy and monkeytype run 2.2-2.5x faster with the flag at the defaults,
+because plain recycles every 21 MB checker share. **New angle, an adaptive policy**: plain by default, the flag when
+plain's recycling thrashes. The signal is available early and cheaply: a checker that recycles after fewer than
+CHECKER_MEMORY_BACKOFF_FILES files repeatedly, or the first segment's warm-up over its budget share (dokploy's tRPC
+~150 MB against 21 MB). Switching mid-run is a recycle into a fresh shared graph (graph_epoch_rebuild()'s machinery,
+at a file boundary, nothing in flight), so determinism is the flag's own. Evidence for it: thrash.log/thrash2.log
+above. Its risk is the flag's residues (the C+V family). Under load they get more frequent: the merger's effect K4
+runs at load ~23 differed in 5/12 (base) and 3/12 and 2/12 (with these commits), against ~1% recorded at lower load.
+So the release criterion (C and V done, plain and flagged oracles equal) still gates it.
+**The graph budget** (coordinator's call): 800 MB sits at dokploy's natural working set. Options: (i) don't recycle
+when the unclaimed files are under a quarter of the total (the peak has already been reached, and the rebuild costs a
+full warm-up); (ii) double the budget after an epoch shorter than half the first (storms, like the per-checker
+backoff). Both are flag-only and need vscode's peak re-measured: it recycles twice at 800 MB today, 2.9 GB peak.
+**Tools left behind**: TTTT_GRAPH_WORK=1, TTTT_GRAPH_LEAD=1, TTTT_GRAPH_NO_LEAD=1, TTTT_GRAPH_SHARE_RELATIONS=0
+(existing). Not committed: the per-site first-taint probe of variance groups and the claim_and_measure() callgrind
+toggle (each ~20 lines, recipe in the wt-sg report).
+
 ## Validation of the whole plan
 The 12-core table in measurements.md re-run by the human after each stage (`scripts/bench.sh --runs 3 --bun PATH
 --tscrs PATH`, the CPU column included), per-file sums at K1 / K1-with-spinning-cores / K12 on vscode and drizzle
