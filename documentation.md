@@ -243,8 +243,10 @@ directives). The worker's resolutions stay on the file (`SourceFile.preresolved`
 resolver's lock was the loader's contention with the workers). The loader takes a preparsed file when it gets there (waiting, and parsing other queued files meanwhile, if
 it is in flight) and merges its held errors at that point, or parses the file itself. A wrong guess only costs a
 parse, so the output doesn't depend on the pool. `program_load_ahead()` queues the libs, roots and automatic types up
-front; workers take the biggest queued file first (`program_set_file_size()`, `stat` in the CLI), so one big file
-(tsc's `checker.ts`, `lib.dom.d.ts`) isn't started last. The resolver is shared (its caches are under a lock) and so is
+front; workers take files of at least 128 KB first, biggest first (`program_set_file_size()`, a `stat` the workers
+make), so one big file (tsc's `checker.ts`, `lib.dom.d.ts`) isn't started last, and the rest by rank: the index path to
+the file from the loader's first wants (a root's i-th import is [root, i]), the order the loader takes them in
+(`TTTT_LOAD_POOL_INLINE=1` lists the files the loader parsed itself, with their rank and how long they sat queued). The resolver is shared (its caches are under a lock) and so is
 the program's cwd (`program_cwd()`); `compiler_options()` is per thread. `program_load_ahead_from()`'s guesses are a simplified copy of `program_load_module_ref()`/`program_handle_statement()` (`TTTT_LOAD_POOL_STATS=1` shows the hits); sizes come from `stat()` in main.c, the harness queues FIFO.
 
 **Source text is mapped, not read** (plan 80): `program_make_source()` maps files read through the real `fs`
@@ -262,8 +264,8 @@ process changes during the run is read changed (SIGBUS if truncated); tttt's own
 The parser creates an AST from the source code string, see below.
 
 ### Resolve names
-`program_resolve_names()`, three steps over all files. Declare and link are sequential; the resolve walk (85-90% of the phase) runs on `--threads` threads for TypeScript files (plan 45, below). The contract: a walk writes only its own file's AST and symbols (what is shared anyway: "Parallelism contract" below).
-1. **Declare** (`*_add_names()`): every file gets its scope (a module also its module symbol), and the declarations of files, namespaces, enums and `declare global` blocks become symbols. Same-table conflicts are reported here.
+`program_resolve_names()`, three steps over all files. Link is sequential, declare mostly parallel; the resolve walk (85-90% of the phase) runs on `--threads` threads for TypeScript files (plan 45, below). The contract: a walk writes only its own file's AST and symbols (what is shared anyway: "Parallelism contract" below).
+1. **Declare** (`*_add_names()`): every file gets its scope (a module also its module symbol), and the declarations of files, namespaces, enums and `declare global` blocks become symbols. Same-table conflicts are reported here. A TypeScript module that declares nothing outside its own tables (`declares_in_isolation()`: no `declare global`, `declare module "m"`, `export as namespace` or top-level expando assignment) declares on the resolve threads into a `ResolveShard` of its own, merged in program order (`program_declare_files()`); `Binder.isolated_declares` makes one that reaches a shared table `log_error()`.
 2. **Link** (`binder_link()`): `export *` tables are flattened and every alias is resolved, so that nothing writes to a symbol afterwards; import conflicts (TS2440) are reported.
 3. **Resolve** (`*_lookup_names()`): the deep walk. It makes the function and block scopes as it enters them (declaring their names first, so uses before the declaration resolve) and stores on every identifier the symbol it found plus the symbol that has the meaning it is used with (`target`). The same walk builds the control flow graph, so it visits statements and expressions **in evaluation order** (`for`: init, condition, body, afterthought; an IIFE's arguments before its body), see "Control flow" below.
 

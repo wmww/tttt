@@ -7,6 +7,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument('out')
 ap.add_argument('--top', type=int, default=40)
 ap.add_argument('--under', help='only samples with FUNC on the stack')
+ap.add_argument('--exclude', action='append', default=[], help='drop samples with FUNC on the stack')
 ap.add_argument('--callers', help='what calls FUNC (the frame above its first occurrence)')
 args = ap.parse_args()
 
@@ -56,6 +57,7 @@ for s in samples:
     # (A return address points past the call: -1 for the caller frames)
     stacks.append([name(a if i == 0 else a - 1) for i, a in enumerate(s)])
 if args.under: stacks = [s for s in stacks if args.under in s]
+for x in args.exclude: stacks = [s for s in stacks if x not in s]
 total = len(stacks)
 print(f'{total} samples')
 if args.callers:

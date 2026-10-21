@@ -147,6 +147,23 @@ Validation: `scripts/threadcheck.sh`, scenarios, the source sweep (name resoluti
 declarations, TS2300/TS2451 order), `tttt --time`'s phase lines on vscode, webpack, effect at `--threads 1` and the
 defaults.
 
+**Stage 3 session 1 (2026-10-21, worker "frontend", a box at load 25-45: counts and instructions, not walls)**:
+- A main-thread wall sampler (`bench/sampler/`: LD_PRELOAD, `timer_create` on the main tid, `report.py` with
+  `--under/--exclude/--callers`) stands in for perf, which this box forbids. It showed the loader waiting a quarter of
+  its time on the resolver's single mutex, stat()ing every queued path, freeing the workers' resolutions (their malloc
+  arenas' locks) and the config glob stat()ing every entry. Fixed: resolver caches sharded 64 ways, shared (boxed,
+  uncopied) resolutions (`module_resolver_resolve_shared()`), sizes stat()ed by the workers, roots queued under one
+  lock, `d_type` in the glob. vscode T12 load+parse ~335 -> ~225 ms in the one quiet window.
+- The loader's own parses were a scheduling problem, not discovery: `TTTT_LOAD_POOL_INLINE=1` showed nearly all of them
+  were roots queued hundreds of ms earlier and passed over by biggest-first. Workers now take files by rank (the
+  index path from the loader's first wants: preorder, the order the loader takes them), files >= 128 KB still first:
+  vscode T12 inline parses ~1340 -> 350-500. **The pre-scan is not built**: what is left inline is deep `.d.ts` chains
+  found just in time and workers starved by the load. Decide it on a quiet 12-core box with `TTTT_LOAD_POOL_INLINE=1`
+  (how many inline parses are of files queued < 1 ms before, i.e. found just in time).
+- Parallel declare done (`program_declare_files()`, `declares_in_isolation()`): 10604 of vscode's 11015 files.
+  Left: **link** (~50-60 ms on vscode at 12 cores: `binder_link()`'s alias resolution is order-dependent: TS2303
+  cycles, placeholders by index), the 411 serial files (libs), and the walk's serial files.
+
 ## Stage 4: a shared concurrent type graph (~25 sessions over several windows, gates G0-G2: "The design" below)
 The paste's "declarations first, bodies second" idea, built where the duplication actually is: **one hash-consed
 intern table for every kind of type, grown concurrently by all checkers**, instantiations included; once-published
