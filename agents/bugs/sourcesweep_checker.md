@@ -1,5 +1,6 @@
 # Source sweep checker leftovers (plan 52 stage 2 onward)
-What the source sweep fan-outs left, by session. `scripts/sourcesweep.py -f '^REPO/'` re-checks one repo. For a +TS2589,
+What the source sweep fan-outs left, by session. (2026-10-21, the coordinator's quarter sample: 1272 / 1274, the two
+left being es-toolkit's tsc order artifact and monkeytype's TS2589 count, both won't-fix below.) `scripts/sourcesweep.py -f '^REPO/'` re-checks one repo. For a +TS2589,
 a gdb breakpoint on `ty_instantiation_limit_reached` in `debug/tttt` (`--checkers 1 --threads 1`)
 prints `me->instantiation_depth` / `instantiation_count`: depth 100 is a runaway recursion, count 5M an exponential (or
 missing cache) blow-up. (Pruned 2026-10-12: entries for repos that fully match now are gone: date-fns, styled-components,
@@ -43,9 +44,11 @@ Probes are under /tmp/d-probes (gone after a reboot; the reductions are quoted h
 - Display differences seen on the way: tsc prints `Nullable<Vals<K>>` (`{ [K in keyof T]: T[K] | null } & {}` over a
   mapped type) as `{ [K_1 in keyof Vals<K>]: ... }`, tttt as `Vals<K> extends infer T ? {...} : never`; the vitepress
   TS2345 elaboration prints `Partial<T>[K] & null` where tsc normalizes to `T[K] & null`; isolatedDeclarations on
-  `k(c = new Set<string>()) { return c }` is TS9039 in tsc, TS9008 in tttt.
-- stripInternal is only applied to statements and class members (not interface/type-literal members, enum members,
-  parameter properties), and a trailing `// @internal` on the previous code line isn't seen.
+  `k(c = new Set<string>()) { return c }` (TS9011 + TS9039) matches since (rechecked 2026-10-21, methods, functions,
+  object literal methods).
+- stripInternal on interface/type-literal members, enum members, parameter properties and trailing `// @internal`:
+  matches tsgo's CLI byte for byte (rechecked 2026-10-21, worker "filler"; tsgo keeps a parameter property's
+  `/** @internal */` parameter and drops only its field, as tttt does).
 
 ## Source sweep fan-out 2026-10-12 leftovers (agent C)
 Fixed this round: arktype's ark/docs (indexed-access `T & P` reduction, union base classes), react-hook-form's
@@ -67,7 +70,9 @@ storybook's TS2307s, tsx's TS7022) match since; pixijs is the @webgpu/types merg
 Its mikro-orm/trpc +TS2698, react-navigation TS2349, discord.js and redux-toolkit combineSlices findings match since.
 - Display: a method's instantiated type parameter defaults print uninstantiated (`<EO = O>` for `<EO = any>`), a
   default type argument is left out (`E<EO>` for `E<EO, Cfg<EO>>`), and `PayloadAction<..., never>` prints a defaulted
-  `never` argument tsc leaves out.
+  `never` argument tsc leaves out. (2026-10-21: a guessed reduction of each, `interface Box<O> { get<EO = O>(x: EO):
+  EO }` on `Box<any>`, `make<EO = O>(): E2<EO>` with `E2<A, B = Cfg<A>>`, RTK's PayloadAction shape, matches tsgo's
+  types baseline: the original shapes are lost, nothing in the sweep shows it.)
 
 ## A missing-diagnostic quirk from the source sweep (plan 52 drain, ss-d round 2)
 (The other one, property access on a union of `E & null`-like members, fixed 2026-10-18 by agent B.)
@@ -286,6 +291,5 @@ babel jsx (evolving array pushes typed with the contextual type any, tsc's getCo
 still needs a member with the property itself), astro cloudflare (an interface property merged with a later class
 accessor is typed by the accessor). better-auth's cloudflare skip-lib-check-false matched after the day's merges.
 Unchanged verdicts: es-toolkit (tsc order artifact), monkeytype (TS2589 count), better-auth
-lynx-store, hono request.ts (entries above). Seen, not done: `declare abstract class C { get x() }` then
-`interface C { readonly x }` is TS2687 in tsc, not in tttt; an interface `opt?: T` taken over by `get opt(): T` reads
-`T` in tsc (no optionality), `T | undefined` in tttt.
+lynx-store, hono request.ts (entries above). Seen then, matching now (rechecked 2026-10-21): `declare abstract class C { get x() }` then
+`interface C { readonly x }` is TS2687 in both; an interface `opt?: T` merged with `get opt(): T` reads `T` in both.
