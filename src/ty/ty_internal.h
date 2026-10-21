@@ -164,6 +164,9 @@ enum {
     // FunctionImpl (node_links) -> non-null if its return type's outer inference was circular after a nested one had
     // published (function.c): the checker's own record of a TS7023 to say, the published memo stays as it was
     KEY_RETURN_LATE_CIRCULAR,
+    // (type id, which) -> non-null while this checker resolves that type's iterable iteration types through its
+    // `[Symbol.iterator]()` (iterate.c): the in-flight marker, a scratch kind, never in KEY_ITERATION_TYPES' memo slot
+    KEY_ITERATION_IN_FLIGHT,
 };
 
 // The type parameters declared outside a root conditional type that it mentions (tsc's root.outerTypeParameters, less
