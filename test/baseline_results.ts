@@ -42,6 +42,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAnnotatedConstKeyNameFromInitializer': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAnyIntersectionDisjointDomains': {
         errors: true,
         symbols: true,

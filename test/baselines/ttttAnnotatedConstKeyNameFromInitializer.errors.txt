@@ -1,0 +1,22 @@
+ttttAnnotatedConstKeyNameFromInitializer.ts(5,7): error TS2322: Type 'unique symbol' is not assignable to type 'never'.
+ttttAnnotatedConstKeyNameFromInitializer.ts(7,28): error TS2322: Type 'unique symbol' is not assignable to type 'never'.
+ttttAnnotatedConstKeyNameFromInitializer.ts(9,11): error TS2564: Property '[N.key]' has no initializer and is not definitely assigned in the constructor.
+
+
+==== ttttAnnotatedConstKeyNameFromInitializer.ts (3 errors) ====
+    // An annotated const whose annotation names no property names a reference by its initializer's type: tsc's
+    // tryGetNameFromEntityNameExpression tries the annotation, then the initializer, so `this[N.key] = ...` assigns
+    // `[N.key]` (no TS2564; mutation testing, typeGuardNarrowsIndexedAccessOfKnownProperty7 with `const key: never`)
+    const k: never = Symbol() as never;
+    const j: never = Symbol();
+          ~
+!!! error TS2322: Type 'unique symbol' is not assignable to type 'never'.
+    class D { [j]: string; constructor() { this[j] = "hello"; } }
+    namespace N { export const key: never = Symbol(); }
+                               ~~~
+!!! error TS2322: Type 'unique symbol' is not assignable to type 'never'.
+    class C { [N.key]: string; constructor() { this[N.key] = "hello"; } }
+    class E { [N.key]: string; constructor() { } }
+              ~~~~~~~
+!!! error TS2564: Property '[N.key]' has no initializer and is not definitely assigned in the constructor.
+    

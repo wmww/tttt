@@ -641,6 +641,20 @@ static bool is_constant_entity_name(Checker* me, Expr const* key) {
     return prop && prop->decl->symbol && prop->decl->symbol->is_const;
 }
 
+// An annotated const whose annotation names no property (`const k: never = Symbol()`): its initializer's type may
+// (tsc's tryGetNameFromEntityNameExpression tries the annotation, then getTypeOfExpression(initializer))
+static Atom const* annotated_const_initializer_name(Checker* me, Binding const* binding) {
+    if (!binding || binding->tag != BINDING_IDENTIFIER || !binding->has_explicit_type || !binding->source ||
+        binding->source->tag != LAZY_TYPE_INITIALIZED_BINDING
+    ) {
+        return nullptr;
+    }
+    InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
+    if (!initialized->value || initialized->value->tag == EXPR_IMPLICIT_ANY) return nullptr;
+    bool is_number = false;
+    return ty_property_name_of_key(me, ty_flow_expr_type(me, initialized->value), &is_number);
+}
+
 // The name an access goes by: `a.b`, `a["b"]`, `a[0]`, `a[c]` for a `const c` of a literal type
 static Atom const* access_name(Checker* me, PropertyExpr const* access) {
     if (property_private_class(access)) return ty_literal_name(me, ty_access_key_type(me, access));
@@ -679,11 +693,26 @@ static Atom const* access_name(Checker* me, PropertyExpr const* access) {
                 return ty_property_name_of_key(me, ty_flow_expr_type(me, initialized->value), &is_number);
             }
         }
+        bool is_number = false;
+        Atom const* name = ty_property_name_of_key(me, ty_flow_expr_type(me, key), &is_number);
+        return name ? name : annotated_const_initializer_name(me, binding);
     } else if (!is_constant_entity_name(me, key)) {
         return nullptr;
     }
     bool is_number = false;
-    return ty_property_name_of_key(me, ty_flow_expr_type(me, key), &is_number);
+    Atom const* name = ty_property_name_of_key(me, ty_flow_expr_type(me, key), &is_number);
+    if (name || key->tag != EXPR_PROPERTY) return name;
+    // (`ns.key` of an annotated const whose annotation names nothing: its initializer, below)
+    Atom const* member = checker_atom(me, span_sv(expr_static_property_name(key)));
+    Prop const* prop = ty_get_prop(me, ty_flow_expr_type(me, &key->property->expr), member);
+    Symbol const* symbol = prop && prop->decl->symbol && prop->decl->symbol->is_const ? prop->decl->symbol : nullptr;
+    Binding const* binding = symbol && (symbol->flags & SYMBOL_VARIABLE) ? symbol_find_node(symbol, SYMBOL_DECL_VARIABLE) : nullptr;
+    if (!binding || binding->parent) return nullptr;
+    Span declared = symbol->name_span;
+    if (span_source(declared) == span_source(key->inner_span) && span_start_ptr(declared) > span_start_ptr(key->inner_span)) {
+        return nullptr;
+    }
+    return annotated_const_initializer_name(me, binding);
 }
 
 // `x[k]` where k has no literal type but always names the same thing: a const, or a parameter or `let` never assigned

@@ -1,0 +1,54 @@
+//// [test/cases/ttttAnnotatedConstKeyNameFromInitializer.ts] ////
+
+=== ttttAnnotatedConstKeyNameFromInitializer.ts ===
+// An annotated const whose annotation names no property names a reference by its initializer's type: tsc's
+// tryGetNameFromEntityNameExpression tries the annotation, then the initializer, so `this[N.key] = ...` assigns
+// `[N.key]` (no TS2564; mutation testing, typeGuardNarrowsIndexedAccessOfKnownProperty7 with `const key: never`)
+const k: never = Symbol() as never;
+>k : never
+>Symbol() as never : never
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+
+const j: never = Symbol();
+>j : never
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+class D { [j]: string; constructor() { this[j] = "hello"; } }
+>D : D
+>[j] : string
+>j : never
+>this[j] = "hello" : "hello"
+>this[j] : string
+>this : this
+>j : never
+>"hello" : "hello"
+
+namespace N { export const key: never = Symbol(); }
+>N : typeof N
+>key : never
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+class C { [N.key]: string; constructor() { this[N.key] = "hello"; } }
+>C : C
+>[N.key] : string
+>N.key : never
+>N : typeof N
+>key : never
+>this[N.key] = "hello" : "hello"
+>this[N.key] : string
+>this : this
+>N.key : never
+>N : typeof N
+>key : never
+>"hello" : "hello"
+
+class E { [N.key]: string; constructor() { } }
+>E : E
+>[N.key] : string
+>N.key : never
+>N : typeof N
+>key : never
+
