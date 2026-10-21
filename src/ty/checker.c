@@ -228,7 +228,7 @@ __attribute__((always_inline)) static inline InternEntry* intern_find(InternTabl
 }
 
 static void intern_grow(InternTable* me) {
-    InternTable bigger = { .cap = my cap ? my cap * 2 : 64, .len = my len, .shared = my shared, .taint = my taint };
+    InternTable bigger = { .cap = my cap ? my cap * 2 : 64, .len = my len, .shared = my shared, .others = my others, .taint = my taint };
     bigger.entries = zeroed_table(bigger.cap, sizeof(InternEntry));
     panic_if(!bigger.entries, "out of memory");
     for (u32 i = 0; i < my cap; i++) {
@@ -309,7 +309,7 @@ static void debug_check_type_value(InternTable const* table, u64 const* words, u
 
 // --shared-graph: a key the checker's own table doesn't have, in the graph's (ty/graph.h). Null if none
 [[gnu::noinline]] static void const** intern_shared_find(InternTable const* table, u64 hash, u64 const* words, u32 count) {
-    void const** block = shared_table_find(table->shared, hash, words, count);
+    void const** block = shared_table_find(table->others, hash, words, count);
     if (!block) {
         // (A memo kind's computation may start here: graph_memo_log_put() takes the taint counter from then)
         graph_memo_note_miss(current_checker, table, hash, words, count);
@@ -369,7 +369,7 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
     if (!entry->hash) {
         // (--shared-graph: an identity's slot is the shared one; a memo kind's is the checker's own, which its caller may
         // write whatever it finds there: never another checker's published value)
-        if (__builtin_expect(table->shared != nullptr, 0)) {
+        if (__builtin_expect(table->others != nullptr, 0)) {
             if (intern_slot_shares(table, words, count)) {
                 void const** shared = intern_shared_find(table, hash, words, count);
                 if (shared) return shared;
@@ -401,7 +401,7 @@ void const* intern_lookup(InternTable const* table, u64 const* words, u32 count,
     u64 hash = hash_words(words, count);
     InternEntry* entry = intern_find(table, hash, words, count);
     *miss = (InternMiss){ .hash = hash, .cap = table->cap, .index = entry ? (u32)(entry - table->entries) : 0 };
-    if ((!entry || !entry->hash) && table->shared) {
+    if ((!entry || !entry->hash) && table->others) {
         void const** shared = intern_shared_find(table, hash, words, count);
         if (shared) return shared[0];
     }
@@ -447,6 +447,7 @@ static u64 const* intern_key_words(void const** block, u32 count) {
 // the winner's, which intern_set() returns (the loser's value stays in the arena, unreferenced)
 void const* intern_publish(Checker* me, InternTable* table, void const** slot) {
     graph_sched_point(false);
+    if (!table->others) return *slot; // (Alone on the graph: intern_set())
     u64 hash = ((u64 const*)slot)[-1];
     u32 count = (u32)(hash >> 48);
     if (count == INTERN_LONG_KEY) count = (u32)((u64 const*)slot)[1];
@@ -456,7 +457,7 @@ void const* intern_publish(Checker* me, InternTable* table, void const** slot) {
     if (debug < 0) debug = getenv("TTTT_DEBUG_INTERN_SET") != nullptr;
     if (debug) {
         InternEntry* own = intern_find(table, hash, intern_key_words(slot, count), count);
-        void const** found = shared_table_find(table->shared, hash, intern_key_words(slot, count), count);
+        void const** found = shared_table_find(table->others, hash, intern_key_words(slot, count), count);
         if (!own || !own->hash || own->block != slot || found == slot) {
             eprintln("intern_set: slot of kind ", (u32)kind, own && own->hash ? (own->block == slot ? " own" : " other private") : " not private",
                 found == slot ? ", already shared" : "");
@@ -468,7 +469,7 @@ void const* intern_publish(Checker* me, InternTable* table, void const** slot) {
     if (!*slot && kind != KEY_PROP_WRITE_TYPE) panic("intern_publish: a null value of kind ", (u32)kind);
 #endif
     void const** there;
-    if (!shared_table_insert(table->shared, hash, slot, count, &there)) {
+    if (!shared_table_insert(table->others, hash, slot, count, &there)) {
         *slot = there[0];
         graph_count_lost(me->graph, (u32)kind);
     }
@@ -479,7 +480,8 @@ static inline void link_set(LinkTable* table, u32 kind, void const* subject, voi
 
 void const* ty_link_publish(Checker* me, u32 kind, void const* subject, void const* value) {
     link_set(&my node_links, kind, subject, value);
-    if (!my graph || graph_kind_class(kind) != GRAPH_IDENTITY) return value;
+    // (Alone on the graph: graph_adopt() publishes it when another checker comes)
+    if (!my graph || !my graph_memo_on || graph_kind_class(kind) != GRAPH_IDENTITY) return value;
     void const* there = graph_link_insert(my graph, kind, subject, value);
     if (there != value) {
         link_set(&my node_links, kind, subject, there);
@@ -508,7 +510,7 @@ void const* intern_get(InternTable const* table, u64 const* words, u32 count) {
     u64 hash = hash_words(words, count);
     InternEntry* entry = intern_find(table, hash, words, count);
     if (entry && entry->hash) return intern_hit(table, entry->block)[0];
-    void const** shared = table->shared ? intern_shared_find(table, hash, words, count) : nullptr;
+    void const** shared = table->others ? intern_shared_find(table, hash, words, count) : nullptr;
     return shared ? shared[0] : nullptr;
 #endif
 }
@@ -526,7 +528,7 @@ bool intern_has(InternTable const* table, u64 const* words, u32 count, void cons
 #endif
         return true;
     }
-    void const** shared = table->shared ? intern_shared_find(table, hash, words, count) : nullptr;
+    void const** shared = table->others ? intern_shared_find(table, hash, words, count) : nullptr;
     if (!shared) return false;
     *value = __atomic_load_n(shared, __ATOMIC_ACQUIRE);
     return true;

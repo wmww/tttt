@@ -380,6 +380,13 @@ without / with `--shared-graph` (which turns recycling off).
   drizzle 300 loaded runs (an effect K12 loop beside it) all K1's; vscode 5 / 5 (2.16-2.26 s, 4.56-4.58 GB, no redo),
   TypeScript6's compiler 5 / 5; all 13 other `-p` corpora at K4 and K12 twice each K1's output.
 
+## Plan 86 4f PERF: the flag's K1 overhead (2026-10-22, wt-perf)
+Callgrind whole process, K1 T1 `--checker-memory off`, `TTTT_SHARED_GRAPH=1` over the plain path (base 3fb334159):
+drizzle +11.66% -> +4.06%, zod +11.30% -> +4.25%, nest +2.19% -> +0.71%. By group (drizzle / zod, % of plain): Overlay
+and word slow paths 4.09/3.97 -> 1.92/1.93 (claims as a stack), shared intern tables + shard mutexes 5.13/4.80 ->
+0.02/0.03 (nothing published or probed while one checker is alone on the graph), memo taint hit test 0.75/0.66 and
+first-touch stamps 0.81/1.03 unchanged. K12 work (cgtc.sh) -1 to -2%; K12 wall within noise (plan 86 "PERF" note).
+
 ## Plan 86 4e item 1: the variance lock removed, first-touch stamps on under the flag (2026-10-22, wt-design4f)
 Release build, this box (16 vCPUs shared, load 7-16 during the runs). `--shared-graph` now turns stamps on; the lock in
 claim_and_measure() is gone (not just off). Base = de94e1179 (lock on, stamps off), built in the same scratch.

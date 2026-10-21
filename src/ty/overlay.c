@@ -339,7 +339,7 @@ uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value,
         map_put(o, (uintptr_t)w, value);
         return value;
     }
-    if (clean && !(__builtin_expect(force_shadow != 0, 0) && force_shadow_on())) {
+    if (clean && !(__builtin_expect(__atomic_load_n(&force_shadow, __ATOMIC_RELAXED) != 0, 0) && force_shadow_on())) {
         // (Nothing read its own before now: a read of a value in flight is a taint event)
         o->stats.adopted++;
         return seen;

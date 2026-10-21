@@ -1837,6 +1837,67 @@ in parallel only where the file sets are disjoint):
       (with P3's clean-only declaration memos) + 5ffd63edc excalidraw is already 6/6 without CTX: P3 hides the case,
       CTX removes the mechanism.
     - Not covered (hacks.md): class field initializers, for-in/of iterables, decorators, computed keys have no root.
+- **PERF, the flag's K1 overhead (wt-perf, 2026-10-22).** Two commits (3ff507d2d, and the publication one after it).
+  Callgrind whole process, K1 T1 `--checker-memory off`, the flag's extra instructions as % of the plain path, base
+  3fb334159 -> after both (groups as in D's profile: (1) Overlay/ClaimSet and the word slow paths, (2)+(3) the shared
+  intern tables and their shard mutexes, (4) the memo taint hit test, (5) first-touch stamps, the rest the sites' graph
+  branches):
+
+  | corpus | total | (1) | (2)+(3) | (4) | (5) | rest |
+  |---|---|---|---|---|---|---|
+  | drizzle | +11.66% -> +4.06% | 4.09 -> 1.92 | 5.13 -> 0.02 | 0.75 | 0.81 | 0.87 -> 0.55 |
+  | zod | +11.30% -> +4.25% | 3.97 -> 1.93 | 4.80 -> 0.03 | 0.66 | 1.03 | 0.84 -> 0.59 |
+  | nest | +2.19% -> +0.71% | | | | | |
+
+  - (1): claims are a per-worker stack with a counting filter by address (overlay.h's Overlay), and the map holds only
+    private values and copies in flight, looked in only for a poisoned word, a shadowed worker or with copies. What is
+    left (1.9%) is 26-45 instructions per look, claim, finish and peek over ~3M of them on drizzle. The next lever is
+    a look-and-claim in one call at the sites (members.c), or the graph path of claim/finish inline in the sites (it
+    moved the default path when tried for look/peek).
+  - **SW_PTR()/SW_VAL() evaluated their argument twice** (macros; the sites write `SW_PTR(sw_finish(...))`), so
+    before 3ff507d2d every finish of a non-null value ran twice. The second sw_finish() found its word finished and
+    adopted its own value (for a tainted one: the word poisoned, its private value put again). No output effect, but
+    the counters of the notes above count it: "adopted" in every TTTT_GRAPH_STATS table before 3ff507d2d is about half
+    double finishes (drizzle K12 471k -> 5.6k, zod 282k -> 11k, effect 274k -> 75 per run; K1 drizzle 469k -> 0).
+    Published, poisoned and shadowed counts don't change.
+  - (2)+(3), **alone on the graph**: a graph with one checker (`--checkers 1`, InternTable.others null, graph_memo_on
+    false) publishes no identity and doesn't probe the shared tables on a private miss: the shared tables then hold only
+    graph_new()'s publication of this same checker's tables, so a probe can only miss. When a second checker adopts,
+    graph_adopt() publishes the first one's identities (publish_identities(): GRAPH_IDENTITY kinds of types and links,
+    and identity node links) before the newcomer is registered, and both tables get `others`. The rule's three
+    questions:
+    1. *What it publishes*: exactly the kinds intern_publish() and ty_link_publish() publish at creation, identities,
+       which the rule publishes whatever their taint. Memo kinds aren't published (as before: they were never logged
+       while alone, graph_memo_on false, and stay that checker's own), nor anything of the Overlay or the private
+       tables; shared words are untouched (they were published or poisoned in place by sw_finish() all along). One
+       difference: an identity a constructor set with a plain store instead of intern_set() (TTTT_DEBUG_UNSHARED's
+       list) goes out too, which creation-time publication missed.
+    2. *Race-free*: a graph is alone only while it has one checker, and its second one comes at one of three points,
+       none with the first running: the program's start (checkers made before the threads), graph_fresh_worker() (on
+       the first one's own thread, at its file boundary: a shadow's retire or a redo, which needs a second worker
+       anyway), and the recheck after the join. The catch-up is under graph_adopt()'s lock and through
+       shared_table_insert(); the newcomer starts after it. At K>1 the first checker is no longer alone after the
+       start, so the branch is never taken while workers run. TSan T12 on drizzle, effect, zod, excalidraw and nest:
+       clean.
+    3. *Recycle*: a graph recycle (program.c's graph epoch) drops every checker and the graph and makes a fresh graph
+       and checkers; with one checker the new graph is alone again and nothing crosses the boundary (the old tables
+       are freed with their graph). Checked: `--checkers 1 --checker-memory 0` with the flag (a recycle after every
+       file: nest 184, drizzle 519, excalidraw 650 recycles) is byte-identical to the base build's and to plain K1.
+       The K1 recheck (TTTT_GRAPH_RECHECK=1, the catch-up's one K1 user) prints the base's 3 of 519 drizzle files.
+  - K>1: a lock-free CAS insert in shared_table_insert() isn't done. The shard's Slots array is replaced when it
+    grows (copied into a bigger one under the lock, readers following `slots`), so an insert by CAS into the array it
+    loaded could land in an array another worker is copying from, and be lost. Doing it needs inserters to exclude
+    the grow (a per-shard reader-writer gate, or a grow that helps move entries as in a split-ordered table): a
+    redesign. The mutex is no longer on the K1 path, and the K12 work moved -1 to -2% (cgtc.sh drizzle 6.59-6.71 ->
+    6.50-6.56 G, zod 5.63-5.66 -> 5.54-5.57 G, 2 runs each; K1 in-typecheck drizzle 5.56 -> 5.11 G, zod 4.65 -> 4.31 G).
+  - K12 T12 wall with the flag, best-of-7 base/after interleaved at load 15-17: drizzle 0.253/0.251 s (best-of-15
+    0.253/0.249), zod 0.212/0.204, effect 0.342/0.346: within the noise at that load.
+  - Gates (both commits): default path callgrind drizzle +0.04%, zod 0.00%, nest +0.03%, effect 0.00%, excalidraw
+    +0.14% (data-dependent: ty_get_prop's linear scan, identical code; a Checker size change alone doesn't move it,
+    so layout noise); suite unchanged; K1 with the flag byte-identical to plain K1 on all 14 `-p` corpora; rep3 K12
+    20 runs 20/20 on drizzle, zod, effect, excalidraw, nest; seeds 100/100 drizzle and effect; checkerdiff -k 12 and
+    threadcheck T12 with the flag identical on the five; TTTT_GRAPH_RECHECK=1 drizzle 3 of 519 at K1 and K12 (the
+    base's); TSan T12 on the five: no pair the base doesn't have (one of mine, force_shadow read plainly, fixed).
 - **D, the deletions (one worker, last; ~1 session).** program.c, graph.c, ty.h: everything in the list above, then
   the gates. A mechanism that can't be deleted at D means a site isn't converted.
   **D progress (2026-10-22, wt-d), step 1** (before the last wait user, the signature return word, lands: wt-ident).

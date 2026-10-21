@@ -59,6 +59,10 @@ typedef struct InternTable {
     u32 len;
     // With --shared-graph (ty/graph.h): the graph's table of the same keys, looked up when this one misses. Null otherwise
     struct SharedTable* shared;
+    // `shared` once another checker reads it, null while this one is alone on the graph (`--checkers 1`): what a miss
+    // looks in and an identity is published to. Alone, nobody could read a publication and the shared table holds only
+    // what this checker has itself; graph_adopt() publishes its identities when a second checker comes
+    struct SharedTable* others;
     // With --shared-graph, once the checker has a tainted memo entry: its set of them (graph.c's MemoTaint), which a
     // hit looks in. Null otherwise
     struct MemoTaint const* taint;
@@ -1599,6 +1603,9 @@ static inline void const* intern_set(Checker* me, InternTable* table, void const
         void const* there = __atomic_load_n(slot, __ATOMIC_ACQUIRE);
         if (there) return there;
         *slot = value;
+        // (Alone on the graph nobody reads a publication: graph_adopt() publishes it when another checker comes. The
+        // seeded scheduler's runs have several)
+        if (!table->others) return value;
         return intern_publish(me, table, slot);
     }
     *slot = value;

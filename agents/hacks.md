@@ -6,9 +6,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 ## Global state, memory, parallelism
 - **Plan 86 4f's shared words keep a state byte each for the default path** (`FunctionReturn.state`,
   `SymbolLinks.declared_state`, `TyObjectState.base_state`...): without --shared-graph in flight is that byte, as S0
-  designed (overlay.h); with it the byte is never touched. Correct: the Overlay for both (one map probe per claim, the
-  measured reason it wasn't). And function_return_type() counts an argument's return inferred under an outer inference
+  designed (overlay.h); with it the byte is never touched. Correct: the Overlay for both (the claims are a stack with a
+  filter since plan 86's PERF note, a push and a load, cheaper than the map probe that was the measured reason). And function_return_type() counts an argument's return inferred under an outer inference
   as tainted wholesale (keep_outer), where only the reads of the outer inference need to be (plan 86 "P2 progress").
+- **A graph with one checker publishes nothing until a second one adopts** (InternTable.others null while alone;
+  graph.c graph_adopt()'s publish_identities() catches up): correct only because a lone checker's second one comes when
+  the first isn't running (start, its own file boundary, the recheck after the join). A path adopting a checker while
+  the first runs alone would race the catch-up (plan 86 "PERF" note).
 - `ast_free()` / `ast_delete()` (ast_alloc.c): the AST arenas trust the size they're given, and a too-big one hands
   the next allocation of that size someone else's bytes. `ast_delete()` takes `sizeof(*p)`, so a box allocated short
   (`property_dot_new()`, `require_ports` arrays) needs its real size at every free; nothing checks it. Correct: a

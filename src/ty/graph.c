@@ -146,6 +146,14 @@ static void graph_link_tables(TyGraph* me, Checker* checker) {
 
 void graph_publish(TyGraph* me, Checker* checker);
 static void publish_declaration_memo(TyGraph* me, Checker* checker, u32 slot);
+static void publish_identities(TyGraph* me, Checker* checker);
+
+// (Its tables look in the graph's from now on: another checker reads the graph)
+static void graph_share_tables(TyGraph* me, Checker* checker) {
+    checker->types.others = my types;
+    checker->links.others = my links;
+    checker->intersection_props.others = my intersection_props;
+}
 
 TyGraph* graph_new(Checker* first) {
     graph_kind_class(0); // (Its tables, before any worker asks)
@@ -194,8 +202,16 @@ void graph_adopt(TyGraph* me, Checker* checker) {
     // (Memo publication from the second checker on: the first one's, made alone, went with graph_new()'s publication)
     {
         checker->graph_memo_on = true;
-        // (Not written again once on: a redo's fresh worker adopts while the first one runs, which reads it)
-        if (my workers[1] && !my workers[1]->graph_memo_on) my workers[1]->graph_memo_on = true;
+        graph_share_tables(me, checker);
+        // (Not written again once on: a redo's fresh worker adopts while the first one runs, which reads it. Alone it
+        // published no identity: it does now, before the newcomer looks. It isn't running: a graph of one checker gets
+        // its second one at the start, a recycle's handover or a recheck)
+        Checker* first = my workers[1];
+        if (first && !first->graph_memo_on) {
+            publish_identities(me, first);
+            graph_share_tables(me, first);
+            first->graph_memo_on = true;
+        }
     }
     __atomic_store_n(&my workers[my checkers], checker, __ATOMIC_RELEASE);
     pthread_mutex_unlock(&my adopt_lock);
@@ -300,6 +316,29 @@ static void publish_table(TyGraph* me, Checker* checker, InternTable* private_ta
         void const** there;
         if (shared_table_insert(shared, entry->hash, entry->block, count, &there)) __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
     }
+}
+
+// The identities a checker made alone on the graph (InternTable.others null: intern_publish() and ty_link_publish()
+// kept them private), published as intern_publish() would have: nobody else made any, so each goes in as it is
+static void publish_identity_link(void* arg, u32 kind, void const* subject, void const* value) {
+    TyGraph* me = arg;
+    if (value && graph_kind_class(kind) == GRAPH_IDENTITY) graph_link_insert(me, kind, subject, value);
+}
+
+static void publish_identities(TyGraph* me, Checker* checker) {
+    InternTable* tables[2] = { &checker->types, &checker->links };
+    SharedTable* shared[2] = { my types, my links };
+    for (u32 t = 0; t < 2; t++) {
+        for (u32 i = 0; i < tables[t]->cap; i++) {
+            InternEntry const* entry = &tables[t]->entries[i];
+            if (!entry->hash || !entry->block[0]) continue;
+            u32 count;
+            if (graph_kind_class(block_kind(tables[t], checker, entry, &count)) != GRAPH_IDENTITY) continue;
+            void const** there;
+            shared_table_insert(shared[t], entry->hash, entry->block, count, &there);
+        }
+    }
+    link_table_each(&checker->node_links, publish_identity_link, me);
 }
 
 // (Debug: TTTT_DEBUG_UNSHARED=1, at each share's end: identities still private, which a constructor set with a plain
@@ -502,6 +541,8 @@ static void publish_declaration_memo(TyGraph* me, Checker* checker, u32 slot) {
 }
 
 void const* graph_link_get(TyGraph const* me, u32 kind, void const* subject) {
+    // (Alone on the graph, a checker has its own identities, the only ones published: ty_link_publish())
+    if (__atomic_load_n(&my checkers, __ATOMIC_RELAXED) == 1) return nullptr;
     void const* ret = shared_links_get(my node_links, graph_link_key(kind, subject));
     if (ret) __atomic_fetch_add(&((TyGraph*)me)->stats[256 + (kind & 255)].shared_hits, 1, __ATOMIC_RELAXED);
     return ret;
