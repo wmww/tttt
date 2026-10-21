@@ -11,6 +11,9 @@ byte-identical.
   scripts/checkerdiff.py -k 2 webpack zod  # some corpora, K=2
   scripts/checkerdiff.py --file x.ts       # one file (or a -p directory) instead of the corpora
   scripts/checkerdiff.py -k 1 -m 0         # a fresh checker per file against one that never recycles
+
+thirdparty/ensure-corpora.sh runs only when a corpus it checks is missing; TTTT_NO_ENSURE=1 errors out then instead
+(worktrees, whose corpora are the shared checkouts). The environment goes through to tttt (TTTT_SHARED_GRAPH=1...).
 """
 import argparse
 import collections
@@ -86,8 +89,13 @@ def main():
         options = ['-p', args.file] if os.path.isdir(args.file) or args.file.endswith('.json') else [args.file]
         ok = compare(args.file, options, args.k, args.timeout, args.examples, args.memory)
     else:
-        subprocess.run(['thirdparty/ensure-corpora.sh'], check=True, stdout=subprocess.DEVNULL)
-        for name in args.corpora or [c for c in CORPORA if c != 'zod-root']:
+        names = args.corpora or [c for c in CORPORA if c != 'zod-root']
+        missing = [n for n in names if not os.path.exists(CORPORA[n])]
+        if missing and os.environ.get('TTTT_NO_ENSURE'):
+            sys.exit('missing corpora (TTTT_NO_ENSURE set): ' + ' '.join(missing))
+        if missing:
+            subprocess.run(['thirdparty/ensure-corpora.sh'], check=True, stdout=subprocess.DEVNULL)
+        for name in names:
             path = os.path.relpath(os.path.realpath(CORPORA[name]))
             ok = compare(name, ['-p', path], args.k, args.timeout, args.examples, args.memory) and ok
     sys.exit(0 if ok else 1)
