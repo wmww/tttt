@@ -1975,18 +1975,23 @@ Ty const* ty_reduced_slow(Checker* me, Ty const* ty) {
     if (ty->kind == TY_INTERSECTION) {
         TyObjectState* state = ty->composite.state;
         if (!state) return ty; // (A union's origin)
-        again:;
-        LAZY_SNAP(me, state->reduced_state, seen, again);
-        if (seen == REDUCED_NOT_STARTED) {
-            if (!LAZY_CLAIM(me, state->reduced_state)) goto again;
-            TAINT_BEGIN(taint_frame);
-            bool private_conflict;
-            bool never = never_reduced_prop(me, ty->composite.types.data, ty->composite.types.len, &private_conflict) != nullptr;
-            TAINT_END(taint_frame, TK_REDUCED, ty, ty, (void const*)(uintptr_t)(never ? 2 : 1));
-            __atomic_store_n(&state->reduced_state, never ? REDUCED_NEVER : REDUCED_ITSELF, __ATOMIC_RELEASE);
+        // (A shared word, plan 86 stage 4f)
+        uintptr_t v = sw_get(me, &state->reduced);
+        if (!v) {
+            switch (sw_look(me, &state->reduced, &state->reduced_state, &v)) {
+                case SW_LOOK_DONE: break;
+                case SW_LOOK_MINE: return ty; // (In flight here: itself, a taint event)
+                case SW_LOOK_COMPUTE: {
+                    u64 taint = sw_claim(me, &state->reduced, &state->reduced_state);
+                    bool private_conflict;
+                    bool never = never_reduced_prop(me, ty->composite.types.data, ty->composite.types.len, &private_conflict) != nullptr;
+                    SW_FP(TK_REDUCED, ty, (void const*)(uintptr_t)(never ? 2 : 1), taint);
+                    v = sw_finish(me, &state->reduced, &state->reduced_state, never ? REDUCED_NEVER : REDUCED_ITSELF, taint);
+                    break;
+                }
+            }
         }
-        // (In flight here: itself)
-        return LAZY_LOAD(state->reduced_state) == REDUCED_NEVER ? my intrinsics[TY_NEVER] : ty;
+        return v == REDUCED_NEVER ? my intrinsics[TY_NEVER] : ty;
     }
     if (ty->kind != TY_UNION || !(ty->xflags & TYX_CONTAINS_INTERSECTIONS)) return ty;
     u64 key[2] = { KEY_REDUCED_UNION, ty->id };
@@ -3752,7 +3757,7 @@ deferred:;
 bool ty_is_generic_tuple(Checker* me, Ty const* ty) {
     if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || !ty_is_tuple(ty)) return false;
     TyDeferredRef const* deferred = ty->reference.deferred;
-    if (deferred && deferred->state != LAZY_STATE_DONE) {
+    if (deferred && !ty_reference_args_known(me, ty)) {
         return deferred->node->tag == TYPE_TUPLE && ty_tuple_node_has_variadic(deferred->node);
     }
     TupleShape const* shape = ty_tuple_shape(ty);
@@ -3841,7 +3846,7 @@ static bool is_generic_operand(Checker* me, Ty const* ty, u32 depth) {
 
 // Every number the index can be names one of the leading fixed elements of a tuple
 static bool index_less_than_fixed(Checker* me, Ty const* tuple, Ty const* index) {
-    if (tuple->reference.deferred && tuple->reference.deferred->state != LAZY_STATE_DONE) return false;
+    if (!ty_reference_args_known(me, tuple)) return false;
     // (The leading and trailing fixed elements: tsc's getTotalFixedElementCount)
     TupleShape const* shape = ty_tuple_shape(tuple);
     u32 fixed = 0;

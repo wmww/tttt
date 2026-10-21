@@ -66,8 +66,7 @@ void sw_abandon(struct Checker* me, SharedWord const* w, uint8_t* state);
 // leaves the word empty)
 uintptr_t sw_peek(struct Checker const* me, SharedWord const* w);
 
-// Whether a computation that started at `taint` (sw_claim()'s) is clean: always without a graph. The fingerprint build
-// (-DTTTT_GRAPH_FINGERPRINT) checks only those against K1's record: `if (SW_CLEAN(me, taint)) TAINT_END(...)`
+// Whether a computation that started at `taint` (sw_claim()'s) is clean: always without a graph
 #define SW_CLEAN(me, taint) (!(me)->graph || graph_taint_now == (taint))
 
 // -DTTTT_GRAPH_FINGERPRINT's publication point of a converted site (graph_debug.c): the result is compared with K1's

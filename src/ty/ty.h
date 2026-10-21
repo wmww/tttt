@@ -248,10 +248,11 @@ typedef struct LowerCtx {
 typedef struct TyObjectState {
     LazyState members_state;
     uint8_t base_state; // equivalent_base in flight (NOT_STARTED / IN_FLIGHT, without --shared-graph: overlay.h)
-    uint8_t reduced_state; // Intersections: whether ty_reduced() is never (REDUCED_*, checker.c)
+    uint8_t reduced_state; // `reduced` in flight without --shared-graph (overlay.h)
     Members const* members;
     Members const* unexpanded; // resolve_members_inner()'s result before expand_mapped(), see ty_mapped_info_unexpanded()
     SharedWord equivalent_base; // A Ty, see ty_non_augmenting_base() (plan 86 stage 4f's worked example)
+    SharedWord reduced; // Intersections: whether ty_reduced() is never (REDUCED_ITSELF or REDUCED_NEVER, checker.c)
 } TyObjectState;
 
 typedef struct TyParamState {
@@ -504,9 +505,12 @@ typedef struct TyDeferredRef {
     TypeNode const* node; // TYPE_ARRAY, TYPE_TUPLE or TYPE_IDENTIFIER (a generic interface or class)
     LowerCtx ctx;
     TyMapper const* mapper; // may be null
-    LazyState state;
-    TyList args; // (While they are resolved, what is known about them is the resolving checker's: ty_reference_args())
+    uint8_t state; // `args` in flight without --shared-graph (overlay.h)
+    u32 arg_count; // The target's type parameters
+    // The arguments once resolved (ty_reference_args(), plan 86 stage 4f's shared word): their array (arg_count)
+    SharedWord args;
 } TyDeferredRef;
+
 
 typedef enum PropFlags {
     PROP_OPTIONAL = 1 << 0, // Its type has undefined (tsc's addOptionality): see prop_type()
@@ -1469,6 +1473,12 @@ static inline uintptr_t sw_finish_fast(Checker* me, SharedWord* w, uint8_t* stat
     *state = LAZY_STATE_NOT_STARTED;
     return value;
 }
+// Whether a deferred reference's arguments are known to this worker (a done-ness peek, no event): the reference's
+// syntax answers otherwise (lower.c ty_reference_args())
+static inline bool ty_reference_args_known(Checker const* me, Ty const* reference) {
+    TyDeferredRef const* deferred = reference->reference.deferred;
+    return !deferred || sw_get(me, &deferred->args) || sw_peek(me, &deferred->args);
+}
 bool lazy_wait_slow(Checker* me, void* field, size_t size); // (graph.c) false: break the cycle, don't wait
 bool lazy_claim_slow(Checker* me, void* field, size_t size);
 
@@ -1606,11 +1616,12 @@ Ty const* ty_union_unreduced(Checker* me, Ty const* const* types, u32 len);
 Ty const* ty_union_filtered(Checker* me, Ty const* of, Ty const* const* kept, u32 len);
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
 // tsc's getReducedType (checker.c): the common answers inline
-enum { REDUCED_NOT_STARTED, REDUCED_IN_FLIGHT, REDUCED_ITSELF, REDUCED_NEVER };
+// (TyObjectState.reduced's values: a shared word's, above SW_NONE)
+enum { REDUCED_ITSELF = 4, REDUCED_NEVER = 8 };
 Ty const* ty_reduced_slow(Checker* me, Ty const* ty);
 static inline Ty const* ty_reduced(Checker* me, Ty const* ty) {
     if (ty->kind == TY_INTERSECTION) {
-        if (!ty->composite.state || LAZY_LOAD(ty->composite.state->reduced_state) == REDUCED_ITSELF) return ty;
+        if (!ty->composite.state || sw_get(me, &ty->composite.state->reduced) == REDUCED_ITSELF) return ty;
     } else if (ty->kind != TY_UNION || !(ty->xflags & TYX_CONTAINS_INTERSECTIONS)) {
         return ty;
     }

@@ -436,7 +436,6 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
         return FR_TYPE(v);
     }
     u64 taint = sw_claim(me, &memo->word, &memo->state);
-    TAINT_BEGIN(taint_frame);
     ty_resolving_push(me, RESOLVING_FUNCTION_RETURN, function);
     FlowIsolation isolation = ty_flow_isolate(me);
     // (An object literal getter a call's resolution types: nothing in its body is remembered, see
@@ -460,6 +459,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     if (sw_mine_in_flight(me, &memo->word, &memo->state)) {
         // A return type that depends on itself is any, whatever else the body says (tsc: popTypeResolution() failing)
         v = (uintptr_t)(circular ? ty_intrinsic(me, TY_ANY) : type) | (promise_missing ? FR_PROMISE_MISSING : 0) | (circular ? FR_CIRCULAR : 0);
+        SW_FP(TK_FUNCTION_RETURN, function, FR_TYPE(v), taint);
         v = sw_finish(me, &memo->word, &memo->state, v, taint);
     } else {
         // A nested inference finished first: its result stays (tsc's). If this outer one turned out circular, the TS7023
@@ -469,7 +469,6 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
         check(v);
         if (circular && !(v & FR_CIRCULAR)) ty_link_set(me, KEY_RETURN_LATE_CIRCULAR, function, function);
     }
-    if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_FUNCTION_RETURN, memo, function, FR_TYPE(v));
     report_promise_missing(me, function, v);
     return FR_TYPE(v);
 }

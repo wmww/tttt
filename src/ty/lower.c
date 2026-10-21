@@ -293,7 +293,6 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
         case SW_LOOK_COMPUTE: break;
     }
     u64 taint = sw_claim(me, &links->declared, &links->declared_state);
-    TAINT_BEGIN(taint_frame);
     Ty const* ret;
     bool alias_circular = false;
     // An interface's, a class's and a type parameter's declared type is an identity made of identities (the symbol's
@@ -365,6 +364,7 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     // said above)
     if (identity) taint = graph_taint_now;
     if (sw_mine_in_flight(me, &links->declared, &links->declared_state)) {
+        SW_FP(TK_SYMBOL_DECLARED, symbol, ret, taint);
         v = sw_finish(me, &links->declared, &links->declared_state, (uintptr_t)ret | (alias_circular ? SYMBOL_DECLARED_CIRCULAR : 0), taint);
     } else {
         // (Finished by a nested resolution, or an enum member by its enum's)
@@ -372,7 +372,6 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
         v = sw_peek(me, &links->declared);
         check(v);
     }
-    if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_SYMBOL_DECLARED, links, symbol, DECLARED_TYPE(v));
     return DECLARED_TYPE(v);
 }
 
@@ -2706,6 +2705,7 @@ Ty const* ty_deferred_reference(
         deferred->node = node;
         deferred->ctx = ctx; // Still resolved by the alias, syntactically (tsc's isResolvedByTypeAlias)
         deferred->mapper = mapper;
+        deferred->arg_count = target->declared.type_params.len;
         fresh->reference.deferred = deferred;
         // An array or tuple written as the body of an alias goes by the alias name
         fresh->alias = alias;
@@ -2729,32 +2729,27 @@ typedef struct DeferredArgsClaim {
     bool circular; // Its arguments needed its arguments (TS4109/TS4110 when they're done)
 } DeferredArgsClaim;
 
-// The deferred reference's arguments are done
-static TyList publish_reference_args(TyDeferredRef* deferred, Ty const** args, u32 len) {
-    deferred->args = (TyList){ .data = args, .len = len };
-    LAZY_DONE(deferred->state);
-    return deferred->args;
-}
-
 TyList ty_reference_args(Checker* me, Ty const* reference) {
     check(reference->kind == TY_REFERENCE);
     TyDeferredRef* deferred = reference->reference.deferred;
     if (!deferred) return reference->reference.args;
-    again:;
-    LAZY_SNAP(me, deferred->state, seen, again);
-    if (seen == LAZY_STATE_DONE) return deferred->args;
-    u32 len = reference->reference.target->declared.type_params.len;
-    Ty const** args = arena_new_n(&my arena, Ty const*, len ? len : 1);
-    if (LAZY_IN_FLIGHT(seen)) {
-        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-        // Only an illegal cycle gets here (its arguments need its arguments)
-        Claim* claim = ty_claim_find(me, CLAIM_DEFERRED_ARGS, deferred, 0);
-        if (claim) c_container_of(claim, DeferredArgsClaim, claim)->circular = true;
-        circular_reference_args(me, args, len);
-        return (TyList){ .data = args, .len = len };
+    u32 len = deferred->arg_count;
+    uintptr_t v = sw_get(me, &deferred->args);
+    if (__builtin_expect(v != 0, 1)) return (TyList){ .data = (Ty const* const*)v, .len = len };
+    switch (sw_look(me, &deferred->args, &deferred->state, &v)) {
+        case SW_LOOK_DONE: return (TyList){ .data = (Ty const* const*)v, .len = len };
+        case SW_LOOK_MINE: {
+            // Only an illegal cycle gets here (its arguments need its arguments; a taint event)
+            Ty const** args = arena_new_n(&my arena, Ty const*, len ? len : 1);
+            Claim* claim = ty_claim_find(me, CLAIM_DEFERRED_ARGS, deferred, 0);
+            if (claim) c_container_of(claim, DeferredArgsClaim, claim)->circular = true;
+            circular_reference_args(me, args, len);
+            return (TyList){ .data = args, .len = len };
+        }
+        case SW_LOOK_COMPUTE: break;
     }
-    if (!LAZY_CLAIM(me, deferred->state)) goto again;
-    TAINT_BEGIN(taint_frame);
+    u64 taint = sw_claim(me, &deferred->args, &deferred->state);
+    Ty const** args = arena_new_n(&my arena, Ty const*, len ? len : 1);
     DeferredArgsClaim claim = {0};
     ty_claim_push(me, CLAIM_DEFERRED_ARGS, &claim.claim, deferred, 0);
     TypeNode const* node = deferred->node;
@@ -2807,9 +2802,9 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
             ty_error_at_current_node_d(me, 4110, "Tuple type arguments circularly reference themselves.");
         }
     }
-    TyList published = publish_reference_args(deferred, args, len);
-    TAINT_END(taint_frame, TK_DEFERRED_ARGS, deferred, deferred, deferred);
-    return published;
+    TyList list = { .data = args, .len = len };
+    SW_FP(TK_DEFERRED_ARGS, deferred, &list, taint);
+    return (TyList){ .data = (Ty const* const*)sw_finish(me, &deferred->args, &deferred->state, (uintptr_t)args, taint), .len = len };
 }
 
 // `[a, b, ...rest]`: what `rest` gets out of a tuple, `start` being its index in the pattern. Mutable even of a readonly

@@ -3154,7 +3154,7 @@ static bool mentions_declared(Checker* me, Ty const* ty, Ty const* declared, u32
         case TY_DECLARED: return ty == declared && depth >= 2;
         case TY_REFERENCE:
             if (ty->reference.target == declared && depth >= 2) return true;
-            if (!ty->reference.deferred || ty->reference.deferred->state == LAZY_STATE_DONE) {
+            if (ty_reference_args_known(me, ty)) {
                 TyList args = ty_reference_args(me, ty);
                 for (u32 i = 0; i < args.len; i++) {
                     if (mentions_declared(me, args.data[i], declared, depth + 1)) return true;
@@ -3323,7 +3323,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 // (A deferred base's arguments too, `interface J extends _J` with `type _J = Union<[Rec<J>]>`: tsc's
                 // resolveObjectTypeMembers has them, getTypeArguments of the base whose members it takes)
                 Ty const* base = written_bases.data[i];
-                if (base->kind == TY_REFERENCE && base->reference.deferred && base->reference.deferred->state == LAZY_STATE_NOT_STARTED) {
+                if (base->kind == TY_REFERENCE && !ty_reference_args_known(me, base) &&
+                    !sw_mine_in_flight(me, &base->reference.deferred->args, &base->reference.deferred->state)) {
                     ty_reference_args(me, base);
                 }
                 recursive_bases = mentions_declared(me, base, ty, 0);
@@ -3615,7 +3616,7 @@ static bool same_reference_members(Checker* me, Ty const* a, Ty const* b) {
     if (a->kind != TY_REFERENCE || b->kind != TY_REFERENCE || a->reference.target != b->reference.target) return false;
     if (!a->reference.deferred == !b->reference.deferred) return false;
     Ty const* deferred = a->reference.deferred ? a : b;
-    if (deferred->reference.deferred->state != LAZY_STATE_DONE) return false;
+    if (!ty_reference_args_known(me, deferred)) return false;
     TyList x = ty_reference_args(me, a), y = ty_reference_args(me, b);
     return x.len == y.len && !memcmp(x.data, y.data, sizeof(Ty const*) * x.len);
 }
@@ -3683,7 +3684,7 @@ static bool mentions_members_in_flight(Checker* me, Ty const* ty, u32 depth) {
                 return true;
             }
             // (A deferred reference's arguments once they are resolved)
-            if (ty->kind == TY_REFERENCE && (!ty->reference.deferred || ty->reference.deferred->state == LAZY_STATE_DONE)) {
+            if (ty->kind == TY_REFERENCE && ty_reference_args_known(me, ty)) {
                 TyList args = ty_reference_args(me, ty);
                 for (u32 i = 0; i < args.len; i++) {
                     if (mentions_members_in_flight(me, args.data[i], depth + 1)) return true;
@@ -5237,7 +5238,7 @@ Members const* ty_members_resolving(Checker* me, Ty const* ty) {
             // A deferred reference's arguments come first, before its members are in flight (tsc's
             // resolveTypeReferenceMembers starts with getTypeArguments): arguments that need these members find
             // their own resolution in flight (TS4109), not the members'
-            if (ty->kind == TY_REFERENCE && ty->reference.deferred && LAZY_LOAD(ty->reference.deferred->state) != LAZY_STATE_DONE) {
+            if (ty->kind == TY_REFERENCE && !ty_reference_args_known(me, ty)) {
                 ty_reference_args(me, ty);
                 if (LAZY_LOAD(state->members_state) != LAZY_STATE_NOT_STARTED) return ty_members(me, ty);
             }

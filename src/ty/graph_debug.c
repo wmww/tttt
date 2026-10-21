@@ -165,7 +165,7 @@ static u64 value_of(unsigned kind, void const* result) {
             return fp_bytes(masked, len);
         }
         case TK_DEFERRED_ARGS:
-            return fp_list(53, ((TyDeferredRef const*)result)->args);
+            return fp_list(53, *(TyList const*)result); // (The arguments as a list, lower.c ty_reference_args())
         case TK_SIG_RESOLVED:
             return fp_resolved(result);
         case TK_REDUCED:
