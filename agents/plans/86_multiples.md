@@ -815,6 +815,42 @@ at the computation's end**, and makes every field another worker can read safe t
   every run that broke a cycle K1's output; the one differing drizzle run had no broken cycle (a TS2589 in
   mysql-core/query-builders/query-builder.ts: instantiation depth against what is cached already, another mechanism).
   vscode: 2 runs, both K1's output, no redos, 2.3-2.6 s wall at K12 against K1's 13.5 s, 4.6 GB peak (K1 4.1 GB).
+  **Step 4 done (2026-10-21, worker "shared2"): memo kinds published when their value is there**, not at the share's
+  end (which on threads is the program's end: before it, K12 shared almost no memo and drizzle did 2.6x K1's work).
+  intern_put() logs a memo kind's new private entry (Checker.graph_memo_log, with instantiation_limit_hits then);
+  graph_memo_flush() inserts the logged entries that have their value into the shared table (first wins, a loser's
+  entry takes the winner's value), every 64 puts (the limit doubles while unfilled entries pile up), at each file's
+  end and at the share's; the share-end graph_publish() is gone with it (60 ms a checker on drizzle). Not published:
+  an entry made before an instantiation limit ran out (TS2589: cut short in that worker's history). intern_slot() of a
+  memo kind fills a new private entry from the shared table (callers find it done). Node link memos (ty_link_set())
+  and declaration memos (graph_memo_done()) go at once. All of it only with a second checker (Checker.graph_memo_on).
+  TTTT_GRAPH_MEMO_EAGER=0 (share-end publication), =nodecl (declaration memos at the end), TTTT_GRAPH_MEMO_LATE=k,k
+  (kinds held back: the bisection tool), TTTT_DEBUG_MEMO_PUBLISH=1 (published values written again later: 2-23 a run,
+  KEY_REVERSE_MAPPED and intersection props whose nested request published first; those two stores are release now).
+  **Variances needed their own protocol**: published entry by entry, two workers measured one type at once and the
+  first read spread (drizzle's View [0 0 0] next to K1's [1 1 1], a TS2344 in 2-4 runs of 20); kept private, every
+  worker measured them again in the now warm graph (excalidraw TS2345 in 20 of 20, track S's warm-measurement effect).
+  So on threads a type's or alias's variances have a shared slot (graph_variance_slot(): LAZY_CLAIM()ed by the
+  measuring worker, LAZY_SNAP()-waited for by the others, done as one group when the claimer's outermost measurement
+  ends, graph_variances_publish()), tsc's one measurement per program; variances_known() counts another worker's
+  measurement in flight (marker instances are compared structurally then, as K1 would). This makes wait cycles, so
+  redos are common now (drizzle 1-5 a run). Waiting also changed: after the 64 pauses, 50 sched_yield()s before the
+  sleeps (TTTT_GRAPH_WAIT_YIELDS=N): with every memo shared the workers ran in a convoy, a waiter that slept fell in
+  behind the owner at its next field (drizzle K12: 89k waits, 1.59 s mean wall; yielding, 660 and 0.85 s).
+  Work (callgrind Ir inside program_typecheck and the worker threads, --checker-memory off), base = 36c99661f:
+  | corpus | flag K1 base | flag K1 now | K12 base | K12 now | K12 now / K1 |
+  |---|---|---|---|---|---|
+  | zod | 4.384 G | 4.392 | 5.527 (1.26x) | 4.805 | 1.096 |
+  | drizzle | 5.283 | 5.294 | 13.869 (2.63x) | 5.853 | 1.108 |
+  | excalidraw | 6.544 | 6.548 | 7.653 (1.17x) | 7.372 | 1.126 |
+  Shared hits (TTTT_GRAPH_STATS) drizzle 1.5 M -> 1.2-8 M (with the waiting), zod 1.0 -> 0.9-1.3 M, excalidraw 1.0 ->
+  1.9 M, effect 1.6 -> 1.8-2.2 M. Wall at K12 T12 (load 4, mean of 5): drizzle 0.25 s against 0.76 (min 0.30), effect
+  0.27 / 0.29, zod 0.16 / 0.18, excalidraw 0.196 / 0.200. Default path (flag off, whole-process callgrind): nest +0.05%,
+  drizzle +0.24%, zod +0.12% before moving the log hook into intern_put()'s --shared-graph branch, typecheck-only
+  drizzle +0.007% after. 20-run table at K12 T12: drizzle 19 (one run: TS2769/TS2578 missing errors, redos in it),
+  zod 20, effect 20, excalidraw 20; drizzle over 70 runs in all 66-67, the differences TS2589s, TS2578 (`@ts-expect-error`
+  lines left unused: a type too permissive) and once TS2322/TS2430/TS2416 in singlestore (variance-shaped). Task 3's
+  subject (what instantiation limits and the redo leave history-dependent) is the next suspect for all of them.
 
 ### 4e's first item: a shared relation cache (measured and designed 2026-10-21, not built)
 **Measurement** (`agents/plans/86_relation_share_probe.patch`, a scratch patch to relate.c's recursive_related():

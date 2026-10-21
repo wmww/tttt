@@ -657,7 +657,9 @@ static Ty const* reverse_mapped_type(Checker* me, Ty const* source, MappedInfo c
     void const* cached = intern_get(&my links, key, 4);
     if (cached) return cached == mapped ? nullptr : cached;
     Ty const* ret = reverse_mapped_type_uncached(me, source, mapped, operand);
-    *intern_slot(me, &my links, key, 4) = ret ? (void const*)ret : (void const*)mapped;
+    // (Release: a nested request for the same key may have published its result already, which this one replaces,
+    // --shared-graph's other checkers reading it)
+    __atomic_store_n(intern_slot(me, &my links, key, 4), ret ? (void const*)ret : (void const*)mapped, __ATOMIC_RELEASE);
     return ret;
 }
 

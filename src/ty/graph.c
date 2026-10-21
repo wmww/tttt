@@ -8,6 +8,7 @@
 #include <setjmp.h>
 #include <stdatomic.h>
 #include <time.h>
+#include <sched.h>
 
 
 typedef struct KindStats {
@@ -40,6 +41,7 @@ struct TyGraph {
     SharedTable* links;
     SharedTable* intersection_props;
     SharedLinks* node_links;
+    SharedLinks* variance_slots; // By subject (graph_variance_slot())
     // Declaration memos by slot, like LazySlots.top (pages made by CAS, a memo written flags last under memo_lock)
     LazyMemo** _Atomic memos[1 << LAZY_TOP_BITS];
     pthread_mutex_t memo_lock;
@@ -128,6 +130,7 @@ static void graph_link_tables(TyGraph* me, Checker* checker) {
 }
 
 void graph_publish(TyGraph* me, Checker* checker);
+static void publish_declaration_memo(TyGraph* me, Checker* checker, u32 slot);
 
 TyGraph* graph_new(Checker* first) {
     TyGraph* me = calloc(1, sizeof(TyGraph));
@@ -136,6 +139,7 @@ TyGraph* graph_new(Checker* first) {
     my links = shared_table_new();
     my intersection_props = shared_table_new();
     my node_links = shared_links_new();
+    my variance_slots = shared_links_new();
     pthread_mutex_init(&my memo_lock, nullptr);
     memcpy(my intrinsics, first->intrinsics, sizeof(my intrinsics));
     my typeof_type = first->typeof_type;
@@ -170,6 +174,11 @@ void graph_adopt(TyGraph* me, Checker* checker) {
     my checkers++;
     panic_if(my checkers > 63, "--shared-graph: at most 63 checkers");
     checker->graph_worker = (uint8_t)my checkers;
+    // (Memo publication from the second checker on: the first one's, made alone, went with graph_new()'s publication)
+    if (graph_memo_eager()) {
+        checker->graph_memo_on = true;
+        if (my workers[1]) my workers[1]->graph_memo_on = true;
+    }
     __atomic_store_n(&my workers[my checkers], checker, __ATOMIC_RELEASE);
     pthread_mutex_unlock(&my adopt_lock);
 }
@@ -199,6 +208,12 @@ void graph_release(TyGraph* me, Checker* checker) {
     if (checker->graph_worker < 64 && my workers[checker->graph_worker] == checker) my workers[checker->graph_worker] = nullptr;
     // (The graph's: freed by graph_drop())
     free(checker->graph_memo_slots);
+    free(checker->graph_memo_log);
+    free(checker->graph_variance_claims);
+    checker->graph_variance_claims = nullptr;
+    checker->graph_variance_claims_len = checker->graph_variance_claims_cap = 0;
+    checker->graph_memo_log = nullptr;
+    checker->graph_memo_log_len = checker->graph_memo_log_cap = 0;
     checker->graph_memo_slots = nullptr;
 }
 
@@ -208,6 +223,7 @@ void graph_drop(TyGraph* me) {
     shared_table_drop(my links);
     shared_table_drop(my intersection_props);
     shared_links_drop(my node_links);
+    shared_links_drop(my variance_slots);
     pthread_mutex_destroy(&my memo_lock);
     pthread_mutex_destroy(&my wait_lock);
     for (size_t i = 0; i < c_arraylen(my memos); i++) {
@@ -600,30 +616,70 @@ void graph_publish(TyGraph* me, Checker* checker) {
             __atomic_fetch_add(&stats->tainted, 1, __ATOMIC_RELAXED);
             continue;
         }
-        LazyType lazy = { .tag = LAZY_TYPE_EVALUATED, .slot = slot };
-        LazySlots* saved = current_lazy_slots;
-        current_lazy_slots = &checker->lazy;
-        LazyMemo const* memo = lazy_type_state_peek(&lazy);
-        current_lazy_slots = saved;
-        if (!memo || !memo->done) {
-            __atomic_fetch_add(&stats->unfinished, 1, __ATOMIC_RELAXED);
-            continue;
-        }
-        LazyMemo* shared = memo_at(me, slot, true);
-        // (Written done last, read done first: a reader sees a whole memo or none)
-        pthread_mutex_lock(&my memo_lock);
-        if (!shared->done) {
-            LazyMemo copy = *memo;
-            copy.hits = 0;
-            copy.done = false;
-            *shared = copy;
-            atomic_thread_fence(memory_order_release);
-            shared->done = true;
-            __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
-        }
-        pthread_mutex_unlock(&my memo_lock);
+        publish_declaration_memo(me, checker, slot);
     }
     checker->graph_memo_len = 0;
+}
+
+// Variance slots (graph.h). The slots are the graph's arena's: the first checker's, never recycled with the flag
+VarianceSlot* graph_variance_slot(Checker* checker, void const* subject, bool alias, bool create) {
+    TyGraph* me = checker->graph;
+    if (!me || !my concurrent) return nullptr;
+    u64 key = (u64)alias << 56 | (u64)(uintptr_t)subject;
+    VarianceSlot* ret = (VarianceSlot*)shared_links_get(my variance_slots, key);
+    if (ret || !create) return ret;
+    VarianceSlot* fresh = arena_new(&checker->arena, VarianceSlot);
+    *fresh = (VarianceSlot){ .subject = subject, .alias = alias };
+    return (VarianceSlot*)shared_links_insert(my variance_slots, key, fresh);
+}
+
+void graph_variance_claimed(Checker* checker, VarianceSlot* slot) {
+    if (checker->graph_variance_claims_len == checker->graph_variance_claims_cap) {
+        checker->graph_variance_claims_cap = checker->graph_variance_claims_cap ? checker->graph_variance_claims_cap * 2 : 16;
+        checker->graph_variance_claims = realloc(checker->graph_variance_claims, sizeof(VarianceSlot*) * checker->graph_variance_claims_cap);
+        panic_if(!checker->graph_variance_claims, "out of memory");
+    }
+    checker->graph_variance_claims[checker->graph_variance_claims_len++] = slot;
+}
+
+void graph_variances_publish(Checker* checker, void const* (*value_of)(Checker* checker, VarianceSlot const* slot)) {
+    for (u32 i = 0; i < checker->graph_variance_claims_len; i++) {
+        VarianceSlot* slot = checker->graph_variance_claims[i];
+        void const* value = value_of(checker, slot);
+        if (value) {
+            __atomic_store_n(&slot->value, value, __ATOMIC_RELAXED);
+            LAZY_DONE(slot->state);
+        } else {
+            __atomic_store_n(&slot->state, (unsigned)LAZY_STATE_NOT_STARTED, __ATOMIC_RELEASE);
+        }
+    }
+    checker->graph_variance_claims_len = 0;
+}
+
+static void publish_declaration_memo(TyGraph* me, Checker* checker, u32 slot) {
+    KindStats* stats = &my stats[GRAPH_STAT_MEMOS];
+    LazyType lazy = { .tag = LAZY_TYPE_EVALUATED, .slot = slot };
+    LazySlots* saved = current_lazy_slots;
+    current_lazy_slots = &checker->lazy;
+    LazyMemo const* memo = lazy_type_state_peek(&lazy);
+    current_lazy_slots = saved;
+    if (!memo || !memo->done) {
+        __atomic_fetch_add(&stats->unfinished, 1, __ATOMIC_RELAXED);
+        return;
+    }
+    LazyMemo* shared = memo_at(me, slot, true);
+    // (Written done last, read done first: a reader sees a whole memo or none)
+    pthread_mutex_lock(&my memo_lock);
+    if (!shared->done) {
+        LazyMemo copy = *memo;
+        copy.hits = 0;
+        copy.done = false;
+        *shared = copy;
+        atomic_thread_fence(memory_order_release);
+        shared->done = true;
+        __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
+    }
+    pthread_mutex_unlock(&my memo_lock);
 }
 
 void const* graph_link_get(TyGraph const* me, u32 kind, void const* subject) {
@@ -758,6 +814,15 @@ bool lazy_wait_slow(Checker* me, void* field, size_t size) {
             ret = false;
             break;
         }
+        // (Then yields: an owner preempted on a loaded machine gets the core back, and a waiter that slept instead fell in
+        // behind it, waiting again at its next field: drizzle K12 on 12 threads with every memo published, 89k waits and
+        // 1.59 s mean wall sleeping at once, 660 and 0.85 s yielding 50 times first. TTTT_GRAPH_WAIT_YIELDS=N)
+        static int yields = -1;
+        if (yields < 0) yields = getenv("TTTT_GRAPH_WAIT_YIELDS") ? atoi(getenv("TTTT_GRAPH_WAIT_YIELDS")) : 50;
+        if (round < 64 + (u32)yields) {
+            sched_yield();
+            continue;
+        }
         struct timespec pause = { 0, (long)sleep_ns };
         nanosleep(&pause, nullptr);
         if (sleep_ns < 1000000) sleep_ns *= 2;
@@ -779,7 +844,180 @@ bool graph_memo_take(TyGraph* me, u32 slot, LazyMemo* memo) {
     return true;
 }
 
+// Memo publication at the computation's end (graph.h)
+
+bool graph_memo_eager(void) {
+    static int on = -1;
+    if (__builtin_expect(on < 0, 0)) on = !(getenv("TTTT_GRAPH_MEMO_EAGER") && !strcmp(getenv("TTTT_GRAPH_MEMO_EAGER"), "0"));
+    return on;
+}
+
+// (Only once there is someone to read them: a graph of one checker, `--checkers 1`, publishes nothing)
+bool graph_memo_sharing(Checker const* checker) {
+    return checker->graph_memo_on;
+}
+
+// (Debug: TTTT_GRAPH_MEMO_LATE=k,k,...: those memo kinds (KEY_* numbers, 254 intersection props) aren't published
+// before the share's end: a bisection of what eager publication changes)
+bool graph_memo_late(u32 kind) {
+    static int init = -1;
+    static bool kinds[256];
+    if (__builtin_expect(init < 0, 0)) {
+        char const* env = getenv("TTTT_GRAPH_MEMO_LATE");
+        for (char const* p = env; p && *p;) {
+            char* end;
+            unsigned long k = strtoul(p, &end, 10);
+            if (end == p) break;
+            if (k < 256) kinds[k] = true;
+            p = *end == ',' ? end + 1 : end;
+        }
+        init = env != nullptr;
+    }
+    return init && kind < 256 && kinds[kind];
+}
+
+// (TTTT_DEBUG_MEMO_PUBLISH=1: every published entry's value, checked when the program ends: a memo written again after
+// it was published changes what the others read under them)
+typedef struct PublishedMemo {
+    void const** block;
+    void const* value;
+} PublishedMemo;
+static PublishedMemo* debug_published;
+static u64 debug_published_len, debug_published_cap;
+static pthread_mutex_t debug_published_lock = PTHREAD_MUTEX_INITIALIZER;
+static int debug_memo_publish = -1;
+
+static void debug_memo_published(void const** block) {
+    pthread_mutex_lock(&debug_published_lock);
+    if (debug_published_len == debug_published_cap) {
+        debug_published_cap = debug_published_cap ? debug_published_cap * 2 : 1 << 16;
+        debug_published = realloc(debug_published, sizeof(PublishedMemo) * debug_published_cap);
+        panic_if(!debug_published, "out of memory");
+    }
+    debug_published[debug_published_len++] = (PublishedMemo){ block, block[0] };
+    pthread_mutex_unlock(&debug_published_lock);
+}
+
+static void debug_memo_check(void) {
+    u64 changed[256] = {0}, total = 0;
+    for (u64 i = 0; i < debug_published_len; i++) {
+        PublishedMemo const* p = &debug_published[i];
+        if (p->block[0] == p->value) continue;
+        u64 hash = ((u64 const*)p->block)[-1];
+        u32 count = (u32)(hash >> 48);
+        u64 const* key = (u64 const*)(p->block + 1);
+        if (count == 0xffffu) count = (u32)*key++;
+        changed[count ? key[0] & 255 : 0]++;
+        total++;
+    }
+    eprintln("graph: ", total, " of ", debug_published_len, " published memo entries written again after");
+    for (u32 k = 0; k < 256; k++) if (changed[k]) eprintln("graph:   kind ", k, ": ", changed[k]);
+}
+
+typedef struct GraphMemoLogEntry {
+    uintptr_t entry;
+    u32 limit_hits;
+} GraphMemoLogEntry;
+
+static SharedTable* memo_log_table(TyGraph* me, uintptr_t tag) {
+    return tag == 0 ? my types : tag == 1 ? my links : my intersection_props;
+}
+
+void graph_memo_log_put(Checker* checker, InternTable const* table, void const** block, u32 kind) {
+    uintptr_t tag;
+    if (table == &checker->types) tag = 0;
+    else if (table == &checker->links) tag = 1;
+    else tag = 2;
+    if (tag != 2 && graph_kind_class(kind) != GRAPH_MEMO) return;
+    if (!graph_memo_sharing(checker) || graph_memo_late(tag == 2 ? GRAPH_KIND_INTERSECTION_PROPS : kind)) return;
+    // (Variances on threads go through their slots, graph_variance_slot(): published entry by entry, two workers measured
+    // one type at once, drizzle K12's View [0 0 0] next to K1's [1 1 1], and whichever was read first spread (TS2344 in
+    // 2-4 runs of 20); kept private instead, every worker measured them again in a warm graph (excalidraw's TS2345s in
+    // 20 of 20). One checker after another they go out as a group when the outermost measurement ends,
+    // graph_memo_flush())
+    if ((kind == KEY_VARIANCES || kind == KEY_ALIAS_VARIANCES) && tag == 1 && checker->graph->concurrent) return;
+    if (!checker->graph_memo_log_limit) checker->graph_memo_log_limit = 64;
+    // (Before the new one goes in, whose block isn't filled yet. Entries still without a value stay: the limit grows
+    // with them, a deep computation doesn't flush every put)
+    if (checker->graph_memo_log_len >= checker->graph_memo_log_limit) graph_memo_flush(checker);
+    if (checker->graph_memo_log_len == checker->graph_memo_log_cap) {
+        checker->graph_memo_log_cap = checker->graph_memo_log_cap ? checker->graph_memo_log_cap * 2 : 256;
+        checker->graph_memo_log = realloc(checker->graph_memo_log, sizeof(GraphMemoLogEntry) * checker->graph_memo_log_cap);
+        panic_if(!checker->graph_memo_log, "out of memory");
+    }
+    checker->graph_memo_log[checker->graph_memo_log_len++] = (GraphMemoLogEntry){ (uintptr_t)block | tag, checker->instantiation_limit_hits };
+}
+
+void graph_memo_log_unput(Checker* checker, void const** block) {
+    u32 n = checker->graph_memo_log_len;
+    if (n && (checker->graph_memo_log[n - 1].entry & ~(uintptr_t)3) == (uintptr_t)block) checker->graph_memo_log_len--;
+}
+
+void graph_memo_flush(Checker* checker) {
+    TyGraph* me = checker->graph;
+    if (!me) return;
+    if (__builtin_expect(debug_memo_publish < 0, 0)) debug_memo_publish = getenv("TTTT_DEBUG_MEMO_PUBLISH") != nullptr;
+    u32 kept = 0;
+    for (u32 i = 0; i < checker->graph_memo_log_len; i++) {
+        GraphMemoLogEntry logged = checker->graph_memo_log[i];
+        uintptr_t entry = logged.entry;
+        void const** block = (void const**)(entry & ~(uintptr_t)3);
+        if (!block[0]) {
+            checker->graph_memo_log[kept++] = logged;
+            continue;
+        }
+        // (The instantiation limits ran out while it may have been computed (TS2589): what it is was cut short in this
+        // worker's history, which the others don't share. It stays the worker's own)
+        if (logged.limit_hits != checker->instantiation_limit_hits) {
+            __atomic_fetch_add(&my stats[GRAPH_STAT_KINDS - 1].tainted, 1, __ATOMIC_RELAXED);
+            continue;
+        }
+        u64 hash = ((u64 const*)block)[-1];
+        u32 count = (u32)(hash >> 48);
+        u64 const* key = (u64 const*)(block + 1);
+        if (count == 0xffffu) count = (u32)*key++;
+        u32 kind = (entry & 3) == 2 ? GRAPH_KIND_INTERSECTION_PROPS : count ? (u32)(key[0] & 255) : 0;
+        // (Variances go out as a group when the outermost measurement ends: what a cycle measures depends on where it is
+        // entered, and one worker's entry mustn't be mixed with another's, plan 86 4d)
+        if ((kind == KEY_VARIANCES || kind == KEY_ALIAS_VARIANCES) && checker->variance_depth) {
+            checker->graph_memo_log[kept++] = logged;
+            continue;
+        }
+        KindStats* stats = &my stats[kind];
+        if (entry_tainted(kind, block)) {
+            __atomic_fetch_add(&stats->tainted, 1, __ATOMIC_RELAXED);
+            continue;
+        }
+        void const** there;
+        if (shared_table_insert(memo_log_table(me, entry & 3), hash, block, count, &there)) {
+            __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
+            if (debug_memo_publish) debug_memo_published(block);
+        } else if (there != block) {
+            // (Another checker's came first: this one reads that from now on)
+            block[0] = __atomic_load_n(there, __ATOMIC_ACQUIRE);
+            __atomic_fetch_add(&stats->lost, 1, __ATOMIC_RELAXED);
+        }
+    }
+    checker->graph_memo_log_len = kept;
+    u32 limit = checker->graph_memo_log_limit ? checker->graph_memo_log_limit : 64;
+    while (kept * 2 > limit) limit *= 2;
+    while (limit > 64 && kept * 8 < limit) limit /= 2;
+    checker->graph_memo_log_limit = limit;
+}
+
+
 void graph_memo_done(Checker* checker, u32 slot, bool tainted) {
+    static int late = -1; // (Debug: TTTT_GRAPH_MEMO_EAGER=nodecl, declaration memos at the share's end)
+    if (late < 0) late = getenv("TTTT_GRAPH_MEMO_EAGER") && !strcmp(getenv("TTTT_GRAPH_MEMO_EAGER"), "nodecl");
+    if (graph_memo_eager() && !late) {
+        if (!graph_memo_sharing(checker)) return;
+        if (tainted && !publish_tainted(GRAPH_STAT_MEMOS)) {
+            __atomic_fetch_add(&checker->graph->stats[GRAPH_STAT_MEMOS].tainted, 1, __ATOMIC_RELAXED);
+            return;
+        }
+        publish_declaration_memo(checker->graph, checker, slot);
+        return;
+    }
     if (checker->graph_memo_len == checker->graph_memo_cap) {
         checker->graph_memo_cap = checker->graph_memo_cap ? checker->graph_memo_cap * 2 : 1024;
         checker->graph_memo_slots = realloc(checker->graph_memo_slots, sizeof(u32) * checker->graph_memo_cap);
@@ -819,6 +1057,7 @@ static char const* kind_name(u32 kind) {
 
 // TTTT_GRAPH_STATS=1 (at the end of the typecheck): by kind, what was published, kept private and found shared
 void graph_print_stats(TyGraph const* me) {
+    if (debug_memo_publish > 0) debug_memo_check();
     eprintln("graph: ", (u32)atomic_load(&((TyGraph*)me)->redos), " files checked again after a broken wait cycle");
     eprintln("graph: ", my checkers, " checkers, ", shared_table_len(my types), " types entries, ", shared_table_len(my links),
         " links, ", shared_table_len(my intersection_props), " intersection props, ", shared_links_len(my node_links),

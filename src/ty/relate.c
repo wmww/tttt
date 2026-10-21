@@ -1,4 +1,5 @@
 #include "ty/ty_internal.h"
+#include "ty/graph.h"
 #include "program.h"
 #include "scope.h"
 #include "error.h"
@@ -1624,7 +1625,9 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
         if (parts != stack_buf) free(parts);
         FoundProp* memo = arena_new(&my arena, FoundProp);
         *memo = ret;
-        *intern_slot(me, &my intersection_props, key, 2) = memo;
+        // (Release: a nested lookup of the same property may have published its memo already, which this one replaces,
+        // --shared-graph's other checkers reading it)
+        __atomic_store_n(intern_slot(me, &my intersection_props, key, 2), (void const*)memo, __ATOMIC_RELEASE);
         return ret;
     }
     if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
@@ -3591,6 +3594,8 @@ static void measure_variances(Checker* me, VarianceSubject subject, VarianceClai
     my variance_reports = saved_reports;
     if (claim->done) return;
     Variances const* variances = publish_variances(me, claim, measured);
+    // (--shared-graph: the outermost measurement's end publishes what it measured, as one group, graph_memo_flush())
+    if (__builtin_expect(my graph_memo_on, 0) && !my variance_depth) graph_memo_flush(me);
     if (debug_env.dump_variances) {
         cstr name = subject.declared ? ty_to_cstr(me, subject.declared) : cstr_from_sv(subject.alias->name);
         for (u32 i = 0; i < variances->len; i++) log_info("variance of ", name, " #", i, ": ", (u32)variances->data[i]);
@@ -3644,18 +3649,47 @@ static Variances const* measured_variances(Checker* me, VarianceClaim* claim) {
 }
 
 // Measures what is neither in the links nor in flight, under a claim of its own
+// (--shared-graph on threads: a claimed slot's value, the measurement's in the checker's links)
+static void const* variance_slot_value(Checker* me, VarianceSlot const* slot) {
+    u64 key[2] = { slot->alias ? KEY_ALIAS_VARIANCES : KEY_VARIANCES,
+        slot->alias ? (u64)(uintptr_t)slot->subject : ((Ty const*)slot->subject)->id };
+    return intern_get(&my links, key, 2);
+}
+
 static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) {
+    void const* subject_ptr = subject.declared ? (void const*)subject.declared : (void const*)subject.alias;
+    // --shared-graph on threads: measured once for the program, by whichever worker claims the subject's slot first;
+    // the others wait for the group its outermost measurement publishes (graph.h). A worker that would close a cycle of
+    // waits and breaks it measures privately
+    VarianceSlot* slot = my graph ? graph_variance_slot(me, subject_ptr, !subject.declared, true) : nullptr;
+    if (slot) {
+        again:;
+        LAZY_SNAP(me, slot->state, v, again);
+        if (LAZY_STATE_OF(v) == LAZY_STATE_DONE) {
+            Variances const* shared = __atomic_load_n(&slot->value, __ATOMIC_RELAXED);
+            u64 key[2] = { subject.declared ? KEY_VARIANCES : KEY_ALIAS_VARIANCES,
+                subject.declared ? subject.declared->id : (u64)(uintptr_t)subject.alias };
+            *intern_slot(me, &my links, key, 2) = shared;
+            return shared;
+        }
+        if (!LAZY_IN_FLIGHT(v)) {
+            if (!LAZY_CLAIM(me, slot->state)) goto again;
+            graph_variance_claimed(me, slot);
+        }
+    }
     VarianceClaim claim = { .declared = subject.declared, .alias = subject.alias, .len = subject.params.len };
-    ty_claim_push(me, CLAIM_VARIANCES, &claim.claim,
-        subject.declared ? (void const*)subject.declared : (void const*)subject.alias, !subject.declared);
+    ty_claim_push(me, CLAIM_VARIANCES, &claim.claim, subject_ptr, !subject.declared);
     measure_variances(me, subject, &claim);
     ty_claim_pop(me, CLAIM_VARIANCES, &claim.claim);
+    if (__builtin_expect(my graph_variance_claims_len != 0, 0) && !my variance_depth) graph_variances_publish(me, variance_slot_value);
     return claim.done;
 }
 
-// Whether the declared type's variances are measured, or being measured
+// Whether the declared type's variances are measured, or being measured (--shared-graph on threads: by any worker)
 static bool variances_known(Checker* me, Ty const* target) {
-    return intern_get(&my links, (u64[]){ KEY_VARIANCES, target->id }, 2) || variance_claim_of(me, target, nullptr);
+    if (intern_get(&my links, (u64[]){ KEY_VARIANCES, target->id }, 2) || variance_claim_of(me, target, nullptr)) return true;
+    VarianceSlot const* slot = my graph ? graph_variance_slot(me, target, false, false) : nullptr;
+    return slot && LAZY_LOAD(slot->state) != LAZY_STATE_NOT_STARTED;
 }
 
 // Null while the variances are being measured (the caller then goes by Ternary Unknown, like tsc)

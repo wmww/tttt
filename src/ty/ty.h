@@ -1299,8 +1299,17 @@ struct Checker {
     u64 stamp_decisions;
     u32* graph_memo_slots;
     u32 graph_memo_len, graph_memo_cap;
+    // Memo kinds' private intern entries made since the last graph_memo_flush(), the table in the low two bits (0
+    // types, 1 links, 2 intersection_props), with instantiation_limit_hits when made: each goes into the shared table
+    // once its value is there (plan 86 4d), unless the instantiation limits ran out meanwhile
+    struct GraphMemoLogEntry* graph_memo_log;
+    u32 graph_memo_log_len, graph_memo_log_cap, graph_memo_log_limit;
+    // The variance slots it claimed during its outermost measurement in progress (graph_variance_claimed())
+    struct VarianceSlot** graph_variance_claims;
+    u32 graph_variance_claims_len, graph_variance_claims_cap;
     // Its worker number on the graph (1..63, the tag of what it has in flight: LAZY_FOREIGN()), 0 without one
     uint8_t graph_worker;
+    bool graph_memo_on; // --shared-graph with another checker to read them: memo kinds published as they finish
     u64 graph_waits, graph_wait_ns, graph_fallbacks; // lazy_wait_slow() (TTTT_GRAPH_STATS)
     // --shared-graph on threads: a jmp_buf the file being checked can be given up through (a broken wait cycle,
     // check_share()'s redo), null when it can't

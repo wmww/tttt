@@ -8,9 +8,8 @@
 // - the intern tables (types, links, intersection_props) and node_links have a shared counterpart each, looked up
 //   after the checker's own on a miss (InternTable.shared, graph_link_get()). A checker makes a private entry only
 //   when the shared table has none, so the two never disagree
-// - a checker's private entries are published when its share ends (graph_publish()): identity kinds always, memo
-//   kinds when their computation was clean, scratch kinds never. Sequentially that gives the next checker what
-//   publishing at each computation's end would; in 4d graph_publish_entry() moves to the computation's end, as a CAS
+// - identity kinds are published at creation (intern_set()), memo kinds when their value is there (graph_memo_flush(),
+//   first wins), scratch kinds never; variances on threads through a slot per subject (graph_variance_slot())
 // - declaration LazyType memos: a shared memo store by slot, taken before evaluating (graph_memo_take())
 // - nothing of a checker is freed before the program's end, so what a shared type points to stays
 
@@ -51,6 +50,33 @@ void const* graph_link_get(TyGraph const* me, u32 kind, void const* subject);
 bool graph_memo_take(TyGraph* me, u32 slot, struct LazyMemo* memo);
 // A declaration memo finished in the checker: published with the rest, if clean
 void graph_memo_done(Checker* checker, u32 slot, bool tainted);
+
+// Memo kinds published when their computation ends (plan 86 4d step 4): a memo kind's new private intern entry is
+// logged (graph_memo_log_put(), from intern_put()), and graph_memo_flush() inserts the logged entries that have their
+// value into the shared tables (first wins: a loser's entry takes the winner's value), every few dozen entries, at
+// each file's end and at the share's. Node link memos (ty_link_set()) and declaration memos (graph_memo_done()) go at
+// once. TTTT_GRAPH_MEMO_EAGER=0: all of them at the share's end, as in track S
+bool graph_memo_eager(void);
+bool graph_memo_sharing(Checker const* checker); // Eager, and another checker to read them
+bool graph_memo_late(u32 kind);
+void graph_memo_log_put(Checker* checker, InternTable const* table, void const** block, u32 kind);
+void graph_memo_log_unput(Checker* checker, void const** block); // The last put, its value found shared
+void graph_memo_flush(Checker* checker);
+
+// Variances on threads (plan 86 4d): one measurement per type or alias for the program, like tsc's, whoever asks
+// first. A slot per subject (the declared type or the alias symbol), claimed with LAZY_CLAIM() by the worker that
+// measures it, which every other one waits for (LAZY_SNAP()); claimed slots go done as one group when the claiming
+// worker's outermost measurement ends (graph_variances_publish()). Null without threads
+typedef struct VarianceSlot {
+    unsigned state; // LazyState, owner-tagged
+    void const* value; // The Variances once done
+    void const* subject;
+    bool alias;
+} VarianceSlot;
+VarianceSlot* graph_variance_slot(Checker* checker, void const* subject, bool alias, bool create);
+void graph_variance_claimed(Checker* checker, VarianceSlot* slot);
+// The outermost measurement ended: each claimed slot gets `value_of`'s answer (null: not started again)
+void graph_variances_publish(Checker* checker, void const* (*value_of)(Checker* checker, VarianceSlot const* slot));
 
 void graph_print_stats(TyGraph const* me);
 // The shared tables' insertion and node_links' (checker.c)

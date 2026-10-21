@@ -253,6 +253,8 @@ static void const** intern_put(Checker* me, InternTable* table, InternEntry* ent
         panic_if(current_checker != me, "a checker's table used off its thread");
         block = arena_new_n(&my arena, u64, 2 + long_key + count) + 1;
         block[-1] = hash;
+        // (A memo kind's entry is published once its value is there, graph_memo_flush())
+        if (my graph_memo_on) graph_memo_log_put(me, table, (void const**)block, count ? (u32)(words[0] & 255) : 0);
     } else {
         block = arena_new_n(&my arena, u64, 1 + long_key + count);
     }
@@ -375,9 +377,23 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
     if (!entry->hash) {
         // (--shared-graph: an identity's slot is the shared one; a memo kind's is the checker's own, which its caller may
         // write whatever it finds there: never another checker's published value)
-        void const** shared = table->shared && intern_slot_shares(table, words, count) ?
-            intern_shared_find(table, hash, words, count) : nullptr;
-        return shared ? shared : intern_put(me, table, entry, hash, words, count);
+        if (__builtin_expect(table->shared != nullptr, 0)) {
+            if (intern_slot_shares(table, words, count)) {
+                void const** shared = intern_shared_find(table, hash, words, count);
+                if (shared) return shared;
+            } else if (me->graph_memo_on) {
+                // (A memo kind another checker published: its value in a private entry of the checker's own, which the
+                // caller finds done)
+                void const** shared = intern_shared_find(table, hash, words, count);
+                if (shared && __atomic_load_n(shared, __ATOMIC_ACQUIRE)) {
+                    void const** block = intern_put(me, table, entry, hash, words, count);
+                    graph_memo_log_unput(me, block);
+                    *block = shared[0];
+                    return block;
+                }
+            }
+        }
+        return intern_put(me, table, entry, hash, words, count);
     }
 #ifdef TTTT_TAINT
     void const** taint_block = entry->block;
@@ -533,8 +549,16 @@ void link_table_each(LinkTable const* table, void (*each)(void* arg, u32 kind, v
 }
 
 
+// (--shared-graph: a memo kind's value goes to the others at once, first wins: a loser reads the winner's from then)
+[[gnu::noinline]] static void link_memo_publish(Checker* me, u32 kind, void const* subject, void const* value) {
+    if (!value || graph_kind_class(kind) != GRAPH_MEMO || graph_memo_late(kind)) return;
+    void const* there = graph_link_insert(my graph, kind, subject, value);
+    if (there != value) link_set(&my node_links, kind, subject, there);
+}
+
 void ty_link_set(Checker* me, u32 kind, void const* subject, void const* value) {
     link_set(&my node_links, kind, subject, value);
+    if (__builtin_expect(my graph_memo_on, 0)) link_memo_publish(me, kind, subject, value);
 }
 
 static inline void link_set(LinkTable* table, u32 kind, void const* subject, void const* value) {
