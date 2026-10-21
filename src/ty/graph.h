@@ -64,7 +64,8 @@ void graph_adopt(TyGraph* me, Checker* checker);
 // Before checker_drop() frees what it doesn't own
 void graph_release(TyGraph* me, Checker* checker);
 
-// Publishes what the checker computed (the end of its share)
+// Publishes what the checker computed before the graph (graph_new()'s first checker: what it made alone); every other
+// result goes out as its computation ends
 void graph_publish(TyGraph* me, Checker* checker);
 
 // node_links' (ty_link_get())
@@ -79,10 +80,8 @@ void graph_memo_done(Checker* checker, u32 slot, bool tainted);
 // logged (graph_memo_log_put(), from intern_put()), and graph_memo_flush() inserts the logged entries that have their
 // value into the shared tables (first wins: a loser's entry takes the winner's value), every few dozen entries, at
 // each file's end and at the share's. Node link memos (ty_link_set()) and declaration memos (graph_memo_done()) go at
-// once. TTTT_GRAPH_MEMO_EAGER=0: all of them at the share's end, as in track S
-bool graph_memo_eager(void);
-bool graph_memo_sharing(Checker const* checker); // Eager, and another checker to read them
-bool graph_memo_late(u32 kind);
+// once
+bool graph_memo_sharing(Checker const* checker); // Another checker to read them
 // Plan 86 stage 4f: a memo kind's entry is published only if its computation was clean. Its computation starts at the
 // private and shared miss of its key (graph_memo_miss(), from intern_shared_find()) and ends when its value is there:
 // tainted if the taint counter moved between the miss and the put, or while the put entry had no value yet (an event

@@ -5066,8 +5066,7 @@ static void check_share(Program* me, u32 c, u32 count) {
     }
     // (--shared-graph: what it computed goes to the checkers after it, if there are any)
     if (checker->graph && getenv("TTTT_DEBUG_UNSHARED")) graph_check_unshared(checker->graph, checker);
-    if (checker->graph && graph_memo_eager()) graph_memo_flush(checker);
-    else if (checker->graph && c + 1 < count && !getenv("TTTT_NO_SHARE_END_PUBLISH")) graph_publish(checker->graph, checker);
+    if (checker->graph) graph_memo_flush(checker);
     checker_make_current(nullptr);
     graph_epoch_leave(me, count);
     timespec_get(&end, TIME_UTC);

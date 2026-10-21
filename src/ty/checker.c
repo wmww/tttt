@@ -273,12 +273,7 @@ static void const** intern_put(Checker* me, InternTable* table, InternEntry* ent
     taint_intern_put(table, hash, taint_block, count ? words[0] & 255 : 0);
     return taint_block;
 #else
-    void const** ret = entry->block;
-    // (--shared-graph: whether its computation is clean, see graph.c)
-#ifdef TTTT_GRAPH_TAINT
-    if (table->shared) graph_taint_put(table, hash, ret, count ? (u32)(words[0] & 255) : 0);
-#endif
-    return ret;
+    return entry->block;
 #endif
 }
 
@@ -316,10 +311,6 @@ static void debug_check_type_value(InternTable const* table, u64 const* words, u
 [[gnu::noinline]] static void const** intern_shared_find(InternTable const* table, u64 hash, u64 const* words, u32 count) {
     void const** block = shared_table_find(table->shared, hash, words, count);
     if (!block) {
-        // (Its value's computation may start here: graph_taint_put() takes the counter from then)
-#ifdef TTTT_GRAPH_TAINT
-        graph_taint_miss(table, hash);
-#endif
         // (A memo kind's computation may start here: graph_memo_log_put() takes the taint counter from then)
         graph_memo_note_miss(current_checker, table, hash, words, count);
         return nullptr;
@@ -572,7 +563,7 @@ void link_table_each(LinkTable const* table, void (*each)(void* arg, u32 kind, v
 
 // (--shared-graph: a memo kind's value goes to the others at once, first wins: a loser reads the winner's from then)
 [[gnu::noinline]] static void link_memo_publish(Checker* me, u32 kind, void const* subject, void const* value) {
-    if (!value || graph_kind_class(kind) != GRAPH_MEMO || graph_memo_late(kind)) return;
+    if (!value || graph_kind_class(kind) != GRAPH_MEMO) return;
     void const* there = graph_link_insert(my graph, kind, subject, value);
     if (there != value) link_set(&my node_links, kind, subject, there);
 }

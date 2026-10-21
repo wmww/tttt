@@ -5933,7 +5933,7 @@ static __attribute__((noinline)) Ty const* signature_return_type_slow(Checker* m
         }
     }
     sig->ret = ret;
-    LAZY_DONE_CLEAN(sig->ret_state, taint_frame, TK_SIGNATURE_RETURN);
+    LAZY_DONE(sig->ret_state);
     TAINT_END(taint_frame, TK_SIGNATURE_RETURN, sig, sig, ret);
     return ret;
 }

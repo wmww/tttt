@@ -7,7 +7,7 @@
 
 thread_local uint64_t graph_taint_now;
 
-#if !defined(TTTT_TAINT) && !defined(TTTT_GRAPH_TAINT)
+#ifndef TTTT_TAINT
 void graph_taint_bump(void) {
     graph_taint_now++;
     // (The memo entries put that have no value yet were in flight across it: tainted, graph.c)

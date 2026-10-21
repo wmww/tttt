@@ -1367,8 +1367,7 @@ struct Checker {
     bool awaited_reported; // TS2318 for a missing Awaited (tsc's getGlobalAwaitedSymbol(/*reportErrors*/ true))
     bool iterable_iterator_reported[2]; // TS2318 for a missing IterableIterator / AsyncIterableIterator (sync, async)
     bool iterable_reported; // TS2318 for a missing Iterable (an empty or rest-only array pattern's type)
-    // --shared-graph (ty/graph.h): the graph it shares, and the declaration memos it finished (slots, the top bit:
-    // tainted), published with its other results when its share ends
+    // --shared-graph (ty/graph.h): the graph it shares
     struct TyGraph* graph;
     // --first-touch-stamps (plan 86 stage 4c): what deep nesting (is_deeply_nested_as()) orders types by instead of
     // their ids, by id, chunked like the id table: the order in which this checker made or first met each type. At one
@@ -1377,8 +1376,6 @@ struct Checker {
     u32 stamp_next;
     u64 stamp_disagreements; // Deep nesting decisions the id order would have made otherwise (TTTT_GRAPH_STATS)
     u64 stamp_decisions;
-    u32* graph_memo_slots;
-    u32 graph_memo_len, graph_memo_cap;
     // Memo kinds' private intern entries made since the last graph_memo_flush(), the table in the low two bits (0
     // types, 1 links, 2 intersection_props), with instantiation_limit_hits when made: each goes into the shared table
     // once its value is there (plan 86 4d), unless the instantiation limits ran out meanwhile
@@ -1450,16 +1447,6 @@ struct Checker {
     if (LAZY_IN_FLIGHT(field) && !LAZY_MINE_IN_FLIGHT(me, (field))) (field) = LAZY_STATE_NOT_STARTED; \
 } while (0)
 #define LAZY_DONE(field) __atomic_store_n(&(field), LAZY_STATE_DONE, __ATOMIC_RELEASE)
-// LAZY_DONE(), unless --shared-graph's withholding experiment keeps a result its computation's taint frame saw an event
-// in from the other workers: then not started again (graph_withhold(), -DTTTT_GRAPH_TAINT builds only)
-#if defined(TTTT_GRAPH_TAINT) && !defined(TTTT_TAINT)
-#define LAZY_DONE_CLEAN(field, frame, kind) do { \
-    if (graph_withhold((kind), (frame))) __atomic_store_n(&(field), LAZY_STATE_NOT_STARTED, __ATOMIC_RELEASE); \
-    else LAZY_DONE(field); \
-} while (0)
-#else
-#define LAZY_DONE_CLEAN(field, frame, kind) LAZY_DONE(field)
-#endif
 // A shared word's fast path (overlay.h): its value if published and this worker isn't shadowed, else SW_EMPTY (then
 // sw_look())
 static inline uintptr_t sw_get(Checker const* me, SharedWord const* w) {
