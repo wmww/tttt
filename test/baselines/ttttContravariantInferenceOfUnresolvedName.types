@@ -1,0 +1,120 @@
+//// [test/cases/ttttContravariantInferenceOfUnresolvedName.ts] ////
+
+=== ttttContravariantInferenceOfUnresolvedName.ts ===
+// A type parameter inferred only from contravariant return-type candidates is their intersection (tsc's
+// getContravariantInference with a combining priority), and getIntersectionType of one any is the plain error type: an
+// unresolved name's aliased any loses its name there (mockoon's rxjs `pipe(switchMap(...), tap(...))` printing
+// `Observable<any>`), while a union of one keeps it
+import { DI } from 'nonexistent';
+>DI : any
+
+declare class Obs<T> { _t: T; pipe<A, B>(op1: OF<T, A>, op2: OF<A, B>): Obs<B> }
+>Obs : Obs<T>
+>_t : T
+>pipe : <A, B>(op1: OF<T, A>, op2: OF<A, B>) => Obs<B>
+>op1 : OF<T, A>
+>op2 : OF<A, B>
+
+interface UF<T, R> { (source: T): R }
+>source : T
+
+interface OF<T, R> extends UF<Obs<T>, Obs<R>> {}
+interface MOF<T> extends OF<T, T> {}
+declare const dop: OF<number, DI>;
+>dop : OF<number, DI>
+
+declare function tap<T>(x?: (value: T) => void): MOF<T>;
+>tap : <T>(x?: (value: T) => void) => MOF<T>
+>x : ((value: T) => void) | undefined
+>value : T
+
+declare const src: Obs<number>;
+>src : Obs<number>
+
+export const s1 = src.pipe(dop, tap(() => {}));
+>s1 : Obs<any>
+>src.pipe(dop, tap(() => {})) : Obs<any>
+>src.pipe : <A, B>(op1: OF<number, A>, op2: OF<A, B>) => Obs<B>
+>src : Obs<number>
+>pipe : <A, B>(op1: OF<number, A>, op2: OF<A, B>) => Obs<B>
+>dop : OF<number, DI>
+>tap(() => {}) : MOF<any>
+>tap : <T>(x?: (value: T) => void) => MOF<T>
+>() => {} : () => void
+
+export const s2 = src.pipe(dop, tap((v) => {}));
+>s2 : Obs<any>
+>src.pipe(dop, tap((v) => {})) : Obs<any>
+>src.pipe : <A, B>(op1: OF<number, A>, op2: OF<A, B>) => Obs<B>
+>src : Obs<number>
+>pipe : <A, B>(op1: OF<number, A>, op2: OF<A, B>) => Obs<B>
+>dop : OF<number, DI>
+>tap((v) => {}) : MOF<any>
+>tap : <T>(x?: (value: T) => void) => MOF<T>
+>(v) => {} : (v: any) => void
+>v : any
+
+declare function same<T>(x: T, y: T): Obs<T>;
+>same : <T>(x: T, y: T) => Obs<T>
+>x : T
+>y : T
+
+declare const di: DI;
+>di : DI
+
+export const s3 = same(di, di);
+>s3 : Obs<DI>
+>same(di, di) : Obs<DI>
+>same : <T>(x: T, y: T) => Obs<T>
+>di : DI
+>di : DI
+
+export const r1: string = s1;
+>r1 : string
+>s1 : Obs<any>
+
+export const r2: string = s2;
+>r2 : string
+>s2 : Obs<any>
+
+export const r3: string = s3;
+>r3 : string
+>s3 : Obs<DI>
+
+// A property only one member of an intersection has is that member's (createUnionOrIntersectionProperty's singleProp):
+// an unresolved type keeps its name, no intersection of one is made (mapbox-gl-draw's `this.map` in a method whose
+// `this` is `DrawCustomModeThis & this`)
+import { Map } from 'nonexistent';
+>Map : any
+
+interface Ctx { map: Map }
+>map : Map
+
+interface Mode { onClick?(this: Ctx & this, e: number): void }
+>onClick : ((this: Ctx & this, e: number) => void) | undefined
+>this : Ctx & this
+>e : number
+
+export const mode: Mode = {
+>mode : Mode
+>{    onClick(e) {        const m: string = this.map;        const n: string = [this.map];    }} : { onClick(this: Ctx & Mode, e: number): void; }
+
+    onClick(e) {
+>onClick : (this: Ctx & Mode, e: number) => void
+>e : number
+
+        const m: string = this.map;
+>m : string
+>this.map : Map
+>this : Ctx & Mode
+>map : Map
+
+        const n: string = [this.map];
+>n : string
+>[this.map] : Map[]
+>this.map : Map
+>this : Ctx & Mode
+>map : Map
+    }
+};
+
