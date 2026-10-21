@@ -4666,6 +4666,35 @@ static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
 // Null when the file was checked
 enum { MAX_FILE_REDOS = 3 };
 static pthread_mutex_t retired_lock = PTHREAD_MUTEX_INITIALIZER;
+// A file check_file_or_give_up() gave up (its setjmp returned): the checker is retired and a fresh one returned.
+// (A function of its own: its locals and the compound literals of its messages aren't live across the setjmp,
+// -Wclobbered)
+static Checker* give_up_file(Program* me, Checker* checker, SourceFile const* source) {
+    // (Given up: the stack is gone, what it reported for this file too)
+    checker->redo_jmp = nullptr;
+    ErrorCtx* given_up = checker->errs;
+    checker->errs = given_up->parent;
+    error_ctx_drop(given_up);
+    free(given_up);
+    graph_retire(checker->graph, checker);
+    if (getenv("TTTT_GRAPH_STATS")) eprintln("graph: redo of ", source->canonical_path, " (worker ", (u32)checker->graph_worker, ")");
+    pthread_mutex_lock(&retired_lock);
+    if (my retired_count == my retired_cap) {
+        my retired_cap = my retired_cap ? my retired_cap * 2 : 8;
+        my retired = realloc(my retired, sizeof(Checker*) * my retired_cap);
+        panic_if(!my retired, "out of memory");
+    }
+    my retired[my retired_count++] = checker;
+    pthread_mutex_unlock(&retired_lock);
+    checker_make_current(nullptr);
+    Checker* fresh = checker_new(me);
+    fresh->errs = checker->errs;
+    fresh->peak_memory = checker->peak_memory;
+    checker_make_current(fresh);
+    ty_init_global_types(fresh);
+    return fresh;
+}
+
 static Checker* check_file_or_give_up(Program* me, Checker* checker, SourceFile* source, u32 at, bool may_give_up) {
     __atomic_store_n(&checker->file_order, at, __ATOMIC_RELAXED);
     checker->flow_analysis_disabled = false;
@@ -4682,31 +4711,7 @@ static Checker* check_file_or_give_up(Program* me, Checker* checker, SourceFile*
         *file_errs = error_ctx_scratch(checker->errs);
         file_errs->parent = checker->errs;
         checker->errs = file_errs;
-        if (setjmp(redo)) {
-            // (Given up: the stack is gone, what it reported for this file too)
-            checker->redo_jmp = nullptr;
-            ErrorCtx* given_up = checker->errs;
-            checker->errs = given_up->parent;
-            error_ctx_drop(given_up);
-            free(given_up);
-            graph_retire(checker->graph, checker);
-            if (getenv("TTTT_GRAPH_STATS")) eprintln("graph: redo of ", source->canonical_path, " (worker ", (u32)checker->graph_worker, ")");
-            pthread_mutex_lock(&retired_lock);
-            if (my retired_count == my retired_cap) {
-                my retired_cap = my retired_cap ? my retired_cap * 2 : 8;
-                my retired = realloc(my retired, sizeof(Checker*) * my retired_cap);
-                panic_if(!my retired, "out of memory");
-            }
-            my retired[my retired_count++] = checker;
-            pthread_mutex_unlock(&retired_lock);
-            checker_make_current(nullptr);
-            Checker* fresh = checker_new(me);
-            fresh->errs = checker->errs;
-            fresh->peak_memory = checker->peak_memory;
-            checker_make_current(fresh);
-            ty_init_global_types(fresh);
-            return fresh;
-        }
+        if (setjmp(redo)) return give_up_file(me, checker, source);
         checker->redo_jmp = &redo;
     }
     if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
