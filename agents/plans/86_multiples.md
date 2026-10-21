@@ -933,6 +933,27 @@ every `-p` corpus, 20-run tables on the four, no default-path cost until the fla
    (identities and Ty-resident results to the published one, scratch to the private one; the census in
    86_stage4_census.md lists the kinds), and no private pointer from a published block (TTTT_DEBUG_IDS-style check).
    Target: vscode K12 peak within ~1.3x of today's defaults (1.4 GB), drizzle/effect within 1.2x.
+   **Measured first (2026-10-21): the private part can't reach the target.** vscode at K12 with the flag peaks at
+   4.56 GB: ~0.89 GB before the typecheck (AST, binder), then ~1.1 GB of materialized deferred bodies (`--no-defer-bodies`
+   parses them all up front: resolve ends at 2.00 GB instead of 0.89; with the flag nothing is recycled, so every
+   materialized body stays, `defer: dropped 0`), the checkers' arenas 1.42 GB (one K1 history's worth of types:
+   K1 without recycling has 1.40 GB), and ~1.1 GB of tables, lazy pages and the rest (checker_memory() sums to 1.67 GB
+   with the arenas). The defaults peak at 1.28-1.49 GB because a recycle drops all of it: types, bodies and tables. With
+   a shared graph the types are published (every worker may point at them) and published types point into
+   materialized bodies (function expressions', object literals', local declarations' nodes: KEY_NODE identities, decl
+   pointers), so neither can go while the graph lives. Recycling only the private part (relation caches, scratch kinds,
+   expression memos, private tables) frees at most ~1 GB: ~3.5 GB, 2.5x the target. **What the target needs is a
+   graph-wide recycle**: when the graph's memory passes the budget, every worker stops at its next file boundary (nothing
+   in flight there), the last to arrive drops every checker, the graph and its tables (deferred bodies are released
+   with the checkers' holds), a new graph and checkers are made, and the workers go on, warming the lib up again
+   (ty_graph_warm_up()). Today's per-checker recycle semantics for the whole graph at once; the barrier costs up to the
+   slowest worker's current file per recycle. Estimate 2-3 sessions (the barrier with stealing and finished shares,
+   graph teardown/rebuild, the id directory's chunks, retired checkers dropped with it, the recycle oracle).
+   **Where the flag already wins on memory, the thrashers**: K12 T12 (load 3.5) dokploy/apps/dokploy 0.77 s, 4.2 s CPU,
+   1.22 GB against the defaults' 3.40 s, 34.5 s, 2.98 GB (K1: 3.77 s, 0.81 GB); monkeytype/frontend 0.30 s, 2.1 s, 564 MB
+   against 0.89 s, 8.9 s, 1056 MB (K1 0.79 s, 395 MB); both 5 / 5 K1's output. vscode 2.12 s / 21.5 / 4.56 GB against
+   2.20 / 22.5 / 1.49; drizzle 0.41 / 1.54 / 629 MB against 0.28 / 2.65 / 622; effect 0.28 / 2.62 / 840 against 0.24 /
+   2.39 / 561.
 4. **The redo's gaps (1 session).** A break while the thread materializes deferred bodies (none seen) leaves the AST
    thread state set; malloc'd temporaries of the abandoned stack leak (bounded by redos: drizzle 0-4 a run); a retired
    checker's memory stays to the end (fold into item 3: a retired worker's private part freed at once).
