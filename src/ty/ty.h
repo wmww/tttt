@@ -1029,6 +1029,7 @@ typedef enum ClaimKind {
     CLAIM_PARAM_DEFAULT, // members.c's ParamDefaultClaim: a type parameter's default being lowered
     CLAIM_SIMPLIFIED, // ty_simplified() of (type, writing) in flight: itself meanwhile
     CLAIM_PRIMITIVE_CONSTRAINT, // checker.c's primitive_constraint_of() of a type variable in flight: none meanwhile
+    CLAIM_MENTIONS, // conditional.c's compute_mentions() of a type in flight (KEY_FUNCTION_TYPE_MENTIONS): unknown meanwhile
     CLAIM_KIND_COUNT,
 } ClaimKind;
 
