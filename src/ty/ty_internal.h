@@ -315,7 +315,7 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key);
 u32 ty_order_rank(Ty const* t);
 static inline int ty_compare(Ty const* a, Ty const* b) {
     if (a == b) return 0;
-    u64 ka = a->order_key, kb = b->order_key;
+    u64 ka = __atomic_load_n(&a->order_key, __ATOMIC_RELAXED), kb = __atomic_load_n(&b->order_key, __ATOMIC_RELAXED);
     if (!ka) ka = ty_order_key(a);
     if (!kb) kb = ty_order_key(b);
     if (ka != kb) return ka < kb ? -1 : 1;

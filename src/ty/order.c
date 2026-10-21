@@ -477,10 +477,12 @@ static u64 compute_key(Ty const* t) {
 }
 
 u64 ty_order_key(Ty const* t) {
-    u64 k = t->order_key;
+    u64 k = __atomic_load_n(&t->order_key, __ATOMIC_RELAXED);
     if (k) return k;
     k = compute_key(t);
-    ((Ty*)t)->order_key = k; // (A cache: the checker that owns the type is the only one reading it)
+    // (A cache of a pure function of the type's immutable fields: every worker computes the same word, so a relaxed
+    // store is enough, whoever's lands. Relaxed atomics are plain moves on x86)
+    __atomic_store_n(&((Ty*)t)->order_key, k, __ATOMIC_RELAXED);
     return k;
 }
 
