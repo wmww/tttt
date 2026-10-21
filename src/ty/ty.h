@@ -253,7 +253,7 @@ typedef struct TyParamState {
     LazyState constraint_state;
     Ty const* constraint; // null if unconstrained
     LazyState fallback_state;
-    bool fallback_circular; // Its default reaches itself (TS2716): then it has none
+    bool fallback_circular; // Its default reached itself (TS2716): then it has none. Written with the default only
     Ty const* fallback;
     bool is_infer; // declared by `infer X` in the extends type of a conditional type
     bool is_this; // The `this` type of a class or interface (Ty.declared.this_param), prints as `this`
@@ -1026,6 +1026,7 @@ typedef struct DeferredCheck {
 typedef enum ClaimKind {
     CLAIM_VARIANCES, // relate.c's VarianceClaim: a declared type's or alias's variances being measured
     CLAIM_DEFERRED_ARGS, // lower.c's DeferredArgsClaim: a deferred reference's arguments being resolved
+    CLAIM_PARAM_DEFAULT, // members.c's ParamDefaultClaim: a type parameter's default being lowered
     CLAIM_KIND_COUNT,
 } ClaimKind;
 

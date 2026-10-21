@@ -6447,25 +6447,40 @@ bool ty_param_has_default(Ty const* param) {
     return state->item && default_item(param);
 }
 
+// A type parameter's default being lowered (CLAIM_PARAM_DEFAULT, keyed by its TyParamState)
+typedef struct ParamDefaultClaim {
+    Claim claim;
+    bool circular; // Asked for meanwhile: it reaches itself (TS2716), and has none
+} ParamDefaultClaim;
+
+// The default is known (with whether it was circular, TS2716)
+static void publish_param_default(TyParamState* state, Ty const* fallback, bool circular) {
+    state->fallback = fallback;
+    state->fallback_circular = circular;
+    state->fallback_state = LAZY_STATE_DONE;
+}
+
 Ty const* ty_param_default(Checker* me, Ty const* param) {
     check(param->kind == TY_TYPE_PARAM);
     TyParamState* state = param->param.state;
     if (state->fallback_state == LAZY_STATE_NOT_STARTED && state->clone_of) {
         state->fallback_state = LAZY_STATE_IN_FLIGHT;
         Ty const* fallback = ty_param_default(me, state->clone_of);
-        state->fallback = fallback ? ty_instantiate(me, fallback, state->clone_mapper) : nullptr;
-        state->fallback_state = LAZY_STATE_DONE;
+        publish_param_default(state, fallback ? ty_instantiate(me, fallback, state->clone_mapper) : nullptr, false);
     }
     if (state->fallback_state == LAZY_STATE_NOT_STARTED) {
         state->fallback_state = LAZY_STATE_IN_FLIGHT;
+        ParamDefaultClaim claim = {0};
+        ty_claim_push(me, CLAIM_PARAM_DEFAULT, &claim.claim, state, 0);
         GenericItem const* item = state->item ? default_item(param) : nullptr;
-        if (item) state->fallback = ty_from_node(me, item->fallback, (LowerCtx){ .generic = true });
+        Ty const* fallback = item ? ty_from_node(me, item->fallback, (LowerCtx){ .generic = true }) : nullptr;
+        ty_claim_pop(me, CLAIM_PARAM_DEFAULT, &claim.claim);
         // (tsc's getResolvedTypeParameterDefault: asked for while being resolved, it's circularConstraintType)
-        if (state->fallback_circular) state->fallback = nullptr;
-        state->fallback_state = LAZY_STATE_DONE;
+        publish_param_default(state, claim.circular ? nullptr : fallback, claim.circular);
     } else if (state->fallback_state == LAZY_STATE_IN_FLIGHT && !state->clone_of) {
         TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-        state->fallback_circular = true;
+        Claim* claim = ty_claim_find(me, CLAIM_PARAM_DEFAULT, state, 0);
+        if (claim) c_container_of(claim, ParamDefaultClaim, claim)->circular = true;
     }
     return state->fallback_state == LAZY_STATE_DONE ? state->fallback : nullptr;
 }
