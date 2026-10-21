@@ -5215,8 +5215,7 @@ static Members const* resolve_intersection_members(Checker* me, Ty const* ty) {
                     }
                     Signature* clone = arena_new(&my arena, Signature);
                     signature_resolve(me, sig);
-                    *clone = *sig;
-                    signature_copied(me, clone, sig);
+                    signature_copy(me, clone, sig);
                     sig_ret_init(clone, ty_intersection(me, mixed, mixed_len, nullptr, (TyList){0}));
                     free(mixed);
                     sig = clone;
@@ -5766,7 +5765,23 @@ static void copy_word(Checker* me, SharedWord* to, uint8_t* to_state, SharedWord
     if (in_flight) sw_copy_in_flight(me, to, to_state);
 }
 
-void signature_copied(Checker* me, Signature* copy, Signature const* original) {
+// (Byte ranges of `from` around its words, which another worker may be publishing: those are read by copy_word() and
+// the record's peek below, with atomics; plan 86 4f, TSan D)
+static void copy_around_words(Signature* to, Signature const* from) {
+    size_t words[3] = { offsetof(Signature, ret), offsetof(Signature, predicate), offsetof(Signature, res) };
+    for (u32 i = 1; i < 3; i++) for (u32 j = i; j && words[j - 1] > words[j]; j--) {
+        size_t t = words[j]; words[j] = words[j - 1]; words[j - 1] = t;
+    }
+    size_t at = 0;
+    for (u32 i = 0; i < 3; i++) {
+        memcpy((char*)to + at, (char const*)from + at, words[i] - at);
+        at = words[i] + sizeof(SharedWord);
+    }
+    memcpy((char*)to + at, (char const*)from + at, sizeof(Signature) - at);
+}
+
+void signature_copy(Checker* me, Signature* copy, Signature const* original) {
+    copy_around_words(copy, original);
     // (A predicate in flight is its claim's, which the copy doesn't have: not computed)
     copy_word(me, &copy->ret, &copy->ret_flight, &original->ret, &original->ret_flight, true);
     copy_word(me, &copy->predicate, &copy->predicate_flight, &original->predicate, &original->predicate_flight, false);

@@ -1998,9 +1998,10 @@ static inline bool sig_resolved(Checker* me, Signature const* sig) {
     if (__builtin_expect(v > SW_NONE && !my graph_shadowed, 1)) return true;
     return my graph && sw_peek(me, &sig->res) != SW_EMPTY;
 }
-// After `*copy = *original`: a copy of a resolved signature shares its record; one in flight here gets a snapshot of
-// what is resolved so far (as when it copied the fields); an unresolved one, or one in flight elsewhere, resolves itself
-void signature_copied(Checker* me, Signature* copy, Signature const* original);
+// `*copy = *original` without a plain read of its words (another worker may be publishing them): a copy of a resolved
+// signature shares its record; one in flight here gets a snapshot of what is resolved so far (as when it copied the
+// fields); an unresolved one, or one in flight elsewhere, resolves itself
+void signature_copy(Checker* me, Signature* copy, Signature const* original);
 // A record for a signature made resolved, before anyone else can see it
 SigResolved const* sig_resolved_new(Checker* me, SigResolved init);
 static inline void sig_res_init(Signature* sig, SigResolved const* res) {

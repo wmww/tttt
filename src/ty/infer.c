@@ -544,8 +544,7 @@ Signature const* ty_signature_with_type_params(Checker* me, Signature const* sig
     signature_return_type(me, sig);
     signature_predicate(me, sig);
     Signature* ret = arena_new(&my arena, Signature);
-    *ret = *sig;
-    signature_copied(me, ret, sig);
+    signature_copy(me, ret, sig);
     SigResolved res = *sig_res(me, ret);
     res.type_params = type_params;
     sig_res_init(ret, sig_resolved_new(me, res));

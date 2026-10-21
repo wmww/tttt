@@ -2316,8 +2316,7 @@ bool ty_implementation_compatible_with_overload(Checker* me, Signature const* im
     }
     // isSignatureAssignableTo with IgnoreReturnTypes: the target returning any compares nothing more
     Signature* copy = arena_new(&my arena, Signature);
-    *copy = *target;
-    signature_copied(me, copy, target);
+    signature_copy(me, copy, target);
     sig_ret_init(copy, ty_intrinsic(me, TY_ANY));
     sig_predicate_init(copy, nullptr);
     // (compareSignaturesRelated, not signaturesRelatedTo: a constructor's accessibility or abstractness doesn't matter,
@@ -2325,8 +2324,7 @@ bool ty_implementation_compatible_with_overload(Checker* me, Signature const* im
     copy->flags &= ~(u32)SIGNATURE_CONSTRUCT;
     if (source->flags & SIGNATURE_CONSTRUCT) {
         Signature* source_copy = arena_new(&my arena, Signature);
-        *source_copy = *source;
-        signature_copied(me, source_copy, source);
+        signature_copy(me, source_copy, source);
         source_copy->flags &= ~(u32)SIGNATURE_CONSTRUCT;
         source = source_copy;
     }
