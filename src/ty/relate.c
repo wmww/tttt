@@ -4716,8 +4716,15 @@ static bool may_simplify_conditional(Ty const* ty) {
 }
 
 // tsc's getResolvedBaseConstraint, without the sentinels: cached like its resolvedBaseConstraint, whatever the stack
-// (React's `T & {}` check types ask again and again)
-static Ty const base_constraint_in_flight, base_constraint_circular, base_constraint_none;
+// (React's `T & {}` check types ask again and again). The links only hold finished answers (two of them sentinels:
+// circular, none); one in flight is its RESOLVING_BASE_CONSTRAINT entry, nothing in the links
+static Ty const base_constraint_circular, base_constraint_none;
+
+// The base constraint is known
+static void publish_base_constraint(Checker* me, Ty const* ty, Ty const* constraint, bool circular) {
+    ty_link_set(me, KEY_BASE_CONSTRAINT, ty, circular ? &base_constraint_circular : constraint ? constraint : &base_constraint_none);
+}
+
 static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack) {
     // (Nothing generic in it: itself, but for `Uppercase<string>`, which is a string, also inside a template literal,
     // and a substitution type (`NoInfer<X>` is X). tsc also replaces those in unions and intersections, which tttt
@@ -4728,18 +4735,20 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
         return ty;
     }
     Ty const* cached = ty_link_get(me, KEY_BASE_CONSTRAINT, ty);
-    if (cached == &base_constraint_in_flight) {
-        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-        // Asked for again while computed: circular (tsc's pushTypeResolution failing), unless that was below the
-        // resolution barrier, where it's computed again
-        if (ty_resolving_find(me, RESOLVING_BASE_CONSTRAINT, ty)) {
-            ty_resolving_cycle(me, RESOLVING_BASE_CONSTRAINT, ty);
-            return nullptr;
-        }
-    } else if (cached) {
+    if (cached) {
         TAINT_READ(TK_BASE_CONSTRAINT, ty);
         return cached == &base_constraint_circular || cached == &base_constraint_none ? nullptr : cached;
     }
+    // Asked for again while computed: circular (tsc's pushTypeResolution failing), unless that was below the resolution
+    // barrier, where it's computed again
+    if (ty_resolving_find(me, RESOLVING_BASE_CONSTRAINT, ty)) {
+        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+        ty_resolving_cycle(me, RESOLVING_BASE_CONSTRAINT, ty);
+        return nullptr;
+    }
+#ifdef TTTT_TAINT
+    if (ty_in_flight_entry(me, RESOLVING_BASE_CONSTRAINT, ty)) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+#endif
     // We always explore at least 10 levels of nested constraints, then up to 50 while the type's recursion identity
     // isn't on the stack yet (tsc's getResolvedBaseConstraint: a safety stop for long cycles of generated types)
     void const* identity = recursion_identity(ty);
@@ -4753,15 +4762,14 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
     ConstraintStack inner = { .up = stack, .identity = identity, .len = len + 1 };
     // (tsc simplifies every type first: indexed accesses here, conditional types only where their branches as written
     // could make them simplify, see may_simplify_conditional())
-    ty_link_set(me, KEY_BASE_CONSTRAINT, ty, &base_constraint_in_flight);
     TAINT_BEGIN(taint_frame);
     ty_resolving_push(me, RESOLVING_BASE_CONSTRAINT, ty);
     Ty const* ret = deep ? nullptr : compute_base_constraint(me, ty->kind == TY_INDEXED || (ty->kind == TY_CONDITIONAL && may_simplify_conditional(ty)) ?
         ty_simplified(me, ty, false) : ty, &inner);
     bool circular = ty_resolving_pop(me);
     // (The first answer stays: one computed again below the barrier answered already)
-    if (ty_link_get(me, KEY_BASE_CONSTRAINT, ty) == &base_constraint_in_flight) {
-        ty_link_set(me, KEY_BASE_CONSTRAINT, ty, circular ? &base_constraint_circular : ret ? ret : &base_constraint_none);
+    if (!ty_link_get(me, KEY_BASE_CONSTRAINT, ty)) {
+        publish_base_constraint(me, ty, ret, circular);
         TAINT_END(taint_frame, TK_BASE_CONSTRAINT, ty, ty, circular ? nullptr : ret);
     }
     return circular ? nullptr : ret;
@@ -4778,7 +4786,7 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, ConstraintStack cons
 // (Asked for while it's computed above the barrier: circular, tsc's pushTypeResolution failing, an answer for now only)
 static bool has_non_circular_base_constraint(Checker* me, Ty const* ty) {
     if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return true;
-    bool in_flight = ty_link_get(me, KEY_BASE_CONSTRAINT, ty) == &base_constraint_in_flight && ty_resolving_find(me, RESOLVING_BASE_CONSTRAINT, ty);
+    bool in_flight = !ty_link_get(me, KEY_BASE_CONSTRAINT, ty) && ty_resolving_find(me, RESOLVING_BASE_CONSTRAINT, ty);
     if (in_flight) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
     base_constraint(me, ty, nullptr);
     return !in_flight && ty_link_get(me, KEY_BASE_CONSTRAINT, ty) != &base_constraint_circular;
@@ -4786,10 +4794,9 @@ static bool has_non_circular_base_constraint(Checker* me, Ty const* ty) {
 
 // Whether the base constraint is being computed (its circularity isn't known yet)
 bool ty_base_constraint_in_flight(Checker* me, Ty const* ty) {
-#ifdef TTTT_TAINT
-    if (ty_link_get(me, KEY_BASE_CONSTRAINT, ty) == &base_constraint_in_flight) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-#endif
-    return ty_link_get(me, KEY_BASE_CONSTRAINT, ty) == &base_constraint_in_flight;
+    bool in_flight = !ty_link_get(me, KEY_BASE_CONSTRAINT, ty) && ty_in_flight_entry(me, RESOLVING_BASE_CONSTRAINT, ty);
+    if (in_flight) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+    return in_flight;
 }
 
 Ty const* ty_base_constraint(Checker* me, Ty const* ty) { return base_constraint(me, ty, nullptr); }
