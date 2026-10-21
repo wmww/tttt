@@ -1402,7 +1402,7 @@ struct Checker {
     // Plan 86 stage 4f (overlay.h): its words in flight and the values it keeps privately (tainted, or computed after
     // a poison); and whether one of them is a word another worker published meanwhile (then every word's fast path
     // takes the slow path, Overlay first, until its file ends)
-    struct Overlay* overlay;
+    Overlay overlay;
     bool graph_shadowed;
     // The signature_resolve() calls in flight in this worker, innermost first (members.c): their records so far
     struct SigResolving* sig_resolving;
@@ -1460,6 +1460,26 @@ static inline uintptr_t sw_get(Checker const* me, SharedWord const* w) {
     uintptr_t v = sw_load(w);
     return __builtin_expect(v > SW_POISON && !my graph_shadowed, 1) ? v : SW_EMPTY;
 }
+// Whether a published value is what this worker reads of `w`: it isn't shadowed, has no copies in flight, and hasn't
+// `w` in flight (the claims' filter: one load)
+static inline bool sw_reads_published(Checker const* me, SharedWord const* w) {
+    return !my graph_shadowed && !my overlay.copies && !my overlay.filter[sw_filter_slot(w)];
+}
+// sw_look_slow() with the inline first probe: a published word this worker reads as it is
+static inline SwLook sw_look(Checker* me, SharedWord const* w, uint8_t const* state, uintptr_t* out) {
+    uintptr_t v = sw_load(w);
+    if (__builtin_expect(v > SW_POISON && sw_reads_published(me, w), 1)) {
+        *out = v;
+        return SW_LOOK_DONE;
+    }
+    return sw_look_slow(me, w, state, out);
+}
+// A done-ness peek (TAINT_PEEK, no event; sw_peek_slow()) with the inline first probe
+static inline uintptr_t sw_peek(Checker const* me, SharedWord const* w) {
+    uintptr_t v = sw_load(w);
+    if (__builtin_expect(v > SW_POISON && sw_reads_published(me, w), 1)) return v;
+    return sw_peek_slow(me, w);
+}
 // A done-ness peek (sw_peek(): no event but for its own private value): its type if this worker knows it (published, or its own private value), else null
 static inline Ty const* prop_type_peek(Checker* me, Prop const* prop) {
     uintptr_t v = me->graph ? sw_peek(me, &prop->type) : __atomic_load_n(&prop->type.v, __ATOMIC_RELAXED);
@@ -1468,7 +1488,8 @@ static inline Ty const* prop_type_peek(Checker* me, Prop const* prop) {
 // sw_look(), sw_claim() and sw_finish() with the default path (no graph: the word and its state byte) inline: they are
 // what every computation of a hot kind pays (a property type, a signature), ~1% of drizzle's instructions out of line
 static inline SwLook sw_look_fast(Checker* me, SharedWord const* w, uint8_t const* state, uintptr_t* out) {
-    if (__builtin_expect(my graph != nullptr, 0)) return sw_look(me, w, state, out);
+    // (With a graph its callers have taken sw_get() already: the probe would fail)
+    if (__builtin_expect(my graph != nullptr, 0)) return sw_look_slow(me, w, state, out);
     uintptr_t v = __atomic_load_n(&w->v, __ATOMIC_RELAXED);
     if (v) {
         *out = v;
@@ -1501,7 +1522,7 @@ static inline bool sw_mine_in_flight_fast(Checker const* me, SharedWord const* w
     return *state == LAZY_STATE_IN_FLIGHT;
 }
 static inline uintptr_t sw_peek_fast(Checker const* me, SharedWord const* w) {
-    if (__builtin_expect(my graph != nullptr, 0)) return sw_peek(me, w);
+    if (__builtin_expect(my graph != nullptr, 0)) return sw_peek_slow(me, w);
     return __atomic_load_n(&w->v, __ATOMIC_RELAXED);
 }
 // Plan 86 4f: a read or write of per-worker side data that a computation can leave behind or read, which a worker

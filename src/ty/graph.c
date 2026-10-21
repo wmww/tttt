@@ -1095,7 +1095,7 @@ void graph_print_stats(TyGraph const* me) {
         (u64)variance_poisoned, ", tainted after another's ", (u64)variance_private);
     eprintln("graph: memo entries clean ", (u64)memo_stat_clean, ", tainted ", (u64)memo_stat_tainted, " (by a pushed-out miss ",
         (u64)memo_stat_floor, "), tainted hits ", (u64)memo_stat_hits);
-    overlay_print_stats();
+    overlay_print_stats((Checker* const*)my workers + 1, my checkers < 63 ? my checkers : 63);
     eprintln("graph: relations shared ", (u64)atomic_load(&((TyGraph*)me)->relation_puts), ", hits ", (u64)atomic_load(&((TyGraph*)me)->relation_hits));
     eprintln("graph: ", my checkers, " checkers, ", shared_table_len(my types), " types entries, ", shared_table_len(my links),
         " links, ", shared_table_len(my intersection_props), " intersection props, ", shared_links_len(my node_links),

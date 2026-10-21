@@ -16,42 +16,33 @@ void graph_taint_bump(void) {
 }
 #endif
 
-// A worker's words in flight (value SW_EMPTY) and its private values, by the word's address: open addressing with
-// linear probing, deletion by backward shift
-typedef struct Overlay {
-    uintptr_t* keys;
-    uintptr_t* values;
-    u32 cap, len;
-} Overlay;
+// The private values and copies in flight (Overlay.map): open addressing with linear probing, deletion by backward
+// shift
+static OverlayStats stat_total;
+static pthread_mutex_t stat_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static _Atomic u64 stat_published, stat_adopted, stat_poisoned, stat_private, stat_shadowed, stat_hits, stat_mine;
-
-static inline u32 overlay_slot(Overlay const* o, uintptr_t key) {
+static inline u32 map_slot(OverlayMap const* o, uintptr_t key) {
     u64 h = (u64)key * 0x9e3779b97f4a7c15ull;
     return (u32)(h >> 32) & (o->cap - 1);
 }
 
 // The entry's index, or the empty slot where it would go
-static u32 overlay_find(Overlay const* o, uintptr_t key) {
-    u32 i = overlay_slot(o, key);
+static u32 map_find(OverlayMap const* o, uintptr_t key) {
+    u32 i = map_slot(o, key);
     while (o->keys[i] && o->keys[i] != key) i = (i + 1) & (o->cap - 1);
     return i;
 }
 
-static void overlay_put(Checker* me, uintptr_t key, uintptr_t value) {
-    Overlay* o = my overlay;
-    if (!o) {
-        o = my overlay = calloc(1, sizeof(Overlay));
-        panic_if(!o, "out of memory");
-    }
+static void map_put(Overlay* ov, uintptr_t key, uintptr_t value) {
+    OverlayMap* o = &ov->map;
     if ((o->len + 1) * 2 > o->cap) {
-        Overlay bigger = { .cap = o->cap ? o->cap * 2 : 256, .len = o->len };
+        OverlayMap bigger = { .cap = o->cap ? o->cap * 2 : 256, .len = o->len };
         bigger.keys = calloc(bigger.cap, sizeof(uintptr_t));
         bigger.values = calloc(bigger.cap, sizeof(uintptr_t));
         panic_if(!bigger.keys || !bigger.values, "out of memory");
         for (u32 i = 0; i < o->cap; i++) {
             if (!o->keys[i]) continue;
-            u32 j = overlay_find(&bigger, o->keys[i]);
+            u32 j = map_find(&bigger, o->keys[i]);
             bigger.keys[j] = o->keys[i];
             bigger.values[j] = o->values[i];
         }
@@ -59,31 +50,33 @@ static void overlay_put(Checker* me, uintptr_t key, uintptr_t value) {
         free(o->values);
         *o = bigger;
     }
-    u32 i = overlay_find(o, key);
+    u32 i = map_find(o, key);
     if (!o->keys[i]) o->len++;
+    else if (!o->values[i]) ov->copies--;
+    if (!value) ov->copies++;
     o->keys[i] = key;
     o->values[i] = value;
 }
 
-static bool overlay_get(Checker const* me, uintptr_t key, uintptr_t* value) {
-    Overlay const* o = my overlay;
-    if (!o || !o->len) return false;
-    u32 i = overlay_find(o, key);
+static bool map_get(OverlayMap const* o, uintptr_t key, uintptr_t* value) {
+    if (!o->len) return false;
+    u32 i = map_find(o, key);
     if (!o->keys[i]) return false;
     *value = o->values[i];
     return true;
 }
 
-static void overlay_remove(Checker* me, uintptr_t key) {
-    Overlay* o = my overlay;
-    if (!o || !o->len) return; // (sw_finish() without a claim: ty_set_declared_type())
-    u32 i = overlay_find(o, key);
+static void map_remove(Overlay* ov, uintptr_t key) {
+    OverlayMap* o = &ov->map;
+    if (!o->len) return; // (sw_finish() without a claim: ty_set_declared_type())
+    u32 i = map_find(o, key);
     if (!o->keys[i]) return;
+    if (!o->values[i]) ov->copies--;
     o->keys[i] = 0;
     o->len--;
     // (Backward shift: the entries after it that probed past it move up)
     for (u32 j = (i + 1) & (o->cap - 1); o->keys[j]; j = (j + 1) & (o->cap - 1)) {
-        u32 home = overlay_slot(o, o->keys[j]);
+        u32 home = map_slot(o, o->keys[j]);
         if (((j - home) & (o->cap - 1)) >= ((j - i) & (o->cap - 1))) {
             o->keys[i] = o->keys[j];
             o->values[i] = o->values[j];
@@ -93,14 +86,70 @@ static void overlay_remove(Checker* me, uintptr_t key) {
     }
 }
 
-void overlay_drop(Checker* me) {
-    if (!my overlay) return;
-    free(my overlay->keys);
-    free(my overlay->values);
-    free(my overlay);
-    my overlay = nullptr;
+// The claims (Overlay.claims and its filter)
+
+[[gnu::noinline, gnu::cold]] static void claims_grow(Overlay* o) {
+    o->cap = o->cap ? o->cap * 2 : 256;
+    o->claims = realloc(o->claims, sizeof(uintptr_t) * o->cap);
+    panic_if(!o->claims, "out of memory");
 }
 
+[[gnu::noinline, gnu::cold]] static void claims_overflow(void) {
+    panic("sw_claim(): too many claims");
+}
+
+static inline void claim_push(Overlay* o, SharedWord const* w) {
+    if (__builtin_expect(o->depth == o->cap, 0)) claims_grow(o);
+    o->claims[o->depth++] = (uintptr_t)w;
+    uint16_t* n = &o->filter[sw_filter_slot(w)];
+    if (__builtin_expect(*n == UINT16_MAX, 0)) claims_overflow();
+    ++*n;
+}
+
+static inline bool claim_has(Overlay const* o, SharedWord const* w) {
+    if (__builtin_expect(!o->filter[sw_filter_slot(w)], 1)) return false;
+    for (u32 i = o->depth; i-- > 0;) if (o->claims[i] == (uintptr_t)w) return true;
+    return false;
+}
+
+// Every claim of `w` ends (a re-entry that computed it again claimed it twice: the one finish ends both, as the map
+// entry it was ended them)
+[[gnu::noinline]] static void claim_drop_slow(Overlay* o, SharedWord const* w, uint16_t* n) {
+    for (u32 i = o->depth; *n && i-- > 0;) {
+        if (o->claims[i] != (uintptr_t)w) continue;
+        o->claims[i] = 0;
+        --*n;
+    }
+    while (o->depth && !o->claims[o->depth - 1]) o->depth--;
+}
+
+static inline void claim_drop(Overlay* o, SharedWord const* w) {
+    uint16_t* n = &o->filter[sw_filter_slot(w)];
+    if (!*n) return;
+    if (__builtin_expect(*n == 1 && o->claims[o->depth - 1] == (uintptr_t)w, 1)) {
+        *n = 0;
+        if (--o->depth && __builtin_expect(!o->claims[o->depth - 1], 0)) claim_drop_slow(o, w, n);
+        return;
+    }
+    claim_drop_slow(o, w, n);
+}
+
+void overlay_drop(Checker* me) {
+    Overlay* o = &my overlay;
+    pthread_mutex_lock(&stat_lock);
+    stat_total.published += o->stats.published;
+    stat_total.adopted += o->stats.adopted;
+    stat_total.poisoned += o->stats.poisoned;
+    stat_total.private_ += o->stats.private_;
+    stat_total.shadowed += o->stats.shadowed;
+    stat_total.hits += o->stats.hits;
+    stat_total.mine += o->stats.mine;
+    pthread_mutex_unlock(&stat_lock);
+    free(o->map.keys);
+    free(o->map.values);
+    free(o->claims);
+    *o = (Overlay){0};
+}
 
 // TTTT_DEBUG_PUBLISH=1 (plan 86 stage 4f, "identity of lost-race objects"): every computation's arena range is recorded
 // when it finishes, as private (tainted, or lost) or public (published). sw_debug_check_ref() aborts when a pointer a
@@ -133,7 +182,7 @@ static bool debug_publish_on(void) {
     return on;
 }
 
-static void debug_mark(Checker* me, SharedWord const* w) {
+[[gnu::noinline, gnu::cold]] static void debug_mark(Checker* me, SharedWord const* w) {
     if (debug_marks_len == debug_marks_cap) {
         debug_marks_cap = debug_marks_cap ? debug_marks_cap * 2 : 64;
         debug_marks = realloc(debug_marks, sizeof(DebugMark) * debug_marks_cap);
@@ -153,7 +202,7 @@ static void debug_range_add(char const* from, char const* to, bool private_) {
 }
 
 // The computation of `w` ended: its allocations since its claim, chunk by chunk (newer chunks are in front)
-static void debug_finish(Checker* me, SharedWord const* w, bool private_) {
+[[gnu::noinline, gnu::cold]] static void debug_finish(Checker* me, SharedWord const* w, bool private_) {
     if (!debug_marks_len || debug_marks[debug_marks_len - 1].word != w) return; // (Claimed before the knob was read)
     DebugMark mark = debug_marks[--debug_marks_len];
     pthread_mutex_lock(&debug_lock);
@@ -181,7 +230,7 @@ void sw_debug_check_ref(void const* ref, char const* what) {
         ", made by a computation whose result is private (tainted or lost)");
 }
 
-SwLook sw_look(Checker* me, SharedWord const* w, uint8_t const* state, uintptr_t* out) {
+SwLook sw_look_slow(Checker* me, SharedWord const* w, uint8_t const* state, uintptr_t* out) {
     if (!my graph) {
         uintptr_t v = __atomic_load_n(&w->v, __ATOMIC_RELAXED);
         if (v) {
@@ -196,19 +245,26 @@ SwLook sw_look(Checker* me, SharedWord const* w, uint8_t const* state, uintptr_t
     }
     (void)state;
     // (This worker's own first: its in-flight computation, or a value it keeps, whatever the word says now)
+    Overlay* o = &my overlay;
+    if (claim_has(o, w)) {
+        // (Its own cycle: an event)
+        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+        o->stats.mine++;
+        return SW_LOOK_MINE;
+    }
+    uintptr_t v = sw_load(w);
     uintptr_t own;
-    if (overlay_get(me, (uintptr_t)w, &own)) {
-        // (Its own cycle, or a private value: tainted, so reading it is an event too)
+    if ((v == SW_POISON || my graph_shadowed || o->copies) && map_get(&o->map, (uintptr_t)w, &own)) {
+        // (A copy in flight, a cycle, or a private value: tainted, so reading it is an event too)
         TAINT_EVENT(own ? TAINT_READ_TAINTED : TAINT_IN_FLIGHT_OTHER);
         if (!own) {
-            atomic_fetch_add_explicit(&stat_mine, 1, memory_order_relaxed);
+            o->stats.mine++;
             return SW_LOOK_MINE;
         }
-        atomic_fetch_add_explicit(&stat_hits, 1, memory_order_relaxed);
+        o->stats.hits++;
         *out = own;
         return SW_LOOK_DONE;
     }
-    uintptr_t v = sw_load(w);
     if (v > SW_POISON) {
         *out = v;
         return SW_LOOK_DONE;
@@ -218,19 +274,35 @@ SwLook sw_look(Checker* me, SharedWord const* w, uint8_t const* state, uintptr_t
 
 void sw_copy_in_flight(Checker* me, SharedWord* to, uint8_t* to_state) {
     if (!my graph) *to_state = LAZY_STATE_IN_FLIGHT;
-    else overlay_put(me, (uintptr_t)to, SW_EMPTY);
+    else map_put(&my overlay, (uintptr_t)to, SW_EMPTY);
+}
+
+// (The seeded scheduler's and TTTT_DEBUG_PUBLISH's claim)
+[[gnu::noinline, gnu::cold]] static void sw_claim_debug(Checker* me, SharedWord const* w) {
+    // (A scheduling point of the seeded scheduler (TTTT_GRAPH_SEED), as lazy_claim_slow() is: a claim is where
+    // another worker's computation of the same word can interleave)
+    graph_sched_point(false);
+    claim_push(&my overlay, w);
+    if (debug_publish_on()) debug_mark(me, w);
 }
 
 uint64_t sw_claim(Checker* me, SharedWord* w, uint8_t* state) {
     if (!my graph) *state = LAZY_STATE_IN_FLIGHT;
-    else {
-        // (A scheduling point of the seeded scheduler (TTTT_GRAPH_SEED), as lazy_claim_slow() is: a claim is where
-        // another worker's computation of the same word can interleave)
-        graph_sched_point(false);
-        overlay_put(me, (uintptr_t)w, SW_EMPTY);
-        if (__builtin_expect(__atomic_load_n(&debug_publish, __ATOMIC_RELAXED) != 0, 0) && debug_publish_on()) debug_mark(me, w);
-    }
+    else if (__builtin_expect(graph_sched_on || __atomic_load_n(&debug_publish, __ATOMIC_RELAXED) != 0, 0)) sw_claim_debug(me, w);
+    else claim_push(&my overlay, w);
     return graph_taint_now;
+}
+
+// TTTT_GRAPH_FORCE_SHADOW=1: a clean loser is treated as a tainted one, to exercise the shadowed path and the retire at
+// the file's end; the output must not move
+static int force_shadow = -1;
+[[gnu::cold]] static bool force_shadow_on(void) {
+    int force = __atomic_load_n(&force_shadow, __ATOMIC_RELAXED);
+    if (force < 0) {
+        force = getenv("TTTT_GRAPH_FORCE_SHADOW") && *getenv("TTTT_GRAPH_FORCE_SHADOW") == '1';
+        __atomic_store_n(&force_shadow, force, __ATOMIC_RELAXED);
+    }
+    return force;
 }
 
 uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value, uint64_t taint) {
@@ -241,52 +313,51 @@ uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value,
         *state = LAZY_STATE_NOT_STARTED;
         return value;
     }
-    overlay_remove(me, (uintptr_t)w);
+    Overlay* o = &my overlay;
+    claim_drop(o, w);
+    // (A private value is kept only for a poisoned word, or by a shadowed worker)
+    uintptr_t seen = sw_load(w);
+    if ((seen == SW_POISON || o->copies || my graph_shadowed) && o->map.len) map_remove(o, (uintptr_t)w);
     bool clean = graph_taint_now == taint;
     bool debug = __builtin_expect(__atomic_load_n(&debug_publish, __ATOMIC_RELAXED) > 0, 0);
-    uintptr_t seen = SW_EMPTY;
-    if (__atomic_compare_exchange_n(&w->v, &seen, clean ? value : (uintptr_t)SW_POISON, false, __ATOMIC_RELEASE, __ATOMIC_ACQUIRE)) {
+    // (Tested before the CAS: a final word's line isn't taken exclusively by a CAS that can't win)
+    if (seen == SW_EMPTY &&
+        __atomic_compare_exchange_n(&w->v, &seen, clean ? value : (uintptr_t)SW_POISON, false, __ATOMIC_RELEASE, __ATOMIC_ACQUIRE)) {
         if (debug) debug_finish(me, w, !clean);
         if (clean) {
-            atomic_fetch_add_explicit(&stat_published, 1, memory_order_relaxed);
+            o->stats.published++;
             return value;
         }
-        atomic_fetch_add_explicit(&stat_poisoned, 1, memory_order_relaxed);
-        overlay_put(me, (uintptr_t)w, value);
+        o->stats.poisoned++;
+        map_put(o, (uintptr_t)w, value);
         return value;
     }
     if (debug) debug_finish(me, w, true);
     if (seen == SW_POISON) {
         // (Someone's was tainted: every worker keeps its own, clean or not)
-        atomic_fetch_add_explicit(&stat_private, 1, memory_order_relaxed);
-        overlay_put(me, (uintptr_t)w, value);
+        o->stats.private_++;
+        map_put(o, (uintptr_t)w, value);
         return value;
     }
-    // (TTTT_GRAPH_FORCE_SHADOW=1: a clean loser is treated as a tainted one, to exercise the shadowed path and the
-    // retire at the file's end; the output must not move)
-    static int force_shadow = -1;
-    int force = __atomic_load_n(&force_shadow, __ATOMIC_RELAXED);
-    if (force < 0) {
-        force = getenv("TTTT_GRAPH_FORCE_SHADOW") && *getenv("TTTT_GRAPH_FORCE_SHADOW") == '1';
-        __atomic_store_n(&force_shadow, force, __ATOMIC_RELAXED);
-    }
-    if (clean && !force) {
+    if (clean && !(__builtin_expect(force_shadow != 0, 0) && force_shadow_on())) {
         // (Nothing read its own before now: a read of a value in flight is a taint event)
-        atomic_fetch_add_explicit(&stat_adopted, 1, memory_order_relaxed);
+        o->stats.adopted++;
         return seen;
     }
     // A tainted value whose word another worker published meanwhile: this worker keeps its own, and goes by its Overlay
     // first until its file ends (program.c retires it then)
-    atomic_fetch_add_explicit(&stat_shadowed, 1, memory_order_relaxed);
-    overlay_put(me, (uintptr_t)w, value);
+    o->stats.shadowed++;
+    map_put(o, (uintptr_t)w, value);
     my graph_shadowed = true;
     return value;
 }
 
 bool sw_mine_in_flight(Checker const* me, SharedWord const* w, uint8_t const* state) {
     if (!my graph) return *state == LAZY_STATE_IN_FLIGHT;
+    Overlay const* o = &my overlay;
+    if (claim_has(o, w)) return true;
     uintptr_t own;
-    return overlay_get(me, (uintptr_t)w, &own) && !own;
+    return o->copies && map_get(&o->map, (uintptr_t)w, &own) && !own;
 }
 
 void sw_unclaim(Checker* me, SharedWord const* w) {
@@ -298,23 +369,35 @@ void sw_abandon(Checker* me, SharedWord const* w, uint8_t* state) {
         *state = LAZY_STATE_NOT_STARTED;
         return;
     }
-    overlay_remove(me, (uintptr_t)w);
+    claim_drop(&my overlay, w);
+    map_remove(&my overlay, (uintptr_t)w);
     sw_unclaim(me, w);
 }
 
-uintptr_t sw_peek(Checker const* me, SharedWord const* w) {
+uintptr_t sw_peek_slow(Checker const* me, SharedWord const* w) {
     if (!my graph) return __atomic_load_n(&w->v, __ATOMIC_RELAXED);
+    Overlay const* o = &my overlay;
+    if (claim_has(o, w)) return SW_EMPTY;
+    uintptr_t v = sw_load(w);
     uintptr_t own;
-    if (overlay_get(me, (uintptr_t)w, &own)) {
+    if ((v == SW_POISON || my graph_shadowed || o->copies) && map_get(&o->map, (uintptr_t)w, &own)) {
         if (own) TAINT_EVENT(TAINT_READ_TAINTED);
         return own;
     }
-    uintptr_t v = sw_load(w);
     return v > SW_POISON ? v : SW_EMPTY;
 }
 
-void overlay_print_stats(void) {
-    eprintln("graph: shared words published ", (u64)stat_published, ", adopted ", (u64)stat_adopted, ", poisoned ",
-        (u64)stat_poisoned, ", computed privately after poison ", (u64)stat_private, ", shadowed ", (u64)stat_shadowed,
-        ", overlay hits ", (u64)stat_hits, ", own in flight ", (u64)stat_mine);
+void overlay_print_stats(Checker* const* live, u32 count) {
+    pthread_mutex_lock(&stat_lock);
+    OverlayStats t = stat_total;
+    pthread_mutex_unlock(&stat_lock);
+    for (u32 i = 0; i < count; i++) {
+        if (!live[i]) continue;
+        OverlayStats const* s = &live[i]->overlay.stats;
+        t.published += s->published, t.adopted += s->adopted, t.poisoned += s->poisoned, t.private_ += s->private_;
+        t.shadowed += s->shadowed, t.hits += s->hits, t.mine += s->mine;
+    }
+    eprintln("graph: shared words published ", t.published, ", adopted ", t.adopted, ", poisoned ", t.poisoned,
+        ", computed privately after poison ", t.private_, ", shadowed ", t.shadowed, ", overlay hits ", t.hits,
+        ", own in flight ", t.mine);
 }
