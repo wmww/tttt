@@ -1076,16 +1076,12 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
         bool identity = key[0] == KEY_CONDITIONAL_INSTANCE;
         for (u32 i = 0; i < len && identity; i++) identity = targets[i] == outer->params.data[i];
         for (u32 i = 0; i < len; i++) {
-            // (Except for a type parameter with a distributed twin: mapping it to itself maps the twin back to it, as
-            // tsgo's newTypeMapper of all the outer type parameters does, plan 57)
+            // (Except for a type parameter: mapping it to itself maps its distributed twin back to it, as tsgo's
+            // newTypeMapper of all the outer type parameters does, plan 57. Every type parameter, not only one whose twin
+            // exists yet: whether it does is history (the first lowering of a branch that names it makes it), and two
+            // histories built different instances for one key, plan 86 stage 4b's M1)
             Ty const* param = outer->params.data[i];
-#ifdef TTTT_TAINT
-            // (Whether the twin exists yet is history: plan 86 stage 4-0's experiment, TTTT_TAINT_EXP_TWIN=1)
-            static int exp_twin = -1;
-            if (exp_twin < 0) exp_twin = getenv("TTTT_TAINT_EXP_TWIN") && *getenv("TTTT_TAINT_EXP_TWIN");
-            if (exp_twin && targets[i] == param && !identity && param->kind == TY_TYPE_PARAM) TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
-#endif
-            if (targets[i] == param && (identity || !(param->kind == TY_TYPE_PARAM && param->param.state->distributed))) continue;
+            if (targets[i] == param && (identity || param->kind != TY_TYPE_PARAM)) continue;
             sources[kept_len] = outer->params.data[i];
             kept[kept_len++] = targets[i];
         }

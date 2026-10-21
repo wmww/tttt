@@ -10,8 +10,8 @@
 # ty_to_cstr, which perturbs: printing resolves what it prints; --kind K only kind K's, which keeps the memory down).
 # --lenient: the rule plan 86's G0 verdict uses (no done-ness peeks, flow_uncached only for expressions;
 # src/ty/taint.c says why); --variances-clean also counts variances read while being measured as clean (cleandiff
-# says that's wrong: drizzle's 92 mismatches); --twin taints instantiate_conditional()'s test of whether a type
-# parameter's distributed twin exists yet (the named mechanism behind the conditional instance mismatches).
+# says that's wrong: drizzle's 92 mismatches). (--twin, which tainted instantiate_conditional()'s test of whether a
+# type parameter's distributed twin existed yet, does nothing now: the test is gone, plan 86 4b's M1.)
 set -e
 cd "$(dirname "$0")/.."
 TOP=40
