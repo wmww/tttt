@@ -4982,7 +4982,11 @@ static void check_share(Program* me, u32 c, u32 count) {
             // (With a memory budget the first one starts in a fresh checker: its own files' types are little use in
             // another's region, and kept they'd stack a second warm state on the first. The source sweep's 285 biggest
             // at the defaults: wall -7.1%, peak +3.8% kept; -5.2%, +0.4% dropped)
-            if (at != UINT32_MAX && !stolen++ && my checker_budget != UINT64_MAX && segment_count) recycle_due = true;
+            if (at != UINT32_MAX && !stolen++ && my checker_budget != UINT64_MAX && segment_count &&
+                checker_memory(checker) > budget / 2
+            ) {
+                recycle_due = true;
+            }
         }
         if (at == UINT32_MAX) break;
         if (my graph) graph_lead_wait(me, c);

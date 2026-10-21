@@ -35,11 +35,13 @@
 #include <sched.h>
 
 enum { MAX_COMPILER_OPTION_ARGS = 64 };
-// --checker-memory's default (plan 67 stage 1)
-#define DEFAULT_CHECKER_MEMORY_MB 256
-// Unless --checker-memory is given: what the checkers hold together at most, each at least 64 MB (plan 75: 128 MB
-// each up to 12 checkers, 64 MB each at 24)
-#define CHECKER_MEMORY_CAP_MB 1536
+// --checker-memory's default: a quarter of the memory, at most DEFAULT_CHECKER_MEMORY_MAX_MB and at least
+// DEFAULT_CHECKER_MEMORY_MIN_MB, split between the checkers (each at least 96 MB while that fits, else 64: the cap).
+// Recycling rebuilds each checker's warm state: on 16 vCPUs (2026-10-21) the old 96 MB each cost vscode 6% of its
+// CPU (26.3 against 24.8 s off, peak 3.2 against 5.0 GB) and dokploy 3x (32 against 10.6 s, 2.4 against 2.8 GB). The
+// human takes speed over memory up to ~3x bun's peak (vscode: 2.2 GB); 8 GB never recycles any measured project
+#define DEFAULT_CHECKER_MEMORY_MAX_MB 8192
+#define DEFAULT_CHECKER_MEMORY_MIN_MB 256
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
@@ -60,7 +62,7 @@ typedef struct Options {
     u32 checkers; // --checkers
     u32 checker_cap; // Unless --checkers is given: default_checker_cap()
     u64 checker_memory; // --checker-memory, bytes (UINT64_MAX: off)
-    bool checker_memory_given; // Else CHECKER_MEMORY_CAP_MB caps it
+    bool checker_memory_given; // Else the default total caps it (each at least 64 MB)
     bool shared_graph; // --shared-graph
     bool first_touch_stamps; // --first-touch-stamps
     u32 threads; // --threads
@@ -644,7 +646,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     if (!opts->expect_types) program_set_checker_memory(program, opts->checker_memory);
     // (No growing start, program_set_checker_memory_shared(): plan 81 stage 1's 16 MB start held vscode's peak at
     // 1.6 GB against 3.0 without it, for 6-20% more CPU; the human takes speed over memory, 2026-10-21)
-    if (!opts->expect_types && !opts->checker_memory_given) program_set_checker_memory_cap(program, (u64)CHECKER_MEMORY_CAP_MB << 20);
+    if (!opts->expect_types && !opts->checker_memory_given) program_set_checker_memory_cap(program, opts->checker_memory);
     set_lib_dir(program);
     program_follow_lib_references(program);
     StrList root_files = {0};
@@ -1329,8 +1331,8 @@ static void print_help(void) {
         "                4 threads, else 1). The output doesn't depend on it\n"
         "  --singleThreaded  one checker on one thread, one project at a time\n"
         "  --checker-memory MB  what the checkers may hold together before each drops its types and goes on\n"
-        "                fresh (default: " STRINGIFY(DEFAULT_CHECKER_MEMORY_MB) ", each at least 96, together at most\n"
-        "                " STRINGIFY(CHECKER_MEMORY_CAP_MB) " but each at least 64; 0: a fresh checker per file, off: never)\n"
+        "                fresh (default: a quarter of the memory, at most " STRINGIFY(DEFAULT_CHECKER_MEMORY_MAX_MB) ", each\n"
+        "                at least 96 while that fits, else 64; 0: a fresh checker per file, off: never)\n"
         "  --shared-graph  the checkers share one type graph, never recycled (plan 86 stage 4; also\n"
         "                TTTT_SHARED_GRAPH=1)\n"
         "  --first-touch-stamps  deep nesting orders types by when each checker met them first, not by id\n"
@@ -1394,13 +1396,21 @@ static u32 default_checker_cap(u32 threads) {
     return cores > few ? cores : few;
 }
 
+// --checker-memory's default, bytes
+static u64 default_checker_memory(void) {
+    long pages = sysconf(_SC_PHYS_PAGES), page = sysconf(_SC_PAGESIZE);
+    u64 quarter = pages > 0 && page > 0 ? (u64)pages * (u64)page / 4 : (u64)DEFAULT_CHECKER_MEMORY_MIN_MB << 20;
+    u64 most = (u64)DEFAULT_CHECKER_MEMORY_MAX_MB << 20, least = (u64)DEFAULT_CHECKER_MEMORY_MIN_MB << 20;
+    return quarter > most ? most : quarter < least ? least : quarter;
+}
+
 static int run(int argc, const char** argv) {
     long cores = sysconf(_SC_NPROCESSORS_ONLN);
     // Every core parses and binds; checking uses at most `checkers` of them (0: one per core, fewer for a small program,
     // auto_checker_count(): the output doesn't depend on the count, plan 62)
     Options opts = {
         .paths = argv, .pretty = -1, .checkers = 0, .threads = cores < 1 ? 1 : (u32)cores,
-        .checker_memory = (u64)DEFAULT_CHECKER_MEMORY_MB << 20,
+        .checker_memory = default_checker_memory(),
     };
     bool single_threaded = false;
     // tsc's executeCommandLine: `--build` only as the first argument (TS6369 elsewhere), and its options only with it
