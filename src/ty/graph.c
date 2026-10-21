@@ -42,6 +42,7 @@ struct TyGraph {
     SharedTable* intersection_props;
     SharedLinks* node_links;
     SharedLinks* variance_slots; // By subject (graph_variance_slot())
+    unsigned variance_lock; // The worker measuring variances, owner-tagged (graph_variance_lock())
     // Declaration memos by slot, like LazySlots.top (pages made by CAS, a memo written flags last under memo_lock)
     LazyMemo** _Atomic memos[1 << LAZY_TOP_BITS];
     pthread_mutex_t memo_lock;
@@ -621,6 +622,10 @@ void graph_publish(TyGraph* me, Checker* checker) {
     checker->graph_memo_len = 0;
 }
 
+unsigned* graph_variance_lock(Checker* checker) {
+    return &checker->graph->variance_lock;
+}
+
 // Variance slots (graph.h). The slots are the graph's arena's: the first checker's, never recycled with the flag
 VarianceSlot* graph_variance_slot(Checker* checker, void const* subject, bool alias, bool create) {
     TyGraph* me = checker->graph;
@@ -800,7 +805,11 @@ bool lazy_wait_slow(Checker* me, void* field, size_t size) {
         bool breaks = breaks_wait_cycle(graph, me->graph_worker, owner);
         pthread_mutex_unlock(&graph->wait_lock);
         if (breaks) {
-            if (getenv("TTTT_GRAPH_LOUD_FALLBACKS")) eprintln("graph: worker ", (u32)me->graph_worker, " breaks a wait cycle on ", (u32)owner);
+            if (getenv("TTTT_GRAPH_LOUD_FALLBACKS")) {
+                void* ra = __builtin_return_address(0);
+                eprintln("graph: worker ", (u32)me->graph_worker, " breaks a wait cycle on ", (u32)owner, " at ",
+                    (u64)((uintptr_t)ra - (uintptr_t)&graph_print_stats));
+            }
             graph_fallback_hook(me, field);
             me->graph_fallbacks++;
             // A redo instead (plan 86 4d): the worker gives its file up, its claims become nobody's, and the file is
@@ -1064,6 +1073,7 @@ void graph_print_stats(TyGraph const* me) {
         " node links shared");
     for (u32 w = 1; w <= my checkers && w < 64; w++) {
         Checker const* c = my workers[w];
+        if (c && c->instantiation_limit_hits) eprintln("graph: worker ", w, " instantiation limit hits ", c->instantiation_limit_hits);
         if (c && (c->graph_waits || c->graph_fallbacks)) {
             eprintln("graph: worker ", w, " waited ", c->graph_waits, " times, ", (double)c->graph_wait_ns / 1e6, " ms, ",
                 c->graph_fallbacks, " wait cycles broken (fallbacks)");

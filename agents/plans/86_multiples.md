@@ -851,6 +851,22 @@ at the computation's end**, and makes every field another worker can read safe t
   zod 20, effect 20, excalidraw 20; drizzle over 70 runs in all 66-67, the differences TS2589s, TS2578 (`@ts-expect-error`
   lines left unused: a type too permissive) and once TS2322/TS2430/TS2416 in singlestore (variance-shaped). Task 3's
   subject (what instantiation limits and the redo leave history-dependent) is the next suspect for all of them.
+  **Task 3 (the drizzle residue) found: concurrent variance measurements, not the limits or the redo.** Repro loop:
+  drizzle K12 T12 next to an effect K12 loop for load, 100 runs (~4 min, scratch `t3loop.sh`: verdict, redos, limit
+  hits, redone files, differing codes; TTTT_GRAPH_STATS now prints per-worker instantiation limit hits and each redone
+  file). K1 has no instantiation limit hit at all, and no differing run had one (the TS2589 of before step 4 is gone).
+  Differing runs ~2% (6 of ~400), redos in every one but at the same rate as in identical runs (most runs redo 1-6
+  files). Tried and not it: memo entries made during a measurement kept private, every lazy state done during the
+  abandoned measurement reset at the redo, the marker types per worker (TTTT_GRAPH_NOSHARE=53,55,56,57), no redo
+  (fallback: 7%). What fixes it: one worker measuring at a time (graph_variance_lock(), owner-tagged so the wait-for
+  graph sees it, taken by the outermost measurement): 0 differing in 300 loaded runs, and the redos mostly go (0-4 a
+  run). Cost: drizzle's K12 wall 0.27 -> 0.44 s (load 10; zod, effect, excalidraw within noise): measure_variances is a
+  third of drizzle's K1 typecheck inclusive (1.88 G of 5.28 G), now on one worker at a time. Not understood: which
+  shared result one measurement takes from another running at once (both claim different subjects; a cycle between
+  them is a wait cycle, so they're unrelated measurements reading each other's lazy results). Narrowing the lock
+  (per strongly connected group of subjects, or only while another measurement is in flight on a type this one
+  reaches) is 4e work; TTTT_GRAPH_VARIANCE_LOCK=0 is the old behaviour. tsgo's dependence on checker count (task 3's
+  other question) was not measured: its checkers share nothing, so its variance is per checker.
 
 ### 4e's first item: a shared relation cache (measured and designed 2026-10-21, not built)
 **Measurement** (`agents/plans/86_relation_share_probe.patch`, a scratch patch to relate.c's recursive_related():

@@ -73,6 +73,7 @@ typedef struct VarianceSlot {
     void const* subject;
     bool alias;
 } VarianceSlot;
+unsigned* graph_variance_lock(Checker* checker); // Owner-tagged like a lazy state: one measuring worker at a time
 VarianceSlot* graph_variance_slot(Checker* checker, void const* subject, bool alias, bool create);
 void graph_variance_claimed(Checker* checker, VarianceSlot* slot);
 // The outermost measurement ended: each claimed slot gets `value_of`'s answer (null: not started again)

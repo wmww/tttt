@@ -4656,6 +4656,7 @@ static Checker* check_file_or_give_up(Program* me, Checker* checker, SourceFile*
             checker->redo_jmp = nullptr;
             while (vec_error_size(&checker->errs->errors) > errors_before) vec_error_pop(&checker->errs->errors);
             graph_retire(checker->graph, checker);
+            if (getenv("TTTT_GRAPH_STATS")) eprintln("graph: redo of ", source->canonical_path, " (worker ", (u32)checker->graph_worker, ")");
             pthread_mutex_lock(&retired_lock);
             if (my retired_count == my retired_cap) {
                 my retired_cap = my retired_cap ? my retired_cap * 2 : 8;
