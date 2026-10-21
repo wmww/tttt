@@ -1181,6 +1181,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttImportAliasRootValueReference': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttImportExportEqualsPropertyUmdNamespace': {
         errors: true,
         symbols: true,

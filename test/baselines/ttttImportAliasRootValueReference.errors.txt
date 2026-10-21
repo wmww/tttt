@@ -1,0 +1,35 @@
+ambient.ts(6,23): error TS2724: 'mod1' has no exported member named 'test1X'. Did you mean 'test1'?
+plain.ts(5,18): error TS2708: Cannot use namespace 'mod3' as a value.
+plain.ts(5,23): error TS2724: 'mod3' has no exported member named 'test1X'. Did you mean 'test1'?
+plain.ts(6,3): error TS1194: Export declarations are not permitted in a namespace.
+
+
+==== ambient.ts (1 errors) ====
+    declare namespace mod1 {
+      type test1 = string;
+      export { test1 };
+    }
+    declare namespace mod2 {
+      import test1 = mod1.test1X;
+                          ~~~~~~
+!!! error TS2724: 'mod1' has no exported member named 'test1X'. Did you mean 'test1'?
+      export { test1 };
+    }
+    const test2 = mod2;
+    export {}
+==== plain.ts (3 errors) ====
+    namespace mod3 {
+      export type test1 = string;
+    }
+    namespace mod4 {
+      import test1 = mod3.test1X;
+                     ~~~~
+!!! error TS2708: Cannot use namespace 'mod3' as a value.
+                          ~~~~~~
+!!! error TS2724: 'mod3' has no exported member named 'test1X'. Did you mean 'test1'?
+      export { test1 };
+      ~~~~~~~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+    }
+    export {}
+    

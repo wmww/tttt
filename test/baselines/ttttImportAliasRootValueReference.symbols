@@ -1,0 +1,46 @@
+//// [test/cases/ttttImportAliasRootValueReference.ts] ////
+
+=== ambient.ts ===
+declare namespace mod1 {
+>mod1 : Symbol(mod1, Decl(ambient.ts, 0, 0))
+
+  type test1 = string;
+>test1 : Symbol(test1, Decl(ambient.ts, 0, 24))
+
+  export { test1 };
+>test1 : Symbol(test1, Decl(ambient.ts, 2, 10))
+}
+declare namespace mod2 {
+>mod2 : Symbol(mod2, Decl(ambient.ts, 3, 1))
+
+  import test1 = mod1.test1X;
+>test1 : Symbol(test1, Decl(ambient.ts, 4, 24))
+>mod1 : Symbol(mod1, Decl(ambient.ts, 0, 0))
+
+  export { test1 };
+>test1 : Symbol(test1, Decl(ambient.ts, 6, 10))
+}
+const test2 = mod2;
+>test2 : Symbol(test2, Decl(ambient.ts, 8, 5))
+>mod2 : Symbol(mod2, Decl(ambient.ts, 3, 1))
+
+export {}
+=== plain.ts ===
+namespace mod3 {
+>mod3 : Symbol(mod3, Decl(plain.ts, 0, 0))
+
+  export type test1 = string;
+>test1 : Symbol(test1, Decl(plain.ts, 0, 16))
+}
+namespace mod4 {
+>mod4 : Symbol(mod4, Decl(plain.ts, 2, 1))
+
+  import test1 = mod3.test1X;
+>test1 : Symbol(test1, Decl(plain.ts, 3, 16))
+>mod3 : Symbol(mod3, Decl(plain.ts, 0, 0))
+
+  export { test1 };
+>test1 : Symbol(test1, Decl(plain.ts, 5, 10))
+}
+export {}
+

@@ -6,6 +6,19 @@
 #include "scope.h"
 #include "ty/ty.h"
 
+// `A` of an `import x = A.B` referenced as a value (tsc's markIdentifierAliasReferenced -> getResolvedSymbol): not
+// found is TS2304, a namespace only TS2708
+void port_item_report_alias_root_value(Scope const* scope, Span first, ErrorCtx* errs) {
+    // (Not under verbatimModuleSyntax: tsc's markLinkedReferences needs canCollectSymbolAliasAccessibilityData)
+    if (!first.size || compiler_options()->verbatim_module_syntax) return;
+    if (scope_resolve(scope, span_sv(first), SYMBOL_VALUE)) return;
+    if (scope_resolve(scope, span_sv(first), SYMBOL_NAMESPACE)) {
+        error_ctx_error_d(errs, first, 2708, "Cannot use namespace '", first, "' as a value.");
+    } else {
+        scope_report_value_not_found(scope, first, false, errs);
+    }
+}
+
 bool port_item_check_namespace_import_use(Symbol const* alias, Scope const* names) {
     if (!alias || !(alias->flags & SYMBOL_ALIAS) || !alias->alias || !alias->alias->item) return false;
     PortItem* item = alias->alias->item;
@@ -532,14 +545,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         if (alias->export_import && !ambient && !alias->declared && (unknown || value) &&
             !compiler_options()->verbatim_module_syntax
         ) {
-            Span first = *vec_span_at(&port_item_alias(alias)->path, 0);
-            Scope const* scope = alias->symbol->alias->scope;
-            Symbol const* value_found = scope_resolve(scope, span_sv(first), SYMBOL_VALUE);
-            if (!value_found && scope_resolve(scope, span_sv(first), SYMBOL_NAMESPACE)) {
-                error_ctx_error_d(errs, first, 2708, "Cannot use namespace '", first, "' as a value.");
-            } else if (!value_found) {
-                scope_report_value_not_found(scope, first, false, errs);
-            }
+            port_item_report_alias_root_value(alias->symbol->alias->scope, *vec_span_at(&port_item_alias(alias)->path, 0), errs);
         }
     }
     // tsc's checkModuleExportName: `import { "a" as b }`, `export { a as "b" }` can't be emitted as ES2015/ES2020 modules

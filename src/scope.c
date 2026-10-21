@@ -3872,16 +3872,17 @@ static Symbol* resolve_alias_target(Symbol* me) {
             Symbol* target = resolve_if_pure_alias(found);
             // An `import x = A.B` that resolves to nothing is exported as a value (tsc's checkExportSpecifier checks the
             // name as an expression when the target is unknown, which checks A as a value: markAliasReferenced)
-            if ((!target || target->is_placeholder) && (found->flags & SYMBOL_ALIAS) && found->alias && found->alias->item &&
+            // (Not from an ambient context: tsgo's markLinkedReferences returns there, a `declare namespace`'s export)
+            bool ambient = false;
+            for (Scope const* s = my alias->scope; s && !ambient; s = s->parent) ambient = s->ambient;
+            if (!ambient && (!target || target->is_placeholder) && (found->flags & SYMBOL_ALIAS) && found->alias && found->alias->item &&
                 found->alias->item->tag == PORT_IMPORT_ALIAS && !found->alias->item->value_use_checked &&
                 vec_span_size(&port_item_alias(found->alias->item)->path) && found->alias->scope
             ) {
                 PortItem* alias_item = found->alias->item;
                 alias_item->value_use_checked = true;
-                Span first = *vec_span_front(&port_item_alias(alias_item)->path);
-                if (first.size && !scope_get_value(found->alias->scope, span_sv(first), nullptr)) {
-                    scope_report_value_not_found(found->alias->scope, first, false, found->alias->scope->binder->errs);
-                }
+                port_item_report_alias_root_value(found->alias->scope, *vec_span_front(&port_item_alias(alias_item)->path),
+                    found->alias->scope->binder->errs);
             }
             return target;
         }
