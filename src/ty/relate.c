@@ -4908,35 +4908,20 @@ static Ty const* compute_base_constraint(Checker* me, Ty const* ty, ConstraintSt
     }
 }
 
-// A branch of a conditional type, as instantiated if it is already, else as written: whether it could be never
-// (ty_cond_branch_known(): a done-ness peek that selects the answer, rule 5's kind; not an event yet, plan 86 "P2
-// progress")
+// A branch of a conditional type as its root lowers it, before the instance's mapper: whether it could be never
+// (Something generic other than an object type may instantiate to never)
 static bool cond_branch_may_be_never(Checker* me, TyCondBranch const* branch) {
-    Ty const* known = ty_cond_branch_known(me, branch);
-    if (known) return known->flags & TYF_NEVER;
-    if (branch->source) {
-        Ty const* type = branch->source;
-        // (Something generic other than an object type may instantiate to never)
-        return (type->flags & TYF_NEVER) || ((type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && !(type->flags & TYF_OBJECT));
-    }
-    switch (branch->node->tag) {
-        case TYPE_UNKNOWN: case TYPE_VOID: case TYPE_BOOLEAN: case TYPE_NUMBER: case TYPE_STRING: case TYPE_SYMBOL:
-        case TYPE_BIGINT: case TYPE_VALUE: case TYPE_UNIQUE_SYMBOL: case TYPE_TEMPLATE: case TYPE_CALLABLE:
-        case TYPE_INTERFACE: case TYPE_ARRAY: case TYPE_TUPLE:
-            return false;
-        default: return true;
-    }
+    Ty const* type = ty_cond_branch_root_lowered(me, branch);
+    return (type->flags & TYF_NEVER) || ((type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && !(type->flags & TYF_OBJECT));
 }
 
-// Whether a branch of a conditional type is (or as written could be) its check type
+// Whether a branch of a conditional type is (or as its root lowers it could be) its check type
 static bool cond_branch_may_be_check(Checker* me, Ty const* ty, TyCondBranch const* branch) {
-    Ty const* known = ty_cond_branch_known(me, branch);
-    if (known) return actual_type_variable(known) == actual_type_variable(ty->conditional.check);
     Ty const* root = ty->conditional.root ? ty->conditional.root : ty;
-    if (branch->source) return actual_type_variable(branch->source) == actual_type_variable(root->conditional.check);
-    // (A type parameter's name, not an alias applied to arguments)
-    return branch->node->tag == TYPE_IDENTIFIER && vec_spanned_type_is_empty(&branch->node->identifier->generic_params) &&
-        !identifier_type_namespace_count(branch->node->identifier);
+    Ty const* source = ty_cond_branch_root_lowered(me, branch);
+    // (Nothing to instantiate: the branch as it is)
+    if (!(source->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return actual_type_variable(source) == actual_type_variable(ty->conditional.check);
+    return actual_type_variable(source) == actual_type_variable(root->conditional.check);
 }
 
 // Whether tsc's getSimplifiedConditionalType could find `T extends U ? T : never` (or `? never : T`) in a conditional

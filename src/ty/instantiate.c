@@ -194,19 +194,13 @@ TyMapper const* ty_mapper_with(Checker* me, TyMapper const* mapper, Ty const* so
     return ret;
 }
 
-// (Whether the root's branch is lowered yet is history: an instance's key is its root and mapper, not this, see
-// ty_conditional(). Instantiating every branch from the node instead cost drizzle 10% more instructions at K1, each
-// instance lowering its branch again)
-// (A done-ness peek that decides an identity's representation: plan 86 4f's "known identity-history holes", the two
-// paths aren't equivalent)
+// An instance's branch: the root's node with the mapper, lowered through the root's branch when picked
+// (ty_cond_branch_compute()). Whatever the root's branch is by now plays no part: it was a creation-time choice between
+// the node and the root's lowered type, an identity's representation decided by history (plan 86 4f's "known
+// identity-history holes"). Lowering each instance's node anew instead of sharing the root's lowering costs drizzle 9%
 static TyCondBranch instantiate_branch(Checker* me, TyCondBranch const* branch, TyMapper const* mapper) {
-    Ty const* lowered = ty_cond_branch_known(me, branch);
-    if (!lowered) {
-        return (TyCondBranch){ .node = branch->node, .source = branch->source, .ctx = branch->ctx,
-            .mapper = ty_compose_mappers(me, branch->mapper, mapper) };
-    }
-    if (lowered->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) return (TyCondBranch){ .source = lowered, .mapper = mapper };
-    return (TyCondBranch){ .type = lowered };
+    return (TyCondBranch){ .node = branch->node, .ctx = branch->ctx, .mapper = ty_compose_mappers(me, branch->mapper, mapper),
+        .root = branch->root ? branch->root : branch };
 }
 
 static Ty const* conditional_from_root(Checker* me, Ty const* root, Ty const* check_type, TyMapper const* mapper) {

@@ -386,7 +386,7 @@ void graph_fp_result(unsigned kind, void const* subject, void const* result, boo
             break;
         case TK_COND_BRANCH: {
             TyCondBranch const* branch = subject;
-            key = fp_mix(fp_mix((u64)(uintptr_t)branch->node, fp_ty(branch->source)), fp_mapper(branch->mapper));
+            key = fp_mix(fp_mix((u64)(uintptr_t)branch->node, (u64)(uintptr_t)branch->root), fp_mapper(branch->mapper));
             value = fp_ty(result);
             break;
         }

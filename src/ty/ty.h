@@ -501,20 +501,20 @@ static_assert(sizeof(Ty) == 144);
 size_t ty_size_of_kind(TyKind kind);
 
 // A conditional type's branch: immutable but for `lowered`, a lazy branch's type once picked through its conditional
-// type (ty_cond_branch_type(), plan 86 stage 4f's shared word)
+// type (ty_cond_branch_type(), plan 86 stage 4f's shared word). Always lazy: instantiating both branches of a
+// conditional up front would resolve what the untaken one mentions (`Awaited<V>` inside `Awaited<number>`) and never end
 struct TyCondBranch {
-    Ty const* type; // The branch, if neither `node` nor `source` is set (eager)
-    TypeNode const* node;
-    // Or a type to instantiate with `mapper` when the branch is picked: instantiating both branches of a conditional
-    // up front would resolve what the untaken one mentions (`Awaited<V>` inside `Awaited<number>`) and never end
-    Ty const* source;
+    TypeNode const* node; // As written, lowered with `ctx` and instantiated with `mapper` (tsc's getConditionalType)
     LowerCtx ctx;
     TyMapper const* mapper;
+    // An instance's: the root's branch, whose lowered node it instantiates (the lowering shared by every instance,
+    // the same type as lowering the node again: see ty_cond_branch_compute()). Null in a root
+    TyCondBranch const* root;
     uint8_t state; // `lowered` in flight without --shared-graph (overlay.h)
     SharedWord lowered;
 };
-// The branch's type if this worker knows it without computing it (eager, or lowered: a done-ness peek), else null
-Ty const* ty_cond_branch_known(Checker const* me, TyCondBranch const* branch);
+// The branch as its root lowers it: an instance's before its mapper (shared by every instance of the root)
+Ty const* ty_cond_branch_root_lowered(Checker* me, TyCondBranch const* branch);
 
 typedef struct TyDeferredRef {
     TypeNode const* node; // TYPE_ARRAY, TYPE_TUPLE or TYPE_IDENTIFIER (a generic interface or class)

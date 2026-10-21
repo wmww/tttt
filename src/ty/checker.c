@@ -4231,19 +4231,31 @@ Ty const* ty_optional_prop_type(Checker* me, Ty const* ty) {
     return ty_union(me, (Ty const*[]){ ty, add }, 2, nullptr, (TyList){0});
 }
 
-Ty const* ty_cond_branch_known(Checker const* me, TyCondBranch const* branch) {
-    if (!branch->node && !branch->source) return branch->type;
-    return SW_PTR(sw_peek_fast(me, &branch->lowered));
+// A root's branch as lowered from its node: remembered in the root's word, which is that lowering (its mapper is
+// none), so every instance shares it. In flight on this worker's own stack (an instance picked while the root's
+// branch is being lowered: recursiveConditionalCrash4's `Foo<unknown>`), lowered again, not the error type a
+// branch's own cycle is: the same lowering tsc's getConditionalType does each time, which then finds the
+// instantiation depth (TS5114) rather than a cycle
+static Ty const* root_branch_lowered(Checker* me, TyCondBranch const* root) {
+    uintptr_t v = sw_get(me, &root->lowered);
+    if (__builtin_expect(v != 0, 1)) return SW_PTR(v);
+    if (sw_look_fast(me, &root->lowered, &root->state, &v) == SW_LOOK_MINE) return ty_from_node(me, root->node, root->ctx);
+    return ty_cond_branch_type(me, root);
 }
 
+Ty const* ty_cond_branch_root_lowered(Checker* me, TyCondBranch const* branch) {
+    return root_branch_lowered(me, branch->root ? branch->root : branch);
+}
+
+// The branch's node lowered and instantiated with `mapper` (tsc's instantiateType(getTypeFromTypeNode(node), mapper)).
+// An instance's goes through its root's lowering (root_branch_lowered()): lowering the same node with the same
+// context again gives the same type, so the result doesn't depend on whether the root's was lowered first
 Ty const* ty_cond_branch_compute(Checker* me, TyCondBranch const* branch, TyMapper const* mapper) {
-    if (!branch->node && !branch->source) return branch->type;
-    Ty const* source = branch->node ? ty_from_node(me, branch->node, branch->ctx) : branch->source;
+    Ty const* source = branch->root ? root_branch_lowered(me, branch->root) : ty_from_node(me, branch->node, branch->ctx);
     return ty_instantiate_tail(me, source, mapper);
 }
 
 Ty const* ty_cond_branch_type(Checker* me, TyCondBranch const* branch) {
-    if (!branch->node && !branch->source) return branch->type;
     TyCondBranch* mut = (TyCondBranch*)branch; // (The word and its default-path byte only)
     uintptr_t v = sw_get(me, &branch->lowered);
     if (__builtin_expect(v != 0, 1)) return SW_PTR(v);
@@ -4259,18 +4271,12 @@ Ty const* ty_cond_branch_type(Checker* me, TyCondBranch const* branch) {
 }
 
 static u32 cond_branch_key_len(TyCondBranch const* branch) {
-    if (!branch->node && !branch->source) return 2;
     return 2 + (branch->mapper ? branch->mapper->len : 0);
 }
 
 static u32 cond_branch_key(u64* key, TyCondBranch const* branch) {
-    if (!branch->node && !branch->source) {
-        key[0] = branch->type->id;
-        key[1] = 0;
-        return 2;
-    }
     u32 count = 0;
-    key[count++] = branch->node ? (u64)(uintptr_t)branch->node : (u64)(uintptr_t)branch->source;
+    key[count++] = (u64)(uintptr_t)branch->node;
     key[count++] = branch->mapper ? branch->mapper->len : 0;
     for (u32 i = 0; branch->mapper && i < branch->mapper->len; i++) {
         key[count++] = ty_id_pair(branch->mapper->sources[i], branch->mapper->targets[i]);
@@ -4294,9 +4300,8 @@ Ty const* ty_conditional(
     my for_constraint_root = saved_constraint_root;
     if (resolved) return resolved;
     u64 stack_key[64];
-    // An instance (a root and its mapper) is keyed by the mapper, not by its branches: the root's branches are the
-    // root's, and how an instance's branch is held depends on whether the root's was lowered yet (instantiate_branch()),
-    // which is history: with --shared-graph two workers made two instances of one conditional type (plan 86 4d)
+    // An instance (a root and its mapper) is keyed by the mapper, not by its branches: they are the root's, with the
+    // mapper (instantiate_branch())
     u32 key_len = root ? 4 + (mapper ? mapper->len : 0) : 3 + cond_branch_key_len(if_true) + cond_branch_key_len(if_false);
     u64* key = key_len <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * key_len);
     panic_if(!key, "out of memory");

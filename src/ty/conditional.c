@@ -446,7 +446,7 @@ static Ty const* branch_type(Checker* me, TyCondBranch const* branch) {
 // The branch instantiated with the `infer` results too: in one go with what the branch has been instantiated with so
 // far, like tsc's combinedMapper (a substitution type in it resolves differently in two steps)
 static Ty const* branch_type_with(Checker* me, TyCondBranch const* branch, TyMapper const* mapper) {
-    if (mapper && (branch->node || branch->source)) return ty_cond_branch_compute(me, branch, ty_compose_mappers(me, branch->mapper, mapper));
+    if (mapper) return ty_cond_branch_compute(me, branch, ty_compose_mappers(me, branch->mapper, mapper));
     return ty_instantiate_tail(me, branch_type(me, branch), mapper);
 }
 
