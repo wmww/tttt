@@ -734,3 +734,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   files (unchecked since tttt emits declarations, plan 64), `-b`'s tsbuildinfo `contentMapperIdentities`.
 - `node_in_mapped_file()` (ty_display.c, declaration maps): a reused TypeNode doesn't know its file; found from one of
   its spans, a keyword by comparing the text at its offset. Correct: TypeNodes knowing their file. Shown by: dtsdiff.py.
+- `claim_and_measure()` (relate.c), `--shared-graph` on threads: one graph-wide variance lock serializes every
+  outermost variance measurement, because measurements running at once on two workers made drizzle differ from K1 in
+  ~2% of runs by a mechanism not yet found (plan 86 4d, task 3). Costs drizzle +54% K12 wall; plan 86 4e item 1.
+- `lazy_wait_slow()` (graph.c): 64 pauses, then 50 sched_yield()s, then doubling sleeps; the 50 was tuned on a loaded
+  16-vCPU box against a convoy of waiters (TTTT_GRAPH_WAIT_YIELDS).
