@@ -786,7 +786,7 @@ static ResolutionMode program_module_ref_mode(Program const* me, SourceFile cons
 typedef struct PreresolvedEntry {
     ModuleRef const* ref;
     ResolutionMode mode;
-    ResolvedModule resolved;
+    ResolvedModule const* resolved; // The resolver's (module_resolver_resolve_shared())
 } PreresolvedEntry;
 
 typedef struct Preresolved {
@@ -796,26 +796,23 @@ typedef struct Preresolved {
 
 static void preresolved_destroy(Preresolved* me) {
     if (!me) return;
-    for (u32 i = 0; i < my count; i++) resolved_module_drop(&my entries[i].resolved);
     free(my entries);
     free(me);
 }
 
-// The worker's resolution of ref in mode, moved out, if it made one
-static bool preresolved_take(Preresolved* me, ModuleRef const* ref, ResolutionMode mode, ResolvedModule* out) {
-    if (!me) return false;
+// The worker's resolution of ref in mode, if it made one
+static ResolvedModule const* preresolved_take(Preresolved* me, ModuleRef const* ref, ResolutionMode mode) {
+    if (!me) return nullptr;
     for (u32 n = 0; n < my count; n++) {
         u32 i = (my next + n) % my count;
         PreresolvedEntry* entry = &my entries[i];
         if (entry->ref != ref) continue;
-        if (entry->mode != mode) return false;
-        *out = entry->resolved;
-        entry->resolved = (ResolvedModule){0};
+        if (entry->mode != mode) return nullptr;
         entry->ref = nullptr;
         my next = i + 1;
-        return true;
+        return entry->resolved;
     }
-    return false;
+    return nullptr;
 }
 
 // Where a file's module names resolve from: a referenced project's output declaration file's resolve from its source
@@ -835,10 +832,11 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     ModuleResolver* resolver = program_resolver_of(me, source);
     csview containing = program_resolution_containing(me, source);
     ResolutionMode mode = program_module_ref_mode(me, source, ref);
-    ResolvedModule resolved;
-    if (!preresolved_take(source->preresolved, ref, mode, &resolved)) {
-        resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
-    }
+    ResolvedModule const* shared = preresolved_take(source->preresolved, ref, mode);
+    if (!shared) shared = module_resolver_resolve_shared(resolver, cstr_sv(&ref->path), containing, mode);
+    // (The resolver's, unless a referenced project's output may replace what it found: then a copy to change)
+    bool owned = my redirects;
+    ResolvedModule resolved = owned ? resolved_module_clone(shared) : *shared;
     program_learn_symlink(me, &resolved);
     csview unbuilt = program_output_of_resolved(me, &resolved);
     if (unbuilt.size && resolved.kind == RESOLVED_JS) {
@@ -847,14 +845,14 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
         ref->failure = MODULE_REF_IS_JS;
         cstr_take(&module_ref_rare_mut(ref)->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
         if (!module_name_is_relative(cstr_sv(&ref->path))) module_ref_rare_mut(ref)->package_name = cstr_clone(resolved.package_name);
-        resolved_module_drop(&resolved);
+        if (owned) resolved_module_drop(&resolved);
         return;
     }
     if (unbuilt.size) {
         ref->failure = MODULE_REF_NOT_BUILT;
         cstr_take(&module_ref_rare_mut(ref)->unbuilt_output, cstr_from_sv(unbuilt));
         cstr_take(&module_ref_rare_mut(ref)->resolved_path, cstr_clone(resolved.path));
-        resolved_module_drop(&resolved);
+        if (owned) resolved_module_drop(&resolved);
         return;
     }
     if (cstr_size(&resolved.ambiguous_root_package_json)) {
@@ -880,7 +878,7 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     if (my options.no_resolve) {
         // Nothing is added to the program, but a name may still mean a file that is part of it
         if (resolved.kind != RESOLVED_NONE) ref->file = program_find_source(me, cstr_sv(&resolved.path));
-        resolved_module_drop(&resolved);
+        if (owned) resolved_module_drop(&resolved);
         return;
     }
     // An augmentation doesn't load what it augments (see ModuleRef.augmented_path), what can't be loaded anyway goes
@@ -889,7 +887,7 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     if (ref->is_declaration && loadable) {
         ref->file = program_find_source(me, cstr_sv(&resolved.path));
         cstr_take(&module_ref_rare_mut(ref)->augmented_path, cstr_clone(resolved.path));
-        resolved_module_drop(&resolved);
+        if (owned) resolved_module_drop(&resolved);
         return;
     }
     bool is_new = resolved.kind != RESOLVED_NONE && !program_find_source(me, cstr_sv(&resolved.path));
@@ -911,7 +909,7 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     if (ref->file && ref->used_ts_extension && my options.rewrite_relative_import_extensions) {
         ref->rewrite_crosses_projects = program_rewrite_crosses_projects(me, ref->file);
     }
-    resolved_module_drop(&resolved);
+    if (owned) resolved_module_drop(&resolved);
 }
 
 // The same version of a package installed twice is one package (tsc's packageIdToSourceFile), unless
@@ -1616,29 +1614,7 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* fil
     if (my options.no_resolve) return;
     ModuleResolver* resolver = program_resolver_of(me, file);
     csview containing = program_resolution_containing(me, file);
-    Preresolved* preresolved = file->module_ref_count ? c_new(Preresolved, {
-        .entries = c_new_n(PreresolvedEntry, file->module_ref_count),
-    }) : nullptr;
-    for (u32 i = 0; i < file->module_ref_count; i++) {
-        ModuleRef const* ref = file->module_refs[i];
-        if (ref->is_declaration || ref->ambient_only) continue;
-        ResolutionMode mode = program_module_ref_mode(me, file, ref);
-        ResolvedModule raw = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
-        ResolvedModule resolved = resolved_module_clone(&raw);
-        preresolved->entries[preresolved->count++] = (PreresolvedEntry){ .ref = ref, .mode = mode, .resolved = raw };
-        program_redirect_resolved(me, &resolved);
-        bool load = resolved.kind == RESOLVED_TS || resolved.kind == RESOLVED_DTS || resolved.kind == RESOLVED_JSON ||
-            (resolved.kind == RESOLVED_JS && my options.allow_js && !(resolved.is_external_library &&
-                csview_contains(cstr_sv(&resolved.path), "/node_modules/")));
-        if (load) program_queue_path(me, pool, cstr_sv(&resolved.path), false);
-        resolved_module_drop(&resolved);
-    }
-    if (preresolved && !preresolved->count) {
-        preresolved_destroy(preresolved);
-        preresolved = nullptr;
-    }
-    preresolved_destroy(file->preresolved);
-    file->preresolved = preresolved;
+    // (In the loader's order, which the pool's ranks follow: the directives, then the imports)
     for_each (s, vec_statement, &file->ast.statements) {
         if (s->tag != STATEMENT_SOURCE_DIRECTIVE) continue;
         SourceDirectiveStatement const* directive = s->source_directive;
@@ -1679,8 +1655,31 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* fil
             }   break;
         }
     }
+    Preresolved* preresolved = file->module_ref_count ? c_new(Preresolved, {
+        .entries = c_new_n(PreresolvedEntry, file->module_ref_count),
+    }) : nullptr;
+    for (u32 i = 0; i < file->module_ref_count; i++) {
+        ModuleRef const* ref = file->module_refs[i];
+        if (ref->is_declaration || ref->ambient_only) continue;
+        ResolutionMode mode = program_module_ref_mode(me, file, ref);
+        ResolvedModule const* shared = module_resolver_resolve_shared(resolver, cstr_sv(&ref->path), containing, mode);
+        preresolved->entries[preresolved->count++] = (PreresolvedEntry){ .ref = ref, .mode = mode, .resolved = shared };
+        bool owned = my redirects;
+        ResolvedModule resolved = owned ? resolved_module_clone(shared) : *shared;
+        program_redirect_resolved(me, &resolved);
+        bool load = resolved.kind == RESOLVED_TS || resolved.kind == RESOLVED_DTS || resolved.kind == RESOLVED_JSON ||
+            (resolved.kind == RESOLVED_JS && my options.allow_js && !(resolved.is_external_library &&
+                csview_contains(cstr_sv(&resolved.path), "/node_modules/")));
+        if (load) program_queue_path(me, pool, cstr_sv(&resolved.path), false);
+        if (owned) resolved_module_drop(&resolved);
+    }
+    if (preresolved && !preresolved->count) {
+        preresolved_destroy(preresolved);
+        preresolved = nullptr;
+    }
+    preresolved_destroy(file->preresolved);
+    file->preresolved = preresolved;
 }
-
 // A load pool worker's job
 static SourceFile* program_parse_ahead(void* ctx, LoadPool* pool, csview path, bool is_stdlib, ErrorCtx* errs) {
     Program* me = ctx;

@@ -95,6 +95,14 @@ ResolvedModule module_resolver_resolve(
     csview containing_file,
     ResolutionMode mode
 );
+// module_resolver_resolve()'s result, the resolver's: valid until module_resolver_forget_resolutions() (no copy: the
+// load pool's workers and the loader ask for every import of every file)
+ResolvedModule const* module_resolver_resolve_shared(
+    ModuleResolver* me,
+    csview specifier,
+    csview containing_file,
+    ResolutionMode mode
+);
 // tsc's resolvePackageDirectory: the directory of package `name` in the nearest node_modules (or its @types twin) up
 // from containing_file, whether or not anything in it resolves; path is followed through symlinks (original_path is
 // the link). Empty path if there is none

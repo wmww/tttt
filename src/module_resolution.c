@@ -60,9 +60,10 @@ static void package_json_box_drop(PackageJsonBox* me) {
 #define g_no_clone
 #include <cleat/generic/hmap.h>
 
+// (Results live in their shard's boxes: two keys may share one, and pointers to them stay valid until forgotten)
+typedef ResolvedModule const* ResolvedModulePtr;
 #define g_pro_key SvStr, svstr
-#define g_class_val ResolvedModule, resolved_module
-#define g_no_clone
+#define g_val ResolvedModulePtr, resolved_module_ptr
 #include <cleat/generic/hmap.h>
 
 // Sharded by key hash: the load pool's workers all resolve at once
@@ -73,7 +74,9 @@ typedef struct ResolverShard {
     HMapPackageJsonBox package_jsons; // By directory
     // module_resolver_resolve()'s results by containing directory, mode and specifier (resolution_key()): the files of
     // a directory import the same packages, each a walk up the node_modules directories
-    HMapResolvedModule resolutions;
+    HMapResolvedModulePtr resolutions;
+    ResolvedModule** boxes; // What resolutions point to, made in this shard
+    isize box_count, box_cap;
 } ResolverShard;
 
 typedef struct ModuleResolver {
@@ -176,9 +179,9 @@ static void apply_realpath(ModuleResolver* me, ResolvedModule* resolved) {
 void module_resolver_destroy(ModuleResolver* me) {
     if (!me) return;
     cstr_drop(&my cwd);
+    module_resolver_forget_resolutions(me);
     for (int i = 0; i < RESOLVER_SHARDS; i++) {
         hmap_package_json_box_drop(&my shards[i].package_jsons);
-        hmap_resolved_module_drop(&my shards[i].resolutions);
         pthread_mutex_destroy(&my shards[i].lock);
     }
     pthread_mutex_destroy(&my cwd_lock);
@@ -188,8 +191,16 @@ void module_resolver_destroy(ModuleResolver* me) {
 void module_resolver_forget_resolutions(ModuleResolver* me) {
     if (!me) return;
     for (int i = 0; i < RESOLVER_SHARDS; i++) {
-        hmap_resolved_module_drop(&my shards[i].resolutions);
-        my shards[i].resolutions = (HMapResolvedModule){0};
+        ResolverShard* shard = &my shards[i];
+        hmap_resolved_module_ptr_drop(&shard->resolutions);
+        shard->resolutions = (HMapResolvedModulePtr){0};
+        for (isize j = 0; j < shard->box_count; j++) {
+            resolved_module_drop(shard->boxes[j]);
+            free(shard->boxes[j]);
+        }
+        free(shard->boxes);
+        shard->boxes = nullptr;
+        shard->box_count = shard->box_cap = 0;
     }
 }
 
@@ -1663,21 +1674,41 @@ static bool resolves_by_joined_path(csview specifier) {
     return !ends_with(specifier, "/") && !ends_with(specifier, "/.") && !ends_with(specifier, "/..");
 }
 
-ResolvedModule module_resolver_resolve(
+// Under the shard's lock: key means value from now on unless it already meant something, which it keeps (two threads
+// both resolved it, and agree). key is taken
+static ResolvedModule const* shard_insert(ResolverShard* shard, cstr key, ResolvedModule const* value) {
+    auto inserted = hmap_resolved_module_ptr_insert(&shard->resolutions, key, value);
+    return inserted.ref->second;
+}
+
+// Under the shard's lock: a box for value (taken), for shard_insert()
+static ResolvedModule const* shard_box(ResolverShard* shard, ResolvedModule value) {
+    if (shard->box_count == shard->box_cap) {
+        shard->box_cap = shard->box_cap ? shard->box_cap * 2 : 64;
+        shard->boxes = realloc(shard->boxes, sizeof(ResolvedModule*) * (size_t)shard->box_cap);
+        panic_if(!shard->boxes, "out of memory");
+    }
+    ResolvedModule* box = c_new(ResolvedModule, value);
+    shard->boxes[shard->box_count++] = box;
+    return box;
+}
+
+ResolvedModule const* module_resolver_resolve_shared(
     ModuleResolver* me,
     csview specifier,
     csview containing_file,
     ResolutionMode mode
 ) {
-    if (!specifier.size) return (ResolvedModule){0};
+    static ResolvedModule const nothing = {0};
+    if (!specifier.size) return &nothing;
     resolver_init_cwd(me);
     cstr key = resolution_key(me, containing_file, mode, specifier);
     ResolverShard* shard = resolver_shard(me, cstr_sv(&key));
     pthread_mutex_lock(&shard->lock);
-    auto cached = hmap_resolved_module_get(&shard->resolutions, cstr_sv(&key));
-    ResolvedModule ret = cached ? resolved_module_clone(&cached->second) : (ResolvedModule){0};
+    auto cached = hmap_resolved_module_ptr_get(&shard->resolutions, cstr_sv(&key));
+    ResolvedModule const* ret = cached ? cached->second : nullptr;
     pthread_mutex_unlock(&shard->lock);
-    if (cached) {
+    if (ret) {
         cstr_drop(&key);
         return ret;
     }
@@ -1685,35 +1716,44 @@ ResolvedModule module_resolver_resolve(
     cstr dir = cstr_from_sv(csview_slice(cstr_sv(&key), 0, csview_find(cstr_sv(&key), "\n")));
     // The joined path's key: the path, a carriage return (no directory key has one before its line break), the mode
     cstr joined_key = cstr_null;
+    ResolverShard* joined_shard = nullptr;
     if (resolves_by_joined_path(specifier)) {
         cstr joined = join(cstr_sv(&dir), specifier);
         joined_key = cstr_d(joined, "\r", (char)('0' + mode));
         cstr_drop(&joined);
-        ResolverShard* joined_shard = resolver_shard(me, cstr_sv(&joined_key));
+        joined_shard = resolver_shard(me, cstr_sv(&joined_key));
         pthread_mutex_lock(&joined_shard->lock);
-        auto by_path = hmap_resolved_module_get(&joined_shard->resolutions, cstr_sv(&joined_key));
-        if (by_path) ret = resolved_module_clone(&by_path->second);
+        auto by_path = hmap_resolved_module_ptr_get(&joined_shard->resolutions, cstr_sv(&joined_key));
+        ret = by_path ? by_path->second : nullptr;
         pthread_mutex_unlock(&joined_shard->lock);
-        if (by_path) {
+        if (ret) {
             pthread_mutex_lock(&shard->lock);
-            hmap_resolved_module_insert(&shard->resolutions, key, resolved_module_clone(&ret));
+            ret = shard_insert(shard, key, ret);
             pthread_mutex_unlock(&shard->lock);
             c_drop(cstr, &dir, &joined_key);
             return ret;
         }
     }
-    ret = resolve_uncached(me, specifier, cstr_sv(&dir), mode);
+    ResolvedModule resolved = resolve_uncached(me, specifier, cstr_sv(&dir), mode);
     pthread_mutex_lock(&shard->lock);
-    hmap_resolved_module_insert(&shard->resolutions, key, resolved_module_clone(&ret));
+    ret = shard_insert(shard, key, shard_box(shard, resolved));
     pthread_mutex_unlock(&shard->lock);
-    if (cstr_size(&joined_key)) {
-        ResolverShard* joined_shard = resolver_shard(me, cstr_sv(&joined_key));
+    if (joined_shard) {
         pthread_mutex_lock(&joined_shard->lock);
-        hmap_resolved_module_insert(&joined_shard->resolutions, joined_key, resolved_module_clone(&ret));
+        shard_insert(joined_shard, joined_key, ret);
         pthread_mutex_unlock(&joined_shard->lock);
     }
     cstr_drop(&dir);
     return ret;
+}
+
+ResolvedModule module_resolver_resolve(
+    ModuleResolver* me,
+    csview specifier,
+    csview containing_file,
+    ResolutionMode mode
+) {
+    return resolved_module_clone(module_resolver_resolve_shared(me, specifier, containing_file, mode));
 }
 
 ResolvedModule module_resolver_resolve_package_directory(ModuleResolver* me, csview name, csview containing_file) {

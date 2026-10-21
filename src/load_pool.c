@@ -11,13 +11,36 @@ typedef enum LoadState {
     LOAD_TAKEN, // The loader has it, or parses it itself: nobody else touches it
 } LoadState;
 
+// Where the loader will want a file, roughly: the indices of the path to it from the loader's first wants (libs, roots in
+// order, automatic types), a root's i-th import [root, i], its j-th [root, i, j]. The loader takes files in that
+// order (depth first, preorder) when the import graph is a tree; below RANK_DEPTH it's queue order
+enum { RANK_DEPTH = 16 };
+
+typedef struct Rank {
+    u32 at[RANK_DEPTH];
+    u32 depth;
+} Rank;
+
+static int rank_compare(Rank const* a, Rank const* b) {
+    u32 n = a->depth < b->depth ? a->depth : b->depth;
+    for (u32 i = 0; i < n; i++) {
+        if (a->at[i] != b->at[i]) return a->at[i] < b->at[i] ? -1 : 1;
+    }
+    return a->depth < b->depth ? -1 : a->depth > b->depth;
+}
+
 typedef struct LoadEntry {
     cstr path;
     bool is_stdlib;
-    i64 size; // load_pool_queue()'s hint
-    isize order; // Queue order, between equal sizes
+    bool sized; // In a heap (or not to be, if taken before): its size is known
+    i64 size; // The size function's guess
+    // When the loader will want it: the lowest rank it was queued with (load_pool_queue()). Workers take files in rank
+    // order
+    Rank rank;
+    isize order; // Queue order, between equal ranks
     bool is_helped; // Parsed by the loader while it waited for another
     LoadState state;
+    double queued_at; // (TTTT_LOAD_POOL_INLINE)
     SourceFile* file; // LOAD_DONE: the worker's file, null if unreadable
     ErrorCtx errs; // LOAD_DONE: the file's parse errors
 } LoadEntry;
@@ -25,6 +48,20 @@ typedef struct LoadEntry {
 typedef LoadEntry* LoadEntryPtr;
 #define g_key LoadEntryPtr, load_entry_ptr
 #include <cleat/generic/vec.h>
+
+// A heap item: an entry under a key (an entry may be in a heap several times, under its old ranks: only the item with
+// its current one counts)
+typedef struct HeapItem {
+    i64 size;
+    Rank rank;
+    LoadEntry* entry;
+} HeapItem;
+
+typedef struct Heap {
+    HeapItem* items;
+    isize count, cap;
+    bool by_size; // Biggest first, else by rank
+} Heap;
 
 #define g_pro_key SvStr, svstr
 #define g_val LoadEntryPtr, load_entry_ptr
@@ -39,9 +76,10 @@ typedef struct LoadPool {
     pthread_cond_t done; // A file was parsed
     VecLoadEntryPtr entries; // In queue order
     HMapLoadEntryPtr by_path;
-    // The queued entries (and ones taken since), a max-heap by size: the biggest file is the longest parse, and one
-    // big file started last would be the loader's critical path (tsc's checker.ts, lib.dom.d.ts)
-    VecLoadEntryPtr heap;
+    // The queued entries (and ones taken since), min-heaps. Files of at least BIG_FILE bytes first, biggest first: one
+    // big file started late would be the loader's critical path (tsc's checker.ts, lib.dom.d.ts). Then the rest by rank
+    // (the order the loader will want them in: by size, small roots sat queued until the loader parsed them itself)
+    Heap big, ranked;
     // Queued entries whose size isn't known yet, from unsized_next on (when there's a size function)
     VecLoadEntryPtr unsized;
     isize unsized_next;
@@ -51,9 +89,15 @@ typedef struct LoadPool {
     pthread_t* threads;
     u32 thread_count;
     // TTTT_LOAD_POOL_STATS (TTTT_LOAD_POOL_WAITS: each wait over 2 ms)
-    isize taken, inline_parses;
+    isize taken, inline_parses, inline_unqueued; // (Parsed by the loader: of those, never queued)
     double wait_ms, busy_ms, started_at, helped_ms, inline_ms;
 } LoadPool;
+
+static double pool_now_ms(void) {
+    struct timespec now;
+    timespec_get(&now, TIME_UTC);
+    return (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6;
+}
 
 // (Address space only: pages are committed as the stack grows)
 size_t worker_stack_size(void) {
@@ -64,31 +108,41 @@ size_t worker_stack_size(void) {
     return stack;
 }
 
-static bool heap_before(LoadEntry const* a, LoadEntry const* b) {
-    return a->size != b->size ? a->size > b->size : a->order < b->order;
+// (A bigger file is a longer parse than a typical module: ~1 ms)
+enum { BIG_FILE = 128 << 10 };
+
+static bool item_before(Heap const* heap, HeapItem const* a, HeapItem const* b) {
+    if (heap->by_size && a->size != b->size) return a->size > b->size;
+    int c = heap->by_size ? 0 : rank_compare(&a->rank, &b->rank);
+    return c ? c < 0 : a->entry->order < b->entry->order;
 }
 
-static void heap_push(LoadPool* me, LoadEntry* entry) {
-    vec_load_entry_ptr_push(&my heap, entry);
-    LoadEntry** items = my heap.data;
-    for (isize i = vec_load_entry_ptr_size(&my heap) - 1; i > 0;) {
+static void heap_push(Heap* heap, LoadEntry* entry) {
+    if (heap->count == heap->cap) {
+        heap->cap = heap->cap ? heap->cap * 2 : 256;
+        heap->items = realloc(heap->items, sizeof(HeapItem) * (size_t)heap->cap);
+        panic_if(!heap->items, "out of memory");
+    }
+    HeapItem* items = heap->items;
+    isize i = heap->count++;
+    items[i] = (HeapItem){ .size = entry->size, .rank = entry->rank, .entry = entry };
+    while (i > 0) {
         isize parent = (i - 1) / 2;
-        if (!heap_before(items[i], items[parent])) break;
+        if (!item_before(heap, &items[i], &items[parent])) break;
         c_swap(&items[i], &items[parent]);
         i = parent;
     }
 }
 
-static LoadEntry* heap_pop(LoadPool* me) {
-    LoadEntry** items = my heap.data;
-    isize size = vec_load_entry_ptr_size(&my heap);
-    LoadEntry* ret = items[0];
-    items[0] = items[--size];
-    vec_load_entry_ptr_pop(&my heap);
+static HeapItem heap_pop(Heap* heap) {
+    HeapItem* items = heap->items;
+    HeapItem ret = items[0];
+    isize size = --heap->count;
+    items[0] = items[size];
     for (isize i = 0;;) {
         isize best = i, left = 2 * i + 1, right = left + 1;
-        if (left < size && heap_before(items[left], items[best])) best = left;
-        if (right < size && heap_before(items[right], items[best])) best = right;
+        if (left < size && item_before(heap, &items[left], &items[best])) best = left;
+        if (right < size && item_before(heap, &items[right], &items[best])) best = right;
         if (best == i) break;
         c_swap(&items[i], &items[best]);
         i = best;
@@ -96,15 +150,41 @@ static LoadEntry* heap_pop(LoadPool* me) {
     return ret;
 }
 
+// Under the lock: a sized queued entry into its heap
+static void load_pool_schedule(LoadPool* me, LoadEntry* entry) {
+    entry->sized = true;
+    heap_push(entry->size >= BIG_FILE ? &my big : &my ranked, entry);
+}
+
 // The next queued entry, now parsing, null if there's none. Under the lock
 static LoadEntry* load_pool_next(LoadPool* me) {
-    while (vec_load_entry_ptr_size(&my heap)) {
-        LoadEntry* entry = heap_pop(me);
+    while (my big.count) {
+        LoadEntry* entry = heap_pop(&my big).entry;
         if (entry->state != LOAD_QUEUED) continue;
         entry->state = LOAD_PARSING;
         return entry;
     }
+    while (my ranked.count) {
+        HeapItem item = heap_pop(&my ranked);
+        if (item.entry->state != LOAD_QUEUED || rank_compare(&item.rank, &item.entry->rank)) continue;
+        item.entry->state = LOAD_PARSING;
+        return item.entry;
+    }
     return nullptr;
+}
+
+// The rank of the file this thread is parsing (a worker, or the loader helping), or the loader took last: what it
+// finds in it ranks below it, in the order it is queued. None (depth 0) for the loader's own queueing before it took
+// anything: libs, roots, automatic types, in queue order
+static thread_local Rank current_rank;
+static thread_local u32 current_children;
+
+// The rank of the next path this thread queues
+static Rank next_rank(isize order) {
+    Rank ret = current_rank;
+    if (!ret.depth) ret = (Rank){ .at = { (u32)order }, .depth = 1 };
+    else if (ret.depth < RANK_DEPTH) ret.at[ret.depth++] = current_children++;
+    return ret;
 }
 
 // Parses a LOAD_PARSING entry, unlocking meanwhile
@@ -113,7 +193,13 @@ static void load_pool_run(LoadPool* me, LoadEntry* entry) {
     // (Nobody else touches the entry's path, errs or file while it's parsing)
     struct timespec start, end;
     timespec_get(&start, TIME_UTC);
+    Rank outer_rank = current_rank;
+    u32 outer_children = current_children;
+    current_rank = entry->rank;
+    current_children = 0;
     SourceFile* file = my parse(my ctx, me, cstr_sv(&entry->path), entry->is_stdlib, &entry->errs);
+    current_rank = outer_rank;
+    current_children = outer_children;
     timespec_get(&end, TIME_UTC);
     pthread_mutex_lock(&my lock);
     my busy_ms += (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
@@ -140,7 +226,9 @@ static bool load_pool_size_batch(LoadPool* me) {
     // (path and size are this batch's until it's in the heap: nobody else writes them)
     for (isize i = 0; i < count; i++) batch[i]->size = my size(my size_ctx, cstr_sv(&batch[i]->path));
     pthread_mutex_lock(&my lock);
-    for (isize i = 0; i < count; i++) heap_push(me, batch[i]);
+    for (isize i = 0; i < count; i++) {
+        if (batch[i]->state == LOAD_QUEUED) load_pool_schedule(me, batch[i]);
+    }
     if (count > 1) pthread_cond_broadcast(&my work);
     return true;
 }
@@ -164,6 +252,7 @@ LoadPool* load_pool_new(
     check(threads > 0);
     LoadPool* me = c_new(LoadPool, {
         .parse = parse, .drop = drop, .ctx = ctx, .thread_count = threads, .size = size, .size_ctx = size_ctx,
+        .big = { .by_size = true },
     });
     pthread_mutex_init(&my lock, nullptr);
     pthread_cond_init(&my work, nullptr);
@@ -184,9 +273,10 @@ LoadPool* load_pool_new(
 
 // Under the lock
 static LoadEntry* load_pool_add(LoadPool* me, csview path, bool is_stdlib, i64 size, LoadState state) {
+    isize order = vec_load_entry_ptr_size(&my entries);
     LoadEntry* entry = c_new(LoadEntry, {
         .path = cstr_from_sv(path), .is_stdlib = is_stdlib, .size = size,
-        .order = vec_load_entry_ptr_size(&my entries), .state = state,
+        .rank = next_rank(order), .order = order, .state = state,
     });
     vec_load_entry_ptr_push(&my entries, entry);
     hmap_load_entry_ptr_insert(&my by_path, cstr_from_sv(path), entry);
@@ -194,11 +284,22 @@ static LoadEntry* load_pool_add(LoadPool* me, csview path, bool is_stdlib, i64 s
 }
 
 // Under the lock. A new path waits for its size (a stat) in the unsized list, which workers take in batches
+// A path the loader will want sooner than its rank says moves up (an import of a later root from an earlier one)
 static void load_pool_queue_locked(LoadPool* me, csview path, bool is_stdlib) {
-    if (hmap_load_entry_ptr_get(&my by_path, path)) return;
+    auto found = hmap_load_entry_ptr_get(&my by_path, path);
+    if (found) {
+        LoadEntry* entry = found->second;
+        Rank rank = next_rank(entry->order);
+        if (entry->state == LOAD_QUEUED && rank_compare(&rank, &entry->rank) < 0) {
+            entry->rank = rank;
+            if (entry->sized && entry->size < BIG_FILE) heap_push(&my ranked, entry);
+        }
+        return;
+    }
     LoadEntry* entry = load_pool_add(me, path, is_stdlib, 0, LOAD_QUEUED);
+    entry->queued_at = pool_now_ms();
     if (my size) vec_load_entry_ptr_push(&my unsized, entry);
-    else heap_push(me, entry);
+    else load_pool_schedule(me, entry);
     pthread_cond_signal(&my work);
 }
 
@@ -219,6 +320,7 @@ SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* 
     pthread_mutex_lock(&my lock);
     auto found = hmap_load_entry_ptr_get(&my by_path, path);
     LoadEntry* entry = found ? found->second : load_pool_add(me, path, is_stdlib, 0, LOAD_TAKEN);
+    my inline_unqueued += !found;
     if (entry->state == LOAD_PARSING) {
         struct timespec start, end;
         timespec_get(&start, TIME_UTC);
@@ -244,9 +346,19 @@ SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* 
         my taken++;
     } else {
         my inline_parses++;
+        if (found && getenv("TTTT_LOAD_POOL_INLINE")) {
+            cstr rank = cstr_null;
+            for (u32 i = 0; i < entry->rank.depth; i++) cstr_append_d(&rank, DEFAULT_DISPLAY, i ? "." : "", (i64)entry->rank.at[i]);
+            eprintln("load pool: the loader parses ", path, " (rank ", rank, " of ", vec_load_entry_ptr_size(&my entries),
+                ", ", entry->size, " bytes, queued ", pool_now_ms() - entry->queued_at, " ms ago, ",
+                entry->state == LOAD_QUEUED ? entry->sized ? "waiting" : "unsized" : "parsed as the other kind", ")");
+            cstr_drop(&rank);
+        }
     }
     bool had_errors = entry->state == LOAD_DONE && ret;
     entry->state = LOAD_TAKEN;
+    current_rank = entry->rank;
+    current_children = 0;
     pthread_mutex_unlock(&my lock);
     // (The entry is the loader's now)
     if (had_errors) error_ctx_merge(errs, &entry->errs);
@@ -282,7 +394,7 @@ void load_pool_destroy(LoadPool* me) {
     }
     if (getenv("TTTT_LOAD_POOL_STATS")) {
         eprintln("load pool: ", my thread_count, " threads, ", vec_load_entry_ptr_size(&my entries), " paths, ", my taken,
-            " preparsed files taken, ", my inline_parses, " parsed by the loader, ", wasted, " parsed for nothing, ", never,
+            " preparsed files taken, ", my inline_parses, " parsed by the loader (", my inline_unqueued, " never queued), ", wasted, " parsed for nothing, ", never,
             " never started");
         eprintln("load pool: the loader waited ", my wait_ms, " ms (parsing queued files for ", my helped_ms,
             " ms of it); workers busy ", my busy_ms, " ms of ", lifetime * my thread_count);
@@ -290,7 +402,8 @@ void load_pool_destroy(LoadPool* me) {
             lifetime, " ms: ", lifetime - my wait_ms - my inline_ms);
     }
     vec_load_entry_ptr_drop(&my entries);
-    vec_load_entry_ptr_drop(&my heap);
+    free(my big.items);
+    free(my ranked.items);
     vec_load_entry_ptr_drop(&my unsized);
     hmap_load_entry_ptr_drop(&my by_path);
     pthread_cond_destroy(&my work);
