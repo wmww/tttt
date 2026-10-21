@@ -79,6 +79,7 @@ void graph_variance_claimed(Checker* checker, VarianceSlot* slot);
 // The outermost measurement ended: each claimed slot gets `value_of`'s answer (null: not started again)
 void graph_variances_publish(Checker* checker, void const* (*value_of)(Checker* checker, VarianceSlot const* slot));
 
+void graph_check_unshared(TyGraph* me, Checker* checker); // TTTT_DEBUG_UNSHARED=1 (program.c)
 void graph_print_stats(TyGraph const* me);
 // The shared tables' insertion and node_links' (checker.c)
 void link_table_each(LinkTable const* table, void (*each)(void* arg, u32 kind, void const* subject, void const* value), void* arg);

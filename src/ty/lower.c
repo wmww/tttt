@@ -1395,9 +1395,9 @@ Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx
         }
         anonymous_set_free_params(me, ret, found);
     }
-    // Collecting can intern type parameters, so the slot is looked up again
-    *intern_slot(me, &my links, key, 2) = ret;
-    return ret;
+    // Collecting can intern type parameters, so the slot is looked up again (an identity: with --shared-graph
+    // published at once, intern_set())
+    return intern_set(me, &my links, intern_slot(me, &my links, key, 2), ret);
 }
 
 Ty const* ty_anonymous_from_overloads(Checker* me, FunctionImpl const* const* overloads, u32 count, LowerCtx ctx) {

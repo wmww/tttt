@@ -58,6 +58,7 @@ struct TyGraph {
 
 
 static GraphClass graph_kind_class_of(u32 kind);
+static char const* kind_name(u32 kind);
 // (Debug: TTTT_GRAPH_NOSHARE=k,k,... or =all-but:k,k: kinds kept private, a bisection of what sharing breaks)
 static uint8_t noshare_kinds[256];
 static int noshare_init = -1;
@@ -544,6 +545,29 @@ static void publish_table(TyGraph* me, Checker* checker, InternTable* private_ta
         }
         void const** there;
         if (shared_table_insert(shared, entry->hash, entry->block, count, &there)) __atomic_fetch_add(&stats->published, 1, __ATOMIC_RELAXED);
+    }
+}
+
+// (Debug: TTTT_DEBUG_UNSHARED=1, at each share's end: identities still private, which a constructor set with a plain
+// store instead of intern_set(). Each is a type the other checkers make again: vite's KEY_NODE function types, TS9011s)
+void graph_check_unshared(TyGraph* me, Checker* checker) {
+    InternTable* tables[2] = { &checker->types, &checker->links };
+    SharedTable* shared[2] = { my types, my links };
+    u64 by_kind[256] = {0};
+    for (u32 t = 0; t < 2; t++) {
+        for (u32 i = 0; i < tables[t]->cap; i++) {
+            InternEntry const* entry = &tables[t]->entries[i];
+            if (!entry->hash || !entry->block[0]) continue;
+            u32 count;
+            u32 kind = block_kind(tables[t], checker, entry, &count);
+            if (graph_kind_class(kind) != GRAPH_IDENTITY) continue;
+            u64 const* key = (u64 const*)(entry->block + 1);
+            if (count >= 0xffffu) key++;
+            if (!shared_table_find(shared[t], entry->hash, key, count)) by_kind[kind & 255]++;
+        }
+    }
+    for (u32 k = 0; k < 256; k++) {
+        if (by_kind[k]) eprintln("graph: ", by_kind[k], " unshared identities of kind ", kind_name(k) ? kind_name(k) : "?");
     }
 }
 
