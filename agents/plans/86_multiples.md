@@ -893,6 +893,20 @@ every `-p` corpus, 20-run tables on the four, no default-path cost until the fla
    Then either fix that read (keep such results private to the measuring worker: a measurement-scoped overlay) or lock
    per connected group (a worker that would wait on another's slot joins its lock instead of claiming its own).
    Gate: drizzle 300 loaded runs K1's output with drizzle's K12 wall back at or below the defaults'.
+   **First session's findings (2026-10-21, no fix yet).** Lock off, drizzle K12 next to an effect loop: ~2-3% of runs
+   differ (13 of ~700), always *missing* errors (unused `@ts-expect-error` in type-tests, a TS2416/TS2322 group in
+   singlestore): some type became too permissive. Ruled out, each over 100-150 loaded runs: KEY_NODE duplicates (fixed
+   anyway, 536614091), variances_known() answering "known" for another worker's measurement in flight (only done
+   ones: still 2/150), memo entries made while measuring kept private, per-worker marker types, resetting what the
+   abandoned measurement finished at a redo. The published variances themselves vary run to run with the lock on too
+   (the VARIANCE_UNRELIABLE bit, 1 against 9, on ~40 drizzle types: whether a measurement went through something
+   unreliable depends on what the worker's relation cache already held) and the output doesn't move, so the final
+   variances aren't the channel. Overlapping measurement pairs (start/end times per worker) show no pair specific to
+   the differing runs. Remaining suspects: a relation-dependent result computed inside one worker's measurement with
+   its own subject in flight (an Unknown variance read as related: inferred return types, declaration memos,
+   overload results of class members reached through marker instances) that another worker's measurement or check
+   races to compute first; under K1 the order is fixed. Tools for the next try: a worker-tagged TTTT_DEBUG_VARIANCE,
+   a per-slot dump at publication (both scratch patches, easy to redo), and the 100-run loaded loop (`t3loop.sh`).
 2. **Shared relation cache (2 sessions)**, as designed below. Gate as there; excalidraw's K12 pairs within 5% of K1.
 3. **Memory: per-worker private state recycled, the shared graph kept (3-4 sessions).** With the flag nothing is
    freed: a worker's arena holds both what it published and its private state (relation caches, scratch kinds,
