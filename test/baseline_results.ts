@@ -27,6 +27,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAliasCycleFailsDeferredArgs': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAliasReentersBelowVarianceBarrier': {
         errors: true,
         symbols: true,

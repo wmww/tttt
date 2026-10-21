@@ -1,0 +1,47 @@
+//// [test/cases/ttttAliasCycleFailsDeferredArgs.ts] ////
+
+=== ttttAliasCycleFailsDeferredArgs.ts ===
+// An alias cycle found while a deferred reference's type arguments resolve fails them too: tsc's getTypeArguments
+// runs under pushTypeResolution(TypeArguments), and the cycle marks every entry from the alias on (TS4109 next to
+// TS2456; mutation testing, recursiveArrayNotCircular with `extends Object`)
+type Action<T, P> = P extends Object ? { type: T } : { type: T, payload: P }
+>Action : Symbol(Action, Decl(ttttAliasCycleFailsDeferredArgs.ts, 0, 0))
+>T : Symbol(T, Decl(ttttAliasCycleFailsDeferredArgs.ts, 3, 12))
+>P : Symbol(P, Decl(ttttAliasCycleFailsDeferredArgs.ts, 3, 14))
+>P : Symbol(P, Decl(ttttAliasCycleFailsDeferredArgs.ts, 3, 14))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>type : Symbol(type, Decl(ttttAliasCycleFailsDeferredArgs.ts, 3, 40))
+>T : Symbol(T, Decl(ttttAliasCycleFailsDeferredArgs.ts, 3, 12))
+>type : Symbol(type, Decl(ttttAliasCycleFailsDeferredArgs.ts, 3, 54))
+>T : Symbol(T, Decl(ttttAliasCycleFailsDeferredArgs.ts, 3, 12))
+>payload : Symbol(payload, Decl(ttttAliasCycleFailsDeferredArgs.ts, 3, 63))
+>P : Symbol(P, Decl(ttttAliasCycleFailsDeferredArgs.ts, 3, 14))
+
+type RA =
+>RA : Symbol(RA, Decl(ttttAliasCycleFailsDeferredArgs.ts, 3, 76))
+
+  | Action<1, number>
+>Action : Symbol(Action, Decl(ttttAliasCycleFailsDeferredArgs.ts, 0, 0))
+
+  | Action<2, RA[]>
+>Action : Symbol(Action, Decl(ttttAliasCycleFailsDeferredArgs.ts, 0, 0))
+>RA : Symbol(RA, Decl(ttttAliasCycleFailsDeferredArgs.ts, 3, 76))
+
+type Action2<T, P> = P extends { length: number } ? { type: T } : { type: T, payload: P }
+>Action2 : Symbol(Action2, Decl(ttttAliasCycleFailsDeferredArgs.ts, 6, 19))
+>T : Symbol(T, Decl(ttttAliasCycleFailsDeferredArgs.ts, 7, 13))
+>P : Symbol(P, Decl(ttttAliasCycleFailsDeferredArgs.ts, 7, 15))
+>P : Symbol(P, Decl(ttttAliasCycleFailsDeferredArgs.ts, 7, 15))
+>length : Symbol(length, Decl(ttttAliasCycleFailsDeferredArgs.ts, 7, 32))
+>type : Symbol(type, Decl(ttttAliasCycleFailsDeferredArgs.ts, 7, 53))
+>T : Symbol(T, Decl(ttttAliasCycleFailsDeferredArgs.ts, 7, 13))
+>type : Symbol(type, Decl(ttttAliasCycleFailsDeferredArgs.ts, 7, 67))
+>T : Symbol(T, Decl(ttttAliasCycleFailsDeferredArgs.ts, 7, 13))
+>payload : Symbol(payload, Decl(ttttAliasCycleFailsDeferredArgs.ts, 7, 76))
+>P : Symbol(P, Decl(ttttAliasCycleFailsDeferredArgs.ts, 7, 15))
+
+type RB = Action2<2, RB[]>
+>RB : Symbol(RB, Decl(ttttAliasCycleFailsDeferredArgs.ts, 7, 89))
+>Action2 : Symbol(Action2, Decl(ttttAliasCycleFailsDeferredArgs.ts, 6, 19))
+>RB : Symbol(RB, Decl(ttttAliasCycleFailsDeferredArgs.ts, 7, 89))
+

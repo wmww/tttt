@@ -1,0 +1,9 @@
+// An alias cycle found while a deferred reference's type arguments resolve fails them too: tsc's getTypeArguments
+// runs under pushTypeResolution(TypeArguments), and the cycle marks every entry from the alias on (TS4109 next to
+// TS2456; mutation testing, recursiveArrayNotCircular with `extends Object`)
+type Action<T, P> = P extends Object ? { type: T } : { type: T, payload: P }
+type RA =
+  | Action<1, number>
+  | Action<2, RA[]>
+type Action2<T, P> = P extends { length: number } ? { type: T } : { type: T, payload: P }
+type RB = Action2<2, RB[]>

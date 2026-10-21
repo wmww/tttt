@@ -2767,6 +2767,7 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     Ty const** args = arena_new_n(&my arena, Ty const*, len ? len : 1);
     DeferredArgsClaim claim = {0};
     ty_claim_push(me, CLAIM_DEFERRED_ARGS, &claim.claim, deferred, 0);
+    ty_resolving_push(me, RESOLVING_TYPE_ARGUMENTS, deferred);
     TypeNode const* node = deferred->node;
     if (node->tag == TYPE_IDENTIFIER) {
         Ty const* written_buf[MAX_TYPE_ARGS];
@@ -2783,6 +2784,7 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
             args[i] = ty_instantiate(me, element, deferred->mapper);
         }
     }
+    if (ty_resolving_pop(me)) claim.circular = true;
     ty_claim_pop(me, CLAIM_DEFERRED_ARGS, &claim.claim);
     if (claim.circular) {
         // tsc's getTypeArguments when popTypeResolution fails: error type arguments, reported at the node (array and

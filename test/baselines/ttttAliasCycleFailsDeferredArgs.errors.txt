@@ -1,0 +1,25 @@
+ttttAliasCycleFailsDeferredArgs.ts(5,6): error TS2456: Type alias 'RA' circularly references itself.
+ttttAliasCycleFailsDeferredArgs.ts(7,15): error TS4109: Type arguments for 'Array' circularly reference themselves.
+ttttAliasCycleFailsDeferredArgs.ts(9,6): error TS2456: Type alias 'RB' circularly references itself.
+ttttAliasCycleFailsDeferredArgs.ts(9,22): error TS4109: Type arguments for 'Array' circularly reference themselves.
+
+
+==== ttttAliasCycleFailsDeferredArgs.ts (4 errors) ====
+    // An alias cycle found while a deferred reference's type arguments resolve fails them too: tsc's getTypeArguments
+    // runs under pushTypeResolution(TypeArguments), and the cycle marks every entry from the alias on (TS4109 next to
+    // TS2456; mutation testing, recursiveArrayNotCircular with `extends Object`)
+    type Action<T, P> = P extends Object ? { type: T } : { type: T, payload: P }
+    type RA =
+         ~~
+!!! error TS2456: Type alias 'RA' circularly references itself.
+      | Action<1, number>
+      | Action<2, RA[]>
+                  ~~~~
+!!! error TS4109: Type arguments for 'Array' circularly reference themselves.
+    type Action2<T, P> = P extends { length: number } ? { type: T } : { type: T, payload: P }
+    type RB = Action2<2, RB[]>
+         ~~
+!!! error TS2456: Type alias 'RB' circularly references itself.
+                         ~~~~
+!!! error TS4109: Type arguments for 'Array' circularly reference themselves.
+    

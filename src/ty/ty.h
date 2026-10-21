@@ -2629,6 +2629,10 @@ typedef enum ResolvingKind {
     // pushTypeResolution(ResolvedBaseConstraint) (getConstraintTypeFromMappedType). Nothing looks for it, it is only a
     // guard for members_reentered_unguarded()
     RESOLVING_MAPPED_CONSTRAINT,
+    // A deferred reference's type arguments (a TyDeferredRef): tsc's getTypeArguments under
+    // pushTypeResolution(TypeArguments), so an alias cycle found while they resolve fails them too (TS4109). Its own
+    // re-entry is CLAIM_DEFERRED_ARGS's; nothing looks for this entry
+    RESOLVING_TYPE_ARGUMENTS,
 } ResolvingKind;
 typedef struct MembersInFlight {
     Ty const* ty;
