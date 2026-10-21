@@ -207,6 +207,10 @@ void graph_count_shared_hit(InternTable const* table, u64 const* words, u32 coun
 thread_local u64 graph_taint_now;
 thread_local u32 graph_taint_pending;
 bool graph_taint_marks;
+#ifdef TTTT_TAINT
+// (The -DTTTT_TAINT prototype, taint.c, has its own events: this one's only have to compile there)
+static inline void graph_taint_tick(void) { graph_taint_now++; }
+#endif
 
 // Tainted results: intern blocks by address, other results by (kind, object) as taint.c keys them. A bitmap in front
 // keeps the reads cheap
