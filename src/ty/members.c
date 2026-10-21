@@ -6027,6 +6027,13 @@ Ty const* ty_object_literal_alternative(
         fresh->anonymous.jsx_attributes = kind == OBJECT_JSX_ATTRIBUTES || kind == OBJECT_JSX_ATTRIBUTES_FRESH;
         fresh->anonymous.js_literal = js;
         if (kind != OBJECT_SYNTHETIC) fresh->anonymous.literal_expr = expr;
+        // (A synthetic object of a symbol is an object rest's, lower.c's rest_literal(): ordered in unions by that
+        // symbol's declaration, like tsc's, before an object literal written later, which subtype reduction then checks
+        // first. Set here, before the type is published, not by its maker afterwards)
+        if (kind == OBJECT_SYNTHETIC && expr) {
+            fresh->anonymous.rest_binding = expr;
+            fresh->anonymous.rest_of_binding = true;
+        }
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
         builder_sort_stable(&builder);
         fresh->anonymous.state->members = builder_finish(me, &builder);
