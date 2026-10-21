@@ -2132,6 +2132,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTemplateTypeTextEscapes': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttThisOptionalPropertyAssignmentContext': {
         errors: true,
         symbols: true,

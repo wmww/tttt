@@ -1231,15 +1231,43 @@ static void display_template_text(TyDisplay d, csview sv) {
                 if (i + 1 < sv.size && sv.buf[i + 1] == '{') out_lit(d, "\\$");
                 else out_lit(d, "$");
                 break;
-            default:
-                if (c < 0x20) {
+            case 0:
+                if (i + 1 < sv.size && sv.buf[i + 1] >= '0' && sv.buf[i + 1] <= '9') out_lit(d, "\\x00");
+                else out_lit(d, "\\0");
+                break;
+            default: {
+                // (What tsgo's escapeStringWorker escapes whatever the quote: other control characters, U+0085,
+                // U+2028/2029, a lone surrogate (WTF-8), and a byte that isn't UTF-8 as U+FFFD)
+                u32 code = c < 0x20 ? c : 0;
+                isize_t extra = 0;
+                unsigned char c1 = i + 1 < sv.size ? (unsigned char)sv.buf[i + 1] : 0;
+                unsigned char c2 = i + 2 < sv.size ? (unsigned char)sv.buf[i + 2] : 0;
+                if (c == 0xC2 && c1 == 0x85) {
+                    code = 0x85, extra = 1;
+                } else if (c == 0xED && c1 >= 0xA0 && c1 <= 0xBF && i + 2 < sv.size) {
+                    code = ((u32)(c & 0x0F) << 12) | ((u32)(c1 & 0x3F) << 6) | (c2 & 0x3F), extra = 2;
+                } else if (c == 0xE2 && c1 == 0x80 && (c2 == 0xA8 || c2 == 0xA9)) {
+                    code = c2 == 0xA8 ? 0x2028 : 0x2029, extra = 2;
+                } else if (c >= 0x80) {
+                    int size = utf8_rune_size_n(sv.buf + i, sv.size - i);
+                    if (size < 0) {
+                        out_lit(d, "\\uFFFD");
+                    } else {
+                        out(d, csview_from_n(&sv.buf[i], size));
+                        i += size - 1;
+                    }
+                    break;
+                }
+                if (code) {
                     char buf[8];
-                    snprintf(buf, sizeof buf, "\\u%04X", c);
+                    snprintf(buf, sizeof buf, "\\u%04X", code);
                     out(d, csview_from(buf));
+                    i += extra;
                 } else {
                     out(d, csview_from_n(&sv.buf[i], 1));
                 }
                 break;
+            }
         }
     }
 }

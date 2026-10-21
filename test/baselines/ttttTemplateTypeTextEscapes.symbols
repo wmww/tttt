@@ -1,0 +1,48 @@
+//// [test/cases/ttttTemplateTypeTextEscapes.ts] ////
+
+=== ttttTemplateTypeTextEscapes.ts ===
+// A template literal type printed in a message escapes what tsgo's escapeStringWorker escapes for any quote: lone
+// surrogates, NUL, U+0085, U+2028/2029
+type Hi = "\uD83D";
+>Hi : Symbol(Hi, Decl(ttttTemplateTypeTextEscapes.ts, 0, 0))
+
+type T1 = `${Hi}${Lo}`;
+>T1 : Symbol(T1, Decl(ttttTemplateTypeTextEscapes.ts, 2, 19))
+>Hi : Symbol(Hi, Decl(ttttTemplateTypeTextEscapes.ts, 0, 0))
+>Lo : Symbol(Lo)
+
+type T2 = `a\uD83D${number}`;
+>T2 : Symbol(T2, Decl(ttttTemplateTypeTextEscapes.ts, 3, 23))
+
+type T3 = `\uDE00${number}b\uD83D`;
+>T3 : Symbol(T3, Decl(ttttTemplateTypeTextEscapes.ts, 4, 29))
+
+const a: Hi = 1;
+>a : Symbol(a, Decl(ttttTemplateTypeTextEscapes.ts, 6, 5))
+>Hi : Symbol(Hi, Decl(ttttTemplateTypeTextEscapes.ts, 0, 0))
+
+const b: T1 = 1;
+>b : Symbol(b, Decl(ttttTemplateTypeTextEscapes.ts, 7, 5))
+>T1 : Symbol(T1, Decl(ttttTemplateTypeTextEscapes.ts, 2, 19))
+
+const c: T2 = 1;
+>c : Symbol(c, Decl(ttttTemplateTypeTextEscapes.ts, 8, 5))
+>T2 : Symbol(T2, Decl(ttttTemplateTypeTextEscapes.ts, 3, 23))
+
+const d: T3 = 1;
+>d : Symbol(d, Decl(ttttTemplateTypeTextEscapes.ts, 9, 5))
+>T3 : Symbol(T3, Decl(ttttTemplateTypeTextEscapes.ts, 4, 29))
+
+const e: `x${Hi}` = 1;
+>e : Symbol(e, Decl(ttttTemplateTypeTextEscapes.ts, 10, 5))
+>Hi : Symbol(Hi, Decl(ttttTemplateTypeTextEscapes.ts, 0, 0))
+
+const f: `\u{1F600}${number}` = 1;
+>f : Symbol(f, Decl(ttttTemplateTypeTextEscapes.ts, 11, 5))
+
+const h: `\0${number}\u2028\x001\u0085` = 1;
+>h : Symbol(h, Decl(ttttTemplateTypeTextEscapes.ts, 12, 5))
+
+const i: `\u0001${number}\r\n` = 1;
+>i : Symbol(i, Decl(ttttTemplateTypeTextEscapes.ts, 13, 5))
+
