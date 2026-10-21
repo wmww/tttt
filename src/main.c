@@ -1496,6 +1496,12 @@ static int run(int argc, const char** argv) {
     }
     if (single_threaded) opts.checkers = opts.threads = opts.build_jobs = 1;
     if (!opts.checkers) opts.checker_cap = default_checker_cap(opts.threads);
+    // (TTTT_GRAPH_SEED, ty/graph_sched.c: one worker runs at a time, so nothing may block outside its token)
+    if (getenv("TTTT_GRAPH_SEED") && (opts.checker_memory != UINT64_MAX || !opts.checkers || opts.threads != opts.checkers)) {
+        eprintln("tttt: TTTT_GRAPH_SEED needs --checker-memory off (the graph-wide recycle's barrier blocks) and --threads "
+            "equal to --checkers (no materialize-ahead helpers)");
+        return 1;
+    }
     // tttt only checks: it is `tsc --noEmit` (no emit-only option errors), unless the command line says otherwise or the
     // options only emit declarations. -b is tsc -b's, which emits
     bool no_emit_given = false;

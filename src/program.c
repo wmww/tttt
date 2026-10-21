@@ -5517,8 +5517,8 @@ void program_typecheck(Program* me) {
     }
     if (threads > count) threads = count;
     if (my graph && getenv("TTTT_GRAPH_SEED")) {
-        panic_if(my graph_budget != UINT64_MAX, "TTTT_GRAPH_SEED needs --checker-memory off (the graph-wide recycle blocks outside the token)");
-        panic_if(helpers, "TTTT_GRAPH_SEED needs --threads equal to --checkers (no materialize-ahead helpers)");
+        // (main.c refuses the command line otherwise; a program made another way still mustn't block outside the token)
+        panic_if(my graph_budget != UINT64_MAX || helpers, "TTTT_GRAPH_SEED needs --checker-memory off and --threads equal to --checkers");
         graph_sched_init(threads);
     }
     if (threads <= 1) {
