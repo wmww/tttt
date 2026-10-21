@@ -1482,6 +1482,12 @@ static inline uintptr_t sw_peek_fast(Checker const* me, SharedWord const* w) {
     if (__builtin_expect(my graph != nullptr, 0)) return sw_peek(me, w);
     return __atomic_load_n(&w->v, __ATOMIC_RELAXED);
 }
+// Plan 86 4f: a read or write of per-worker side data that a computation can leave behind or read, which a worker
+// adopting the computation's published result wouldn't have: the links later reports read (KEY_*_WIDENED_ANY,
+// KEY_JS_IMPLICIT_ANY, KEY_BINDING_ACCESS_KEY, the private-member reference marks), a binding's recorded circularity,
+// in-flight markers of per-worker memos. With a graph the computation then has no clean result, so every worker that
+// needs it computes it and has the side data (plan 86 "P2 progress": the audit of P2's files)
+#define TY_WORKER_STATE(me) do { if (__builtin_expect((me)->graph != nullptr, 0)) TAINT_EVENT(TAINT_READ_TAINTED); } while (0)
 // Whether a deferred reference's arguments are known to this worker (a done-ness peek, no event): the reference's
 // syntax answers otherwise (lower.c ty_reference_args())
 static inline bool ty_reference_args_known(Checker const* me, Ty const* reference) {

@@ -1501,6 +1501,45 @@ in parallel only where the file sets are disjoint):
     - The enum's members are finished from inside the enum's resolution (ty_set_declared_type(), sw_finish() without
       a claim, with the enum's start taint: a clean prefix is clean). The member's own claim, if any, sees
       sw_mine_in_flight() false and takes the value, as the nested re-entries do.
+    - Also converted: reduced intersections (TyObjectState.reduced, REDUCED_ITSELF/NEVER), deferred references'
+      arguments (TyDeferredRef.args: the array, the count immutable in arg_count), the type directory's slots
+      (release/acquire). The category C TSan groups on drizzle/effect/excalidraw/react all reach the type through a
+      declaration or expression memo (P3's LazyMemo publication), not through the slots.
+    - **Per-worker side data read or left behind by a publishing computation (the audit of P2's files, 2026-10-22).**
+      A published result is adopted without the side data its computation left in the computing worker's scratch
+      links, and a computation that reads another computation's side data depends on whether this worker did that one.
+      Two kinds, with opposite answers:
+      1. *Self-produced* (the computation itself writes it, a later report of the same worker reads it): an event at
+         the write (TY_WORKER_STATE()), so the result stays private and every worker that needs it recomputes it and
+         has the data. Done: KEY_RETURN/YIELD/ELEMENT_WIDENED_ANY (function.c, lower.c: the implicit-any widening
+         reports), KEY_JS_IMPLICIT_ANY (lower.c), KEY_BINDING_ACCESS_KEY (TS2538's key), ty_mark_member_referenced()
+         (checker.c: unused.c's report_class_members() reads each checker's own marks; the likely cause of the vscode
+         TS6133/TS6138 residue above), a recorded KEY_CIRCULAR_BINDING hit, the KEY_BINDING_COMPUTED_KEY in-flight
+         marker. Not needed: KEY_CHECKED_ONCE, KEY_DEFERRED_BODY and the reports themselves (diagnostics merge
+         program-wide with duplicates dropped); KEY_RETURN_LATE_CIRCULAR (only after a MINE event); KEY_REST_SYMBOL (the
+         type carries anonymous.rest_binding too); KEY_SYNTHETIC_ACCESS (a per-worker Expr with its own slots).
+      2. *Produced by another computation* (the contextual-typing links: KEY_CONTEXT_CHECKED, _PARAM*, _RETURN, _THIS,
+         _IIFE_RETURN, _RETURN_SELF, _FREE, KEY_YIELD_CONTEXT, KEY_PATTERN_COMPUTED; the enclosing call's resolution
+         assigns them): an event does **not** work. Measured: events at every read and write kept excalidraw, drizzle,
+         zod and nest 20/20 but made effect 0/20 and 24/100 seeds (`circular.ts(806,21) TS7006 'id'`). The private
+         recompute runs in a history that never resolved the enclosing call, so it is context-less, and it records
+         `context_checked_none` for good. Rules 2 and 5 make every read an event, absent or present, so no placement
+         helps. **The by-construction answer is (b)**: the contextual signature as a function of the node, resolved on
+         demand from its position (tsc's getContextualSignature / contextuallyCheckFunctionExpressionOrObjectLiteralMethod:
+         a fresh checker gets the same one), which also recovers the sharing. This is what P1's signature-return word
+         needs (excalidraw's `perform` widened in 20/20) and very likely the fiber.ts/circular.ts TS7006 residue.
+         expr.c/call.c, its own item.
+      Stack-scoped per-worker state read by nested computations (candidates, not yet shown to matter): lower.c's
+      contextual_patterns (read by expr.c identifier flow), function.c's return_inference_of/_skipped and
+      return_context, Checker.for_constraint_root (its conditional instances are keyed without it: an identity whose
+      resolution path differs by context, but whose key is the same).
+    - **Known identity-history holes.** Conditional instances: instantiate_branch() decided an instance's branch
+      representation by whether the root's branch was lowered yet, and the instance (an identity, keyed by root and
+      mapper) is published at creation, so whoever made it first fixed it for every worker. The two history-free
+      choices change output (always from the node: a spurious TS2344 at type-fest object-merge.d.ts(173,48); always
+      lowering the root first: 3 suite tests). Option B (the instance keeps the root's branch; the choice is made at
+      pick time, ty_cond_branch_compute(), the not-lowered case a taint event) is byte-identical on the suite and 12
+      corpora; landed after the side-data commit with its sharing numbers.
   - **P3, relate.c + graph.c + lazy_type.c + shared_table.c** (variance groups without waiting, declaration memos as
     words, memo kinds publishing only clean entries in graph_memo_flush(), the shared relation cache's deeply-nested
     rule). ~1-2 sessions. The tooling worker's hooks in graph.c and shared_table.c are its neighbours: rebase often.

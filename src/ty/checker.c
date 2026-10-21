@@ -3453,6 +3453,7 @@ bool ty_member_is_referenced(Checker* me, Span declaration) {
 
 void ty_mark_member_referenced(Checker* me, Span declaration) {
     if (!span_valid(declaration)) return;
+    TY_WORKER_STATE(me); // (Read by this worker's unused.c report_class_members() only)
     u64 key[2] = { KEY_REFERENCED_MEMBER, (u64)(uintptr_t)declaration.buf };
     *intern_slot(me, &my links, key, 2) = me;
 }

@@ -1684,6 +1684,7 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
     SourceFile const* file = span_source(decl->full);
     Binding const* parent_binding = symbol->parent ? symbol_find_node(symbol->parent, SYMBOL_DECL_VARIABLE) : nullptr;
     if (file && (file->is_js || !parent_binding || !parent_binding->has_explicit_type) && ty_is_empty_array_literal_type(me, type)) {
+        TY_WORKER_STATE(me);
         *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)decl->node }, 2) = decl->node;
         return ty_array(me, ty_intrinsic(me, TY_ANY), false);
     }
@@ -1745,7 +1746,10 @@ bool ty_export_equals_property_missing(Checker* me, Symbol const* property) {
 static Ty const* export_expression_type(Checker* me, Symbol const* symbol, SymbolDecl const* decl) {
     Ty const* circular = ty_intrinsic(me, TY_CIRCULAR);
     u64 key[2] = { KEY_CIRCULAR_BINDING, (u64)(uintptr_t)decl };
-    if (my circular_bindings && intern_get(&my links, key, 2)) return circular;
+    if (my circular_bindings && intern_get(&my links, key, 2)) {
+        TY_WORKER_STATE(me); // (A recorded cycle: this worker's)
+        return circular;
+    }
     if (ty_resolving_find(me, RESOLVING_DECLARATION, decl)) {
         ty_resolving_cycle(me, RESOLVING_DECLARATION, decl);
         return circular;
@@ -1828,6 +1832,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
                 if (file && file->is_js && !undefined_alias && decl->assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY &&
                     ty_only_nullable(ty_widened_nullable(me, type))
                 ) {
+                    TY_WORKER_STATE(me);
                     *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = (void const*)(uintptr_t)2;
                     return ty_intrinsic(me, TY_ANY);
                 }
@@ -2097,6 +2102,7 @@ static Ty const* flow_type_in_constructor(Checker* me, Symbol const* symbol) {
     // Nothing but `[]` (tsc's autoArrayType, which never evolves here): any[], reported (getFlowTypeInConstructor)
     SourceFile const* file = span_source(symbol_rare(symbol)->constructor_assigned->inner_span);
     if (file && file->is_js && ret == ty_auto_array(me)) {
+        TY_WORKER_STATE(me);
         *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = (void const*)(uintptr_t)3;
         return ty_array(me, ty_intrinsic(me, TY_ANY), false);
     }
@@ -2214,6 +2220,7 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     // Nothing but null and undefined is any in JavaScript
     SourceFile const* file = span_source(symbol->decls[0].full);
     if (file && file->is_js && ty_only_nullable(ty_widened_nullable(me, ret))) {
+        TY_WORKER_STATE(me);
         *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = (void const*)(uintptr_t)2;
         return ty_intrinsic(me, TY_ANY);
     }
@@ -2309,7 +2316,10 @@ static Ty const* guarded_assignment_symbol_type(Checker* me, Symbol const* symbo
     }
     Ty const* circular = ty_intrinsic(me, TY_CIRCULAR);
     u64 key[2] = { KEY_CIRCULAR_BINDING, (u64)(uintptr_t)decl };
-    if (my circular_bindings && intern_get(&my links, key, 2)) return circular;
+    if (my circular_bindings && intern_get(&my links, key, 2)) {
+        TY_WORKER_STATE(me); // (A recorded cycle: this worker's)
+        return circular;
+    }
     if (ty_resolving_find(me, RESOLVING_DECLARATION, decl)) {
         ty_resolving_cycle(me, RESOLVING_DECLARATION, decl);
         return circular;
@@ -2336,7 +2346,10 @@ static Ty const* guarded_assignment_symbol_type(Checker* me, Symbol const* symbo
     }
     // (Evaluated again from below a call's barrier and found circular there: that inner result is the one remembered,
     // tsc's getTypeOfVariableOrParameterOrProperty keeps the first resolvedType set)
-    if (my circular_bindings && intern_get(&my links, key, 2)) return circular;
+    if (my circular_bindings && intern_get(&my links, key, 2)) {
+        TY_WORKER_STATE(me); // (A recorded cycle: this worker's)
+        return circular;
+    }
     return type;
 }
 
@@ -3058,7 +3071,10 @@ static bool pattern_names(Checker* me, TyList keys, Atom const* name, bool numer
 Ty const* ty_binding_computed_key_type(Checker* me, ObjectBindingItem const* item) {
     u64 key[2] = { KEY_BINDING_COMPUTED_KEY, (u64)(uintptr_t)item };
     Ty const* cached = intern_get(&my links, key, 2);
-    if (cached == (Ty const*)&my links) return ty_empty_object_type(me);
+    if (cached == (Ty const*)&my links) {
+        TY_WORKER_STATE(me); // (In flight here)
+        return ty_empty_object_type(me);
+    }
     if (cached) return cached;
     *intern_slot(me, &my links, key, 2) = (Ty const*)&my links;
     Ty const* ret = ty_expr_type(me, item->computed_key);
@@ -3603,6 +3619,7 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     ) {
         return ret;
     }
+    TY_WORKER_STATE(me);
     *intern_slot(me, &my links, (u64[]){ KEY_ELEMENT_WIDENED_ANY, (u64)(uintptr_t)binding }, 2) = ret;
     return ty_array(me, ty_intrinsic(me, TY_ANY), false);
 }
@@ -3677,6 +3694,7 @@ static Ty const* binding_element_of(Checker* me, Binding const* binding, Ty cons
         ObjectBindingItem const* item = binding->parent_item;
         Ty const* key = item->computed_key ? ty_regular(me, ty_binding_computed_key_type(me, item)) : ty_literal(me, &item->source);
         if (item->computed_key) {
+            TY_WORKER_STATE(me);
             Ty const** used = (Ty const**)intern_slot(me, &my links, (u64[]){ KEY_BINDING_ACCESS_KEY, (u64)(uintptr_t)item }, 2);
             if (!*used) *used = key;
         }
@@ -3803,6 +3821,7 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
         !compiler_options()->strict_null_checks
     ) {
         // Its null and undefined widen to any (tsc's reportErrorsFromWidening of the element, TS7031)
+        TY_WORKER_STATE(me);
         *intern_slot(me, &my links, (u64[]){ KEY_ELEMENT_WIDENED_ANY, (u64)(uintptr_t)binding }, 2) = raw;
     }
     if (binding->default_value && widens && !(raw->flags & TYF_ANY)) {
@@ -3850,6 +3869,7 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
             Ty const* unwidened[2] = { non_undefined_type(me, raw), default_type };
             Ty const* pre = ty_union_subtype_reduced(me, unwidened, 2);
             if (pre->xflags & TYX_CONTAINS_WIDENING) {
+                TY_WORKER_STATE(me);
                 *intern_slot(me, &my links, (u64[]){ KEY_ELEMENT_WIDENED_ANY, (u64)(uintptr_t)binding }, 2) = pre;
             }
         }
@@ -3888,7 +3908,10 @@ Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx) {
     }
     Ty const* circular = ty_intrinsic(me, TY_CIRCULAR);
     u64 key[2] = { KEY_CIRCULAR_BINDING, (u64)(uintptr_t)binding };
-    if (my circular_bindings && intern_get(&my links, key, 2)) return circular;
+    if (my circular_bindings && intern_get(&my links, key, 2)) {
+        TY_WORKER_STATE(me); // (A recorded cycle: this worker's)
+        return circular;
+    }
     if (ty_resolving_find(me, RESOLVING_BINDING, binding)) {
         ty_resolving_cycle(me, RESOLVING_BINDING, binding);
         return circular;

@@ -146,10 +146,12 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
     }
     if (yield_type && !compiler_options()->strict_null_checks && (yield_type->xflags & TYX_CONTAINS_WIDENING)) {
         // (tsc's reportErrorsFromWidening with WideningKind.GeneratorYield)
+        TY_WORKER_STATE(me);
         *intern_slot(me, &my links, (u64[]){ KEY_YIELD_WIDENED_ANY, (u64)(uintptr_t)function }, 2) = yield_type;
     }
     if (return_type && !compiler_options()->strict_null_checks && (return_type->xflags & TYX_CONTAINS_WIDENING)) {
         // (WideningKind.FunctionReturn, after the yields: see ty_generator_return_before_widening())
+        TY_WORKER_STATE(me);
         *intern_slot(me, &my links, (u64[]){ KEY_RETURN_WIDENED_ANY, (u64)(uintptr_t)function }, 2) = return_type;
     }
     if (yield_type) yield_type = ty_widened_return_type(me, yield_type, context ? context->yield_type : nullptr);
@@ -322,6 +324,7 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
             ret = ty_union_subtype_reduced(me, returned.data, returned.len);
             if (!compiler_options()->strict_null_checks && (ret->xflags & TYX_CONTAINS_WIDENING)) {
                 // Its null and undefined widen to any below (tsc's reportErrorsFromWidening with WideningKind.FunctionReturn)
+                TY_WORKER_STATE(me);
                 *intern_slot(me, &my links, (u64[]){ KEY_RETURN_WIDENED_ANY, (u64)(uintptr_t)function }, 2) = ret;
             }
             // (Its context is its own type: see set_contextual_return() in expr.c)
