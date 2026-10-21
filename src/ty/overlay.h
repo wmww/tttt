@@ -53,6 +53,9 @@ uint64_t sw_claim(struct Checker* me, SharedWord* w, uint8_t* state);
 // The value this worker uses from now on (its own, or the winner's)
 uintptr_t sw_finish(struct Checker* me, SharedWord* w, uint8_t* state, uintptr_t value, uint64_t taint);
 
+// TTTT_DEBUG_PUBLISH=1: aborts if `ref`, held by a value being published, was made by a computation whose result stayed
+// private (overlay.c). For the kinds whose values hold non-identity objects (Props, Signatures, Members: P1's walks)
+void sw_debug_check_ref(void const* ref, char const* what);
 void overlay_drop(struct Checker* me);
 void overlay_print_stats(void); // TTTT_GRAPH_STATS
 

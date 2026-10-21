@@ -1339,6 +1339,59 @@ in parallel only where the file sets are disjoint):
   `my graph`), the deeply-nested-cut event (relate.c is_deeply_nested_as() call sites only), TTTT_GRAPH_STATS
   counters (POISON, adopts, shadows), TTTT_DEBUG_PUBLISH. Files: ty.h (lazy macros), taint.h, overlay.{h,c},
   checker.c (intern hooks), relate.c (one call site). Measure the default path here.
+  **S0 done (2026-10-22, wt-design4f).** As built:
+  - `src/ty/overlay.{h,c}`: SharedWord, sw_get() (fast path, in ty.h), sw_look(), sw_claim(), sw_finish(). The
+    pattern of a site is in overlay.h's header comment.
+  - ClaimSet and Overlay are one per-worker map by the word's address (value 0 = in flight here).
+  - Without the flag the word is written whatever the taint, and in flight is a LazyState byte next to it (only
+    NOT_STARTED / IN_FLIGHT), so every site keeps one byte for the default path.
+  - `Checker.graph_shadowed`: program.c hands over to graph_fresh_worker() at the next file boundary, the same
+    helper the redo's give_up_file() uses. TTTT_GRAPH_FORCE_SHADOW=1 treats every clean loser as shadowed, to test
+    that path: 210 retirements in 10 effect runs, output K1's.
+  - The counter: TAINT_EVENT() is a cold out-of-line bump of the thread-local `graph_taint_now`, always compiled.
+    Inline, it changed hot callers' inlining (+0.37% drizzle). Not in `Checker`, because the event sites don't all
+    have `me`.
+  - The intern hooks (graph_taint_miss/put) and the global mark set stay `-DTTTT_GRAPH_TAINT`-only: turning
+    publication of intern memo kinds into publish-only-clean is P3's. So S0 changes no memo kind's publication.
+  - Rule 3: relation_deep_cut() at relation_deeply_nested() and ty_is_deeply_nested() returning true (a taint event,
+    `Checker.deep_cuts`). `Checker.relation_deep_seen` is saved and restored per pair, like variance_reports. Pairs
+    concluded around a cut are cached CACHE_DEEP; a hit is an event, and they are never put in the shared relation
+    cache.
+  - TTTT_DEBUG_PUBLISH=1: every claimed computation's arena range is recorded at its end (private if tainted or
+    lost). sw_debug_check_ref(ref, what) aborts on a referent whose innermost recorded range is private. Nothing
+    calls it yet: the example's value is a type, an identity. P1 calls it from the walks of Members, Props and
+    SigResolved.
+  - Worked example: ty_non_augmenting_base() (TyObjectState.equivalent_base a SharedWord, NONE for none).
+
+  Gates:
+  - Default path callgrind against ai-main db9ca5304: nest +0.0%, drizzle -0.06%, zod +0.04%. The suite is
+    unchanged.
+  - Every corpus with the flag: plain K1 = K1 = K4 = K4 T4 x2 = K12 T12 x2.
+  - 20-run K12 tables drizzle, zod, effect, excalidraw and nest 20/20 each.
+  - Seeded scheduler (TTTT_GRAPH_SEED): effect and drizzle 100/100 seeds, and seed 18 (the TS7006) passes, also on
+    base at db9ca5304.
+  - TSan on effect and drizzle T12: no report in overlay.c or the example.
+  Counters per K12 run (means of 20):
+
+  | corpus | words published | adopted | poisoned | after poison | shadowed | deep cuts |
+  |---|---|---|---|---|---|---|
+  | drizzle | 18.7k | 9 | 0.6 | 1.8 | 0 | 17k |
+  | effect | 47.4k | 133 | 0 | 0 | 0 | 25k |
+  | zod | 40.1k | 123 | 0 | 0 | 0 | 5.4k |
+  | excalidraw | 5.0k | 13 | 0 | 0 | 0 | 1.8k |
+
+  Rule 3's cost to sharing, measured with the taint build: tainted intern memo entries go from 0.005-0.14% to
+  0.19-0.28% (drizzle 1150 of 443k, effect 721 of 385k, zod 650 of 233k).
+
+  **The fingerprint oracle's five divergent publications (the tooling worker's 20-run list), by owner:**
+  1. zod `$replace` base constraint and KEY_DISTRIBUTIVE_CONSTRAINT: P3 (memo and node-link kinds published only
+     when clean).
+  2. Method property types published as an instance of the function type (literal_instance_is_itself,
+     ty_function_type_mentions(): TSan E): P1.
+  3. drizzle PgArrayBuilder/GelArrayBuilder variances: P3 (variance groups).
+  4. KEY_UNION_PAIR of Promise unions: P3 (a memo kind; if it is identity purity instead, the owner of checker.c, P2).
+  5. effect inferred returns with `any` (the TS7006/TS2769 residue): P2 (function.c's function returns).
+  Standing gates for P1-P3: `seeds.sh` 100 seeds on effect and drizzle, seed 18 on effect.
 - **S1, SigResolved (one worker, alone, mechanical, Sonnet-able with an Opus review; ~1 session).** Signature's
   resolved fields move into an immutable record behind `Signature.res`, and every reader takes it from
   signature_resolve(). Touches call.c, relate.c, infer.c, members.c, expr.c, check.c, ty_display.c, decl_emit and
