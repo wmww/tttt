@@ -6247,15 +6247,22 @@ bool signature_declared_never(Checker* me, Signature const* sig) {
 }
 
 typedef struct WordBuf {
-    u64* data;
+    u64* data; // `small` while the key fits (most literals: no allocation)
     u32 len, cap;
+    u64 small[48];
 } WordBuf;
 
 static void words_push(WordBuf* me, u64 word) {
     if (my len == my cap) {
-        my cap = my cap ? my cap * 2 : 32;
-        my data = realloc(my data, sizeof(u64) * my cap);
-        panic_if(!my data, "out of memory");
+        my cap *= 2;
+        if (my data == my small) {
+            my data = malloc(sizeof(u64) * my cap);
+            panic_if(!my data, "out of memory");
+            memcpy(my data, my small, sizeof(my small));
+        } else {
+            my data = realloc(my data, sizeof(u64) * my cap);
+            panic_if(!my data, "out of memory");
+        }
     }
     my data[my len++] = word;
 }
@@ -6281,7 +6288,10 @@ Ty const* ty_object_literal_alternative(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind,
     void const* expr, u32 alternative
 ) {
-    WordBuf words = {0};
+    WordBuf words;
+    words.data = words.small;
+    words.len = 0;
+    words.cap = c_arraylen(words.small);
     words_push(&words, KEY_STRUCTURAL);
     words_push(&words, kind);
     if (expr) {
@@ -6407,7 +6417,7 @@ Ty const* ty_object_literal_alternative(
         ty_members_init(fresh->anonymous.state, builder_finish(me, &builder));
         ret = intern_set(me, &my links, intern_slot(me, &my links, words.data, words.len), fresh);
     }
-    free(words.data);
+    if (words.data != words.small) free(words.data);
     return ret;
 }
 

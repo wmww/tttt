@@ -9542,8 +9542,11 @@ static inline bool is_digit_of_base(char c, int base) {
 static const char* scan_digit_fragment(Parser* p, const char* c, int base, cstr* digits) {
     bool allow_separator = false;
     bool previous_separator = false;
+    const char* run = c; // (The digits since the last separator, appended at once)
     for (;; c++) {
         if (*c == '_') {
+            if (c > run) cstr_append_n(digits, run, c - run);
+            run = c + 1;
             if (allow_separator) {
                 allow_separator = false;
                 previous_separator = true;
@@ -9556,11 +9559,11 @@ static const char* scan_digit_fragment(Parser* p, const char* c, int base, cstr*
         } else if (is_digit_of_base(*c, base)) {
             allow_separator = true;
             previous_separator = false;
-            cstr_append_n(digits, c, 1);
         } else {
             break;
         }
     }
+    if (c > run) cstr_append_n(digits, run, c - run);
     if (c[-1] == '_') {
         parse_error(p, span_make(p->shared->source, c - 1, c), 6188, "Numeric separators are not allowed here.");
     }
@@ -10430,8 +10433,11 @@ static bool parse_template(Parser* parent, VecExpr* ret, AstCStrs* texts) {
             segment = p.pos - 1;
             segment_errors = vec_error_size(&p.shared->errors);
         } else {
-            cstr_append_n(&text, p.pos, 1);
-            p.pos++;
+            // (This character and the plain ones after it at once: one append per character was 1.3% of excalidraw)
+            const char* run = p.pos + 1;
+            while (*run && *run != '\\' && *run != '\r' && *run != '`' && *run != '$') run++;
+            cstr_append_n(&text, p.pos, run - p.pos);
+            p.pos = run;
         }
     }
     ast_cstr_seal(&text);
