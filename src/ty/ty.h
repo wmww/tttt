@@ -1034,6 +1034,33 @@ typedef struct DeferredCheck {
     void const* node;
 } DeferredCheck;
 
+// --shared-graph: the lib singletons a checker makes on first use (the array targets, tuple element parameters, tsc's
+// unknownSignature, the global types, the iteration and disposable globals), published once for every checker of the
+// graph (plan 86 4d). Each checker's own field is a cache of its slot here: filled from the slot if it is set, else
+// computed and published by a CAS, the first to publish winning (a loser drops its value, left in its arena, and takes
+// the winner's). Lazy as before: whoever needs one first computes it, and reports what that reports (TS2318).
+// Without the flag a checker has none (Checker.singletons null) and its fields are all there is
+typedef struct TySingletons {
+    void const* array_target;
+    void const* auto_array;
+    void const* readonly_array_target;
+    void const* tuple_params; // A TyList const*, replaced by a longer copy when a longer tuple needs more
+    void const* unknown_signature;
+    void const* global_types[14];
+    void const* iteration;
+    void const* disposable_targets[2];
+} TySingletons;
+TySingletons* ty_singletons_new(void);
+// Publishes `value` into a TySingletons slot unless one is there: the slot's value from then on (null is a value)
+void const* ty_singleton_publish(void const** slot, void const* value);
+// Whether the slot has a value (`out`: it)
+bool ty_singleton_known(void const* const* slot, void const** out);
+// A checker joining a graph (Checker.singletons just set): publishes the singletons it has made already (the graph's
+// first checker, whose ty_init_global_types() ran before the graph existed) and takes every other one published so far.
+// Some are compared with by identity where nothing makes them (`my auto_array`, the any-function type, the array
+// targets), so a joining checker must have them; the others are also taken when first needed
+void ty_singletons_sync(struct Checker* me);
+
 // The kinds of in-flight record that hang off no Resolving entry (see ty_claim_push()): one list each, so that a kind's
 // lookup only walks its own claims
 typedef enum ClaimKind {
@@ -1120,6 +1147,9 @@ struct Checker {
     struct Signature** unknown_signature; // tsc's unknownSignature (no parameters, returning errorType) as a list of one
     Ty const* global_types[14]; // GlobalType in relate.c: String, Number... looked up on first use
     bool global_types_resolved[14];
+    // --shared-graph: where the fields above (array_target, tuple_params, unknown_signature, global_types, iteration,
+    // disposable_targets) are published for the other checkers; null without the flag (see TySingletons)
+    TySingletons* singletons;
     u32 instantiation_depth;
     Ty const* instantiation_stack[100]; // What each depth of instantiation_depth instantiates (tsc's instantiationStack)
     // Conditional types picked as the branch of a conditional type being instantiated now, which don't count towards

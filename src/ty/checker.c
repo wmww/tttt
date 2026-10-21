@@ -3037,24 +3037,132 @@ static Ty const* global_generic_target(Checker* me, char const* name) {
     return make_synthetic_target(me, name);
 }
 
+static unsigned char const singleton_none; // A TySingletons slot published as null
+
+TySingletons* ty_singletons_new(void) {
+    TySingletons* ret = calloc(1, sizeof(TySingletons));
+    panic_if(!ret, "out of memory");
+    return ret;
+}
+
+void const* ty_singleton_publish(void const** slot, void const* value) {
+    void const* mine = value ? value : &singleton_none;
+    void const* expected = nullptr;
+    if (!__atomic_compare_exchange_n(slot, &expected, mine, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) mine = expected;
+    return mine == &singleton_none ? nullptr : mine;
+}
+
+bool ty_singleton_known(void const* const* slot, void const** out) {
+    void const* value = __atomic_load_n(slot, __ATOMIC_ACQUIRE);
+    if (!value) return false;
+    *out = value == &singleton_none ? nullptr : value;
+    return true;
+}
+
+// The checker's field and the shared slot made one: its value published if it has one, else the slot's taken
+static void sync_slot(void const** field, bool* known_flag, void const** slot) {
+    bool mine = known_flag ? *known_flag : *field != nullptr;
+    void const* value;
+    if (mine) {
+        *field = ty_singleton_publish(slot, *field);
+    } else if (ty_singleton_known(slot, &value)) {
+        *field = value;
+        if (known_flag) *known_flag = true;
+    }
+}
+
+void ty_singletons_sync(Checker* me) {
+    TySingletons* shared = my singletons;
+    if (!shared) return;
+    sync_slot((void const**)&my array_target, nullptr, &shared->array_target);
+    sync_slot((void const**)&my auto_array, nullptr, &shared->auto_array);
+    sync_slot((void const**)&my readonly_array_target, nullptr, &shared->readonly_array_target);
+    sync_slot((void const**)&my unknown_signature, nullptr, &shared->unknown_signature);
+    for (u32 i = 0; i < c_arraylen(shared->global_types); i++) {
+        sync_slot((void const**)&my global_types[i], &my global_types_resolved[i], &shared->global_types[i]);
+    }
+    sync_slot((void const**)&my iteration, nullptr, &shared->iteration);
+    for (u32 i = 0; i < 2; i++) {
+        sync_slot((void const**)&my disposable_targets[i], &my disposable_looked_up[i], &shared->disposable_targets[i]);
+    }
+    // (The tuple parameters: the longer list, published as one)
+    void const* known = nullptr;
+    if (ty_singleton_known(&shared->tuple_params, &known) && ((TyList const*)known)->len >= my tuple_params.len) {
+        my tuple_params = *(TyList const*)known;
+    } else if (my tuple_params.len) {
+        TyList* list = arena_new(&my arena, TyList);
+        *list = my tuple_params;
+        void const* expected = known;
+        if (!__atomic_compare_exchange_n(&shared->tuple_params, &expected, list, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) {
+            my tuple_params = *(TyList const*)expected;
+        }
+    }
+}
+
+// The Array or ReadonlyArray target, and with Array tsc's autoArrayType (published with --shared-graph: TySingletons)
+static void array_target_resolve(Checker* me, bool readonly) {
+    Ty const** target = readonly ? &my readonly_array_target : &my array_target;
+    TySingletons* shared = my singletons;
+    void const** slot = !shared ? nullptr : readonly ? &shared->readonly_array_target : &shared->array_target;
+    void const* known;
+    if (slot && ty_singleton_known(slot, &known)) {
+        *target = known;
+        if (!readonly) ty_singleton_known(&shared->auto_array, (void const**)&my auto_array);
+        return;
+    }
+    Ty const* made = global_generic_target(me, readonly ? "ReadonlyArray" : "Array");
+    *target = slot ? ty_singleton_publish(slot, made) : made;
+    // tsc makes autoArrayType first thing: of the arrays it has the lowest id, so it's the `any[]` that survives
+    // subtype reduction
+    if (!readonly) {
+        Ty const* auto_element = ty_intrinsic(me, TY_AUTO);
+        Ty const* auto_array = ty_reference(me, *target, (TyList){ .data = &auto_element, .len = 1 });
+        my auto_array = slot ? ty_singleton_publish(&shared->auto_array, auto_array) : auto_array;
+    }
+}
+
 // ReadonlyArray's target, looked up if no `readonly T[]` did yet: a written `ReadonlyArray<T>` is a readonly array
 // (tsc looks the global types up when it starts)
 Ty const* ty_readonly_array_target(Checker* me) {
-    if (!my readonly_array_target) my readonly_array_target = global_generic_target(me, "ReadonlyArray");
+    if (!my readonly_array_target) array_target_resolve(me, true);
     return my readonly_array_target;
+}
+
+// The element type parameters every tuple target shares, at least `arity` of them. With --shared-graph the list is
+// published by a pointer swap (TySingletons.tuple_params), each longer one a copy of the one it replaces: a worker takes
+// a long enough list from there, or grows the one it found and swaps it in, again from the winner's if it loses
+static void tuple_params_grow(Checker* me, u32 arity) {
+    TySingletons* shared = my singletons;
+    for (;;) {
+        TyList base = my tuple_params;
+        void const* known = nullptr;
+        if (shared && ty_singleton_known(&shared->tuple_params, &known) && ((TyList const*)known)->len > base.len) {
+            base = *(TyList const*)known;
+            my tuple_params = base;
+        }
+        if (base.len >= arity) return;
+        u32 len = base.len * 2 > arity ? base.len * 2 : arity;
+        Ty const** params = arena_new_n(&my arena, Ty const*, len);
+        if (base.len) memcpy(params, base.data, sizeof(Ty const*) * base.len);
+        for (u32 i = base.len; i < len; i++) params[i] = ty_synthetic_type_param(me, c_sv("T"));
+        if (!shared) {
+            my tuple_params = (TyList){ .data = params, .len = len };
+            return;
+        }
+        TyList* list = arena_new(&my arena, TyList);
+        *list = (TyList){ .data = params, .len = len };
+        void const* expected = known;
+        if (__atomic_compare_exchange_n(&shared->tuple_params, &expected, list, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) {
+            my tuple_params = *list;
+            return;
+        }
+        // (Another worker grew it meanwhile: start over from theirs, dropping these parameters)
+    }
 }
 
 Ty const* ty_array(Checker* me, Ty const* element, bool readonly) {
     Ty const** target = readonly ? &my readonly_array_target : &my array_target;
-    if (!*target) {
-        *target = global_generic_target(me, readonly ? "ReadonlyArray" : "Array");
-        // tsc makes autoArrayType first thing: of the arrays it has the lowest id, so it's the `any[]` that survives
-        // subtype reduction
-        if (!readonly) {
-            Ty const* auto_element = ty_intrinsic(me, TY_AUTO);
-            my auto_array = ty_reference(me, *target, (TyList){ .data = &auto_element, .len = 1 });
-        }
-    }
+    if (!*target) array_target_resolve(me, readonly);
     // A lib without ReadonlyArray reads it as Array (tsc's getGlobalReadonlyArrayType)
     if (readonly && (*target)->declared.kind == TY_DECLARED_SYNTHETIC) return ty_array(me, element, false);
     // Without a global Array (noLib) an array is the empty object type (tsc's createTypeFromGenericGlobalType of
@@ -3090,13 +3198,7 @@ Ty const* ty_tuple_target(Checker* me, TupleShape const* shape) {
     void const** slot = intern_slot(me, &my types, key, count);
     if (key != stack_key) free(key);
     if (!*slot) {
-        if (my tuple_params.len < shape->arity) {
-            u32 len = my tuple_params.len * 2 > shape->arity ? my tuple_params.len * 2 : shape->arity;
-            Ty const** params = arena_new_n(&my arena, Ty const*, len);
-            if (my tuple_params.len) memcpy(params, my tuple_params.data, sizeof(Ty const*) * my tuple_params.len);
-            for (u32 i = my tuple_params.len; i < len; i++) params[i] = ty_synthetic_type_param(me, c_sv("T"));
-            my tuple_params = (TyList){ .data = params, .len = len };
-        }
+        if (my tuple_params.len < shape->arity) tuple_params_grow(me, shape->arity);
         unsigned char* flags = arena_new_n(&my arena, unsigned char, shape->arity);
         Atom const** names = shape->names ? arena_new_n(&my arena, Atom const*, shape->arity) : nullptr;
         void const** target_labels = labels ? arena_new_n(&my arena, void const*, shape->arity) : nullptr;

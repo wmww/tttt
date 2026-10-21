@@ -57,6 +57,9 @@ Atom const* ty_well_known_symbol_name(Checker* me, char const* name) {
 
 static IterationState const* iteration_state(Checker* me) {
     if (my iteration) return my iteration;
+    // (--shared-graph: another checker's, if one published it, see TySingletons)
+    void const* known;
+    if (my singletons && ty_singleton_known(&my singletons->iteration, &known)) return my iteration = known;
     IterationState* state = arena_new(&my arena, IterationState);
     for (u32 i = 0; i < IG_COUNT; i++) {
         Symbol const* decl = program_get_global(my program, csview_from(iteration_global_names[i]), SYMBOL_TYPE);
@@ -66,8 +69,8 @@ static IterationState const* iteration_state(Checker* me) {
     }
     state->iterator_name = ty_well_known_symbol_name(me, "iterator");
     state->async_iterator_name = ty_well_known_symbol_name(me, "asyncIterator");
-    my iteration = state;
-    return state;
+    my iteration = my singletons ? ty_singleton_publish(&my singletons->iteration, state) : state;
+    return my iteration;
 }
 
 static bool is_reference_to(IterationState const* state, Ty const* ty, IterationGlobal which) {

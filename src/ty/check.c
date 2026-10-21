@@ -1289,6 +1289,15 @@ static Ty const* global_disposable_type(Checker* me, char const* name, ErrorCtx*
 }
 
 void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Span span, ErrorCtx* errs) {
+    // (--shared-graph: another checker's, if one published it, see TySingletons; whoever looks them up first reports a
+    // missing one, TS2318, a global error)
+    void const* known;
+    if (!my disposable_looked_up[is_await] && my singletons &&
+        ty_singleton_known(&my singletons->disposable_targets[is_await], &known)
+    ) {
+        my disposable_looked_up[is_await] = true;
+        my disposable_targets[is_await] = known;
+    }
     if (!my disposable_looked_up[is_await]) {
         my disposable_looked_up[is_await] = true;
         Ty const* async_disposable = is_await ? global_disposable_type(me, "AsyncDisposable", errs) : nullptr;
@@ -1301,6 +1310,9 @@ void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Sp
             parts[count++] = ty_intrinsic(me, TY_NULL);
             parts[count++] = ty_intrinsic(me, TY_UNDEFINED);
             my disposable_targets[is_await] = ty_union(me, parts, count, nullptr, (TyList){0});
+        }
+        if (my singletons) {
+            my disposable_targets[is_await] = ty_singleton_publish(&my singletons->disposable_targets[is_await], my disposable_targets[is_await]);
         }
     }
     Ty const* target = my disposable_targets[is_await];

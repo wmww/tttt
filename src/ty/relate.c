@@ -291,6 +291,13 @@ static u64 relation_key_of(Checker* me, Ty const* source, Ty const* target, bool
 
 [[gnu::noinline, gnu::cold]] static Ty const* resolve_global_type(Checker* me, GlobalType which) {
     static char const* const names[] = { "String", "Number", "Boolean", "Symbol", "BigInt", "Function", "Object", "RegExp", "CallableFunction", "NewableFunction" };
+    // (--shared-graph: another checker's, if one published it, see TySingletons)
+    void const* known;
+    if (my singletons && ty_singleton_known(&my singletons->global_types[which], &known)) {
+        my global_types[which] = known;
+        my global_types_resolved[which] = true;
+        return known;
+    }
     {
         my global_types_resolved[which] = true;
         if (which == GLOBAL_EMPTY_OBJECT || which == GLOBAL_ANY_FUNCTION || which == GLOBAL_UNKNOWN_EMPTY_OBJECT ||
@@ -314,6 +321,7 @@ static u64 relation_key_of(Checker* me, Ty const* source, Ty const* target, bool
             }
         }
     }
+    if (my singletons) my global_types[which] = ty_singleton_publish(&my singletons->global_types[which], my global_types[which]);
     return my global_types[which];
 }
 
@@ -8298,13 +8306,18 @@ Signature* const* ty_union_signatures(Checker* me, TyList members, bool construc
         // `Function` is called through tsc's unknownSignature: no parameters, returning errorType
         // (resolveUnionTypeMembers)
         if (function_type && members.data[i] == function_type) {
+            void const* known;
+            if (!my unknown_signature && my singletons && ty_singleton_known(&my singletons->unknown_signature, &known)) {
+                my unknown_signature = (Signature**)known;
+            }
             if (!my unknown_signature) {
                 Signature* unknown = arena_new(&my arena, Signature);
                 *unknown = (Signature){
                     .state = LAZY_STATE_DONE, .ret_state = LAZY_STATE_DONE, .ret = ty_intrinsic(me, TY_ERROR), .predicate_done = true,
                 };
-                my unknown_signature = arena_new_n(&my arena, Signature*, 1);
-                my unknown_signature[0] = unknown;
+                Signature** list = arena_new_n(&my arena, Signature*, 1);
+                list[0] = unknown;
+                my unknown_signature = my singletons ? (Signature**)ty_singleton_publish(&my singletons->unknown_signature, list) : list;
             }
             lists[i] = my unknown_signature;
             lens[i] = 1;
