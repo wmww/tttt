@@ -166,6 +166,9 @@ typedef struct Program {
     pthread_cond_t graph_epoch_cond;
     u32 graph_active, graph_arrived, graph_epoch, graph_recycles;
     _Atomic bool graph_epoch_due;
+    // The worker the others wait for at their next file boundary until it has checked a file (-1: none): after a
+    // graph-wide recycle, the one that rebuilt the graph (graph_lead_wait())
+    _Atomic int graph_leader;
     struct AtomTable* atoms; // Every checker's atoms (ty/atom_table.h)
     struct TypeDirectory* type_directory; // Every checker's types by id (lazy_type.h)
     u32 checker_cap; // program_set_checker_cap(), 0: the threads (past it only for a big program, auto_checker_count())
@@ -4820,6 +4823,24 @@ static void graph_epoch_rebuild(Program* me, u32 count) {
     my graph_recycles++;
 }
 
+// --shared-graph: a worker at a file boundary waits while another leads (graph_leader). After a graph-wide recycle
+// every worker starts its next file at the same instant on an empty graph, and nothing in flight is shared (plan 86
+// stage 4f), so all of them compute the same cold subgraph side by side: dokploy's tRPC router types, ~420 ms in one
+// fresh checker, took ~850 ms in each of 12 workers at once (the 3x slow runs). The leader warms the graph alone and
+// the others find its words published. It holds nothing in flight while it waits, nor does the leader wait for
+// anyone, so no wait cycle can form; and what a file reports doesn't depend on the schedule
+static void graph_lead_wait(Program* me, u32 c) {
+    for (int leader; (leader = atomic_load_explicit(&my graph_leader, memory_order_acquire)) >= 0 && (u32)leader != c;) {
+        struct timespec ts = { 0, 100000 };
+        nanosleep(&ts, nullptr);
+    }
+}
+
+static void graph_lead_done(Program* me, u32 c) {
+    int leader = (int)c;
+    atomic_compare_exchange_strong(&my graph_leader, &leader, -1);
+}
+
 // After a file: whether the graph is due, and if so the barrier. Returns the share's checker to go on with
 static bool graph_epoch_due(Program* me, Checker* checker, u32 c, u32 count) {
     if (my graph_budget == UINT64_MAX) return false;
@@ -4842,6 +4863,7 @@ static Checker* graph_epoch_arrive(Program* me, Checker* checker, u32 c, u32 cou
     u32 epoch = my graph_epoch;
     if (++my graph_arrived == my graph_active) {
         graph_epoch_rebuild(me, count);
+        if (!getenv("TTTT_GRAPH_NO_LEAD")) atomic_store(&my graph_leader, (int)c);
         my graph_arrived = 0;
         atomic_store(&my graph_epoch_due, false);
         my graph_epoch++;
@@ -4919,6 +4941,7 @@ static void check_share(Program* me, u32 c, u32 count) {
             if (at != UINT32_MAX && !stolen++ && my checker_budget != UINT64_MAX && segment_count) recycle_due = true;
         }
         if (at == UINT32_MAX) break;
+        if (my graph) graph_lead_wait(me, c);
         graph_sched_point(false);
         SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
         // (A failed materialization means a run without deferral: what's left needn't be checked, plan 78)
@@ -4937,6 +4960,7 @@ static void check_share(Program* me, u32 c, u32 count) {
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
         check_file(me, checker, source, at);
+        if (my graph) graph_lead_done(me, c);
         // (Plan 86 stage 4f: a worker that kept a tainted value of a word another worker published meanwhile goes by its
         // Overlay first, on every fast path. Its file is done: it hands over to a fresh worker, whose history starts
         // here, like a recycle's)
@@ -4989,6 +5013,7 @@ static void check_share(Program* me, u32 c, u32 count) {
         }
         recycle_due = true;
     }
+    if (my graph) graph_lead_done(me, c);
     atomic_store_explicit(&my share_states[c], 2, memory_order_release);
     check_segment_after(me, checker, c, segment, segment_count);
     free(segment);
@@ -5436,6 +5461,7 @@ void program_typecheck(Program* me) {
         atomic_store(&my graph_epoch_due, false);
     }
     my steal_files = !getenv("TTTT_NO_STEAL");
+    atomic_store(&my graph_leader, my graph && getenv("TTTT_GRAPH_LEAD") ? 0 : -1);
     my share_states = c_new_n(_Atomic u32, count);
     my share_left = c_new_n(_Atomic u64, count);
     my share_first = c_new_n(u32, count);
