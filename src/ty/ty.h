@@ -1247,6 +1247,13 @@ struct Checker {
     // --shared-graph (ty/graph.h): the graph it shares, and the declaration memos it finished (slots, the top bit:
     // tainted), published with its other results when its share ends
     struct TyGraph* graph;
+    // --first-touch-stamps (plan 86 stage 4c): what deep nesting (is_deeply_nested_as()) orders types by instead of
+    // their ids, by id, chunked like the id table: the order in which this checker made or first met each type. At one
+    // checker on a graph of its own that is the id order; on a shared graph it is the checker's own history. Null: off
+    u32** stamps;
+    u32 stamp_next;
+    u64 stamp_disagreements; // Deep nesting decisions the id order would have made otherwise (TTTT_GRAPH_STATS)
+    u64 stamp_decisions;
     u32* graph_memo_slots;
     u32 graph_memo_len, graph_memo_cap;
 };
@@ -1288,6 +1295,7 @@ void ty_check_destructured_member(
 );
 Atom const* checker_atom(Checker* me, csview sv);
 u32 checker_type_count(Checker const* me); // How many types it made (tttt --time)
+u32 ty_stamp(Checker* me, Ty const* ty); // --first-touch-stamps (Checker.stamps)
 Atom const* ty_index_atom(Checker* me, u32 index); // "0", "1"... (an index's property name)
 static inline Ty const* ty_intrinsic(Checker const* me, TyIntrinsic i) { return my intrinsics[i]; }
 

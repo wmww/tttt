@@ -151,6 +151,7 @@ typedef struct Program {
     bool steal_files; // While typechecking: checkers take each other's files (TTTT_NO_STEAL=1: never, to measure)
     u32 requested_checkers; // program_set_checkers()
     bool shared_graph; // program_set_shared_graph()
+    bool first_touch_stamps; // program_set_first_touch_stamps()
     struct TyGraph* graph; // Its checkers', while they share one (ty/graph.h)
     struct AtomTable* atoms; // Every checker's atoms (ty/atom_table.h)
     struct TypeDirectory* type_directory; // Every checker's types by id (lazy_type.h)
@@ -239,6 +240,8 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
         .checker_memory = UINT64_MAX,
         .atoms = atom_table_new(),
         .type_directory = type_directory_new(),
+        // (TTTT_FIRST_TOUCH_STAMPS=1: --first-touch-stamps for every program, the suite's too)
+        .first_touch_stamps = getenv("TTTT_FIRST_TOUCH_STAMPS") != nullptr,
         .checker_memory_cap = UINT64_MAX,
         .checker_memory_shared = UINT64_MAX,
     });
@@ -3854,6 +3857,14 @@ void program_make_current(Program* me) {
 // nestjs-boilerplate checks 240 KB in 110 ms where most projects of that size take 25)
 enum { CHECKER_BYTES = 64 << 10 };
 
+void program_set_first_touch_stamps(Program* me, bool stamps) {
+    my first_touch_stamps = stamps;
+}
+
+bool program_first_touch_stamps(Program const* me) {
+    return my first_touch_stamps;
+}
+
 void program_set_shared_graph(Program* me, bool shared) {
     my shared_graph = shared;
 }
@@ -5028,6 +5039,11 @@ void program_typecheck(Program* me) {
     my binder->frozen = false;
     my errs->frozen = false;
     if (my graph && getenv("TTTT_GRAPH_STATS")) graph_print_stats(my graph);
+    if (my first_touch_stamps && getenv("TTTT_GRAPH_STATS")) {
+        u64 decisions = 0, disagreements = 0;
+        for (u32 c = 0; c < count; c++) decisions += my checkers[c]->stamp_decisions, disagreements += my checkers[c]->stamp_disagreements;
+        eprintln("stamps: ", decisions, " deep nesting decisions, ", disagreements, " the type ids would have made otherwise");
+    }
     error_ctx_keep_first_once(checker_errs, count);
     for (u32 c = 0; c < count; c++) {
         error_ctx_merge(my errs, &checker_errs[c]);

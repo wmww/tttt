@@ -6547,11 +6547,37 @@ static bool intersection_has_identity(Checker* me, Ty const* key, Ty const* iden
     return false;
 }
 
+// is_deeply_nested_as() by first-touch stamps (--first-touch-stamps, plan 86 stage 4c): "newer" is newer to this
+// checker. Also counts the decisions the ids would have made otherwise
+[[gnu::noinline]] static bool is_deeply_nested_stamped(
+    Checker* me, Ty const* identity, Ty const* ty, Ty const* const* stack, uintptr_t const* entries, u32 depth, u32 max
+) {
+    u32 count = 0, last = 0, id_count = 0, last_id = 0;
+    bool ret = false, by_id = false;
+    for (u32 i = 0; i < depth && !(ret && by_id); i++) {
+        uintptr_t entry = entries ? entries[i] : ty_recursion_entry(me, stack[i]);
+        if (entry != (uintptr_t)identity && !((entry & 1) && intersection_has_identity(me, (Ty const*)(entry & ~(uintptr_t)1), identity))) {
+            continue;
+        }
+        u32 stamp = ty_stamp(me, stack[i]);
+        if (!ret && stamp >= last && ++count >= max) ret = true;
+        last = stamp;
+        if (!by_id && stack[i]->id >= last_id && ++id_count >= max) by_id = true;
+        last_id = stack[i]->id;
+    }
+    if (!ret) ret = ty_stamp(me, ty) >= last && ++count >= max;
+    if (!by_id) by_id = ty->id >= last_id && ++id_count >= max;
+    my stamp_decisions++;
+    if (ret != by_id) my stamp_disagreements++;
+    return ret;
+}
+
 // Whether `identity` is on the stack at least `max` times counting `ty` (the type about to go on it, which has it),
 // each newer than the one before. `entries` are the stack's ty_recursion_entry(), null to work them out
 static bool is_deeply_nested_as(
     Checker* me, Ty const* identity, Ty const* ty, Ty const* const* stack, uintptr_t const* entries, u32 depth, u32 max
 ) {
+    if (my stamps) return is_deeply_nested_stamped(me, identity, ty, stack, entries, depth, max);
     u32 count = 0;
     u32 last_id = 0;
     for (u32 i = 0; i < depth; i++) {

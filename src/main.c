@@ -65,6 +65,7 @@ typedef struct Options {
     u64 checker_memory; // --checker-memory, bytes (UINT64_MAX: off)
     bool checker_memory_given; // Else CHECKER_MEMORY_CAP_MB caps it
     bool shared_graph; // --shared-graph
+    bool first_touch_stamps; // --first-touch-stamps
     u32 threads; // --threads
     const char* expect_types; // --expect-types FILE: print the types of the expressions it lists (expect_types.h)
     u32 build_jobs; // --builders: how many projects -b checks at once (0: decided by threads)
@@ -601,6 +602,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     }
     program_set_checkers(program, opts->checkers);
     program_set_shared_graph(program, opts->shared_graph);
+    program_set_first_touch_stamps(program, opts->first_touch_stamps);
     program_set_checker_cap(program, opts->checker_cap);
     // (--expect-types reads each file's types in the checker that checked it)
     if (!opts->expect_types) program_set_checker_memory(program, opts->checker_memory);
@@ -1284,6 +1286,7 @@ static void print_help(void) {
         "                and grow when they recycle every few files; 0: a fresh checker per file, off: never).\n"
         "  --shared-graph  the checkers share one type graph, one after another, never recycled (plan 86 stage 4:\n"
         "                a measurement, implies --threads 1 --checker-memory off for the typecheck)\n"
+        "  --first-touch-stamps  deep nesting orders types by when each checker met them first, not by id\n"
         "                The output doesn't depend on it\n"
         "  --threads N   parse, bind and check on N threads (default: the number of cores; checking uses at\n"
         "                most K of them)\n"
@@ -1421,6 +1424,8 @@ static int run(int argc, const char** argv) {
             return 1;
         } else if (streq(argv[i], "--shared-graph")) {
             opts.shared_graph = true;
+        } else if (streq(argv[i], "--first-touch-stamps")) {
+            opts.first_touch_stamps = true;
         } else if (streq(argv[i], "--checkers") && count_value(argc, argv, i)) {
             opts.checkers = (u32)atoi(argv[++i]);
         } else if (streq(argv[i], "--checker-memory") && i + 1 < argc &&
