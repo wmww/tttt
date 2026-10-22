@@ -5676,17 +5676,23 @@ static Ternary conditional_source_related(Checker* me, RelationState* st, Ty con
     // isDeeplyNestedType(source, sourceStack, sourceDepth, 10); it is on the stack already)
     if (st->source_depth && relation_deeply_nested(me, source, st->source_stack, st->source_entries, &st->source_entries_valid, st->source_depth - 1, 10, false)) return TERNARY_MAYBE;
     // Through the default constraint, the union of the branches (an any branch counts as never)
-    Ty const* true_branch = inferred_true_branch(me, source);
+    // (The branches as written first, then the inferred true branch: the order tsc makes them in, getSimplifiedConditionalType
+    // when the source is normalized, then getDefaultConstraintOfConditionalType)
+    ty_conditional_branch(me, source, true);
     Ty const* false_branch = ty_conditional_branch(me, source, false);
+    Ty const* true_branch = inferred_true_branch(me, source);
     if (true_branch->flags & TYF_ANY) true_branch = ty_intrinsic(me, TY_NEVER);
     else if (false_branch->flags & TYF_ANY) false_branch = ty_intrinsic(me, TY_NEVER);
     // HACK: tsc relates the default constraint with RecursionFlags.Source; pushing the target too (a deep-nesting
     // cut-off tsc doesn't have) saves react-hook-form's Path/FieldPathValue chains 10% of the react corpus
-    // (A union source: some member for the comparable relation, each one otherwise)
+    // (A union source: some member for the comparable relation, each one otherwise. In the order of their union, by id:
+    // tsc relates getUnionType([trueConstraint, falseConstraint]) member by member, and stops at the first that fails)
     bool some = st->relation == TY_RELATION_COMPARABLE;
-    Ternary related = is_related_to(me, st, true_branch, target, false);
-    if (some && !related) related = is_related_to(me, st, false_branch, target, false);
-    else if (related && !some) related &= is_related_to(me, st, false_branch, target, false);
+    Ty const* first = false_branch->id < true_branch->id ? false_branch : true_branch;
+    Ty const* second = first == true_branch ? false_branch : true_branch;
+    Ternary related = is_related_to(me, st, first, target, false);
+    if (some && !related) related = is_related_to(me, st, second, target, false);
+    else if (related && !some) related &= is_related_to(me, st, second, target, false);
     if (related) return related;
     // Plan 57: tsgo's check type is the distributed twin T' (whose constraint is T), so its first distributive constraint
     // is the conditional with the branches' T' mapped back to T; tttt keeps T as the check type, and relates those
