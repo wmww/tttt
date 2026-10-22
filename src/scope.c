@@ -13,6 +13,7 @@
 #include "class_decl.h"
 #include "interface_decl.h"
 #include <math.h>
+#include <sys/resource.h>
 #include "ty/ty.h"
 #include "lib_features.h"
 #include "statement.h"
@@ -4883,7 +4884,11 @@ static void link_step(char const* name, double* last) {
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);
     double now = (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1000000.0;
-    if (*last) eprintln("link: ", name, " ", now - *last, " ms");
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+    static long faults_last;
+    if (*last) eprintln("link: ", name, " ", now - *last, " ms, ", usage.ru_minflt - faults_last, " faults");
+    faults_last = usage.ru_minflt;
     *last = now;
 }
 

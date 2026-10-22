@@ -169,9 +169,16 @@ static void phase_done(Options const* opts, Output* out, const char* name, doubl
         struct timespec cpu;
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &cpu);
         double main_cpu = (double)cpu.tv_sec * 1e3 + (double)cpu.tv_nsec / 1e6;
+        struct rusage usage;
+        getrusage(RUSAGE_SELF, &usage);
+        static long faults_last;
+        static double sys_last;
+        double sys = (double)usage.ru_stime.tv_sec * 1e3 + (double)usage.ru_stime.tv_usec / 1e3;
         out_eprintln(out, "time: ", name, " ", now - *last, " ms (resident ", resident_mb(), " MB, main thread on a CPU ",
-            main_cpu - main_cpu_last, " ms)");
+            main_cpu - main_cpu_last, " ms, ", usage.ru_minflt - faults_last, " faults, sys ", sys - sys_last, " ms)");
         main_cpu_last = main_cpu;
+        faults_last = usage.ru_minflt;
+        sys_last = sys;
     }
     *last = now;
 }

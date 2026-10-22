@@ -10,6 +10,7 @@
 #include "flow.h"
 #include "function_impl.h"
 #include <sched.h>
+#include <sys/resource.h>
 #include <cleat/filesystem.h>
 #include "error.h"
 #include "statement.h"
@@ -3930,7 +3931,12 @@ static void resolve_step_done(char const* name, double* last) {
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);
     double now = (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1000000.0;
-    if (*last) eprintln("resolve: ", name, " ", now - *last, " ms");
+    // (The process's minor faults meanwhile: page faulting, not the work, was most of small projects' link)
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+    static long faults_last;
+    if (*last) eprintln("resolve: ", name, " ", now - *last, " ms, ", usage.ru_minflt - faults_last, " faults");
+    faults_last = usage.ru_minflt;
     *last = now;
 }
 
