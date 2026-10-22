@@ -85,6 +85,88 @@ D1 read misses up 2.07 -> 2.13% on tsc); splitting is_related_to(), recursive_re
 caches (instructions up or flat). The parser is ~12% of vscode's instructions with no hot site (74M child Parser
 creations for 138 MB of source, the top site 10%): structural.
 
+## The 12-core box at 8e3f4fb0: BOLT and interning A/B (2026-10-22)
+Run by an agent on the human's laptop (the box of the 2989c0f0 section below): AC, `balanced`, but **Firefox open**
+(~25% of a core) and load 3-5 before each step (10 during B's runs, our own). llvm-bolt isn't packaged by Arch (`pacman
+-F` finds neither llvm-bolt nor merge-fdata): `BOLT=` pointed at llvm-bolt from LLVM's own `LLVM-23.1.3-Linux-X64`
+release tarball (the box's clang is 23.1.3), extracted into the session scratchpad and gone with it. `scripts/fastbuild.sh`
+at 8e3f4fb0 then built pgo/tttt (the baseline) and bolt/tttt (fast/tttt); byte-identical output on vscode.
+
+**A. BOLT (pgo/tttt -> fast/tttt), vscode.** `perf stat -M PipelineL1 -r 3` and `perf stat -e
+cycles,instructions,L1-icache-load-misses,iTLB-load-misses,bp_l1_tlb_miss_l2_tlb_hit,ic_tag_hit_miss.*,op_cache_hit_miss.*,de_src_op_disp.* -r 3`
+(the event set of the 2989c0f0 section). K1 is `--checkers 1 --threads 1` **pinned to CPU 2** (a Zen 5 core, `taskset`:
+the hybrid's core types would swamp a 3% A/B); the defaults unpinned:
+
+| vscode | K1 pgo | K1 fast | defaults pgo | defaults fast |
+|---|---|---|---|---|
+| wall s (PipelineL1 run / events run) | 9.55 / 9.58 | **9.25 / 9.28** (-3.2%) | 1.850 / 1.919 | **1.812 / 1.844** (-2 to -4%) |
+| cycles G / instructions G | 46.66 / 64.92 | 45.24 / 64.49 | 100.28 / 76.48 | 95.49 / 75.92 |
+| IPC | 1.39 | 1.43 | 0.76 | 0.80 |
+| frontend / backend / bad spec / retiring % | 53.0 / 23.4 / 7.5 / 15.5 | **51.1** / 24.8 / 7.9 / 16.0 | 51.5 / 22.4 / 2.9 / 8.8 (SMT 12.1) | **48.7** / 24.0 / 3.2 / 9.3 (SMT 12.4) |
+| L1-icache-load-misses per 1000 instructions | 11.2 | **7.9** (-30%) | 10.5 | **7.1** (-33%) |
+| ic_tag miss rate (of fetch lookups) | 22.1% | 18.3% | 31.8% | 26.8% |
+| L1 iTLB misses (L2 hits) per 1000 instructions | 12.0 | **0.13** | 9.7 | **0.14** |
+| iTLB-load-misses (L2 misses) | 0.2 M | 0.03 M | 89 M | **10 M** |
+| op cache hit rate / ops from the x86 decoder | 62.8% / 29.4% | 63.6% / 29.3% | 56.0% / 37.5% | 56.9% / 37.4% |
+
+- **BOLT is a 3% win on real hardware at K1 and 2-4% at the defaults**, all of it front end: 30% fewer icache misses
+  (more than cachegrind's simulated 16% fewer I1 misses, c098d0c1), and the L1 iTLB nearly never misses (its hot text is
+  packed into a ~2.5 MB window, `__hot_start..__hot_end`): the 300x iTLB-L2-miss excess of the defaults over K1 (the
+  2989c0f0 section's unexplained number) drops 9x. Instructions -0.7%. The op cache doesn't move: it misses on the
+  same working set, BOLT only changes where the lines come from.
+- The frontend-bound share is still ~49-51%: layout took 2-3 points off, not the stall. Retiring rises 0.5 points.
+
+**Bench** (`scripts/bench.sh --runs 3 --checkers 12`; bench.sh has no `--bin`, so the second run had bolt/tttt **copied
+over pgo/tttt** and pgo/tttt restored afterwards, sha256 checked): best wall s / CPU s (median run) / peak MB:
+
+| corpus | default pgo | default fast | K12 pgo | K12 fast | single pgo | single fast |
+|---|---|---|---|---|---|---|
+| TypeScript6 | 0.26 / 1.19 / 499 | 0.22 / 1.17 / 501 | 0.20 / 1.18 / 494 | 0.21 / 1.19 / 503 | 0.44 / 0.44 / 231 | 0.44 / 0.44 / 231 |
+| nestjs-boilerplate | 0.07 / 0.41 / 299 | 0.07 / 0.42 / 300 | 0.07 / 0.47 / 327 | 0.06 / 0.48 / 319 | 0.15 / 0.15 / 136 | 0.13 / 0.13 / 134 |
+| zod | 0.20 / 1.89 / 861 | 0.20 / 1.86 / 860 | 0.20 / 1.78 / 860 | 0.19 / 1.82 / 848 | 0.52 / 0.52 / 445 | 0.50 / 0.50 / 442 |
+| drizzle | 0.31 / 2.85 / 1120 | 0.29 / 2.75 / 1106 | 0.28 / 2.65 / 1098 | 0.28 / 2.72 / 1106 | 0.65 / 0.65 / 467 | 0.63 / 0.63 / 466 |
+| effect | 0.29 / 3.08 / 940 | 0.28 / 2.95 / 933 | 0.27 / 3.08 / 942 | 0.27 / 2.91 / 942 | 1.07 / 1.07 / 624 | 1.03 / 1.03 / 621 |
+| vscode | 1.84 / 33.7 / 5353 | **1.81** / 32.9 / 5362 | 2.02 / 22.6 / 4992 | 1.97 / 22.7 / 5004 | 9.44 / 9.45 / 4094 | **9.13** / 9.18 / 4091 |
+
+- Single-threaded 0-13% faster (TypeScript6 level; vscode -3.3%, effect -3.7%, nest -13% at 10 ms granularity); the defaults
+  and K12 0-5% (CPU -1 to -4%), never slower beyond the 10 ms granularity. Peak RSS unchanged (bolt/tttt is 11.7 MB
+  on disk against 7.7 MB: BOLT keeps the original text). TypeScript6's default 0.26 is again the bench's very first
+  measurement (warm-up). vscode at the defaults 1.81-1.84 against the 2989c0f0 bench's 1.70: Firefox and the load.
+- **Verdict: the counters confirm BOLT.** Flipping `MEASURED=fast` in `scripts/fastbuild.sh` is now justified (not
+  done here: this round didn't change scripts); note llvm-bolt has to be installed off-repo on Arch.
+
+**B. Interning names (wt-fe2: df1ef385, e713d565, 894d2292) against main.** wt-fe2 sits on 4a67416e, not on main
+(no fastbuild.sh, no -fno-plt, no c9477eb6), so the three commits were **cherry-picked onto 8e3f4fb0** in a detached
+`/tmp/fe2` (b3383033, 1508d86a, d18b702d; clean, never pushed, worktree removed) and built there with its own
+`scripts/fastbuild.sh` (own PGO profile and BOLT). Byte-identical output on vscode, nest, TypeScript6. Both fast/tttt:
+
+| vscode, defaults, 5 runs alternating (`--time`, `TTTT_RESOLVE_TIMES=1`), median ms | main | fe2 |
+|---|---|---|
+| resolve names (wall / main thread CPU) | 124.3 / 115.1 | 122.0 / 114.3 |
+| of it: declare / link (of which aliases) / walk | 25 / **41.0 (34.4)** / 41.6 | 29 / **32.0 (25.0)** / 45.3 |
+| load+parse files | 114.2 | 114.1 |
+| typecheck | 1450 | 1479 |
+| total wall / CPU | **1772 / 31.98 s** | **1804 / 32.96 s** |
+
+| `perf stat` | main | fe2 |
+|---|---|---|
+| nest -r 10, two rounds: wall ms | 77.1, 79.8 | 81.1, 81.3 |
+| nest: cycles G / instructions G | 1.249, 1.233 / 1.176, 1.165 | 1.345, 1.280 / 1.180, 1.172 |
+| TypeScript6 (src/compiler) -r 5: wall ms / cycles G / instructions G | 231 / 3.71 / 4.33 | 230 / 3.75 / 4.36 |
+| vscode defaults -r 3: wall s | 1.852 | 1.872 |
+| cycles G / instructions G | 95.38 / 76.34 | 98.02 (+2.8%) / 76.72 (+0.5%) |
+| dTLB-load-misses M / L1-dcache-load-misses G | 81.2 / 1.942 | 83.9 (+3.3%) / 1.977 (+1.8%) |
+
+- **No: on this box the interning branch loses.** Link is the predicted -22% (41 -> 32 ms, all in aliases), but declare
+  (+4 ms) and the walk (+4 ms) give most of it back, so resolve names wins 2 ms, and the checkers lose ~30 ms of wall
+  and ~1 s of CPU (typecheck +2%). End to end vscode +1.8% wall, +3% CPU, +2.8% cycles; nest +2-5% wall, +4-8%
+  cycles; TypeScript6 a tie on wall, +1% cycles. Instructions +0.3-0.6% as cachegrind said, but **the cycles rise 5x
+  more than the instructions**, and the data side gets worse, not better: dTLB +3.3%, L1d misses +1.8%. The compact
+  atom storage doesn't show up as a data-cache win at the defaults; where the checkers' extra cycles go (the shared
+  process-wide atom table's lines under 24 threads? the {atom, symbol} entries' extra indirection?) wasn't measured.
+- Caveat: each side has its own PGO training and BOLT layout, so ~1% of either way is layout noise; nest's two rounds
+  agree on the sign; vscode's 5 alternating runs don't overlap (main 1756-1780, fe2 1787-1831).
+
 ## The 12-core box at 2989c0f0: front end cuts and perf counters (2026-10-22)
 Run by an agent on the human's laptop: Ryzen AI 9 HX 370, **hybrid**: 4 Zen 5 cores (8 threads, 5.16 GHz, 16 MB L3,
 CPUs 0-3,12-15) + 8 Zen 5c (16 threads, 3.29 GHz, 8 MB L3); Linux 7.2.11-zen1, perf 7.2.11, AC, `balanced`, Firefox
