@@ -44,6 +44,8 @@ static inline void* arena_alloc(Arena* me, size_t size) {
 }
 #endif
 void arena_drop(Arena* me);
+// Empties it for reuse, keeping its latest chunk (zeroed again, its pages still mapped)
+void arena_reset(Arena* me);
 // Gives back the latest allocation (zeroed again) if `ptr` of `size` bytes is it, else false and nothing happens
 bool arena_pop_last(Arena* me, void* ptr, size_t size);
 #ifdef TTTT_ARENA_SITES

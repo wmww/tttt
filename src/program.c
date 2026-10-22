@@ -3985,8 +3985,9 @@ void program_resolve_names(Program* me) {
     program_link_module_refs(me);
     resolve_step_done("link: module refs", &last);
     binder_link(my binder);
-    binder_check_export_star_conflicts(my binder, my errs);
     resolve_step_done("link", &last);
+    binder_check_export_star_conflicts(my binder, my errs);
+    resolve_step_done("link: export star conflicts", &last);
 
     // Resolve: every identifier gets its symbol, function and block scopes are made on the way
     program_resolve_walk(me);

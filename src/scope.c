@@ -3074,14 +3074,19 @@ static SymbolTable const* export_star_visit(ExportStarWalk* walk, Symbol* module
 }
 
 void binder_check_export_star_conflicts(Binder* me, ErrorCtx* errs) {
+    // (One arena for every walk, emptied between them: an arena per module was a chunk mapped, faulted in and
+    // unmapped per module)
+    Arena arena = {0};
     for (u32 i = 0; i < my symbol_count; i++) {
         Symbol* module = my symbols[i];
         if (!module->is_module || !module->module || !module->module->export_star_count) continue;
-        ExportStarWalk walk = { .errs = errs };
+        ExportStarWalk walk = { .arena = arena, .errs = errs };
         export_star_visit(&walk, module_export_equals(module), true);
         free(walk.visited);
-        arena_drop(&walk.arena);
+        arena = walk.arena;
+        arena_reset(&arena);
     }
+    arena_drop(&arena);
 }
 
 static SymbolTable const* module_resolved_exports(Symbol* me) {

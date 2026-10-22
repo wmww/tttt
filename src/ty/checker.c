@@ -17,11 +17,14 @@
 
 #define ARENA_CHUNK_SIZE (8 * 1024 * 1024)
 
-// Faults the next MB of a chunk in with one call rather than a trap per 4 KB page (vscode: names -4%, check -2.5%).
-// Chunks are bumped through in order, so those pages are about to be written anyway
+// Faults the next pages of a chunk in with one call rather than a trap per 4 KB page (vscode: names -4%, check -2.5%).
+// Chunks are bumped through in order, so those pages are about to be written anyway. As many as the chunk has used
+// (64 KB to 1 MB): a short-lived arena that allocates a few KB doesn't fault a MB in (nest's export star walks made 253
+// arenas of a few KB, populated 1 MB each: 55% of its link)
 [[gnu::noinline]] static void arena_populate(ArenaChunk* chunk) {
     uintptr_t from = ((uintptr_t)chunk->data + chunk->populated) & ~(uintptr_t)4095;
-    size_t to = chunk->used + ((size_t)1 << 20) < chunk->cap ? chunk->used + ((size_t)1 << 20) : chunk->cap;
+    size_t step = chunk->used < ((size_t)64 << 10) ? (size_t)64 << 10 : chunk->used > ((size_t)1 << 20) ? (size_t)1 << 20 : chunk->used;
+    size_t to = chunk->used + step < chunk->cap ? chunk->used + step : chunk->cap;
     uintptr_t end = ((uintptr_t)chunk->data + to) & ~(uintptr_t)4095;
     if (end > from) madvise((void*)from, end - from, MADV_POPULATE_WRITE);
     chunk->populated = to;
@@ -89,8 +92,10 @@ static void* arena_alloc_chunk(Arena* me, size_t size) {
         void* memory = mmap(nullptr, mapped, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         panic_if(memory == MAP_FAILED, "out of memory");
         // Transparent huge pages while the system has them free: a few hundred MB of types page faulted 4 KB at a
-        // time is a tenth of a big project's time
-        bool huge = huge_pages_take(mapped);
+        // time is a tenth of a big project's time. Not an arena's first chunk: most arenas are small (a thread's
+        // binder arenas, a walk's), and a huge page is 2 MB zeroed at the first touch (nest's 253 export star walks
+        // spent 12 ms of its link zeroing them)
+        bool huge = my head && huge_pages_take(mapped);
         if (huge) madvise(memory, mapped, MADV_HUGEPAGE);
         ArenaChunk* chunk = memory;
         chunk->huge = huge;
@@ -156,6 +161,20 @@ bool arena_pop_last(Arena* me, void* ptr, size_t size) {
     my head->used -= size;
     my total -= size;
     return true;
+}
+
+void arena_reset(Arena* me) {
+    if (my ast_backed || !my head) {
+        arena_drop(me);
+        return;
+    }
+    ArenaChunk* keep = my head;
+    my head = keep->next;
+    arena_drop(me);
+    memset(keep->data, 0, keep->used);
+    keep->used = 0;
+    keep->next = nullptr;
+    my head = keep;
 }
 
 void arena_drop(Arena* me) {
