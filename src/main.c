@@ -4,6 +4,7 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <libgen.h>
 #include <sys/stat.h>
 #include <sys/resource.h>
@@ -1763,7 +1764,8 @@ static int run(int argc, const char** argv) {
 // binary without such a segment (pgo/, release/) is left alone. Fails quietly: no THP, no free 2 MB block (the
 // budget of huge_pages_take(): a madvised fault without one compacts memory synchronously), an mremap error.
 // Skipped under valgrind (its translations of the old text) and with TTTT_HUGE_TEXT=0 (perf then attributes the hot
-// code to the binary again rather than to an anonymous mapping)
+// code to the binary again rather than to an anonymous mapping). The fault is checked to have got a huge page, else
+// MADV_COLLAPSE makes one (~0.5 ms, only then); TTTT_HUGE_TEXT=2 says which happened on stderr
 static int find_hot_segment(struct dl_phdr_info* info, size_t size, void* out) {
     (void)size;
     // (The main program comes first)
@@ -1777,16 +1779,39 @@ static int find_hot_segment(struct dl_phdr_info* info, size_t size, void* out) {
     return 1;
 }
 
+// The AnonHugePages of the process in kB (/proc/self/smaps_rollup), -1 if unreadable. At startup the hot text's page
+// is the only anonymous huge page there can be
+static long anon_huge_kb(void) {
+    int fd = open("/proc/self/smaps_rollup", O_RDONLY | O_CLOEXEC);
+    if (fd < 0) return -1;
+    char buf[4096];
+    ssize_t n = read(fd, buf, sizeof buf - 1);
+    close(fd);
+    if (n <= 0) return -1;
+    buf[n] = 0;
+    char const* at = strstr(buf, "AnonHugePages:");
+    return at ? strtol(at + strlen("AnonHugePages:"), nullptr, 10) : -1;
+}
+
 static void huge_text(void) {
     size_t const huge = 2u << 20;
     char const* env = getenv("TTTT_HUGE_TEXT");
     if (env && strcmp(env, "0") == 0) return;
+    // TTTT_HUGE_TEXT=2: say on stderr whether the page was taken (the laptop counts them)
+    bool verbose = env && strcmp(env, "2") == 0;
+    #define HUGE_TEXT_SAY(...) do { if (verbose) eprintln("huge text: ", __VA_ARGS__); } while (0)
     char const* preload = getenv("LD_PRELOAD");
     if (preload && strstr(preload, "vgpreload")) return;
     uintptr_t start = 0;
     dl_iterate_phdr(find_hot_segment, &start);
-    if (!start || start % huge) return;
-    if (!huge_pages_take(huge)) return;
+    if (!start || start % huge) {
+        HUGE_TEXT_SAY("no hot segment (not a BOLT build)");
+        return;
+    }
+    if (!huge_pages_take(huge)) {
+        HUGE_TEXT_SAY("not taken: no free 2 MB block");
+        return;
+    }
     // A 2 MB-aligned anonymous page, filled and made executable, then moved over the text (atomically: code running
     // in that range meanwhile, this function's return included, reads the same bytes)
     char* raw = mmap(nullptr, 2 * huge, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -1796,10 +1821,24 @@ static void huge_text(void) {
     if (page + huge < raw + 2 * huge) munmap(page + huge, (size_t)(raw + 2 * huge - (page + huge)));
     madvise(page, huge, MADV_HUGEPAGE);
     memcpy(page, (void const*)start, huge);
+    // The fault doesn't always get a huge page (a run right after another one freed its memory: 4 KB-level iTLB rates
+    // in some of the laptop's batches): then a synchronous collapse (kernel 6.1+), else 4 KB pages as before
+    long before = anon_huge_kb();
+    char const* how = "at the fault";
+    if (before >= 0 && before < (long)(huge >> 10)) {
+        how = madvise(page, huge, MADV_COLLAPSE) == 0 && anon_huge_kb() >= (long)(huge >> 10) ? "by a collapse" : nullptr;
+    } else if (before < 0) {
+        how = "unverified (no smaps_rollup)";
+    }
     if (mprotect(page, huge, PROT_READ | PROT_EXEC) != 0
         || mremap(page, huge, huge, MREMAP_MAYMOVE | MREMAP_FIXED, (void*)start) == MAP_FAILED) {
         munmap(page, huge);
+        HUGE_TEXT_SAY("not taken: mprotect or mremap failed");
+        return;
     }
+    if (how) HUGE_TEXT_SAY("taken ", how);
+    else HUGE_TEXT_SAY("not taken: 4 KB pages (the fault and the collapse got no huge page)");
+    #undef HUGE_TEXT_SAY
 }
 
 static void raise_stack_limit(void) {
