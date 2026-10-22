@@ -86,3 +86,8 @@ intersection's property symbol to bugs/type_core.md.
   D["length"] extends 8 ? "x" : number } : never;` is TS2536 at `A<T, [...D, 1]>["self"]` in tsgo ('"self"' cannot be
   used to index type 'A<T, [...D, 1]>'), nothing in tttt; with `extends 2..6` tsgo also reports one more TS2322 on
   `const r: R<0> = a` against `interface R<X> { next: R<[X]>; self: R<[X]>; tag: number }` (2 vs 1, 3 vs 2).
+
+- Per-checker memory is the fault/RSS lever on small projects (2026-10-23, fe5; `--time` prints faults per phase):
+  react peak RSS ~300 MB at the defaults against ~169 at --threads 1 (nest ~195 / ~136), typecheck 16.8k minor faults
+  against 7.7k, libs 2.9k against 0.2k. Suspects: checker arenas starting on huge pages (Arena.huge_first, 2 MB+
+  populated per checker for 1-4 MB used), 8 sets of intern tables, per-thread malloc heaps. For a checker worker.
