@@ -1960,6 +1960,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttRestElementOfNarrowedGeneric': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttRestMappedOverEmptyTuple': {
         errors: true,
         symbols: true,

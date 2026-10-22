@@ -437,6 +437,16 @@ Ty const* binding_element_parent_type(Binding const* me, Expr const* initializer
     return type;
 }
 
+// What an object pattern's rest element is taken from (tsc's getTypeForBindingElement in CheckMode.RestBindingElement):
+// a root pattern without a written type types its initializer again without the pattern as contextual type, so a
+// reference to a `T` the pattern made its constraint stays `T` (not the never a discriminant narrowed that to)
+static Ty const* binding_rest_source(Binding const* me, Expr const* initializer) {
+    Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
+    if (my parent || my has_explicit_type || !initializer) return type;
+    Ty const* rest = ty_rest_binding_initializer_type(current_checker, initializer);
+    return rest ? rest : type;
+}
+
 // tsc's checkGrammarBindingElement: a rest element's initializer, at its `=`
 static void binding_report_rest_initializer(Binding const* element, ErrorCtx* errs) {
     Span value = expr_outer_span(element->default_value);
@@ -650,9 +660,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                     error_ctx_grammar_error_d(errs, i->target.content_span, 2566, "A rest element cannot have a property name.");
                 } else if (i->target.rest && i->target.default_value) {
                     binding_report_rest_initializer(&i->target, errs);
-                } else if (i->target.rest && !ty_object_rest_source_valid(current_checker,
-                    ty_binding_type(current_checker, me, (LowerCtx){ .generic = true }))
-                ) {
+                } else if (i->target.rest && !ty_object_rest_source_valid(current_checker, binding_rest_source(me, initializer))) {
                     // (tsc's getTypeForBindingElement: isValidSpreadType of the parent)
                     error_ctx_error_d(errs, i->target.content_span, 2700, "Rest types may only be created from object types.");
                 }

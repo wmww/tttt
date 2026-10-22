@@ -1,0 +1,38 @@
+//// [test/cases/ttttRestElementOfNarrowedGeneric.ts] ////
+
+=== ttttRestElementOfNarrowedGeneric.ts ===
+// The rest element of a pattern initialized with a generic reference a discriminant narrowed to never: tsc types the
+// initializer again for the rest (CheckMode.RestBindingElement) without the pattern as contextual type, so the
+// reference stays `T` (no constraint substituted, nothing narrowed) and the rest is `Omit<T, "kind">`, not TS2700.
+// (The narrowingDestructuring literal-type mutant)
+function f<T extends { kind: "a"; a: string } | { kind: "b"; b: number }>(t: T) {
+>f : Symbol(f, Decl(ttttRestElementOfNarrowedGeneric.ts, 0, 0))
+>T : Symbol(T, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 11))
+>kind : Symbol(kind, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 22))
+>a : Symbol(a, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 33))
+>kind : Symbol(kind, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 49))
+>b : Symbol(b, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 60))
+>t : Symbol(t, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 74))
+>T : Symbol(T, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 11))
+
+    if (t.kind === "c" as string && t.kind !== "a" && t.kind !== "b") {
+>t.kind : Symbol(kind, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 22), Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 49))
+>t : Symbol(t, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 74))
+>kind : Symbol(kind, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 22), Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 49))
+>t.kind : Symbol(kind, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 22), Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 49))
+>t : Symbol(t, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 74))
+>kind : Symbol(kind, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 22), Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 49))
+>t.kind : Symbol(kind, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 49))
+>t : Symbol(t, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 74))
+>kind : Symbol(kind, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 49))
+
+        const { kind, ...r1 } = t;
+>kind : Symbol(kind, Decl(ttttRestElementOfNarrowedGeneric.ts, 6, 15))
+>r1 : Symbol(r1, Decl(ttttRestElementOfNarrowedGeneric.ts, 6, 21))
+>t : Symbol(t, Decl(ttttRestElementOfNarrowedGeneric.ts, 4, 74))
+
+        r1;
+>r1 : Symbol(r1, Decl(ttttRestElementOfNarrowedGeneric.ts, 6, 21))
+    }
+}
+

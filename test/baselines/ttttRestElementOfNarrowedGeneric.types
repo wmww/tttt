@@ -1,0 +1,45 @@
+//// [test/cases/ttttRestElementOfNarrowedGeneric.ts] ////
+
+=== ttttRestElementOfNarrowedGeneric.ts ===
+// The rest element of a pattern initialized with a generic reference a discriminant narrowed to never: tsc types the
+// initializer again for the rest (CheckMode.RestBindingElement) without the pattern as contextual type, so the
+// reference stays `T` (no constraint substituted, nothing narrowed) and the rest is `Omit<T, "kind">`, not TS2700.
+// (The narrowingDestructuring literal-type mutant)
+function f<T extends { kind: "a"; a: string } | { kind: "b"; b: number }>(t: T) {
+>f : <T extends { kind: "a"; a: string; } | { kind: "b"; b: number; }>(t: T) => void
+>kind : "a"
+>a : string
+>kind : "b"
+>b : number
+>t : T
+
+    if (t.kind === "c" as string && t.kind !== "a" && t.kind !== "b") {
+>t.kind === "c" as string && t.kind !== "a" && t.kind !== "b" : boolean
+>t.kind === "c" as string && t.kind !== "a" : boolean
+>t.kind === "c" as string : boolean
+>t.kind : "a" | "b"
+>t : { kind: "a"; a: string; } | { kind: "b"; b: number; }
+>kind : "a" | "b"
+>"c" as string : string
+>"c" : "c"
+>t.kind !== "a" : boolean
+>t.kind : "a" | "b"
+>t : { kind: "a"; a: string; } | { kind: "b"; b: number; }
+>kind : "a" | "b"
+>"a" : "a"
+>t.kind !== "b" : boolean
+>t.kind : "b"
+>t : { kind: "b"; b: number; }
+>kind : "b"
+>"b" : "b"
+
+        const { kind, ...r1 } = t;
+>kind : never
+>r1 : Omit<T, "kind">
+>t : never
+
+        r1;
+>r1 : Omit<T, "kind">
+    }
+}
+
