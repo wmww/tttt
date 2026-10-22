@@ -28,8 +28,8 @@ while test $# -gt 0; do
     esac
 done
 
-# The shipped build: LTO + PGO (scripts/pgobuild.sh, retrained when the sources changed)
-TTTT=$(scripts/pgobuild.sh)
+# The measured build (scripts/fastbuild.sh --measured: pgo/tttt, LTO + PGO, until the laptop confirms BOLT)
+TTTT=$(scripts/fastbuild.sh --measured)
 thirdparty/ensure-typescript.sh
 thirdparty/ensure-corpora.sh
 TSGO=thirdparty/typescript/built/tsc

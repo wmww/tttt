@@ -2,8 +2,8 @@
 # Instructions (perf stat instructions:u, else callgrind) per pinned corpus, single-threaded: the stable
 # perf measure across sessions (agents/measurements.md).
 #
-#   scripts/instrcount.sh [--bin path/to/tttt] [--save] [corpus...]     (default: the shipped LTO + PGO build,
-#                                                                       scripts/pgobuild.sh; every corpus but zod-root)
+#   scripts/instrcount.sh [--bin path/to/tttt] [--save] [corpus...]     (default: `scripts/fastbuild.sh --measured`,
+#                                                                       pgo/tttt for now; every corpus but zod-root)
 #
 # Each count is printed with its change against test/instrcount.txt (the counts of the last --save, by the same tool),
 # and a change over 2% either way is flagged: drizzle's +50% of 2026-10-17 was recorded in measurements.md and went
@@ -19,7 +19,7 @@ while test $# -gt 0; do
         *) break ;;
     esac
 done
-test -n "$BIN" || BIN=$(scripts/pgobuild.sh)
+test -n "$BIN" || BIN=$(scripts/fastbuild.sh --measured)
 REF=test/instrcount.txt
 declare -A RESULT
 # The count of $1 (instructions) with its change against the reference of tool $2

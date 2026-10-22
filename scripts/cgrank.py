@@ -2,7 +2,7 @@
 """Ranks where tttt's single-threaded time goes in the memory system (plan 86 stage 2), from cachegrind or callgrind.
 
   scripts/cgrank.py --run CORPUS [--bin B] [-o OUT]    cachegrind --cache-sim=yes on a corpus at K1 (instrcount.sh's
-                                                       names; default binary pgo/tttt, no line info: --bin a -g build
+                                                       names; default binary fastbuild.sh --measured, no line info: --bin a -g build
                                                        for --lines), then ranks it
   scripts/cgrank.py OUT [-n N]                         functions by the stall estimate
   scripts/cgrank.py OUT --lines [-f FUNC]              source lines (needs a -g build), FUNC: a substring of the function
@@ -121,7 +121,7 @@ def main():
     a = ap.parse_args()
     os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     if a.run:
-        binary = a.bin or subprocess.run(['scripts/pgobuild.sh'], capture_output=True, text=True, check=True).stdout.strip()
+        binary = a.bin or subprocess.run(['scripts/fastbuild.sh', '--measured'], capture_output=True, text=True, check=True).stdout.strip()
         out = a.o or f'/tmp/cgrank.{a.run}.out'
         subprocess.run(['valgrind', '--tool=cachegrind', '--cache-sim=yes', f'--cachegrind-out-file={out}', binary,
                         '--checkers', '1', '--threads', '1', '-q', '--keep-going', '--noEmit', '-p',

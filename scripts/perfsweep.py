@@ -322,8 +322,8 @@ def main():
         args.last = args.defaults = True
     global TTTT
     if not args.no_build and (not args.last or args.defaults):
-        # The shipped LTO + PGO build (retrained when the sources changed); --no-build times release/ as it is
-        TTTT = os.path.join(ROOT, subprocess.run([os.path.join(ROOT, 'scripts/pgobuild.sh')], check=True,
+        # The measured build (scripts/fastbuild.sh --measured, pgo/tttt for now); --no-build times release/ as it is
+        TTTT = os.path.join(ROOT, subprocess.run([os.path.join(ROOT, 'scripts/fastbuild.sh'), '--measured'], check=True,
                                                  stdout=subprocess.PIPE, text=True).stdout.strip())
     if not args.last or args.defaults:
         print(f'tttt: {os.path.relpath(TTTT, ROOT)}', file=sys.stderr)
