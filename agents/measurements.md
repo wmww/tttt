@@ -15,7 +15,7 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
 
 ## How to measure (notes that still hold)
 - **Instructions**: `scripts/instrcount.sh` (callgrind, K1 T1, pgo/tttt since 2026-10-19; saved in `test/instrcount.txt`,
-  vscode 75.49 G there). Callgrind counts run ~3% above `perf stat -e instructions:u`: don't compare across tools. At
+  vscode 68.31 G there at 7f3cd4fbb). Callgrind counts run ~3% above `perf stat -e instructions:u`: don't compare across tools. At
   K1 the counts include recycling's warm-ups (type-fest, drizzle, vscode recycle at 256 MB): compare with
   `--checker-memory off` for the checker's own work. instrcount gives valgrind a 64 MB main stack (type-fest's
   IntRange needs ~16 MB). A worktree with symlinked corpora can measure some corpora differently (nest +8% once):
@@ -30,6 +30,20 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## Memory budget sweep on vscode (2026-10-22, 16 vCPUs, loaded)
+`--checker-memory` at the defaults otherwise (16 threads), typecheck phase wall / peak RSS:
+
+| budget | typecheck | peak |
+|---|---|---|
+| default (a quarter of RAM) | 1.20 s | 5.15 GB |
+| 3 GB | 1.43 s | 4.2 GB |
+| 2 GB | 1.46 s | 4.1 GB |
+| 1 GB | 1.39 s | 3.1 GB |
+
+Recycling costs 15-20% of check time, and ~2 GB of the peak (the program plus per-thread state) is there whatever the
+budget: no knob, the fix is structural and deferred while speed comes first (vision.md "Decisions"). The cross-checker
+duplication census (types and instructions per K, avoidable vs inherent) is in notes/duplication.md, not here.
+
 ## The thrashers with the flag (2026-10-21, this box)
 pgo/tttt at ee9501eb8, quiet box, best of 3, wall s / CPU s / peak MB, plain -> `TTTT_SHARED_GRAPH=1`:
 
@@ -41,7 +55,15 @@ pgo/tttt at ee9501eb8, quiet box, best of 3, wall s / CPU s / peak MB, plain -> 
 2 of 9 dokploy flag K12 runs took 2.42 s / 23 CPU s: the lockstep recycle (notes/shared_graph.md "The perf
 accounting"). These are the only projects measured where the flag wins big (recycling thrash in plain).
 
-## Single-threaded checker speed (2026-10-22, ee9501eb8 -> 859a7a6a2; this box, 4 vCPUs shared with other agents)
+## Single-threaded checker speed (2026-10-22, ee9501eb8 -> 859a7a6a2, then 08a80d884 -> 2989c0f05; this box)
+**The round of 08a80d884 -> 2989c0f05** (callgrind K1, PGO, against 08a80d884 at the round's start; merger's clean
+builds): drizzle -1.8%, type-fest -1.5%, zod -1.3%, xstate ~-2.4% (-1.0 from the typeof-local fix, -1.44 from the ck
+batch), vscode ~-0.6% net (ck -0.7%; the last correctness batch +0.21%: nested recomputation below call barriers and
+non-isolated argument return inference do slightly more work, by tsc's rules). The ck batch: stack buffers for mapper
+helpers, instantiate_members building in the arena, property arrays sized up front, the tuple-reference lookup before
+renormalizing, MemberRefs not zeroed per access. Sites now give 0.1-0.5% each: mining stopped (notes/checker_speed.md).
+`test/instrcount.txt` saved at 7f3cd4fbb.
+**The round before** (ee9501eb8 -> 859a7a6a2; 4 vCPUs shared with other agents):
 Base ee9501eb8 -> 859a7a6a2. **Callgrind K1 instructions, PGO + LTO
 builds of both** (`pgobuild.sh` without ensure-corpora): vscode 77.79 -> 73.69 G (-5.3%), excalidraw 6.51 -> 5.80
 (-10.9%), drizzle 5.60 -> 5.28 (-5.7%), effect 8.14 -> 7.68 (-5.6%), zod 4.22 -> 3.99 (-5.4%), tsc 3.87 -> 3.74
@@ -532,19 +554,17 @@ claim_and_measure() is gone (not just off). Base = de94e1179 (lock on, stamps of
   (lock) 0.417 / 0.439: the lock's +54% is gone and the flag now beats the defaults. Effect defaults 0.267 / 0.271,
   flag 0.293 / 0.297, base flag 0.281 / 0.286: effect is still +10% over the defaults (it was +17% at G2).
 
-## Oracle totals (2026-10-22, 8a2bb4b38)
-The full `scripts/oracles.py` at ai-main 8a2bb4b38; box load ~20, so perfsweep's times are inflated. Suite 13972 /
-14006 (dts 1888 / 1910; `--no-defer-bodies` 13972; `--checker-memory 0`: 0 of 17643 differ), every corpus 0/0 but vue
-0/2, DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 18 / 3 / 2, source sweep `--sample 4` 1272 / 1274, `-b` sweep
-411 / 416, dtsdiff 1328 / 1350 projects (105145 / 106222 files, +7 as tsgo `--singleThreaded`), clidiff 3824 / 3831
-(text 1: apollo vite; diagnostics 6), kdiff 3 / 3814 and recycle 3 / 3814 (rxjs, sequelize x2: tsgo-shared), perfsweep
-worst types ratio 1.40 (lit tsserver-plugin), median check ratio 0.29 under load. With `TTTT_SHARED_GRAPH=1`:
-checkerdiff drizzle/zod identical, TSan drizzle T4 + T12 clean.
-**Instructions** (PGO, `test/instrcount.txt` saved at 9f979e91c, now at a recycle-free K1: the memory default alone is
--11.9% drizzle / -6.2% zod of these), ee9501eb8 -> 8a2bb4b38: nest 0.942 -> 0.932 G (-1.1%), drizzle 5.548 -> 4.601
-(-17.1%), zod 4.204 -> 3.731 (-11.3%), effect 8.069 -> 7.449 (-7.7%), tsc 3.865 -> 3.709 (-4.0%); against the previous
-save: vscode 76.85 -> 68.45 (-10.9%), excalidraw -11.0%, tanstack-router -7.5%, xstate -6.1%, type-fest -5.4%, vue
--5.2%, valibot -5.1%, webpack -3.3%, react -2.5%.
+## Oracle totals (2026-10-22, 2989c0f05)
+The merger's final `scripts/oracles.py` of the fourth coordinator's first round, at ai-main 2989c0f05 (the previous
+totals were 8a2bb4b38's, earlier on 2026-10-22: `git log -S'Oracle totals (2026-10-22, 8a2bb4b38)' --
+agents/measurements.md`). Suite 13979 / 14015 (was 13972 / 14006), 0 lost; the two failing own tests fail by design
+(ttttThisInstantiatedMethodErased: hono's this-instantiated members; ttttDeferredBodyBeforeContextualParameters: tsc's
+deferred-body check order). The same with `--no-defer-bodies`; `--checker-memory 0`: 0 of 17652 differ. Every corpus
+0/0 but vue 0/2 (tsgo's TS5115 runaway artifact), DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 16 / 2 / 2
+(was 18 / 3 / 2; all 20 left are vue pluginScoped.ts, won't fix), source sweep `--sample 4` 1272 / 1274 (the full
+sweep is clean on angular-cli now), `-b` sweep 411 / 416, dtsdiff 1328 / 1350 projects (105145 / 106222 files), clidiff
+3824 / 3831, kdiff 3 / 3814 and recycle 3 / 3814 (rxjs, sequelize x2: tsgo-shared), perfsweep worst types ratio 1.40
+(lit tsserver-plugin). Instructions: "Single-threaded checker speed" below and `test/instrcount.txt`.
 
 ## Oracle totals with and without the shared graph (2026-10-21/22, plain at 9032ae214 and 8d693aeb5)
 Suite 13962 / 13996 (dts 1887 / 1909; `scripts/passcount.py`), `--no-defer-bodies` and `--checker-memory 0` unchanged,

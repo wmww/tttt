@@ -3,7 +3,7 @@ The live list of directions and ideas, roughly in order (vision.md "Direction" s
 is known, where the numbers are. Delete an entry when it lands, leaving its numbers in measurements.md; add new ones
 where they fit the order. Uninvestigated items go to triage.md, known bugs to `bugs/*.md`.
 
-Starting point: measurements.md "Oracle totals (2026-10-22, 8a2bb4b38)" and "The 12-core box at f2ad73c9".
+Starting point: measurements.md "Oracle totals (2026-10-22, 2989c0f05)" and "The 12-core box at f2ad73c9".
 `test/instrcount.txt` is at a recycle-free K1 (the memory default), so a jump against it needs attribution (policy or
 code) before it is celebrated.
 
@@ -29,60 +29,51 @@ Done when `grep -rn fed0bf24 scripts src test thirdparty/*.sh` is empty, no orac
 suite's lost list is fixed or written up. tsgo's `.tsbuildinfo` `version` string would matter only if a buildinfo is
 ever written (it isn't).
 
-## 1. The front end's critical path at the defaults
-~0.5 s of vscode's 1.93 s on the laptop is serial before checking (libs, the loader thread's own work during
-load/parse, declare/link/walk), and it caps every many-core gain; it is also why nest loses to bun (0.08 vs 0.06 s).
-Start with a timeline at the defaults on vscode and nest (`--time` with its per-phase main-thread CPU,
-`TTTT_LOAD_POOL_STATS=1`, `TTTT_RESOLVE_TIMES=1`, the wall sampler `bench/sampler/`), ideally on the laptop, then cut
-the pieces in critical-path order. What is already measured and what was decided against (the import pre-scan,
-two-phase link, parallel body parse of one big file) is in notes/front_end.md; those decisions were made at the old
-~2.5 s wall and are worth re-checking against the new one. Candidates named there: the config glob (250 M
-instructions serial), the loader's diffuse ~80 ms, link's aliases (43 ms), refcounted `ResolvedModule`s.
+The re-pin above is direction 5 (vision.md "Direction").
 
-## 2. Single-threaded checker speed (continuous)
-A flat profile; the last round took ~5% (vscode -5.3%, excalidraw -10.9%: measurements.md "Single-threaded checker
-speed"). Its leftovers: LiteralBuilder's first realloc, object literal item atoms on the AST, LazyMemo pages. The
-stall ranking (notes/checker_speed.md): instruction footprint ~42% (outline cold arms of instantiate_inner and the
-relation switch), hash table first probes ~10% (8-byte entries, hot kinds in their own table), Ty header reads ~5%.
-Measure by instructions with a same-worktree base build; walls only on the laptop. **The parser** is ~12% of vscode's
-K1 instructions and structural (a `Parser` copy per speculative attempt, 74M child creations, no token stream): a
-token per position and node arenas, a rewrite of src/parser.c with the suite as its oracle. Do it only after a
-measurement shows parse on the critical path at the defaults (it already runs on the pool's threads), or as a spike
-on one construct family measured on vscode's parse CPU.
+## 1. The parser as a structural project
+~12% of vscode's K1 instructions with no hot site (a `Parser` copy per speculative attempt, 74M child creations for
+138 MB of source, no token stream), and on the check phase's critical path at the defaults: deferred bodies are parsed
+on the checker threads. First measure parse CPU inside the check phase with `bench/timeline/` (the whole-process
+timeline tool) at the defaults on vscode, so the win is priced before the rewrite. Then a token per position and node
+arenas, a rewrite of src/parser.c with the suite and `scripts/syntaxstats.py` as its oracle (error recovery stays: the
+one list/commit-point framework, vision.md "Decisions"). A spike on one construct family measured on vscode's parse CPU
+is a fine first step if its code becomes the skeleton.
 
-## 3. Cross-checker duplication without the shared graph
-At K24 each checker rebuilds the lib's and the project's common types: ~1.2x duplicated work on vscode, and most of
-the memory. First a census of what a vscode checker holds and re-derives at the defaults (`scripts/survivors.sh`,
-`scripts/arenasites.sh`, per-file sums with `TTTT_FILE_TIMES=1`). Then affinity scheduling (files that share
-dependencies dealt to the same checker; today `deal_files()` cuts program order into contiguous runs, tsgo's FENNEL
-partitioner duplicated 2-21% more types than that) and the K policy (vscode K24 costs 12 CPU s more than K12 for
-0.09 s of wall; measurements.md "The 12-core box at f2ad73c9"). A snapshot-style recycle for the thrashers
-(dokploy, monkeytype, supabase studio) is a related idea: bugs/perf_leads.md "Shared warm state at the defaults".
+## 2. The memory system
+IPC is ~1.2 and cachegrind estimates half the cycles stalled; checker constant factors are mined out (0.1-0.5% a site,
+notes/checker_speed.md). The stall ranking there (instruction footprint ~42%, hash table first probes ~10%, Ty header
+reads ~5%) is a simulation: before choosing between hash-table layout (8-byte entries, hot kinds in their own table),
+`Ty` header layout and allocation volume, get the laptop's hardware counters: `perf stat` and `perf record` at K1 and
+at the defaults, topdown, on vscode and drizzle. Lazy message formatting (2.6% on drizzle) is blocked on hacks.md's
+"Two circularity diagnostics come from printing a type for its side effects" being fixed tsc's way first.
 
-## 4. Hardware counters before the shared graph
-The shared graph is parked because each of its instructions costs 1.2-1.6x plain's at K12, inferred (not measured)
-to be cross-core cache-line traffic. On the laptop: `perf stat` and `perf c2c record` on drizzle K12, flag
-(`TTTT_SHARED_GRAPH=1`) against plain. If the stalls have a layout fix, the residues and the variance-group design
-in notes/shared_graph.md "Before reopening it" are next; if not, it stays parked.
+## 3. Front end round 2 (after the laptop's timeline)
+Round 1 landed (the include walk on its own thread streaming roots to the loader, prefetch in link's alias loop, module
+refs on threads, a 16 MB malloc top pad during the front end, `absolute_path_fast`). Next, once the laptop's
+`bench/timeline/` run shows what is left serial: names interned per program (link, declare and the walk compare names
+in source text today), then the two-phase link (notes/front_end.md; decided against at the old ~2.5 s wall, worth
+re-checking). Any malloc tuning (`M_TOP_PAD` and friends) needs an RSS gate at many threads.
 
-## 5. Correctness long tail (continuous)
-Each is mechanism-sized; the real-code oracles show them, the suite mostly doesn't:
-- **Errors tsc reports from a loop's unfinished flow analysis** (five sightings: vue TS2538/TS4111 in flagflip,
-  selfReferencingSpreadInLoop TS2488, typeGuardsAsAssertions TS2339, arrayFrom): tsc reports against an intermediate
-  type during loop iteration, tttt only against final types. First learn how tsc's checkExpression inside
-  getFlowTypeOfReference's loop pass reports, then whether tttt's compute can report once per node at that point
-  (bugs/missing_checks.md).
-- **Instantiation identity**: hono's TS2769 (tsgo keeps a this-instantiated method type apart from the declared one;
-  tttt merges them) and xstate's eopt TS2322 (tttt makes a second instantiation tsgo reuses), one root.
-- **The satisfies elaboration inside the initializer** (TS7022/TS7023), **the error pass's first check of a callback
-  argument** (TS2339), **the zod getter case** (re-entrancy stages C/D, notes/reentrancy.md), **the binding-element
-  family**: bugs/missing_checks.md.
-- Mutation seeds yield less each time (5 fixes at seed 1021, 2 at 1022); parser-recovery mutants (58-77 per seed,
-  `scripts/mutate.py`, `failstats.py --syntax`) are untouched.
-- bugs/sourcesweep_checker.md and the oracle refreshes (vision.md "Decisions": a new rule for picking repositories,
-  day-one rate first).
+## 4. Correctness long tail (continuous)
+New real-code sightings first; every unfixed divergence gets a known-failing test in `test/cases`. Grep `bugs/` for a
+repository's name before investigating it (the source sweep's leftovers are all written up there). Open:
+- **hono's TS2769**: tsgo keeps a this-instantiated method type apart from the declared one, tttt merges them (design
+  in bugs/sourcesweep_build.md; known-failing test ttttThisInstantiatedMethodErased).
+- **The seed-62 spurious getter circularities** (recursiveTypeInference `_zod?` line 28, noCircularitySelfReferentialGetter2
+  drop-as): not the expression-memo mechanism; unexplained. Instrumented tsgo (notes/instrumenting_tsgo.md,
+  `TSGO_PUSH`/`TSGO_CYCLE`) against `TTTT_DEBUG_CYCLE=1` is the method.
+- **The loop-pass K-dependence hole** (triage.md, `ty_flow_partial_reports()`) and the partial pass's leftovers (same).
+- **The error pass's first check of a callback argument** (TS2339), **the binding-element family**:
+  bugs/missing_checks.md.
+- Mutation seeds yield less each time; parser-recovery mutants (58-77 per seed, `scripts/mutate.py`,
+  `failstats.py --syntax`) are untouched. Oracle refreshes with repositories picked by a new rule (vision.md
+  "Decisions").
 
 ## Smaller ideas
+- **A snapshot-style recycle for the thrashers** (dokploy, monkeytype, supabase studio): bugs/perf_leads.md "Shared
+  warm state at the defaults". Recycling costs vscode 15-20% of check time at small budgets (measurements.md "Memory
+  budget sweep on vscode"), so it is the memory direction's lever once speed allows.
 - **`-b` shares parsed declaration files across its programs**: every `-b` program parses and binds the default lib
   and each reference output itself (typescript-eslint's 56 programs take at least 80-130 ms each, `TTTT_BUILD_TIMES`);
   tsgo parses each `.d.ts`/`.json` once per build (`parseCache`). Measure the floor's split on a trivial program

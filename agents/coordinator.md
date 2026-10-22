@@ -28,6 +28,11 @@ wants to talk to you at any time, so between reports you are idle and the agents
   A worker that can't name a mechanism in one stint won't in two: change the method (tooling, design) instead of
   funding more hypothesis rounds. A worker that reports "the algorithm is already tsc's" has produced a result: stop it
   rather than fund constant factors.
+- A diagnosis track with a written verdict can settle several open questions at once: "dup" (notes/duplication.md)
+  closed both the scheduling question and the shared graph's ceiling in one worker-session.
+- **Unfixed divergences become known-failing tests** in `test/cases` (the results file records per-component
+  pass/fail), so the next attempt starts from a repro. Decline heuristics that reconstruct tsc's check order (the
+  deferred-body one): they pass a test and fail the next shape.
 - **Keep one cheap, certain win in flight** (a policy, a default, a measured small fix): defaults and memory policy
   were once worth more wall than the research track.
 - Three to four workers plus a merger is the load this box and the budget take; five was the ceiling. Parallel
@@ -44,8 +49,10 @@ brief, you don't understand the task yet. The common rules, each learned from an
   symlinked); never edit, build in or run scripts from `/home/ai/tttt`. The symlinked trees are shared: no
   `thirdparty/ensure-*.sh`, no `--tsc` regenerations, no heavy oracles (`oracles.py`, `sweep.py`, `sourcesweep.py`,
   `perfsweep.py`) from a worktree; the merger runs those.
-- Never `git stash` (shared by all worktrees); never `pkill -f PATTERN` with the pattern on the same command line;
-  never `rm` a path built from a shell variable (literal paths, or `"${S:?}"/...`).
+- Never `git stash` (shared by all worktrees); never `pkill -f PATTERN` with the pattern on the same command line,
+  and never `pgrep -f`/`pkill -f` a generic pattern (`tttt`, `callgrind`): it matches other workers' jobs and once
+  killed one. Kill by a PID you started. Never `rm` a path built from a shell variable (literal paths, or
+  `"${S:?}"/...`).
 - Commit early with real messages; never amend or rebase an already-made commit (the merger picks by hash); rebase
   onto `ai-main` before a new commit once other tracks touch the same files.
 - Validate: the suite (`scripts/fasttest.sh --summary`), the corpora, byte-identical output across checker and
@@ -53,6 +60,8 @@ brief, you don't understand the task yet. The common rules, each learned from an
   (`scripts/instrcount.sh --bin`; worktree numbers aren't comparable with `test/instrcount.txt`).
 - Measure instructions and type counts, not wall: the box is shared (load often 10-40). Wall only as best-of-N,
   interleaved A/B, load stated; real walls come from the human's laptop.
+- Correctness workers comparing against tsgo's internals: agents/notes/instrumenting_tsgo.md (the overlay build,
+  the hooks that paid off, the bwrap overlay for shared checkouts).
 - The final message is the report: commits one line each, numbers, what's left with file/function names, risks;
   under ~60 lines. Interim reports at milestones for long tasks.
 
@@ -67,6 +76,10 @@ clean `git archive` builds of commit vs parent to attribute a PGO delta over ~0.
 after every ~30 picks of checker code (it finds what the batch can't: a memory cap scaled for a smaller box,
 K-dependences, a history dependence; once it caught the one regression the batch missed); stop after a long idle
 spell. Have it rewrite its pick/check scripts (ten minutes) rather than hunting for old ones.
+
+Lessons of the 2026-10-22 round for the merger: the per-batch gate must not include vscode's 25-minute callgrind (once
+per round, at the end); it reports per landed batch (what landed, its gate numbers), not per cycle; anything touching
+malloc tuning (`mallopt`, `M_TOP_PAD`) at many threads needs an RSS gate next to the wall.
 
 ## While they run
 - **Decide fast, in a paragraph with reasons.** Workers ask for decisions (design, gate relaxation, budget overrun)

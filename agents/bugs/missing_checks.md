@@ -3,7 +3,7 @@ The work queue for the suite checker bugs: diagnostics tttt doesn't report, or r
 the failing tests behind them. Find fresh buckets with `scripts/failstats.py` (single-code tests: errors fail on one code
 alone in `build/failstats/tests.tsv`) and `scripts/unimplemented_codes.sh` (codes `src/` never mentions). Every test named
 here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in `harness.md`, type-core causes in
-`type_core.md`). Entries naming a mutant (`mutNNNN`, "X delete-stmt") describe a mutation of a test that itself passes (pruned again 2026-10-16 by probes and hand-made mutants).
+`type_core.md`). To see what tsgo does inside a check, instrument it: `agents/notes/instrumenting_tsgo.md`. Entries naming a mutant (`mutNNNN`, "X delete-stmt") describe a mutation of a test that itself passes (pruned again 2026-10-16 by probes and hand-made mutants).
 
 ## Known missing checks
 - **JS**: TS2565 for a property declared by a JS expression statement (`/** @type {F} */ C.prototype.m;`) read in the
