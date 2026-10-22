@@ -92,10 +92,9 @@ static void* arena_alloc_chunk(Arena* me, size_t size) {
         void* memory = mmap(nullptr, mapped, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         panic_if(memory == MAP_FAILED, "out of memory");
         // Transparent huge pages while the system has them free: a few hundred MB of types page faulted 4 KB at a
-        // time is a tenth of a big project's time. Not an arena's first chunk: most arenas are small (a thread's
-        // binder arenas, a walk's), and a huge page is 2 MB zeroed at the first touch (nest's 253 export star walks
-        // spent 12 ms of its link zeroing them)
-        bool huge = my head && huge_pages_take(mapped);
+        // time is a tenth of a big project's time. Not an arena's first chunk unless it says it grows big
+        // (Arena.huge_first: nest's 253 export star walks spent 12 ms of its link zeroing huge pages)
+        bool huge = (my head || my huge_first) && huge_pages_take(mapped);
         if (huge) madvise(memory, mapped, MADV_HUGEPAGE);
         ArenaChunk* chunk = memory;
         chunk->huge = huge;
@@ -188,7 +187,7 @@ void arena_drop(Arena* me) {
         munmap(i, i->mapped);
         i = next;
     }
-    *me = (Arena){ .ast_backed = ast_backed };
+    *me = (Arena){ .ast_backed = ast_backed, .huge_first = my huge_first };
 }
 
 // Intern table
@@ -767,6 +766,7 @@ static Checker* checker_make(Program* program, bool join_graph) {
     my binder = program_get_binder(program);
     my errs = program_errors(program);
     my atom_table = program_atoms(program);
+    my arena.huge_first = true; // (Types: tens to hundreds of MB)
     {
         typeof(my atoms)* a = &my atoms;
         static struct { size_t offset; char const* name; } const known[] = {

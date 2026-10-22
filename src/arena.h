@@ -11,6 +11,9 @@ typedef struct Arena {
     // owns the memory: arena_drop() only forgets it. ARENA_AST_DIRECT: each allocation (no chunk tails, no
     // arena_pop_last()), ARENA_AST_CHUNKED: in small chunks of it
     uint8_t ast_backed;
+    // Its first chunk may take a huge page too (an arena that is known to grow big: a checker's). Others take one from
+    // their second chunk on: most arenas are small, and a huge page is 2 MB zeroed at the first touch
+    bool huge_first;
 } Arena;
 enum { ARENA_AST_DIRECT = 1, ARENA_AST_CHUNKED = 2 };
 
