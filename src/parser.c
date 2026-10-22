@@ -1390,6 +1390,37 @@ static bool source_is_mts_or_cts(Parser const* p) {
     return csview_ends_with(path, ".mts") || csview_ends_with(path, ".cts");
 }
 
+// The quick tests in front of parse functions (a character no branch starts with: fail without a child parser).
+// GATE_FAIL(call) fails; a -DVERIFY_GATES build makes the call anyway, gates off (GATE_FAIL then falls through), and
+// panics if it succeeds
+#ifdef VERIFY_GATES
+static bool gate_bypass;
+#define GATE_ACTIVE (!gate_bypass)
+#define GATE_FAIL(call) do { \
+        if (!gate_bypass) { \
+            gate_bypass = true; \
+            Parser v_ = parser(parent); \
+            bool ok_ = (call); \
+            parse_fail(&v_); \
+            gate_bypass = false; \
+            if (ok_) panic("gate failed what parses: ", __func__, " at ", csview_from_range(parent->pos, parent->pos + 30)); \
+            return false; \
+        } \
+    } while (0)
+#else
+#define GATE_ACTIVE true
+#define GATE_FAIL(call) return false
+#endif
+
+// Whether `keyword` may start at `at`: its characters, or an escape where they stop matching (hop_escaped_keyword()
+// cooks one). The quick test before a probe for a keyword is worth a child parser
+static inline bool may_start_keyword(const char* at, const char* keyword) {
+    for (; *keyword; at++, keyword++) {
+        if (*at != *keyword) return *at == '\\';
+    }
+    return true;
+}
+
 // The keyword probe: no child parser (nothing to backtrack), and most probes fail on the first character
 __attribute__((always_inline)) static inline bool hop_start_if_ends_on_word_break(Parser* parent, const char* prefix) {
 #ifdef DEBUG_BUILD
@@ -1431,6 +1462,22 @@ static bool hop_escaped_keyword(Parser* parent, const char* keyword) {
 }
 
 static inline bool starts_with_followed_by_word_break(Parser* parent, const char* prefix) {
+    // (Without a child parser unless an escape may spell the keyword: hop_escaped_keyword() reports TS1260)
+    const char* at = parent->pos;
+    size_t i = 0;
+    for (; prefix[i]; i++) {
+        if (at[i] != prefix[i]) break;
+    }
+    if (GATE_ACTIVE && (!prefix[i] || at[i] != '\\')) {
+        bool fast = !prefix[i] && !identifier_char_size(at + i, false);
+#ifdef VERIFY_GATES
+        gate_bypass = true;
+        bool slow = starts_with_followed_by_word_break(parent, prefix);
+        gate_bypass = false;
+        if (slow != fast) panic("starts_with_followed_by_word_break ", prefix);
+#endif
+        return fast;
+    }
     Parser p = parser(parent);
     bool ret = hop_start_if_ends_on_word_break(&p, prefix);
     parse_fail(&p);
@@ -1591,6 +1638,17 @@ static const char* tok_scan_end(Parser const* p, const char* c) {
 }
 
 static Tok tok_at(Parser* parent, const char* pos, bool newline_before) {
+    // (No trivia to hop: no child parser)
+    if (GATE_ACTIVE && (unsigned char)*pos > ' ' && (unsigned char)*pos < 0x80 && *pos != '/') {
+        Tok fast = { .start = pos, .end = tok_scan_end(parent, pos), .newline_before = newline_before };
+#ifdef VERIFY_GATES
+        gate_bypass = true;
+        Tok slow = tok_at(parent, pos, newline_before);
+        gate_bypass = false;
+        if (slow.start != fast.start || slow.end != fast.end || slow.newline_before != fast.newline_before) panic("tok_at");
+#endif
+        return fast;
+    }
     Parser p = parser(parent);
     p.pos = pos;
     p.whitespace = newline_before ? WHITESPACE_NEWLINE : WHITESPACE_NONE;
@@ -2926,6 +2984,13 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
 }
 
 static bool parse_type_right_side_inner(Parser* parent, TypePrecedence min_precedence, char const* left_start, TypeNode* left_and_ret) {
+    // (No trivia first and none of the characters a branch below starts with: no child parser)
+    char first = *parent->pos;
+    if ((unsigned char)first > ' ' && (unsigned char)first < 0x80 && first != '/' && first != '!' && first != '?' &&
+        first != '[' && first != '&' && first != '|' && first != 'e' && first != '\\'
+    ) {
+        GATE_FAIL(parse_type_right_side_inner(&v_, min_precedence, left_start, left_and_ret));
+    }
     Parser p = parser(parent);
     TypeNode type;
 
@@ -7633,6 +7698,7 @@ static inline bool parse_name_or_value(Parser* parent, Span* span_ret, cstr* nam
 // Hops a contextual member keyword (`get`, `set`, `async`) if it is followed by a member name on the same line,
 // rather than being the member name itself (`{ get: 1 }`, `{ get() {} }`, `{ get }`)
 static bool hop_member_keyword(Parser* parent, const char* keyword, bool allow_newline) {
+    if (*parent->pos != keyword[0] && *parent->pos != '\\') GATE_FAIL(hop_member_keyword(&v_, keyword, allow_newline));
     Parser p = parser(parent);
     if (!hop_start_if_ends_on_word_break(&p, keyword)) {
         return parse_fail(&p);
@@ -8889,6 +8955,13 @@ static bool parse_list_member(Parser* parent, ParsingContext ctx, bool is_type, 
 
 // abstract: the statement's modifiers had `abstract` (an expression's `abstract class` is taken here)
 static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
+    // (Decorators, `abstract`, `class`, an escaped keyword)
+    switch (*parent->pos) {
+        case '@': case '\\': break;
+        case 'a': if (!may_start_keyword(parent->pos, "abstract")) GATE_FAIL(parse_class_decl(&v_, abstract, ret)); break;
+        case 'c': if (!may_start_keyword(parent->pos, "class")) GATE_FAIL(parse_class_decl(&v_, abstract, ret)); break;
+        default: GATE_FAIL(parse_class_decl(&v_, abstract, ret));
+    }
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -9033,6 +9106,7 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
 }
 
 static bool parse_call_args(Parser* parent, VecExpr* args) {
+    if (*parent->pos != '(') GATE_FAIL(parse_call_args(&v_, args));
     Parser p = parser(parent);
 
     if (!hop_start(&p, "(")) {
@@ -9478,6 +9552,16 @@ static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
 }
 
 static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
+    // (What parse_left_unary_op() can start with, an escaped keyword's `\` too)
+    switch (*parent->pos) {
+        case '!': case '+': case '-': case '~': case '\\': break;
+        case 'a': if (!may_start_keyword(parent->pos, "await")) GATE_FAIL(parse_left_unary_op_expr(&v_, ctx, ret)); break;
+        case 'd': if (!may_start_keyword(parent->pos, "delete")) GATE_FAIL(parse_left_unary_op_expr(&v_, ctx, ret)); break;
+        case 't': if (!may_start_keyword(parent->pos, "typeof")) GATE_FAIL(parse_left_unary_op_expr(&v_, ctx, ret)); break;
+        case 'v': if (!may_start_keyword(parent->pos, "void")) GATE_FAIL(parse_left_unary_op_expr(&v_, ctx, ret)); break;
+        case 'y': if (!may_start_keyword(parent->pos, "yield")) GATE_FAIL(parse_left_unary_op_expr(&v_, ctx, ret)); break;
+        default: GATE_FAIL(parse_left_unary_op_expr(&v_, ctx, ret));
+    }
     Parser p = parser(parent);
 
     Anchor a = anchor(&p);
@@ -9740,6 +9824,7 @@ __attribute__((noinline)) static bool nul_inside_file(Parser const* p) {
 
 // `report_escapes`: false in a tagged template, where invalid escapes are allowed
 static bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escapes) {
+    if (*parent->pos != '"' && *parent->pos != '\'' && *parent->pos != '`') GATE_FAIL(parse_string_or_tagged(&v_, ret, report_escapes));
     Parser p = parser(parent);
 
     char quote = *p.pos;
@@ -9867,6 +9952,16 @@ static bool parse_regex(Parser* parent) {
 }
 
 static bool parse_type_compat_literal(Parser* parent, Value* ret) {
+    // (What the branches below can start with: most types are names, which fail here without a child parser)
+    switch (*parent->pos) {
+        case '\\': case '"': case '\'': case '`': case '.':
+        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': break;
+        case 'u': if (!may_start_keyword(parent->pos, "undefined")) GATE_FAIL(parse_type_compat_literal(&v_, ret)); break;
+        case 'n': if (!may_start_keyword(parent->pos, "null")) GATE_FAIL(parse_type_compat_literal(&v_, ret)); break;
+        case 't': if (!may_start_keyword(parent->pos, "true")) GATE_FAIL(parse_type_compat_literal(&v_, ret)); break;
+        case 'f': if (!may_start_keyword(parent->pos, "false")) GATE_FAIL(parse_type_compat_literal(&v_, ret)); break;
+        default: GATE_FAIL(parse_type_compat_literal(&v_, ret));
+    }
     Parser p = parser(parent);
 
     if (hop_start_if_ends_on_word_break(&p, "undefined")) {
@@ -9979,6 +10074,12 @@ static void mark_chain_continues(Expr* object, bool is_call) {
 }
 
 static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_ret) {
+    // (The common end of an expression, right after it: no child parser. With trivia before it the child below hops
+    // it, which records where the trivia was)
+    switch (*parent->pos) {
+        case ';': case ',': case ')': case ']': case '}': case ':': GATE_FAIL(parse_expr_right_side(&v_, ctx, left_and_ret));
+        default: break;
+    }
     Parser p = parser(parent);
     Anchor a = span_starting_at(&p, expr_outer_span(left_and_ret));
 
@@ -10370,6 +10471,11 @@ operators:
 }
 
 static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
+    // (No trivia first and no comma: no child parser)
+    char first = *parent->pos;
+    if ((unsigned char)first > ' ' && (unsigned char)first < 0x80 && first != '/' && first != ',') {
+        GATE_FAIL(parse_comma_ops_right_side(&v_, left_and_ret));
+    }
     Parser p = parser(parent);
     Anchor a = span_starting_at(&p, expr_outer_span(left_and_ret));
     Expr expr;
@@ -10582,6 +10688,7 @@ static bool parse_decorators(Parser* parent, VecExpr* ret) {
 
 // `async function () {}`, `async () => {}`, `async x => {}`
 static bool parse_async_function_expr(Parser* parent, ExprCtx ctx, FunctionImpl* ret) {
+    if (!may_start_keyword(parent->pos, "async")) GATE_FAIL(parse_async_function_expr(&v_, ctx, ret));
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -14892,6 +14999,7 @@ static inline bool expect_statement(Parser* parent, bool toplevel, Statement* re
 }
 
 static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
+    if (*parent->pos != '{') GATE_FAIL(parse_block(&v_, toplevel, ret));
     Parser p = parser(parent);
 
     const char* open = p.pos;
