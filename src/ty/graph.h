@@ -163,6 +163,10 @@ void graph_check_unshared(TyGraph* me, Checker* checker); // TTTT_DEBUG_UNSHARED
 // 0: none
 unsigned graph_relation_get(TyGraph* me, u32 relation, u64 key);
 void graph_relation_put(TyGraph* me, u32 relation, u64 key, unsigned value);
+// TTTT_GRAPH_BATCH=1 (sg2's batching experiment): memo entries and relation results published only at a file's end
+// (graph_memo_flush() from check_file()), sorted by shard so that each shard's lock is taken once in a row
+extern int graph_batch;
+void graph_relation_buffer(Checker* checker, u32 relation, u64 key, unsigned value);
 void graph_print_stats(TyGraph const* me);
 // The shared tables' insertion and node_links' (checker.c)
 void link_table_each(LinkTable const* table, void (*each)(void* arg, u32 kind, void const* subject, void const* value), void* arg);

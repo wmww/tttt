@@ -152,6 +152,7 @@ static void graph_share_tables(TyGraph* me, Checker* checker) {
 TyGraph* graph_new(Checker* first) {
     graph_kind_class(0); // (Its tables, before any worker asks)
     graph_stats_on = getenv("TTTT_GRAPH_STATS") != nullptr;
+    graph_batch = getenv("TTTT_GRAPH_BATCH") && strcmp(getenv("TTTT_GRAPH_BATCH"), "0") ? 1 : 0;
     TyGraph* me = calloc(1, sizeof(TyGraph));
     panic_if(!me, "out of memory");
     my types = shared_table_new();
@@ -225,6 +226,7 @@ void graph_release(TyGraph* me, Checker* checker) {
     if (checker->graph_worker < 64 && my workers[checker->graph_worker] == checker) my workers[checker->graph_worker] = nullptr;
     // (The graph's: freed by graph_drop())
     free(checker->graph_memo_log);
+    free(checker->graph_relation_buf);
     memo_taint_drop(checker);
     free(checker->graph_variance_claims);
     checker->graph_variance_claims = nullptr;
@@ -405,6 +407,35 @@ unsigned graph_relation_get(TyGraph* me, u32 relation, u64 key) {
     unsigned ret = (unsigned)(uintptr_t)shared_links_get(my relations[relation], key);
     if (ret) GRAPH_STAT_ADD(&my relation_hits, 1, memory_order_relaxed);
     return ret;
+}
+
+int graph_batch = -1;
+typedef struct GraphRelationPut { u64 key; u32 relation; u32 value; u32 shard; } GraphRelationPut;
+
+void graph_relation_buffer(Checker* checker, u32 relation, u64 key, unsigned value) {
+    if (checker->graph_relation_len == checker->graph_relation_cap) {
+        checker->graph_relation_cap = checker->graph_relation_cap ? checker->graph_relation_cap * 2 : 256;
+        checker->graph_relation_buf = realloc(checker->graph_relation_buf, sizeof(GraphRelationPut) * checker->graph_relation_cap);
+        panic_if(!checker->graph_relation_buf, "out of memory");
+    }
+    checker->graph_relation_buf[checker->graph_relation_len++] = (GraphRelationPut){ key, relation, value, shared_links_shard(key) };
+}
+
+static int relation_put_cmp(void const* a, void const* b) {
+    GraphRelationPut const* x = a;
+    GraphRelationPut const* y = b;
+    if (x->relation != y->relation) return x->relation < y->relation ? -1 : 1;
+    return x->shard < y->shard ? -1 : x->shard > y->shard;
+}
+
+static void graph_relations_commit(Checker* checker) {
+    if (!checker->graph_relation_len) return;
+    qsort(checker->graph_relation_buf, checker->graph_relation_len, sizeof(GraphRelationPut), relation_put_cmp);
+    for (u32 i = 0; i < checker->graph_relation_len; i++) {
+        GraphRelationPut const* p = &checker->graph_relation_buf[i];
+        graph_relation_put(checker->graph, p->relation, p->key, p->value);
+    }
+    checker->graph_relation_len = 0;
 }
 
 void graph_relation_put(TyGraph* me, u32 relation, u64 key, unsigned value) {
@@ -827,7 +858,7 @@ void graph_memo_log_put(Checker* checker, InternTable const* table, void const**
     if (!checker->graph_memo_log_limit) checker->graph_memo_log_limit = 64;
     // (Before the new one goes in, whose block isn't filled yet. Entries still without a value stay: the limit grows
     // with them, a deep computation doesn't flush every put)
-    if (checker->graph_memo_log_len >= checker->graph_memo_log_limit) graph_memo_flush(checker);
+    if (checker->graph_memo_log_len >= checker->graph_memo_log_limit && graph_batch != 1) graph_memo_flush(checker);
     if (checker->graph_memo_log_len == checker->graph_memo_log_cap) {
         checker->graph_memo_log_cap = checker->graph_memo_log_cap ? checker->graph_memo_log_cap * 2 : 256;
         checker->graph_memo_log = realloc(checker->graph_memo_log, sizeof(GraphMemoLogEntry) * checker->graph_memo_log_cap);
@@ -842,12 +873,26 @@ void graph_memo_log_unput(Checker* checker, void const** block) {
     if (n && (checker->graph_memo_log[n - 1].entry & ~(uintptr_t)7) == (uintptr_t)block) checker->graph_memo_log_len--;
 }
 
+// (TTTT_GRAPH_BATCH: the log by table and shard, so each shard's lock is taken in a row)
+static int memo_log_shard_cmp(void const* a, void const* b) {
+    uintptr_t x = ((GraphMemoLogEntry const*)a)->entry, y = ((GraphMemoLogEntry const*)b)->entry;
+    void const** bx = (void const**)(x & ~(uintptr_t)7);
+    void const** by = (void const**)(y & ~(uintptr_t)7);
+    u64 kx = (u64)(x & 3) << 8 | shared_table_shard(((u64 const*)bx)[-1]);
+    u64 ky = (u64)(y & 3) << 8 | shared_table_shard(((u64 const*)by)[-1]);
+    return kx < ky ? -1 : kx > ky;
+}
+
 void graph_memo_flush(Checker* checker) {
     TyGraph* me = checker->graph;
     if (!me) return;
     graph_sched_point(false);
     if (__builtin_expect(__atomic_load_n(&debug_memo_publish, __ATOMIC_RELAXED) < 0, 0)) {
         __atomic_store_n(&debug_memo_publish, getenv("TTTT_DEBUG_MEMO_PUBLISH") != nullptr, __ATOMIC_RELAXED);
+    }
+    if (graph_batch == 1) {
+        graph_relations_commit(checker);
+        if (checker->graph_memo_log_len > 1) qsort(checker->graph_memo_log, checker->graph_memo_log_len, sizeof(GraphMemoLogEntry), memo_log_shard_cmp);
     }
     u32 kept = 0;
     for (u32 i = 0; i < checker->graph_memo_log_len; i++) {

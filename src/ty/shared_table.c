@@ -21,19 +21,38 @@ typedef struct Slots {
     Slot slot[];
 } Slots;
 
+// (sg2's layout experiment, plan "sharing_design": the slots pointer every lookup reads is on a line of its own, apart
+// from the lock and the length every insert writes; with TTTT_GRAPH_PAD=1 each slot takes a cache line of its own too,
+// so that no two inserts' slots share a line)
+#ifdef TTTT_SHARD_PACKED
+// (The layout before the experiment, for its A/B: the slots pointer beside the lock)
 typedef struct Shard {
     Slots* _Atomic slots;
     pthread_mutex_t lock;
     u32 len;
     char pad[40];
 } Shard;
+#else
+typedef struct Shard {
+    alignas(64) Slots* _Atomic slots;
+    alignas(64) pthread_mutex_t lock;
+    u32 len;
+} Shard;
+#endif
+
+// Slots apart (TTTT_GRAPH_PAD=1: 4, a 16-byte slot per 64-byte line; else 1), fixed at the first table made
+static u32 slot_stride;
+static u32 stride(void) {
+    if (!slot_stride) slot_stride = getenv("TTTT_GRAPH_PAD") && strcmp(getenv("TTTT_GRAPH_PAD"), "0") ? 4 : 1;
+    return slot_stride;
+}
 
 struct SharedTable {
     Shard shards[SHARDS];
 };
 
 static Slots* slots_new(u32 cap, Slots* older, size_t slot_size) {
-    Slots* ret = zeroed_table(1, sizeof(Slots) + slot_size * cap);
+    Slots* ret = zeroed_table(1, sizeof(Slots) + slot_size * cap * stride());
     panic_if(!ret, "out of memory");
     ret->cap = cap;
     ret->older = older;
@@ -65,7 +84,8 @@ static u64 shards_len(Shard const* shards) {
 }
 
 SharedTable* shared_table_new(void) {
-    SharedTable* me = calloc(1, sizeof(SharedTable));
+    SharedTable* me = aligned_alloc(64, (sizeof(SharedTable) + 63) & ~(size_t)63);
+    if (me) memset(me, 0, sizeof(SharedTable));
     panic_if(!me, "out of memory");
     shards_init(my shards, sizeof(Slot));
     return me;
@@ -78,6 +98,7 @@ void shared_table_drop(SharedTable* me) {
 }
 
 u64 shared_table_len(SharedTable const* me) { return shards_len(my shards); }
+u32 shared_table_shard(u64 hash) { return shard_of(hash); }
 
 static bool key_is(void const* const* block, u64 const* words, u32 count) {
     u64 const* key = (u64 const*)(block + 1);
@@ -89,7 +110,7 @@ static bool key_is(void const* const* block, u64 const* words, u32 count) {
 // The slot of the key, or the empty one where it would go
 static Slot* probe(Slots* slots, u64 hash, u64 const* words, u32 count) {
     for (u32 i = slot_of(hash, slots->cap);; i = (i + 1) & (slots->cap - 1)) {
-        Slot* slot = &slots->slot[i];
+        Slot* slot = &slots->slot[i * slot_stride];
         u64 h = atomic_load_explicit(&slot->hash, memory_order_acquire);
         if (!h) return slot;
         if (h == hash && key_is(atomic_load_explicit(&slot->block, memory_order_relaxed), words, count)) return slot;
@@ -102,7 +123,7 @@ void const** shared_table_find(SharedTable const* me, u64 hash, u64 const* words
     Shard const* shard = &my shards[shard_of(hash)];
     Slots* slots = atomic_load_explicit(&((Shard*)shard)->slots, memory_order_acquire);
     for (u32 i = slot_of(hash, slots->cap);; i = (i + 1) & (slots->cap - 1)) {
-        Slot* slot = &slots->slot[i];
+        Slot* slot = &slots->slot[i * slot_stride];
         u64 h = atomic_load_explicit(&slot->hash, memory_order_acquire);
         if (!h) return nullptr;
         if (h != hash) continue;
@@ -129,12 +150,12 @@ u64 shared_table_insert(SharedTable* me, u64 hash, void const** block, u32 count
     if ((shard->len + 1) * 4 > slots->cap * 3) {
         Slots* bigger = slots_new(slots->cap * 2, slots, sizeof(Slot));
         for (u32 i = 0; i < slots->cap; i++) {
-            u64 h = atomic_load_explicit(&slots->slot[i].hash, memory_order_relaxed);
+            u64 h = atomic_load_explicit(&slots->slot[i * slot_stride].hash, memory_order_relaxed);
             if (!h) continue;
             u32 j = slot_of(h, bigger->cap);
-            while (atomic_load_explicit(&bigger->slot[j].hash, memory_order_relaxed)) j = (j + 1) & (bigger->cap - 1);
-            atomic_store_explicit(&bigger->slot[j].block, atomic_load_explicit(&slots->slot[i].block, memory_order_relaxed), memory_order_relaxed);
-            atomic_store_explicit(&bigger->slot[j].hash, h, memory_order_relaxed);
+            while (atomic_load_explicit(&bigger->slot[j * slot_stride].hash, memory_order_relaxed)) j = (j + 1) & (bigger->cap - 1);
+            atomic_store_explicit(&bigger->slot[j * slot_stride].block, atomic_load_explicit(&slots->slot[i * slot_stride].block, memory_order_relaxed), memory_order_relaxed);
+            atomic_store_explicit(&bigger->slot[j * slot_stride].hash, h, memory_order_relaxed);
         }
         atomic_store_explicit(&shard->slots, bigger, memory_order_release);
         slot = probe(bigger, hash, words, count);
@@ -174,7 +195,8 @@ static u64 link_hash(u64 key) {
 }
 
 SharedLinks* shared_links_new(void) {
-    SharedLinks* me = calloc(1, sizeof(SharedLinks));
+    SharedLinks* me = aligned_alloc(64, (sizeof(SharedLinks) + 63) & ~(size_t)63);
+    if (me) memset(me, 0, sizeof(SharedLinks));
     panic_if(!me, "out of memory");
     shards_init(my shards, sizeof(LinkSlot));
     return me;
@@ -187,10 +209,11 @@ void shared_links_drop(SharedLinks* me) {
 }
 
 u64 shared_links_len(SharedLinks const* me) { return shards_len(my shards); }
+u32 shared_links_shard(u64 key) { return shard_of(link_hash(key)); }
 
 static LinkSlot* link_probe(LinkSlots* slots, u64 hash, u64 key) {
     for (u32 i = slot_of(hash, slots->cap);; i = (i + 1) & (slots->cap - 1)) {
-        LinkSlot* slot = &slots->slot[i];
+        LinkSlot* slot = &slots->slot[i * slot_stride];
         u64 k = atomic_load_explicit(&slot->key, memory_order_acquire);
         if (!k || k == key) return slot;
     }
@@ -202,7 +225,7 @@ void const* shared_links_get(SharedLinks const* me, u64 key) {
     Shard* shard = (Shard*)&my shards[shard_of(hash)];
     LinkSlots* slots = (LinkSlots*)atomic_load_explicit(&shard->slots, memory_order_acquire);
     for (u32 i = slot_of(hash, slots->cap);; i = (i + 1) & (slots->cap - 1)) {
-        LinkSlot* slot = &slots->slot[i];
+        LinkSlot* slot = &slots->slot[i * slot_stride];
         u64 k = atomic_load_explicit(&slot->key, memory_order_acquire);
         if (!k) return nullptr;
         if (k == key) return atomic_load_explicit(&slot->value, memory_order_relaxed);
@@ -223,12 +246,12 @@ void const* shared_links_insert(SharedLinks* me, u64 key, void const* value) {
     if ((shard->len + 1) * 4 > slots->cap * 3) {
         LinkSlots* bigger = (LinkSlots*)slots_new(slots->cap * 2, (Slots*)slots, sizeof(LinkSlot));
         for (u32 i = 0; i < slots->cap; i++) {
-            u64 k = atomic_load_explicit(&slots->slot[i].key, memory_order_relaxed);
+            u64 k = atomic_load_explicit(&slots->slot[i * slot_stride].key, memory_order_relaxed);
             if (!k) continue;
             u32 j = slot_of(link_hash(k), bigger->cap);
-            while (atomic_load_explicit(&bigger->slot[j].key, memory_order_relaxed)) j = (j + 1) & (bigger->cap - 1);
-            atomic_store_explicit(&bigger->slot[j].value, atomic_load_explicit(&slots->slot[i].value, memory_order_relaxed), memory_order_relaxed);
-            atomic_store_explicit(&bigger->slot[j].key, k, memory_order_relaxed);
+            while (atomic_load_explicit(&bigger->slot[j * slot_stride].key, memory_order_relaxed)) j = (j + 1) & (bigger->cap - 1);
+            atomic_store_explicit(&bigger->slot[j * slot_stride].value, atomic_load_explicit(&slots->slot[i * slot_stride].value, memory_order_relaxed), memory_order_relaxed);
+            atomic_store_explicit(&bigger->slot[j * slot_stride].key, k, memory_order_relaxed);
         }
         atomic_store_explicit(&shard->slots, (Slots*)bigger, memory_order_release);
         slot = link_probe(bigger, hash, key);

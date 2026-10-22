@@ -3391,12 +3391,16 @@ static Ty const* binding_element_implied_type(Checker* me, Binding const* elemen
 // That is history-like the way K1's order is (a tuple reference's this-argument is whichever resolved them first) and
 // safe under sharing: the state protocol is per state, not per Ty. Its order_key is its own: copying a cached one
 // would make it depend on whether the original was compared before it was cloned (the key can hold the id)
+static_assert(offsetof(Ty, height) < offsetof(Ty, flags) && offsetof(Ty, flags) < offsetof(Ty, order_key));
 static Ty* clone_with_new_id(Checker* me, Ty const* ty) {
     Ty* ret = ty_alloc(me, (TyKind)ty->kind, ty->flags);
     u32 id = ret->id;
     // (Around order_key, which another worker may be caching in the original meanwhile: an atomic word, plan 86 4f)
     size_t at = offsetof(Ty, order_key), size = ty_size_of_kind((TyKind)ty->kind);
-    memcpy(ret, ty, at);
+    // (And around height, which another worker may be memoizing in the original: TTTT_NESTING_ORDER=content)
+    memcpy(ret, ty, offsetof(Ty, height));
+    memcpy((char*)ret + offsetof(Ty, flags), (char const*)ty + offsetof(Ty, flags), at - offsetof(Ty, flags));
+    ret->height = 0;
     memcpy((char*)ret + at + sizeof ret->order_key, (char const*)ty + at + sizeof ret->order_key, size - at - sizeof ret->order_key);
     ret->id = id;
     ret->order_key = 0;

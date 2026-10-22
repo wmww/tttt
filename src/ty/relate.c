@@ -3642,7 +3642,7 @@ static void measure_variances(Checker* me, VarianceSubject subject, VarianceClai
     if (claim->done) return;
     Variances const* variances = publish_variances(me, claim, measured);
     // (--shared-graph: the outermost measurement's end publishes what it measured, as one group, graph_memo_flush())
-    if (__builtin_expect(my graph_memo_on, 0) && !my variance_depth) graph_memo_flush(me);
+    if (__builtin_expect(my graph_memo_on, 0) && !my variance_depth && graph_batch != 1) graph_memo_flush(me);
     if (debug_env.dump_variances) {
         cstr name = subject.declared ? ty_to_cstr(me, subject.declared) : cstr_from_sv(subject.alias->name);
         for (u32 i = 0; i < variances->len; i++) log_info("variance of ", name, " #", i, ": ", (u32)variances->data[i]);
@@ -7104,7 +7104,8 @@ static void relation_publish(Checker* me, RelationState* st, u64 key, unsigned v
     if (!my variance_depth && relation_shares(key)) graph_fp_relation(st->relation, key, value);
 #endif
     if (__builtin_expect(my graph_memo_on, 0) && !my variance_depth && relation_shares(key)) {
-        graph_relation_put(my graph, st->relation, key, value);
+        if (graph_batch == 1) graph_relation_buffer(me, st->relation, key, value);
+        else graph_relation_put(my graph, st->relation, key, value);
     }
 }
 

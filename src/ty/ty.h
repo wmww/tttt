@@ -296,7 +296,10 @@ typedef struct TyParamState {
 
 struct Ty {
     u32 id;
-    u32 kind; // TyKind
+    uint16_t kind; // TyKind
+    // TTTT_NESTING_ORDER=content (sg2's audit): the type's height once ty_height() worked it out, 0 until then. Written
+    // once by whichever worker asks first; every worker computes the same value (a content property)
+    _Atomic uint16_t height;
     u32 flags; // TyFlags
     u32 xflags; // TYX_*: flags that propagate like tsc's ObjectFlags.PropagatingFlags
     // ty_compare()'s cached prefix (order.c's order_key()), 0 until first compared
@@ -1407,6 +1410,9 @@ struct Checker {
     // once its value is there (plan 86 4d), unless the instantiation limits ran out meanwhile
     struct GraphMemoLogEntry* graph_memo_log;
     u32 graph_memo_log_len, graph_memo_log_cap, graph_memo_log_limit;
+    // TTTT_GRAPH_BATCH=1 (sg2's batching experiment): shared relation results held to the file's end (graph.c)
+    struct GraphRelationPut* graph_relation_buf;
+    u32 graph_relation_len, graph_relation_cap;
     // Plan 86 stage 4f: where its memo kinds' computations started (their misses) and which of its entries were tainted
     // (graph.c)
     struct MemoTaint* memo_taint;

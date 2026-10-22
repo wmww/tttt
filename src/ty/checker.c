@@ -727,6 +727,7 @@ Ty* ty_alloc(Checker* me, TyKind kind, u32 flags) {
     lazy_slots_add_type(&my lazy, ret);
     if (my stamps) ty_stamp(me, ret);
     ret->kind = kind;
+    ret->height = 0;
     ret->flags = flags;
     return ret;
 }
@@ -1263,6 +1264,7 @@ static Ty const* make_origin(Checker* me, OriginSpec const* spec, TyList types) 
     Ty* ret = arena_alloc(&my arena, ty_size_of_kind(spec->kind));
 #endif
     ret->kind = spec->kind;
+    ret->height = 0;
     if (spec->kind == TY_KEYOF) {
         ret->keyof.operand = spec->types[0];
     } else {

@@ -18,6 +18,8 @@ void const** shared_table_find(SharedTable const* me, u64 hash, u64 const* words
 // Inserts the block (it stays where it is) unless the key is there already: the block that is there after
 u64 shared_table_insert(SharedTable* me, u64 hash, void const** block, u32 count, void const*** out);
 u64 shared_table_len(SharedTable const* me);
+u32 shared_table_shard(u64 hash); // Which shard (lock) a key's insert takes: batches sort by it
+u32 shared_links_shard(u64 key);
 
 SharedLinks* shared_links_new(void);
 void shared_links_drop(SharedLinks* me);

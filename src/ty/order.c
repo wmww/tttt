@@ -286,6 +286,9 @@ typedef struct HeightSlot { Ty const* ty; u32 height; } HeightSlot;
 static thread_local HeightSlot* height_slots;
 static thread_local u32 height_cap, height_len;
 static thread_local u64 height_owner;
+// Memoized in the Ty itself (Ty.height, a relaxed store of a value every worker computes alike); TTTT_HEIGHT_MEMO=thread:
+// in a per-thread table instead (the first prototype's: under --shared-graph at K12 it cost drizzle +27% check CPU)
+static _Atomic int height_in_type = -1;
 
 static u32 height_of(Ty const* t, u32 depth);
 
@@ -355,6 +358,13 @@ static u32 height_compute(Ty const* t, u32 depth) {
 
 static u32 height_of(Ty const* t, u32 depth) {
     if (depth > 200) return 1; // (A guard: identities are built bottom-up, so this never happens)
+    if (height_in_type) {
+        u32 h = atomic_load_explicit(&((Ty*)t)->height, memory_order_relaxed);
+        if (h) return h;
+        h = height_compute(t, depth + 1);
+        atomic_store_explicit(&((Ty*)t)->height, (uint16_t)(h < 65535 ? h : 65535), memory_order_relaxed);
+        return h;
+    }
     if (height_cap) {
         u32 i = (u32)(((uintptr_t)t >> 3) * 0x9E3779B97F4A7C15ull >> 32) & (height_cap - 1);
         while (height_slots[i].ty) {
@@ -385,6 +395,7 @@ static u32 height_of(Ty const* t, u32 depth) {
 }
 
 u32 ty_height(Checker const* checker, Ty const* t) {
+    if (height_in_type < 0) height_in_type = !(getenv("TTTT_HEIGHT_MEMO") && !strcmp(getenv("TTTT_HEIGHT_MEMO"), "thread"));
     if (checker->height_generation != height_owner) {
         free(height_slots);
         height_slots = nullptr;
