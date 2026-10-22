@@ -29,3 +29,11 @@ intersection's property symbol to bugs/type_core.md.
   tsc, nothing in tttt (the circularity through the loop's assigned value). (3) Call argument errors (TS2345...) of a
   nested call resolution under a loop in progress aren't reported from the partial pass (call.c resolves without
   errs under flow_uncached): wire them like expr_property_access_errors() if an oracle shows one.
+
+- K-dependence hole of the loop-pass diagnostics (`ty_flow_partial_reports()`, 2026-10-22): a partial evaluation
+  reports only in the checker checking the expression's file. If another file's check evaluates that loop first (an
+  inferred return type: `export function f(a: number[]) { let y; while (a.length) { y = a[y] } return y }` in a.ts and
+  `import { f } from "./a"; const r = f([])` in b.ts checked first) its partial pass is silent, and at K1 the same
+  checker later reads finished memos for a.ts (`flow_expr_type_in` returns a done memo, no rerun), so a.ts's TS2538 could
+  be missing at K1 and present at K16. Not seen by checkerdiff/kdiff yet; if it shows, rerun the partial pass for the
+  own file (or record foreign partial errors per file and replay them when that file is checked).
