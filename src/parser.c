@@ -3026,7 +3026,9 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
     return true;
 }
 
-static bool parse_type_right_side_inner(Parser* parent, TypePrecedence min_precedence, char const* left_start, TypeNode* left_and_ret) {
+[[gnu::noinline]] static bool parse_type_right_side_inner_slow(Parser* parent, TypePrecedence min_precedence, char const* left_start, TypeNode* left_and_ret);
+// (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
+static inline bool parse_type_right_side_inner(Parser* parent, TypePrecedence min_precedence, char const* left_start, TypeNode* left_and_ret) {
     // (No trivia first and none of the characters a branch below starts with: no child parser)
     char first = *parent->pos;
     if ((unsigned char)first > ' ' && (unsigned char)first < 0x80 && first != '/' && first != '!' && first != '?' &&
@@ -3034,6 +3036,10 @@ static bool parse_type_right_side_inner(Parser* parent, TypePrecedence min_prece
     ) {
         GATE_FAIL(parse_type_right_side_inner(&v_, min_precedence, left_start, left_and_ret));
     }
+    return parse_type_right_side_inner_slow(parent, min_precedence, left_start, left_and_ret);
+}
+
+[[gnu::noinline]] static bool parse_type_right_side_inner_slow(Parser* parent, TypePrecedence min_precedence, char const* left_start, TypeNode* left_and_ret) {
     Parser p = parser(parent);
     TypeNode type;
 
@@ -7740,8 +7746,14 @@ static inline bool parse_name_or_value(Parser* parent, Span* span_ret, cstr* nam
 
 // Hops a contextual member keyword (`get`, `set`, `async`) if it is followed by a member name on the same line,
 // rather than being the member name itself (`{ get: 1 }`, `{ get() {} }`, `{ get }`)
-static bool hop_member_keyword(Parser* parent, const char* keyword, bool allow_newline) {
+[[gnu::noinline]] static bool hop_member_keyword_slow(Parser* parent, const char* keyword, bool allow_newline);
+// (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
+static inline bool hop_member_keyword(Parser* parent, const char* keyword, bool allow_newline) {
     if (*parent->pos != keyword[0] && *parent->pos != '\\') GATE_FAIL(hop_member_keyword(&v_, keyword, allow_newline));
+    return hop_member_keyword_slow(parent, keyword, allow_newline);
+}
+
+[[gnu::noinline]] static bool hop_member_keyword_slow(Parser* parent, const char* keyword, bool allow_newline) {
     Parser p = parser(parent);
     if (!hop_start_if_ends_on_word_break(&p, keyword)) {
         return parse_fail(&p);
@@ -8999,7 +9011,9 @@ static bool parse_list_member(Parser* parent, ParsingContext ctx, bool is_type, 
 }
 
 // abstract: the statement's modifiers had `abstract` (an expression's `abstract class` is taken here)
-static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
+[[gnu::noinline]] static bool parse_class_decl_slow(Parser* parent, bool abstract, ClassDecl* ret);
+// (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
+static inline bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
     // (Decorators, `abstract`, `class`, an escaped keyword)
     switch (*parent->pos) {
         case '@': case '\\': break;
@@ -9007,6 +9021,10 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
         case 'c': if (!may_start_keyword(parent->pos, "class")) GATE_FAIL(parse_class_decl(&v_, abstract, ret)); break;
         default: GATE_FAIL(parse_class_decl(&v_, abstract, ret));
     }
+    return parse_class_decl_slow(parent, abstract, ret);
+}
+
+[[gnu::noinline]] static bool parse_class_decl_slow(Parser* parent, bool abstract, ClassDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -9150,8 +9168,14 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
     return parse_success(&p);
 }
 
-static bool parse_call_args(Parser* parent, VecExpr* args) {
+[[gnu::noinline]] static bool parse_call_args_slow(Parser* parent, VecExpr* args);
+// (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
+static inline bool parse_call_args(Parser* parent, VecExpr* args) {
     if (*parent->pos != '(') GATE_FAIL(parse_call_args(&v_, args));
+    return parse_call_args_slow(parent, args);
+}
+
+[[gnu::noinline]] static bool parse_call_args_slow(Parser* parent, VecExpr* args) {
     Parser p = parser(parent);
 
     if (!hop_start(&p, "(")) {
@@ -9596,7 +9620,9 @@ static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
     return true;
 }
 
-static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
+[[gnu::noinline]] static bool parse_left_unary_op_expr_slow(Parser* parent, ExprCtx ctx, Expr* ret);
+// (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
+static inline bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     // (What parse_left_unary_op() can start with, an escaped keyword's `\` too)
     switch (*parent->pos) {
         case '!': case '+': case '-': case '~': case '\\': break;
@@ -9607,6 +9633,10 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         case 'y': if (!may_start_keyword(parent->pos, "yield")) GATE_FAIL(parse_left_unary_op_expr(&v_, ctx, ret)); break;
         default: GATE_FAIL(parse_left_unary_op_expr(&v_, ctx, ret));
     }
+    return parse_left_unary_op_expr_slow(parent, ctx, ret);
+}
+
+[[gnu::noinline]] static bool parse_left_unary_op_expr_slow(Parser* parent, ExprCtx ctx, Expr* ret) {
     Parser p = parser(parent);
 
     Anchor a = anchor(&p);
@@ -9868,8 +9898,14 @@ __attribute__((noinline)) static bool nul_inside_file(Parser const* p) {
 }
 
 // `report_escapes`: false in a tagged template, where invalid escapes are allowed
-static bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escapes) {
+[[gnu::noinline]] static bool parse_string_or_tagged_slow(Parser* parent, cstr* ret, bool report_escapes);
+// (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
+static inline bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escapes) {
     if (*parent->pos != '"' && *parent->pos != '\'' && *parent->pos != '`') GATE_FAIL(parse_string_or_tagged(&v_, ret, report_escapes));
+    return parse_string_or_tagged_slow(parent, ret, report_escapes);
+}
+
+[[gnu::noinline]] static bool parse_string_or_tagged_slow(Parser* parent, cstr* ret, bool report_escapes) {
     Parser p = parser(parent);
 
     char quote = *p.pos;
@@ -9996,7 +10032,9 @@ static bool parse_regex(Parser* parent) {
     return parse_success(&p);
 }
 
-static bool parse_type_compat_literal(Parser* parent, Value* ret) {
+[[gnu::noinline]] static bool parse_type_compat_literal_slow(Parser* parent, Value* ret);
+// (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
+static inline bool parse_type_compat_literal(Parser* parent, Value* ret) {
     // (What the branches below can start with: most types are names, which fail here without a child parser)
     switch (*parent->pos) {
         case '\\': case '"': case '\'': case '`': case '.':
@@ -10007,6 +10045,10 @@ static bool parse_type_compat_literal(Parser* parent, Value* ret) {
         case 'f': if (!may_start_keyword(parent->pos, "false")) GATE_FAIL(parse_type_compat_literal(&v_, ret)); break;
         default: GATE_FAIL(parse_type_compat_literal(&v_, ret));
     }
+    return parse_type_compat_literal_slow(parent, ret);
+}
+
+[[gnu::noinline]] static bool parse_type_compat_literal_slow(Parser* parent, Value* ret) {
     Parser p = parser(parent);
 
     if (hop_start_if_ends_on_word_break(&p, "undefined")) {
@@ -10118,13 +10160,19 @@ static void mark_chain_continues(Expr* object, bool is_call) {
     }
 }
 
-static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_ret) {
+[[gnu::noinline]] static bool parse_expr_right_side_slow(Parser* parent, ExprCtx ctx, Expr* left_and_ret);
+// (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
+static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_ret) {
     // (The common end of an expression, right after it: no child parser. With trivia before it the child below hops
     // it, which records where the trivia was)
     switch (*parent->pos) {
         case ';': case ',': case ')': case ']': case '}': case ':': GATE_FAIL(parse_expr_right_side(&v_, ctx, left_and_ret));
         default: break;
     }
+    return parse_expr_right_side_slow(parent, ctx, left_and_ret);
+}
+
+[[gnu::noinline]] static bool parse_expr_right_side_slow(Parser* parent, ExprCtx ctx, Expr* left_and_ret) {
     Parser p = parser(parent);
     Anchor a = span_starting_at(&p, expr_outer_span(left_and_ret));
 
@@ -10515,12 +10563,18 @@ operators:
     return parse_fail(&p);
 }
 
-static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
+[[gnu::noinline]] static bool parse_comma_ops_right_side_slow(Parser* parent, Expr* left_and_ret);
+// (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
+static inline bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
     // (No trivia first and no comma: no child parser)
     char first = *parent->pos;
     if ((unsigned char)first > ' ' && (unsigned char)first < 0x80 && first != '/' && first != ',') {
         GATE_FAIL(parse_comma_ops_right_side(&v_, left_and_ret));
     }
+    return parse_comma_ops_right_side_slow(parent, left_and_ret);
+}
+
+[[gnu::noinline]] static bool parse_comma_ops_right_side_slow(Parser* parent, Expr* left_and_ret) {
     Parser p = parser(parent);
     Anchor a = span_starting_at(&p, expr_outer_span(left_and_ret));
     Expr expr;
@@ -10732,8 +10786,14 @@ static bool parse_decorators(Parser* parent, VecExpr* ret) {
 }
 
 // `async function () {}`, `async () => {}`, `async x => {}`
-static bool parse_async_function_expr(Parser* parent, ExprCtx ctx, FunctionImpl* ret) {
+[[gnu::noinline]] static bool parse_async_function_expr_slow(Parser* parent, ExprCtx ctx, FunctionImpl* ret);
+// (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
+static inline bool parse_async_function_expr(Parser* parent, ExprCtx ctx, FunctionImpl* ret) {
     if (!may_start_keyword(parent->pos, "async")) GATE_FAIL(parse_async_function_expr(&v_, ctx, ret));
+    return parse_async_function_expr_slow(parent, ctx, ret);
+}
+
+[[gnu::noinline]] static bool parse_async_function_expr_slow(Parser* parent, ExprCtx ctx, FunctionImpl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -15043,8 +15103,14 @@ static inline bool expect_statement(Parser* parent, bool toplevel, Statement* re
     }
 }
 
-static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
+[[gnu::noinline]] static bool parse_block_slow(Parser* parent, bool toplevel, Block* ret);
+// (The quick test inlined where it is called, the rest not: PGO inlined whole parse functions behind it)
+static inline bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     if (*parent->pos != '{') GATE_FAIL(parse_block(&v_, toplevel, ret));
+    return parse_block_slow(parent, toplevel, ret);
+}
+
+[[gnu::noinline]] static bool parse_block_slow(Parser* parent, bool toplevel, Block* ret) {
     Parser p = parser(parent);
 
     const char* open = p.pos;
