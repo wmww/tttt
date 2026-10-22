@@ -290,7 +290,7 @@ void sw_debug_check_ref(void const* ref, char const* what) {
 
 SwLook sw_look_slow(Checker* me, SharedWord const* w, uint8_t const* state, uintptr_t* out) {
     if (!my graph) {
-        uintptr_t v = __atomic_load_n(&w->v, __ATOMIC_RELAXED);
+        uintptr_t v = atomic_load_explicit(&w->v, memory_order_relaxed);
         if (v) {
             *out = v;
             return SW_LOOK_DONE;
@@ -368,7 +368,7 @@ uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value,
     check(value != SW_EMPTY && value != SW_POISON);
     if (!my graph) {
         // (One worker: its value is the only history, tainted or not)
-        __atomic_store_n(&w->v, value, __ATOMIC_RELEASE);
+        atomic_store_explicit(&w->v, value, memory_order_release);
         *state = LAZY_STATE_NOT_STARTED;
         return value;
     }
@@ -381,7 +381,7 @@ uintptr_t sw_finish(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value,
     bool debug = __builtin_expect(__atomic_load_n(&debug_publish, __ATOMIC_RELAXED) > 0, 0);
     // (Tested before the CAS: a final word's line isn't taken exclusively by a CAS that can't win)
     if (seen == SW_EMPTY &&
-        __atomic_compare_exchange_n(&w->v, &seen, clean ? value : (uintptr_t)SW_POISON, false, __ATOMIC_RELEASE, __ATOMIC_ACQUIRE)) {
+        atomic_compare_exchange_strong_explicit(&w->v, &seen, clean ? value : (uintptr_t)SW_POISON, memory_order_release, memory_order_acquire)) {
         if (debug) debug_finish(me, w, !clean);
         if (work_on > 0) work_pop(o, w, clean ? SW_OUT_PUBLISHED : SW_OUT_POISONED);
         if (clean) {
@@ -437,7 +437,7 @@ void sw_abandon(Checker* me, SharedWord const* w, uint8_t* state) {
 }
 
 uintptr_t sw_peek_slow(Checker const* me, SharedWord const* w) {
-    if (!my graph) return __atomic_load_n(&w->v, __ATOMIC_RELAXED);
+    if (!my graph) return atomic_load_explicit(&w->v, memory_order_relaxed);
     Overlay const* o = &my overlay;
     if (claim_has(o, w)) return SW_EMPTY;
     uintptr_t v = sw_load(w);

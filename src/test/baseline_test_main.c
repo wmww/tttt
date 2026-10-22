@@ -4,6 +4,8 @@
 #include "string_helpers.h"
 
 #include <cleat/filesystem.h>
+#include "../load_pool.h"
+#include <sys/resource.h>
 
 csview const default_tests_dir = c_sv_const_init("thirdparty/typescript/tsc/testdata/tests");
 csview tests_dir = default_tests_dir;
@@ -143,7 +145,18 @@ static_failable parse_args(int argc, const char** argv) {
     return ok;
 }
 
+// The tests run on the main thread, whose stack grows up to RLIMIT_STACK (checked when it grows): raised to the CLI's
+// worker stack size like tttt's main() does. awaitedType's recursion takes ~7 MB built by GCC and ~9 MB by clang,
+// whose frames are bigger: the default 8 MB failed the clang build
+static void raise_stack_limit(void) {
+    struct rlimit limit;
+    if (getrlimit(RLIMIT_STACK, &limit) || limit.rlim_cur == RLIM_INFINITY || limit.rlim_cur >= worker_stack_size()) return;
+    limit.rlim_cur = limit.rlim_max != RLIM_INFINITY && limit.rlim_max < worker_stack_size() ? limit.rlim_max : worker_stack_size();
+    setrlimit(RLIMIT_STACK, &limit);
+}
+
 int main(int argc, const char** argv) {
+    raise_stack_limit();
     try (parse_args(argc, argv)) if_err (e) {
         error_base_eprintln(e);
         current_error_destroy();

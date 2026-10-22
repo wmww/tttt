@@ -15,6 +15,13 @@ endif
 # (`meson setup /tmp/x`): the source tree's thirdparty/lib
 add_project_arguments('-DTTTT_SOURCE_LIB_DIR="' + meson.current_source_dir() / 'thirdparty' / 'lib' + '"', language : 'c')
 
+# clang (unlike GCC) warns about designated initializers that leave fields out under -Wextra, which -Werror makes
+# fatal in the vendored STC (csview.h's `{.buf = ...}` literals) and our own code alike: leaving fields to zero is C's
+# rule and this code's style
+if meson.get_compiler('c').get_id() == 'clang'
+    add_project_arguments('-Wno-missing-field-initializers', language : 'c')
+endif
+
 # Must come after the add_project_arguments() above so cleat gets the same defines. cleat's meson.build declares
 # cleat_dep and cleat_c_args (the recommended set of warnings/errors); cleat_c_args can't go through
 # add_project_arguments() because by this point cleat has already declared its own build targets, so each of our

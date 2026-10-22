@@ -11,7 +11,8 @@
 // TTTT_GRAPH_STATS' counters: global, so every worker's increment of one would take the same cache line exclusively
 // (several million a run, from every core). Counted only when the stats are printed
 static bool graph_stats_on;
-#define GRAPH_STAT_ADD(p, n, order) do { if (graph_stats_on) __atomic_fetch_add((p), (n), __ATOMIC_RELAXED); } while (0)
+// (The counters are u64, some of them _Atomic: the cast lets one builtin serve both under clang too)
+#define GRAPH_STAT_ADD(p, n, order) do { if (graph_stats_on) __atomic_fetch_add((u64*)(p), (n), __ATOMIC_RELAXED); } while (0)
 
 
 typedef struct KindStats {
@@ -453,7 +454,7 @@ bool graph_variances_publish(
         // ran. Left empty for whoever measures it)
         if (!mine) continue;
         uintptr_t seen = SW_EMPTY;
-        if (__atomic_compare_exchange_n(&slot->value.v, &seen, clean ? (uintptr_t)mine : (uintptr_t)SW_POISON, false, __ATOMIC_RELEASE, __ATOMIC_ACQUIRE)) {
+        if (atomic_compare_exchange_strong_explicit(&slot->value.v, &seen, clean ? (uintptr_t)mine : (uintptr_t)SW_POISON, memory_order_release, memory_order_acquire)) {
             if (clean) {
                 GRAPH_STAT_ADD(&variance_published, 1, memory_order_relaxed);
 #ifdef TTTT_GRAPH_FINGERPRINT
@@ -510,7 +511,7 @@ static void publish_declaration_memo(TyGraph* me, Checker* checker, u32 slot) {
     LazyMemo* copy = arena_new(&checker->arena, LazyMemo);
     *copy = (LazyMemo){ .evaluated = memo->evaluated, .context = memo->context, .evaluation_started = true, .done = true };
     uintptr_t seen = SW_EMPTY;
-    if (__atomic_compare_exchange_n(&memo_at(me, slot, true)->v, &seen, (uintptr_t)copy, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED)) {
+    if (atomic_compare_exchange_strong_explicit(&memo_at(me, slot, true)->v, &seen, (uintptr_t)copy, memory_order_release, memory_order_relaxed)) {
         GRAPH_STAT_ADD(&stats->published, 1, __ATOMIC_RELAXED);
     }
 }

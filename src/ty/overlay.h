@@ -30,6 +30,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdatomic.h>
 
 typedef struct SharedWord {
     _Atomic uintptr_t v;
@@ -45,7 +46,7 @@ static inline void const* sw_ptr(uintptr_t v) { return v == SW_NONE ? nullptr : 
 #define SW_PTR(v) sw_ptr(v)
 
 static inline uintptr_t sw_load(SharedWord const* w) {
-    return __atomic_load_n(&w->v, __ATOMIC_ACQUIRE);
+    return atomic_load_explicit(&w->v, memory_order_acquire);
 }
 
 struct Checker;

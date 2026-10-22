@@ -87,7 +87,7 @@ static void prop_copy_into(Checker* me, Prop* to, Prop const* from, bool keep_in
     uintptr_t known = sw_peek(me, &from->type);
     bool in_flight = keep_in_flight && !known && sw_mine_in_flight(me, &from->type, &from->type_flight);
     *to = *from;
-    __atomic_store_n(&to->type.v, known, __ATOMIC_RELAXED);
+    atomic_store_explicit(&to->type.v, known, memory_order_relaxed);
     to->type_flight = LAZY_STATE_NOT_STARTED;
     if (in_flight) sw_copy_in_flight(me, &to->type, &to->type_flight);
     if (prop_decl_shared(from->decl)) return;
@@ -125,13 +125,13 @@ static inline bool members_mine_in_flight(Checker* me, TyObjectState const* stat
 static uintptr_t word_settle(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value, u64 taint) {
     if (my graph) return sw_finish(me, w, state, value, taint);
     uintptr_t unset = SW_EMPTY;
-    if (__atomic_compare_exchange_n(&w->v, &unset, value, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED)) return value;
+    if (atomic_compare_exchange_strong_explicit(&w->v, &unset, value, memory_order_release, memory_order_relaxed)) return value;
     return unset;
 }
 
 // TyObjectState.unexpanded as this worker knows it, null if not yet
 static Members const* unexpanded_known(Checker* me, TyObjectState const* state) {
-    return (Members const*)(my graph ? sw_peek(me, &state->unexpanded) : __atomic_load_n(&state->unexpanded.v, __ATOMIC_ACQUIRE));
+    return (Members const*)(my graph ? sw_peek(me, &state->unexpanded) : atomic_load_explicit(&state->unexpanded.v, memory_order_acquire));
 }
 
 // What a state in flight has published so far (null: nothing, or not in flight here)
@@ -1443,7 +1443,7 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
         if (ty_resolving_pop(me) && links) {
             // (Its own word, found under a cycle: with a graph sw_finish() keeps it this worker's)
             if (my graph) sw_finish(me, &links->base_constructor_cycle, &links->base_constructor_flight, BASE_CONSTRUCTOR_CYCLIC, taint);
-            else __atomic_store_n(&links->base_constructor_cycle.v, (uintptr_t)BASE_CONSTRUCTOR_CYCLIC, __ATOMIC_RELEASE);
+            else atomic_store_explicit(&links->base_constructor_cycle.v, (uintptr_t)BASE_CONSTRUCTOR_CYCLIC, memory_order_release);
             return false;
         }
         Ty const* constructor = ty_apparent_type(me, expr_type);
@@ -5639,7 +5639,7 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
             if (members_rare(expanded)->expanded_from) {
                 MembersRare* rare = members_rare_published(me, expanded);
                 if (my graph) sw_finish(me, &rare->contains_error, &rare->contains_error_flight, MEMBERS_CONTAINS_ERROR, taint);
-                else __atomic_store_n(&rare->contains_error.v, (uintptr_t)MEMBERS_CONTAINS_ERROR, __ATOMIC_RELEASE);
+                else atomic_store_explicit(&rare->contains_error.v, (uintptr_t)MEMBERS_CONTAINS_ERROR, memory_order_release);
             }
         }
         cstr mapped = ty_to_cstr(me, mapped_type);
@@ -5658,7 +5658,7 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
         // (Its own word, settled with the type's taint before the type is: published if clean, else this worker's own)
         PropDeclRare* rare = (PropDeclRare*)prop->decl->rare;
         if (my graph) sw_finish(me, &rare->asserted_dropped, &rare->asserted_dropped_flight, PROP_ASSERTED_DROPPED, taint);
-        else __atomic_store_n(&rare->asserted_dropped.v, (uintptr_t)PROP_ASSERTED_DROPPED, __ATOMIC_RELEASE);
+        else atomic_store_explicit(&rare->asserted_dropped.v, (uintptr_t)PROP_ASSERTED_DROPPED, memory_order_release);
     }
     type = SW_PTR(sw_finish_fast(me, &prop->type, &prop->type_flight, SW_VAL(type), taint));
     if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_PROP_TYPE, prop, prop, type);
@@ -5856,9 +5856,9 @@ SigResolved const* sig_res_slow(Checker* me, Signature const* sig) {
 static void copy_word(Checker* me, SharedWord* to, uint8_t* to_state, SharedWord const* from, uint8_t const* from_state,
     bool keep_in_flight
 ) {
-    uintptr_t v = my graph ? sw_peek(me, from) : __atomic_load_n(&from->v, __ATOMIC_RELAXED);
+    uintptr_t v = my graph ? sw_peek(me, from) : atomic_load_explicit(&from->v, memory_order_relaxed);
     bool in_flight = keep_in_flight && !v && sw_mine_in_flight(me, from, from_state);
-    __atomic_store_n(&to->v, v, __ATOMIC_RELAXED);
+    atomic_store_explicit(&to->v, v, memory_order_relaxed);
     *to_state = LAZY_STATE_NOT_STARTED;
     if (in_flight) sw_copy_in_flight(me, to, to_state);
 }
@@ -5884,13 +5884,13 @@ void signature_copy(Checker* me, Signature* copy, Signature const* original) {
     copy_word(me, &copy->ret, &copy->ret_flight, &original->ret, &original->ret_flight, true);
     copy_word(me, &copy->predicate, &copy->predicate_flight, &original->predicate, &original->predicate_flight, false);
     copy->res_flight = LAZY_STATE_NOT_STARTED;
-    uintptr_t v = me->graph ? sw_peek(me, &original->res) : __atomic_load_n(&original->res.v, __ATOMIC_RELAXED);
+    uintptr_t v = me->graph ? sw_peek(me, &original->res) : atomic_load_explicit(&original->res.v, memory_order_relaxed);
     if (!v && sw_mine_in_flight(me, &original->res, &original->res_flight)) {
         // (In flight here: a snapshot of what is resolved so far, which the copy keeps, resolved)
         SigResolved const* partial = sig_resolving_record(me, original);
         if (partial) v = (uintptr_t)sig_resolved_new(me, *partial);
     }
-    __atomic_store_n(&copy->res.v, v, __ATOMIC_RELAXED);
+    atomic_store_explicit(&copy->res.v, v, memory_order_relaxed);
 }
 
 SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_sig) {
@@ -6076,7 +6076,7 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
 
 // The return type as this worker knows it (a done-ness peek), null if it isn't
 static Ty const* sig_return_peek(Checker* me, Signature const* sig) {
-    uintptr_t v = my graph ? sw_peek(me, &sig->ret) : __atomic_load_n(&sig->ret.v, __ATOMIC_RELAXED);
+    uintptr_t v = my graph ? sw_peek(me, &sig->ret) : atomic_load_explicit(&sig->ret.v, memory_order_relaxed);
     return v ? SW_PTR(v) : sig_res(me, sig)->class_ret;
 }
 
@@ -7168,11 +7168,11 @@ static uintptr_t param_circular_known(Checker* me, TyParamState const* state) {
 static uintptr_t param_circular_publish(Checker* me, TyParamState* state, uintptr_t value, u64 taint, bool first_wins) {
     if (my graph) return sw_finish(me, &state->circular, &state->circular_flight, value, taint);
     if (!first_wins) {
-        __atomic_store_n(&state->circular.v, value, __ATOMIC_RELAXED);
+        atomic_store_explicit(&state->circular.v, value, memory_order_relaxed);
         return value;
     }
     uintptr_t unset = SW_EMPTY;
-    if (__atomic_compare_exchange_n(&state->circular.v, &unset, value, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED)) return value;
+    if (atomic_compare_exchange_strong_explicit(&state->circular.v, &unset, value, memory_order_relaxed, memory_order_relaxed)) return value;
     return unset;
 }
 

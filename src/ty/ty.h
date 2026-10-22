@@ -720,7 +720,7 @@ static inline Ty const* prop_type_known(Prop const* prop) {
 }
 // A property being made, before anyone else can see it: its type is `type`, known (prop_type() doesn't compute it)
 static inline void prop_type_init(Prop* prop, Ty const* type) {
-    __atomic_store_n(&prop->type.v, SW_VAL(type), __ATOMIC_RELAXED);
+    atomic_store_explicit(&prop->type.v, SW_VAL(type), memory_order_relaxed);
 }
 
 typedef enum SignatureFlags {
@@ -1458,7 +1458,7 @@ static inline uintptr_t sw_peek(Checker const* me, SharedWord const* w) {
 }
 // A done-ness peek (sw_peek(): no event but for its own private value): its type if this worker knows it (published, or its own private value), else null
 static inline Ty const* prop_type_peek(Checker* me, Prop const* prop) {
-    uintptr_t v = me->graph ? sw_peek(me, &prop->type) : __atomic_load_n(&prop->type.v, __ATOMIC_RELAXED);
+    uintptr_t v = me->graph ? sw_peek(me, &prop->type) : atomic_load_explicit(&prop->type.v, memory_order_relaxed);
     return v ? (Ty const*)SW_PTR(v) : nullptr;
 }
 // sw_look(), sw_claim() and sw_finish() with the default path (no graph: the word and its state byte) inline: they are
@@ -1466,7 +1466,7 @@ static inline Ty const* prop_type_peek(Checker* me, Prop const* prop) {
 static inline SwLook sw_look_fast(Checker* me, SharedWord const* w, uint8_t const* state, uintptr_t* out) {
     // (With a graph its callers have taken sw_get() already: the probe would fail)
     if (__builtin_expect(my graph != nullptr, 0)) return sw_look_slow(me, w, state, out);
-    uintptr_t v = __atomic_load_n(&w->v, __ATOMIC_RELAXED);
+    uintptr_t v = atomic_load_explicit(&w->v, memory_order_relaxed);
     if (v) {
         *out = v;
         return SW_LOOK_DONE;
@@ -1488,7 +1488,7 @@ static inline uint64_t sw_claim_fast(Checker* me, SharedWord* w, uint8_t* state)
 }
 static inline uintptr_t sw_finish_fast(Checker* me, SharedWord* w, uint8_t* state, uintptr_t value, uint64_t taint) {
     if (__builtin_expect(my graph != nullptr, 0)) return sw_finish(me, w, state, value, taint);
-    __atomic_store_n(&w->v, value, __ATOMIC_RELEASE);
+    atomic_store_explicit(&w->v, value, memory_order_release);
     *state = LAZY_STATE_NOT_STARTED;
     return value;
 }
@@ -1499,7 +1499,7 @@ static inline bool sw_mine_in_flight_fast(Checker const* me, SharedWord const* w
 }
 static inline uintptr_t sw_peek_fast(Checker const* me, SharedWord const* w) {
     if (__builtin_expect(my graph != nullptr, 0)) return sw_peek_slow(me, w);
-    return __atomic_load_n(&w->v, __ATOMIC_RELAXED);
+    return atomic_load_explicit(&w->v, memory_order_relaxed);
 }
 // Plan 86 4f: a read or write of per-worker side data that a computation can leave behind or read, which a worker
 // adopting the computation's published result wouldn't have: the links later reports read (KEY_*_WIDENED_ANY,
@@ -1900,14 +1900,14 @@ static inline Members const* ty_members(Checker* me, Ty const* ty) {
 bool ty_members_done(Checker* me, Ty const* ty);
 // Its members if this worker knows them (published, or its own private ones), else null: a done-ness peek
 static inline Members const* ty_members_peek(Checker* me, TyObjectState const* state) {
-    uintptr_t v = me->graph ? sw_peek(me, &state->members) : __atomic_load_n(&state->members.v, __ATOMIC_RELAXED);
+    uintptr_t v = me->graph ? sw_peek(me, &state->members) : atomic_load_explicit(&state->members.v, memory_order_relaxed);
     return (Members const*)v;
 }
 enum { MEMBERS_CONTAINS_ERROR = 3 };
 bool ty_members_contain_error(Checker* me, Members const* members); // MembersRare.contains_error
 // A fresh object type's members, known from the start
 static inline void ty_members_init(TyObjectState* state, Members const* members) {
-    __atomic_store_n(&state->members.v, (uintptr_t)members, __ATOMIC_RELAXED);
+    atomic_store_explicit(&state->members.v, (uintptr_t)members, memory_order_relaxed);
 }
 // A generic class or interface (or one with a `this` type) declared more than once (`interface Array<T>` in every lib):
 // its type parameters have several declarations, so tsc's isTypeParameterPossiblyReferenced says every node in it may
@@ -2018,15 +2018,15 @@ void signature_copy(Checker* me, Signature* copy, Signature const* original);
 // A record for a signature made resolved, before anyone else can see it
 SigResolved const* sig_resolved_new(Checker* me, SigResolved init);
 static inline void sig_res_init(Signature* sig, SigResolved const* res) {
-    __atomic_store_n(&sig->res.v, (uintptr_t)res, __ATOMIC_RELAXED);
+    atomic_store_explicit(&sig->res.v, (uintptr_t)res, memory_order_relaxed);
 }
 // The return type and predicate of a signature being made (known: signature_return_type() and signature_predicate()
 // don't compute them)
 static inline void sig_ret_init(Signature* sig, Ty const* ret) {
-    __atomic_store_n(&sig->ret.v, SW_VAL(ret), __ATOMIC_RELAXED);
+    atomic_store_explicit(&sig->ret.v, SW_VAL(ret), memory_order_relaxed);
 }
 static inline void sig_predicate_init(Signature* sig, TyPredicate const* predicate) {
-    __atomic_store_n(&sig->predicate.v, SW_VAL(predicate), __ATOMIC_RELAXED);
+    atomic_store_explicit(&sig->predicate.v, SW_VAL(predicate), memory_order_relaxed);
 }
 // Its return type is known to this worker (a done-ness peek): published, its own private one, or a class's that its
 // resolution made
@@ -2130,8 +2130,8 @@ Ty const* ty_param_constraint(Checker* me, Ty const* param); // null if unconstr
 enum { PARAM_NOT_CIRCULAR = 3, PARAM_CIRCULAR = 4 }; // TyParamState.circular's values
 // A fresh type parameter's constraint (null: unconstrained), known from the start; `circular` false or not known
 static inline void ty_param_constraint_init(TyParamState* state, Ty const* constraint, bool not_circular) {
-    __atomic_store_n(&state->constraint.v, constraint ? (uintptr_t)constraint : (uintptr_t)SW_NONE, __ATOMIC_RELAXED);
-    if (not_circular) __atomic_store_n(&state->circular.v, (uintptr_t)PARAM_NOT_CIRCULAR, __ATOMIC_RELAXED);
+    atomic_store_explicit(&state->constraint.v, constraint ? (uintptr_t)constraint : (uintptr_t)SW_NONE, memory_order_relaxed);
+    if (not_circular) atomic_store_explicit(&state->circular.v, (uintptr_t)PARAM_NOT_CIRCULAR, memory_order_relaxed);
 }
 // The declared constraint as published (a done-ness peek without a worker: the printer's and the oracle's), null if
 // none or not known
