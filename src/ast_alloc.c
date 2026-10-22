@@ -255,6 +255,21 @@ void ast_arena_end(void) {
     t->arena = nullptr;
 }
 
+void ast_arena_absorb(AstArena* into, AstArena* from) {
+    check(!into->materialization && !from->materialization);
+    for (u32 i = 0; i < from->range_count; i++) {
+        if (into->range_count == into->range_cap) {
+            into->range_cap = into->range_cap ? into->range_cap * 2 : 2;
+            into->ranges = realloc(into->ranges, sizeof(AstRange) * into->range_cap);
+            check(into->ranges);
+        }
+        into->ranges[into->range_count++] = from->ranges[i];
+    }
+    into->total += from->total;
+    free(from->ranges);
+    *from = (AstArena){0};
+}
+
 void ast_arena_drop(AstArena* arena) {
     for (u32 i = 0; i < arena->range_count; i++) {
         if (arena->materialization && !arena->lasting) {

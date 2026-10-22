@@ -39,6 +39,10 @@ SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* 
 // For TTTT_LOAD_POOL_STATS: how long the loader spent parsing a file load_pool_take() left to it
 void load_pool_note_inline(LoadPool* me, double ms);
 
+// What the loader's own parses offer big declaration files' chunks to (parse_set_helpers()), null with one thread
+typedef struct ParseHelpers ParseHelpers;
+ParseHelpers const* load_pool_helpers(LoadPool* me);
+
 // The stack size for worker threads: the main thread's (at least 8 MB, at most 256): parsing and checking recurse per
 // nesting level
 size_t worker_stack_size(void);

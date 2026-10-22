@@ -1,4 +1,5 @@
 #include "load_pool.h"
+#include "parser.h"
 #include "error.h"
 #include <pthread.h>
 #include <sys/resource.h>
@@ -92,6 +93,10 @@ typedef struct LoadPool {
     isize taken, inline_parses, inline_unqueued; // (Parsed by the loader: of those, never queued)
     double wait_ms, busy_ms, busy_cpu_ms, started_at, helped_ms, inline_ms;
     double loader_cpu_at; // The loader's CPU time when the pool started (it makes and destroys it)
+    // Big declaration files' chunks offered to the pool's threads (parse_file_chunked()), taken before files
+    ParseHelpers helpers;
+    ParseChunkJob* jobs[16];
+    u32 job_count;
     bool stats; // TTTT_LOAD_POOL_STATS: CPU time is a real syscall (no vDSO for CLOCK_THREAD_CPUTIME_ID), 2 a file
 } LoadPool;
 
@@ -244,10 +249,60 @@ static bool load_pool_size_batch(LoadPool* me) {
     return true;
 }
 
+static void pool_offer(void* ctx, ParseChunkJob* job) {
+    LoadPool* me = ctx;
+    pthread_mutex_lock(&my lock);
+    // (More at once than that: the rest parse their chunks themselves)
+    if (my job_count < c_arraylen(my jobs)) my jobs[my job_count++] = job;
+    pthread_cond_broadcast(&my work);
+    pthread_cond_broadcast(&my done);
+    pthread_mutex_unlock(&my lock);
+}
+
+// Under the lock
+static void pool_remove_job(LoadPool* me, u32 i) {
+    memmove(&my jobs[i], &my jobs[i + 1], sizeof(ParseChunkJob*) * (my job_count - i - 1));
+    my job_count--;
+}
+
+static void pool_retract(void* ctx, ParseChunkJob* job) {
+    LoadPool* me = ctx;
+    pthread_mutex_lock(&my lock);
+    for (u32 i = 0; i < my job_count; i++) {
+        if (my jobs[i] == job) {
+            pool_remove_job(me, i);
+            break;
+        }
+    }
+    pthread_mutex_unlock(&my lock);
+}
+
+// Under the lock: helps with an offered chunk job, unlocking meanwhile; false if there was none to help with
+static bool pool_help(LoadPool* me) {
+    while (my job_count) {
+        ParseChunkJob* job = my jobs[0];
+        if (!parse_chunk_job_join(job)) {
+            pool_remove_job(me, 0);
+            continue;
+        }
+        pthread_mutex_unlock(&my lock);
+        parse_chunk_job_help(job);
+        pthread_mutex_lock(&my lock);
+        return true;
+    }
+    return false;
+}
+
+ParseHelpers const* load_pool_helpers(LoadPool* me) {
+    return my thread_count > 1 ? &my helpers : nullptr;
+}
+
 static void* load_pool_worker(void* arg) {
     LoadPool* me = arg;
+    parse_set_helpers(load_pool_helpers(me));
     pthread_mutex_lock(&my lock);
     while (!my stop) {
+        if (pool_help(me)) continue;
         if (load_pool_size_batch(me)) continue;
         LoadEntry* entry = load_pool_next(me);
         if (entry) load_pool_run(me, entry);
@@ -265,6 +320,7 @@ LoadPool* load_pool_new(
         .parse = parse, .drop = drop, .ctx = ctx, .thread_count = threads, .size = size, .size_ctx = size_ctx,
         .big = { .by_size = true },
     });
+    my helpers = (ParseHelpers){ .ctx = me, .offer = pool_offer, .retract = pool_retract };
     pthread_mutex_init(&my lock, nullptr);
     pthread_cond_init(&my work, nullptr);
     pthread_cond_init(&my done, nullptr);
@@ -347,6 +403,7 @@ SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* 
         timespec_get(&start, TIME_UTC);
         // (Rather than idle, the loader parses what's queued, like a worker)
         while (entry->state == LOAD_PARSING) {
+            if (pool_help(me)) continue;
             LoadEntry* other = load_pool_next(me);
             if (other) {
                 other->is_helped = true;

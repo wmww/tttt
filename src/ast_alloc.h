@@ -31,6 +31,9 @@ void ast_arena_begin(AstArena* arena);
 void ast_arena_end(void);
 // Gives the arena's pages back to the system. Its address space isn't reused: nothing may point into it any more
 void ast_arena_drop(AstArena* arena);
+// from's memory is into's from now on (another thread's parse of part of into's file); from is emptied. Not while
+// from is a thread's current arena
+void ast_arena_absorb(AstArena* into, AstArena* from);
 
 // Plan 78 stage 2: the memory of a materialization of a file's deferred function bodies (program.c) is an arena of its
 // own, dropped when no checker holds it (no walk: ast_arena_drop() alone). Between ast_materialize_begin() and

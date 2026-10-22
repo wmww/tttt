@@ -462,6 +462,8 @@ void source_text_detach(csview path);
 bool source_file_parse_error_within(Span node);
 // Takes path
 ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span);
+// Appends a ModuleRef made elsewhere (a chunked parse's, parse_file_chunked()), which the file owns from now on
+void source_file_push_module_ref(SourceFile* me, ModuleRef* ref);
 // tsc's getJSXRuntimeImport(getJSXImplicitImportBase()): `react/jsx-runtime` (react-jsx), `preact/jsx-dev-runtime`
 // (react-jsxdev with `@jsxImportSource preact`), null if the file's JSX doesn't import its factory
 cstr source_file_jsx_runtime_import(SourceFile const* me);

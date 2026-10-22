@@ -103,6 +103,15 @@ end's split", "The 12-core box at efb91998", "The config glob next to the load p
   the parser's identifier nodes wouldn't help: on TypeScript6 each of 190k identifier nodes is looked up by text once
   (by the walk), so the probe would only move. What would still pay: atoms only where a name is looked up many times
   from a place that holds it already (link's alias loop), without the table keying on them.
+- **The loader not blocking on libs** (2026-10-23, fe4; not built): the loader takes the libs first, in order, through
+  program_load_stdlib() -> program_load(), so it waits for lib.dom's parse (nest: 2.4-39 ms of waits on the loaded
+  16-vCPU box) before it starts on the roots, whose own loader work on nest is longer than lib.dom's parse. The
+  program's file order is the load order (`source_files_ordered`); program_collect_files()'s collect_walk() builds it
+  depth first from `load_roots` and each file's `load_children` only when there are duplicate packages. If that walk
+  always set the order (libs and their `/// <reference lib>` children as the first roots), load timing wouldn't be
+  observable and the loader could take the roots while the libs parse, putting the whole libs phase off the critical
+  path (more than the chunked parse saves). Risk: everything keyed on load order before collection (include reasons,
+  module ref order, error order of the loader's own diagnostics) must move to the walk's order too.
 - **Loader leftovers** at T1 (2026-10-16): real resolution (11k misses, ~170 M instructions), the resolver's `join()`
   of `../` names (137 M), clones of cached results (100 M: a refcounted `ResolvedModule` would remove them).
 
@@ -124,7 +133,11 @@ create/merge/fail ~8% (a smaller Parser or cheaper parse_fail(): 1-2% of the par
 token lookahead 3.4%. The skipper (skip_balanced_braces_at()) is table-driven already; what would halve it is a scan that
 stops only at `{}()[]'"`/<` and decides a `/` by looking back at the previous token: ~0.4 G on vscode, not done.
 
-Not built: a chunked parse of a big declaration file (lib.dom.d.ts, 2.4 MB, ~75 M instructions, ~11 ms on a laptop core,
+Built 2026-10-23 (fe4, parse_file_chunked()): a declaration file of 512 KB or more is cut near 64 KB offsets at lines
+that start like a declaration after a `}` or `;` (no serial pre-scan), the chunks are parsed on the load pool's threads
+(and the loader while it waits), and kept only if every chunk ends exactly at the next cut without an error, else the
+file is parsed whole (correct by construction; TTTT_PARSE_CHUNK_BYTES=N forces it on every declaration file over N,
+TTTT_PARSE_CHUNK_STATS=1 counts chunks, helpers and fallbacks). The sketch before it, for the record: a chunked parse of a big declaration file (lib.dom.d.ts, 2.4 MB, ~75 M instructions, ~11 ms on a laptop core,
 the bound of small projects' libs phase). Sketch: a depth-0 scan for top-level statement starts (strings, comments,
 template literal types and braces only: no regex or JSX in a declaration file; ~5-6 instructions a byte, ~14 M, ~19% of
 the parse and serial), then the chunks parsed on the load pool's threads, each with a ParserShared of its own, their

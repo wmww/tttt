@@ -1954,7 +1954,10 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     if (!source_file) {
         struct timespec start, end;
         timespec_get(&start, TIME_UTC);
+        // (A big declaration file's chunks go to the pool's threads too)
+        if (my pool) parse_set_helpers(load_pool_helpers(my pool));
         source_file = program_make_source(me, cstr_sv(&canonical_path), my loading_stdlib, my errs);
+        if (my pool) parse_set_helpers(nullptr);
         timespec_get(&end, TIME_UTC);
         double ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
         if (my pool) load_pool_note_inline(my pool, ms);

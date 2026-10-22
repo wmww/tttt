@@ -266,13 +266,17 @@ CommentDirective* source_file_comment_directive_at_line(SourceFile* me, u32 line
     return nullptr;
 }
 
-ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span) {
+void source_file_push_module_ref(SourceFile* me, ModuleRef* ref) {
     if (my module_ref_count == my module_ref_cap) {
         my module_ref_cap = my module_ref_cap ? my module_ref_cap * 2 : 8;
         my module_refs = realloc(my module_refs, sizeof(ModuleRef*) * my module_ref_cap);
     }
+    my module_refs[my module_ref_count++] = ref;
+}
+
+ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span) {
     ModuleRef* ret = c_new(ModuleRef, { .path = path, .span = span });
-    my module_refs[my module_ref_count++] = ret;
+    source_file_push_module_ref(me, ret);
     return ret;
 }
 

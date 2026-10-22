@@ -1924,6 +1924,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttParseChunkFallback': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttPartialLibReferenceChecked': {
         errors: true,
         symbols: true,

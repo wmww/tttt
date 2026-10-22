@@ -1,4 +1,6 @@
 #include "parser.h"
+#include <pthread.h>
+#include <stdatomic.h>
 #include "unicode_identifiers.h"
 #include "scope.h"
 #include "block.h"
@@ -158,6 +160,12 @@ typedef struct ParserShared {
     // comment succeeds (a comment is parsed by every attempt that parses its host), deduplicated at the end, and only
     // reported in checked JavaScript
     VecError jsdoc_errors;
+    // A chunk of a file parsed on its own (parse_file_chunked()): what the parse would write into the SourceFile is
+    // logged in it instead, and the file-level statement list stops once a statement ends at or past chunk_stop
+    // (chunk_reached: where it did). Null for a whole file
+    struct ParseChunk* chunk;
+    const char* chunk_stop;
+    const char* chunk_reached;
 } ParserShared;
 
 typedef struct FunctionFlags {
@@ -245,9 +253,61 @@ static bool is_relative_module_name(csview path) {
     return path.size == dots || path.buf[dots] == '/' || path.buf[dots] == '\\';
 }
 
+// What a chunk's parse would have done to its SourceFile (parse_file_chunked()), done in chunk order once every chunk
+// parsed: the same calls in the same order as one parse of the file
+typedef enum ChunkEffectKind {
+    CHUNK_EFFECT_MODULE_REF,
+    CHUNK_EFFECT_COMMENT_DIRECTIVE,
+    CHUNK_EFFECT_DEPRECATED_JSDOC,
+    CHUNK_EFFECT_ESCAPED_NAMES,
+    CHUNK_EFFECT_DEFERRED_BODIES,
+} ChunkEffectKind;
+
+typedef struct ChunkEffect {
+    uint8_t kind;
+    bool flag; // A comment directive's expect_error
+    const char* start;
+    const char* end;
+    ModuleRef* ref;
+} ChunkEffect;
+
+typedef struct ParseChunk {
+    const char* start;
+    const char* stop; // Where the next chunk starts, null for the last
+    bool first;
+    bool helped; // Parsed by another thread than the file's, into arena
+    AstArena arena;
+    VecStatement statements;
+    ChunkEffect* effects;
+    u32 effect_count, effect_cap;
+    bool saw_import_meta, saw_commonjs, saw_jsx;
+    const char* failure; // Why the chunk's parse can't stand for the file's (null: it can)
+} ParseChunk;
+
+static void chunk_effect(ParserShared* shared, ChunkEffect effect) {
+    ParseChunk* chunk = shared->chunk;
+    if (chunk->effect_count == chunk->effect_cap) {
+        chunk->effect_cap = chunk->effect_cap ? chunk->effect_cap * 2 : 16;
+        chunk->effects = realloc(chunk->effects, sizeof(ChunkEffect) * chunk->effect_cap);
+        panic_if(!chunk->effects, "out of memory");
+    }
+    chunk->effects[chunk->effect_count++] = effect;
+}
+
 // Takes path. The file owns it: what a failed parse attempt leaves behind is merely one more file looked for
 static ModuleRef* add_module_ref(Parser* p, cstr path, Span span) {
+    if (p->shared->chunk) {
+        ModuleRef* ret = c_new(ModuleRef, { .path = path, .span = span });
+        chunk_effect(p->shared, (ChunkEffect){ .kind = CHUNK_EFFECT_MODULE_REF, .ref = ret });
+        return ret;
+    }
     return source_file_add_module_ref((SourceFile*)p->shared->source, path, span);
+}
+
+// Its names are cooked from now on (name_cooked())
+static void note_escaped_names(ParserShared* shared) {
+    if (shared->chunk) chunk_effect(shared, (ChunkEffect){ .kind = CHUNK_EFFECT_ESCAPED_NAMES });
+    else names_register_source((SourceFile*)shared->source);
 }
 
 static int hex_digit_value(char c) {
@@ -939,8 +999,7 @@ static inline bool parse_identifier_or_keyword(Parser* parent, Span* ret) {
             escaped |= *parent->pos == '\\';
             parent->pos += size;
         }
-        // Its names are cooked from now on (name_cooked())
-        if (escaped) names_register_source((SourceFile*)parent->shared->source);
+        if (escaped) note_escaped_names(parent->shared);
         if (ret) {
             *ret = span_from(a);
         }
@@ -1019,6 +1078,10 @@ static void note_comment_directive(ParserShared* shared, const char* start, cons
     csview rest = csview_from_range(at + 1, end);
     bool expect_error = csview_starts_with(rest, "ts-expect-error");
     if (!expect_error && !csview_starts_with(rest, "ts-ignore")) return;
+    if (shared->chunk) {
+        chunk_effect(shared, (ChunkEffect){ .kind = CHUNK_EFFECT_COMMENT_DIRECTIVE, .flag = expect_error, .start = start, .end = end });
+        return;
+    }
     source_file_add_comment_directive((SourceFile*)shared->source, start, end, expect_error);
 }
 
@@ -1038,7 +1101,8 @@ static void note_deprecated_jsdoc(ParserShared* shared, const char* start, const
         char after = at + 11 < end ? at[11] : ' ';
         // (A tag: past blanks or the comment's `*`s, and a whole word)
         if ((before == ' ' || before == '\t' || before == '*' || before == '\n') && !is_identifier_char(after)) {
-            source_file_add_deprecated_jsdoc((SourceFile*)shared->source, end);
+            if (shared->chunk) chunk_effect(shared, (ChunkEffect){ .kind = CHUNK_EFFECT_DEPRECATED_JSDOC, .end = end });
+            else source_file_add_deprecated_jsdoc((SourceFile*)shared->source, end);
             return;
         }
     }
@@ -7593,7 +7657,8 @@ static bool skip_body(Parser* parent, FunctionImpl* func, bool expression) {
     func->body_ = (Block){0};
     func->has_body = true;
     char const* text = source_file_start(source);
-    ((SourceFile*)source)->has_deferred_bodies = true;
+    if (shared->chunk) chunk_effect(shared, (ChunkEffect){ .kind = CHUNK_EFFECT_DEFERRED_BODIES });
+    else ((SourceFile*)source)->has_deferred_bodies = true;
     defer_stat_add(DEFER_STAT_SKIPPED, 1);
     defer_stat_add(DEFER_STAT_SKIPPED_BYTES, end - open);
     func->deferred = true;
@@ -13943,6 +14008,11 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
                 sh->await_section_next = later < (i32)sh->first_pass_count ? later : -1;
             }
         }
+        // (A chunk ends where its last statement does, before the trivia the next chunk starts with)
+        if (file_level && p.shared->chunk_stop && p.pos >= p.shared->chunk_stop) {
+            p.shared->chunk_reached = p.pos;
+            break;
+        }
         hop_whitespace(&p); // TODO: is this needed?
     }
     if (p.shared->binary_marker && at_eof(&p, p.pos)) {
@@ -15279,12 +15349,309 @@ static bool parsed_file_is_module(SourceFile const* source, ParserShared const* 
 
 static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_await, FirstPassStatement** await_statements, u32* await_count);
 
+// ---- A big declaration file's parse in chunks, on several threads ----
+// lib.dom.d.ts (2.4 MB) is one parse the loader waits for. Cut near fixed offsets at a line that starts a top-level
+// statement after a `}` or `;`, each chunk is parsed like the file from there (the top-level statement list, ending
+// where a statement ends at or past the next cut) on whichever thread takes it, and the results stand for the file's
+// parse only if every chunk ended exactly at the next cut and none has an error: then each chunk's parse is the file's
+// from that statement on (chunk 0 starts where the file does; a chunk that ends where the next starts leaves the
+// parser where the next one starts, the state carried between top-level statements being what parse_chunk_run() sets
+// up), and their statements and logged effects, in chunk order, are the file's. Otherwise the file is parsed the
+// usual way: a wrong cut (in a comment, a template, a nested body) costs one more parse, never a different one.
+// TTTT_PARSE_CHUNK_BYTES=N: chunks of about N bytes in every declaration file over N (0: never), whether or not other
+// threads help (the oracles' knob); TTTT_PARSE_CHUNK_STATS=1 counts them and names each fallback
+
+enum {
+    CHUNK_BYTES_DEFAULT = 64 * 1024,
+    CHUNK_FILE_MIN_DEFAULT = 512 * 1024, // (lib.dom, lib.webworker, typescript.d.ts, vscode.d.ts...)
+};
+
+struct ParseChunkJob {
+    SourceFile* source;
+    CompilerOptions const* options;
+    ParseChunk* chunks;
+    u32 count;
+    _Atomic u32 next; // The next chunk to take
+    _Atomic bool failed; // A chunk's parse can't stand for the file's: the rest needn't be parsed
+    pthread_mutex_t lock;
+    pthread_cond_t finished;
+    u32 active; // Helpers in parse_chunk_job_help()
+};
+
+static thread_local ParseHelpers const* parse_helpers;
+
+void parse_set_helpers(ParseHelpers const* helpers) {
+    parse_helpers = helpers;
+}
+
+static _Atomic i64 chunk_stat_files, chunk_stat_chunks, chunk_stat_helped, chunk_stat_fallbacks;
+
+// TTTT_PARSE_CHUNK_STATS=/path appends there instead of stderr (sweeps that read tttt's output)
+static FILE* chunk_stats_file;
+
+static void chunk_stats_print(void) {
+    fprintf(chunk_stats_file ? chunk_stats_file : stderr, "parse chunks: %lld files in %lld chunks (%lld parsed by helpers), %lld fallbacks\n",
+        (long long)chunk_stat_files, (long long)chunk_stat_chunks, (long long)chunk_stat_helped, (long long)chunk_stat_fallbacks);
+    if (chunk_stats_file) fclose(chunk_stats_file);
+}
+
+static struct {
+    pthread_once_t once;
+    i64 chunk_bytes, file_min;
+    bool forced, stats;
+} chunk_config = { .once = PTHREAD_ONCE_INIT };
+
+static void chunk_config_read(void) {
+    char const* bytes = getenv("TTTT_PARSE_CHUNK_BYTES");
+    chunk_config.forced = bytes && *bytes;
+    chunk_config.chunk_bytes = chunk_config.forced ? atoll(bytes) : CHUNK_BYTES_DEFAULT;
+    chunk_config.file_min = chunk_config.forced ? chunk_config.chunk_bytes : CHUNK_FILE_MIN_DEFAULT;
+    char const* stats = getenv("TTTT_PARSE_CHUNK_STATS");
+    chunk_config.stats = stats && *stats && strcmp(stats, "0");
+    if (chunk_config.stats && stats[0] == '/') chunk_stats_file = fopen(stats, "a");
+    if (chunk_config.stats) atexit(chunk_stats_print);
+}
+
+// A line that starts like a top-level declaration (a line of prose in a comment mostly doesn't)
+static bool starts_declaration(char const* at, char const* end) {
+    static char const* const words[] = {
+        "interface ", "declare ", "type ", "export ", "import ", "namespace ", "module ", "function ", "class ",
+        "enum ", "const ", "let ", "var ", "abstract ",
+    };
+    for (size_t i = 0; i < c_arraylen(words); i++) {
+        size_t n = strlen(words[i]);
+        if ((size_t)(end - at) > n && !memcmp(at, words[i], n)) return true;
+    }
+    return false;
+}
+
+// Where chunks start after the first: a line starting like a declaration after a `}` or `;` (whitespace between),
+// about chunk_bytes apart. The cut is right after the `}` or `;`
+static u32 chunk_cuts(char const* text, isize size, i64 chunk_bytes, char const** cuts, u32 max) {
+    u32 count = 0;
+    char const* end = text + size;
+    for (char const* at = text + chunk_bytes; at < end && count < max;) {
+        char const* line = memchr(at, '\n', (size_t)(end - at));
+        if (!line || line + 1 >= end) break;
+        at = line + 1;
+        if (!starts_declaration(at, end)) continue;
+        char const* before = line;
+        while (before > text && (*before == '\n' || *before == '\r' || *before == ' ' || *before == '\t')) before--;
+        if (*before != '}' && *before != ';') continue;
+        char const* cut = before + 1;
+        if (count && cut <= cuts[count - 1]) continue;
+        cuts[count++] = cut;
+        at = cut + chunk_bytes;
+    }
+    return count;
+}
+
+static void parse_chunk_run(SourceFile* source, ParseChunk* chunk) {
+    ParserShared shared = {
+        .source = source,
+        .text = !source->is_declaration && !source->is_stdlib && (compiler_options()->declaration || compiler_options()->composite) ?
+            source_file_start(source) : nullptr,
+        .fail_cache_start = chunk->start,
+        .errors = vec_error_init(),
+        .in_ambient = source->is_declaration,
+        .chunk = chunk,
+        .chunk_stop = chunk->stop,
+    };
+    Parser p = { .shared = &shared, .parent = nullptr, .pos = chunk->start };
+    if (chunk->first) {
+        p.pos = file_start_excluding_bom(p.pos);
+        if (p.pos[0] == '#' && p.pos[1] == '!') {
+            while (*p.pos && *p.pos != '\n') p.pos++;
+        }
+        hop_conflict_markers(&p);
+        parse_source_directives(&p, &chunk->statements);
+    }
+    hop_whitespace(&p);
+    parse_append_statement_sequence(&p, true, PARSING_SOURCE_ELEMENTS, chunk->start, &chunk->statements);
+    chunk->failure = shared.errors.size || shared.jsdoc_errors.size ? "an error" :
+        shared.unterminated_comment ? "an unterminated comment" :
+        shared.binary_marker ? "a binary marker" :
+        chunk->stop && shared.chunk_reached != chunk->stop ? "a statement across the cut" :
+        nullptr;
+    chunk->saw_import_meta = shared.saw_import_meta;
+    chunk->saw_commonjs = shared.saw_commonjs;
+    chunk->saw_jsx = shared.saw_jsx;
+    parser_shared_drop(&shared);
+}
+
+// The next chunk not taken, or null
+static ParseChunk* chunk_take(ParseChunkJob* job) {
+    if (atomic_load_explicit(&job->failed, memory_order_relaxed)) return nullptr;
+    u32 at = atomic_fetch_add_explicit(&job->next, 1, memory_order_relaxed);
+    return at < job->count ? &job->chunks[at] : nullptr;
+}
+
+bool parse_chunk_job_join(ParseChunkJob* job) {
+    if (atomic_load_explicit(&job->next, memory_order_relaxed) >= job->count) return false;
+    pthread_mutex_lock(&job->lock);
+    job->active++;
+    pthread_mutex_unlock(&job->lock);
+    return true;
+}
+
+void parse_chunk_job_help(ParseChunkJob* job) {
+    CompilerOptions const* outer = compiler_options_private;
+    compiler_options_private = job->options;
+    for (ParseChunk* chunk; (chunk = chunk_take(job));) {
+        chunk->helped = true;
+        ast_arena_begin(&chunk->arena);
+        lazy_slots_new_block();
+        parse_chunk_run(job->source, chunk);
+        ast_arena_end();
+        if (chunk->failure) atomic_store_explicit(&job->failed, true, memory_order_relaxed);
+    }
+    compiler_options_private = outer;
+    pthread_mutex_lock(&job->lock);
+    job->active--;
+    pthread_cond_broadcast(&job->finished);
+    pthread_mutex_unlock(&job->lock);
+}
+
+static void chunk_drop_effects(ParseChunk* chunk) {
+    for (u32 i = 0; i < chunk->effect_count; i++) {
+        ModuleRef* ref = chunk->effects[i].ref;
+        if (!ref) continue;
+        cstr_drop(&ref->path);
+        module_ref_attrs_free(ref->attrs);
+        free(ref);
+    }
+    free(chunk->effects);
+}
+
+// The file's parse, from chunks: false (nothing done to the file) if it isn't one to chunk or a chunk's parse can't
+// stand for the file's. In the file's arena (ast_arena_begin())
+static bool parse_file_chunked(SourceFile* source) {
+    pthread_once(&chunk_config.once, chunk_config_read);
+    if (!source->is_declaration || source->is_js || source->is_json || chunk_config.chunk_bytes <= 0) return false;
+    isize size = cstr_size(&source->contents);
+    if (size < chunk_config.file_min) return false;
+    ParseHelpers const* helpers = parse_helpers;
+    if (!helpers && !chunk_config.forced) return false;
+    enum { MAX_CUTS = 4096 };
+    char const** cuts = malloc(sizeof(char const*) * MAX_CUTS);
+    panic_if(!cuts, "out of memory");
+    char const* text = source_file_start(source);
+    u32 cut_count = chunk_cuts(text, size, chunk_config.chunk_bytes, cuts, MAX_CUTS);
+    if (!cut_count) {
+        free(cuts);
+        return false;
+    }
+    check(!vec_statement_size(&source->ast.statements));
+    ParseChunkJob job = {
+        .source = source, .options = compiler_options(), .count = cut_count + 1,
+        .chunks = c_new_n(ParseChunk, cut_count + 1),
+    };
+    for (u32 i = 0; i <= cut_count; i++) {
+        job.chunks[i] = (ParseChunk){
+            .start = i ? cuts[i - 1] : text, .stop = i < cut_count ? cuts[i] : nullptr, .first = !i,
+            .statements = vec_statement_init(),
+        };
+    }
+    free(cuts);
+    pthread_mutex_init(&job.lock, nullptr);
+    pthread_cond_init(&job.finished, nullptr);
+    if (helpers) helpers->offer(helpers->ctx, &job);
+    // (This thread's chunks go to the file's arena)
+    for (ParseChunk* chunk; (chunk = chunk_take(&job));) {
+        parse_chunk_run(source, chunk);
+        if (chunk->failure) atomic_store_explicit(&job.failed, true, memory_order_relaxed);
+    }
+    if (helpers) helpers->retract(helpers->ctx, &job);
+    pthread_mutex_lock(&job.lock);
+    while (job.active) pthread_cond_wait(&job.finished, &job.lock);
+    pthread_mutex_unlock(&job.lock);
+    pthread_mutex_destroy(&job.lock);
+    pthread_cond_destroy(&job.finished);
+
+    char const* failure = nullptr;
+    u32 failed_at = 0;
+    for (u32 i = 0; i < job.count && !failure; i++) {
+        failure = job.chunks[i].failure;
+        failed_at = i;
+    }
+    i64 helped = 0;
+    for (u32 i = 0; i < job.count; i++) {
+        // (The helpers' memory is the file's either way: a failure's statements are dropped from this thread)
+        if (job.chunks[i].helped) {
+            ast_arena_absorb(&source->arena, &job.chunks[i].arena);
+            helped++;
+        }
+    }
+    if (chunk_config.stats) {
+        atomic_fetch_add(&chunk_stat_files, 1);
+        atomic_fetch_add(&chunk_stat_chunks, job.count);
+        atomic_fetch_add(&chunk_stat_helped, helped);
+        if (failure) {
+            atomic_fetch_add(&chunk_stat_fallbacks, 1);
+            int line = 1;
+            for (char const* c = text; c < job.chunks[failed_at].start; c++) line += *c == '\n';
+            fprintf(chunk_stats_file ? chunk_stats_file : stderr, "parse chunks: %s: chunk %u (line %d) has %s: parsed whole\n",
+                cstr_str(&source->canonical_path), failed_at, line, failure);
+        }
+    }
+    if (failure) {
+        for (u32 i = 0; i < job.count; i++) {
+            vec_statement_drop(&job.chunks[i].statements);
+            chunk_drop_effects(&job.chunks[i]);
+        }
+        free(job.chunks);
+        return false;
+    }
+    // The file's statements, then what the parse did to the file, in order
+    isize total = 0;
+    for (u32 i = 0; i < job.count; i++) total += vec_statement_size(&job.chunks[i].statements);
+    source->ast.statements = job.chunks[0].statements;
+    vec_statement_reserve(&source->ast.statements, total);
+    for (u32 i = 1; i < job.count; i++) {
+        for_each (statement, vec_statement, &job.chunks[i].statements) vec_statement_push(&source->ast.statements, *statement);
+        // (Moved out: the buffer alone goes)
+        job.chunks[i].statements.size = 0;
+        vec_statement_drop(&job.chunks[i].statements);
+    }
+    shrink_list(vec_statement, &source->ast.statements);
+    bool saw_import_meta = false, saw_commonjs = false, saw_jsx = false;
+    for (u32 i = 0; i < job.count; i++) {
+        ParseChunk* chunk = &job.chunks[i];
+        saw_import_meta |= chunk->saw_import_meta;
+        saw_commonjs |= chunk->saw_commonjs;
+        saw_jsx |= chunk->saw_jsx;
+        for (u32 j = 0; j < chunk->effect_count; j++) {
+            ChunkEffect const* effect = &chunk->effects[j];
+            switch ((ChunkEffectKind)effect->kind) {
+                case CHUNK_EFFECT_MODULE_REF: source_file_push_module_ref(source, effect->ref); break;
+                case CHUNK_EFFECT_COMMENT_DIRECTIVE:
+                    source_file_add_comment_directive(source, effect->start, effect->end, effect->flag);
+                    break;
+                case CHUNK_EFFECT_DEPRECATED_JSDOC: source_file_add_deprecated_jsdoc(source, effect->end); break;
+                case CHUNK_EFFECT_ESCAPED_NAMES: names_register_source(source); break;
+                case CHUNK_EFFECT_DEFERRED_BODIES: source->has_deferred_bodies = true; break;
+            }
+        }
+        free(chunk->effects);
+    }
+    free(job.chunks);
+    // (parse_file_pass()'s end, for a file without errors)
+    source->has_import_meta = saw_import_meta;
+    source->has_commonjs = saw_commonjs;
+    source->has_jsx = saw_jsx;
+    source->has_parse_errors = false;
+    free(source->parse_error_starts);
+    source->parse_error_starts = nullptr;
+    source->parse_error_count = 0;
+    return true;
+}
+
 void parse_file(SourceFile* source, ErrorCtx* errs) {
     FirstPassStatement* await_statements = nullptr;
     u32 await_count = 0;
     ast_arena_begin(&source->arena);
     lazy_slots_new_block();
-    if (!parse_file_pass(source, errs, false, &await_statements, &await_count)) {
+    if (!parse_file_chunked(source) && !parse_file_pass(source, errs, false, &await_statements, &await_count)) {
         parse_file_pass(source, errs, true, &await_statements, &await_count);
     }
     ast_arena_end();
