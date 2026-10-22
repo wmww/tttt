@@ -116,3 +116,6 @@ intersection's property symbol to bugs/type_core.md.
   "Expected 1-0 arguments" was the same re-entry, avoided by tsc's applyToReturnTypes order):
   `function g(a: number, b: number = 1, extra?: ReturnType<typeof h>) { return a; }`
   `function h(a: number, b?: number, extra?: Parameters<typeof h>[2]) { return g(a, b, extra); }  h(1, 2, 3);`
+- (cor6, 2026-10-22) `./debug/tttt -p thirdparty/sources/emailthing/apps/api --noEmit` aborts with `free(): invalid
+  pointer` at the default threads (every run; HEAD 8a20b3d3c's relate.c too), not at `--threads 1`; release builds don't.
+  A debug-only heap misuse on some thread path: run it under valgrind/ASan.

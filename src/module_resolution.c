@@ -7,8 +7,6 @@
 #include <pthread.h>
 #include <stdatomic.h>
 
-// tsc's version, for `typesVersions` and versioned `types@>=5.0` conditions
-enum { TS_VERSION_MAJOR = 6, TS_VERSION_MINOR = 0 };
 
 enum {
     EXT_TS = 1 << 0,
@@ -616,47 +614,166 @@ static PackageJson const* package_scope_of(State* me, csview directory, cstr* sc
     return nullptr;
 }
 
-// One comparator set of a semver range against tsc's version: ">=3.1 <4.0", "*", "3.x", "^5.0", "~5.8"
+// tsc's version as typesVersions and `types@` conditions test it (tsgo's core.Version(), "7.1.0-dev": a prerelease, so
+// `>=7.1` holds and `>=7.1.0` doesn't), with tsgo's semver package's rules (internal/semver/version_range.go)
+static const long TS_VERSION[3] = { 7, 1, 0 };
+#define TS_VERSION_PRERELEASE "dev"
+
+// A comparator's operand: major.minor.patch and a prerelease ("" none, else its dot-separated identifiers)
+typedef struct SemVer {
+    long part[3];
+    csview prerelease;
+} SemVer;
+
+static bool semver_numeric(csview id) {
+    if (!id.size) return false;
+    for (isize i = 0; i < id.size; i++) if (id.buf[i] < '0' || id.buf[i] > '9') return false;
+    return id.size == 1 || id.buf[0] != '0';
+}
+
+// tsc's version against `operand` (Version.Compare): numerically, then by prerelease, where none is the greater
+static int semver_compare_mine(SemVer const* operand) {
+    for (int i = 0; i < 3; i++) {
+        if (TS_VERSION[i] != operand->part[i]) return TS_VERSION[i] < operand->part[i] ? -1 : 1;
+    }
+    csview mine = c_sv(TS_VERSION_PRERELEASE), theirs = operand->prerelease;
+    if (!mine.size || !theirs.size) return mine.size == theirs.size ? 0 : mine.size ? -1 : 1;
+    while (true) {
+        if (!mine.size || !theirs.size) return mine.size == theirs.size ? 0 : mine.size ? 1 : -1;
+        isize a = csview_find_sv(mine, c_sv(".")), b = csview_find_sv(theirs, c_sv("."));
+        csview x = csview_slice(mine, 0, a == c_NPOS ? mine.size : a), y = csview_slice(theirs, 0, b == c_NPOS ? theirs.size : b);
+        mine = a == c_NPOS ? c_sv("") : csview_slice(mine, a + 1, mine.size);
+        theirs = b == c_NPOS ? c_sv("") : csview_slice(theirs, b + 1, theirs.size);
+        if (csview_equals_sv(x, y)) continue;
+        bool xn = semver_numeric(x), yn = semver_numeric(y);
+        if (xn != yn) return xn ? -1 : 1; // (Numeric identifiers are the lower)
+        if (xn && x.size != y.size) return x.size < y.size ? -1 : 1;
+        for (isize i = 0; i < x.size && i < y.size; i++) {
+            if (x.buf[i] != y.buf[i]) return (unsigned char)x.buf[i] < (unsigned char)y.buf[i] ? -1 : 1;
+        }
+        return x.size < y.size ? -1 : 1;
+    }
+}
+
+// tsgo's parsePartial: `1`, `1.2`, `1.2.3-pre+build`, with `x`/`X`/`*` wildcards. wild[i]: part i is a wildcard
+static bool semver_parse_partial(csview text, SemVer* out, bool wild[3]) {
+    *out = (SemVer){0};
+    isize at = 0;
+    for (int i = 0; i < 3; i++) {
+        wild[i] = true;
+        if (i && (at >= text.size || text.buf[at] != '.')) continue;
+        if (i) at++;
+        if (at < text.size && (text.buf[at] == 'x' || text.buf[at] == 'X' || text.buf[at] == '*')) {
+            at++;
+            continue;
+        }
+        isize from = at;
+        long n = 0;
+        while (at < text.size && text.buf[at] >= '0' && text.buf[at] <= '9') n = n * 10 + (text.buf[at++] - '0');
+        if (at == from || (at - from > 1 && text.buf[from] == '0')) return false;
+        wild[i] = false;
+        out->part[i] = n;
+    }
+    for (int i = 0; i < 3; i++) if (wild[i]) for (int j = i; j < 3; j++) { wild[j] = true; out->part[j] = 0; }
+    if (at < text.size && text.buf[at] == '-' && !wild[2]) {
+        isize from = ++at;
+        while (at < text.size && text.buf[at] != '+') at++;
+        out->prerelease = csview_slice(text, from, at);
+        if (!out->prerelease.size) return false;
+    }
+    if (at < text.size && text.buf[at] == '+' && !wild[2]) at = text.size;
+    return at == text.size;
+}
+
+static SemVer semver_bump(SemVer v, int part) {
+    SemVer ret = {0};
+    for (int i = 0; i < part; i++) ret.part[i] = v.part[i];
+    ret.part[part] = v.part[part] + 1;
+    return ret;
+}
+
+static bool semver_test(char const* op, SemVer operand) {
+    int c = semver_compare_mine(&operand);
+    if (!strcmp(op, "<")) return c < 0;
+    if (!strcmp(op, "<=")) return c <= 0;
+    if (!strcmp(op, ">")) return c > 0;
+    if (!strcmp(op, ">=")) return c >= 0;
+    return c == 0;
+}
+
+// One comparator of a range (tsgo's parseComparator then testComparator), into *fits; false if it doesn't parse
+static bool semver_comparator(csview op, csview text, bool* fits) {
+    SemVer v;
+    bool wild[3];
+    if (!semver_parse_partial(text, &v, wild)) return false;
+    *fits = true;
+    SemVer zero_pre = v;
+    zero_pre.prerelease = c_sv("0");
+    if (wild[0]) {
+        if (csview_equals(op, "<") || csview_equals(op, ">")) *fits = semver_test("<", (SemVer){ .prerelease = c_sv("0") });
+        return true;
+    }
+    if (csview_equals(op, "~")) {
+        *fits = semver_test(">=", v) && semver_test("<", semver_bump(v, wild[1] ? 0 : 1));
+    } else if (csview_equals(op, "^")) {
+        int bump = v.part[0] > 0 || wild[1] ? 0 : v.part[1] > 0 || wild[2] ? 1 : 2;
+        *fits = semver_test(">=", v) && semver_test("<", semver_bump(v, bump));
+    } else if (csview_equals(op, "<") || csview_equals(op, ">=")) {
+        *fits = semver_test(csview_equals(op, "<") ? "<" : ">=", wild[1] || wild[2] ? zero_pre : v);
+    } else if (csview_equals(op, "<=") || csview_equals(op, ">")) {
+        bool le = csview_equals(op, "<=");
+        if (wild[1] || wild[2]) {
+            SemVer bumped = semver_bump(v, wild[1] ? 0 : 1);
+            bumped.prerelease = c_sv("0");
+            *fits = semver_test(le ? "<" : ">=", bumped);
+        } else {
+            *fits = semver_test(le ? "<=" : ">", v);
+        }
+    } else if (!op.size || csview_equals(op, "=")) {
+        if (wild[1] || wild[2]) {
+            SemVer high = semver_bump(v, wild[1] ? 0 : 1);
+            high.prerelease = c_sv("0");
+            *fits = semver_test(">=", zero_pre) && semver_test("<", high);
+        } else {
+            *fits = semver_test("=", v);
+        }
+    } else {
+        return false;
+    }
+    return true;
+}
+
+// One comparator set of a semver range against tsc's version: ">=3.1 <4.0", "*", "3.x", "^5.0", "~5.8", "1.0 - 2.x"
 static bool version_in_comparators(csview set) {
+    set = csview_trim_whitespace(set);
+    isize hyphen = csview_find_sv(set, c_sv(" - "));
+    if (hyphen != c_NPOS) {
+        SemVer low, high;
+        bool lw[3], hw[3];
+        if (!semver_parse_partial(csview_trim_whitespace(csview_slice(set, 0, hyphen)), &low, lw) ||
+            !semver_parse_partial(csview_trim_whitespace(csview_slice(set, hyphen + 3, set.size)), &high, hw)
+        ) {
+            return false;
+        }
+        if (!lw[0] && !semver_test(">=", low)) return false;
+        if (hw[0]) return true;
+        if (hw[1]) return semver_test("<", semver_bump(high, 0));
+        if (hw[2]) return semver_test("<", semver_bump(high, 1));
+        return semver_test("<=", high);
+    }
     while (true) {
         set = csview_trim_whitespace(set);
         if (!set.size) return true;
         isize end = 0;
-        while (end < set.size && set.buf[end] != ' ') end++;
+        while (end < set.size && set.buf[end] != ' ' && set.buf[end] != '\t') end++;
         csview comparator = csview_slice(set, 0, end);
         set = csview_slice(set, end, set.size);
         isize op_len = 0;
-        while (op_len < comparator.size && strchr("<>=^~", comparator.buf[op_len])) op_len++;
+        while (op_len < comparator.size && op_len < 2 && strchr("<>=^~", comparator.buf[op_len])) op_len++;
         csview op = csview_slice(comparator, 0, op_len);
-        csview version = csview_slice(comparator, op_len, comparator.size);
-        if (!version.size && !op.size) continue;
-        // Only major.minor matter: tsc compares against "6.0.x" for typesVersions
-        long parts[2] = { -1, -1 };
-        isize at = 0;
-        for (int i = 0; i < 2 && at < version.size; i++) {
-            if (version.buf[at] == '*' || version.buf[at] == 'x' || version.buf[at] == 'X') break;
-            long n = 0;
-            bool any = false;
-            while (at < version.size && version.buf[at] >= '0' && version.buf[at] <= '9') {
-                n = n * 10 + (version.buf[at++] - '0');
-                any = true;
-            }
-            if (!any) break;
-            parts[i] = n;
-            if (at < version.size && version.buf[at] == '.') at++;
-        }
-        if (parts[0] < 0) continue; // "*"
-        long mine = TS_VERSION_MAJOR * 1000 + TS_VERSION_MINOR;
-        long low = parts[0] * 1000 + (parts[1] < 0 ? 0 : parts[1]);
-        long high = parts[1] < 0 ? parts[0] * 1000 + 999 : low; // "3" and "3.x" cover every minor
+        if (op_len == 2 && !csview_equals(op, "<=") && !csview_equals(op, ">=")) return false;
         bool fits;
-        if (csview_equals(op, ">=")) fits = mine >= low;
-        else if (csview_equals(op, ">")) fits = mine > high;
-        else if (csview_equals(op, "<=")) fits = mine <= high;
-        else if (csview_equals(op, "<")) fits = mine < low;
-        else if (csview_equals(op, "^")) fits = mine >= low && mine / 1000 == parts[0];
-        else fits = mine >= low && mine <= high; // "=", "~" and a bare version
-        if (!fits) return false;
+        if (!semver_comparator(op, csview_slice(comparator, op_len, comparator.size), &fits) || !fits) return false;
     }
 }
 

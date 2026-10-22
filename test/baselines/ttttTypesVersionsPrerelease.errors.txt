@@ -1,0 +1,49 @@
+/main.ts(5,33): error TS2322: Type '"7.1"' is not assignable to type '1'.
+/main.ts(5,36): error TS2322: Type '"pre"' is not assignable to type '1'.
+/main.ts(5,39): error TS2322: Type '"range"' is not assignable to type '1'.
+/main.ts(5,42): error TS2322: Type '"x"' is not assignable to type '1'.
+
+
+==== /node_modules/a/package.json (0 errors) ====
+    { "name": "a", "types": "index.d.ts", "typesVersions": { ">=7.1.0": { "*": ["v710/*"] }, "^7.1.0": { "*": ["v710/*"] }, ">=7.1": { "*": ["v71/*"] } } }
+==== /node_modules/a/index.d.ts (0 errors) ====
+    export declare const which: "none";
+==== /node_modules/a/v710/index.d.ts (0 errors) ====
+    export declare const which: "7.1.0";
+==== /node_modules/a/v71/index.d.ts (0 errors) ====
+    export declare const which: "7.1";
+==== /node_modules/b/package.json (0 errors) ====
+    { "name": "b", "types": "index.d.ts", "typesVersions": { "<7.1.0": { "*": ["pre/*"] } } }
+==== /node_modules/b/index.d.ts (0 errors) ====
+    export declare const which: "none";
+==== /node_modules/b/pre/index.d.ts (0 errors) ====
+    export declare const which: "pre";
+==== /node_modules/c/package.json (0 errors) ====
+    { "name": "c", "types": "index.d.ts", "typesVersions": { "7.1.0-alpha - 7.2": { "*": ["r/*"] } } }
+==== /node_modules/c/index.d.ts (0 errors) ====
+    export declare const which: "none";
+==== /node_modules/c/r/index.d.ts (0 errors) ====
+    export declare const which: "range";
+==== /node_modules/d/package.json (0 errors) ====
+    { "name": "d", "types": "index.d.ts", "typesVersions": { "<7.1": { "*": ["old/*"] }, "6.x || 7.x": { "*": ["x/*"] } } }
+==== /node_modules/d/index.d.ts (0 errors) ====
+    export declare const which: "none";
+==== /node_modules/d/x/index.d.ts (0 errors) ====
+    export declare const which: "x";
+==== /node_modules/d/old/index.d.ts (0 errors) ====
+    export declare const which: "old";
+==== /main.ts (4 errors) ====
+    import { which as a } from "a";
+    import { which as b } from "b";
+    import { which as c } from "c";
+    import { which as d } from "d";
+    export const x: [1, 1, 1, 1] = [a, b, c, d];
+                                    ~
+!!! error TS2322: Type '"7.1"' is not assignable to type '1'.
+                                       ~
+!!! error TS2322: Type '"pre"' is not assignable to type '1'.
+                                          ~
+!!! error TS2322: Type '"range"' is not assignable to type '1'.
+                                             ~
+!!! error TS2322: Type '"x"' is not assignable to type '1'.
+    

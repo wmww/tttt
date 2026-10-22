@@ -339,3 +339,15 @@ rest element; a spread instantiated to `undefined`). Left:
   the global augmentation as global names (TS2666 at the export, silenced there by `// @ts-nocheck`); tttt doesn't
   declare them: TS2304 at every use. Binder/declare territory (fe3). Repro:
   test/cases/ttttGlobalAugmentationReExport.ts (known failing).
+
+## Fresh repositories, fourth rule: bun lockfiles (2026-10-22, cor6)
+- **kebo/apps/mobile (+TS7022 TransactionModel, +TS7024, +TS2502 `value`)**: models/transaction/transaction.ts builds a
+  mobx-state-tree model, `export const TransactionModel = types.model(...).props(...).views(...).actions((self) => {
+  function updateField<K extends keyof TransactionSnapshotIn>(field: K, value: TransactionSnapshotIn[K]) {...}; return
+  { updateField, ... } })`, with `TransactionSnapshotIn = SnapshotIn<typeof TransactionModel>`. tsc resolves the
+  returned function's signature lazily, after the model's type; tttt resolves its parameter types while the initializer
+  is in flight (signature_resolve_slow's eager parameters, the same root as triage.md's missed TS2502 through
+  `ReturnType<typeof h>`). Reproduces checking the file alone (TTTT_CHECK_ONLY); a 10-line imitation with a plain
+  `model(p, actions)` doesn't, so the cut needs MST's real types (Instance/SnapshotIn over IModelType). No repro yet.
+- **hono/tsconfig.build.json, hono/tsconfig.spec.json (+TS2769 at src/request.ts:214)**: in the full sweep on this
+  branch and with main's release binary too (not from the refresh), not in the `--sample 4` quarter. Uninvestigated.

@@ -2362,6 +2362,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTypesVersionsPrerelease': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttUmdGlobalUnknownExportEquals': {
         errors: true,
         symbols: true,
