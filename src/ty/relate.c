@@ -5725,10 +5725,8 @@ static Ternary conditional_source_related(Checker* me, RelationState* st, Ty con
         Ty const* branches = ty_union(me, pair, 2, nullptr, (TyList){0});
         return is_related_to_side(me, st, branches, target, report, 2);
     }
-    related = is_related_to_side(me, st, true_branch, target, report && !some, 2);
-    if (some && !related) related = is_related_to_side(me, st, false_branch, target, report, 2);
-    else if (related && !some) related &= is_related_to_side(me, st, false_branch, target, report, 2);
-    return related;
+    // (Not the branches again: the default constraint failed above, and tsc goes on to the structural checks)
+    return TERNARY_FALSE;
 }
 
 static Ternary structured_related_members(
