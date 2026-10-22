@@ -87,10 +87,22 @@ end's split", "The 12-core box at efb91998", "The config glob next to the load p
 - **An adaptive load pool mutex** (PTHREAD_MUTEX_ADAPTIVE_NP, and the condvar signals after the unlock), for the
   loader's ~20% of load-phase samples in load_pool_take()'s lock at T16: worse in 3/3 pairs at load 60 (spinning while
   the holder is preempted), unmeasurable quiet here. Try it on the laptop only if a quiet timeline shows lock waits.
-- **Interning names for link**: symbol_table_get_own()'s memcmp is a hit's confirmation (hash and length matched),
-  its cost the miss on the name in the declaring file's text. A per-program atom per name (pointer equality) would
-  remove it and the source-text misses in declare and the walk too; inline 8-byte prefixes wouldn't (vscode's export
-  names are long). Link is otherwise latency: the rest is ModuleRef/PortItem/SymbolAlias chasing.
+- **Interning names** (built and declined, 2026-10-22: branch wt-fe2, deleted; measurements.md "The 12-core box at
+  8e3f4fb0: BOLT and interning A/B"). The design: one atom table for the process (the checkers' `AtomTable` made
+  process-wide: the suite's programs overlay a cached lib program's globals, and ~97 call sites read symbol tables by
+  text without a program at hand), a 32-bit name hash stored in `Atom`, `SymbolEntry` as `{Atom const*, Symbol*}` (24
+  -> 16 bytes) compared by pointer, names interned at insertion on the declare threads, lookups by text through a
+  find-only probe of the atom table, and the names link looks up (an import specifier's imported and local names,
+  `default`, `export=`) interned while declaring so the serial alias loop touched no text. Here: instructions +0.1 to
+  +0.7% per corpus, link's main-thread samples -20%. On the laptop: link -22% as predicted (41 -> 32 ms), but declare
+  +4 ms, the walk +4 ms, the checkers +2% typecheck wall / +1 s CPU: vscode +1.8% wall and +2.8% cycles, nest +2-5%
+  wall, TypeScript6 a tie on wall and +1% cycles; dTLB misses +3.3%, L1d misses +1.8%. Cycles rose 5x more than
+  instructions, on the data side. Why, unmeasured: every lookup by text now probes the shared atom table (one big
+  table every thread reads, its lines spread over 24 cores' caches) before the symbol table, where it used to confirm a
+  hit with one memcmp against text the walk had just read; and an entry's name is one more indirection. Interning at
+  the parser's identifier nodes wouldn't help: on TypeScript6 each of 190k identifier nodes is looked up by text once
+  (by the walk), so the probe would only move. What would still pay: atoms only where a name is looked up many times
+  from a place that holds it already (link's alias loop), without the table keying on them.
 - **Loader leftovers** at T1 (2026-10-16): real resolution (11k misses, ~170 M instructions), the resolver's `join()`
   of `../` names (137 M), clones of cached results (100 M: a refcounted `ResolvedModule` would remove them).
 
