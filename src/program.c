@@ -576,6 +576,7 @@ CompilerOptions* program_options(Program* me) {
 }
 
 void program_destroy(Program* me) {
+    unused_free_retired(); // (A materialization after checking: its growths)
     if (me) {
         // (The thread that destroys a program is usually the one that asked it for names outside the checkers, the test
         // harness's symbols walk: its symbol chain caches. They're per thread and lazily remade, keyed by program)
@@ -6129,6 +6130,7 @@ void program_typecheck(Program* me) {
             atomic_fetch_sub(&ahead_bytes, list->source_bytes);
         }
     }
+    unused_free_retired();
     recheck_stale_undefined_props(me, checker_errs, count);
     if (debug_env.dup_census) {
         for (u32 c = 0; c < count; c++) dup_census_add(my checkers[c], c);

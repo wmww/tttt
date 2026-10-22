@@ -1,4 +1,5 @@
 #include "unused.h"
+#include <stdatomic.h>
 #include "scope.h"
 #include "statement.h"
 #include "port_statement.h"
@@ -16,15 +17,42 @@ bool unused_enabled(void) {
     return options->no_unused_locals || options->no_unused_parameters;
 }
 
+// Lists unused_register() grew out of: a lock-free stack threaded through their first bytes (each holds 16
+// candidates at least), freed by unused_free_retired()
+static _Atomic(void*) unused_retired;
+
+static void unused_retire(void* block) {
+    void* head = atomic_load_explicit(&unused_retired, memory_order_relaxed);
+    do *(void**)block = head;
+    while (!atomic_compare_exchange_weak_explicit(&unused_retired, &head, block, memory_order_release, memory_order_relaxed));
+}
+
+void unused_free_retired(void) {
+    void* block = atomic_exchange_explicit(&unused_retired, nullptr, memory_order_acquire);
+    while (block) {
+        void* next = *(void**)block;
+        free(block);
+        block = next;
+    }
+}
+
 void unused_register(Scope const* scope, UnusedKind kind, void const* node) {
     if (!unused_enabled()) return;
     SourceFile* file = scope->file;
     // Ambient declarations are never unused (tsc's unusedIsError)
     if (!file || file->is_declaration || file->is_stdlib || scope->ambient) return;
     if (file->unused_count == file->unused_cap) {
-        file->unused_cap = file->unused_cap ? file->unused_cap * 2 : 16;
-        file->unused = realloc(file->unused, sizeof(UnusedCandidate) * file->unused_cap);
-        panic_if(!file->unused, "out of memory");
+        // (Not realloc() nor free(): the list was allocated by the thread that walked the file, and freeing it takes that
+        // thread's malloc arena lock, which another thread may hold for long (growing its heap, an mprotect under the
+        // lock): the checkers materializing deferred bodies queued on it, vscode: 14-17% of the check phase's blocked
+        // samples. A fresh block is the calling thread's; the old one is retired, freed once checking is over)
+        u32 cap = file->unused_cap ? file->unused_cap * 2 : 16;
+        UnusedCandidate* grown = malloc(sizeof(UnusedCandidate) * cap);
+        panic_if(!grown, "out of memory");
+        if (file->unused_count) memcpy(grown, file->unused, sizeof(UnusedCandidate) * file->unused_count);
+        if (file->unused) unused_retire(file->unused);
+        file->unused = grown;
+        file->unused_cap = cap;
     }
     file->unused[file->unused_count++] = (UnusedCandidate){ .kind = kind, .node = node };
 }

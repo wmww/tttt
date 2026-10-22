@@ -32,6 +32,9 @@ typedef struct UnusedCandidate {
 
 // Either option is on
 bool unused_enabled(void);
+// Frees the lists unused_register() grew out of (each thread's growth retires the old one instead of freeing it in
+// another thread's malloc arena): after checking, with no walk running
+void unused_free_retired(void);
 // A declaration (list) in the scope the walk is in that may turn out unused
 void unused_register(Scope const* scope, UnusedKind kind, void const* node);
 // `found` is what a name looked up from `scope` with `meaning` found, and the use reads it (tsc's resolveName with
