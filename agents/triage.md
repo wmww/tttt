@@ -91,3 +91,11 @@ intersection's property symbol to bugs/type_core.md.
   react peak RSS ~300 MB at the defaults against ~169 at --threads 1 (nest ~195 / ~136), typecheck 16.8k minor faults
   against 7.7k, libs 2.9k against 0.2k. Suspects: checker arenas starting on huge pages (Arena.huge_first, 2 MB+
   populated per checker for 1-4 MB used), 8 sets of intern tables, per-thread malloc heaps. For a checker worker.
+
+- The indexed-access recursion identity rule (tsc's getRecursionIdentityTarget: an indexed access takes its object
+  type's recursion identity) is right in principle, but its tttt version (wt-cor4's d8a78552b, landed as 20fa22369,
+  reverted on 2026-10-22) blew up youtube-enhancer: a spurious TS2589 + TS5114 ('NonNullable'
+  appears infinitely circular) at src/validation/constraints.ts:6, an object literal against
+  ConfigurationNumericConstraints, with 1.16M types against tsgo's 211k. It needs a cut-down repro from that file
+  (ConfigurationNumericConstraints, NonNullable) before re-landing; the probe where it changed 0 -> 2 errors is in
+  cor4's notes and commit d8a78552b's message.
