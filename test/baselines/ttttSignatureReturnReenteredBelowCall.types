@@ -1,0 +1,62 @@
+//// [test/cases/ttttSignatureReturnReenteredBelowCall.ts] ////
+
+=== ttttSignatureReturnReenteredBelowCall.ts ===
+// An arrow's return type in flight asked again from below a call's resolution isn't circular: tsc's
+// getReturnTypeOfSignature pushes from resolutionStart, which getResolvedSignature resets, so it infers it again,
+// nested. Here: `state`'s type reads `result` in the loop, whose back edge is `wrap(() => action(state))`, whose
+// inference asks the arrow's return type while the outer inference of it (through action(state) -> state) is in
+// flight. tttt found the signature return type circular, inferred T from the return context alone (`R | undefined`)
+// and reported `result` possibly undefined (angular-cli build-action.ts). Known failing types: `state` prints any (the
+// nested evaluation of `result.make` re-enters the loop's flow until lazy_type.c's 8-hit expression bail, tsc's flow
+// loop finds itself in progress: bugs/missing_checks.md "An expression's nested runaway bail")
+interface R { make(c: string): number; }
+>make : (c: string) => number
+>c : string
+
+declare function wrap<T>(action: () => T): T;
+>wrap : <T>(action: () => T) => T
+>action : () => T
+
+declare function action(s: number): R;
+>action : (s: number) => R
+>s : number
+
+declare const cond: boolean;
+>cond : boolean
+
+export function run() {
+>run : () => void
+
+  let result: R | undefined;
+>result : R | undefined
+
+  result = action(0);
+>result = action(0) : R
+>result : R | undefined
+>action(0) : R
+>action : (s: number) => R
+>0 : 0
+
+  while (cond) {
+>cond : boolean
+
+    const state = result.make("");
+>state : number
+>result.make("") : number
+>result.make : (c: string) => number
+>result : R
+>make : (c: string) => number
+>"" : ""
+
+    result = wrap(() => action(state));
+>result = wrap(() => action(state)) : R
+>result : R | undefined
+>wrap(() => action(state)) : R
+>wrap : <T>(action: () => T) => T
+>() => action(state) : () => R
+>action(state) : R
+>action : (s: number) => R
+>state : number
+  }
+}
+

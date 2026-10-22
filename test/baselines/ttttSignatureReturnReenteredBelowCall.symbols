@@ -1,0 +1,59 @@
+//// [test/cases/ttttSignatureReturnReenteredBelowCall.ts] ////
+
+=== ttttSignatureReturnReenteredBelowCall.ts ===
+// An arrow's return type in flight asked again from below a call's resolution isn't circular: tsc's
+// getReturnTypeOfSignature pushes from resolutionStart, which getResolvedSignature resets, so it infers it again,
+// nested. Here: `state`'s type reads `result` in the loop, whose back edge is `wrap(() => action(state))`, whose
+// inference asks the arrow's return type while the outer inference of it (through action(state) -> state) is in
+// flight. tttt found the signature return type circular, inferred T from the return context alone (`R | undefined`)
+// and reported `result` possibly undefined (angular-cli build-action.ts). Known failing types: `state` prints any (the
+// nested evaluation of `result.make` re-enters the loop's flow until lazy_type.c's 8-hit expression bail, tsc's flow
+// loop finds itself in progress: bugs/missing_checks.md "An expression's nested runaway bail")
+interface R { make(c: string): number; }
+>R : Symbol(R, Decl(ttttSignatureReturnReenteredBelowCall.ts, 0, 0))
+>make : Symbol(R.make, Decl(ttttSignatureReturnReenteredBelowCall.ts, 8, 13))
+>c : Symbol(c, Decl(ttttSignatureReturnReenteredBelowCall.ts, 8, 19))
+
+declare function wrap<T>(action: () => T): T;
+>wrap : Symbol(wrap, Decl(ttttSignatureReturnReenteredBelowCall.ts, 8, 40))
+>T : Symbol(T, Decl(ttttSignatureReturnReenteredBelowCall.ts, 9, 22))
+>action : Symbol(action, Decl(ttttSignatureReturnReenteredBelowCall.ts, 9, 25))
+>T : Symbol(T, Decl(ttttSignatureReturnReenteredBelowCall.ts, 9, 22))
+>T : Symbol(T, Decl(ttttSignatureReturnReenteredBelowCall.ts, 9, 22))
+
+declare function action(s: number): R;
+>action : Symbol(action, Decl(ttttSignatureReturnReenteredBelowCall.ts, 9, 45))
+>s : Symbol(s, Decl(ttttSignatureReturnReenteredBelowCall.ts, 10, 24))
+>R : Symbol(R, Decl(ttttSignatureReturnReenteredBelowCall.ts, 0, 0))
+
+declare const cond: boolean;
+>cond : Symbol(cond, Decl(ttttSignatureReturnReenteredBelowCall.ts, 11, 13))
+
+export function run() {
+>run : Symbol(run, Decl(ttttSignatureReturnReenteredBelowCall.ts, 11, 28))
+
+  let result: R | undefined;
+>result : Symbol(result, Decl(ttttSignatureReturnReenteredBelowCall.ts, 13, 5))
+>R : Symbol(R, Decl(ttttSignatureReturnReenteredBelowCall.ts, 0, 0))
+
+  result = action(0);
+>result : Symbol(result, Decl(ttttSignatureReturnReenteredBelowCall.ts, 13, 5))
+>action : Symbol(action, Decl(ttttSignatureReturnReenteredBelowCall.ts, 9, 45))
+
+  while (cond) {
+>cond : Symbol(cond, Decl(ttttSignatureReturnReenteredBelowCall.ts, 11, 13))
+
+    const state = result.make("");
+>state : Symbol(state, Decl(ttttSignatureReturnReenteredBelowCall.ts, 16, 9))
+>result.make : Symbol(R.make, Decl(ttttSignatureReturnReenteredBelowCall.ts, 8, 13))
+>result : Symbol(result, Decl(ttttSignatureReturnReenteredBelowCall.ts, 13, 5))
+>make : Symbol(R.make, Decl(ttttSignatureReturnReenteredBelowCall.ts, 8, 13))
+
+    result = wrap(() => action(state));
+>result : Symbol(result, Decl(ttttSignatureReturnReenteredBelowCall.ts, 13, 5))
+>wrap : Symbol(wrap, Decl(ttttSignatureReturnReenteredBelowCall.ts, 8, 40))
+>action : Symbol(action, Decl(ttttSignatureReturnReenteredBelowCall.ts, 9, 45))
+>state : Symbol(state, Decl(ttttSignatureReturnReenteredBelowCall.ts, 16, 9))
+  }
+}
+

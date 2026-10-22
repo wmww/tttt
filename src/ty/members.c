@@ -6084,6 +6084,8 @@ bool sig_return_known(Checker* me, Signature const* sig) {
     return sig_return_peek(me, sig) != nullptr;
 }
 
+static Ty const* compute_signature_return(Checker* me, Signature* sig, SigResolved const* sig_rs);
+
 static __attribute__((noinline)) Ty const* signature_return_type_slow(Checker* me, Signature* sig) {
     SigResolved const* sig_rs = signature_resolve(me, sig);
     uintptr_t v;
@@ -6093,6 +6095,13 @@ static __attribute__((noinline)) Ty const* signature_return_type_slow(Checker* m
             return SW_PTR(v);
         case SW_LOOK_MINE:
             // (sw_look() counted the taint event)
+            // Asked again from below a call's barrier, it isn't circular yet: computed again, nested (tsc's
+            // getReturnTypeOfSignature: pushTypeResolution looks from resolutionStart). The outer computation
+            // remembers its own result
+            if (ty_resolving_reenters(me, RESOLVING_SIGNATURE_RETURN, sig)) {
+                if (debug_env.debug_reentry) ty_debug_reentry(me, "REENTER signature return", span_null);
+                return compute_signature_return(me, sig, sig_rs);
+            }
             // An inferred return type in progress: asking it says so, it becomes any (see ty_function_return_type())
             if (!sig_target(me, sig) && sig->function && !sig->function->is_type) ty_function_return_type(me, sig->function);
             ty_resolving_cycle(me, RESOLVING_SIGNATURE_RETURN, sig);
@@ -6105,6 +6114,12 @@ static __attribute__((noinline)) Ty const* signature_return_type_slow(Checker* m
         return SW_PTR(sw_finish_fast(me, &sig->ret, &sig->ret_flight, SW_VAL(sig_rs->class_ret), taint));
     }
     TAINT_BEGIN(taint_frame);
+    Ty const* ret = compute_signature_return(me, sig, sig_rs);
+    if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_SIGNATURE_RETURN, sig, sig, ret);
+    return SW_PTR(sw_finish_fast(me, &sig->ret, &sig->ret_flight, SW_VAL(ret), taint));
+}
+
+static Ty const* compute_signature_return(Checker* me, Signature* sig, SigResolved const* sig_rs) {
     ty_resolving_push(me, RESOLVING_SIGNATURE_RETURN, sig);
     Ty const* ret;
     Signature const* target = sig_target(me, sig);
@@ -6131,8 +6146,7 @@ static __attribute__((noinline)) Ty const* signature_return_type_slow(Checker* m
             ty_error_at(me, function_impl_ret_span(function), 2577, cstr_from("Return type annotation circularly references itself."));
         }
     }
-    if (SW_CLEAN(me, taint)) TAINT_END(taint_frame, TK_SIGNATURE_RETURN, sig, sig, ret);
-    return SW_PTR(sw_finish_fast(me, &sig->ret, &sig->ret_flight, SW_VAL(ret), taint));
+    return ret;
 }
 
 static bool signature_return_in_flight(Checker* me, Signature const* sig, bool above_barrier) {

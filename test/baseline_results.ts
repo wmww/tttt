@@ -2038,6 +2038,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSignatureReturnReenteredBelowCall': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
     'ttttSignatureReturnUnresolvedParams': {
         errors: true,
         symbols: true,
