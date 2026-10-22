@@ -1637,6 +1637,21 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttLoopPartialIndexType': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttLoopPartialMissingProperty': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttLoopPartialSpread': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedAsClauseUnionModifiers': {
         errors: true,
         symbols: true,

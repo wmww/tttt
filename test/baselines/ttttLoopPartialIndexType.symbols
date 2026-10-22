@@ -1,0 +1,65 @@
+//// [test/cases/ttttLoopPartialIndexType.ts] ////
+
+=== ttttLoopPartialIndexType.ts ===
+// The loop's first round evaluates `arr[y]` with y's partial type undefined: TS2538, though y's final type is any
+// (vue's renderer.ts under noUncheckedIndexedAccess)
+
+function g(arr: number[]) {
+>g : Symbol(g, Decl(ttttLoopPartialIndexType.ts, 0, 0))
+>arr : Symbol(arr, Decl(ttttLoopPartialIndexType.ts, 3, 11))
+
+    let y;
+>y : Symbol(y, Decl(ttttLoopPartialIndexType.ts, 4, 7))
+
+    while (arr.length) {
+>arr.length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+>arr : Symbol(arr, Decl(ttttLoopPartialIndexType.ts, 3, 11))
+>length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+
+        y = arr[y];
+>y : Symbol(y, Decl(ttttLoopPartialIndexType.ts, 4, 7))
+>arr : Symbol(arr, Decl(ttttLoopPartialIndexType.ts, 3, 11))
+>y : Symbol(y, Decl(ttttLoopPartialIndexType.ts, 4, 7))
+    }
+}
+
+function h(p: number[], result: number[], k: number) {
+>h : Symbol(h, Decl(ttttLoopPartialIndexType.ts, 8, 1))
+>p : Symbol(p, Decl(ttttLoopPartialIndexType.ts, 10, 11))
+>result : Symbol(result, Decl(ttttLoopPartialIndexType.ts, 10, 23))
+>k : Symbol(k, Decl(ttttLoopPartialIndexType.ts, 10, 41))
+
+    let u, v;
+>u : Symbol(u, Decl(ttttLoopPartialIndexType.ts, 11, 7))
+>v : Symbol(v, Decl(ttttLoopPartialIndexType.ts, 11, 10))
+
+    v = k;
+>v : Symbol(v, Decl(ttttLoopPartialIndexType.ts, 11, 10))
+>k : Symbol(k, Decl(ttttLoopPartialIndexType.ts, 10, 41))
+
+    u = result.length;
+>u : Symbol(u, Decl(ttttLoopPartialIndexType.ts, 11, 7))
+>result.length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+>result : Symbol(result, Decl(ttttLoopPartialIndexType.ts, 10, 23))
+>length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+
+    v = result[u - 1];
+>v : Symbol(v, Decl(ttttLoopPartialIndexType.ts, 11, 10))
+>result : Symbol(result, Decl(ttttLoopPartialIndexType.ts, 10, 23))
+>u : Symbol(u, Decl(ttttLoopPartialIndexType.ts, 11, 7))
+
+    while (u-- > 0) {
+>u : Symbol(u, Decl(ttttLoopPartialIndexType.ts, 11, 7))
+
+        result[u] = v;
+>result : Symbol(result, Decl(ttttLoopPartialIndexType.ts, 10, 23))
+>u : Symbol(u, Decl(ttttLoopPartialIndexType.ts, 11, 7))
+>v : Symbol(v, Decl(ttttLoopPartialIndexType.ts, 11, 10))
+
+        v = p[v];
+>v : Symbol(v, Decl(ttttLoopPartialIndexType.ts, 11, 10))
+>p : Symbol(p, Decl(ttttLoopPartialIndexType.ts, 10, 11))
+>v : Symbol(v, Decl(ttttLoopPartialIndexType.ts, 11, 10))
+    }
+}
+

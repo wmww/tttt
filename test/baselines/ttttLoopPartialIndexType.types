@@ -1,0 +1,80 @@
+//// [test/cases/ttttLoopPartialIndexType.ts] ////
+
+=== ttttLoopPartialIndexType.ts ===
+// The loop's first round evaluates `arr[y]` with y's partial type undefined: TS2538, though y's final type is any
+// (vue's renderer.ts under noUncheckedIndexedAccess)
+
+function g(arr: number[]) {
+>g : (arr: number[]) => void
+>arr : number[]
+
+    let y;
+>y : any
+
+    while (arr.length) {
+>arr.length : number
+>arr : number[]
+>length : number
+
+        y = arr[y];
+>y = arr[y] : number | undefined
+>y : any
+>arr[y] : number | undefined
+>arr : number[]
+>y : any
+    }
+}
+
+function h(p: number[], result: number[], k: number) {
+>h : (p: number[], result: number[], k: number) => void
+>p : number[]
+>result : number[]
+>k : number
+
+    let u, v;
+>u : any
+>v : any
+
+    v = k;
+>v = k : number
+>v : any
+>k : number
+
+    u = result.length;
+>u = result.length : number
+>u : any
+>result.length : number
+>result : number[]
+>length : number
+
+    v = result[u - 1];
+>v = result[u - 1] : number | undefined
+>v : any
+>result[u - 1] : number | undefined
+>result : number[]
+>u - 1 : number
+>u : number
+>1 : 1
+
+    while (u-- > 0) {
+>u-- > 0 : boolean
+>u-- : number
+>u : number
+>0 : 0
+
+        result[u] = v;
+>result[u] = v : any
+>result[u] : number
+>result : number[]
+>u : number
+>v : any
+
+        v = p[v];
+>v = p[v] : number | undefined
+>v : any
+>p[v] : number | undefined
+>p : number[]
+>v : any
+    }
+}
+

@@ -1227,6 +1227,18 @@ static void check_assigned_callee(Checker* me, Expr const* assignment, Expr cons
     ty_check_non_null_type(me, ty_flow_expr_type(me, callee), callee, my errs);
 }
 
+bool ty_flow_partial_reports_at(Checker* me, Span span) {
+    return my checking_file && my errs && my errs->phase == ERROR_PHASE_TYPECHECK && span_source(span) == my checking_file;
+}
+
+void ty_flow_partial_no_property_mark(Checker* me, PropertyExpr const* access) {
+    *intern_slot(me, &my links, (u64[]){ KEY_FLOW_PARTIAL_NO_PROPERTY, (u64)(uintptr_t)access }, 2) = access;
+}
+
+bool ty_flow_partial_no_property(Checker* me, PropertyExpr const* access) {
+    return intern_get(&my links, (u64[]){ KEY_FLOW_PARTIAL_NO_PROPERTY, (u64)(uintptr_t)access }, 2) != nullptr;
+}
+
 static Ty const* initial_or_assigned_type_raw(FlowQuery* q, FlowAssign const* assign) {
     Checker* me = q->me;
     switch (assign->kind) {

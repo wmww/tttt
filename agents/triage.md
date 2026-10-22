@@ -21,3 +21,11 @@ intersection's property symbol to bugs/type_core.md.
 
 - Source sweep policy (2026-10-08 idea, unexplored): if checking every `tsconfig*.json` turns out noisy, mine each
   repository's own `tsc` invocations from its package.json scripts instead.
+
+- Loop partial evaluations, leftovers after the loop-pass diagnostics (2026-10-22, worker cor): (1) tsc's types
+  baseline prints `someFrom(isSome(null) ? result.some : makeSome())` in typeGuardsAsAssertions' null-arg mutant as
+  `{ some: a; }` (an uninstantiated return: the nested resolution under the flow loop leaves resolvedSignature as it
+  was), tttt `{ some: any; }`; (2) `while (cond) { const q = result.some; result = someFrom(q); }` is TS7022 on q in
+  tsc, nothing in tttt (the circularity through the loop's assigned value). (3) Call argument errors (TS2345...) of a
+  nested call resolution under a loop in progress aren't reported from the partial pass (call.c resolves without
+  errs under flow_uncached): wire them like expr_property_access_errors() if an oracle shows one.

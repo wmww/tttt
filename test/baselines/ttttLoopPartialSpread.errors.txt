@@ -1,0 +1,18 @@
+ttttLoopPartialSpread.ts(7,22): error TS2488: Type 'any[] | undefined' must have a '[Symbol.iterator]()' method that returns an iterator.
+ttttLoopPartialSpread.ts(7,22): error TS2488: Type 'undefined' must have a '[Symbol.iterator]()' method that returns an iterator.
+
+
+==== ttttLoopPartialSpread.ts (2 errors) ====
+    // An auto-typed variable spread into its own value in a loop: TS2488 for its partial type undefined and for its
+    // final one (mutation of selfReferencingSpreadInLoop)
+    
+    declare function foo(): number;
+    let additional = undefined;
+    for (const subcomponent of [1, 2, 3]) {
+        additional = [...additional, foo()];
+                         ~~~~~~~~~~
+!!! error TS2488: Type 'any[] | undefined' must have a '[Symbol.iterator]()' method that returns an iterator.
+                         ~~~~~~~~~~
+!!! error TS2488: Type 'undefined' must have a '[Symbol.iterator]()' method that returns an iterator.
+    }
+    

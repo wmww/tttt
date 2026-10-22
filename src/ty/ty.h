@@ -2812,6 +2812,24 @@ static inline void ty_flow_restore(Checker* me, FlowIsolation saved) {
     my flow_expr_generation = saved.expr_generation;
 }
 
+// Diagnostics of a loop's unfinished flow analysis. While a loop's types are partial, an expression its flow walk
+// evaluates (an assigned value, uncached) sees them, and tsc reports what that evaluation finds as it goes: its
+// getTypeOfExpression is a full check, and its diagnostics collection only drops identical ones. So `y = arr[y]` with
+// `let y` is TS2538 'undefined' though y's final type is any. The walk's checks of those expressions (property and
+// element access, spread) run again on the partial types (`partial`), into the checker's diagnostics, the final
+// dedupe dropping what the walk says again. Only by the checker checking the expression's file in its typecheck phase:
+// every checker redoes the flow of its own files, so a nested evaluation for another file (an inferred return type)
+// stays silent and the output doesn't depend on the checker count
+bool ty_flow_partial_reports_at(Checker* me, Span span);
+static inline bool ty_flow_partial_reports(Checker* me, Span span) {
+    return __builtin_expect(my flow_uncached != 0, 0) && my flow_loop_count != my flow_loop_start &&
+        ty_flow_partial_reports_at(me, span);
+}
+// tsc's reportNonexistentProperty reports once per property name node (NodeCheckFlagsTypeChecked), the first time:
+// the partial evaluation's TS2339 ('None'), not the walk's ('Optional<r>')
+void ty_flow_partial_no_property_mark(Checker* me, struct PropertyExpr const* access);
+bool ty_flow_partial_no_property(Checker* me, struct PropertyExpr const* access);
+
 // iterate.c: the iteration protocol (tsc's IterationUse and getIterationTypesOfIterable)
 Ty const* ty_for_in_key_type(Checker* me, Ty const* iterable); // `k` of `for (k in x)`
 // What a `for (k in x)` assigns an existing k (tsc's getIndexTypeOrString): Extract<keyof X, string>, or string if never

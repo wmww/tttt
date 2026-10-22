@@ -4346,6 +4346,132 @@ void expr_typecheck_export_assignment(Expr const* me, ErrorCtx* errs) {
     current_checker->const_enum_object_ok = outer_ok;
 }
 
+// `...x` of an array literal or a call: what isn't an array has to be iterable. Not in a destructuring assignment,
+// where `x` is assigned to (`[...x] = e`). The walk's, and a loop's unfinished flow analysis's (ty_flow_partial_reports())
+void expr_spread_errors(Expr const* me, Ty const* operand, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    if (!expr_is_destructuring_target(my spread) && !(operand->flags & TYF_ANY) && !ty_extends_array(checker, operand)) {
+        ty_iterated_type(checker, ITERATION_SPREAD, operand, expr_outer_span(my spread), errs);
+    }
+}
+
+static bool is_no_property_code(unsigned code) {
+    return code == 2339 || code == 2550 || code == 2551 || code == 2576 || code == 2812;
+}
+
+// What tsc's checkPropertyAccessExpressionOrQualifiedName and checkElementAccessExpression report about `me`, a
+// property or element access, given its object's type (with a chain's optional marker removed). The walk's, and with
+// `partial` a loop's unfinished flow analysis's (ty_flow_partial_reports()): only what the object's and key's types
+// decide, nothing that asks for the access's own type (which is being computed then)
+void expr_property_access_errors(Expr const* me, Ty const* expr_type, bool partial, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    if (partial) {
+        // (A private name's access is the walk's: what it reports doesn't depend on flow)
+        if (my property->form == PROPERTY_EXPR_DOT && span_valid(property_name(my property)) &&
+            property_name(my property).buf[0] == '#'
+        ) {
+            return;
+        }
+    } else if (ty_check_private_name_access(checker, my property, expr_type, errs)) {
+        return;
+    }
+    bool error_if_not_found = my property->form == PROPERTY_EXPR_DOT;
+    // `null.x`, `undefined[0]`, `u.x` with `u: undefined` (tsc's checkNonNullExpression; a union with null
+    // or undefined is check_access()'s)
+    if ((expr_type->flags & TYF_NULLABLE) && expr_type->kind != TY_UNION) {
+        ty_check_non_null_type(checker, expr_type, &my property->expr, errs);
+        return;
+    }
+    // An object that may be nullish indexed by a generic key (check_access() doesn't look at those): TS18048
+    // and then its non-nullable part (tsc's checkNonNullExpression, type parameters by their constraint)
+    // (A type parameter without constraint isn't: tsc says its members are missing instead)
+    bool generic_key = my property->form == PROPERTY_EXPR_BRACKET && compiler_options()->strict_null_checks &&
+        (expr_type->kind == TY_UNION || (expr_type->kind == TY_TYPE_PARAM && ty_base_constraint(checker, expr_type))) &&
+        ty_is_generic_index(ty_regular(checker, ty_access_key_type(checker, my property)));
+    // (tsc's getTypeFacts(IsUndefinedOrNull): an unconstrained type parameter is unknown's facts, which don't
+    // have it, `x[k]` of `x: T | U` indexes `T | U`)
+    if (generic_key && !my property->qualified_name && ty_undefined_or_null_facts(checker, expr_type)) {
+        ty_check_non_null_type(checker, expr_type, &my property->expr, errs);
+        expr_type = ty_non_nullable(checker, expr_type);
+    }
+    if (my property->qualified_name && (my property->form == PROPERTY_EXPR_DOT || my property->index.tag == EXPR_LITERAL) &&
+        ty_namespace_type_only_prop(checker, expr_type, ty_literal_name(checker, ty_access_key_type(checker, my property)))
+    ) {
+        return;
+    }
+    // (Written to or called, the object is widened: tsc's checkPropertyAccessExpressionOrQualifiedName. What a
+    // property access lacks is said about the type as it was)
+    Ty const* unwidened = expr_type;
+    if (my property->method_call || my property->assignment_target) {
+        expr_type = ty_widened_objects(checker, ty_widened_nullable(checker, expr_type));
+    }
+    ErrorCtx found = error_ctx_scratch(errs);
+    PropertyExpr const* saved_suggestion = checker->suggestion_access;
+    checker->suggestion_access = my property->form == PROPERTY_EXPR_DOT && !my property->qualified_name ? my property : nullptr;
+    ty_check_property_access(
+        checker,
+        expr_type,
+        ty_access_key_type(checker, my property),
+        expr_outer_span(&my property->expr),
+        property_key_span(my property),
+        // (In a `typeof a.b.c` type the object is a qualified name, an entity name expression only when it's an
+        // identifier, `this` included: tsc's isEntityNameExpression)
+        my property->qualified_name ?
+            my property->expr.tag == EXPR_IDENTIFIER && !expr_is_perenthisized(&my property->expr) :
+            expr_is_entity_name(&my property->expr),
+        error_if_not_found,
+        &found
+    );
+    Span name_span = property_key_span(my property);
+    if (unwidened != expr_type && error_if_not_found && (error_ctx_find(&found, name_span, 2339) ||
+        error_ctx_find(&found, name_span, 2550) || error_ctx_find(&found, name_span, 2551))
+    ) {
+        error_ctx_clear(&found);
+        found.phase = errs->phase;
+        ty_report_no_property(checker, unwidened, ty_access_key_type(checker, my property),
+            property_key_span(my property), &found);
+    }
+    checker->suggestion_access = saved_suggestion;
+    // What says the property is missing is said once, the first time (tsc's reportNonexistentProperty)
+    bool no_property = false;
+    for (intptr_t i = 0; i < vec_error_size(&found.errors); i++) {
+        Error const* error = vec_error_at(&found.errors, i);
+        no_property |= is_no_property_code(error->ts_code) && span_eq(error->span, name_span);
+    }
+    if (no_property) {
+        if (ty_flow_partial_no_property(checker, my property)) {
+            intptr_t kept = 0;
+            for (intptr_t i = 0; i < vec_error_size(&found.errors); i++) {
+                Error* error = vec_error_at_mut(&found.errors, i);
+                if (is_no_property_code(error->ts_code) && span_eq(error->span, name_span)) {
+                    error_drop(error);
+                } else {
+                    if (kept != i) found.errors.data[kept] = *error;
+                    kept++;
+                }
+            }
+            found.errors.size = kept;
+        } else if (partial) {
+            ty_flow_partial_no_property_mark(checker, my property);
+        }
+    }
+    error_ctx_merge(errs, &found);
+    error_ctx_drop(&found);
+    ty_check_element_implicit_any(checker, my property, expr_type, my inner_span, errs);
+    if (!partial) {
+        // (Unless the flow type replaced the deferred `O[K]` by its constraint: tsc's checkIndexedAccessIndexType)
+        if (ty_expr_type(checker, me)->flags & TYF_ERROR) {
+            ty_check_generic_element_access(checker, my property, expr_type, my inner_span, errs);
+        }
+        ty_check_generic_index_write(checker, my property, expr_type, my inner_span, errs);
+        ty_check_member_modifiers(checker, my property, expr_type, my inner_span, errs);
+    }
+    if (compiler_options()->no_property_access_from_index_signature) {
+        ty_check_index_signature_dot_access(checker, my property, expr_type, errs);
+    }
+    if (!partial) ty_check_property_used_before_assigned(checker, me, errs);
+}
+
 void expr_typecheck(Expr const* me, ErrorCtx* errs) {
     // The expression's own type first: evaluating it is what gives the expressions inside it their contextual types
     // (whoever knows this expression's contextual type has done the same before getting here)
@@ -4438,80 +4564,12 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             // (`a?.b` of `a?.b.c` without the undefined of a chain that ended)
             Ty const* expr_type = ty_optional_expression_type(current_checker, expr_get_type(&my property->expr),
                 my property->optional_chain, nullptr);
-            bool error_if_not_found = my property->form == PROPERTY_EXPR_DOT;
             if (my property->form == PROPERTY_EXPR_DOT && span_valid(property_name(my property)) &&
                 property_name(my property).buf[0] == '#'
             ) {
                 private_access_check_emit_helpers(me, errs);
             }
-            if (ty_check_private_name_access(current_checker, my property, expr_type, errs)) break;
-            // `null.x`, `undefined[0]`, `u.x` with `u: undefined` (tsc's checkNonNullExpression; a union with null
-            // or undefined is check_access()'s)
-            if ((expr_type->flags & TYF_NULLABLE) && expr_type->kind != TY_UNION) {
-                ty_check_non_null_type(current_checker, expr_type, &my property->expr, errs);
-                break;
-            }
-            // An object that may be nullish indexed by a generic key (check_access() doesn't look at those): TS18048
-            // and then its non-nullable part (tsc's checkNonNullExpression, type parameters by their constraint)
-            // (A type parameter without constraint isn't: tsc says its members are missing instead)
-            bool generic_key = my property->form == PROPERTY_EXPR_BRACKET && compiler_options()->strict_null_checks &&
-                (expr_type->kind == TY_UNION || (expr_type->kind == TY_TYPE_PARAM && ty_base_constraint(current_checker, expr_type))) &&
-                ty_is_generic_index(ty_regular(current_checker, ty_access_key_type(current_checker, my property)));
-            // (tsc's getTypeFacts(IsUndefinedOrNull): an unconstrained type parameter is unknown's facts, which don't
-            // have it, `x[k]` of `x: T | U` indexes `T | U`)
-            if (generic_key && !my property->qualified_name && ty_undefined_or_null_facts(current_checker, expr_type)) {
-                ty_check_non_null_type(current_checker, expr_type, &my property->expr, errs);
-                expr_type = ty_non_nullable(current_checker, expr_type);
-            }
-            if (my property->qualified_name && (my property->form == PROPERTY_EXPR_DOT || my property->index.tag == EXPR_LITERAL) &&
-                ty_namespace_type_only_prop(current_checker, expr_type, ty_literal_name(current_checker, ty_access_key_type(current_checker, my property)))
-            ) {
-                break;
-            }
-            // (Written to or called, the object is widened: tsc's checkPropertyAccessExpressionOrQualifiedName. What a
-            // property access lacks is said about the type as it was)
-            Ty const* unwidened = expr_type;
-            if (my property->method_call || my property->assignment_target) {
-                expr_type = ty_widened_objects(current_checker, ty_widened_nullable(current_checker, expr_type));
-            }
-            ErrorCtx found = error_ctx_scratch(errs);
-            current_checker->suggestion_access = my property->form == PROPERTY_EXPR_DOT && !my property->qualified_name ? my property : nullptr;
-            ty_check_property_access(
-                current_checker,
-                expr_type,
-                ty_access_key_type(current_checker, my property),
-                expr_outer_span(&my property->expr),
-                property_key_span(my property),
-                // (In a `typeof a.b.c` type the object is a qualified name, an entity name expression only when it's an
-                // identifier, `this` included: tsc's isEntityNameExpression)
-                my property->qualified_name ?
-                    my property->expr.tag == EXPR_IDENTIFIER && !expr_is_perenthisized(&my property->expr) :
-                    expr_is_entity_name(&my property->expr),
-                error_if_not_found,
-                &found
-            );
-            Span name_span = property_key_span(my property);
-            if (unwidened != expr_type && error_if_not_found && (error_ctx_find(&found, name_span, 2339) ||
-                error_ctx_find(&found, name_span, 2550) || error_ctx_find(&found, name_span, 2551))
-            ) {
-                error_ctx_clear(&found);
-                ty_report_no_property(current_checker, unwidened, ty_access_key_type(current_checker, my property),
-                    property_key_span(my property), errs);
-            }
-            current_checker->suggestion_access = nullptr;
-            error_ctx_merge(errs, &found);
-            error_ctx_drop(&found);
-            ty_check_element_implicit_any(current_checker, my property, expr_type, my inner_span, errs);
-            // (Unless the flow type replaced the deferred `O[K]` by its constraint: tsc's checkIndexedAccessIndexType)
-            if (ty_expr_type(current_checker, me)->flags & TYF_ERROR) {
-                ty_check_generic_element_access(current_checker, my property, expr_type, my inner_span, errs);
-            }
-            ty_check_generic_index_write(current_checker, my property, expr_type, my inner_span, errs);
-            ty_check_member_modifiers(current_checker, my property, expr_type, my inner_span, errs);
-            if (compiler_options()->no_property_access_from_index_signature) {
-                ty_check_index_signature_dot_access(current_checker, my property, expr_type, errs);
-            }
-            ty_check_property_used_before_assigned(current_checker, me, errs);
+            expr_property_access_errors(me, expr_type, false, errs);
         }   break;
 
         case EXPR_GENERIC_PARAMS: {
@@ -4766,12 +4824,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             expr_typecheck(my spread, errs);
             // `...x` of an array literal or a call: what isn't an array has to be iterable. Not in a destructuring
             // assignment, where `x` is assigned to (`[...x] = e`)
-            Checker* checker = current_checker;
-            bool target = expr_is_destructuring_target(my spread);
-            Ty const* operand = expr_get_type(my spread);
-            if (!target && !(operand->flags & TYF_ANY) && !ty_extends_array(checker, operand)) {
-                ty_iterated_type(checker, ITERATION_SPREAD, operand, expr_outer_span(my spread), errs);
-            }
+            expr_spread_errors(me, expr_get_type(my spread), errs);
         }   break;
 
         case EXPR_REGEX:

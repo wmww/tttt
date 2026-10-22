@@ -5118,6 +5118,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
         if (i->tag == EXPR_SPREAD) {
             // (A spread of a const context is in it too: tsc's isConstContext goes up through SpreadElement)
             Ty const* operand = ctx.is_const ? check_with(me, i->spread, (ExprCtx){ .is_const = true }) : ty_expr_type(me, i->spread);
+            if (ty_flow_partial_reports(me, i->inner_span)) expr_spread_errors(i, operand, my errs);
             if (as_tuple) {
                 flags[count] = TUPLE_ELEMENT_REST;
                 if (expr->assignment_pattern && !ty_is_array(me, operand) && !ty_is_tuple(operand) && !(operand->flags & TYF_ANY) &&
@@ -6253,6 +6254,10 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (in_constructor) return in_constructor;
             bool optional = false;
             Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
+            // (An incomplete never is silent: tsc's getTypeAtFlowCondition)
+            if (ty_flow_partial_reports(me, expr->inner_span) && object != ty_intrinsic(me, TY_SILENT_NEVER)) {
+                expr_property_access_errors(expr, object, true, my errs);
+            }
             // (tsc's getWidenedType: an object literal isn't one any more, a fresh literal widens)
             if (expr->property->method_call || expr->property->assignment_target) {
                 object = ty_widened_objects(me, ty_widened_nullable(me, object));

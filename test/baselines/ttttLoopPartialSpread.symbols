@@ -1,0 +1,22 @@
+//// [test/cases/ttttLoopPartialSpread.ts] ////
+
+=== ttttLoopPartialSpread.ts ===
+// An auto-typed variable spread into its own value in a loop: TS2488 for its partial type undefined and for its
+// final one (mutation of selfReferencingSpreadInLoop)
+
+declare function foo(): number;
+>foo : Symbol(foo, Decl(ttttLoopPartialSpread.ts, 0, 0))
+
+let additional = undefined;
+>additional : Symbol(additional, Decl(ttttLoopPartialSpread.ts, 4, 3))
+>undefined : Symbol(undefined)
+
+for (const subcomponent of [1, 2, 3]) {
+>subcomponent : Symbol(subcomponent, Decl(ttttLoopPartialSpread.ts, 5, 10))
+
+    additional = [...additional, foo()];
+>additional : Symbol(additional, Decl(ttttLoopPartialSpread.ts, 4, 3))
+>additional : Symbol(additional, Decl(ttttLoopPartialSpread.ts, 4, 3))
+>foo : Symbol(foo, Decl(ttttLoopPartialSpread.ts, 0, 0))
+}
+
