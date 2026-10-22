@@ -2247,6 +2247,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTupleSpreadNotArrayLike': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTupleSpreadVariadicGeneric': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTypeMemberGetterBody': {
         errors: true,
         symbols: true,

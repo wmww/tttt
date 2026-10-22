@@ -1,0 +1,36 @@
+//// [test/cases/ttttTupleSpreadNotArrayLike.ts] ////
+
+=== ttttTupleSpreadNotArrayLike.ts ===
+// A variadic element instantiated to something that isn't array-like is a rest element of the error type (tsc's
+// createNormalizedTupleType: "treat everything else as an array type"): `[1, ...any[]]`, not `[1, ...undefined]`
+type T1<A extends any[], P extends any[][]> = [...A, ...P[0]];
+>T1 : Symbol(T1, Decl(ttttTupleSpreadNotArrayLike.ts, 0, 0))
+>A : Symbol(A, Decl(ttttTupleSpreadNotArrayLike.ts, 2, 8))
+>P : Symbol(P, Decl(ttttTupleSpreadNotArrayLike.ts, 2, 24))
+>A : Symbol(A, Decl(ttttTupleSpreadNotArrayLike.ts, 2, 8))
+>P : Symbol(P, Decl(ttttTupleSpreadNotArrayLike.ts, 2, 24))
+
+type R1 = T1<[1], []>;
+>R1 : Symbol(R1, Decl(ttttTupleSpreadNotArrayLike.ts, 2, 62))
+>T1 : Symbol(T1, Decl(ttttTupleSpreadNotArrayLike.ts, 0, 0))
+
+type G<A extends any[], P extends any[][], N> = [...A, ...P[0]][N & number];
+>G : Symbol(G, Decl(ttttTupleSpreadNotArrayLike.ts, 3, 22))
+>A : Symbol(A, Decl(ttttTupleSpreadNotArrayLike.ts, 4, 7))
+>P : Symbol(P, Decl(ttttTupleSpreadNotArrayLike.ts, 4, 23))
+>N : Symbol(N, Decl(ttttTupleSpreadNotArrayLike.ts, 4, 42))
+>A : Symbol(A, Decl(ttttTupleSpreadNotArrayLike.ts, 4, 7))
+>P : Symbol(P, Decl(ttttTupleSpreadNotArrayLike.ts, 4, 23))
+>N : Symbol(N, Decl(ttttTupleSpreadNotArrayLike.ts, 4, 42))
+
+export const q: { r1: R1, g: G<[1], [], 5> } = null!;
+>q : Symbol(q, Decl(ttttTupleSpreadNotArrayLike.ts, 5, 12))
+>r1 : Symbol(r1, Decl(ttttTupleSpreadNotArrayLike.ts, 5, 17))
+>R1 : Symbol(R1, Decl(ttttTupleSpreadNotArrayLike.ts, 2, 62))
+>g : Symbol(g, Decl(ttttTupleSpreadNotArrayLike.ts, 5, 25))
+>G : Symbol(G, Decl(ttttTupleSpreadNotArrayLike.ts, 3, 22))
+
+export const z: number = q;
+>z : Symbol(z, Decl(ttttTupleSpreadNotArrayLike.ts, 6, 12))
+>q : Symbol(q, Decl(ttttTupleSpreadNotArrayLike.ts, 5, 12))
+

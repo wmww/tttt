@@ -3065,6 +3065,13 @@ static bool is_readonly_array(Checker* me, Ty const* ty) {
     return ty->kind == TY_REFERENCE && ty->reference.target == my readonly_array_target;
 }
 
+// A variadic element instantiated to something that can't be array-like (`[...A, ...P[0]]` with P `[]`: `undefined`),
+// a rest element of the error type as lower.c's tuple_element_type() makes it as written
+static bool spread_not_array_like(Ty const* arg) {
+    if (arg->kind == TY_UNION && !(arg->flags & TYF_BOOLEAN)) return false;
+    return !(arg->flags & (TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION | TYF_NEVER));
+}
+
 static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
     TupleShape const* shape = target->declared.tuple;
     // A lone rest element of an array is that array (tsc's getTupleTargetType): `[...xs]` in a tuple context
@@ -3085,7 +3092,8 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
         // (A rest element keeps only the element type of the array it spreads: `...readonly T[]` is `...T[]`)
         needed = ty_is_tuple(arg) || (arg->kind == TY_DECLARED && arg->declared.kind == TY_DECLARED_TUPLE_TARGET) ||
             (arg->flags & (TYF_ANY | TYF_UNKNOWN)) ||
-            (arg->kind == TY_UNION && !(arg->flags & TYF_BOOLEAN)) || (arg->flags & TYF_NEVER) || is_readonly_array(me, arg);
+            (arg->kind == TY_UNION && !(arg->flags & TYF_BOOLEAN)) || (arg->flags & TYF_NEVER) || is_readonly_array(me, arg) ||
+            spread_not_array_like(arg);
         if (!is_generic_spread(me, arg)) {
             needed |= past_rest;
             past_rest = true;
@@ -3163,6 +3171,9 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
             Ty const* element = ty_union(me, elements.data, elements.len, nullptr, (TyList){0});
             ty_buf_drop(&elements);
             tuple_builder_add(me, &b, ty_array(me, element, false), TUPLE_ELEMENT_REST, name, label);
+        } else if (spread_not_array_like(arg)) {
+            // (tsc's createNormalizedTupleType: "treat everything else as an array type", of the error type)
+            tuple_builder_add(me, &b, ty_array(me, ty_intrinsic(me, TY_ERROR), false), TUPLE_ELEMENT_REST, name, label);
         } else if (!(arg->kind == TY_DECLARED && arg->declared.kind == TY_DECLARED_TUPLE_TARGET)) {
             tuple_builder_add(me, &b, arg, TUPLE_ELEMENT_REST, name, label);
         }
