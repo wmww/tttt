@@ -1,0 +1,105 @@
+//// [test/cases/ttttStatementFirstWordDispatch.ts] ////
+
+=== ttttStatementFirstWordDispatch.ts ===
+// Statements whose first word decides which statement parsers are tried (parse_statement()'s first-word dispatch):
+// labels after trivia, contextual keywords used as identifiers, `await using`, escaped keywords
+declare function use(...args: any[]): any;
+>use : (...args: any[]) => any
+>args : any[]
+
+let type = 1, declare = 2, module = 3, namespace = 4, abstract = 5, global = 6, async = 7;
+>type : number
+>1 : 1
+>declare : number
+>2 : 2
+>module : number
+>3 : 3
+>namespace : number
+>4 : 4
+>abstract : number
+>5 : 5
+>global : number
+>6 : 6
+>async : number
+>7 : 7
+
+type = declare + module;
+>type = declare + module : number
+>type : number
+>declare + module : number
+>declare : number
+>module : number
+
+namespace = abstract * global;
+>namespace = abstract * global : number
+>namespace : number
+>abstract * global : number
+>abstract : number
+>global : number
+
+async = 1;
+>async = 1 : 1
+>async : number
+>1 : 1
+
+outer /* a comment */ : for (const x of [1]) {
+>outer : any
+>x : number
+>[1] : number[]
+>1 : 1
+
+    inner
+>inner : any
+
+    : while (true) { break outer; }
+>true : true
+>outer : any
+}
+lbl: use(type);
+>lbl : any
+>use(type) : any
+>use : (...args: any[]) => any
+>type : number
+
+async function f() {
+>f : () => Promise<void>
+
+    await using res = { [Symbol.asyncDispose]: async () => {} };
+>res : { [Symbol.asyncDispose]: () => Promise<void>; }
+>{ [Symbol.asyncDispose]: async () => {} } : { [Symbol.asyncDispose]: () => Promise<void>; }
+>[Symbol.asyncDispose] : () => Promise<void>
+>Symbol.asyncDispose : unique symbol
+>Symbol : SymbolConstructor
+>asyncDispose : unique symbol
+>async () => {} : () => Promise<void>
+
+    await use(res);
+>await use(res) : any
+>use(res) : any
+>use : (...args: any[]) => any
+>res : { [Symbol.asyncDispose]: () => Promise<void>; }
+
+    await
+>await    use(1) : any
+
+    use(1);
+>use(1) : any
+>use : (...args: any[]) => any
+>1 : 1
+}
+var escaped = 1;
+>escaped : number
+>1 : 1
+
+var escaped2 = 2;
+>escaped2 : number
+>2 : 2
+
+let escaped3 = 3;
+>escaped3 : number
+>3 : 3
+
+export { escaped, escaped2 };
+>escaped : number
+>escaped2 : number
+

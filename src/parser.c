@@ -14690,6 +14690,62 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
     vec_jsdoc_tag_drop(&tags);
 }
 
+// What the first word of a statement allows (statement_word()): only these words start a declaration (modifiers,
+// variable keywords, declaration keywords: parse_decl_statement()), an import or export, a label
+typedef struct StatementWord {
+    bool may_label;
+    bool may_declare;
+    bool may_import_export;
+} StatementWord;
+
+static bool word_starts_declaration(csview word) {
+#define WORD_IS(lit) (word.size == sizeof(lit) - 1 && memcmp(word.buf, lit, sizeof(lit) - 1) == 0)
+    switch (word.buf[0]) {
+        case 'a': return WORD_IS("abstract") || WORD_IS("accessor") || WORD_IS("async") || WORD_IS("await");
+        case 'c': return WORD_IS("class") || WORD_IS("const");
+        case 'd': return WORD_IS("declare") || WORD_IS("default");
+        case 'e': return WORD_IS("enum") || WORD_IS("export");
+        case 'f': return WORD_IS("function");
+        case 'g': return WORD_IS("global");
+        case 'i': return WORD_IS("interface");
+        case 'l': return WORD_IS("let");
+        case 'm': return WORD_IS("module");
+        case 'n': return WORD_IS("namespace");
+        case 'o': return WORD_IS("override");
+        case 'p': return WORD_IS("private") || WORD_IS("protected") || WORD_IS("public");
+        case 'r': return WORD_IS("readonly");
+        case 's': return WORD_IS("static");
+        case 't': return WORD_IS("type");
+        case 'u': return WORD_IS("using");
+        case 'v': return WORD_IS("var");
+        default: return false;
+    }
+#undef WORD_IS
+}
+
+// At a character that starts an identifier
+static StatementWord statement_word(const char* at) {
+    const char* end = at;
+    while (is_identifier_char(*end)) end++;
+    // (An escape or a non-ASCII character: anything may follow, every branch is tried)
+    if ((uint8_t)*end >= 0x80 || *end == '\\' || (uint8_t)*at >= 0x80 || *at == '\\') {
+        return (StatementWord){ .may_label = true, .may_declare = true, .may_import_export = true };
+    }
+    csview word = { at, end - at };
+    // What follows on the line after blanks: `:` for a label, a comment, line break or anything unusual leaves it open
+    const char* next = end;
+    while (*next == ' ' || *next == '\t') next++;
+    bool next_open = *next == '/' || *next == '\\' || *next == '\n' || *next == '\r' || *next == '\v' || *next == '\f' || (uint8_t)*next >= 0x80;
+    return (StatementWord){
+        // (parse_label(): a word that isn't reserved, then the `:`)
+        .may_label = (*next == ':' || next_open) && !is_reserved_word(word),
+        // (`await` only starts a declaration as `await using`)
+        .may_declare = word_starts_declaration(word) && (word.size != 5 || memcmp(at, "await", 5) != 0 || next_open ||
+            (strncmp(next, "using", 5) == 0 && !is_identifier_char(next[5]))),
+        .may_import_export = (word.size == 6 && (memcmp(at, "import", 6) == 0 || memcmp(at, "export", 6) == 0)),
+    };
+}
+
 static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -14699,13 +14755,17 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     // Every branch before the expression statement needs a particular first character: test it first
     char c = *p.pos;
     bool word = identifier_char_size(p.pos, true);
+    // A plain ASCII first word (no escape, no non-ASCII character in or right after it) decides which of the branches
+    // led by a word can apply: most statements are expression statements and keyword statements, which would
+    // otherwise go through a failed label and a failed declaration first
+    StatementWord first = word ? statement_word(p.pos) : (StatementWord){0};
     if (c == ';') {
         // tsc's EmptyStatement, the `;` its own (`if (c); else d`)
         *ret = statement_noop;
         p.pos++;
     } else if (hop_start_if_ends_on_word_break(&p, "debugger")) {
         *ret = statement_noop;
-    } else if (word && parse_label(&p, &label)) {
+    } else if (word && first.may_label && parse_label(&p, &label)) {
         hop_whitespace(&p);
         Statement body;
         expect_statement(&p, false, &body);
@@ -14717,8 +14777,8 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
             },
         };
         label = span_null;
-    } else if ((c == 'i' || c == 'e') && parse_import_export_statement(&p, ret)) {
-    } else if ((word || c == '@') && parse_decl_statement(&p, toplevel, ret)) {
+    } else if ((c == 'i' || c == 'e') && first.may_import_export && parse_import_export_statement(&p, ret)) {
+    } else if (((word && first.may_declare) || c == '@') && parse_decl_statement(&p, toplevel, ret)) {
     } else if (c == '{' && parse_block(&p, false, &ret->block)) {
         ret->tag = STATEMENT_BLOCK;
     } else if (c == 'i' && parse_if_else(&p, &ret->if_else)) {

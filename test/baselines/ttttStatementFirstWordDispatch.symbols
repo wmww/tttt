@@ -1,0 +1,72 @@
+//// [test/cases/ttttStatementFirstWordDispatch.ts] ////
+
+=== ttttStatementFirstWordDispatch.ts ===
+// Statements whose first word decides which statement parsers are tried (parse_statement()'s first-word dispatch):
+// labels after trivia, contextual keywords used as identifiers, `await using`, escaped keywords
+declare function use(...args: any[]): any;
+>use : Symbol(use, Decl(ttttStatementFirstWordDispatch.ts, 0, 0))
+>args : Symbol(args, Decl(ttttStatementFirstWordDispatch.ts, 2, 21))
+
+let type = 1, declare = 2, module = 3, namespace = 4, abstract = 5, global = 6, async = 7;
+>type : Symbol(type, Decl(ttttStatementFirstWordDispatch.ts, 3, 3))
+>declare : Symbol(declare, Decl(ttttStatementFirstWordDispatch.ts, 3, 13))
+>module : Symbol(module, Decl(ttttStatementFirstWordDispatch.ts, 3, 26))
+>namespace : Symbol(namespace, Decl(ttttStatementFirstWordDispatch.ts, 3, 38))
+>abstract : Symbol(abstract, Decl(ttttStatementFirstWordDispatch.ts, 3, 53))
+>global : Symbol(global, Decl(ttttStatementFirstWordDispatch.ts, 3, 67))
+>async : Symbol(async, Decl(ttttStatementFirstWordDispatch.ts, 3, 79))
+
+type = declare + module;
+>type : Symbol(type, Decl(ttttStatementFirstWordDispatch.ts, 3, 3))
+>declare : Symbol(declare, Decl(ttttStatementFirstWordDispatch.ts, 3, 13))
+>module : Symbol(module, Decl(ttttStatementFirstWordDispatch.ts, 3, 26))
+
+namespace = abstract * global;
+>namespace : Symbol(namespace, Decl(ttttStatementFirstWordDispatch.ts, 3, 38))
+>abstract : Symbol(abstract, Decl(ttttStatementFirstWordDispatch.ts, 3, 53))
+>global : Symbol(global, Decl(ttttStatementFirstWordDispatch.ts, 3, 67))
+
+async = 1;
+>async : Symbol(async, Decl(ttttStatementFirstWordDispatch.ts, 3, 79))
+
+outer /* a comment */ : for (const x of [1]) {
+>x : Symbol(x, Decl(ttttStatementFirstWordDispatch.ts, 7, 34))
+
+    inner
+    : while (true) { break outer; }
+}
+lbl: use(type);
+>use : Symbol(use, Decl(ttttStatementFirstWordDispatch.ts, 0, 0))
+>type : Symbol(type, Decl(ttttStatementFirstWordDispatch.ts, 3, 3))
+
+async function f() {
+>f : Symbol(f, Decl(ttttStatementFirstWordDispatch.ts, 11, 15))
+
+    await using res = { [Symbol.asyncDispose]: async () => {} };
+>res : Symbol(res, Decl(ttttStatementFirstWordDispatch.ts, 13, 15))
+>[Symbol.asyncDispose] : Symbol([Symbol.asyncDispose], Decl(ttttStatementFirstWordDispatch.ts, 13, 23))
+>Symbol.asyncDispose : Symbol(SymbolConstructor.asyncDispose, Decl(lib.esnext.disposable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>asyncDispose : Symbol(SymbolConstructor.asyncDispose, Decl(lib.esnext.disposable.d.ts, --, --))
+
+    await use(res);
+>use : Symbol(use, Decl(ttttStatementFirstWordDispatch.ts, 0, 0))
+>res : Symbol(res, Decl(ttttStatementFirstWordDispatch.ts, 13, 15))
+
+    await
+    use(1);
+>use : Symbol(use, Decl(ttttStatementFirstWordDispatch.ts, 0, 0))
+}
+var escaped = 1;
+>escaped : Symbol(escaped, Decl(ttttStatementFirstWordDispatch.ts, 18, 3))
+
+var escaped2 = 2;
+>escaped2 : Symbol(escaped2, Decl(ttttStatementFirstWordDispatch.ts, 19, 3))
+
+let escaped3 = 3;
+>escaped3 : Symbol(escaped3, Decl(ttttStatementFirstWordDispatch.ts, 20, 3))
+
+export { escaped, escaped2 };
+>escaped : Symbol(escaped, Decl(ttttStatementFirstWordDispatch.ts, 21, 8))
+>escaped2 : Symbol(escaped2, Decl(ttttStatementFirstWordDispatch.ts, 21, 17))
+

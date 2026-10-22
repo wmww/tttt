@@ -2129,6 +2129,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttStatementFirstWordDispatch': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttStaticUniqueSymbolField': {
         errors: true,
         symbols: true,
