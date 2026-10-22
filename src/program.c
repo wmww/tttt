@@ -4391,10 +4391,17 @@ void program_make_current(Program* me) {
     checker_make_current(my checker);
 }
 
-// (64 KB: below it a second checker saves a few milliseconds and costs its own copy of the library types, 4-9% of the
-// RSS; measured on a twelfth of the source sweep 2026-10-14, plan 62 stage 3. Bytes are a rough proxy for check time:
-// nestjs-boilerplate checks 240 KB in 110 ms where most projects of that size take 25)
-enum { CHECKER_BYTES = 64 << 10 };
+// (16 KB, for wall time before CPU and memory, 2026-10-22: at 64 KB small projects got 2-3 checkers and ran faster at a
+// forced 8-12. Callgrind per thread at the defaults but --checkers K, the longest checker's instructions / every
+// checker's / the whole run's, in G: nest (240 KB) K3 0.104 / 0.27 / 1.19, K4 0.094 / 0.28 / 1.20, K8 0.070 / 0.32 /
+// 1.25, K12 0.054 / 0.34 / 1.27; bulletproof-react (177 KB) K2 0.369 / 0.68 / 1.48, K4 0.236 / 0.90 / 1.70, K8 0.178 /
+// 1.19 / 1.99, K12 0.155 / 1.44 / 2.24. Walls on the 16-vCPU box: nest 0.082 -> 0.075 s at K8 (CPU +8%), react 0.112
+// -> 0.088 (CPU +49%). Each extra checker builds the global and library types again (~9 M instructions on nest) and
+// whatever its files share (~67 M on react: React's types re-derived per checker). The cap at the physical cores stays:
+// past it TypeScript6's longest checker grows (1.06 -> 1.44 G at K12), the threads left to parse bodies ahead
+// (materialize-ahead) being fewer. 32 KB is the alternative if CPU matters more (about half the extra CPU, most of the
+// gain); the laptop confirms the wall. Before: 64 KB, below which a second checker cost 4-9% of the RSS, plan 62 stage 3)
+enum { CHECKER_BYTES = 16 << 10 };
 // Past program_set_checker_cap()'s physical cores, one more checker (a second hardware thread's) per SMT_CHECKER_BYTES
 // of checked source, up to the threads: a checker on a core's second thread pays for itself only when each checker has
 // enough to check to win back the global and library types it builds again. On 12 cores / 24 threads vscode (138 MB,
