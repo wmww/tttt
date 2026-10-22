@@ -87,6 +87,12 @@ typedef struct LoadPool {
     i64 (*size)(void* ctx, csview path);
     void* size_ctx;
     bool stop;
+    // Workers waiting on `work`, and whether the loader waits on `done` (for loader_awaits): wakeups go only to threads
+    // that sleep and have something to do, after the lock is released (nest: every queued path signalled `work` under
+    // the lock, and every parsed file broadcast `done`; the woken thread went straight to sleep again on the lock)
+    u32 idle;
+    bool loader_waiting;
+    LoadEntry* loader_awaits;
     pthread_t* threads;
     u32 thread_count;
     // TTTT_LOAD_POOL_STATS (TTTT_LOAD_POOL_WAITS: each wait over 2 ms)
@@ -112,6 +118,23 @@ static double pool_now_ms(void) {
     return (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6;
 }
 
+// Under the lock: whether a worker would find something to do (a heap's items may be stale: a guess, erring towards yes)
+static bool load_pool_has_work(LoadPool* me) {
+    return my big.count || my ranked.count || my job_count || vec_load_entry_ptr_size(&my unsized) > my unsized_next;
+}
+
+// After the lock is released: wakes up to `units` sleeping workers (a stale `idle` only costs a wakeup or delays one
+// until the next: a worker increments it under the lock before it waits, so one that waits on work queued before
+// this sees it)
+static void load_pool_wake(LoadPool* me, isize units) {
+    u32 idle = __atomic_load_n(&my idle, __ATOMIC_RELAXED);
+    if (units >= idle) {
+        if (idle) pthread_cond_broadcast(&my work);
+        return;
+    }
+    for (isize i = 0; i < units; i++) pthread_cond_signal(&my work);
+}
+
 // (Address space only: pages are committed as the stack grows)
 size_t worker_stack_size(void) {
     struct rlimit limit;
@@ -120,6 +143,9 @@ size_t worker_stack_size(void) {
     if (stack > (256u << 20)) stack = 256u << 20;
     return stack;
 }
+
+// Unsized paths a worker stats at once
+enum { SIZE_BATCH = 32 };
 
 // (A bigger file is a longer parse than a typical module: ~1 ms)
 enum { BIG_FILE = 128 << 10 };
@@ -222,7 +248,13 @@ static void load_pool_run(LoadPool* me, LoadEntry* entry) {
     if (entry->is_helped) my helped_ms += (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
     entry->file = file;
     entry->state = LOAD_DONE;
-    pthread_cond_broadcast(&my done);
+    // (The loader, waiting, wants its file, or queued work to help with meanwhile)
+    if (my loader_waiting && (entry == my loader_awaits || load_pool_has_work(me))) {
+        my loader_waiting = false;
+        pthread_mutex_unlock(&my lock);
+        pthread_cond_signal(&my done);
+        pthread_mutex_lock(&my lock);
+    }
 }
 
 // Sizes a batch of the unsized entries, unlocking meanwhile: true if there were some. (The stats are the workers', not
@@ -230,7 +262,6 @@ static void load_pool_run(LoadPool* me, LoadEntry* entry) {
 static bool load_pool_size_batch(LoadPool* me) {
     isize pending = vec_load_entry_ptr_size(&my unsized) - my unsized_next;
     if (!pending) return false;
-    enum { SIZE_BATCH = 32 };
     LoadEntry* batch[SIZE_BATCH];
     isize count = pending < SIZE_BATCH ? pending : SIZE_BATCH;
     for (isize i = 0; i < count; i++) batch[i] = my unsized.data[my unsized_next++];
@@ -242,10 +273,19 @@ static bool load_pool_size_batch(LoadPool* me) {
     // (path and size are this batch's until it's in the heap: nobody else writes them)
     for (isize i = 0; i < count; i++) batch[i]->size = my size(my size_ctx, cstr_sv(&batch[i]->path));
     pthread_mutex_lock(&my lock);
+    isize scheduled = 0;
     for (isize i = 0; i < count; i++) {
-        if (batch[i]->state == LOAD_QUEUED) load_pool_schedule(me, batch[i]);
+        if (batch[i]->state == LOAD_QUEUED) {
+            load_pool_schedule(me, batch[i]);
+            scheduled++;
+        }
     }
-    if (count > 1) pthread_cond_broadcast(&my work);
+    // (This worker takes one of them; the others for whoever sleeps)
+    if (scheduled > 1 && my idle) {
+        pthread_mutex_unlock(&my lock);
+        load_pool_wake(me, scheduled - 1);
+        pthread_mutex_lock(&my lock);
+    }
     return true;
 }
 
@@ -306,7 +346,12 @@ static void* load_pool_worker(void* arg) {
         if (load_pool_size_batch(me)) continue;
         LoadEntry* entry = load_pool_next(me);
         if (entry) load_pool_run(me, entry);
-        else pthread_cond_wait(&my work, &my lock);
+        else {
+            // (Atomic: load_pool_wake() reads it without the lock)
+            __atomic_fetch_add(&my idle, 1, __ATOMIC_RELAXED);
+            pthread_cond_wait(&my work, &my lock);
+            __atomic_fetch_sub(&my idle, 1, __ATOMIC_RELAXED);
+        }
     }
     pthread_mutex_unlock(&my lock);
     return nullptr;
@@ -354,7 +399,8 @@ static LoadEntry* load_pool_add(LoadPool* me, csview path, bool is_stdlib, i64 s
 
 // Under the lock. A new path waits for its size (a stat) in the unsized list, which workers take in batches
 // A path the loader will want sooner than its rank says moves up (an import of a later root from an earlier one)
-static void load_pool_queue_locked(LoadPool* me, csview path, bool is_stdlib) {
+// Returns whether it made work for a worker
+static bool load_pool_queue_locked(LoadPool* me, csview path, bool is_stdlib) {
     auto found = hmap_load_entry_ptr_get(&my by_path, path);
     if (found) {
         LoadEntry* entry = found->second;
@@ -364,33 +410,44 @@ static void load_pool_queue_locked(LoadPool* me, csview path, bool is_stdlib) {
             entry->ranked_at = pool_now_ms();
             if (entry->sized && entry->size < BIG_FILE) heap_push(&my ranked, entry);
         }
-        return;
+        return false;
     }
     LoadEntry* entry = load_pool_add(me, path, is_stdlib, 0, LOAD_QUEUED);
     entry->queued_at = entry->ranked_at = pool_now_ms();
     if (my size) vec_load_entry_ptr_push(&my unsized, entry);
     else load_pool_schedule(me, entry);
-    pthread_cond_signal(&my work);
+    return true;
+}
+
+// Under the lock, which it releases: wakes workers for `added` new paths (unsized ones are sized SIZE_BATCH at a time:
+// a worker per batch, which wakes others for what it sized), and the loader if it waits with nothing to help with
+static void load_pool_queued(LoadPool* me, isize added) {
+    bool wake_loader = added && my loader_waiting && added > my idle;
+    if (wake_loader) my loader_waiting = false;
+    pthread_mutex_unlock(&my lock);
+    if (!added) return;
+    load_pool_wake(me, my size ? (added + SIZE_BATCH - 1) / SIZE_BATCH : added);
+    if (wake_loader) pthread_cond_signal(&my done);
 }
 
 void load_pool_queue(LoadPool* me, csview path, bool is_stdlib) {
     pthread_mutex_lock(&my lock);
-    load_pool_queue_locked(me, path, is_stdlib);
-    pthread_mutex_unlock(&my lock);
+    load_pool_queued(me, load_pool_queue_locked(me, path, is_stdlib));
 }
 
 void load_pool_queue_each(LoadPool* me, csview const* paths, bool const* is_stdlib, isize count) {
     if (!count) return;
     pthread_mutex_lock(&my lock);
-    for (isize i = 0; i < count; i++) load_pool_queue_locked(me, paths[i], is_stdlib[i]);
-    pthread_mutex_unlock(&my lock);
+    isize added = 0;
+    for (isize i = 0; i < count; i++) added += load_pool_queue_locked(me, paths[i], is_stdlib[i]);
+    load_pool_queued(me, added);
 }
 
 void load_pool_queue_many(LoadPool* me, csview const* paths, isize count, bool is_stdlib) {
     pthread_mutex_lock(&my lock);
-    for (isize i = 0; i < count; i++) load_pool_queue_locked(me, paths[i], is_stdlib);
-    pthread_cond_broadcast(&my work);
-    pthread_mutex_unlock(&my lock);
+    isize added = 0;
+    for (isize i = 0; i < count; i++) added += load_pool_queue_locked(me, paths[i], is_stdlib);
+    load_pool_queued(me, added);
 }
 
 SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* errs) {
@@ -409,7 +466,12 @@ SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* 
                 other->is_helped = true;
                 load_pool_run(me, other);
             }
-            else pthread_cond_wait(&my done, &my lock);
+            else {
+                my loader_waiting = true;
+                my loader_awaits = entry;
+                pthread_cond_wait(&my done, &my lock);
+                my loader_waiting = false;
+            }
         }
         timespec_get(&end, TIME_UTC);
         double waited = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
