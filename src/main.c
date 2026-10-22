@@ -145,6 +145,7 @@ static long resident_mb() {
 // scripts/memtrack.sh's LD_PRELOADed live-heap tracker (bench/memtrack/memtrack.c), absent otherwise
 void memtrack_dump(char const* name) __attribute__((weak));
 void memtrack_scan(char const* name) __attribute__((weak));
+void timeline_phase(char const* name) __attribute__((weak)); // bench/timeline's LD_PRELOADed sampler, absent otherwise
 static void phase_done(Options const* opts, Output* out, const char* name, double* last) {
     if (memtrack_dump && getenv("MEMTRACK")) {
         char phase[64];
@@ -154,6 +155,7 @@ static void phase_done(Options const* opts, Output* out, const char* name, doubl
         memtrack_dump(phase);
         memtrack_scan(phase);
     }
+    if (timeline_phase) timeline_phase(name);
     const double now = now_ms();
     // (How long the main thread was on a CPU meanwhile: a loaded machine's preemption is the rest, for the serial
     // phases)
@@ -635,6 +637,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     ProjectRedirects const* redirects, bool last, CheckCounts* counts, bool defer, returns int
 ) {
     double last_time = now_ms();
+    if (timeline_phase) timeline_phase("startup");
     ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
     Program* program = program_new(errs, opts->emit_view ? emit_view_fs(opts->emit_view) : fs);
     program_set_defer_bodies(program, defer);

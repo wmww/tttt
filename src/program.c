@@ -3558,7 +3558,13 @@ static int resolve_order_cmp(void const* a, void const* b) {
 // ResolveShard of its own; then, in program order, each TypeScript file's shard is replayed and merged and each
 // JavaScript file walked. The order of everything that reaches the binder is the same for any thread count
 // TTTT_RESOLVE_TIMES: the time since *last under the given name on stderr, and *last reset
+void timeline_phase(char const* name) __attribute__((weak)); // bench/timeline's LD_PRELOADed sampler, absent otherwise
 static void resolve_step_done(char const* name, double* last) {
+    if (timeline_phase && *name) {
+        char mark[64];
+        snprintf(mark, sizeof mark, "resolve: %s", name);
+        timeline_phase(mark);
+    }
     if (!debug_env.resolve_times) return;
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);
