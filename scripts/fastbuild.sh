@@ -14,7 +14,7 @@
 # confirm BOLT: flipping MEASURED to fast makes them measure fast/tttt.
 set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )/.."
-MEASURED=pgo
+MEASURED=fast # flipped 2026-10-22: the laptop confirmed BOLT (measurements.md "BOLT and interning A/B": -3% K1, -2..-4% defaults)
 FORCE=
 case "${1:-}" in
     --force) FORCE=--force ;;
