@@ -937,6 +937,10 @@ typedef struct FreeParams {
     // The class or interface declaration the nodes are in (TypeFlow.owner): when it's declared more than once, its type
     // parameters and `this` are free too (tsc's isTypeParameterPossiblyReferenced: more than one declaration)
     Symbol const* owner;
+    // A `typeof` of a function's local was bounded by the type parameters around its declarations (typeof_local_params()):
+    // the type may still hold a type variable through the local's type, so it could contain one (tsc's
+    // couldContainTypeVariables says so of every type literal)
+    bool typeof_local;
 } FreeParams;
 
 static void free_params_bind(FreeParams* out, Ty const* param) {
@@ -1008,6 +1012,36 @@ static bool typeof_mentions_no_type_params(Expr const* first) {
         if (!block && decl->kind == SYMBOL_DECL_ALIAS && span_source(decl->full) && !span_source(decl->full)->is_js) continue;
         if (!block || block->generics || block->function) return false;
     }
+    return true;
+}
+
+// `typeof x` of a name declared in a function: what it can mention is bounded by the type parameters around x's
+// declarations (tsc's isTypeParameterPossiblyReferenced of a type query: a type parameter whose scope has a declaration
+// of the name), each of which is around the node too since the name is visible there. A local of a function inside a
+// class may mention the class's `this` (tsc's getOuterTypeParameters includes this types): unknown, as is anything but
+// a plain name, and so is one inside a context sensitive function expression. xstate's `types: {} as { actors: { logic: typeof child } }` in a non-generic function: no instance per
+// inference mapper, the one type tsgo keeps
+static bool typeof_local_params(Checker* me, Expr const* first, FreeParams* out) {
+    while (first->tag == EXPR_PROPERTY && !expr_is_perenthisized(first)) first = &first->property->expr;
+    if (first->tag != EXPR_IDENTIFIER || first->identifier.keyword || expr_is_perenthisized(first)) return false;
+    Symbol const* symbol = first->identifier.target;
+    if (!symbol || !symbol->decl_count) return false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        Scope const* block = symbol->decls[i].block;
+        if (!block || scope_enclosing_class(block)) return false;
+        SourceFile const* source = span_source(symbol->decls[i].full);
+        if (!source || source->is_js) return false;
+        // A context sensitive function expression around it has its contextual signature's type parameters too
+        // (tsc's getOuterTypeParameters; contextualOuterTypeParameters' `f(t => { type A = { x: typeof t } })`)
+        for (Scope const* scope = block; scope; scope = scope->parent) {
+            if (scope->function && scope->function->is_expression && ty_function_is_context_sensitive(scope->function)) return false;
+        }
+    }
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        TyList around = ty_outer_type_params(me, symbol->decls[i].block->generics);
+        for (u32 j = 0; j < around.len; j++) free_params_add(out, around.data[j]);
+    }
+    out->typeof_local = true;
     return true;
 }
 
@@ -1182,7 +1216,7 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
                 for_each (i, vec_spanned_type, &applied->params) {
                     collect_free_params(me, &i->type, out);
                 }
-            } else if (!typeof_mentions_no_type_params(node->typeof_->expr)) {
+            } else if (!typeof_mentions_no_type_params(node->typeof_->expr) && !typeof_local_params(me, node->typeof_->expr, out)) {
                 out->unknown = true;
             }
             break;
@@ -1308,7 +1342,7 @@ static void anonymous_set_free_params(Checker* me, Ty* ty, FreeParams found) {
     ty->anonymous.block_params_only = !found.unknown && !mentions && found.len;
     ty->anonymous.free_params_unknown = found.unknown;
     if (!found.unknown) ty->anonymous.free_params = ty_list_copy(me, found.params, found.len);
-    if (found.unknown || found.len) ty->flags |= TYF_COULD_CONTAIN_TYPE_VARIABLES;
+    if (found.unknown || found.len || found.typeof_local) ty->flags |= TYF_COULD_CONTAIN_TYPE_VARIABLES;
 }
 
 static TyConditionalOuter* collect_outer_params(Checker* me, TypeNode const* node) {
