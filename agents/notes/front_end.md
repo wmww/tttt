@@ -36,6 +36,11 @@ end's split", "The 12-core box at efb91998", "The config glob next to the load p
   threads; options' per-file paths 41 -> 10 M instructions. Not yet retaken quietly: the T16 table above is before
   them, and T4 (laptop-class) and nest have no quiet timeline at all. Link at T4 read 82-96 ms against 52-56 at T1
   and T16 in every run (unexplained: check on the laptop).
+- **Retaken on the 12-core laptop at 2989c0f0 (2026-10-22, measurements.md "The 12-core box at 2989c0f0")**: vscode's
+  front end 251-261 ms at the defaults (efb91998: ~500), 440-453 at T4; link 39-43 ms at T24 and **40-51 at T4** (the
+  16-vCPU box's 82-96 was that box's); nest 51-58 ms of its ~80 ms wall. At T24 load+parse the main thread is the
+  critical path (82 ms on a CPU, 27 blocked, 15 queued). Perf counters: K1 is 53% frontend-bound (the code footprint:
+  23% icache fetch misses, op cache 63% hit), the hash tables and allocation are not where the stalls land.
 - Tools: `tttt --time` (phases with the main thread's CPU), `TTTT_LOAD_POOL_STATS=1` (the loader's own work, waits,
   inline parses), `TTTT_LOAD_POOL_INLINE=1` (why each inline parse happened), `TTTT_RESOLVE_TIMES=1` (declare, link's
   steps, walk), `TTTT_FILE_TIMES=1` (per-file check timeline), `TTTT_DEFER_STATS=1` (materializations over 10 ms),

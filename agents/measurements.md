@@ -85,6 +85,152 @@ D1 read misses up 2.07 -> 2.13% on tsc); splitting is_related_to(), recursive_re
 caches (instructions up or flat). The parser is ~12% of vscode's instructions with no hot site (74M child Parser
 creations for 138 MB of source, the top site 10%): structural.
 
+## The 12-core box at 2989c0f0: front end cuts and perf counters (2026-10-22)
+Run by an agent on the human's laptop: Ryzen AI 9 HX 370, **hybrid**: 4 Zen 5 cores (8 threads, 5.16 GHz, 16 MB L3,
+CPUs 0-3,12-15) + 8 Zen 5c (16 threads, 3.29 GHz, 8 MB L3); Linux 7.2.11-zen1, perf 7.2.11, AC, `balanced`, Firefox
+closed, load ~1 before. pgo/tttt retrained at 2989c0f0. bun: the same canary package as before
+(`@oven/bun-linux-x64@1.4.3-canary.20261019.1`, refetched: the old binary was gone).
+
+**Bench** (`scripts/bench.sh --runs 3 --checkers 12 --bun ...`): best wall s / CPU s (median run) / peak MB, the
+f2ad73c9 columns from the section below:
+
+| corpus | tttt default | f2ad73c9 default | tttt K12 | f2ad73c9 K12 | tttt single | f2ad73c9 single | bun | bun single | tsgo |
+|---|---|---|---|---|---|---|---|---|---|
+| TypeScript6 | 0.26 / 1.2 / 493 | 0.21 / 1.1 / 489 | 0.22 / 1.2 / 500 | 0.23 / 1.2 / 483 | 0.45 / 0.5 / 231 | 0.47 / 0.5 / 229 | 0.30 / 1.8 / 280 | 0.69 / 0.8 / 168 | 0.58 / 3.2 / 499 |
+| type-fest | 0.22 / 1.3 / 923 | 0.31 / 1.6 / 891 | 0.22 / 1.4 / 934 | 0.32 / 1.7 / 905 | 0.61 / 0.6 / 567 | 0.88 / 0.9 / 563 | 0.97 / 6.0 / 1022 | 3.76 / 3.9 / 786 | 3.95 / 19.6 / 5238 |
+| valibot | 0.14 / 1.2 / 526 | 0.14 / 1.2 / 517 | 0.14 / 1.3 / 533 | 0.13 / 1.2 / 524 | 0.36 / 0.4 / 258 | 0.38 / 0.4 / 257 | 0.14 / 2.4 / 264 | 1.16 / 1.2 / 158 | 0.67 / 4.6 / 833 |
+| bulletproof-react | 0.10 / 0.4 / 332 | 0.10 / 0.5 / 304 | 0.08 / 0.7 / 434 | 0.09 / 0.7 / 408 | 0.18 / 0.2 / 149 | 0.15 / 0.2 / 147 | 0.16 / 0.9 / 242 | 0.40 / 0.4 / 157 | 0.42 / 2.5 / 446 |
+| nestjs-boilerplate | 0.07 / 0.4 / 301 | 0.08 / 0.5 / 264 | 0.06 / 0.5 / 308 | 0.08 / 0.6 / 304 | 0.14 / 0.2 / 137 | 0.14 / 0.2 / 133 | 0.06 / 0.6 / 197 | 0.19 / 0.2 / 120 | 0.14 / 1.3 / 256 |
+| webpack | 0.26 / 2.6 / 871 | 0.27 / 2.6 / 861 | 0.27 / 2.6 / 876 | 0.28 / 2.7 / 860 | 0.97 / 1.0 / 543 | 1.03 / 1.0 / 540 | 0.40 / 4.5 / 513 | 1.61 / 2.4 / 328 | 1.12 / 6.6 / 1163 |
+| zod | 0.18 / 1.6 / 866 | 0.18 / 1.8 / 866 | 0.19 / 1.8 / 852 | 0.19 / 1.8 / 856 | 0.52 / 0.5 / 443 | 0.54 / 0.5 / 446 | 0.21 / 3.1 / 380 | 1.02 / 1.5 / 212 | 0.98 / 6.7 / 1340 |
+| xstate | 0.11 / 0.9 / 477 | 0.14 / 1.2 / 458 | 0.13 / 1.0 / 504 | 0.13 / 1.1 / 485 | 0.27 / 0.3 / 195 | 0.29 / 0.3 / 197 | 0.14 / 1.4 / 237 | 0.46 / 0.6 / 111 | 0.38 / 2.6 / 480 |
+| drizzle | 0.27 / 2.6 / 1087 | 0.30 / 2.8 / 1093 | 0.28 / 2.7 / 1190 | 0.29 / 3.0 / 1123 | 0.64 / 0.6 / 470 | 0.68 / 0.7 / 467 | 0.27 / 4.5 / 433 | 1.46 / 2.3 / 273 | 1.42 / 9.8 / 1619 |
+| vue | 0.15 / 1.5 / 566 | 0.17 / 1.7 / 569 | 0.16 / 1.6 / 569 | 0.17 / 1.8 / 556 | 0.56 / 0.6 / 309 | 0.58 / 0.6 / 308 | 0.22 / 2.7 / 312 | 0.93 / 1.5 / 180 | 0.83 / 4.8 / 737 |
+| effect | 0.24 / 2.6 / 946 | 0.30 / 3.2 / 909 | 0.26 / 2.8 / 933 | 0.29 / 3.1 / 916 | 1.04 / 1.1 / 626 | 1.11 / 1.1 / 625 | 0.50 / 6.3 / 516 | 2.23 / 2.3 / 333 | 1.42 / 10.3 / 1546 |
+| vscode | **1.70** / 31.7 / 5365 | 1.93 / 35.4 / 5375 | 1.90 / 21.5 / 4993 | 2.02 / 22.9 / 5014 | 9.29 / 9.3 / 4093 | 9.90 / 10.0 / 4087 | 1.74 / 36.9 / 2234 | 12.93 / 13.5 / 1642 | 7.74 / 55.2 / 7861 |
+| excalidraw | 0.21 / 2.1 / 743 | 0.21 / 2.1 / 730 | 0.21 / 2.2 / 740 | 0.24 / 2.3 / 727 | 0.67 / 0.7 / 374 | 0.71 / 0.7 / 375 | 0.21 / 2.9 / 386 | 1.24 / 1.7 / 255 | 1.45 / 11.7 / 1815 |
+| tanstack-router | 0.18 / 1.5 / 586 | 0.20 / 1.6 / 579 | 0.17 / 1.5 / 609 | 0.19 / 1.7 / 589 | 0.50 / 0.5 / 315 | 0.53 / 0.5 / 316 | 0.22 / 2.9 / 376 | 1.05 / 1.1 / 186 | 1.10 / 6.3 / 958 |
+| TS6 -b | 0.56 / 2.9 / 539 | 0.57 / 3.1 / 532 | - | - | - | - | - | - | 1.29 / 7.1 / 554 |
+
+- **vscode 1.93 -> 1.70 s at the defaults, now level with bun (1.74).** More than the front end's expected 40-70 ms:
+  single-threaded is also 6% faster (9.90 -> 9.29, the checker work since f2ad73c9), worth ~90 ms of the 1.5 s
+  typecheck at the defaults. The front end (`--time`: config + libs + load+parse + resolve, 5 runs) is **251-261 ms**
+  (efb91998: ~500): config 2, libs 11-20, load+parse 107-117, resolve 122-127. Run alone after the bench (5 runs,
+  `/usr/bin/time`) vscode reads best 1.77 / median 1.80 s, CPU 32.7 s, 5343 MB: the 0.07-0.1 s gap to the bench's 1.70 is
+  unexplained (thermals after 20 minutes of bench, probably). Either way below f2ad73c9's 1.93.
+- vscode `--threads 4` (5 runs alone): best 3.52 / median 3.67 s, CPU 14.3 s, 4452 MB; front end 440-453 ms
+  (load+parse 228-235, resolve 194-212).
+- **nest**: 0.07 default, 0.06 K12, ties bun's 0.06 at K12. Alone (5 runs, perf_counter): defaults 78-87 ms
+  (median 84), CPU 0.43 s, 297 MB, front end 51-58 ms (libs 12-19, load+parse 6-9, resolve 26-33); `--threads 4`
+  69-88 ms (median 83), CPU 0.27 s, 169 MB, front end 47-60. The front end is ~2/3 of nest's wall at every T.
+- Everything else within noise of f2ad73c9 or better (type-fest 0.31 -> 0.22, effect 0.30 -> 0.24, xstate 0.14 ->
+  0.11: f2ad73c9's type-fest was the suspected noise). TypeScript6's default 0.26 against K12 0.22 is the bench's very
+  first measurement (unconfirmed warm-up; f2ad73c9 0.21). tttt now leads or ties bun's wall on every corpus.
+
+**Timeline** (`bench/timeline/`, 3 runs each, the middle one shown; the preload inflates walls ~5%):
+
+| vscode | T24 (defaults) | | | T4 | | |
+|---|---|---|---|---|---|---|
+| phase | wall ms | main run / runq / blocked | pool CPU, parallelism | wall ms | main run / runq / blocked | pool CPU, parallelism |
+| config | 2 | 3 / 0 / 0 | | 1 | 2 / 0 / 0 | |
+| libs | 17 | 4 / 1 / 12 | 214, 12.9 | 13 | 12 / 0 / 1 | 61, 5.7 |
+| load+parse files | 124 | 82 / 15 / 27 | 1664, 14.1 | 223 | 215 / 1 / 8 | 885, 4.9 |
+| collect files, pool end, file scopes | 9 | 10 / 0 / 0 | idle | 10 | 10 / 0 / 0 | idle |
+| declare in isolation | 21 | 13 / 0 / 7 | 227, 11.8 | 28 | 28 / 0 / 0 | 62, 3.2 |
+| declare merge + between | 8 | 7 / 0 / 1 | idle | 8 | 7 / 0 / 1 | idle |
+| link: module refs | 1 | | | 2 | | 3.5, 2.6 |
+| **link** | **39** | 38 / 0 / 1 | idle | **40** | 41 / 0 / 0 | idle |
+| parallel walk | 38 | 38 / 0 / 0 | 774, 21.6 | 104 | 103 / 0 / 1 | 294, 3.8 |
+| shard merge, remaining aliases | 7 | 7 / 0 / 1 | idle | 7 | 7 / 0 / 0 | idle |
+| typecheck | 1539 | 1288 / 29 / 222 | 29385, 19.9 | 3201 | 3146 / 4 / 51 | 9430, 3.9 |
+
+- **Link at T4 reads ~40-51 ms, not 80-96** (T4 runs: 51, 40, 40; T24: 43, 39, 40; nest 10-15). The 82-96 ms on the
+  16-vCPU box is that box's (SMT/VM), not tttt's. Link's samples: binder_link 41-46%, resolve_alias_target_in ~35%.
+- T24 load+parse: the main thread is the critical path again but now waits too: 27 ms blocked, 15 ms on the run
+  queue (24 busy threads on 24 hardware threads), its top sample `__lll_lock_wait_private<program_add_source_idempotent`
+  14% (a glibc-internal lock under it, malloc's arena lock most likely; not checked), then program_add_made_source 13%. The pool's top leaf is
+  skip_balanced_braces_at 16-20% (the deferred bodies' skipper) and mmap of each file 8%.
+- At T4 the front end is serial-ish by construction: the walk 104 ms at 3.8x, load+parse 223 ms at 4.9x.
+- **nest at the defaults** (run 2, 79 ms to the end of typecheck): config 2, libs 16 (main blocked 8; the pool at 14x,
+  mmap 22% of its samples), load+parse files 6, declare in isolation 4, declare merge 3, **link 10** (madvise of
+  arena_populate 55% and munmap of arena_drop 18% of its samples: the arena's page faulting, not linking), parallel
+  walk 7 (thread start-up in the main thread's samples), typecheck 27 (2.8x on 3 checkers). Before typecheck: 52 ms.
+- The timeline's `_dl_mcount_wrapper<X` frames are probably a symbolization artefact of the LTO binary (read as X).
+
+**Hardware counters, vscode** (`thirdparty/corpora/vscode/src/tsconfig.corpus.json --noEmit --pretty false`;
+`perf_event_paranoid` set to -1 by the human; 10 events multiplexed at 50%):
+
+| per 1000 instructions | K1 T1 (a Zen 5 core) | defaults (T24, K24) |
+|---|---|---|
+| instructions / cycles | 65.2 G / 46.1 G, **IPC 1.42** | 76.6 G / 101.0 G, **IPC 0.76** |
+| branch-misses | 6.05 (2.7% of branches) | 7.20 (3.2%) |
+| cache-references / cache-misses | 85.9 / 8.64 | 105.8 / 12.05 |
+| L1-dcache-load-misses | 16.6 | 25.7 |
+| L1-icache-load-misses | 10.3 | 9.6 |
+| dTLB-load-misses | 0.11 | 1.01 |
+| iTLB-load-misses | 0.004 | 1.08 |
+| wall / user / sys | 9.59 / 9.06 / 0.46 s | 1.86 / 31.0 / 2.77 s |
+
+- The defaults do 11.3 G more instructions (+17%: cross-checker re-derivation) at half the IPC (SMT, Zen 5c's 3.3
+  GHz cores and 8 MB L3; kernel 13.4 G cycles / 5.6 G instructions of it). The defaults' TLB misses are user space
+  (`:u` 74.3 M dTLB, 74.6 M iTLB; `:k` 1.6 M / 0.08 M): **iTLB L2 misses ~300x K1's** per instruction, unexplained
+  (SMT siblings sharing the iTLB? the c-cores' TLBs? worth a `taskset` pair at T8 on the Zen 5 threads only).
+- **Topdown at K1 (`-M PipelineL1`/`PipelineL2`, AMD's metric groups; `--topdown` isn't supported): frontend-bound
+  53.2%, backend-bound 23.3%, bad speculation 7.7%, retiring 15.7%** (8 slots/cycle). Level 2: frontend latency 33.4%
+  (cycles with no op at all from the front end) + bandwidth 19.8%; backend 22.3% memory, 1.0% CPU; bad speculation all
+  mispredicts (7.5%); retiring 15.3% fastpath, 0.4% microcode. Pinned: Zen 5 (CPU 2) 9.50 s, 53.3 / 23.5 / 7.7 / 15.8;
+  Zen 5c (CPU 6) 13.92 s, 55.3 / 19.5 / 8.3 / 16.7, the same instructions (IPC 1.52 at the lower clock). The defaults:
+  frontend 51.2, backend 22.8, bad speculation 2.9, retiring 8.9, **SMT contention 11.8%**.
+- **The front end is the stall, and it's the code footprint**: 5.4 MB of text; the instruction cache misses 23% of
+  its fetch lookups (8.1-8.6 G of 35.8 G); the op cache hits 63% (14.8 G hits / 8.9 G misses) so 29% of ops (25.1 of
+  86.4 G) come from the legacy x86 decoder; an L1 iTLB miss every 86 instructions (757 M, all L2 iTLB hits);
+  instruction fills from beyond L2 312 M against 3.62 G from L2. On the data side demand fills are 571 M from L2,
+  111 M from L3 (local CCX), 70 M from DRAM: **more instruction lines than data lines come from beyond L2**.
+- Profiles (K1 T1; `perf record -g --call-graph dwarf -F 2000` with `perf report --no-children --sort symbol`, and
+  `perf record -e EVENT -F 2000` with `--sort dso,symbol`; `LLC-load-misses` doesn't exist on this CPU:
+  `ls_dmnd_fills_from_sys.dram_io_all`, demand data fills from DRAM, stands in; `L1-icache-load-misses` added for
+  the frontend result; `k:` kernel; suffixes trimmed). Flat: no symbol over 3% of cycles, and the icache-miss profile
+  is the cycle profile (misses spread over the whole hot path, not one function's):
+
+| # | dwarf -g, --no-children (cycles) | cycles | L1-dcache-load-misses | L1-icache-load-misses | DRAM demand fills |
+|---|---|---|---|---|---|
+| 1 | 3.03 type_at_flow_node | 2.68 type_at_flow_node | 5.88 k:clear_pages | 2.73 type_at_flow_node | 4.28 k:clear_pages |
+| 2 | 1.90 find_prop_in | 2.45 atom_table_get | 3.95 type_at_flow_node | 2.55 atom_table_get | 3.21 unused_report |
+| 3 | 1.73 atom_table_get | 2.33 find_prop_in | 3.16 find_prop_in | 2.53 find_prop_in | 3.00 k:_raw_spin_lock |
+| 4 | 1.61 call_return_type | 1.84 recursive_related | 2.66 compute_inner | 2.18 compute_inner | 2.14 recursive_related |
+| 5 | 1.56 k:clear_pages | 1.73 call_return_type | 2.31 call_effects | 2.15 expr_typecheck | 2.11 program_resolve_names |
+| 6 | 1.53 compute_inner | 1.73 compute_inner | 2.21 atom_table_get | 1.86 recursive_related | 2.09 find_prop_in |
+| 7 | 1.53 recursive_related | 1.47 skip_balanced_braces_at | 1.61 call_return_type | 1.55 parse_expr | 2.05 report_variables |
+| 8 | 1.47 expr_lookup_names | 1.40 parse_expr | 1.58 expr_typecheck | 1.49 call_return_type | 1.98 atom_table_get |
+| 9 | 1.32 check_object | 1.37 expr_lookup_names | 1.34 reorder_candidates | 1.23 is_related_to | 1.92 call_return_type |
+| 10 | 1.27 skip_balanced_braces_at | 1.36 expr_typecheck | 1.09 check_object | 1.21 check_with | 1.83 k:map_anon_folio_pte_nopf |
+| 11 | 1.23 parse_expr_right_side | 1.22 check_object | 1.07 parse_expr | 1.04 check_object | 1.77 compute_inner |
+| 12 | 1.21 expr_typecheck | 1.10 k:clear_pages | 1.03 recursive_related | 1.03 resolve_with_signatures_inner | 1.39 reorder_candidates |
+| 13 | 1.16 parse_expr | 1.10 scope_resolve | 0.97 ty_access_key_type | 1.02 ty_access_key_type | 1.26 ty_fresh_literal |
+| 14 | 1.03 scope_resolve | 1.01 is_related_to | 0.95 ty_type_of_symbol | 0.99 lazy_type_evaluate_inner | 1.25 check_object |
+| 15 | 0.97 props_related_impl | 0.88 reachability_walk | 0.86 expr_lookup_names | 0.97 ty_expr_type | 1.03 is_related_to |
+| 16 | 0.94 identifier_flow_type | 0.87 props_related_impl | 0.86 class_instance_member | 0.93 reachability_walk | 1.01 instantiate_anonymous |
+| 17 | 0.84 check_with | 0.87 parse_expr_right_side | 0.86 reachability_walk | 0.91 expr_lookup_names | 0.99 program_materialize_locked |
+| 18 | 0.83 infer_from | 0.86 lazy_type_evaluate_inner | 0.84 lazy_type_evaluate_inner | 0.90 reorder_candidates | 0.89 reachability_walk |
+| 19 | 0.82 lazy_type_evaluate_inner | 0.84 ty_access_key_type | 0.84 ty_string_literal | 0.86 identifier_flow_type | 0.83 k:__mem_cgroup_charge |
+| 20 | 0.82 resolve_with_signatures_inner | 0.79 check_with | 0.82 ty_link_get | 0.79 ty_string_literal | 0.79 binder_link |
+- By category (all symbols, cycles / L1d misses / L1i misses / DRAM fills, %): parser+lexer 9.8 / 4.4 / 9.4 / 0.3
+  (skip_balanced_braces_at 1.5, parse_expr 1.4); name resolution 7.4 / 5.1 / 4.7 / 9.3; hash and intern tables
+  (atom_table_get, intern_*, ty_link_get, symbol tables) 4.5 / 4.4 / 3.8 / 4.3, atom_table_get alone 2.5 / 2.2 / 2.5
+  / 2.0, ty_link_get 0.4 / 0.8; malloc/free/arena 2.0 / 1.6 / 2.5 / 1.7; kernel 5.7 / 9.5 / 2.8 / 16.4 (clear_pages:
+  zeroing fresh pages, 1.1% of cycles but 5.9% of L1d misses and 4.3% of DRAM fills); the checker's own code the
+  remaining ~73%. The DRAM-fill top has unused_report 3.2 and report_variables 2.0 (the unused pass, walking cold
+  memory), program_resolve_names 2.1. Stalls don't land in the hash tables, the Ty header reads (no single reader) or
+  allocation: they land on fetching the checker's code.
+- Direction this suggests (not tried): code layout and size (hot/cold splitting beyond PGO's, `-fno-plt`-style and
+  `--icf`, BOLT on pgo/tttt, fewer near-duplicate inlined copies, `-Os` on cold units), and huge pages for text
+  (`CONFIG_READ_ONLY_THP_FOR_FS` / remapping .text to a 2 MB page) for the iTLB.
+
+**drizzle K12, plain vs `TTTT_SHARED_GRAPH=1`** (`perf stat -r 5`): user instructions 8.11 G -> 5.98 G (**-26%**),
+user cycles 6.55 G -> 5.94 G (-9%: IPC 1.24 -> 1.01), kernel cycles 1.80 -> 1.49 G, L1d misses 183 -> 155 M, DRAM
+demand fills 17.8 -> 15.9 M, L3/other-L2 fills 15.7 -> 18.9 M (+20%: sharing moves lines between cores); wall 0.300
+-> 0.273 s (+-0.7%). The graph removes a quarter of the work but the remaining work runs a fifth slower.
+
 ## The 12-core box at f2ad73c9: the new defaults' laptop bench (2026-10-21, run by an agent on the human's laptop)
 The new defaults (checkers past the cores for big programs, `--checker-memory` a quarter of RAM). Same machine
 as below (on AC, `balanced`, load ~1), pgo/tttt retrained at f2ad73c9, `scripts/bench.sh --runs 3 --checkers 12` (no
