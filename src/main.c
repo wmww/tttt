@@ -1,6 +1,7 @@
 // realpath() and PATH_MAX, which strict -std=c2x hides, and sched_getaffinity()
 #define _GNU_SOURCE
 #include <limits.h>
+#include <malloc.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <libgen.h>
@@ -861,6 +862,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         // fraction of the work: jest's packages, each gated by TS5108)
         bool declarations_only = (gated || getenv("TTTT_DECLARATIONS_ONLY")) && typecheck && !opts->expect_types;
         if (declarations_only) program_set_declarations_only(program, true);
+        mallopt(M_TOP_PAD, 128 << 10); // (glibc's default, see main())
         if (typecheck) program_typecheck(program);
         // (Checked, every body was materialized: program_typecheck() says if one parsed otherwise)
         if (defer && (program_defer_failed(program) ||
@@ -1606,6 +1608,10 @@ int main(int argc, const char** argv) {
     // (Tools that compare with tsgo's own harness run its test content mappers through this, plan 56)
     content_mapper_set_launcher(getenv("TTTT_CONTENT_MAPPER_LAUNCHER"));
     raise_stack_limit();
+    // (Loading and declaring grow glibc's per-thread heaps by an mprotect() per 128 KB, each one taking the mmap lock
+    // for writing and stalling every other thread's page faults: vscode's front end made 21k of them. A 16 MB pad
+    // until the checkers start; kept during checking it held up to 4% more peak RSS, trimmed less)
+    mallopt(M_TOP_PAD, 16 << 20);
     int ret = run(argc, argv);
     ast_stats_print();
     return ret;
