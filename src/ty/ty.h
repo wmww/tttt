@@ -1424,6 +1424,7 @@ struct Checker {
     bool graph_shadowed;
     // The signature_resolve() calls in flight in this worker, innermost first (members.c): their records so far
     struct SigResolving* sig_resolving;
+    u32 census_id; // TTTT_VARIANCE_CENSUS: this checker's number, in creation order
     u64 deep_cuts; // Relations cut short by deep nesting (a taint event, TTTT_GRAPH_STATS)
     bool relation_deep_seen; // The relation in progress went through a deep-nesting cut (relate.c CACHE_DEEP)
     u64 relation_pairs; // Pairs recursive_related() computed (TTTT_GRAPH_STATS: plan 86 4e's relation sharing)

@@ -30,6 +30,9 @@ typedef struct DebugEnv {
     bool debug_reentry;
     bool dump_flow;            // TTTT_DUMP_FLOW
     bool dump_variances;       // TTTT_DUMP_VARIANCES
+    // TTTT_VARIANCE_CENSUS: one `VC` line per variance measurement on stderr (checker, subject, values, whether it was
+    // clean by the taint counter, deep cuts, instructions-free cost proxies): scripts/variancecensus.py
+    bool variance_census;
     bool debug_relate;         // TTTT_DEBUG_RELATE
     bool debug_relate_nested;  // TTTT_DEBUG_RELATE_NESTED
     bool debug_variance;       // TTTT_DEBUG_VARIANCE: the relations of variance measurements, like an instrumented tsgo

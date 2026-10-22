@@ -23,6 +23,7 @@ static void read_debug_env() {
         .debug_reentry = getenv("TTTT_DEBUG_REENTRY") != nullptr,
         .dump_flow = getenv("TTTT_DUMP_FLOW") != nullptr,
         .dump_variances = getenv("TTTT_DUMP_VARIANCES") != nullptr,
+        .variance_census = getenv("TTTT_VARIANCE_CENSUS") != nullptr,
         .debug_relate = getenv("TTTT_DEBUG_RELATE") != nullptr,
         .debug_relate_nested = getenv("TTTT_DEBUG_RELATE_NESTED") != nullptr,
         .debug_variance = getenv("TTTT_DEBUG_VARIANCE") != nullptr,

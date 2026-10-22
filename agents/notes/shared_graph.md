@@ -151,6 +151,16 @@ full time), not duplicated work.
    recycling after fewer than CHECKER_MEMORY_BACKOFF_FILES files repeatedly, or a first segment's warm-up over its
    budget share; switching is a recycle into a fresh shared graph at a file boundary); the graph budget (800 MB, at
    dokploy's working set): don't recycle when under a quarter of the files remain, or double after a short epoch.
+6. **Sharing clean variances alone (bun's claim/wait) is closed** (2026-10-22, worker "var", `scripts/variancecensus.py`
+   and callgrind at `--threads 1`, plain build). Variance measurement is 87% / 68% / 9% / 3.4% of the K12 excess over K1
+   on drizzle / zod / effect / excalidraw (inclusive instructions in claim_and_measure: drizzle 1.58 -> 5.13 G of 5.44
+   -> 9.50 G), but 98% / 94% of it on drizzle / zod is in *tainted* outermost measurements (95% with deep-nesting cuts of
+   their own); clean duplicates are 0.04-0.07 G, under 1% of K12 instructions on every corpus. And taint is history's,
+   not the symbol's: subjects clean in some checkers and tainted in others exist on three of the four corpora (drizzle
+   11, zod 3, effect 2), with differing values (drizzle's MakeColumnConfig clean `010101` in 8 checkers, `010901` in one,
+   tainted by an earlier deep-cut relation; PgArrayBuilder `0103` at K1, `0109` in two K12 checkers), so first clean
+   publisher wins is not K-independent by construction. Clean values never disagreed (~3600). The lever is the cost of
+   the tainted measurements themselves, which varies 25x by history (SingleStoreSelectBuilder 19k-751k types).
 
 ## What bun does differently (read from its source at 6bb5dc19, 2026-10-20)
 One content-keyed hash-consed store for every type, signature and mapper, created into directly with global ids from

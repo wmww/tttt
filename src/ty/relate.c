@@ -3731,6 +3731,22 @@ static void variance_claim_read(Checker* me, VarianceClaim const* claim) {
 // stage 4f, graph.h): a subject's slot, published, is adopted; empty, it joins the group of the outermost measurement
 // in progress (or starts one), published at its end if the group read nothing in flight but its own claims (else
 // poisoned); poisoned, it is measured privately. Nobody waits for anybody
+// TTTT_VARIANCE_CENSUS: `VC checker depth symbol:kind name values clean deep_cuts types` (scripts/variancecensus.py)
+[[gnu::cold, gnu::noinline]] static void variance_census_line(
+    Checker* me, VarianceSubject subject, VarianceClaim const* claim, u32 depth, bool clean, u64 cuts, u32 types
+) {
+    Symbol const* sym = subject_symbol(subject);
+    char values[512];
+    int n = 0;
+    Variances const* done = claim->done;
+    for (u32 i = 0; done && i < done->len && n < 500; i++) n += snprintf(values + n, sizeof(values) - (size_t)n, "%02x", done->data[i]);
+    if (!done) snprintf(values, sizeof(values), "none");
+    else if (!n) snprintf(values, sizeof(values), "empty");
+    fprintf(stderr, "VC %u %u %p:%u %s%.*s %s %d %llu %u\n", my census_id, depth, (void const*)sym,
+        subject.declared ? (u32)subject.declared->declared.kind : 99u, subject.declared ? "" : "alias:",
+        (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "", values, (int)clean, (unsigned long long)cuts, types);
+}
+
 static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) {
     void const* subject_ptr = subject.declared ? (void const*)subject.declared : (void const*)subject.alias;
     VarianceSlot* slot = my graph ? graph_variance_slot(me, subject_ptr, !subject.declared, true) : nullptr;
@@ -3759,9 +3775,14 @@ static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) 
     bool outermost = slot && !my variance_depth;
     u64 group_start = graph_taint_now, internal_start = my variance_internal_events;
     VarianceClaim claim = { .declared = subject.declared, .alias = subject.alias, .len = subject.params.len, .in_group = in_group };
+    u64 census_taint = graph_taint_now, census_internal = my variance_internal_events, census_cuts = my deep_cuts;
+    u32 census_types = my next_type_id, census_depth = my variance_depth;
     ty_claim_push(me, CLAIM_VARIANCES, &claim.claim, subject_ptr, !subject.declared);
     measure_variances(me, subject, &claim);
     ty_claim_pop(me, CLAIM_VARIANCES, &claim.claim);
+    if (__builtin_expect(debug_env.variance_census, 0)) variance_census_line(me, subject, &claim, census_depth,
+        graph_taint_now - census_taint == my variance_internal_events - census_internal, my deep_cuts - census_cuts,
+        my next_type_id - census_types);
     if (slot && !in_group && claim.done) {
         // (Poisoned: this checker's own, a read of it a taint event, by the caller first)
         graph_memo_taint_block(me, intern_slot(me, &my links, key, 2));

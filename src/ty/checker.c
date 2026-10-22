@@ -762,6 +762,7 @@ static Checker* checker_make(Program* program, bool join_graph) {
     { u32 at = atomic_fetch_add(&debug_checker_count, 1); if (at < 256) debug_checkers[at] = me; }
     debug_in_checker_new = true;
 #endif
+    { static atomic_uint census_ids; my census_id = atomic_fetch_add(&census_ids, 1); }
     my program = program;
     my binder = program_get_binder(program);
     my errs = program_errors(program);
