@@ -1,0 +1,30 @@
+//// [test/cases/ttttUnknownTargetPropertySkipsSource.ts] ////
+
+=== ttttUnknownTargetPropertySkipsSource.ts ===
+// A property related to an `unknown` (or any) target property is related without asking for the source property's
+// type (tsc's isPropertySymbolTypeRelated): asking resolves `I.p` here, from inside `v`'s initializer, a cycle tsc
+// never enters (TS7022 on v, TS2502 on p). better-drizzle's TS2502 at plugins.ts:742 at some checker counts
+const v = i satisfies { p: unknown };
+>v : I
+>i satisfies { p: unknown } : I
+>i : I
+>p : unknown
+
+interface I { p: typeof v }
+>p : I
+>v : I
+
+declare const i: I;
+>i : I
+
+const s: string = v.p;
+>s : string
+>v.p : I
+>v : I
+>p : I
+
+const t: { p: any } = i;
+>t : { p: any; }
+>p : any
+>i : I
+

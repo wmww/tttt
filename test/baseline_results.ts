@@ -2422,6 +2422,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttUnknownTargetPropertySkipsSource': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttUnresolvedImportMergedExport': {
         errors: true,
         symbols: true,

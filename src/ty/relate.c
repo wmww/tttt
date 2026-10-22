@@ -2919,22 +2919,18 @@ static Ternary props_related_impl(
         }
         Ty const* target_type = prop_type(me, target_prop);
         // (Anything is related to an any property, unknown too unless strict subtypes: tsc's isPropertySymbolTypeRelated
-        // doesn't ask for the source property's type then, a getter's that would be circular. Only skipped for a getter:
-        // elsewhere asking is unobservable, and type-fest costs 0.8% more instructions when its property types are
-        // resolved later instead)
-        // The relation itself is skipped whatever the source: is_related_to() would reduce it first, and reducing `Window
-        // & typeof globalThis` (vue's `typeof globalThis extends { window: unknown }`) resolves ~600 types)
+        // doesn't ask for the source property's type then. Observable: a getter's would be circular, and a declared
+        // member's type first asked for here rather than from where tsc asks is a cycle found from another entry,
+        // better-drizzle's TS2502 at plugins.ts:742 when an `{ transaction: unknown }` parameter met it first)
+        // (The relation itself is skipped too: is_related_to() would reduce the source first, and reducing `Window &
+        // typeof globalThis` (vue's `typeof globalThis extends { window: unknown }`) resolves ~600 types)
         Ternary related = TERNARY_TRUE;
-        bool trivial = target_type->flags & (st->relation == TY_RELATION_STRICT_SUBTYPE ? TYF_ANY : TYF_ANY | TYF_UNKNOWN);
-        bool skip = trivial && source_prop.prop && (source_prop.prop->flags & PROP_GETTER);
-        if (!skip) {
+        if (!(target_type->flags & (st->relation == TY_RELATION_STRICT_SUBTYPE ? TYF_ANY : TYF_ANY | TYF_UNKNOWN))) {
             Ty const* source_type = source_prop.type ? source_prop.type : prop_type(me, source_prop.prop);
-            if (!trivial) {
-                // (tsc's getNonMissingTypeOfSymbol of both)
-                target_type = ty_remove_missing(me, target_type, target_prop->flags & PROP_OPTIONAL);
-                source_type = ty_remove_missing(me, source_type, source_prop.flags & PROP_OPTIONAL);
-                related = is_related_to(me, st, source_type, target_type, report);
-            }
+            // (tsc's getNonMissingTypeOfSymbol of both)
+            target_type = ty_remove_missing(me, target_type, target_prop->flags & PROP_OPTIONAL);
+            source_type = ty_remove_missing(me, source_type, source_prop.flags & PROP_OPTIONAL);
+            related = is_related_to(me, st, source_type, target_type, report);
         }
         if (debug_env.debug_variance && my variance_depth) {
             for (u32 j = 0; j < st->source_depth; j++) fputc(' ', stderr);

@@ -1,0 +1,31 @@
+//// [test/cases/ttttUnknownTargetPropertySkipsSource.ts] ////
+
+=== ttttUnknownTargetPropertySkipsSource.ts ===
+// A property related to an `unknown` (or any) target property is related without asking for the source property's
+// type (tsc's isPropertySymbolTypeRelated): asking resolves `I.p` here, from inside `v`'s initializer, a cycle tsc
+// never enters (TS7022 on v, TS2502 on p). better-drizzle's TS2502 at plugins.ts:742 at some checker counts
+const v = i satisfies { p: unknown };
+>v : Symbol(v, Decl(ttttUnknownTargetPropertySkipsSource.ts, 3, 5))
+>i : Symbol(i, Decl(ttttUnknownTargetPropertySkipsSource.ts, 5, 13))
+>p : Symbol(p, Decl(ttttUnknownTargetPropertySkipsSource.ts, 3, 23))
+
+interface I { p: typeof v }
+>I : Symbol(I, Decl(ttttUnknownTargetPropertySkipsSource.ts, 3, 37))
+>p : Symbol(I.p, Decl(ttttUnknownTargetPropertySkipsSource.ts, 4, 13))
+>v : Symbol(v, Decl(ttttUnknownTargetPropertySkipsSource.ts, 3, 5))
+
+declare const i: I;
+>i : Symbol(i, Decl(ttttUnknownTargetPropertySkipsSource.ts, 5, 13))
+>I : Symbol(I, Decl(ttttUnknownTargetPropertySkipsSource.ts, 3, 37))
+
+const s: string = v.p;
+>s : Symbol(s, Decl(ttttUnknownTargetPropertySkipsSource.ts, 6, 5))
+>v.p : Symbol(I.p, Decl(ttttUnknownTargetPropertySkipsSource.ts, 4, 13))
+>v : Symbol(v, Decl(ttttUnknownTargetPropertySkipsSource.ts, 3, 5))
+>p : Symbol(I.p, Decl(ttttUnknownTargetPropertySkipsSource.ts, 4, 13))
+
+const t: { p: any } = i;
+>t : Symbol(t, Decl(ttttUnknownTargetPropertySkipsSource.ts, 7, 5))
+>p : Symbol(p, Decl(ttttUnknownTargetPropertySkipsSource.ts, 7, 10))
+>i : Symbol(i, Decl(ttttUnknownTargetPropertySkipsSource.ts, 5, 13))
+
