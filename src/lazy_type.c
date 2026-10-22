@@ -33,18 +33,23 @@ void lazy_slots_new_block(void) {
     if (slot_next & ((1 << LAZY_PAGE_BITS) - 1)) slot_next = slot_end;
 }
 
+// A zeroed memo page or directory (lazy_type_state())
+static void* lazy_slots_table(LazySlots* slots, size_t bytes) {
+    if (!slots->arena) return zeroed_table(1, bytes);
+    slots->arena_bytes += bytes;
+    return arena_alloc(slots->arena, bytes);
+}
+
 static LazyMemo* lazy_type_state(LazyType* me) {
     panic_if(!my slot, "LazyType with tag ", (i32)my tag, " was never given a slot");
     panic_if(!current_lazy_slots, "LazyType evaluated without a current checker");
     LazyMemo*** dir = &current_lazy_slots->top[my slot >> (LAZY_PAGE_BITS + LAZY_DIR_BITS)];
     if (!*dir) {
-        *dir = zeroed_table(1 << LAZY_DIR_BITS, sizeof(LazyMemo*));
-        panic_if(!*dir, "out of memory");
+        *dir = lazy_slots_table(current_lazy_slots, sizeof(LazyMemo*) << LAZY_DIR_BITS);
     }
     LazyMemo** page = &(*dir)[(my slot >> LAZY_PAGE_BITS) & ((1 << LAZY_DIR_BITS) - 1)];
     if (!*page) {
-        *page = zeroed_table(1 << LAZY_PAGE_BITS, sizeof(LazyMemo));
-        panic_if(!*page, "out of memory");
+        *page = lazy_slots_table(current_lazy_slots, sizeof(LazyMemo) << LAZY_PAGE_BITS);
     }
     return &(*page)[my slot & ((1 << LAZY_PAGE_BITS) - 1)];
 }
@@ -141,6 +146,11 @@ static u32 lazy_type_id(Ty const* ty) {
 void lazy_slots_drop(LazySlots* me) {
     for (size_t i = 0; i < c_arraylen(my top); i++) {
         if (!my top[i]) continue;
+        // (The arena's: they go with it)
+        if (my arena) {
+            my top[i] = nullptr;
+            continue;
+        }
         for (size_t j = 0; j < (1 << LAZY_DIR_BITS); j++) {
             LazyMemo* page = my top[i][j];
             if (!page) continue;
