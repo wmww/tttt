@@ -807,6 +807,9 @@ void binder_add_module_declaration(Symbol* module, NamespaceDecl const* decl);
 // The module a string names: an ambient module, the file the program found for it if that is a module, a pattern
 // ambient module. Null if there is none (module_ref_is_missing() tells "not found" from "not a module")
 Symbol* binder_module_of_ref(Binder const* me, ModuleRef* ref);
+// binder_module_of_ref() on one of several threads, each on refs of its own: false (and nothing found) for a ref that
+// meets a pattern augmentation, whose first finder sets its exports' parent: binder_module_of_ref() it after, in order
+bool binder_module_of_ref_parallel(Binder const* me, ModuleRef* ref);
 // An import's attributes as pattern ambient modules are matched against them: name -> string value
 typedef struct ModuleAttr {
     csview name;

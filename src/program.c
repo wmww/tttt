@@ -3821,6 +3821,9 @@ static void program_mark_init_resolved_imports(Program* me) {
 typedef struct ModuleRefsLane {
     Program* program;
     atomic_uint next;
+    pthread_mutex_t deferred_lock;
+    u32* deferred; // The files with a ref binder_module_of_ref_parallel() deferred, from it on
+    u32 deferred_count, deferred_cap;
 } ModuleRefsLane;
 
 static void* module_refs_lane_run(void* arg) {
@@ -3831,25 +3834,54 @@ static void* module_refs_lane_run(void* arg) {
     for (u32 start; (start = atomic_fetch_add(&lane->next, 64)) < count;) {
         for (u32 i = start; i < start + 64 && i < count; i++) {
             SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, i);
-            for (u32 j = 0; j < source->module_ref_count; j++) binder_module_of_ref(my binder, source->module_refs[j]);
+            for (u32 j = 0; j < source->module_ref_count; j++) {
+                if (binder_module_of_ref_parallel(my binder, source->module_refs[j])) continue;
+                // (Deferred: the file, from this ref on)
+                pthread_mutex_lock(&lane->deferred_lock);
+                {
+                    if (lane->deferred_count == lane->deferred_cap) {
+                        lane->deferred_cap = lane->deferred_cap ? lane->deferred_cap * 2 : 64;
+                        lane->deferred = realloc(lane->deferred, sizeof(u32) * lane->deferred_cap);
+                        panic_if(!lane->deferred, "out of memory");
+                    }
+                    lane->deferred[lane->deferred_count++] = i;
+                }
+                pthread_mutex_unlock(&lane->deferred_lock);
+                break;
+            }
         }
     }
     return nullptr;
+}
+
+static int u32_compare(void const* a, void const* b) {
+    u32 x = *(u32 const*)a, y = *(u32 const*)b;
+    return x < y ? -1 : x > y;
 }
 
 static void program_link_module_refs(Program* me) {
     u32 count = (u32)vec_source_file_ptr_size(&my source_files_ordered);
     u32 threads = my threads ? my threads : 1;
     if (threads > count / 256 && !debug_env.parallel_resolve) threads = count / 256 ? count / 256 : 1;
-    if (my binder->pattern_augmentations.count) threads = 1;
     ModuleRefsLane lane = { .program = me };
     atomic_init(&lane.next, 0);
+    pthread_mutex_init(&lane.deferred_lock, nullptr);
     pthread_t* workers = threads > 1 ? c_new_n(pthread_t, threads - 1) : nullptr;
     u32 started = 0;
     while (started + 1 < threads && !pthread_create(&workers[started], nullptr, module_refs_lane_run, &lane)) started++;
     module_refs_lane_run(&lane);
     for (u32 t = 0; t < started; t++) pthread_join(workers[t], nullptr);
     free(workers);
+    // What meets a pattern augmentation, in program order: the first to find one sets its exports' parent, as when
+    // every ref went in order (refs before a deferred one in its file are done: they set nothing)
+    qsort(lane.deferred, lane.deferred_count, sizeof(u32), u32_compare);
+    if (debug_env.resolve_times) eprintln("resolve: module refs on ", started + 1, " threads, ", lane.deferred_count, " files' deferred");
+    for (u32 d = 0; d < lane.deferred_count; d++) {
+        SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, lane.deferred[d]);
+        for (u32 j = 0; j < source->module_ref_count; j++) binder_module_of_ref(my binder, source->module_refs[j]);
+    }
+    free(lane.deferred);
+    pthread_mutex_destroy(&lane.deferred_lock);
 }
 
 // What loading kept and nothing needs once names are resolved: the module resolutions, the workers' preresolved

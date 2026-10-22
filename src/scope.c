@@ -2809,7 +2809,8 @@ static Symbol* best_pattern_module(Binder const* me, csview path, ModuleAttrs co
     return best;
 }
 
-Symbol* binder_find_module_with(Binder const* me, ModuleRef const* ref, ModuleAttrs const* attributes) {
+// (deferred: on a thread, a pattern augmentation's parent is not set here: *deferred says so, and nothing is found)
+static Symbol* find_module_in(Binder const* me, ModuleRef const* ref, ModuleAttrs const* attributes, bool* deferred) {
     csview path = cstr_sv(&ref->path);
     bool relative = csview_starts_with(path, "./") || csview_starts_with(path, "../") ||
         csview_equals(path, ".") || csview_equals(path, "..");
@@ -2826,6 +2827,10 @@ Symbol* binder_find_module_with(Binder const* me, ModuleRef const* ref, ModuleAt
     Symbol* best = best_pattern_module(me, path, attributes);
     if (!best) return resolved;
     Symbol* augmented = symbol_table_get_own(&me->pattern_augmentations, path, symbol_name_hash(path));
+    if (augmented && deferred) {
+        *deferred = true;
+        return nullptr;
+    }
     if (augmented) {
         // (What it augments is the pattern without attributes, tsgo's mergeModuleAugmentation: known once some import
         // asks, its exports are the parent of the name's own)
@@ -2836,10 +2841,26 @@ Symbol* binder_find_module_with(Binder const* me, ModuleRef const* ref, ModuleAt
     return best;
 }
 
+Symbol* binder_find_module_with(Binder const* me, ModuleRef const* ref, ModuleAttrs const* attributes) {
+    return find_module_in(me, ref, attributes, nullptr);
+}
+
 static Symbol* binder_find_module(Binder const* me, ModuleRef const* ref) {
     ModuleAttrs attributes;
     module_ref_syntactic_attributes(ref, &attributes);
     return binder_find_module_with(me, ref, &attributes);
+}
+
+bool binder_module_of_ref_parallel(Binder const* me, ModuleRef* ref) {
+    if (!ref || ref->module_state == ALIAS_DONE) return true;
+    ModuleAttrs attributes;
+    module_ref_syntactic_attributes(ref, &attributes);
+    bool deferred = false;
+    Symbol* module = find_module_in(me, ref, &attributes, &deferred);
+    if (deferred) return false;
+    ref->module = module;
+    ref->module_state = ALIAS_DONE;
+    return true;
 }
 
 Symbol* binder_module_of_ref(Binder const* me, ModuleRef* ref) {
