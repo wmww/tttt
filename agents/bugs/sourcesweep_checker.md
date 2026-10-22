@@ -293,3 +293,31 @@ accessor is typed by the accessor). better-auth's cloudflare skip-lib-check-fals
 Unchanged verdicts: es-toolkit (tsc order artifact), monkeytype (TS2589 count), better-auth
 lynx-store, hono request.ts (entries above). Seen then, matching now (rechecked 2026-10-21): `declare abstract class C { get x() }` then
 `interface C { readonly x }` is TS2687 in both; an interface `opt?: T` merged with `get opt(): T` reads `T` in both.
+
+## Fresh repositories, third rule (2026-10-22, cor3)
+Refresh 4 (repos.txt "Refresh 4": application code, 40..400 stars). Fixed: hermes-ide's TS7022 (a for-of variable
+evaluated isolated from the loops in progress), youtube-enhancer's TS2322 (a generic type literal instantiation's
+literal property conflict left unreduced), and two tuple bugs found on the way (`[...Conditional]` treated as an array
+rest element; a spread instantiated to `undefined`). Left:
+- **pi-bolt, TypeBox (+TS7053 x87, +TS2353 x31, +TS2345)**: `Type.Record(Type.Enum(["off", "minimal", ...]), V)` is
+  `{ off: V }` in tttt, every key in tsc. TypeBox's TBroaden filters with `TCompare<Type, Left> extends 2 | 0`, and
+  TCompare's default `Extends = [TExtends<{}, L, R>, TExtends<{}, R, L>]` is a tuple (not generic), so the alias's
+  conditional is decided eagerly for generic L, R (getConditionalType's restrictive check). There tttt relates
+  `TExtendsLeft<{}, Ca1<X>, Ca1<Y>>` to `TExtendsTrue<TProperties>` through conditional_source_related()'s default
+  constraint, which pushes the *target* too (the HACK there: tsc relates the default constraint with
+  RecursionFlags.Source; pushing the target saves react-hook-form's Path chains ~10% of the react corpus): the same
+  TExtendsTrue on every level makes the target "expanding", the source's TExtendsRight levels too, and the cut answers
+  Maybe, which the restrictive check takes as "definitely true": `TCompare<X, Y> extends 2 | 0` is true for every X, Y.
+  tsgo instrumented (getConditionalType and recursiveTypeRelatedTo) answers False there. Relating the default
+  constraint source-only (or redoing a Maybe concluded through a cut that way) fixes it and the repro
+  (test/cases/ttttConditionalConstraintDeepCut.ts, known failing), but loses largeTupleTypes: with the target pushed
+  source-only, tttt's relation of `Tuple<I, E>` to `readonly any[]` runs largeTupleTypes' GrowExpRev chain (union
+  members, then indexed accesses' constraints) to the depth-100 backstop where tsgo stops near depth 22, and the
+  instantiations on the way report TS2799. Why tsgo stops there isn't known yet (getRecursionIdentity of the indexed
+  accesses, `[...A, ...P[0]][N]`, is the first suspect: tsgo's is the deferred tuple reference's node). Removing the
+  HACK needs that and a perf check on react.
+- **bekuto3d (+TS2304 MaybeRefOrGetter x2, +TS7006)**: unplugin-auto-import's auto-imports.d.ts declares Vue's types
+  globally with `declare global { export type { MaybeRefOrGetter, ... } from 'vue' }`. tsc binds the re-export inside
+  the global augmentation as global names (TS2666 at the export, silenced there by `// @ts-nocheck`); tttt doesn't
+  declare them: TS2304 at every use. Binder/declare territory (fe3). Repro:
+  test/cases/ttttGlobalAugmentationReExport.ts (known failing).

@@ -1,0 +1,28 @@
+globals.d.ts(3,3): error TS2666: Exports and export assignments are not permitted in module augmentations.
+globals.d.ts(3,33): error TS2307: Cannot find module './lib' or its corresponding type declarations.
+globals.d.ts(4,3): error TS2666: Exports and export assignments are not permitted in module augmentations.
+globals.d.ts(4,41): error TS2307: Cannot find module './lib' or its corresponding type declarations.
+
+
+==== lib.ts (0 errors) ====
+    export type MaybeRef<T> = T | { value: T };
+    export interface Box { size: number }
+==== globals.d.ts (4 errors) ====
+    export {}
+    declare global {
+      export type { MaybeRef } from './lib'
+      ~~~~~~
+!!! error TS2666: Exports and export assignments are not permitted in module augmentations.
+                                    ~~~~~~~
+!!! error TS2307: Cannot find module './lib' or its corresponding type declarations.
+      export type { Box as GlobalBox } from './lib'
+      ~~~~~~
+!!! error TS2666: Exports and export assignments are not permitted in module augmentations.
+                                            ~~~~~~~
+!!! error TS2307: Cannot find module './lib' or its corresponding type declarations.
+    }
+==== main.ts (0 errors) ====
+    export const x: MaybeRef<number> = 1;
+    export const b: GlobalBox = { size: 1 };
+    export const bad: GlobalBox = { size: "no" };
+    

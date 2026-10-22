@@ -1,0 +1,39 @@
+//// [test/cases/ttttGlobalAugmentationReExport.ts] ////
+
+=== lib.ts ===
+export type MaybeRef<T> = T | { value: T };
+>MaybeRef : MaybeRef<T>
+>value : T
+
+export interface Box { size: number }
+>size : number
+
+=== globals.d.ts ===
+export {}
+declare global {
+>global : typeof global
+
+  export type { MaybeRef } from './lib'
+>MaybeRef : any
+
+  export type { Box as GlobalBox } from './lib'
+>Box : any
+>GlobalBox : any
+}
+=== main.ts ===
+export const x: MaybeRef<number> = 1;
+>x : MaybeRef<number>
+>1 : 1
+
+export const b: GlobalBox = { size: 1 };
+>b : GlobalBox
+>{ size: 1 } : { size: number; }
+>size : number
+>1 : 1
+
+export const bad: GlobalBox = { size: "no" };
+>bad : GlobalBox
+>{ size: "no" } : { size: string; }
+>size : string
+>"no" : "no"
+

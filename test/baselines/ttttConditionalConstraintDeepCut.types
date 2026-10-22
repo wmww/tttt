@@ -1,0 +1,40 @@
+//// [test/cases/ttttConditionalConstraintDeepCut.ts] ////
+
+=== ttttConditionalConstraintDeepCut.ts ===
+// A conditional source's default constraint is related pushing only the source on the deep-nesting stacks (tsc's
+// RecursionFlags.Source). tttt pushes the target too, as a shortcut, and that extra cut-off turned the restrictive check
+// of `E extends [TT | TU]` below into a Maybe: C<X> resolved to 0 for every X (typebox's Record over an Enum key kept
+// only its first member: TBroaden's TCompare). A Maybe concluded through such a cut is worked out again without it
+interface TT { kind: 'T' }
+>kind : "T"
+
+interface TU { kind: 'U' }
+>kind : "U"
+
+interface TF { type: 'F' }
+>type : "F"
+
+type Chain<L, N extends unknown[] = []> = N['length'] extends 4 ? (L extends string ? TT : TF) : L extends number ? Chain<L, [...N, 0]> : TT;
+>Chain : Chain<L, N>
+
+type C<L, E extends [TT | TF] = [Chain<L>]> = E extends [TT | TU] ? 0 : 1;
+>C : C<L, E>
+
+type W<X> = C<X> extends 0 ? [1] : [0];
+>W : W<X>
+
+export const z: [0] = null as any as W<number>;
+>z : [0]
+>null as any as W<number> : [0]
+>null as any : any
+
+export const z1: [1] = null as any as W<"a">;
+>z1 : [1]
+>null as any as W<"a"> : [1]
+>null as any : any
+
+export const z2: [1] = null as any as W<number>;
+>z2 : [1]
+>null as any as W<number> : [0]
+>null as any : any
+

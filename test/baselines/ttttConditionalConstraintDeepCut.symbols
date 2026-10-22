@@ -1,0 +1,63 @@
+//// [test/cases/ttttConditionalConstraintDeepCut.ts] ////
+
+=== ttttConditionalConstraintDeepCut.ts ===
+// A conditional source's default constraint is related pushing only the source on the deep-nesting stacks (tsc's
+// RecursionFlags.Source). tttt pushes the target too, as a shortcut, and that extra cut-off turned the restrictive check
+// of `E extends [TT | TU]` below into a Maybe: C<X> resolved to 0 for every X (typebox's Record over an Enum key kept
+// only its first member: TBroaden's TCompare). A Maybe concluded through such a cut is worked out again without it
+interface TT { kind: 'T' }
+>TT : Symbol(TT, Decl(ttttConditionalConstraintDeepCut.ts, 0, 0))
+>kind : Symbol(TT.kind, Decl(ttttConditionalConstraintDeepCut.ts, 4, 14))
+
+interface TU { kind: 'U' }
+>TU : Symbol(TU, Decl(ttttConditionalConstraintDeepCut.ts, 4, 26))
+>kind : Symbol(TU.kind, Decl(ttttConditionalConstraintDeepCut.ts, 5, 14))
+
+interface TF { type: 'F' }
+>TF : Symbol(TF, Decl(ttttConditionalConstraintDeepCut.ts, 5, 26))
+>type : Symbol(TF.type, Decl(ttttConditionalConstraintDeepCut.ts, 6, 14))
+
+type Chain<L, N extends unknown[] = []> = N['length'] extends 4 ? (L extends string ? TT : TF) : L extends number ? Chain<L, [...N, 0]> : TT;
+>Chain : Symbol(Chain, Decl(ttttConditionalConstraintDeepCut.ts, 6, 26))
+>L : Symbol(L, Decl(ttttConditionalConstraintDeepCut.ts, 7, 11))
+>N : Symbol(N, Decl(ttttConditionalConstraintDeepCut.ts, 7, 13))
+>N : Symbol(N, Decl(ttttConditionalConstraintDeepCut.ts, 7, 13))
+>L : Symbol(L, Decl(ttttConditionalConstraintDeepCut.ts, 7, 11))
+>TT : Symbol(TT, Decl(ttttConditionalConstraintDeepCut.ts, 0, 0))
+>TF : Symbol(TF, Decl(ttttConditionalConstraintDeepCut.ts, 5, 26))
+>L : Symbol(L, Decl(ttttConditionalConstraintDeepCut.ts, 7, 11))
+>Chain : Symbol(Chain, Decl(ttttConditionalConstraintDeepCut.ts, 6, 26))
+>L : Symbol(L, Decl(ttttConditionalConstraintDeepCut.ts, 7, 11))
+>N : Symbol(N, Decl(ttttConditionalConstraintDeepCut.ts, 7, 13))
+>TT : Symbol(TT, Decl(ttttConditionalConstraintDeepCut.ts, 0, 0))
+
+type C<L, E extends [TT | TF] = [Chain<L>]> = E extends [TT | TU] ? 0 : 1;
+>C : Symbol(C, Decl(ttttConditionalConstraintDeepCut.ts, 7, 141))
+>L : Symbol(L, Decl(ttttConditionalConstraintDeepCut.ts, 8, 7))
+>E : Symbol(E, Decl(ttttConditionalConstraintDeepCut.ts, 8, 9))
+>TT : Symbol(TT, Decl(ttttConditionalConstraintDeepCut.ts, 0, 0))
+>TF : Symbol(TF, Decl(ttttConditionalConstraintDeepCut.ts, 5, 26))
+>Chain : Symbol(Chain, Decl(ttttConditionalConstraintDeepCut.ts, 6, 26))
+>L : Symbol(L, Decl(ttttConditionalConstraintDeepCut.ts, 8, 7))
+>E : Symbol(E, Decl(ttttConditionalConstraintDeepCut.ts, 8, 9))
+>TT : Symbol(TT, Decl(ttttConditionalConstraintDeepCut.ts, 0, 0))
+>TU : Symbol(TU, Decl(ttttConditionalConstraintDeepCut.ts, 4, 26))
+
+type W<X> = C<X> extends 0 ? [1] : [0];
+>W : Symbol(W, Decl(ttttConditionalConstraintDeepCut.ts, 8, 74))
+>X : Symbol(X, Decl(ttttConditionalConstraintDeepCut.ts, 9, 7))
+>C : Symbol(C, Decl(ttttConditionalConstraintDeepCut.ts, 7, 141))
+>X : Symbol(X, Decl(ttttConditionalConstraintDeepCut.ts, 9, 7))
+
+export const z: [0] = null as any as W<number>;
+>z : Symbol(z, Decl(ttttConditionalConstraintDeepCut.ts, 10, 12))
+>W : Symbol(W, Decl(ttttConditionalConstraintDeepCut.ts, 8, 74))
+
+export const z1: [1] = null as any as W<"a">;
+>z1 : Symbol(z1, Decl(ttttConditionalConstraintDeepCut.ts, 11, 12))
+>W : Symbol(W, Decl(ttttConditionalConstraintDeepCut.ts, 8, 74))
+
+export const z2: [1] = null as any as W<number>;
+>z2 : Symbol(z2, Decl(ttttConditionalConstraintDeepCut.ts, 12, 12))
+>W : Symbol(W, Decl(ttttConditionalConstraintDeepCut.ts, 8, 74))
+

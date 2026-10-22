@@ -1,0 +1,40 @@
+//// [test/cases/ttttGlobalAugmentationReExport.ts] ////
+
+=== lib.ts ===
+export type MaybeRef<T> = T | { value: T };
+>MaybeRef : Symbol(MaybeRef, Decl(lib.ts, 0, 0))
+>T : Symbol(T, Decl(lib.ts, 0, 21))
+>T : Symbol(T, Decl(lib.ts, 0, 21))
+>value : Symbol(value, Decl(lib.ts, 0, 31))
+>T : Symbol(T, Decl(lib.ts, 0, 21))
+
+export interface Box { size: number }
+>Box : Symbol(Box, Decl(lib.ts, 0, 43))
+>size : Symbol(Box.size, Decl(lib.ts, 1, 22))
+
+=== globals.d.ts ===
+export {}
+declare global {
+>global : Symbol(global, Decl(globals.d.ts, 0, 9))
+
+  export type { MaybeRef } from './lib'
+>MaybeRef : Symbol(MaybeRef, Decl(globals.d.ts, 2, 15))
+
+  export type { Box as GlobalBox } from './lib'
+>GlobalBox : Symbol(GlobalBox, Decl(globals.d.ts, 3, 15))
+}
+=== main.ts ===
+export const x: MaybeRef<number> = 1;
+>x : Symbol(x, Decl(main.ts, 0, 12))
+>MaybeRef : Symbol(MaybeRef, Decl(globals.d.ts, 2, 15))
+
+export const b: GlobalBox = { size: 1 };
+>b : Symbol(b, Decl(main.ts, 1, 12))
+>GlobalBox : Symbol(GlobalBox, Decl(globals.d.ts, 3, 15))
+>size : Symbol(size, Decl(main.ts, 1, 29))
+
+export const bad: GlobalBox = { size: "no" };
+>bad : Symbol(bad, Decl(main.ts, 2, 12))
+>GlobalBox : Symbol(GlobalBox, Decl(globals.d.ts, 3, 15))
+>size : Symbol(size, Decl(main.ts, 2, 31))
+
