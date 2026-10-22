@@ -112,6 +112,26 @@ end's split", "The 12-core box at efb91998", "The config glob next to the load p
   observable and the loader could take the roots while the libs parse, putting the whole libs phase off the critical
   path (more than the chunked parse saves). Risk: everything keyed on load order before collection (include reasons,
   module ref order, error order of the loader's own diagnostics) must move to the walk's order too.
+- **A persistent thread pool** (2026-10-23, fe4; designed, not built: ~1 ms on nest for 1-2 days and a thread-local
+  risk). Today threads start in 7+ places per run, each phase creating and joining its own: the load pool
+  (load_pool_new()), the include walk's root stream (main.c), resolve lanes (program.c resolve_lane_thread), module-refs
+  lanes, materialize-ahead helpers, checker threads (check_shares_thread), the release thread, the source-drop threads
+  and `-b`'s builders: nest starts 71 (react 67). Design: one process-wide WorkerPool made lazily at worker_stack_size()
+  with `pool_lease(k, fn, arg)` / `lease_join()` (leases, not short tasks: load workers and checkers block for long
+  stretches; the caller can be one of the k). The audit of the ~58 thread-locals, three classes:
+  (a) caches valid across tasks, kept: ast_alloc's AstThread slabs and free lists, the lazy-slot block, parser scratch,
+  scope.c's alias_stack and symbol_chain's buffers (alias_indexes with their generation, extended_containers,
+  container_index, access_memo storage); (b) task-scoped pointers that must be null when a task ends (a debug check at
+  task end rather than a silent reset, so a leak shows): current_checker, resolve_shard, walk_chunked/walk_chunk,
+  materializing_file, compiler_options_private, parse_helpers, load_pool's current_rank/current_children,
+  expando_scope, chain_usage_ref, module_specifier_fn/ctx, inside_classes, current_flow, unused_marking_suppressed,
+  graph_taint_now, overlay's work_stack depth; (c) memos keyed by addresses a free can hand out again, which need a
+  generation or a reset per task: program.c's lookup_memo (by Program*) and canonical_hint (by buffer), symbol_chain's
+  access_memo_generation/painted_symbols, scope.c's binder_made. Gates: threadcheck, checkerdiff, kdiff, suite, the
+  sweeps with `sourcesweep --build`, scenarios. What would justify it: the laptop's nest timeline showing thread
+  creation as a serial cost on the main thread (the 2989c0f0 run saw "thread start-up in the main thread's samples" in
+  the 7 ms walk), or a per-phase RSS/page-fault comparison showing that checker threads re-fault memory the load
+  threads had warm (slabs, malloc arenas): that, not the clone()s, is the part that could be worth more than 1 ms.
 - **Loader leftovers** at T1 (2026-10-16): real resolution (11k misses, ~170 M instructions), the resolver's `join()`
   of `../` names (137 M), clones of cached results (100 M: a refcounted `ResolvedModule` would remove them).
 
