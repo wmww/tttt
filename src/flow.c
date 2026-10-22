@@ -118,9 +118,18 @@ static FlowNode* new_node(FlowBuilder* me, u32 flags, FlowNode* antecedent, void
     return ret;
 }
 
+FlowBuilder flow_builder_per_thread;
+thread_local FlowBuilder* flow_thread_builder;
+
 static void set_referenced(FlowNode* flow) {
     if (flow == &flow_unreachable) return;
-    // On first reference the node is referenced, from then on it is shared
+    // On first reference the node is referenced, from then on it is shared. In a chunked walk the file's start node is
+    // every chunk's: whichever reference comes first marks it referenced, the second shared, in any order
+    if (flow_thread_builder) {
+        u32 old = __atomic_fetch_or(&flow->flags, FLOW_REFERENCED, __ATOMIC_RELAXED);
+        if (old & FLOW_REFERENCED) __atomic_fetch_or(&flow->flags, FLOW_SHARED, __ATOMIC_RELAXED);
+        return;
+    }
     flow->flags |= flow->flags & FLOW_REFERENCED ? FLOW_SHARED : FLOW_REFERENCED;
 }
 

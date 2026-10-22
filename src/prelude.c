@@ -31,6 +31,7 @@ static void read_debug_env() {
         .dup_census = getenv("TTTT_DUP_CENSUS") != nullptr,
         .debug_containers = getenv("TTTT_DEBUG_CONTAINERS") != nullptr,
         .resolve_times = getenv("TTTT_RESOLVE_TIMES") != nullptr,
+        .walk_chunk_bytes = getenv("TTTT_WALK_CHUNK_BYTES") ? (u32)strtoul(getenv("TTTT_WALK_CHUNK_BYTES"), nullptr, 0) : 0,
         .huge_pages = getenv("TTTT_HUGEPAGES") ? (int8_t)(strcmp(getenv("TTTT_HUGEPAGES"), "0") != 0) : -1,
         .ast_poison = getenv("TTTT_AST_POISON") != nullptr,
         .ast_stats = getenv("TTTT_AST_STATS") != nullptr,

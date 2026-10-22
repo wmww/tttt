@@ -52,7 +52,7 @@ bool block_has_export_declarations(Block const* me) {
 }
 
 void block_lookup_names_as(Block const* me, Scope* names, ErrorCtx* errs) {
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     for_each (i, vec_statement, &my statements) {
         flow->statement_list = &my statements;
         flow->lookup_statements = &my statements;
@@ -62,7 +62,7 @@ void block_lookup_names_as(Block const* me, Scope* names, ErrorCtx* errs) {
 
 // A `static {}` block of a class runs where the class is evaluated: part of the flow around it, like an IIFE
 FlowNode const* block_lookup_names_inline_container(Block const* me, Scope* scope, ErrorCtx* errs) {
-    FlowBuilder* outer = scope->flow;
+    FlowBuilder* outer = scope_flow(scope);
     FlowBuilder flow;
     flow_builder_init(&flow, outer, scope, nullptr, errs);
     flow.start = outer->start;
@@ -75,7 +75,7 @@ FlowNode const* block_lookup_names_inline_container(Block const* me, Scope* scop
     flow.parameter_initializing = outer->parameter_initializing;
     flow.parameter_function_scope = outer->parameter_function_scope;
     flow.return_target = flow_new_branch_label(&flow);
-    scope->flow = &flow;
+    scope->flow_ = &flow;
     for_each (i, vec_statement, &my statements) {
         flow.statement_list = &my statements;
         // It runs with the class (TS2729), nested blocks too, up to a function (tsc 6.0's
@@ -87,7 +87,7 @@ FlowNode const* block_lookup_names_inline_container(Block const* me, Scope* scop
     flow_add_antecedent(&flow, flow.return_target, flow.current);
     flow.current = flow_finish_label(flow.return_target);
     flow_builder_finish(&flow, c_sv("static block"), span_null);
-    scope->flow = outer;
+    scope->flow_ = outer;
     if (!outer->dead) {
         outer->current = flow.current;
         outer->has_flow_effects |= flow.has_flow_effects;
@@ -96,15 +96,15 @@ FlowNode const* block_lookup_names_inline_container(Block const* me, Scope* scop
 }
 
 void block_lookup_names_container(Block const* me, csview kind, Span name, Scope* scope, ErrorCtx* errs) {
-    FlowBuilder* outer = scope->flow;
+    FlowBuilder* outer = scope_flow(scope);
     FlowBuilder flow;
     flow_builder_init(&flow, outer, scope, nullptr, errs);
     flow.current = flow_new_start(&flow, nullptr, false);
     flow.container = me;
-    scope->flow = &flow;
+    scope->flow_ = &flow;
     block_lookup_names_as(me, scope, errs);
     flow_builder_finish(&flow, kind, name);
-    scope->flow = outer; // The scope may outlive the builder
+    scope->flow_ = outer; // The scope may outlive the builder
 }
 
 void block_resolve_names(Block const* me, Scope* names, ErrorCtx* errs) {

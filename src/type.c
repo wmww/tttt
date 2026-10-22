@@ -404,8 +404,8 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
             ScopePendingMark pending_mark = scope_pending_mark(names->binder);
             Scope* literal_scope = scope_new(names, SCOPE_BLOCK);
             // Computed names in there are in a type: not uses of values (tsc's isInAmbientOrTypeNode)
-            bool saved_type_query = names->flow->in_type_query;
-            names->flow->in_type_query = true;
+            bool saved_type_query = scope_flow(names)->in_type_query;
+            scope_flow(names)->in_type_query = true;
             // (Not a mapped type's: it has no member declarations for getThisContainer to stop at, `{ [K in keyof
             // this["a"]]: ... }` in an interface member is about the interface)
             bool mapped = vec_interface_member_size(&my interface.members) == 1 &&
@@ -420,7 +420,7 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
             for_each (i, vec_interface_member, &my interface.members) {
                 interface_member_lookup_names(i, literal_scope, errs);
             }
-            names->flow->in_type_query = saved_type_query;
+            scope_flow(names)->in_type_query = saved_type_query;
             scope_release(literal_scope, pending_mark);
         }   break;
 

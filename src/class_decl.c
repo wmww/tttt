@@ -245,16 +245,16 @@ static void lookup_names_without_super(
         ClassDecl const* class_decl = scope_enclosing_class(names);
         if (class_decl) scope_rare_mut(scope)->computed_name_of = &class_decl->generic;
     }
-    uint8_t initializer_context = names->flow->initializer_context;
-    bool member_name = names->flow->member_name;
+    uint8_t initializer_context = scope_flow(names)->initializer_context;
+    bool member_name = scope_flow(names)->member_name;
     bool field_decorator = why == NO_SUPER_DECORATOR && names->parent && names->parent->in_field;
-    names->flow->initializer_context = field_decorator ? INITIALIZER_FIELD_DECORATOR : INITIALIZER_NONE;
-    if (why == NO_SUPER_COMPUTED_NAME) names->flow->member_name = true;
-    FlowNode* flow_before = names->flow->current;
+    scope_flow(names)->initializer_context = field_decorator ? INITIALIZER_FIELD_DECORATOR : INITIALIZER_NONE;
+    if (why == NO_SUPER_COMPUTED_NAME) scope_flow(names)->member_name = true;
+    FlowNode* flow_before = scope_flow(names)->current;
     expr_lookup_names(expr, scope, errs);
-    if (own_container) names->flow->current = flow_before;
-    names->flow->initializer_context = initializer_context;
-    names->flow->member_name = member_name;
+    if (own_container) scope_flow(names)->current = flow_before;
+    scope_flow(names)->initializer_context = initializer_context;
+    scope_flow(names)->member_name = member_name;
     scope_release(scope, pending_mark);
 }
 
@@ -281,8 +281,8 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
         names->in_field = true;
     }
     // (Its decorators' flow container is the member, tsc's getControlFlowContainer: what they read is an outer variable)
-    bool member_name = names->flow->member_name;
-    names->flow->member_name = true;
+    bool member_name = scope_flow(names)->member_name;
+    scope_flow(names)->member_name = true;
     for_each (i, vec_expr, &my decorators) {
         ScopePendingMark decorator_mark = scope_pending_mark(names->binder);
         Scope* scope = scope_new(names, SCOPE_BLOCK);
@@ -290,7 +290,7 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
         lookup_names_without_super(i, scope, NO_SUPER_DECORATOR, false, nullptr, decorator_errs);
         scope_release(scope, decorator_mark);
     }
-    names->flow->member_name = member_name;
+    scope_flow(names)->member_name = member_name;
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
             function_impl_lookup_names(&my constructor.func, false, names, errs);
@@ -300,13 +300,13 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
             // (Named first: errors in the computed name may point at the method, TS1308's related information)
             function_impl_set_member_name(&me->method.func, my method.name_span);
             if (my method.computed_key) {
-                names->flow->type_only_alias_ok = my method.is_abstract;
-                bool method_name = names->flow->method_name;
-                names->flow->method_name = true;
+                scope_flow(names)->type_only_alias_ok = my method.is_abstract;
+                bool method_name = scope_flow(names)->method_name;
+                scope_flow(names)->method_name = true;
                 lookup_names_without_super(my method.computed_key, names, NO_SUPER_COMPUTED_NAME, true, &my method.func,
                     class_item_key_is_misplaced_mapped(me) ? nullptr : errs);
-                names->flow->method_name = method_name;
-                names->flow->type_only_alias_ok = false;
+                scope_flow(names)->method_name = method_name;
+                scope_flow(names)->type_only_alias_ok = false;
             }
             lazy_type_bind(&my method.accessor_type, LAZY_TYPE_CLASS_ITEM_ACCESSOR);
             my method.func.is_method = !my method.accessor;
@@ -322,10 +322,10 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
 
         case CLASS_ITEM_FIELD:
             if (my field.computed_key) {
-                names->flow->type_only_alias_ok = my field.is_abstract || my field.is_declare;
+                scope_flow(names)->type_only_alias_ok = my field.is_abstract || my field.is_declare;
                 lookup_names_without_super(my field.computed_key, names, NO_SUPER_COMPUTED_NAME, my field.value.tag != EXPR_IMPLICIT_ANY,
                     nullptr, class_item_key_is_misplaced_mapped(me) ? nullptr : errs);
-                names->flow->type_only_alias_ok = false;
+                scope_flow(names)->type_only_alias_ok = false;
             }
             lazy_type_bind(&my field.lazy_type, LAZY_TYPE_CLASS_ITEM_FIELD);
             type_lookup_names(&my field.explicit_type, names, errs);
@@ -333,7 +333,7 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
                 expr_lookup_names(&my field.value, names, errs);
             } else {
                 // An initializer is a control flow container of its own
-                FlowBuilder* outer = names->flow;
+                FlowBuilder* outer = scope_flow(names);
                 FlowBuilder flow;
                 flow_builder_init(&flow, outer, names, nullptr, errs);
                 flow.contextual_depth += my field.has_explicit_type;
@@ -349,10 +349,10 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
                     flow.parameter_initializing = outer->parameter_initializing;
                     flow.parameter_function_scope = outer->parameter_function_scope;
                 }
-                names->flow = &flow;
+                names->flow_ = &flow;
                 expr_lookup_names(&my field.value, names, errs);
                 flow_builder_finish(&flow, c_sv("field"), expr_outer_span(&my field.value));
-                names->flow = outer;
+                names->flow_ = outer;
             }
             break;
 

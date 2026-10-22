@@ -624,7 +624,7 @@ Scope* scope_new(Scope* parent, ScopeKind kind) {
     ret->kind = kind;
     ret->binder = parent->binder;
     ret->ambient = parent->ambient;
-    ret->flow = parent->flow;
+    ret->flow_ = scope_flow(parent);
     ret->file = parent->file;
     ret->strict = parent->strict;
     ret->class_strict = parent->class_strict;
@@ -672,7 +672,7 @@ bool scope_release(Scope* me, ScopePendingMark pending_mark) {
 void scope_reparent(Scope* me, Scope* parent) {
     my parent = parent;
     my ambient = parent->ambient;
-    my flow = parent->flow;
+    my flow_ = scope_flow(parent);
     my file = parent->file;
     my strict = parent->strict;
     my class_strict = parent->class_strict;
@@ -818,7 +818,7 @@ static OuterGenerics* push_generics(Scope* me, Generic const* generic, Span owne
 Scope* scope_new_generic(Scope* parent, Generic* generic, Span owner, Span owner_class, FlowBuilder* flow, ErrorCtx* errs) {
     if (generic_empty(generic)) return parent;
     Scope* ret = scope_new(parent, SCOPE_BLOCK);
-    if (flow) ret->flow = flow;
+    if (flow) ret->flow_ = flow;
     push_generics(ret, generic, owner)->owner_class = owner_class;
     generic_add_names(generic, ret);
     generic_lookup_names(generic, ret, errs);
@@ -851,6 +851,24 @@ void binder_mark_serial_resolves(Binder* me) {
             for (u32 j = 0; j < i && file && !file->resolve_serial; j++) {
                 Generic const* earlier = decl_generic(&owner->decls[j]);
                 if (earlier && !generic_empty((Generic*)earlier) && span_source(owner->decls[j].full) != file) file->resolve_serial = true;
+            }
+        }
+    }
+}
+
+void binder_generic_merge_pairs(Binder* me, void (*pair)(void* ctx, SourceFile* file, Span later, Span earlier), void* ctx) {
+    for (u32 s = 0; s < my symbol_count; s++) {
+        Symbol const* owner = my symbols[s];
+        if (!(owner->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE)) || owner->decl_count < 2) continue;
+        for (u32 i = 1; i < owner->decl_count; i++) {
+            Generic const* generic = decl_generic(&owner->decls[i]);
+            if (!generic || generic_empty((Generic*)generic)) continue;
+            SourceFile* file = (SourceFile*)span_source(owner->decls[i].full);
+            for (u32 j = 0; j < i && file; j++) {
+                Generic const* earlier = decl_generic(&owner->decls[j]);
+                if (earlier && !generic_empty((Generic*)earlier) && span_source(owner->decls[j].full) == file) {
+                    pair(ctx, file, owner->decls[i].full, owner->decls[j].full);
+                }
             }
         }
     }
@@ -5529,7 +5547,7 @@ void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, Er
     note_deferred_signature_not_found(me, span_sv(name), SYMBOL_VALUE);
     bool in_class = false;
     for (Scope const* scope = me; scope && !in_class; scope = scope->parent) in_class = scope_rare(scope)->this_ref.class_decl;
-    if (!in_class || (my flow && my flow->in_type_query)) {
+    if (!in_class || (scope_flow(me) && scope_flow(me)->in_type_query)) {
         ClassItem const* field = in_class ? scope_invalid_initializer_field(me, span_sv(name), nullptr) : nullptr;
         if (field) {
             scope_report_invalid_initializer_reference(field, name, errs);
@@ -6268,7 +6286,7 @@ void scope_add_nested_expando(Scope* me, BinaryOpExpr* op) {
     if (op->expando_bound) return;
     // In an object literal or a class's field initializer, tsc's binder looks the name up in the literal or the class
     // (its container), where it doesn't find a variable (lookupSymbolForName). (A class's statics would be found)
-    FlowBuilder const* flow = my flow;
+    FlowBuilder const* flow = scope_flow(me);
     if (flow && (flow->object_literal_depth || flow->initializer_context == INITIALIZER_INSTANCE_FIELD ||
         flow->initializer_context == INITIALIZER_STATIC_FIELD)
     ) {
@@ -6513,58 +6531,69 @@ void resolve_shard_discard(ResolveShard* me) {
 }
 
 void resolve_shard_merge(ResolveShard* me) {
+    resolve_shard_merge_chunks(me, 1);
+}
+
+void resolve_shard_merge_chunks(ResolveShard* chunks, u32 count) {
     check(resolve_shard == nullptr);
-    Binder* binder = my binder;
+    Binder* binder = chunks[0].binder;
     ErrorCtx* errs = binder->errs;
     ErrorCtx* discarded = binder_discarded_errs(binder);
     // (What the shard's pending reports go to once its contexts are merged)
-    #define MERGED_ERRS(e) ((e) == &my errs ? errs : (e) == &my discarded ? discarded : (e))
-    // (Everything replays in walk order)
-    for (u32 i = 0; i < my deferred_count; i++) {
-        DeferredEvent const* event = &my deferred[i];
-        ErrorCtx* event_errs = event->errs;
-        switch (event->kind) {
-            case DEFERRED_NOT_FOUND:
-                report_not_found(event->scope, event->at, event->meaning, event->shorthand, event_errs);
-                break;
-            case DEFERRED_MISSPELLED:
-                if (!report_misspelled(event->scope, event->at, event->name, event->meaning, event->namespace, event_errs)) {
-                    report_misspelled_fallback(event->at, event->name, event->fallback, event_errs);
-                }
-                break;
-            case DEFERRED_EXPANDO:
-                add_expando_member(event->scope, event->object, event->member, event->left, event->right, event->jsdoc_type,
-                    event->late_bound_key, event->assignment);
-                if (event->link) expr_link_assignment_declaration(event->left, binder);
-                break;
-            case DEFERRED_JS_EXPANDO:
-                add_expando(event->scope, event->op);
-                if (event->link) expr_link_assignment_declaration(&event->op->left, binder);
-                break;
-            case DEFERRED_JS_DEFINE_PROPERTY:
-                add_define_property(event->scope, event->left);
-                break;
-            case DEFERRED_JS_THIS_PROPERTY:
-                add_this_property(event->scope, event->left, event->right, event->jsdoc_type, event->jsdoc_modifiers);
-                if (event->link) expr_link_assignment_declaration(event->left, binder);
-                break;
-            case DEFERRED_FUNCTION_EXPORT:
-                add_function_export_member(event->scope, event->right, event->namespace);
-                break;
+    #define MERGED_ERRS(e) ((e) == &me->errs ? errs : (e) == &me->discarded ? discarded : (e))
+    // (Everything replays in walk order: each list of every chunk in turn, the serial walk's lists)
+    for (ResolveShard* me = chunks; me < chunks + count; me++) {
+        for (u32 i = 0; i < my deferred_count; i++) {
+            DeferredEvent const* event = &my deferred[i];
+            ErrorCtx* event_errs = event->errs;
+            switch (event->kind) {
+                case DEFERRED_NOT_FOUND:
+                    report_not_found(event->scope, event->at, event->meaning, event->shorthand, event_errs);
+                    break;
+                case DEFERRED_MISSPELLED:
+                    if (!report_misspelled(event->scope, event->at, event->name, event->meaning, event->namespace, event_errs)) {
+                        report_misspelled_fallback(event->at, event->name, event->fallback, event_errs);
+                    }
+                    break;
+                case DEFERRED_EXPANDO:
+                    add_expando_member(event->scope, event->object, event->member, event->left, event->right, event->jsdoc_type,
+                        event->late_bound_key, event->assignment);
+                    if (event->link) expr_link_assignment_declaration(event->left, binder);
+                    break;
+                case DEFERRED_JS_EXPANDO:
+                    add_expando(event->scope, event->op);
+                    if (event->link) expr_link_assignment_declaration(&event->op->left, binder);
+                    break;
+                case DEFERRED_JS_DEFINE_PROPERTY:
+                    add_define_property(event->scope, event->left);
+                    break;
+                case DEFERRED_JS_THIS_PROPERTY:
+                    add_this_property(event->scope, event->left, event->right, event->jsdoc_type, event->jsdoc_modifiers);
+                    if (event->link) expr_link_assignment_declaration(event->left, binder);
+                    break;
+                case DEFERRED_FUNCTION_EXPORT:
+                    add_function_export_member(event->scope, event->right, event->namespace);
+                    break;
+            }
         }
     }
-    for (u32 i = 0; i < my symbol_count; i++) {
-        *(Symbol**)list_push((void**)&binder->symbols, &binder->symbol_count, &binder->symbol_cap, sizeof(Symbol*)) = my symbols[i];
+    for (ResolveShard* me = chunks; me < chunks + count; me++) {
+        for (u32 i = 0; i < my symbol_count; i++) {
+            *(Symbol**)list_push((void**)&binder->symbols, &binder->symbol_count, &binder->symbol_cap, sizeof(Symbol*)) = my symbols[i];
+        }
     }
-    for (u32 i = 0; i < my pending_not_found_count; i++) {
-        PendingNotFound pending = my pending_not_found[i];
-        pending.errs = MERGED_ERRS(pending.errs);
-        *(PendingNotFound*)list_push((void**)&binder->pending_not_found, &binder->pending_not_found_count,
-            &binder->pending_not_found_cap, sizeof(PendingNotFound)) = pending;
+    for (ResolveShard* me = chunks; me < chunks + count; me++) {
+        for (u32 i = 0; i < my pending_not_found_count; i++) {
+            PendingNotFound pending = my pending_not_found[i];
+            pending.errs = MERGED_ERRS(pending.errs);
+            *(PendingNotFound*)list_push((void**)&binder->pending_not_found, &binder->pending_not_found_count,
+                &binder->pending_not_found_cap, sizeof(PendingNotFound)) = pending;
+        }
     }
-    if (my pending_type_as_value_count) {
-        u32 count = binder->pending_type_as_value_count + my pending_type_as_value_count;
-        binder->pending_type_as_value = realloc(binder->pending_type_as_value, sizeof(PendingTypeAsValue) * count);
+    for (ResolveShard* me = chunks; me < chunks + count; me++) {
+        if (!my pending_type_as_value_count) continue;
+        u32 total = binder->pending_type_as_value_count + my pending_type_as_value_count;
+        binder->pending_type_as_value = realloc(binder->pending_type_as_value, sizeof(PendingTypeAsValue) * total);
         panic_if(!binder->pending_type_as_value, "out of memory");
         for (u32 i = 0; i < my pending_type_as_value_count; i++) {
             PendingTypeAsValue pending = my pending_type_as_value[i];
@@ -6572,19 +6601,24 @@ void resolve_shard_merge(ResolveShard* me) {
             binder->pending_type_as_value[binder->pending_type_as_value_count++] = pending;
         }
     }
-    for (u32 i = 0; i < my pending_export_merge_count; i++) {
-        *(PendingExportMerge*)list_push((void**)&binder->pending_export_merges, &binder->pending_export_merge_count,
-            &binder->pending_export_merge_cap, sizeof(PendingExportMerge)) = my pending_export_merges[i];
+    for (ResolveShard* me = chunks; me < chunks + count; me++) {
+        for (u32 i = 0; i < my pending_export_merge_count; i++) {
+            *(PendingExportMerge*)list_push((void**)&binder->pending_export_merges, &binder->pending_export_merge_count,
+                &binder->pending_export_merge_cap, sizeof(PendingExportMerge)) = my pending_export_merges[i];
+        }
     }
     #undef MERGED_ERRS
-    error_ctx_merge(errs, &my errs);
-    error_ctx_merge(discarded, &my discarded);
-    error_ctx_drop(&my errs);
-    error_ctx_drop(&my discarded);
-    free(my deferred);
-    free(my symbols);
-    free(my pending_not_found);
-    free(my pending_type_as_value);
-    free(my pending_export_merges);
-    *me = (ResolveShard){0};
+    // (A chunk's errors are all after the chunk before's: merged in turn, they are where the file's would be)
+    for (ResolveShard* me = chunks; me < chunks + count; me++) {
+        error_ctx_merge(errs, &my errs);
+        error_ctx_merge(discarded, &my discarded);
+        error_ctx_drop(&my errs);
+        error_ctx_drop(&my discarded);
+        free(my deferred);
+        free(my symbols);
+        free(my pending_not_found);
+        free(my pending_type_as_value);
+        free(my pending_export_merges);
+        *me = (ResolveShard){0};
+    }
 }

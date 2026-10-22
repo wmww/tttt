@@ -286,6 +286,20 @@ shard is replayed and merged (`resolve_shard_merge()`), and the files whose clas
 symbols with an earlier declaration in another file (`binder_mark_serial_resolves()`) are walked on the main thread. The order is the same
 at any thread count (the suite runs it at one); `TTTT_PARALLEL_RESOLVE=1` uses the threads even for a few files.
 
+**The chunked walk** of big declaration files (`chunked_walk_new()`: lib.dom.d.ts is 2.4 MB, most of a small
+project's walk on one thread). A declaration file of >= 256 KB and >= 64 statements, every one an interface, type
+alias, `declare var` without initializer, bodiless `declare function` or plain `declare namespace` made of the same
+(`statement_walks_alone()`), is walked in runs of statements of >= 128 KB, each a job of the lane with a shard of its
+own; the file's shards merge in statement order (`resolve_shard_merge_chunks()`: each list of every chunk in turn,
+the one shard's lists). The file scope's flow builder is `&flow_builder_per_thread`, so `scope_flow()` gives each chunk
+its own copy of the builder the serial walk starts with (start node made); every statement must leave it as it was
+(checked after each, `log_error()`), so each sees the serial walk's builder. Shared between chunks: the start node's
+REFERENCED/SHARED marks (atomic in `set_referenced()`), `Symbol.flow_start` (only the chunk of the first variable
+declaration writes it; another chunk reads what the serial walk would have seen, `walk_flow_start_differs()`), and
+generic merges (`binder_generic_merge_pairs()`: a later declaration's chunk waits for the chunks of the earlier ones).
+`TTTT_WALK_CHUNK_BYTES=N` chunks every eligible file into N-byte chunks, at any thread count: the oracle (its output
+must be byte-identical to the knob off).
+
 **Parallelism contract** (what the walks share by design). A JavaScript file's walk never sees what its deferred
 assignment declarations declare (nothing there reads it). Deferred expandos are those whose host isn't private to the
 file (`expando_host_is_private()`, conservative). Cross-file writes: `Symbol.referenced` (atomic OR),

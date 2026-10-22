@@ -7,6 +7,9 @@
 #include "import_attributes.h"
 #include "parser.h"
 #include "block.h"
+#include "flow.h"
+#include "function_impl.h"
+#include <sched.h>
 #include <cleat/filesystem.h>
 #include "error.h"
 #include "statement.h"
@@ -3482,8 +3485,8 @@ void program_order_stdlib_first(Program* me) {
     for (isize i = 0; i < count; i++) files[i]->program_order = my order_base + (u32)i;
 }
 
-static void resolve_file(SourceFile* source, ErrorCtx* errs) {
-    block_lookup_names_container(&source->ast, c_sv("file"), span_null, source->scope, errs);
+// What resolve_file() does after the walk (a file walked in chunks: once its chunks are merged)
+static void resolve_file_finish(SourceFile* source) {
     if (!source->is_stdlib && !source->unchecked && !source->is_declaration) unused_mark_jsdoc_links(source);
     // (Grown by doubling while the walk registered them: kept until checking ends, so without the slack)
     if (source->unused_cap > source->unused_count) {
@@ -3496,6 +3499,11 @@ static void resolve_file(SourceFile* source, ErrorCtx* errs) {
     }
 }
 
+static void resolve_file(SourceFile* source, ErrorCtx* errs) {
+    block_lookup_names_container(&source->ast, c_sv("file"), span_null, source->scope, errs);
+    resolve_file_finish(source);
+}
+
 // Whether a file's resolve walk can run on a thread of its own (plan 45). A JavaScript file's does too: its assignment
 // declarations (`this.x = v`, `F.prototype.x = v`, expandos), which declare into other files' symbols, wait for its
 // replay (DEFERRED_JS_* in scope.c)
@@ -3503,31 +3511,323 @@ static bool resolves_in_parallel(SourceFile const* source) {
     return !source->resolve_serial;
 }
 
+// The chunked walk of big declaration files (lib.dom.d.ts: 2.4 MB, 2862 statements, most of a small project's walk on
+// one thread). A file whose top-level statements leave the walk's state as they found it is walked in runs of
+// statements (chunks), each on whichever thread takes it, into a shard of its own; the file's shards are merged in
+// statement order where its one shard would be (resolve_shard_merge_chunks()). Every list a shard collects is ordered
+// and of the file, so the merge sees the serial walk's lists, whatever the boundaries and the schedule.
+// - The file's control flow builder: its scope's is &flow_builder_per_thread (scope_flow()), and each chunk walks with
+//   a copy of the builder the serial walk would start with, its start node made. No statement the rule allows makes a
+//   flow node of the file's container or leaves anything of the builder changed (checked after each), so every
+//   statement sees the builder the serial walk would give it. References to the start node mark it atomically
+// - A variable's Symbol.flow_start: written only by the chunk of its first variable declaration; another chunk reads
+//   what the serial walk would have seen there (walk_flow_start_differs())
+// - The one dependency between chunks: a later declaration of a generic class or interface shares the type parameter
+//   symbols of the earlier ones, which their walks make (scope_new_generic_merged()): its chunk waits for theirs
+// - The file's unused names: none (a declaration file's never are, unused_register())
+typedef struct WalkChunk {
+    u32 from, to; // Top-level statements
+    isize start; // Where it starts in the text (the first chunk: 0), chunked_walk_chunk_at()
+    u32* after; // malloc'd: the chunks that must be walked before this one starts
+    u32 after_count;
+    atomic_bool done;
+} WalkChunk;
+
+typedef struct ChunkedWalk {
+    SourceFile* file;
+    FlowBuilder flow; // The builder each chunk starts with
+    FlowBuilder* outer; // What the scope's builder was
+    WalkChunk* chunks;
+    ResolveShard* shards; // A chunk's
+    u32 chunk_count;
+    u32 handed; // The chunks given an item of the lane so far
+} ChunkedWalk;
+
+// A top-level (or ambient namespace) statement of a declaration file that is a chunk's: a declaration that makes no
+// flow node of its container and declares nothing outside the file's own tables
+static bool statement_walks_alone(Statement const* statement) {
+    if (statement_declares_name(statement->tag) &&
+        (statement->decl.props.invalid_decorators || statement->decl.props.exported == DECL_EXPORTED_YES_DEFAULT)
+    ) {
+        return false;
+    }
+    switch (statement->tag) {
+        case STATEMENT_NOOP:
+        case STATEMENT_SOURCE_DIRECTIVE:
+        case STATEMENT_DECL_INTERFACE:
+        case STATEMENT_DECL_TYPE:
+            return true;
+        case STATEMENT_DECL_VARIABLE:
+            for_each (i, vec_initialized_binding, &statement->decl.variable.initializers) {
+                if (i->value) return false;
+            }
+            return true;
+        case STATEMENT_DECL_FUNCTION:
+            return !statement->decl.function.impl->has_body;
+        case STATEMENT_DECL_NAMESPACE: {
+            NamespaceDecl const* namespace = statement->decl.namespace;
+            if (namespace->is_global || namespace->is_invalid_global || namespace->is_ambient_module ||
+                namespace->is_shorthand || namespace->is_augmentation || namespace->labeled || namespace->misplaced ||
+                namespace->jsdoc || namespace->attributes
+            ) {
+                return false;
+            }
+            for_each (i, vec_statement, &namespace->contents.statements) {
+                if (!statement_walks_alone(i)) return false;
+            }
+            return true;
+        }
+        default:
+            return false;
+    }
+}
+
+// Where a span starts (or ends) in its file's text, -1 when it isn't in it (a missing node's, a directive's)
+static isize statement_offset(SourceFile const* source, Span span, bool end) {
+    char const* text = cstr_str(&source->contents);
+    if (!span_valid(span) || span_source(span) != source) return -1;
+    char const* at = end ? span_end_ptr(span) : span_start_ptr(span);
+    return at >= text && at <= text + cstr_size(&source->contents) ? at - text : -1;
+}
+
+// The chunks of a file the chunked walk takes, null for any other file
+static ChunkedWalk* chunked_walk_new(SourceFile* source) {
+    if (!source->is_declaration || source->is_js || source->is_json || source->resolve_serial || flow_dump_enabled()) return nullptr;
+    VecStatement const* statements = &source->ast.statements;
+    u32 count = (u32)vec_statement_size(statements);
+    isize size = cstr_size(&source->contents);
+    u32 chunk_bytes = debug_env.walk_chunk_bytes ? debug_env.walk_chunk_bytes : 128 * 1024;
+    if (debug_env.walk_chunk_bytes ? count < 2 : size < 256 * 1024 || count < 64) return nullptr;
+    for_each (i, vec_statement, statements) {
+        if (!statement_walks_alone(i)) return nullptr;
+    }
+    ChunkedWalk* ret = c_new(ChunkedWalk, { .file = source });
+    ret->chunks = c_new_n(WalkChunk, count);
+    // (Chunks of at least chunk_bytes from the start of their first statement to the end of their last, where the
+    // statements' spans are in the text: not every one's is)
+    u32 from = 0;
+    isize start = -1;
+    for (u32 i = 0; i < count; i++) {
+        Statement const* statement = vec_statement_at(statements, i);
+        if (start < 0) start = statement_offset(source, statement->span, false);
+        isize end = statement_offset(source, statement->span, true);
+        if (start >= 0 && end >= 0 && end - start >= chunk_bytes && i + 1 < count) {
+            u32 at = ret->chunk_count++;
+            ret->chunks[at] = (WalkChunk){ .from = from, .to = i + 1, .start = at ? start : 0 };
+            from = i + 1;
+            start = -1;
+        }
+    }
+    // (The rest: a chunk of its own if any of its statements is in the text, else the last chunk's)
+    if (start >= 0 || !ret->chunk_count) {
+        u32 at = ret->chunk_count++;
+        ret->chunks[at] = (WalkChunk){ .from = from, .to = count, .start = at ? start : 0 };
+    } else {
+        ret->chunks[ret->chunk_count - 1].to = count;
+    }
+    if (ret->chunk_count < 2) {
+        free(ret->chunks);
+        free(ret);
+        return nullptr;
+    }
+    ret->shards = c_new_n(ResolveShard, ret->chunk_count);
+    return ret;
+}
+
+static void chunked_walk_drop(ChunkedWalk* me) {
+    for (u32 i = 0; i < my chunk_count; i++) free(my chunks[i].after);
+    free(my chunks);
+    free(my shards);
+    free(me);
+}
+
+// The chunk with a position in the file's text
+static u32 chunked_walk_chunk_at(ChunkedWalk const* me, char const* at) {
+    isize offset = at - cstr_str(&my file->contents);
+    u32 low = 0;
+    u32 high = my chunk_count;
+    while (high - low > 1) {
+        u32 mid = low + (high - low) / 2;
+        if (my chunks[mid].start <= offset) low = mid;
+        else high = mid;
+    }
+    return low;
+}
+
+typedef struct ChunkedWalks {
+    ChunkedWalk** walks;
+    u32 count;
+} ChunkedWalks;
+
+// binder_generic_merge_pairs()'s: the later declaration's chunk waits for the earlier one's
+static void chunked_walk_pair(void* ctx, SourceFile* file, Span later, Span earlier) {
+    ChunkedWalks* walks = ctx;
+    for (u32 w = 0; w < walks->count; w++) {
+        ChunkedWalk* walk = walks->walks[w];
+        if (!walk || walk->file != file) continue;
+        u32 to = chunked_walk_chunk_at(walk, span_start_ptr(later));
+        u32 from = chunked_walk_chunk_at(walk, span_start_ptr(earlier));
+        if (from == to) return;
+        if (from > to) {
+            // (Declarations are in source order: never, but walked whole the file would be right anyway)
+            log_error("A declaration's earlier declaration is after it");
+            chunked_walk_drop(walk);
+            walks->walks[w] = nullptr;
+            return;
+        }
+        WalkChunk* chunk = &walk->chunks[to];
+        for (u32 i = 0; i < chunk->after_count; i++) {
+            if (chunk->after[i] == from) return;
+        }
+        chunk->after = realloc(chunk->after, sizeof(u32) * (chunk->after_count + 1));
+        panic_if(!chunk->after, "out of memory");
+        chunk->after[chunk->after_count++] = from;
+        return;
+    }
+}
+
+// Before the lane: the file's builder, as block_lookup_names_container() makes it, and its scope's made per thread
+static void chunked_walk_start(ChunkedWalk* me) {
+    Scope* scope = my file->scope;
+    my outer = scope_flow(scope);
+    flow_builder_init(&my flow, my outer, scope, nullptr, nullptr);
+    my flow.current = flow_new_start(&my flow, nullptr, false);
+    my flow.container = &my file->ast;
+    my flow.statement_list = &my file->ast.statements;
+    my flow.lookup_statements = &my file->ast.statements;
+    scope->flow_ = &flow_builder_per_thread;
+}
+
+// Whether a chunk's builder is the one it started with, but for what is its own
+static bool chunked_walk_flow_unchanged(ChunkedWalk const* me, FlowBuilder const* flow) {
+    FlowBuilder probe = *flow;
+    probe.arena = my flow.arena;
+    probe.errs = my flow.errs;
+    probe.next_id = my flow.next_id;
+    probe.id_counter = my flow.id_counter;
+    probe.statement_list = my flow.statement_list;
+    probe.lookup_statements = my flow.lookup_statements;
+    // (A cache of equal contexts: a chunk's first property access makes one the serial walk might have shared)
+    probe.property_context = my flow.property_context;
+    return memcmp(&probe, &my flow, sizeof probe) == 0;
+}
+
+// The chunk this thread walks, if any
+static thread_local ChunkedWalk* walk_chunked;
+static thread_local u32 walk_chunk;
+
+// The chunk of a symbol's first variable declaration in the file walked in chunks (top_level: whether it is in the
+// file's own scope rather than a namespace's), UINT32_MAX when it has none there
+static u32 chunked_walk_binding_chunk(ChunkedWalk const* walk, Symbol const* symbol, bool* top_level) {
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        if (decl->kind != SYMBOL_DECL_VARIABLE) continue;
+        if (span_source(decl->full) != walk->file) return UINT32_MAX;
+        if (!decl->block) log_error("A variable declaration without its scope");
+        *top_level = decl->block == walk->file->scope;
+        return chunked_walk_chunk_at(walk, span_start_ptr(decl->full));
+    }
+    return UINT32_MAX;
+}
+
+bool chunked_walk_writes_flow_start(Symbol const* symbol) {
+    ChunkedWalk const* walk = walk_chunked;
+    if (!walk) return true;
+    bool top_level = false;
+    u32 chunk = chunked_walk_binding_chunk(walk, symbol, &top_level);
+    return chunk == UINT32_MAX || chunk == walk_chunk;
+}
+
+bool chunked_walk_flow_start_differs(Symbol const* symbol, FlowNode const* container_start) {
+    ChunkedWalk const* walk = walk_chunked;
+    bool top_level = false;
+    u32 chunk = walk ? chunked_walk_binding_chunk(walk, symbol, &top_level) : UINT32_MAX;
+    if (chunk == UINT32_MAX || chunk == walk_chunk) return symbol->flow_start && container_start != symbol->flow_start;
+    // (The serial walk hasn't walked the binding yet)
+    if (chunk > walk_chunk) return false;
+    // It has: the binding's container is the file, or a namespace walked in another chunk (never this one)
+    return !top_level || container_start != walk->flow.container_start;
+}
+
+static void chunked_walk_run(ChunkedWalk* me, u32 c, ErrorCtx* errs) {
+    WalkChunk* chunk = &my chunks[c];
+    for (u32 i = 0; i < chunk->after_count; i++) {
+        while (!atomic_load_explicit(&my chunks[chunk->after[i]].done, memory_order_acquire)) sched_yield();
+    }
+    SourceFile* source = my file;
+    FlowBuilder flow = my flow;
+    flow.next_id = &flow.id_counter;
+    flow.arena = binder_arena(source->scope->binder);
+    flow.errs = errs;
+    flow_thread_builder = &flow;
+    walk_chunked = me;
+    walk_chunk = c;
+    VecStatement* statements = &source->ast.statements;
+    for (u32 i = chunk->from; i < chunk->to; i++) {
+        flow.statement_list = statements;
+        flow.lookup_statements = statements;
+        statement_resolve_names(vec_statement_at_mut(statements, i), source->scope, errs);
+        if (!chunked_walk_flow_unchanged(me, &flow)) {
+            log_error("A statement of a file walked in chunks changed its flow builder: ", span_line_index(vec_statement_at(statements, i)->span) + 1);
+            my flow = flow; // (Once)
+        }
+    }
+    flow_thread_builder = nullptr;
+    walk_chunked = nullptr;
+    atomic_store_explicit(&chunk->done, true, memory_order_release);
+}
+
+// After the lane, in program order: the chunks' shards merged as the file's one would be
+static void chunked_walk_finish(ChunkedWalk* me) {
+    resolve_shard_merge_chunks(my shards, my chunk_count);
+    flow_builder_finish(&my flow, c_sv("file"), span_null);
+    my file->scope->flow_ = my outer;
+    resolve_file_finish(my file);
+}
+
+// One job of a resolve lane: a file, or a chunk of one
+typedef struct ResolveItem {
+    SourceFile* file;
+    ResolveShard* shard;
+    ChunkedWalk* chunked; // Null: the whole file
+    u32 chunk;
+    isize size;
+    double ms; // TTTT_RESOLVE_TIMES
+} ResolveItem;
+
 // The TypeScript files' walks, shared by the resolve threads
 typedef struct ResolveLane {
     Program* program;
     void (*run)(SourceFile* source, ErrorCtx* errs); // A file's job: resolve_file(), declare_file()
-    SourceFile** files; // Biggest first
-    u32* shard_of; // Index into shards, by files' index
-    ResolveShard* shards;
+    ResolveItem* items; // Biggest first (a file's chunks in their order)
     u32 count;
     atomic_uint next;
 } ResolveLane;
+
+static double now_ms(void) {
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    return (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1000000.0;
+}
 
 static void resolve_lane_run(ResolveLane* me, u32 thread) {
     Binder* binder = my program->binder;
     Arena* arena = thread ? binder_thread_arena(binder, thread) : &binder->arena;
     Arena* scope_arena = thread ? binder_thread_scope_arena(binder, thread) : &binder->scope_arena;
     for (u32 i; (i = atomic_fetch_add(&my next, 1)) < my count;) {
-        ResolveShard* shard = &my shards[my shard_of[i]];
+        ResolveItem* item = &my items[i];
+        double start = debug_env.resolve_times ? now_ms() : 0;
+        ResolveShard* shard = item->shard;
         *shard = (ResolveShard){
             .binder = binder, .arena = arena, .scope_arena = scope_arena,
             .errs = { .phase = my program->errs->phase, .parent = my program->errs },
             .discarded = error_ctx_scratch(my program->errs),
         };
         resolve_shard = shard;
-        my run(my files[i], &shard->errs);
+        if (item->chunked) chunked_walk_run(item->chunked, item->chunk, &shard->errs);
+        else my run(item->file, &shard->errs);
         resolve_shard = nullptr;
+        if (debug_env.resolve_times) item->ms = now_ms() - start;
     }
 }
 
@@ -3555,6 +3855,51 @@ static int resolve_order_cmp(void const* a, void const* b) {
     ResolveOrder const* y = b;
     if (x->size != y->size) return x->size > y->size ? -1 : 1;
     return x->index < y->index ? -1 : x->index > y->index;
+}
+
+// Biggest first, so that one big file doesn't start last (the items are in program order). A file's chunks take the
+// places its chunks got in their order: a chunk waits only for chunks handed out before it
+static void resolve_lane_sort(ResolveLane* me) {
+    ResolveOrder* order = c_new_n(ResolveOrder, my count ? my count : 1);
+    for (u32 i = 0; i < my count; i++) order[i] = (ResolveOrder){ my items[i].size, i };
+    qsort(order, my count, sizeof(ResolveOrder), resolve_order_cmp);
+    ResolveItem* items = c_new_n(ResolveItem, my count ? my count : 1);
+    for (u32 i = 0; i < my count; i++) {
+        ResolveItem* item = &items[i];
+        *item = my items[order[i].index];
+        if (!item->chunked) continue;
+        item->chunk = item->chunked->handed++;
+        item->shard = &item->chunked->shards[item->chunk];
+    }
+    free(order);
+    free(my items);
+    my items = items;
+}
+
+// The lane's costliest jobs on stderr (TTTT_RESOLVE_TIMES)
+static void resolve_lane_report(ResolveLane const* me, char const* name) {
+    if (!debug_env.resolve_times || !my count) return;
+    u32 top[8];
+    u32 top_count = 0;
+    for (u32 i = 0; i < my count; i++) {
+        u32 at = top_count < 8 ? top_count++ : 7;
+        if (at == 7 && top_count == 8 && my items[top[7]].ms >= my items[i].ms) continue;
+        top[at] = i;
+        while (at > 0 && my items[top[at - 1]].ms < my items[top[at]].ms) {
+            u32 swap = top[at - 1];
+            top[at - 1] = top[at];
+            top[at] = swap;
+            at--;
+        }
+    }
+    for (u32 i = 0; i < top_count; i++) {
+        ResolveItem const* item = &my items[top[i]];
+        if (item->chunked) {
+            eprintln("resolve: ", name, " ", item->ms, " ms ", cstr_str(&item->file->canonical_path), " chunk ", item->chunk, " of ", item->chunked->chunk_count);
+        } else {
+            eprintln("resolve: ", name, " ", item->ms, " ms ", cstr_str(&item->file->canonical_path));
+        }
+    }
 }
 
 // The resolve walk of every file (plan 45). TypeScript files are walked in any order, on --threads threads, each into a
@@ -3668,33 +4013,24 @@ static void program_declare_files(Program* me) {
     u32 file_count = (u32)vec_source_file_ptr_size(&my source_files_ordered);
     u32 threads = my threads ? my threads : 1;
     bool* isolated = c_new_n(bool, file_count ? file_count : 1);
-    ResolveOrder* order = c_new_n(ResolveOrder, file_count ? file_count : 1);
-    u32 count = 0;
+    ResolveShard* shards = c_new_n(ResolveShard, file_count ? file_count : 1);
+    ResolveLane lane = { .program = me, .run = declare_file, .items = c_new_n(ResolveItem, file_count ? file_count : 1) };
     for (u32 i = 0; i < file_count; i++) {
         SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, i);
         isolated[i] = threads > 1 && declares_in_isolation(source);
-        if (isolated[i]) order[count++] = (ResolveOrder){ cstr_size(&source->contents), i };
+        if (isolated[i]) lane.items[lane.count++] = (ResolveItem){ .file = source, .shard = &shards[i], .size = cstr_size(&source->contents) };
     }
     // (Few files aren't worth a thread each)
-    if (threads > count / 8 && !debug_env.parallel_resolve) threads = count / 8 ? count / 8 : 1;
-    if (debug_env.resolve_times) eprintln("resolve: ", count, " of ", file_count, " files declare in isolation");
+    if (threads > lane.count / 8 && !debug_env.parallel_resolve) threads = lane.count / 8 ? lane.count / 8 : 1;
+    if (debug_env.resolve_times) eprintln("resolve: ", lane.count, " of ", file_count, " files declare in isolation");
     if (threads <= 1) {
         for (u32 i = 0; i < file_count; i++) declare_file(*vec_source_file_ptr_at(&my source_files_ordered, i), my errs);
         free(isolated);
-        free(order);
+        free(shards);
+        free(lane.items);
         return;
     }
-    qsort(order, count, sizeof(ResolveOrder), resolve_order_cmp);
-    ResolveShard* shards = c_new_n(ResolveShard, file_count ? file_count : 1);
-    ResolveLane lane = {
-        .program = me, .run = declare_file, .shards = shards, .count = count,
-        .files = c_new_n(SourceFile*, count ? count : 1), .shard_of = c_new_n(u32, count ? count : 1),
-    };
-    for (u32 i = 0; i < count; i++) {
-        lane.files[i] = *vec_source_file_ptr_at(&my source_files_ordered, order[i].index);
-        lane.shard_of[i] = order[i].index;
-    }
-    free(order);
+    resolve_lane_sort(&lane);
     atomic_init(&lane.next, 0);
     double last = 0;
     resolve_step_done("", &last);
@@ -3708,53 +4044,84 @@ static void program_declare_files(Program* me) {
         else declare_file(source, my errs);
     }
     resolve_step_done("declare shard merge and the other files", &last);
-    free(lane.files);
-    free(lane.shard_of);
+    free(lane.items);
     free(shards);
     free(isolated);
 }
 
 static void program_resolve_walk(Program* me) {
-    isize file_count = vec_source_file_ptr_size(&my source_files_ordered);
+    u32 file_count = (u32)vec_source_file_ptr_size(&my source_files_ordered);
+    u32 threads = my threads ? my threads : 1;
     ResolveShard* shards = c_new_n(ResolveShard, file_count ? file_count : 1);
-    ResolveLane lane = { .program = me, .run = resolve_file, .shards = shards };
     double last = 0;
     resolve_step_done("", &last);
     binder_mark_serial_resolves(my binder);
     resolve_step_done("mark serial resolves", &last);
-    lane.files = c_new_n(SourceFile*, file_count ? file_count : 1);
-    lane.shard_of = c_new_n(u32, file_count ? file_count : 1);
-    // Biggest first, so that one big file doesn't start last
-    ResolveOrder* order = c_new_n(ResolveOrder, file_count ? file_count : 1);
+    // The files walked in chunks (by index in source_files_ordered, null for the others)
+    ChunkedWalks chunked = { .walks = calloc(file_count ? file_count : 1, sizeof(ChunkedWalk*)), .count = file_count };
+    panic_if(!chunked.walks, "out of memory");
+    u32 item_count = 0;
     bool any_js = false;
-    for (isize i = 0; i < file_count; i++) {
+    bool any_chunked = false;
+    for (u32 i = 0; i < file_count; i++) {
         SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, i);
-        if (resolves_in_parallel(source)) order[lane.count++] = (ResolveOrder){ cstr_size(&source->contents), (u32)i };
         any_js |= source->is_js;
+        if (!resolves_in_parallel(source)) continue;
+        if (threads > 1 || debug_env.walk_chunk_bytes) chunked.walks[i] = chunked_walk_new(source);
+        any_chunked |= chunked.walks[i] != nullptr;
+        item_count += chunked.walks[i] ? chunked.walks[i]->chunk_count : 1;
+    }
+    if (any_chunked) binder_generic_merge_pairs(my binder, chunked_walk_pair, &chunked);
+    if (any_chunked && debug_env.resolve_times) {
+        u32 files = 0, chunks = 0, waits = 0;
+        for (u32 i = 0; i < file_count; i++) {
+            ChunkedWalk const* walk = chunked.walks[i];
+            if (!walk) continue;
+            files++;
+            chunks += walk->chunk_count;
+            for (u32 c = 0; c < walk->chunk_count; c++) waits += walk->chunks[c].after_count;
+        }
+        eprintln("resolve: ", files, " files walked in ", chunks, " chunks (", waits, " waits for an earlier chunk)");
+    }
+    ResolveLane lane = { .program = me, .run = resolve_file, .items = c_new_n(ResolveItem, item_count ? item_count : 1) };
+    for (u32 i = 0; i < file_count; i++) {
+        SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, i);
+        if (!resolves_in_parallel(source)) continue;
+        ChunkedWalk* walk = chunked.walks[i];
+        if (!walk) {
+            lane.items[lane.count++] = (ResolveItem){ .file = source, .shard = &shards[i], .size = cstr_size(&source->contents) };
+            continue;
+        }
+        chunked_walk_start(walk);
+        for (u32 c = 0; c < walk->chunk_count; c++) {
+            isize end = c + 1 < walk->chunk_count ? walk->chunks[c + 1].start : cstr_size(&source->contents);
+            lane.items[lane.count++] = (ResolveItem){ .file = source, .chunked = walk, .chunk = c, .size = end - walk->chunks[c].start };
+        }
     }
     // (The `require` of a JavaScript file that doesn't declare one: one symbol, made before the walks share it)
     if (any_js) binder_require_symbol(my binder);
-    qsort(order, lane.count, sizeof(ResolveOrder), resolve_order_cmp);
-    for (u32 i = 0; i < lane.count; i++) {
-        lane.files[i] = *vec_source_file_ptr_at(&my source_files_ordered, order[i].index);
-        lane.shard_of[i] = order[i].index;
-    }
-    free(order);
+    resolve_lane_sort(&lane);
     atomic_init(&lane.next, 0);
-    u32 threads = my threads ? my threads : 1;
     // (Few files aren't worth a thread each)
     if (threads > lane.count / 8 && !debug_env.parallel_resolve) threads = lane.count / 8 ? lane.count / 8 : 1;
     // Nothing reports into the program's context meanwhile, every file into its own
     resolve_lane_threads(me, &lane, threads);
     resolve_step_done("parallel walk", &last);
-    for (isize i = 0; i < file_count; i++) {
+    resolve_lane_report(&lane, "walked");
+    for (u32 i = 0; i < file_count; i++) {
         SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, i);
-        if (resolves_in_parallel(source)) resolve_shard_merge(&shards[i]);
-        else resolve_file(source, my errs);
+        if (chunked.walks[i]) {
+            chunked_walk_finish(chunked.walks[i]);
+            chunked_walk_drop(chunked.walks[i]);
+        } else if (resolves_in_parallel(source)) {
+            resolve_shard_merge(&shards[i]);
+        } else {
+            resolve_file(source, my errs);
+        }
     }
     resolve_step_done("shard merge and serial files", &last);
-    free(lane.files);
-    free(lane.shard_of);
+    free(chunked.walks);
+    free(lane.items);
     free(shards);
 }
 

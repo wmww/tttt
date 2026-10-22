@@ -590,12 +590,12 @@ void namespace_decl_add_contents(NamespaceDecl* me) {
 
 void namespace_decl_resolve_names(NamespaceDecl* me, Scope* names, ErrorCtx* errs) {
     // The scope was made when the namespace was declared
-    my inner_scope->flow = names->flow;
+    my inner_scope->flow_ = scope_flow(names);
     my inner_scope->self = my symbol;
     // (The attributes are named from outside the module: tsgo's resolveName skips a module's exports for them)
     if (my attributes) type_lookup_names(my attributes, names, errs);
     block_lookup_names_container(&my contents, c_sv("namespace"), my name, my inner_scope, errs);
-    my inner_scope->flow = nullptr;
+    my inner_scope->flow_ = nullptr;
 }
 
 // tsc's getFirstNonAmbientClassOrFunctionDeclaration
@@ -1356,7 +1356,7 @@ static bool statement_check_unreachable(Statement const* me, FlowBuilder* flow, 
 }
 
 static void statement_resolve_names_body(Statement* me, Scope* names, ErrorCtx* errs, FlowNode* break_target, FlowNode* continue_target) {
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     FlowNode* saved_break = flow->break_target;
     FlowNode* saved_continue = flow->continue_target;
     flow->break_target = break_target;
@@ -1408,14 +1408,14 @@ static Scope* branch_names_scope(Statement const* branch, Scope* names) {
 
 // A condition, a context root of its own (FunctionImpl.context_root: the walk checks it without a contextual type)
 static void lookup_names_condition_root(Expr* expr, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target) {
-    uintptr_t outer_root = names->flow->context_root;
-    names->flow->context_root = context_root_make(expr, CONTEXT_ROOT_EXPR);
+    uintptr_t outer_root = scope_flow(names)->context_root;
+    scope_flow(names)->context_root = context_root_make(expr, CONTEXT_ROOT_EXPR);
     expr_lookup_names_condition(expr, names, errs, true_target, false_target);
-    names->flow->context_root = outer_root;
+    scope_flow(names)->context_root = outer_root;
 }
 
 static void if_else_resolve_names(IfStatement* me, isize_t index, Scope* names, ErrorCtx* errs) {
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     FlowNode* then_label = flow_new_branch_label(flow);
     FlowNode* else_label = flow_new_branch_label(flow);
     FlowNode* post = flow_new_branch_label(flow);
@@ -1444,12 +1444,12 @@ static void if_else_resolve_names(IfStatement* me, isize_t index, Scope* names, 
 }
 
 static void switch_resolve_names(SwitchStatement* me, Scope* names, ErrorCtx* errs) {
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     FlowNode* post = flow_new_branch_label(flow);
-    uintptr_t outer_root = names->flow->context_root;
-    names->flow->context_root = context_root_make(&my needle, CONTEXT_ROOT_EXPR);
+    uintptr_t outer_root = scope_flow(names)->context_root;
+    scope_flow(names)->context_root = context_root_make(&my needle, CONTEXT_ROOT_EXPR);
     expr_lookup_names(&my needle, names, errs);
-    names->flow->context_root = outer_root;
+    scope_flow(names)->context_root = outer_root;
     FlowNode* saved_break = flow->break_target;
     FlowNode* saved_pre_switch = flow->pre_switch_case_flow;
     flow->break_target = post;
@@ -1519,7 +1519,7 @@ static void switch_resolve_names(SwitchStatement* me, Scope* names, ErrorCtx* er
 static void try_catch_resolve_names(TryCatchStatement* me, bool has_catch, bool has_finally, Scope* names, ErrorCtx* errs) {
     // Any code in the try block can throw, but only assignments widen what a variable may be: they are the
     // antecedents of the exception label, which is where the catch block (or the finally block) starts
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     FlowNode* saved_return = flow->return_target;
     FlowNode* saved_exception = flow->exception_target;
     FlowNode* normal_exit = flow_new_branch_label(flow);
@@ -1580,7 +1580,7 @@ static void statement_resolve_names_labeled(Statement* me, u32 label_count, Scop
 // tsc's checkGrammarStatementInAmbientContext reports TS1036 at the first statement of a block an ambient context
 // doesn't allow, and that statement's own checks stop there (checkReturnStatement)
 static bool ambient_reported_at(Statement const* me, Scope const* names) {
-    VecStatement const* list = names->ambient && names->flow ? names->flow->lookup_statements : nullptr;
+    VecStatement const* list = names->ambient && scope_flow(names) ? scope_flow(names)->lookup_statements : nullptr;
     if (!list || !span_source(me->span) || span_source(me->span)->has_parse_errors) return false;
     for_each (i, vec_statement, list) {
         if (block_statement_is_ambient_disallowed(i)) return i == me;
@@ -1589,7 +1589,7 @@ static bool ambient_reported_at(Statement const* me, Scope const* names) {
 }
 
 static void statement_resolve_names_reachable(Statement* me, u32 label_count, Scope* names, ErrorCtx* errs) {
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     if (statement_declares_name(my tag) || my tag == STATEMENT_IMPORT_EXPORT) {
         unused_register(names, UNUSED_STATEMENT, me);
     }
@@ -1638,7 +1638,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             // A binder error in tsc (checkStrictModeWithStatement), reported in the body of another `with` too (errs is
             // null there, flow->errs is not). The rest are the checker's
             if (names->strict) {
-                error_ctx_error_d(names->flow->errs, keyword, 1101, "'with' statements are not allowed in strict mode.");
+                error_ctx_error_d(scope_flow(names)->errs, keyword, 1101, "'with' statements are not allowed in strict mode.");
             }
             // (tsc's checkWithStatement, which a `with` in the body of another never gets to: nothing in there is
             // reported, errs is null)
@@ -1730,7 +1730,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                     if (i->value) expr_lookup_names(i->value, loop_scope, errs);
                     if (loop->keyword == FOR_EACH_LOOP_IN && i->binding.tag == BINDING_IDENTIFIER) {
                         // (The loop too: `for (const k in ref)` acts as a non-null on ref, see type_at_flow_assignment())
-                        flow_assign(loop_scope->flow, (FlowAssign){ .kind = FLOW_ASSIGN_DECLARATION, .binding = &i->binding, .for_each = loop });
+                        flow_assign(scope_flow(loop_scope), (FlowAssign){ .kind = FLOW_ASSIGN_DECLARATION, .binding = &i->binding, .for_each = loop });
                     } else {
                         binding_flow_assign(&i->binding, loop_scope);
                     }
@@ -1971,7 +1971,7 @@ void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs) {
 }
 
 static void statement_resolve_names_labeled(Statement* me, u32 label_count, Scope* names, ErrorCtx* errs) {
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     VecStatement const* list = flow->statement_list;
     flow->statement_list = nullptr;
     bool in_range = false;

@@ -153,8 +153,8 @@ static void binding_check_var_not_shadowed(Binding const* me, Scope const* names
 }
 
 void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
-    Binding const* outer_root = names->flow ? names->flow->binding_root : nullptr;
-    if (names->flow && !my parent) names->flow->binding_root = me;
+    Binding const* outer_root = scope_flow(names) ? scope_flow(names)->binding_root : nullptr;
+    if (scope_flow(names) && !my parent) scope_flow(names)->binding_root = me;
     // The type, then the default, then the pattern: a default is evaluated before the elements it is destructured
     // into (tsc's bindParameterFlow / bindBindingElementFlow)
     if (my has_explicit_type && my explicit_type) {
@@ -162,10 +162,10 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
     }
     if (my default_value) {
         // In a parameter's pattern the default is the element's own (tsc's associatedDeclarationForContainingInitializer)
-        Binding const* saved = names->flow ? names->flow->parameter_initializing : nullptr;
-        if (saved) names->flow->parameter_initializing = me;
+        Binding const* saved = scope_flow(names) ? scope_flow(names)->parameter_initializing : nullptr;
+        if (saved) scope_flow(names)->parameter_initializing = me;
         expr_lookup_names_initializer(my default_value, names, errs);
-        if (saved) names->flow->parameter_initializing = saved;
+        if (saved) scope_flow(names)->parameter_initializing = saved;
     }
     switch (my tag) {
         case BINDING_NOOP: break;
@@ -173,8 +173,10 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
         case BINDING_IDENTIFIER:
             // The flow container the variable belongs to: elsewhere it is assumed to be initialized
             // (Only the first declaring file's walk writes it: others may be running on other threads, plan 45)
-            if (my symbol && names->flow && !symbol_first_declared_elsewhere(my symbol, names->file) && !my symbol->flow_start) {
-                my symbol->flow_start = names->flow->container_start;
+            if (my symbol && scope_flow(names) && !symbol_first_declared_elsewhere(my symbol, names->file) && !my symbol->flow_start &&
+                walk_writes_flow_start(my symbol)
+            ) {
+                my symbol->flow_start = scope_flow(names)->container_start;
             }
             binding_check_var_not_shadowed(me, names, errs);
             break;
@@ -197,12 +199,12 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
             break;
     }
 
-    if (names->flow && !my parent) names->flow->binding_root = outer_root;
+    if (scope_flow(names) && !my parent) scope_flow(names)->binding_root = outer_root;
 }
 
 // The default of a parameter or of an element of a pattern is only evaluated sometimes (tsc: bindInitializer())
 void expr_lookup_names_initializer(Expr* me, Scope* names, ErrorCtx* errs) {
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     FlowNode* entry = flow->current;
     expr_lookup_names(me, names, errs);
     if (flow_is_unreachable(entry) || entry == flow->current) return;
@@ -218,7 +220,7 @@ void binding_flow_assign(Binding const* me, Scope* names) {
         case BINDING_NOOP: break;
 
         case BINDING_IDENTIFIER:
-            flow_assign(names->flow, (FlowAssign){ .kind = FLOW_ASSIGN_DECLARATION, .binding = me });
+            flow_assign(scope_flow(names), (FlowAssign){ .kind = FLOW_ASSIGN_DECLARATION, .binding = me });
             break;
 
         case BINDING_ARRAY:
@@ -804,10 +806,10 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
         );
     }
     if (initialized_binding_rare(me)->require_port_count) module_ref_report(initialized_binding_rare(me)->require_ports[0].module_ref, names, errs);
-    InitializedBinding const* outer = names->flow->initializing;
-    names->flow->initializing = me;
+    InitializedBinding const* outer = scope_flow(names)->initializing;
+    scope_flow(names)->initializing = me;
     binding_lookup_names(&my binding, names, errs);
-    names->flow->contextual_depth += my binding.has_explicit_type;
+    scope_flow(names)->contextual_depth += my binding.has_explicit_type;
     // (tsc's getNameOfSymbolAsWritten: an anonymous function is named by the variable it initializes)
     if (my binding.tag == BINDING_IDENTIFIER && initialized_binding_value(me)->tag == EXPR_FUNCTION) function_impl_set_variable_name(initialized_binding_value(me)->function, my binding.content_span);
     if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol && initialized_binding_value(me)->tag == EXPR_FUNCTION &&
@@ -818,20 +820,20 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
         function_impl_rare_mut(initialized_binding_value(me)->function)->top_level_variable = my binding.symbol;
     }
     // (The context root of its function expressions, FunctionImpl.context_root: the walk checks the initializer)
-    uintptr_t outer_root = names->flow->context_root;
-    names->flow->context_root = context_root_make(me, CONTEXT_ROOT_BINDING);
+    uintptr_t outer_root = scope_flow(names)->context_root;
+    scope_flow(names)->context_root = context_root_make(me, CONTEXT_ROOT_BINDING);
     if (my value) expr_lookup_names(my value, names, errs);
-    names->flow->context_root = outer_root;
+    scope_flow(names)->context_root = outer_root;
     if (my binding.has_explicit_type && my value && my value->tag == EXPR_UNARY_OP && my value->unary_op->op == UNARY_OP_YIELD) {
         my value->unary_op->declared_context = binding_type(&my binding);
     }
-    names->flow->contextual_depth -= my binding.has_explicit_type;
-    names->flow->initializing = outer;
+    scope_flow(names)->contextual_depth -= my binding.has_explicit_type;
+    scope_flow(names)->initializing = outer;
     if (initialized_binding_value(me)->tag != EXPR_IMPLICIT_ANY) binding_flow_assign(&my binding, names);
 }
 
 void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, bool value_unchecked, ErrorCtx* errs) {
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     Binding const* saved = flow->parameter_initializing;
     Scope const* saved_scope = flow->parameter_function_scope;
     flow->parameter_initializing = &my binding;

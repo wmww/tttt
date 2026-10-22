@@ -54,14 +54,14 @@ void enum_decl_add_names(EnumDecl* me, Scope* scope, DeclStatementProps props) {
 
 void enum_decl_lookup_names(EnumDecl* me, Scope* names, ErrorCtx* errs) {
     // Initializers see the members by their bare names
-    my namespace->flow = names->flow; // The scope was made when the enum was declared
+    my namespace->flow_ = scope_flow(names); // The scope was made when the enum was declared
     my namespace->self = my symbol;
     for_each (i, vec_enum_case, &my cases) {
         // (tsgo's checkEnumMember checks a computed name's expression too)
         if (i->computed_key) expr_lookup_names(i->computed_key, my namespace, errs);
         expr_lookup_names(&i->value, my namespace, errs);
     }
-    my namespace->flow = nullptr;
+    my namespace->flow_ = nullptr;
 }
 
 

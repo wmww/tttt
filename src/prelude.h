@@ -38,6 +38,9 @@ typedef struct DebugEnv {
     bool dup_census;           // TTTT_DUP_CENSUS: cross-checker duplication by fingerprint after checking (ty/dupcensus.c)
     bool debug_containers;     // TTTT_DEBUG_CONTAINERS: getSymbolChain's sorted candidate containers and their specifiers
     bool resolve_times;        // TTTT_RESOLVE_TIMES: name resolution's steps (declare, link, the walk...) timed on stderr
+    // TTTT_WALK_CHUNK_BYTES: every declaration file the chunked walk could take is walked in chunks of this many bytes
+    // of statements (1: a statement each), whatever its size (program.c's chunked walk; its oracle)
+    u32 walk_chunk_bytes;
     // TTTT_HUGEPAGES: 1 madvises every arena chunk for huge pages, 0 none; unset, as many as the system has free
     // (huge_pages_take())
     int8_t huge_pages;

@@ -236,7 +236,7 @@ static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow, FlowB
 
 void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool this_is_any, Scope* names, ErrorCtx* errs) {
     // (a declaration or method too: what it returns is in the same context)
-    if (names->flow && names->flow->contextual_depth) my syntactically_contextual = true;
+    if (scope_flow(names) && scope_flow(names)->contextual_depth) my syntactically_contextual = true;
     my ambient = names->ambient;
     if (my is_async) {
         function_impl_rare_mut(me)->promise_decl = scope_get_type(names, c_sv("Promise"), nullptr);
@@ -257,10 +257,10 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
                 scope_rare_mut(decorator_names)->decorated_function = me;
             }
             // (The function is the flow container of its parameters' decorators: what they read is an outer variable)
-            bool member_name = names->flow && names->flow->member_name;
-            if (names->flow) names->flow->member_name = true;
+            bool member_name = scope_flow(names) && scope_flow(names)->member_name;
+            if (scope_flow(names)) scope_flow(names)->member_name = true;
             expr_lookup_names(decorator, decorator_names, decorator_errs);
-            if (names->flow) names->flow->member_name = member_name;
+            if (scope_flow(names)) scope_flow(names)->member_name = member_name;
         }
     }
 
@@ -274,7 +274,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     FunctionImpl const* enclosing = names->function;
     my contextual_ancestor = !enclosing ? nullptr :
         enclosing->is_expression && ty_function_is_context_sensitive(enclosing) ? enclosing : enclosing->contextual_ancestor;
-    FlowBuilder* outer = names->flow;
+    FlowBuilder* outer = scope_flow(names);
     bool is_iife = outer->next_function_is_iife && my has_body;
     outer->next_function_is_iife = false;
     FlowBuilder flow;
@@ -320,7 +320,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     }
 
     Scope* function_scope = scope_new(names, SCOPE_FUNCTION);
-    function_scope->flow = &flow;
+    function_scope->flow_ = &flow;
     if (type_params_scope) scope_rare_mut(type_params_scope)->type_params_function = function_scope;
     function_scope->function = me;
     // (A deferred body doesn't start with a string: parser.c's skip_body())
@@ -554,7 +554,7 @@ bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
     // (Flow node ids are for dumps only: a materialization's count on from where no file's do)
     flow.id_counter = 1u << 30;
     flow.next_id = &flow.id_counter;
-    function_scope->flow = &flow;
+    function_scope->flow_ = &flow;
     // What the walk sets on the function, as before the first walk (plan 78 stage 2: a materialization after a drop
     // finds the last one's; some are only set if unset). The rare struct the walk makes goes with the materialization
     me->end_flow_ = nullptr;
@@ -595,7 +595,7 @@ bool function_impl_lookup_deferred_body(DeferredBody* body, ErrorCtx* errs) {
             (int)(at.size > 60 ? 60 : at.size), at.buf);
     }
     function_impl_lookup_body(me, &flow, nullptr, function_scope, false, false, errs);
-    function_scope->flow = nullptr;
+    function_scope->flow_ = nullptr;
     if (!rare && me->rare) deferred_bodies_undo_made((void**)&me->rare, nullptr, walk_rare_drop);
     return !collides;
 }

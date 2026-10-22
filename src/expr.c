@@ -59,7 +59,7 @@ void identifier_expr_drop(IdentifierExpr* me) {
 // `super.x` need a `super()` call on every way there. The flow graph behind the current node is complete already
 static bool is_valid_const_assertion_argument(Expr const* me);
 static bool check_before_super(IdentifierExpr const* me, Scope const* names, unsigned code, char const* what, ErrorCtx* errs) {
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     if (!flow || flow->dead || !flow->constructor_of || !names->function || !names->function->is_constructor) return true;
     ClassDecl const* class_decl = symbol_find_node(flow->constructor_of, SYMBOL_DECL_CLASS);
     if (!class_decl || class_decl->extends.tag == EXPR_IMPLICIT_ANY) return true;
@@ -252,7 +252,7 @@ __attribute__((always_inline)) static inline void check_declared_before_use(Iden
     if (!(flags & (SYMBOL_BLOCK_SCOPED_VARIABLE | SYMBOL_CLASS | SYMBOL_ENUM)) || symbol->is_ambient) return;
     if (flags & SYMBOL_CLASS && flags & (SYMBOL_FUNCTION | SYMBOL_FUNCTION_SCOPED_VARIABLE)) return;
     if ((flags & SYMBOL_ENUM) == SYMBOL_CONST_ENUM && !compiler_options()->isolated_modules) return;
-    if ((names->flow && names->flow->in_type_query) || names->ambient) return;
+    if ((scope_flow(names) && scope_flow(names)->in_type_query) || names->ambient) return;
     SymbolDecl const* decl = nullptr;
     for (u32 i = 0; i < symbol->decl_count && !decl; i++) {
         SymbolDeclKind kind = symbol->decls[i].kind;
@@ -280,11 +280,11 @@ __attribute__((always_inline)) static inline void check_declared_before_use(Iden
             }
         } else {
             // Declared before, but used in its own initializer (`let x = x`, `for (const x of x)`)
-            if (decl->kind != SYMBOL_DECL_VARIABLE || !names->flow || !names->flow->initializing) return;
+            if (decl->kind != SYMBOL_DECL_VARIABLE || !scope_flow(names) || !scope_flow(names)->initializing) return;
             Binding const* binding = decl->node;
             Binding const* root = binding;
             while (root->parent) root = root->parent;
-            if (root != &names->flow->initializing->binding) return;
+            if (root != &scope_flow(names)->initializing->binding) return;
             // In the default of another element of the pattern it's initialized already (`{ a, b = a }`)
             char const* at = span_start_ptr(identifier_expr_name(me));
             bool in_pattern = at >= span_start_ptr(root->content_span) && at < span_end_ptr(root->content_span);
@@ -321,7 +321,7 @@ __attribute__((always_inline)) static inline void check_declared_before_use(Iden
 // tsc's onSuccessfullyResolvedSymbol for parameter initializers: a parameter's initializer (or its pattern's defaults
 // and computed names) runs before the parameters after it are, and before it is itself
 static void check_parameter_reference(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
-    FlowBuilder const* flow = names->flow;
+    FlowBuilder const* flow = scope_flow(names);
     Binding const* param = flow ? flow->parameter_initializing : nullptr;
     if (!param || flow->in_type_query) return;
     Symbol const* symbol = my symbol;
@@ -355,7 +355,7 @@ static bool scope_has_arguments(Scope const* scope) {
 // doesn't enter), but in a field's initializer of such a class
 static FlowBuilder* yield_generator_body_flow(Scope const* names) {
     for (Scope const* scope = names; scope; scope = scope->parent) {
-        if (scope->kind == SCOPE_FUNCTION) return scope->function && scope->function->is_generator ? scope->flow : nullptr;
+        if (scope->kind == SCOPE_FUNCTION) return scope->function && scope->function->is_generator ? scope_flow(scope) : nullptr;
         if (scope->parameters) return nullptr;
         if (scope->member_decorator && !(scope->parent && scope->parent->in_field)) return nullptr;
     }
@@ -440,7 +440,7 @@ static void check_unresolved_import_alias_value(IdentifierExpr const* me, Scope 
 // (`at` is the name the value use spells: an identifier, or a JSX tag whose factory `found` is)
 static void check_type_only_value_at(Symbol const* found, Span at, csview name, Scope const* names, ErrorCtx* errs) {
     if (!found || !(found->flags & SYMBOL_ALIAS) || found->flags & SYMBOL_VALUE) return;
-    if (names->flow && (names->flow->in_type_query || names->flow->type_only_alias_ok)) return;
+    if (scope_flow(names) && (scope_flow(names)->in_type_query || scope_flow(names)->type_only_alias_ok)) return;
     for (Scope const* scope = names; scope; scope = scope->parent) {
         if (scope->ambient) return;
     }
@@ -535,7 +535,7 @@ static void check_isolated_global_shadow(IdentifierExpr const* me, Scope const* 
     if (!symbol || symbol->is_local || symbol->parent) return;
     CompilerOptions const* options = compiler_options();
     if (!options->is_set[COMPILER_OPTION_isolated_modules] || !options->isolated_modules) return;
-    if (!names->file || !names->file->is_module || !(names->flow && !names->flow->in_type_query)) return;
+    if (!names->file || !names->file->is_module || !(scope_flow(names) && !scope_flow(names)->in_type_query)) return;
     csview name = span_sv(identifier_expr_name(me));
     Scope const* module = names;
     while (module && module->kind != SCOPE_MODULE) module = module->parent;
@@ -722,9 +722,9 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         // thread)
         // (A signature without a body is a flow container of its own too, tsc's binder: its references have no flow
         // node here, see identifier_flow_type())
-        my outer_reference = names->flow && (names->flow->member_name || symbol_first_declared_elsewhere(my target, names->file) ||
-            (my target->flow_start && names->flow->container_start != my target->flow_start) ||
-            (names->flow->function && !names->flow->function->has_body && names->flow->container == names->flow->function &&
+        my outer_reference = scope_flow(names) && (scope_flow(names)->member_name || symbol_first_declared_elsewhere(my target, names->file) ||
+            walk_flow_start_differs(my target, scope_flow(names)->container_start) ||
+            (scope_flow(names)->function && !scope_flow(names)->function->has_body && scope_flow(names)->container == scope_flow(names)->function &&
                 !my target->is_parameter));
     } else if (span_equals(identifier_expr_name(me), "arguments") && scope_has_arguments(names)) {
         if (in_initializer_or_static_block(names)) {
@@ -735,7 +735,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         // No symbol: ty_identifier_reference_type() makes it IArguments
         my is_arguments = true;
         note_arguments_reference(names);
-    } else if (names->flow && names->flow->type_only_alias_ok &&
+    } else if (scope_flow(names) && scope_flow(names)->type_only_alias_ok &&
         (my symbol = scope_resolve(names, span_sv(identifier_expr_name(me)), SYMBOL_ANY_MEANING)) &&
         // (`export = string`: a type keyword names nothing, TS2693 below)
         (!symbol_is_builtin_type(my symbol) || ((my symbol = nullptr), false))
@@ -1307,7 +1307,7 @@ static bool is_written_undefined(Expr const* me);
 
 
 void expr_lookup_names_condition(Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target) {
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     bool nullish = flow->nullish_condition;
     flow->true_target = true_target;
     flow->false_target = false_target;
@@ -1337,11 +1337,11 @@ void expr_mark_result_unused(Expr* me) {
 void expr_lookup_names_statement(Expr* me, Scope* names, ErrorCtx* errs) {
     expr_mark_result_unused(me);
     // (The context root of the function expressions in it: the walk checks it without a contextual type)
-    uintptr_t outer_root = names->flow->context_root;
-    names->flow->context_root = context_root_make(me, CONTEXT_ROOT_EXPR);
+    uintptr_t outer_root = scope_flow(names)->context_root;
+    scope_flow(names)->context_root = context_root_make(me, CONTEXT_ROOT_EXPR);
     expr_lookup_names(me, names, errs);
-    names->flow->context_root = outer_root;
-    flow_maybe_call(names->flow, me);
+    scope_flow(names)->context_root = outer_root;
+    flow_maybe_call(scope_flow(names), me);
 }
 
 static void flow_assignment_target(FlowBuilder* flow, Expr const* target, FlowAssign assign);
@@ -1412,7 +1412,7 @@ static void flow_assignment_target(FlowBuilder* flow, Expr const* target, FlowAs
 }
 
 void expr_flow_assign_for_each(Expr const* me, Scope* names, ForEachLoopStatement const* for_each) {
-    flow_assignment_target(names->flow, me, (FlowAssign){ .kind = FLOW_ASSIGN_FOR_EACH, .for_each = for_each });
+    flow_assignment_target(scope_flow(names), me, (FlowAssign){ .kind = FLOW_ASSIGN_FOR_EACH, .for_each = for_each });
 }
 
 void expr_link_assignment_declaration(Expr* me, Binder* binder) {
@@ -1447,7 +1447,7 @@ static void identifier_mark_assigned(IdentifierExpr const* me, Scope const* name
     // The end of the outermost statement around the assignment that starts after the declaration
     char const* end = span_end_ptr(identifier_expr_name(me));
     char const* declared_at = span_start_ptr(symbol->name_span);
-    for (FlowStatementFrame const* i = names->flow->statements; i; i = i->parent) {
+    for (FlowStatementFrame const* i = scope_flow(names)->statements; i; i = i->parent) {
         if (span_start_ptr(i->span) <= declared_at) break;
         end = span_end_ptr(i->span);
     }
@@ -1462,7 +1462,7 @@ static bool is_compound_like(Expr const* right) {
 }
 
 static void expr_lookup_names_logical(Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target) {
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     BinaryOp op = my binary_op->op;
     FlowNode* pre_right = flow_new_branch_label(flow);
     bool is_assignment = binary_op_is_logical_assignment(op);
@@ -1497,7 +1497,7 @@ static void expr_lookup_names_logical(Expr* me, Scope* names, ErrorCtx* errs, Fl
 static void expr_lookup_names_chain(
     Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target, bool continues, bool nullish
 ) {
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     bool is_root = expr_is_optional_chain_root(me);
     FlowNode* pre_chain = is_root ? flow_new_branch_label(flow) : nullptr;
     Expr* object =
@@ -1526,7 +1526,7 @@ static void expr_lookup_names_chain(
 static void expr_lookup_names_chain_flow(
     Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target, bool continues, bool nullish
 ) {
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     if (true_target) {
         expr_lookup_names_chain(me, names, errs, true_target, false_target, continues, nullish);
         return;
@@ -1729,7 +1729,7 @@ __attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, E
                 IdentifierExpr* name = &my jsx->tag_name.identifier;
                 if (!name->keyword) {
                     name->target = scope_get_value(names, span_sv(identifier_expr_name(name)), &name->symbol);
-                    name->flow = flow_builder_reference(names->flow, my jsx->tag_name.inner_span);
+                    name->flow = flow_builder_reference(scope_flow(names), my jsx->tag_name.inner_span);
                 }
             }
             for_each (i, vec_spanned_type, &my jsx->type_args) type_lookup_names(&i->type, names, errs);
@@ -1746,7 +1746,7 @@ __attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, E
                     expr_lookup_names(&my jsx->closing_name, names, errs);
                 } else if (!my jsx->closing_namespaced && my jsx->closing_name.tag == EXPR_IDENTIFIER && !closing->keyword) {
                     closing->target = scope_get_value(names, span_sv(identifier_expr_name(closing)), &closing->symbol);
-                    closing->flow = flow_builder_reference(names->flow, my jsx->closing_name.inner_span);
+                    closing->flow = flow_builder_reference(scope_flow(names), my jsx->closing_name.inner_span);
                 }
             }
         }   break;
@@ -1770,7 +1770,7 @@ static bool is_plain_binary(Expr const* me) {
 
 // expr_lookup_names() of a binary expression that isn't logical or an assignment, once its left operand is walked
 static void plain_binary_lookup_names_rest(Expr* me, Scope* names, ErrorCtx* errs) {
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     if (my binary_op->op == BINARY_OP_COMMA) expr_mark_result_unused(&my binary_op->left);
     if (my binary_op->op == BINARY_OP_COMMA) flow_maybe_call(flow, &my binary_op->left);
     expr_lookup_names(&my binary_op->right, names, errs);
@@ -1810,7 +1810,7 @@ AccessSite* scope_access_site(Scope* names) {
     // (The AST's: a deferred body's goes with its materialization)
     return ast_new(AccessSite, {
         .enclosing_class = enclosing_class, .containing_function = names->function, .this_parameter = this_parameter,
-        .this_function = this_function, .initializer_context = names->flow ? names->flow->initializer_context : 0,
+        .this_function = this_function, .initializer_context = scope_flow(names) ? scope_flow(names)->initializer_context : 0,
     });
 }
 
@@ -1818,7 +1818,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_EXPR);
 
     // What this expression is to whoever walks it: taken, so that operands only get what they are given
-    FlowBuilder* flow = names->flow;
+    FlowBuilder* flow = scope_flow(names);
     FlowNode* true_target = flow->true_target;
     FlowNode* false_target = flow->false_target;
     bool chain_continues = flow->chain_continues;
@@ -1863,7 +1863,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 bool ambient = false;
                 for (Scope const* i = names; i && !ambient; i = i->parent) ambient = i->ambient;
                 // (`declare const n = 1n`)
-                Binding const* initializing = names->flow && names->flow->initializing ? &names->flow->initializing->binding : nullptr;
+                Binding const* initializing = scope_flow(names) && scope_flow(names)->initializing ? &scope_flow(names)->initializing->binding : nullptr;
                 if (initializing && initializing->tag == BINDING_IDENTIFIER && initializing->symbol) ambient |= initializing->symbol->is_ambient;
                 my literal_ambient = ambient;
             }

@@ -60,12 +60,12 @@ void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs
     for_each (i, vec_expr, &my invalid_extends) expr_lookup_names(i, names, nullptr);
     // The body's members directly: it isn't a type literal (whose `this` would be invalid). Computed names in there
     // aren't uses of values (tsc's isInAmbientOrTypeNode)
-    bool saved_type_query = names->flow->in_type_query;
-    names->flow->in_type_query = true;
+    bool saved_type_query = scope_flow(names)->in_type_query;
+    scope_flow(names)->in_type_query = true;
     for_each (i, vec_interface_member, &my type.interface.members) {
         interface_member_lookup_names(i, names, errs);
     }
-    names->flow->in_type_query = saved_type_query;
+    scope_flow(names)->in_type_query = saved_type_query;
     type_flow_restore(saved_flow);
     scope_release(this_scope, pending_mark);
 }

@@ -553,7 +553,7 @@ typedef struct Scope {
     Symbol* container; // Exported declarations go to its exports, and lookups see them
     // The resolve walk: the builder of the control flow container this scope is in (inherited by child scopes). Only
     // valid during the walk
-    FlowBuilder* flow;
+    FlowBuilder* flow_; // Read through scope_flow()
     FunctionImpl* function; // The function this scope is in, null outside of functions
     // The file the scope is in (null for the global scope)
     SourceFile* file;
@@ -746,6 +746,27 @@ typedef struct ResolveShard {
     Arena own_arenas[2]; // A materialization's arena and scope_arena (Arena.ast_backed)
 } ResolveShard;
 extern thread_local ResolveShard* resolve_shard;
+// The builder a file scope's walk uses on this thread: a file walked in chunks (program.c's chunked walk of big
+// declaration files) has &flow_builder_per_thread as its scope's builder, and each chunk walks with a copy of its own
+// Symbol.flow_start, which the walk of a variable's first binding writes, as the walk reads it: in a chunked walk
+// (program.c) another chunk's binding may be walked or not yet, so these answer what the serial walk would see, and
+// only the chunk of the first variable declaration writes it
+extern FlowBuilder flow_builder_per_thread;
+extern thread_local FlowBuilder* flow_thread_builder; // flow.c: set while a chunk is walked
+bool chunked_walk_writes_flow_start(Symbol const* symbol);
+bool chunked_walk_flow_start_differs(Symbol const* symbol, struct FlowNode const* container_start);
+static inline bool walk_writes_flow_start(Symbol const* symbol) {
+    return !flow_thread_builder || chunked_walk_writes_flow_start(symbol);
+}
+// Whether the symbol's flow_start is set and isn't `container_start`
+static inline bool walk_flow_start_differs(Symbol const* symbol, struct FlowNode const* container_start) {
+    if (flow_thread_builder) return chunked_walk_flow_start_differs(symbol, container_start);
+    return symbol->flow_start && container_start != symbol->flow_start;
+}
+static inline FlowBuilder* scope_flow(Scope const* me) {
+    FlowBuilder* flow = me->flow_;
+    return flow == &flow_builder_per_thread ? flow_thread_builder : flow;
+}
 // Where the binder's symbols, scopes and tables are allocated: the resolve thread's arena while one walks a file
 static inline Arena* binder_arena(Binder* me) {
     return resolve_shard && resolve_shard->binder == me ? resolve_shard->arena : &my arena;
@@ -761,6 +782,9 @@ static inline ErrorCtx* binder_errs(Binder* me) {
 // a later class or interface declaration with type parameters shares the first declaration's type parameter symbols,
 // which that one's walk makes (scope_new_generic_merged())
 void binder_mark_serial_resolves(Binder* me);
+// The pairs of declarations of a merged class or interface in one file where the later one's type parameters may be the
+// earlier one's (scope_new_generic_merged()): the later one's walk reads what the earlier one's made
+void binder_generic_merge_pairs(Binder* me, void (*pair)(void* ctx, SourceFile* file, Span later, Span earlier), void* ctx);
 // Whether the symbol's first declaration is in another file than `file`
 bool symbol_first_declared_elsewhere(Symbol const* symbol, SourceFile const* file);
 // An arena for resolve thread `t` (> 0; 0 is the main thread's, Binder.arena), kept until the binder dies
@@ -770,6 +794,9 @@ Arena* binder_thread_scope_arena(Binder* me, u32 t);
 // The shard's deferred events replayed (on the calling thread, no shard set), then its symbols, pending reports and
 // errors merged into the binder and the program's errors; frees the shard's lists. Call in program order
 void resolve_shard_merge(ResolveShard* me);
+// The shards of a file walked in chunks (program.c's chunked walk), in statement order: merged as one shard of the
+// whole file's walk would be (each list of every chunk in turn)
+void resolve_shard_merge_chunks(ResolveShard* chunks, u32 count);
 // A deferred body's materialization (plan 78), whose shard has the walks of a file's bodies: its deferred events and
 // pending reports reported now (in the current checker), into `into` with the shard's errors; nothing reaches the binder
 // (its symbols are the bodies' own). Frees the shard's lists
