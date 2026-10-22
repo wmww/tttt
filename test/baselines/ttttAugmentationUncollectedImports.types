@@ -1,0 +1,90 @@
+//// [test/cases/ttttAugmentationUncollectedImports.ts] ////
+
+=== /node_modules/pkg/index.d.ts ===
+export type Ref<T> = { value: T };
+>Ref : Ref<T>
+>value : T
+
+export declare const v: number;
+>v : number
+
+=== /node_modules/other/index.d.ts ===
+export interface Other { other: true }
+>other : true
+>true : true
+
+=== /lib.ts ===
+export interface Box { size: number }
+>size : number
+
+=== /alone.d.ts ===
+export {}
+declare global {
+>global : typeof global
+
+  export type { Ref as AloneRef } from 'pkg'
+>Ref : any
+>AloneRef : any
+
+  export type { Box as AloneBox } from './lib'
+>Box : any
+>AloneBox : any
+}
+=== /twin.d.ts ===
+export {}
+declare global {
+>global : typeof global
+
+  const v2: typeof import('pkg').v
+>v2 : number
+>v : any
+}
+declare global {
+>global : typeof global
+
+  export type { Ref as TwinRef } from 'pkg'
+>Ref : any
+>TwinRef : globalThis.TwinRef<T>
+}
+=== /augment.ts ===
+export interface Base { base: true }
+>base : true
+>true : true
+
+declare module './augment' {
+>'./augment' : typeof import("./augment")
+
+  export { Other } from 'other'
+>Other : any
+
+  interface Base { extra: number }
+>extra : number
+}
+=== /main.ts ===
+import type { Other } from './augment';
+>Other : any
+
+export const a: AloneRef<number> = { value: "any" };
+>a : AloneRef<number>
+>{ value: "any" } : { value: string; }
+>value : string
+>"any" : "any"
+
+export const b: AloneBox = { size: "any" };
+>b : AloneBox
+>{ size: "any" } : { size: string; }
+>size : string
+>"any" : "any"
+
+export const t: TwinRef<number> = { value: "no" };
+>t : globalThis.TwinRef<number>
+>{ value: "no" } : { value: string; }
+>value : string
+>"no" : "no"
+
+export const o: Other = { other: false };
+>o : Other
+>{ other: false } : { other: boolean; }
+>other : boolean
+>false : false
+

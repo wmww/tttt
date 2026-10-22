@@ -1975,6 +1975,27 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
 // The rest of program_add_source_idempotent() for a file just made (canonical_path is taken): it and what it refers to
 // join the program, it after them
+// An import or export in a module's augmentation (`declare global {}`, `declare module "m" {}`) isn't among the file's
+// imports (tsc's collectModuleReferences doesn't walk an augmentation in a module): the checker finds a module for it
+// only if one of the imports of the same name and mode resolved to one (getResolvedModule), else an ambient module or
+// TS2307. unplugin-auto-import's `declare global { export type { Ref } from 'vue' }`, which `typeof import('vue')`
+// types in the same file resolve
+static void program_mark_uncollected_refs(Program const* me, SourceFile* source_file) {
+    if (!source_file->is_module) return;
+    for (u32 i = 0; i < source_file->module_ref_count; i++) {
+        ModuleRef* ref = source_file->module_refs[i];
+        if (!ref->in_augmentation_body || ref->is_declaration) continue;
+        SpecifierMode mode = program_usage_mode(me, source_file, ref);
+        bool twin = false;
+        for (u32 j = 0; j < source_file->module_ref_count && !twin; j++) {
+            ModuleRef const* other = source_file->module_refs[j];
+            if (other->in_augmentation_body || other->is_declaration || other->ambient_only) continue;
+            twin = cstr_eq(&other->path, &ref->path) && program_usage_mode(me, source_file, other) == mode;
+        }
+        ref->ambient_only = !twin;
+    }
+}
+
 static SourceFile* program_add_made_source(Program* me, cstr canonical_path, SourceFile* source_file) {
     if (source_file->is_json) source_file->is_module = true;
     program_note_loaded(me, source_file);
@@ -2054,6 +2075,7 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
         cstr_drop(&jsx_runtime);
     }
 
+    program_mark_uncollected_refs(me, source_file);
     // Every module the file mentions, wherever (the parser lists them), the declarations' first (tsc's order of
     // file.imports, which decides the order of the program's files). By index: loading parses, never this file
     // (The refs are a worker's, not in this core's cache: the first pass fetches them ahead)

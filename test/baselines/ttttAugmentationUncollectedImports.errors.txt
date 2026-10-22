@@ -1,0 +1,65 @@
+/alone.d.ts(3,3): error TS2666: Exports and export assignments are not permitted in module augmentations.
+/alone.d.ts(3,40): error TS2307: Cannot find module 'pkg' or its corresponding type declarations.
+/alone.d.ts(4,3): error TS2666: Exports and export assignments are not permitted in module augmentations.
+/alone.d.ts(4,40): error TS2307: Cannot find module './lib' or its corresponding type declarations.
+/augment.ts(3,3): error TS2666: Exports and export assignments are not permitted in module augmentations.
+/augment.ts(3,25): error TS2307: Cannot find module 'other' or its corresponding type declarations.
+/main.ts(4,37): error TS2322: Type 'string' is not assignable to type 'number'.
+/twin.d.ts(6,3): error TS2666: Exports and export assignments are not permitted in module augmentations.
+
+
+==== /node_modules/pkg/package.json (0 errors) ====
+    { "name": "pkg", "types": "index.d.ts" }
+==== /node_modules/pkg/index.d.ts (0 errors) ====
+    export type Ref<T> = { value: T };
+    export declare const v: number;
+==== /node_modules/other/package.json (0 errors) ====
+    { "name": "other", "types": "index.d.ts" }
+==== /node_modules/other/index.d.ts (0 errors) ====
+    export interface Other { other: true }
+==== /lib.ts (0 errors) ====
+    export interface Box { size: number }
+==== /alone.d.ts (4 errors) ====
+    export {}
+    declare global {
+      export type { Ref as AloneRef } from 'pkg'
+      ~~~~~~
+!!! error TS2666: Exports and export assignments are not permitted in module augmentations.
+                                           ~~~~~
+!!! error TS2307: Cannot find module 'pkg' or its corresponding type declarations.
+      export type { Box as AloneBox } from './lib'
+      ~~~~~~
+!!! error TS2666: Exports and export assignments are not permitted in module augmentations.
+                                           ~~~~~~~
+!!! error TS2307: Cannot find module './lib' or its corresponding type declarations.
+    }
+==== /twin.d.ts (1 errors) ====
+    export {}
+    declare global {
+      const v2: typeof import('pkg').v
+    }
+    declare global {
+      export type { Ref as TwinRef } from 'pkg'
+      ~~~~~~
+!!! error TS2666: Exports and export assignments are not permitted in module augmentations.
+    }
+==== /augment.ts (2 errors) ====
+    export interface Base { base: true }
+    declare module './augment' {
+      export { Other } from 'other'
+      ~~~~~~
+!!! error TS2666: Exports and export assignments are not permitted in module augmentations.
+                            ~~~~~~~
+!!! error TS2307: Cannot find module 'other' or its corresponding type declarations.
+      interface Base { extra: number }
+    }
+==== /main.ts (1 errors) ====
+    import type { Other } from './augment';
+    export const a: AloneRef<number> = { value: "any" };
+    export const b: AloneBox = { size: "any" };
+    export const t: TwinRef<number> = { value: "no" };
+                                        ~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+!!! related TS6500 /node_modules/pkg/index.d.ts:1:24: The expected type comes from property 'value' which is declared here on type 'Ref<number>'
+    export const o: Other = { other: false };
+    

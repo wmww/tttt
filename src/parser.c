@@ -149,6 +149,7 @@ typedef struct ParserShared {
     ModifiedParent statement_parent;
     bool in_namespace_body; // The module block is a `namespace N {}`'s, not an ambient module's
     u32 ambient_module_depth; // Inside `declare module "m" {}` bodies (augmentations too)
+    u32 global_block_depth; // Inside `global {}` bodies
     // The end of the file's last token (tsc's full start of the end-of-file token): where a missing expression at the
     // end of the file is reported. The smallest position trivia was skipped from up to the end
     const char* eof_full_start;
@@ -12686,6 +12687,7 @@ done:
         if (p.shared->ambient_module_depth && is_relative_module_name(port_statement_target_path(&statement))) {
             statement.module_ref->ambient_only = true;
         }
+        statement.module_ref->in_augmentation_body = p.shared->ambient_module_depth || p.shared->global_block_depth;
         statement.main.module_ref = statement.module_ref;
         module_ref_set_attributes(statement.module_ref, statement.attributes, nullptr);
         if (statement.main.type_only) {
@@ -14421,7 +14423,9 @@ static bool parse_global_block(Parser* parent, NamespaceDecl* ret) {
     hop_whitespace(&p);
     bool outer_in_namespace = p.shared->in_namespace_body;
     p.shared->in_namespace_body = false;
+    p.shared->global_block_depth++;
     bool has_block = parse_block(&p, true, &ret->contents);
+    p.shared->global_block_depth--;
     p.shared->in_namespace_body = outer_in_namespace;
     if (!has_block) {
         // tsc's isStartOfDeclaration takes `global` and a name (or `export`) as a declaration too, which is then

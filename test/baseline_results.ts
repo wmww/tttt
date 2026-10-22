@@ -80,6 +80,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAugmentationUncollectedImports': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAutoAccessorModifiers': {
         errors: true,
         symbols: true,
@@ -1187,9 +1192,9 @@ const baselines = {
         types: true,
     },
     'ttttGlobalAugmentationReExport': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttGlobalAugmentationReExportTwin': {
         errors: true,

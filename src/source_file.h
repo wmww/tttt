@@ -51,6 +51,11 @@ typedef struct ModuleRef {
     bool nested_in_ambient_module;
     // Never resolved to a file, only an ambient module (or pattern) can be it: the implicit jsx-runtime import of a script
     bool ambient_only;
+    // An import or export declaration's in an ambient module's or `global {}`'s body. In a module those are
+    // augmentations, whose bodies tsc's collectModuleReferences doesn't walk: the name resolves only through an import
+    // of the file that is collected, same name and mode (tsc's getResolvedModule), else it's ambient_only
+    // (program_mark_uncollected_refs())
+    bool in_augmentation_body;
     // Resolved by tsc's initializeTypeChecker before the scripts' ambient modules are merged into the globals: never an
     // ambient module of its name (program_mark_init_resolved_imports())
     bool resolved_before_ambient;
