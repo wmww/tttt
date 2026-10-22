@@ -13,6 +13,8 @@
 #define AST_SLAB ((size_t)64 << 20)
 #define AST_PAGE ((uintptr_t)4096)
 #define AST_POPULATE ((size_t)2 << 20)
+#define AST_SMALL_PAGES ((size_t)4 << 20)
+#define AST_SMALL_STEP ((size_t)256 << 10)
 // Freed blocks up to this size are kept by size class (bigger ones by power of two)
 #define AST_FREE_MAX 1024
 static_assert(AST_FREE_MAX / 8 + 1 <= 3 * 64);
@@ -58,6 +60,7 @@ typedef struct AstThread {
     AstSlab* swapped; // Materializing: where the files' slab is meanwhile
     bool no_huge; // Materializing a lasting materialization: its pages are given back one by one
     char* cursor_chunk; // The materialization slab's chunk the next materialization starts in, which it holds
+    size_t populated_bytes; // Faulted in over all its slabs (populate())
     void* free_lists[AST_FREE_MAX / 8 + 1];
     u64 small_mask[3]; // Which free_lists aren't empty (AST_FREE_MAX / 8 + 1 bits)
     // Bigger freed blocks (outgrown lists, mostly) by floor(log2(size)), split to serve any allocation
@@ -292,16 +295,29 @@ void ast_arena_drop(AstArena* arena) {
 }
 
 // Faults the slab's pages in up to past pos, 2 MB at a time with one call rather than a trap per page (a tenth of
-// vscode's parse), as huge pages while the system has them free (slabs are 2 MB aligned)
+// vscode's parse), as huge pages while the system has them free (slabs are 2 MB aligned). But a thread's first
+// AST_SMALL_PAGES bytes (over all its slabs) on 4 KB pages, AST_SMALL_STEP at a time: every thread of every phase takes
+// fresh slabs, and on a small program each one's last huge page was mostly unused (nest at 16 threads: peak RSS 192 ->
+// 170 MB, react 292 -> 270). A big program's threads pass it soon (vscode: +4% faults, populated a step at a time;
+// sys and user within noise). TTTT_AST_SMALL_KB=N sets it (1: huge from its second step)
 [[gnu::noinline]] static void populate(AstThread* t, char* pos) {
     while (t->populated < pos && t->populated < t->end) {
         char* from = t->populated;
-        char* to = (size_t)(t->end - from) > AST_POPULATE ? from + AST_POPULATE : t->end;
-        if (to - from == AST_POPULATE && !t->no_huge && huge_pages_take(AST_POPULATE)) {
-            madvise(from, AST_POPULATE, MADV_HUGEPAGE);
-            if (t->arena && t->arena->materialization) chunk_mark_huge(from);
+        char* to;
+        bool small = t->populated_bytes < (debug_env.ast_small_kb ? (size_t)debug_env.ast_small_kb << 10 : AST_SMALL_PAGES);
+        if (small || ((uintptr_t)from & (AST_POPULATE - 1))) {
+            // (4 KB pages: a step at a time while small, then up to the next 2 MB boundary)
+            char* step_end = small ? from + AST_SMALL_STEP : (char*)(((uintptr_t)from + AST_POPULATE) & ~(uintptr_t)(AST_POPULATE - 1));
+            to = step_end < t->end ? step_end : t->end;
+        } else {
+            to = (size_t)(t->end - from) > AST_POPULATE ? from + AST_POPULATE : t->end;
+            if (to - from == AST_POPULATE && !t->no_huge && huge_pages_take(AST_POPULATE)) {
+                madvise(from, AST_POPULATE, MADV_HUGEPAGE);
+                if (t->arena && t->arena->materialization) chunk_mark_huge(from);
+            }
         }
         madvise(from, (size_t)(to - from), MADV_POPULATE_WRITE);
+        t->populated_bytes += (size_t)(to - from);
         t->populated = to;
     }
 }

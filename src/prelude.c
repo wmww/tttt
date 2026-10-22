@@ -34,6 +34,7 @@ static void read_debug_env() {
         .resolve_times = getenv("TTTT_RESOLVE_TIMES") != nullptr,
         .walk_chunk_bytes = getenv("TTTT_WALK_CHUNK_BYTES") ? (u32)strtoul(getenv("TTTT_WALK_CHUNK_BYTES"), nullptr, 0) : 0,
         .huge_pages = getenv("TTTT_HUGEPAGES") ? (int8_t)(strcmp(getenv("TTTT_HUGEPAGES"), "0") != 0) : -1,
+        .ast_small_kb = getenv("TTTT_AST_SMALL_KB") ? (u32)strtoul(getenv("TTTT_AST_SMALL_KB"), nullptr, 0) : 0,
         .ast_poison = getenv("TTTT_AST_POISON") != nullptr,
         .ast_stats = getenv("TTTT_AST_STATS") != nullptr,
         .ast_malloc = getenv("TTTT_AST_MALLOC") != nullptr,

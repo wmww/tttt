@@ -47,6 +47,8 @@ typedef struct DebugEnv {
     // TTTT_HUGEPAGES: 1 madvises every arena chunk for huge pages, 0 none; unset, as many as the system has free
     // (huge_pages_take())
     int8_t huge_pages;
+    // TTTT_AST_SMALL_KB: a thread's first AST bytes on 4 KB pages (ast_alloc.c's populate()), its default when 0
+    u32 ast_small_kb;
     bool ast_poison;           // TTTT_AST_POISON: a dropped file's AST pages fault on access instead of reading as zeroes
     bool ast_stats;            // TTTT_AST_STATS: the AST arenas' churn at exit (ast_alloc.h)
     bool ast_malloc;           // TTTT_AST_MALLOC: no AST arenas, the AST in malloc (for scripts/memtrack.sh)
