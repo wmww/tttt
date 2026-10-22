@@ -36,9 +36,10 @@ if test -z "$FORCE" && test -x $B/tttt && test "$(cat $B/.stamp 2>/dev/null)" = 
     exit 0
 fi
 rm -f $B/.stamp
-readelf -S "$PGO" | grep -q '\.rela\.text' || { echo "boltbuild: $PGO has no static relocations (--emit-relocs)" >&2; exit 1; }
+# (grep without -q: it reads all of its input, so readelf and nm never die of SIGPIPE, which pipefail reports as a failure)
+readelf -S "$PGO" | grep '\.rela\.text' > /dev/null || { echo "boltbuild: $PGO has no static relocations (--emit-relocs)" >&2; exit 1; }
 # (GCC's hot/cold partitioning breaks BOLT's profile of the functions it splits: pgobuild.sh turns it off)
-! nm "$PGO" | grep -q '\.cold$' || echo "boltbuild: $PGO has .cold fragments (-freorder-blocks-and-partition)" >&2
+! nm "$PGO" | grep '\.cold$' > /dev/null || echo "boltbuild: $PGO has .cold fragments (-freorder-blocks-and-partition)" >&2
 
 PROF=$B/prof
 rm -rf "$PROF"
