@@ -1,0 +1,106 @@
+//// [test/cases/ttttIntersectionGenericLiteralNeverReduced.ts] ////
+
+=== ttttIntersectionGenericLiteralNeverReduced.ts ===
+// An intersection with a generic instantiation of a type literal whose literal property conflicts with another
+// member's is never (tsc's getReducedType looks at every member's properties): `Group<F> & Base` with Group's
+// `type: "group"` against Base's `type?: never`. A type predicate's true branch intersects the declared union with
+// the candidate's members (getNarrowedType's last resort), and tttt kept the Group members (youtube-enhancer)
+type Keys = "a" | "b";
+>Keys : Keys
+
+type Base<F extends Keys> = { id: F; type?: never; cb?: (x: F) => void };
+>Base : Base<F>
+>id : F
+>type : undefined
+>cb : ((x: F) => void) | undefined
+>x : F
+
+type Group<F extends Keys> = { type: "group"; children: SNode<F>[] };
+>Group : Group<F>
+>type : "group"
+>children : SNode<F>[]
+
+type Divider = { type: "divider" };
+>Divider : Divider
+>type : "divider"
+
+type TextN = { type: "text" };
+>TextN : TextN
+>type : "text"
+
+type Setting<F extends Keys> =
+>Setting : Setting<F>
+
+  | (Base<F> & { component: "c1" }) | (Base<F> & { component: "c2" }) | (Base<F> & { component: "c3" })
+>component : "c1"
+>component : "c2"
+>component : "c3"
+
+  | (Base<F> & { component: "c4" }) | (Base<F> & { component: "c5" }) | (Base<F> & { component: "c6" })
+>component : "c4"
+>component : "c5"
+>component : "c6"
+
+  | (Base<F> & { component: "c7" }) | (Base<F> & { component: "c8" }) | (Base<F> & { component: "c9", options?: F[] });
+>component : "c7"
+>component : "c8"
+>component : "c9"
+>options : F[] | undefined
+
+type SNode<F extends Keys> = Divider | Group<F> | Setting<F> | TextN;
+>SNode : SNode<F>
+
+declare function isSetting<F extends Keys>(n: unknown): n is Setting<F>;
+>isSetting : <F extends Keys>(n: unknown) => n is Setting<F>
+>n : unknown
+
+function render<F extends Keys>(node: SNode<F>) {
+>render : <F extends Keys>(node: SNode<F>) => void
+>node : SNode<F>
+
+  if (isSetting(node)) {
+>isSetting(node) : boolean
+>isSetting : <F_1 extends Keys>(n: unknown) => n is Setting<F_1>
+>node : SNode<F>
+
+    if (node.component === "c9") {
+>node.component === "c9" : boolean
+>node.component : "c1" | "c2" | "c3" | "c4" | "c5" | "c6" | "c7" | "c8" | "c9"
+>node : (Base<F> & { component: "c1"; } & Base<Keys>) | (Base<F> & { component: "c2"; } & Base<Keys>) | (Base<F> & { component: "c3"; } & Base<Keys>) | (Base<F> & { component: "c4"; } & Base<Keys>) | (Base<F> & { component: "c5"; } & Base<Keys>) | (Base<F> & { component: "c6"; } & Base<Keys>) | (Base<F> & { component: "c7"; } & Base<Keys>) | (Base<F> & { component: "c8"; } & Base<Keys>) | (Base<F> & { component: "c9"; options?: F[] | undefined; } & Base<Keys> & { component: "c9"; options?: Keys[] | undefined; })
+>component : "c1" | "c2" | "c3" | "c4" | "c5" | "c6" | "c7" | "c8" | "c9"
+>"c9" : "c9"
+
+      const t: { a: 1 } = node;
+>t : { a: 1; }
+>a : 1
+>node : Base<F> & { component: "c9"; options?: F[] | undefined; } & Base<Keys> & { component: "c9"; options?: Keys[] | undefined; }
+    }
+  }
+}
+type G2<F> = { type: "group"; children: F[] };
+>G2 : G2<F>
+>type : "group"
+>children : F[]
+
+type H2<F> = { type: "other"; f: F };
+>H2 : H2<F>
+>type : "other"
+>f : F
+
+function f<F>(a: G2<F> & { id: string; type?: never }, b: G2<F> & H2<F>, c: G2<F> & { type: "group" }) {
+>f : <F>(a: G2<F> & { id: string; type?: never; }, b: G2<F> & H2<F>, c: G2<F> & { type: "group"; }) => void
+>a : never
+>id : string
+>type : undefined
+>b : never
+>c : G2<F> & { type: "group"; }
+>type : "group"
+
+  const z: [1, 1, 1] = [a, b, c];
+>z : [1, 1, 1]
+>[a, b, c] : [never, never, G2<F> & { type: "group"; }]
+>a : never
+>b : never
+>c : G2<F> & { type: "group"; }
+}
+

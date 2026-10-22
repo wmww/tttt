@@ -1353,6 +1353,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttIntersectionGenericLiteralNeverReduced': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttIntersectionInheritedPropExactOptional': {
         errors: true,
         symbols: true,

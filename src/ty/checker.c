@@ -1975,7 +1975,76 @@ static Atom const* never_reduced_literal_prop(Checker* me, Ty const* const* type
     return nullptr;
 }
 
+// A generic instantiation of a type literal (`Group<F>` of `type Group<F> = { type: "group"; children: N<F>[] }`):
+// the literal it instantiates, whose properties of a literal type mentioning no type variable are the instantiation's
+// too. Resolving the members of every generic instantiation is what is_known_object_for_reduction() avoids; the
+// literal's own members are resolved once
+static Atom const* never_reduced_prop_known(Checker* me, Ty const* const* types, u32 len, bool* private_conflict);
+
+static Ty const* generic_literal_root(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_ANONYMOUS || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || ty->anonymous.overload_count ||
+        ty->anonymous.applies_type_args || ty->anonymous.object_literal
+    ) {
+        return nullptr;
+    }
+    Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
+    if (root->kind != TY_ANONYMOUS || root->anonymous.target || ty_generic_mapped(me, root)) return nullptr;
+    return root;
+}
+
+// `prop`'s type if it is a literal that no instantiation changes
+static Ty const* fixed_literal_prop_type(Checker* me, Prop const* prop) {
+    Ty const* t = prop_type(me, prop);
+    return is_literal_like(t) && !(t->flags & (TYF_NEVER | TYF_COULD_CONTAIN_TYPE_VARIABLES)) ? t : nullptr;
+}
+
+// tsc's getReducedType looks at every member's properties: a generic instantiation of a type literal whose literal
+// property conflicts with another member's (`Group<F> & { type?: never }`, `Group<F> & Text`) is never too
+// (youtube-enhancer's type-predicate narrowing kept `GroupNode<F> & BaseSettingConfig<FeatureKeys> & ...`)
+static Atom const* never_reduced_generic_literal_prop(Checker* me, Ty const* const* types, u32 len) {
+    for (u32 i = 0; i < len; i++) {
+        Ty const* root = generic_literal_root(me, types[i]);
+        if (!root) continue;
+        Members const* members = ty_members(me, root);
+        for (u32 p = 0; p < members->prop_count; p++) {
+            Prop const* prop = members->props[p];
+            Ty const* a_type = nullptr;
+            for (u32 j = 0; j < len; j++) {
+                if (j == i) continue;
+                Ty const* other_type = types[j];
+                Prop const* other = nullptr;
+                Ty const* b_type = nullptr;
+                if (is_known_object_for_reduction(me, other_type)) {
+                    other = ty_get_prop(me, other_type, prop->name);
+                    if (other) b_type = prop_type(me, other);
+                } else if (j > i) {
+                    Ty const* other_root = generic_literal_root(me, other_type);
+                    other = other_root ? ty_get_prop(me, other_root, prop->name) : nullptr;
+                    if (other) b_type = fixed_literal_prop_type(me, other);
+                }
+                if (!b_type || (prop->flags & other->flags & PROP_OPTIONAL) || (b_type->flags & TYF_NEVER)) continue;
+                if (!a_type) {
+                    a_type = fixed_literal_prop_type(me, prop);
+                    if (!a_type) break;
+                }
+                Ty const* both[2] = { a_type, b_type };
+                if (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER) {
+                    if (some_prop_is_never(me, prop->name, types, len)) break;
+                    return prop->name;
+                }
+            }
+        }
+    }
+    return nullptr;
+}
+
 static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 len, bool* private_conflict) {
+    Atom const* name = never_reduced_prop_known(me, types, len, private_conflict);
+    if (name || *private_conflict) return name;
+    return never_reduced_generic_literal_prop(me, types, len);
+}
+
+static Atom const* never_reduced_prop_known(Checker* me, Ty const* const* types, u32 len, bool* private_conflict) {
     u32 objects = 0;
     for (u32 i = 0; i < len; i++) {
         if (is_known_object_for_reduction(me, types[i])) objects++;

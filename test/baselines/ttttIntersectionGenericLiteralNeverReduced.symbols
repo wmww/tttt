@@ -1,0 +1,161 @@
+//// [test/cases/ttttIntersectionGenericLiteralNeverReduced.ts] ////
+
+=== ttttIntersectionGenericLiteralNeverReduced.ts ===
+// An intersection with a generic instantiation of a type literal whose literal property conflicts with another
+// member's is never (tsc's getReducedType looks at every member's properties): `Group<F> & Base` with Group's
+// `type: "group"` against Base's `type?: never`. A type predicate's true branch intersects the declared union with
+// the candidate's members (getNarrowedType's last resort), and tttt kept the Group members (youtube-enhancer)
+type Keys = "a" | "b";
+>Keys : Symbol(Keys, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 0, 0))
+
+type Base<F extends Keys> = { id: F; type?: never; cb?: (x: F) => void };
+>Base : Symbol(Base, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 4, 22))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 5, 10))
+>Keys : Symbol(Keys, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 0, 0))
+>id : Symbol(id, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 5, 29))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 5, 10))
+>type : Symbol(type, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 5, 36))
+>cb : Symbol(cb, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 5, 50))
+>x : Symbol(x, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 5, 57))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 5, 10))
+
+type Group<F extends Keys> = { type: "group"; children: SNode<F>[] };
+>Group : Symbol(Group, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 5, 73))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 6, 11))
+>Keys : Symbol(Keys, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 0, 0))
+>type : Symbol(type, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 6, 30))
+>children : Symbol(children, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 6, 45))
+>SNode : Symbol(SNode, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 12, 119))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 6, 11))
+
+type Divider = { type: "divider" };
+>Divider : Symbol(Divider, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 6, 69))
+>type : Symbol(type, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 7, 16))
+
+type TextN = { type: "text" };
+>TextN : Symbol(TextN, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 7, 35))
+>type : Symbol(type, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 8, 14))
+
+type Setting<F extends Keys> =
+>Setting : Symbol(Setting, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 8, 30))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 9, 13))
+>Keys : Symbol(Keys, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 0, 0))
+
+  | (Base<F> & { component: "c1" }) | (Base<F> & { component: "c2" }) | (Base<F> & { component: "c3" })
+>Base : Symbol(Base, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 4, 22))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 9, 13))
+>component : Symbol(component, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 10, 16))
+>Base : Symbol(Base, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 4, 22))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 9, 13))
+>component : Symbol(component, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 10, 50))
+>Base : Symbol(Base, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 4, 22))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 9, 13))
+>component : Symbol(component, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 10, 84))
+
+  | (Base<F> & { component: "c4" }) | (Base<F> & { component: "c5" }) | (Base<F> & { component: "c6" })
+>Base : Symbol(Base, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 4, 22))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 9, 13))
+>component : Symbol(component, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 11, 16))
+>Base : Symbol(Base, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 4, 22))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 9, 13))
+>component : Symbol(component, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 11, 50))
+>Base : Symbol(Base, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 4, 22))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 9, 13))
+>component : Symbol(component, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 11, 84))
+
+  | (Base<F> & { component: "c7" }) | (Base<F> & { component: "c8" }) | (Base<F> & { component: "c9", options?: F[] });
+>Base : Symbol(Base, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 4, 22))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 9, 13))
+>component : Symbol(component, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 12, 16))
+>Base : Symbol(Base, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 4, 22))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 9, 13))
+>component : Symbol(component, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 12, 50))
+>Base : Symbol(Base, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 4, 22))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 9, 13))
+>component : Symbol(component, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 12, 84))
+>options : Symbol(options, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 12, 101))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 9, 13))
+
+type SNode<F extends Keys> = Divider | Group<F> | Setting<F> | TextN;
+>SNode : Symbol(SNode, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 12, 119))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 13, 11))
+>Keys : Symbol(Keys, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 0, 0))
+>Divider : Symbol(Divider, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 6, 69))
+>Group : Symbol(Group, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 5, 73))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 13, 11))
+>Setting : Symbol(Setting, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 8, 30))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 13, 11))
+>TextN : Symbol(TextN, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 7, 35))
+
+declare function isSetting<F extends Keys>(n: unknown): n is Setting<F>;
+>isSetting : Symbol(isSetting, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 13, 69))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 14, 27))
+>Keys : Symbol(Keys, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 0, 0))
+>n : Symbol(n, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 14, 43))
+>n : Symbol(n, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 14, 43))
+>Setting : Symbol(Setting, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 8, 30))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 14, 27))
+
+function render<F extends Keys>(node: SNode<F>) {
+>render : Symbol(render, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 14, 72))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 15, 16))
+>Keys : Symbol(Keys, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 0, 0))
+>node : Symbol(node, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 15, 32))
+>SNode : Symbol(SNode, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 12, 119))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 15, 16))
+
+  if (isSetting(node)) {
+>isSetting : Symbol(isSetting, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 13, 69))
+>node : Symbol(node, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 15, 32))
+
+    if (node.component === "c9") {
+>node.component : Symbol(component, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 10, 16), Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 10, 50), Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 10, 84), Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 11, 16), Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 11, 50) ... and 4 more)
+>node : Symbol(node, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 15, 32))
+>component : Symbol(component, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 10, 16), Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 10, 50), Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 10, 84), Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 11, 16), Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 11, 50) ... and 4 more)
+
+      const t: { a: 1 } = node;
+>t : Symbol(t, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 18, 11))
+>a : Symbol(a, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 18, 16))
+>node : Symbol(node, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 15, 32))
+    }
+  }
+}
+type G2<F> = { type: "group"; children: F[] };
+>G2 : Symbol(G2, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 21, 1))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 22, 8))
+>type : Symbol(type, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 22, 14))
+>children : Symbol(children, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 22, 29))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 22, 8))
+
+type H2<F> = { type: "other"; f: F };
+>H2 : Symbol(H2, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 22, 46))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 23, 8))
+>type : Symbol(type, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 23, 14))
+>f : Symbol(f, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 23, 29))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 23, 8))
+
+function f<F>(a: G2<F> & { id: string; type?: never }, b: G2<F> & H2<F>, c: G2<F> & { type: "group" }) {
+>f : Symbol(f, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 23, 37))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 24, 11))
+>a : Symbol(a, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 24, 14))
+>G2 : Symbol(G2, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 21, 1))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 24, 11))
+>id : Symbol(id, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 24, 26))
+>type : Symbol(type, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 24, 38))
+>b : Symbol(b, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 24, 54))
+>G2 : Symbol(G2, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 21, 1))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 24, 11))
+>H2 : Symbol(H2, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 22, 46))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 24, 11))
+>c : Symbol(c, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 24, 72))
+>G2 : Symbol(G2, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 21, 1))
+>F : Symbol(F, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 24, 11))
+>type : Symbol(type, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 24, 85))
+
+  const z: [1, 1, 1] = [a, b, c];
+>z : Symbol(z, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 25, 7))
+>a : Symbol(a, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 24, 14))
+>b : Symbol(b, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 24, 54))
+>c : Symbol(c, Decl(ttttIntersectionGenericLiteralNeverReduced.ts, 24, 72))
+}
+
