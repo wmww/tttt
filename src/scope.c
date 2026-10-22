@@ -4843,6 +4843,29 @@ static void link_step(char const* name, double* last) {
     *last = now;
 }
 
+// The alias loop's memory, a few symbols ahead: it's a chain of dependent misses per alias (the symbol, its alias, the
+// import's PortItem, its ModuleRef), over symbols the declare threads allocated all over. Each stage loads what the one
+// before prefetched
+static inline void link_prefetch_aliases(Binder const* me, u32 i) {
+    enum { STEP = 8 };
+    u32 count = my symbol_count;
+    if (i + 4 * STEP < count) __builtin_prefetch(my symbols[i + 4 * STEP]);
+    if (i + 3 * STEP < count) {
+        Symbol const* ahead = my symbols[i + 3 * STEP];
+        if (ahead->flags & SYMBOL_ALIAS) __builtin_prefetch(ahead->alias);
+    }
+    if (i + 2 * STEP < count) {
+        Symbol const* ahead = my symbols[i + 2 * STEP];
+        if (ahead->flags & SYMBOL_ALIAS && ahead->alias->item) __builtin_prefetch(ahead->alias->item);
+    }
+    if (i + STEP < count) {
+        Symbol const* ahead = my symbols[i + STEP];
+        if (ahead->flags & SYMBOL_ALIAS && ahead->alias->item && ahead->alias->item->module_ref) {
+            __builtin_prefetch(ahead->alias->item->module_ref);
+        }
+    }
+}
+
 void binder_link(Binder* me) {
     double last = 0;
     link_step("", &last);
@@ -4866,6 +4889,7 @@ void binder_link(Binder* me) {
     }
     link_step("resolved exports", &last);
     for (u32 i = 0; i < my symbol_count; i++) {
+        link_prefetch_aliases(me, i);
         Symbol* symbol = my symbols[i];
         if (!(symbol->flags & SYMBOL_ALIAS) || !symbol->alias->scope) continue;
         Symbol* target = symbol_resolve_alias(symbol);
