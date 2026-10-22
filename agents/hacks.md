@@ -806,6 +806,11 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `raise_stack_limit` (main.c): conditional tail recursion (`ty_instantiate_tail`) is C recursion where tsc loops
   (1000 steps ~16 MB), so the soft RLIMIT_STACK is raised to 64 MB (`worker_stack_size`); a lower hard limit still
   overflows. Correct: a loop. Shown by: a crash on type-fest's IntRange under `ulimit -Hs 8192`.
+- **boltbuild.sh rebuilds llvm-bolt's instrumentation runtime when the installed one calls through the GOT** (Arch's
+  llvm-bolt 23.1.3-4: GCC with -fno-plt, so `memset` goes through `GOTPCREL`, which BOLT's JITLink rejects): it fetches
+  `bolt/runtime/{instr.cpp,common.h,sys_x86_64.h}` at llvmorg-VERSION from GitHub and compiles them with
+  LLVM's CMakeLists flags plus `-fplt` into `bolt/rt-VERSION`. Network once per llvm-bolt version; x86-64 only. Correct: a
+  distro runtime without GOT relocations (an Arch bug report), then this block goes.
 
 ## Content mappers (`content_mapper.c`, documentation.md "Content mappers")
 - `alias_original_names()`: tsgo substitutes an alias segment's original text in the *arguments* of a diagnostic

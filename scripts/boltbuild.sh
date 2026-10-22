@@ -41,11 +41,38 @@ readelf -S "$PGO" | grep '\.rela\.text' > /dev/null || { echo "boltbuild: $PGO h
 # (GCC's hot/cold partitioning breaks BOLT's profile of the functions it splits: pgobuild.sh turns it off)
 ! nm "$PGO" | grep '\.cold$' > /dev/null || echo "boltbuild: $PGO has .cold fragments (-freorder-blocks-and-partition)" >&2
 
+# The instrumentation runtime llvm-bolt links into the instrumented copy. Arch's llvm-bolt package compiles it with GCC
+# and -fno-plt, so its memset calls go through the GOT, which BOLT's JITLink rejects ("unsupported edge kind
+# RequestGOTAndTransformToPCRel32GOTLoadRelaxable"): such a runtime is rebuilt from LLVM's source at llvm-bolt's
+# version (as LLVM's CMakeLists.txt compiles it, plus -fplt), once, into $B/rt-VERSION
+RT_ARGS=()
+RT_DEFAULT=$(dirname "$(realpath "$(command -v "$LLVM_BOLT")")")/../lib/libbolt_rt_instr.a
+if test -f "$RT_DEFAULT" && readelf -r "$RT_DEFAULT" | grep GOTPCREL > /dev/null; then
+    VER=$("$LLVM_BOLT" --version | sed -n 's/.*LLVM version \([0-9][0-9.]*\).*/\1/p')
+    RT=$B/rt-$VER
+    if ! test -f $RT/libbolt_rt_instr.a; then
+        echo "boltbuild: $RT_DEFAULT calls through the GOT, rebuilding it from llvm-project llvmorg-$VER" >&2
+        rm -rf $RT.tmp
+        mkdir -p $RT.tmp
+        for F in instr.cpp common.h sys_x86_64.h; do
+            curl -sfL -o $RT.tmp/$F "https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-$VER/bolt/runtime/$F" ||
+                { echo "boltbuild: can't fetch bolt/runtime/$F at llvmorg-$VER" >&2; exit 1; }
+        done
+        echo '#define HAVE_ELF_H' > $RT.tmp/config.h
+        g++ -std=c++17 -O3 -DNDEBUG -ffreestanding -fno-exceptions -fno-rtti -fno-stack-protector -fPIC -fplt \
+            -fomit-frame-pointer -mno-sse -mgeneral-regs-only -I$RT.tmp -c $RT.tmp/instr.cpp -o $RT.tmp/instr.cpp.o
+        ar rcs $RT.tmp/libbolt_rt_instr.a $RT.tmp/instr.cpp.o
+        rm -rf $RT
+        mv $RT.tmp $RT
+    fi
+    RT_ARGS=(-runtime-instrumentation-lib="$(realpath $RT/libbolt_rt_instr.a)")
+fi
+
 PROF=$B/prof
 rm -rf "$PROF"
 mkdir -p "$PROF"
 "$LLVM_BOLT" "$PGO" -o $B/tttt.inst -instrument -instrumentation-file="$(realpath $PROF)/tttt" \
-    -instrumentation-file-append-pid >&2
+    -instrumentation-file-append-pid "${RT_ARGS[@]}" >&2
 
 TRAIN=(
     thirdparty/corpora/drizzle/drizzle-orm/tsconfig.corpus.json
