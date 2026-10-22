@@ -51,3 +51,10 @@ intersection's property symbol to bugs/type_core.md.
 - (fe3, 2026-10-22) The debug build's suite aborts at `ttttJsDeclarationMapsTemplateTags`: `parser.c:518: check failed:
   !parent->has_panding_child` (release builds don't check). So `./debug/baseline_tests` can't run the whole suite;
   owner: the parser.
+- (fe3, 2026-10-22) Checker threads grow their glibc malloc heaps 4 KB at a time: ~13k `mprotect()` calls on vscode
+  (T16, strace -f -k: 11.6k of 4 KB), each taking the mm lock for writing while other threads fault pages, 3-7% of
+  the checker threads' timeline samples (`mprotect<lazy_type_state`, `mprotect<declare_class_members`). Sites by count:
+  lazy_type_state 7141, declare_class_members 1816, declare_symbol_flags 1435, literal_builder_add 911,
+  unused_register 619, builder_sort_stable_from 190, builder_find_prop 183, check_object 153. M_TOP_PAD during
+  checking doesn't change the count (128 KB / 1 MB / 4 MB tried). For a checker-speed worker: move those allocations
+  into the checker's arena.
