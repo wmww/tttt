@@ -55,6 +55,7 @@ intersection's property symbol to bugs/type_core.md.
   before any element is typed. Modelling it: "this function was never context-checked before its deferred body", i.e.
   every candidate of the call it is an argument of failed at an earlier argument; then an element read by its own body
   checks against the raw contextual parameter type.
+
 - Stored variances differ from tsgo's on drizzle (2026-10-22, `scripts/variancetrace.py
   thirdparty/corpora/drizzle/drizzle-orm/tsconfig.corpus.json`: 621 measured by both, 37 differ). Mostly the
   unreliable flag (16): the views (`GelView`, `PgView`, `MySqlViewBase`...) are tsgo `[17 17 16]` against tttt

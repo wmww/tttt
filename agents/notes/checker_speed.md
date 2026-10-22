@@ -23,12 +23,31 @@ is about half the cycles. Shares of it:
    (drizzle 0.1 s sys of 1.3 s): allocation volume.
 5. Cold source text, 1-3% (memchr in source_file_make(): fuse into the scanner).
 
-## Left from the 2026-10-22 round (base ee9501eb8 -> 859a7a6a2: vscode -5.3%, excalidraw -10.9%)
-- LiteralBuilder's first realloc; object literal item atoms on the AST; LazyMemo pages.
-- The malloc family was 5.6% of vscode's instructions, ~3% after; most of the rest is the loader's path code
-  (push_path_to_absolute, relative_path_of, module_resolver_resolve_shared).
+## Left from the 2026-10-22 rounds (k1: ee9501eb8 -> 859a7a6a2, vscode -5.3%, excalidraw -10.9%; ck: 08a80d884 -> 23c882120, drizzle -1.8%, type-fest -1.5%, zod -1.3%; vscode -0.43% for the commits after 1f2699984)
+- The checker's instruction profile is near its floor for local fixes: what is left is tsc's algorithms (variance
+  measurement is ~29% of drizzle and tsgo measures more of them, 737 against 719; flow narrowing; the relation and
+  intern table probes at their load factors) and per-element work proportional to the inputs (type-fest's tuples of
+  hundreds of elements are hashed, compared and scanned per reference). Per-site wins left are 0.1-0.5%.
+- Seen and left: ty_check_member_modifiers() looks the accessed property up again after the access resolved it
+  (member_refs(): ~0.5% of vscode; needs the access's props kept per node); drizzle prints its 41 errors' types in
+  ~5% of its instructions (2963 display pairs for 308 output lines: reports made and dropped); the malloc family is
+  ~2% of drizzle and excalidraw, spread over sites of 0.1-0.3% each (inference's candidate arrays, builder_finish()'s
+  copies), most of the rest the loader's and the parser's strings (cstr_append_n from module resolution and
+  parse_binding_type_ex). Object literal item atoms on the AST: checker_atom() for literal items is ~0.25% of
+  excalidraw, not worth an AST field the parser and checkers share. LazyMemo pages: lazy_type_state_peek() is ~1% of
+  tsc, a TLS read and two dependent loads; LazySlots as two levels was declined before.
+- type-fest's PGO build is bistable by ~0.9% in ty_reference_with_this() (0x144e or 0x14c1 bytes, 75M instructions
+  apart): a change elsewhere can flip it. Compare type-fest against a base, not the commit before, and look at
+  `nm -S` before attributing a type-fest delta.
+- Declined (2026-10-22, ck): a direct-mapped (members, name) cache in front of ty_get_prop()'s binary search (55% hit
+  rate on drizzle, PGO +0.34% drizzle, +0.47% excalidraw; the binary search's misses are the stall, unmeasured);
+  outlining instantiate_conditional()'s restricted mapper (type-fest +1.0% by an LTO inlining shift elsewhere);
+  outlining cold arms in general: cachegrind's I1 misses on drizzle are spread (the top function,
+  instantiate_anonymous, has 4.6% of them) and PGO already splits .cold parts.
 - Declined: the distribution's hardening flags (-4 to -5.5% instructions, 0-3% wall: a security-posture change);
   LazySlots as two levels; splitting is_related_to(), recursive_related() or check_related() at their caches.
 - Measured not worth it (2026-10-22): flow narrowing (already tsc's algorithm).
 - relate.c sits at GCC's inline-unit-growth limit: code added anywhere can cost a hot inlining elsewhere
-  (documentation.md "Relations").
+  (documentation.md "Relations"). A struct grown in Checker or a changed inline in members.c can also set off GCC's
+  bogus -Wstringop-overflow under LTO (sw_load() inlined into props_related_impl(): "destination object is likely at
+  address zero"), which -Werror makes fatal in pgobuild.sh only.
