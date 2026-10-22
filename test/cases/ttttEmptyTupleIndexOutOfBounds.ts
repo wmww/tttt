@@ -1,0 +1,11 @@
+// @strict: true
+// An element access past the end of the empty tuple is TS2493 like any tuple's, in a type and in an expression (the
+// empty tuple is a tuple target of its own in tttt: it took TS2339's message in a type)
+type Q = [][0];
+type E = [];
+type Q2 = E[0];
+type Sh<A extends any[]> = A extends [any, ...infer R] ? R : never;
+type P = Sh<[1]>;
+type Q3 = P[0];
+declare const t: [];
+const v = t[0];

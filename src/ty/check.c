@@ -2276,7 +2276,9 @@ static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const*
             return;
         }
     }
-    if (ty_is_tuple(apparent) && (index->flags & TYF_NUMBER_LITERAL)) {
+    // (The empty tuple `[]` too, a tuple target of its own)
+    bool empty_tuple = apparent->kind == TY_DECLARED && apparent->declared.kind == TY_DECLARED_TUPLE_TARGET;
+    if ((ty_is_tuple(apparent) || empty_tuple) && (index->flags & TYF_NUMBER_LITERAL)) {
         // (ty_access() only misses an element past the end of a tuple without a rest element)
         double n = index->literal.value.number;
         if (n < 0) {
@@ -2284,7 +2286,8 @@ static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const*
         } else {
             cstr object_str = ty_to_cstr(me, apparent);
             error_ctx_error_d(errs, index_span, 2493, "Tuple type '", object_str, "' of length '",
-                (i64)apparent->reference.target->declared.tuple->arity, "' has no element at index '", &index->literal.value, "'.");
+                (i64)(empty_tuple ? apparent->declared.tuple : apparent->reference.target->declared.tuple)->arity,
+                "' has no element at index '", &index->literal.value, "'.");
             cstr_drop(&object_str);
         }
         return;

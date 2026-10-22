@@ -1,0 +1,37 @@
+//// [test/cases/ttttEmptyTupleIndexOutOfBounds.ts] ////
+
+=== ttttEmptyTupleIndexOutOfBounds.ts ===
+// An element access past the end of the empty tuple is TS2493 like any tuple's, in a type and in an expression (the
+// empty tuple is a tuple target of its own in tttt: it took TS2339's message in a type)
+type Q = [][0];
+>Q : Symbol(Q, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 0, 0))
+
+type E = [];
+>E : Symbol(E, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 2, 15))
+
+type Q2 = E[0];
+>Q2 : Symbol(Q2, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 3, 12))
+>E : Symbol(E, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 2, 15))
+
+type Sh<A extends any[]> = A extends [any, ...infer R] ? R : never;
+>Sh : Symbol(Sh, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 4, 15))
+>A : Symbol(A, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 5, 8))
+>A : Symbol(A, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 5, 8))
+>R : Symbol(R, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 5, 51))
+>R : Symbol(R, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 5, 51))
+
+type P = Sh<[1]>;
+>P : Symbol(P, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 5, 67))
+>Sh : Symbol(Sh, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 4, 15))
+
+type Q3 = P[0];
+>Q3 : Symbol(Q3, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 6, 17))
+>P : Symbol(P, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 5, 67))
+
+declare const t: [];
+>t : Symbol(t, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 8, 13))
+
+const v = t[0];
+>v : Symbol(v, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 9, 5))
+>t : Symbol(t, Decl(ttttEmptyTupleIndexOutOfBounds.ts, 8, 13))
+

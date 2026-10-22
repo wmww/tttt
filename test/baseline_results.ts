@@ -1065,6 +1065,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttEmptyTupleIndexOutOfBounds': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttEvolvingArrayPushArgument': {
         errors: true,
         symbols: true,
