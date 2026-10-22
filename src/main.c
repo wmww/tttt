@@ -739,7 +739,9 @@ static void* root_stream_run(void* arg) {
 static void root_stream_start(RootStream* me, bool threaded) {
     pthread_mutex_init(&my lock, nullptr);
     pthread_cond_init(&my more, nullptr);
-    my threaded = threaded && !pthread_create(&my thread, nullptr, root_stream_run, me);
+    // (Set before the thread starts: it reads it)
+    my threaded = threaded;
+    if (my threaded && pthread_create(&my thread, nullptr, root_stream_run, me)) my threaded = false;
     if (!my threaded) root_stream_walk(me);
 }
 
