@@ -212,7 +212,21 @@ static_failable load_stdlib(Program* program) {
     return ok;
 }
 
-// Follows symlinks like the real filesystem does, for the program's module resolution
+// The realpath() of directories real_path_of() met, by absolute path (null: it failed). glibc's realpath() readlinks
+// every component of the path (nest: 748 node_modules files, 8.9k failed readlinks under 418 distinct paths)
+typedef char* RealDir;
+#define g_pro_key SvStr, svstr
+#define g_val RealDir, real_dir
+#include <cleat/generic/hmap.h>
+static HMapRealDir real_dirs;
+static pthread_mutex_t real_dirs_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static char* real_path_plain(char const* path, char* resolved) {
+    return realpath(path, resolved);
+}
+
+// Follows symlinks like the real filesystem does, for the program's module resolution: `dir/base` is realpath(dir)
+// followed by base when base isn't a symlink itself, so a directory's realpath is worked out once
 static cstr real_path_of(void* ctx, csview path) {
     ignore ctx;
     if (path.size >= PATH_MAX) return cstr_null;
@@ -220,7 +234,45 @@ static cstr real_path_of(void* ctx, csview path) {
     memcpy(buf, path.buf, (size_t)path.size);
     buf[path.size] = 0;
     char resolved[PATH_MAX];
-    return realpath(buf, resolved) ? cstr_from(resolved) : cstr_null;
+    isize slash = path.size;
+    while (slash > 0 && path.buf[slash - 1] != '/') slash--;
+    csview base = csview_slice(path, slash, path.size);
+    // (Anything but an absolute path to a named entry: as it is)
+    if (!path.size || path.buf[0] != '/' || slash <= 1 || !base.size || csview_equals(base, ".") || csview_equals(base, "..")) {
+        return real_path_plain(buf, resolved) ? cstr_from(resolved) : cstr_null;
+    }
+    csview dir = csview_slice(path, 0, slash - 1);
+    pthread_mutex_lock(&real_dirs_lock);
+    auto cached = hmap_real_dir_get(&real_dirs, dir);
+    bool known = cached != nullptr;
+    char* dir_real = known ? cached->second : nullptr;
+    pthread_mutex_unlock(&real_dirs_lock);
+    if (!known) {
+        buf[slash - 1] = 0;
+        char* found = real_path_plain(buf, resolved);
+        buf[slash - 1] = '/';
+        dir_real = found ? strdup(found) : nullptr;
+        pthread_mutex_lock(&real_dirs_lock);
+        auto entry = hmap_real_dir_insert(&real_dirs, cstr_from_sv(dir), dir_real);
+        // (Another thread got there first: its answer, the same one)
+        if (!entry.inserted) {
+            free(dir_real);
+            dir_real = entry.ref->second;
+        }
+        pthread_mutex_unlock(&real_dirs_lock);
+    }
+    if (!dir_real) return cstr_null;
+    size_t dir_len = strlen(dir_real);
+    if (dir_len + 1 + (size_t)base.size >= PATH_MAX) return real_path_plain(buf, resolved) ? cstr_from(resolved) : cstr_null;
+    char joined[PATH_MAX];
+    memcpy(joined, dir_real, dir_len);
+    if (dir_len != 1) joined[dir_len++] = '/'; // (realpath("/x") is "/", not "")
+    memcpy(joined + dir_len, base.buf, (size_t)base.size);
+    joined[dir_len + (size_t)base.size] = 0;
+    struct stat st;
+    if (lstat(joined, &st)) return cstr_null;
+    if (S_ISLNK(st.st_mode)) return real_path_plain(joined, resolved) ? cstr_from(resolved) : cstr_null;
+    return cstr_from(joined);
 }
 
 // For the program's scheduling of parses
