@@ -56,3 +56,18 @@ is about half the cycles. Shares of it:
   (documentation.md "Relations"). A struct grown in Checker or a changed inline in members.c can also set off GCC's
   bogus -Wstringop-overflow under LTO (sw_load() inlined into props_related_impl(): "destination object is likely at
   address zero"), which -Werror makes fatal in pgobuild.sh only.
+
+## Relation-count leads against tsgo (cor4, 2026-10-22: react-hook-form after the source-only default constraint)
+Method: an instrumented tsgo printing every `recursiveTypeRelatedTo` past the cache (stack depths, recursion ids),
+against a pre-order print in tttt's `recursive_related()` (agents/notes/instrumenting_tsgo.md). On bulletproof-react
+tsgo makes 84.6k such relations; tttt after cor4's commits 93.4k. Two leads left:
+- **skipCaching for small unions**: tsc relates a union source of fewer than four members against a non-union target
+  (and a primitive against such a union target) member by member, without `recursiveTypeRelatedTo`: no cache entry,
+  no maybe key, no push on the deep-nesting stacks. tttt pushes and caches them (`PathImpl<…> | PathImpl<…> |
+  PathImpl<…>` sits on the source stack where tsgo has nothing). Prototyped in is_related_to() (call
+  structured_related() instead of recursive_related()): react's assignable cache -12%. Needs a suite run: the extra
+  stack entries shift the 100-deep backstop and the cache changes what a failed pair costs later.
+- **Indexed-access constraint chains**: inside UseFormResetField's variance measurement tttt relates
+  `?[keyof ? & string][…][string] -> undefined` chains (a substitution's base through its constraints) at points where
+  tsgo's trace has none; not chased. Align the two traces with a difflib script over normalized lines (markers to `?`,
+  ids dropped) to find the first divergence.

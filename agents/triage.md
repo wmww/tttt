@@ -80,3 +80,9 @@ intersection's property symbol to bugs/type_core.md.
   loaded copy is at /tmp/wt-merge-scratch/perfsweep-tsgo-d5d4cb2fc.jsonl.gz (scratch, may be gone). Regenerate the new
   projects' lines from the main tree when `uptime` shows load < 4 (`scripts/perfsweep.py --tsc` or its per-project
   refresh) and commit that file alone.
+
+- Missing TS2536 on an indexed access of a recursive conditional alias inside its own declaration (cor4, 2026-10-22):
+  `type A<T, D extends unknown[]> = T extends unknown ? { self: A<T, [...D, 1]>; next: A<T, [...D, 1]>["self"]; tag:
+  D["length"] extends 8 ? "x" : number } : never;` is TS2536 at `A<T, [...D, 1]>["self"]` in tsgo ('"self"' cannot be
+  used to index type 'A<T, [...D, 1]>'), nothing in tttt; with `extends 2..6` tsgo also reports one more TS2322 on
+  `const r: R<0> = a` against `interface R<X> { next: R<[X]>; self: R<[X]>; tag: number }` (2 vs 1, 3 vs 2).
