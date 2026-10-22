@@ -19,6 +19,10 @@ B=${BOLT_DIR:-bolt}
 FORCE=
 test "${1:-}" != --force || FORCE=1
 LLVM_BOLT=${BOLT:-llvm-bolt}
+if ! command -v "$LLVM_BOLT" >/dev/null 2>&1; then
+    echo "boltbuild: $LLVM_BOLT not found: install llvm-bolt (Debian/Ubuntu: apt install llvm-bolt), or BOLT=path/to/llvm-bolt" >&2
+    exit 1
+fi
 MERGE_FDATA=$(dirname "$(command -v "$LLVM_BOLT")")/merge-fdata
 command -v "$MERGE_FDATA" > /dev/null || MERGE_FDATA=merge-fdata
 

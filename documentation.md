@@ -725,3 +725,12 @@ with `parse_string_escape()` (escape errors reported by `parse_error_in_literal(
 checkGrammarRegularExpressionLiteral. Columns are UTF-16 code units (`span_col_index`, `utf8_byte_utf16_units()`).
 ### Fail cache
 The fail cache is used to cache specific locations where specific parse functions have failed to parse before. There are some cases (such as arrow functions vs parenthesized expressions) where the correct way of parsing something is not obvious until after the parser has parsed some sub-expressions. If these cases are nested the time complexity of doing this naively is Not Good. However if you keep track of where you've tried and failed to parse specific things it's fine, so that's what we do. For details on precisely how it works you'll have to decipher the code.
+
+## Builds
+`scripts/fastbuild.sh` is the one definition of the fastest build and leaves it at `fast/tttt` (today: `scripts/pgobuild.sh`,
+LTO + GCC PGO trained on a few pinned corpora into `pgo/tttt`, then `scripts/boltbuild.sh`, llvm-bolt's layout into
+`bolt/tttt`; `fast/tttt` is a symlink to the last step). When the pipeline changes, that script changes and the path
+doesn't; the measuring scripts (`bench.sh`, `instrcount.sh`, `perfsweep.py`, `cgrank.py`) take their binary from
+`scripts/fastbuild.sh --measured`. The development builds, which every test script makes for itself: `release/`
+(`meson setup release --buildtype release`, plain -O3, the edit-test loop and the suite), `debug/` (asserts, the
+debug allocator, what `scripts/test.sh -d` runs under valgrind). None of them is the binary to benchmark.
