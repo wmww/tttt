@@ -104,6 +104,117 @@ D1 read misses up 2.07 -> 2.13% on tsc); splitting is_related_to(), recursive_re
 caches (instructions up or flat). The parser is ~12% of vscode's instructions with no hot site (74M child Parser
 creations for 138 MB of source, the top site 10%): structural.
 
+## The 12-core box at bbe37c5f: round three (chunked parse, 16 KB checkers, listings, huge text, react) (2026-10-22)
+Run by an agent on the human's laptop (the box of the sections below): AC, `balanced`, Firefox open (idle), load ~2
+before. fast/tttt from `scripts/fastbuild.sh` at bbe37c5f in the repo (ext4), hot window 2.34 MB (the first 2 MB on the
+huge page). bun: the same canary package (`@oven/bun-linux-x64@1.4.3-canary.20261019.1`, refetched into the scratchpad;
+`--revision` 1.4.4-canary.1+6bb5dc195). Walls of parts 2-4 by perf_counter around each run, CPU and RSS from wait4.
+
+**1. Bench** (`scripts/bench.sh --runs 3 --checkers 12 --bun ...`, run first): best wall s / CPU s (median run) / peak
+MB, against the 277be4bc section's table below:
+
+| corpus | default | 277be4bc | K12 | 277be4bc | single | 277be4bc | bun | bun single | tsgo | tsgo single |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TypeScript6 | 0.24 / 1.21 / 494 | 0.25 / 1.20 / 485 | 0.23 / 1.27 / 489 | 0.23 / 1.21 / 486 | 0.45 / 0.47 / 233 | 0.45 / 0.45 / 231 | 0.33 / 2.03 / 279 | 0.85 / 1.02 / 163 | 0.64 / 3.30 / 506 | 1.19 / 2.40 / 424 |
+| type-fest | 0.25 / 1.56 / 940 | 0.21 / 1.42 / 921 | 0.20 / 1.42 / 948 | 0.25 / 1.45 / 905 | **0.68** / 0.68 / 586 | 0.61 / 0.61 / 565 | 1.05 / 6.89 / 1044 | 3.30 / 3.38 / 785 | 4.12 / 19.0 / 5639 | 6.14 / 14.8 / 4413 |
+| valibot | 0.12 / 1.17 / 518 | 0.14 / 1.26 / 513 | 0.14 / 1.33 / 511 | 0.14 / 1.24 / 514 | 0.36 / 0.37 / 261 | 0.36 / 0.35 / 258 | 0.18 / 3.02 / 273 | 1.22 / 1.26 / 157 | 0.76 / 4.85 / 826 | 1.53 / 3.39 / 628 |
+| bulletproof-react | **0.11** / 0.66 / 438 | 0.09 / 0.38 / 327 | 0.11 / 0.72 / 443 | 0.09 / 0.71 / 422 | **0.17** / 0.17 / 174 | 0.14 / 0.14 / 150 | 0.17 / 0.94 / 238 | 0.43 / 0.45 / 154 | 0.42 / 2.57 / 456 | 0.53 / 1.19 / 297 |
+| nestjs-boilerplate | **0.05** / 0.39 / 321 | 0.06 / 0.43 / 291 | 0.05 / 0.42 / 312 | 0.06 / 0.51 / 300 | 0.12 / 0.13 / 146 | 0.13 / 0.14 / 135 | 0.07 / 0.67 / 197 | 0.26 / 0.26 / 117 | 0.15 / 1.38 / 266 | 0.27 / 0.70 / 212 |
+| webpack | 0.26 / 2.76 / 869 | 0.28 / 2.78 / 872 | 0.27 / 2.71 / 877 | 0.28 / 2.85 / 886 | 0.96 / 0.97 / 539 | 1.00 / 1.00 / 557 | 0.47 / 5.67 / 509 | 1.57 / 1.68 / 323 | 1.21 / 8.18 / 1177 | 2.56 / 4.73 / 964 |
+| zod | 0.17 / 1.60 / 848 | 0.21 / 1.91 / 849 | 0.19 / 1.85 / 852 | 0.20 / 1.91 / 827 | 0.50 / 0.50 / 446 | 0.54 / 0.54 / 440 | 0.24 / 3.63 / 385 | 1.25 / 1.46 / 214 | 1.08 / 8.10 / 1338 | 2.12 / 4.82 / 967 |
+| xstate | 0.12 / 1.08 / 491 | 0.13 / 1.12 / 470 | 0.12 / 1.06 / 482 | 0.13 / 1.11 / 470 | 0.29 / 0.29 / 200 | 0.28 / 0.28 / 196 | 0.13 / 1.64 / 239 | 0.49 / 0.71 / 111 | 0.44 / 3.00 / 473 | 0.80 / 1.81 / 365 |
+| drizzle | 0.31 / 3.02 / 1121 | 0.33 / 3.19 / 1103 | 0.28 / 2.82 / 1098 | 0.29 / 2.93 / 1103 | 0.63 / 0.65 / 471 | 0.63 / 0.65 / 467 | 0.33 / 5.27 / 446 | 1.44 / 2.04 / 269 | 1.44 / 10.1 / 1612 | 2.09 / 3.87 / 930 |
+| vue | 0.14 / 1.49 / 557 | 0.17 / 1.71 / 550 | 0.16 / 1.59 / 562 | 0.17 / 1.66 / 552 | 0.56 / 0.55 / 313 | 0.55 / 0.55 / 307 | 0.26 / 3.27 / 314 | 0.95 / 0.96 / 179 | 0.88 / 5.12 / 761 | 1.79 / 3.28 / 702 |
+| effect | 0.28 / 2.93 / 918 | 0.29 / 3.07 / 987 | 0.26 / 2.90 / 924 | 0.29 / 3.09 / 993 | 1.03 / 1.02 / 621 | 1.07 / 1.07 / 684 | 0.62 / 8.54 / 520 | 2.41 / 2.59 / 339 | 1.43 / 10.4 / 1510 | 3.36 / 5.55 / 1305 |
+| vscode | 1.97 / 35.7 / 5354 | 1.81 / 33.1 / 5348 | 2.13 / 23.1 / 4992 | 2.01 / 22.3 / 4989 | 9.15 / 9.35 / 4090 | 9.23 / 9.28 / 4088 | 1.98 / 41.9 / 2234 | 14.83 / 15.2 / 1656 | 8.07 / 59.0 / 7610 | 19.82 / 33.5 / 6688 |
+| excalidraw | 0.20 / 1.91 / 720 | 0.21 / 2.17 / 738 | 0.21 / 2.14 / 740 | 0.22 / 2.28 / 733 | 0.63 / 0.63 / 378 | 0.67 / 0.68 / 372 | 0.24 / 3.46 / 383 | 1.25 / 1.69 / 256 | 1.40 / 10.2 / 1765 | 2.17 / 4.40 / 891 |
+| tanstack-router | 0.18 / 1.59 / 593 | 0.19 / 1.54 / 575 | 0.16 / 1.47 / 588 | 0.19 / 1.57 / 576 | 0.48 / 0.47 / 320 | 0.50 / 0.49 / 313 | 0.22 / 2.94 / 367 | 0.96 / 1.56 / 190 | 1.14 / 6.30 / 986 | 2.00 / 3.78 / 670 |
+| TS6 -b | 0.48 / 2.72 / 518 | 0.53 / 2.92 / 520 | - | - | - | - | - | - | 1.22 / 6.76 / 710 | 2.37 / 4.02 / 527 |
+
+- **nest faster** (0.06 -> 0.05; alone below: median 84 ms at 2989c0f0 -> 58 ms). **react slower, not faster: 0.09 ->
+  0.11 at the defaults and K12, single 0.14 -> 0.17** (still 3x under tsgo single's 0.53; the default's 0.11 beats
+  bun's 0.17). Cause: `src/components/ui/form/form.tsx` (react-hook-form) alone is react's critical path at every
+  checker count: 48 ms checked at K1, 55-62 ms at the defaults (`TTTT_FILE_TIMES=1`); the next file is 9-29 ms. Release
+  builds of 277be4bc and bbe37c5f, K1: form.tsx 8.3 -> 44.5 ms. That is f38a8b49 (the Path/PathImpl HACK removed, 247d87ac's
+  +35.8% instructions): tsc's own work there, so the 16 KB policy (11 checkers on react now) only adds CPU (0.38 ->
+  0.66 s) and RSS (327 -> 438 MB) without wall to gain: one file of ~50 ms plus a ~35 ms front end is the floor.
+- **type-fest single 0.61 -> 0.68 (+11%)**, its default 0.21 -> 0.25 but K12 0.25 -> 0.20 (the parallel ones are noise
+  either way). 247d87ac counted +6.9% instructions there from the same commit; not looked into further.
+- **vscode's 1.97 at the defaults is the session's drift**, not a regression: run alone afterwards (6 runs) it reads best
+  1.70 / median 1.73 s, CPU 31.4 s, 5350 MB, 24 checkers; K12 alone (4 runs) best 1.81 / median 1.87. Single 9.15 against
+  9.23: level. Everything else level or faster (zod 0.21 -> 0.17, vue 0.17 -> 0.14, TS6 -b 0.53 -> 0.48). Effect's
+  single-threaded peak is back to 621 MB (684 at 277be4bc).
+- Against bun: tttt leads on every corpus at the defaults; vscode ties in the bench (1.97 against bun's 1.98; 1.70
+  alone, bun not rerun alone).
+
+**2. nest and react alone** (10 runs each, `--time`; per phase the median wall ms (min-max), the main thread's CPU ms,
+faults and sys ms of the whole process during the phase):
+
+| phase | nest default (K12) | nest T4 (K4) | react default (K11) | react T4 (K4) |
+|---|---|---|---|---|
+| config | 1.7 (1.4-1.7), 2.4, 668, 4.3 | 1.1, 2.0, 422, 2.1 | 1.6, 2.5, 728, 2.8 | 1.0, 2.0, 454, 1.8 |
+| **load+parse libs** | **7.1 (4.6-10.3)**, 3.3, 2053, 26.8 | 3.7 (2.9-4.4), 3.4, 351, 4.5 | 8.2 (6.6-11.2), 4.8, 2029, 25.1 | 4.4, 4.2, 359, 3.4 |
+| load+parse files | 12.1 (7.8-14.4), 8.6, 372, 29.5 | 23.2, 21.2, 1218, 22.5 | 7.8, 5.9, 296, 22.2 | 14.7, 13.7, 623, 11.3 |
+| resolve names | 19.3 (17.9-21.3), 16.1, 2015, 16.0 | 22.2, 21.8, 511, 3.0 | 17.9, 13.8, 2363, 17.0 | 19.7, 19.3, 840, 3.2 |
+| typecheck | 14.3 (13.7-15.4), 10.3, 2901, 12.0 | 21.9, 19.9, 2719, 7.9 | 76.2 (67.6-106), 34.0, 24595, 61.4 | 66.1 (57.5-98), 63.1, 15669, 28.4 |
+| **wall ms, best / median** | **55.6 / 58.6** | 69.7 / 75.6 | 107.2 / 115.2 | 101.1 / 109.3 |
+| per run | 61 56 58 63 59 58 59 59 56 60 | 80 72 70 83 71 79 77 71 74 81 | 122 127 109 149 115 114 107 128 112 116 | 135 108 104 112 148 104 101 108 119 110 |
+| CPU s (user + sys) / RSS MB | 0.445 (sys 0.093) / 315 | 0.265 (0.040) / 187 | 0.677 (0.137) / 436 | 0.373 (0.051) / 251 |
+
+- **libs halved as expected: nest 7.1 ms median at the defaults** (2989c0f0: 12-19; timeline 16), 3.7 at T4 (single
+  thread parses it in chunks as well). `TTTT_PARSE_CHUNK_STATS=1` on nest: `1 files in 34 chunks (29 parsed by
+  helpers), 0 fallbacks`. The defaults' libs phase still costs ~2000 faults and 27 ms of sys across the pool (T4: 351, 4.5).
+- **nest 84 ms (2989c0f0, median) -> 58.6 at the defaults, 83 -> 75.6 at T4**; the defaults now beat T4 by 17 ms.
+- react: T4 is as fast as the defaults (109 vs 115 median, at 55% of the CPU and 58% of the RSS): typecheck is
+  form.tsx-bound (above). The defaults' typecheck takes 24.6 k faults and 61 ms of sys (11 checkers' arenas).
+- **`TTTT_HUGE_TEXT=2`, 20 nest runs: 20 taken at the fault**, none by collapse, none missed (best 53.1 / median 56.1 ms).
+- **Timeline, nest at the defaults** (`bench/timeline/`, 3 runs, the middle one; 60.4 ms to the end of typecheck): config
+  1.7, libs 6.8 (main blocked 3.3, the pool at 11.7x), load+parse files 13.0 (10.7x; others' samples 17%
+  `__lll_lock_wait_private`), file scopes + pool end 2.2, declare in isolation 3.5, declare shard merge 3.8, link 3.0
+  (+ module refs 0.3, export star conflicts 1.1), parallel walk 6.4 (12.5x), typecheck 15.7 (13 threads busy, 7.2x).
+  Before typecheck: 44.7 ms (2989c0f0: 52). The BOLT binary's frames mostly symbolize as `?` here.
+
+**3. Listings A/B** (`TTTT_NO_LISTINGS=1`, 10 runs per block, ABBA: default, off, off, default; best / median ms,
+median sys s):
+
+| | default a | off a | off b | default b |
+|---|---|---|---|---|
+| nest | 54.3 / 58.3, 0.090 | 53.0 / 58.0, 0.092 | 54.3 / 59.0, 0.093 | 54.8 / 57.7, 0.090 |
+| react | 110.8 / 130.1, 0.135 | 109.6 / 114.3, 0.128 | 111.4 / 120.2, 0.136 | 106.5 / 117.6, 0.131 |
+
+- **Nil, as expected**: nest within 1 ms either way, sys level; react's spread (106-149 ms per run) is larger than any
+  difference (default a's 130 median is that block's noise: default b 117.6).
+
+**4. Checker policy A/B** (5 runs each, best / median wall ms, median CPU s, median RSS MB):
+
+| corpus | default (checkers) | --checkers 4 | --checkers 12 |
+|---|---|---|---|
+| nest | **53.2 / 54.7**, 0.43, 310 (12) | 59.4 / 60.0, 0.40, 296 | 54.4 / 57.8, 0.44, 317 |
+| react | 111.5 / 117.0, 0.68, 435 (11) | **102.2** / 116.6, **0.48**, 368 | 110.7 / 115.0, 0.72, 441 |
+| xstate | **115.5** / 123.3, 1.04, 476 | 127.8 / 130.7, 0.55, 394 | 115.2 / 122.1, 1.01, 481 |
+| valibot | 129.7 / 132.3, 1.20, 515 | 147.6 / 165.9, 0.73, 451 | **122.6** / 130.7, 1.19, 523 |
+| TypeScript6 | 208.9 / 225.1, 1.13, 487 | **199.7 / 204.3**, **0.77**, 413 | 211.9 / 216.0, 1.14, 479 |
+
+- The default is level with K12 everywhere (it is K12 or K11 on all five) and beats K4 on nest (-5 ms), xstate (-7) and
+  valibot (-18 to -33). **K4 wins on TypeScript6 (-21 ms median, -32% CPU)** and ties react at 70% of the CPU: both have
+  one file or a few that bound typecheck (TypeScript6's checker.ts; react's form.tsx), so checkers beyond 4 only add
+  start-up and faults. A cap from the largest file's share of the source would catch both; not tried.
+
+**5. perf stat** (`-e cycles,instructions,L1-icache-load-misses`, fast/tttt, `--noEmit --pretty false`):
+
+| | bbe37c5f | 277be4bc |
+|---|---|---|
+| vscode K1 pinned (taskset -c 2), -r 3: wall s | 9.067 (+-0.4%) | 9.158 (-r 10) |
+| cycles G | **44.24** (-1.7%) | 44.99 |
+| instructions G | **63.05** (-2.9%) | 64.93 |
+| L1-icache-load-misses | 496 M (-1.7%), 7.87 per 1000 | 505 M, 7.76 per 1000 |
+| drizzle defaults, -r 10: wall s / cycles G / instructions G / icache | 0.284 / 8.12 (-2.0%) / 8.85 (0.0%) / 63.2 M (0.0%) | 0.287 / 8.29 / 8.84 / 63 M |
+| drizzle K1 pinned, -r 10: wall s / cycles G / instructions G / icache | 0.622 / 3.04 / 4.33 / 30.0 M (7.0 per 1000) | (not measured) |
+
+- vscode K1: cycles -1.7%, instructions -2.9%, icache misses -1.7% absolute but +1.4% per instruction: **the noinline
+  splits' simulated -5% doesn't show on hardware**; the gain is fewer instructions. drizzle at the defaults: cycles -2%,
+  icache level. (277be4bc's drizzle row was at the defaults; K1 has no earlier number.)
+
 ## The 12-core box at 277be4bc: huge text, -fno-peel-loops, clang (2026-10-22)
 Run by an agent on the human's laptop (the box of the sections below): AC, `balanced`, Firefox open (~1.5% of the box
 in `top`), nothing else running. Built in a detached worktree of origin/wt-layout (277be4bc) **in /tmp (tmpfs)**, with
