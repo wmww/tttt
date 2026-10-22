@@ -12,8 +12,8 @@ Starting point: the end-state totals in measurements.md "Oracle totals (2026-10-
 needs attribution first.
 
 **The next coordinator's whole briefing is `agents/plans/91_next_coordinator.md`.** Order:
-1. **Plan 91 section 4**: the checks, the human's laptop bench of the new defaults (checker count past the cores,
-   memory default; two lines in `auto_checker_count()` / `default_checker_memory()` if a corpus lost), the merger.
+1. **Plan 91 section 4**: the checks and the merger (the laptop bench of the new defaults is done: measurements.md "at f2ad73c9",
+   vscode 1.93 s, nothing lost, the defaults stay).
 2. **Plan 91 section 2**: the next 1.5x on vscode. The parser rewrite as a spike first (token stream, node arenas; plan
    86 stage 3, perf_leads.md "Time"); one checker-speed worker from k1's leftovers (LiteralBuilder's first realloc,
    object literal item atoms on the AST, LazyMemo pages; measurements.md "Stage 2 session 2"); policy on the laptop.

@@ -63,6 +63,40 @@ D1 read misses up 2.07 -> 2.13% on tsc); splitting is_related_to(), recursive_re
 caches (instructions up or flat). The parser is ~12% of vscode's instructions with no hot site (74M child Parser
 creations for 138 MB of source, the top site 10%): structural.
 
+## The 12-core box at f2ad73c9: the new defaults' laptop bench (2026-10-21, run by an agent on the human's laptop)
+Plan 91 section 1's ask (checkers past the cores for big programs, `--checker-memory` a quarter of RAM). Same machine
+as below (on AC, `balanced`, load ~1), pgo/tttt retrained at f2ad73c9, `scripts/bench.sh --runs 3 --checkers 12` (no
+bun/tsc-rs: their binaries were scratch). Best wall s / CPU s (median run) / peak MB; "5f2cd699 K12/K1" is the table
+below's plain columns:
+
+| corpus | tttt default | tttt K12 | 5f2cd699 K12 | tttt single | 5f2cd699 K1 | tsgo |
+|---|---|---|---|---|---|---|
+| TypeScript6 | 0.21 / 1.1 / 489 | 0.23 / 1.2 / 483 | 0.22 / 1.1 / 438 | 0.47 / 0.5 / 229 | 0.53 / 0.5 / 228 | 0.60 / 3.4 / 500 |
+| type-fest | 0.31 / 1.6 / 891 | 0.32 / 1.7 / 905 | 0.23 / 1.3 / 680 | 0.88 / 0.9 / 563 | 0.72 / 0.7 / 432 | 5.60 / 24.3 / 5411 |
+| valibot | 0.14 / 1.2 / 517 | 0.13 / 1.2 / 524 | 0.14 / 1.3 / 387 | 0.38 / 0.4 / 257 | 0.44 / 0.4 / 255 | 0.71 / 4.7 / 803 |
+| bulletproof-react | 0.10 / 0.5 / 304 | 0.09 / 0.7 / 408 | 0.13 / 0.4 / 277 | 0.15 / 0.2 / 147 | 0.18 / 0.2 / 145 | 0.42 / 2.3 / 446 |
+| nestjs-boilerplate | 0.08 / 0.5 / 264 | 0.08 / 0.6 / 304 | 0.08 / 0.4 / 265 | 0.14 / 0.2 / 133 | 0.18 / 0.2 / 131 | 0.14 / 1.4 / 257 |
+| webpack | 0.27 / 2.6 / 861 | 0.28 / 2.7 / 860 | 0.29 / 2.9 / 631 | 1.03 / 1.0 / 540 | 1.16 / 1.2 / 533 | 1.21 / 7.8 / 1173 |
+| zod | 0.18 / 1.8 / 866 | 0.19 / 1.8 / 856 | 0.23 / 2.2 / 556 | 0.54 / 0.5 / 446 | 0.68 / 0.7 / 388 | 1.09 / 8.2 / 1361 |
+| xstate | 0.14 / 1.2 / 458 | 0.13 / 1.1 / 485 | 0.13 / 1.2 / 420 | 0.29 / 0.3 / 197 | 0.33 / 0.3 / 194 | 0.41 / 3.0 / 492 |
+| drizzle | 0.30 / 2.8 / 1093 | 0.29 / 3.0 / 1123 | 0.32 / 3.1 / 670 | 0.68 / 0.7 / 467 | 0.84 / 0.8 / 393 | 1.46 / 9.0 / 1616 |
+| vue | 0.17 / 1.7 / 569 | 0.17 / 1.8 / 556 | 0.17 / 1.6 / 471 | 0.58 / 0.6 / 308 | 0.68 / 0.7 / 305 | 0.90 / 5.5 / 737 |
+| effect | 0.30 / 3.2 / 909 | 0.29 / 3.1 / 916 | 0.26 / 2.8 / 634 | 1.11 / 1.1 / 625 | 1.27 / 1.3 / 509 | 1.50 / 11.0 / 1549 |
+| vscode | **1.93** / 35.4 / 5375 | 2.02 / 22.9 / 5014 | 2.45 / 27.4 / 1581 | 9.90 / 10.0 / 4087 | 12.44 / 12.5 / 1400 | 8.26 / 55.1 / 7879 |
+| excalidraw | 0.21 / 2.1 / 730 | 0.24 / 2.3 / 727 | 0.22 / 2.4 / 544 | 0.71 / 0.7 / 375 | 0.84 / 0.8 / 370 | 1.53 / 11.0 / 1796 |
+| tanstack-router | 0.20 / 1.6 / 579 | 0.19 / 1.7 / 589 | 0.20 / 1.6 / 455 | 0.53 / 0.5 / 316 | 0.61 / 0.6 / 309 | 1.26 / 7.2 / 901 |
+| TS6 -b | 0.57 / 3.1 / 532 | - | 0.58 / 2.9 / 539 | - | - | 1.38 / 8.1 / 668 |
+
+- **The defaults stay.** The default picks 24 checkers only for vscode (12 elsewhere, 2-3 on react/nest): vscode
+  2.45 -> 1.93 s (K12 now 2.02: the checker-speed work alone is most of the gain; K24 adds ~5%, at 35 s CPU against
+  23), as expected. Every other corpus is within noise of its K12 run and of 5f2cd699; nothing lost.
+- Single-threaded improved 7-20% everywhere since 5f2cd699 (vscode 12.44 -> 9.90) but type-fest (0.72 -> 0.88, and
+  0.23 -> 0.31 at K12). Spot checks right after the bench gave 0.62-0.75 s single-threaded with either memory default:
+  probably noise/thermals in the long run, unconfirmed; rerun type-fest alone if it matters.
+- **Memory** is the price of the memory default: vscode 5.4 GB at the default (2.4x bun's 2241 at 5f2cd699, inside
+  the ~3x budget), 4.1 GB single-threaded (1.4 GB before); smaller corpora +20-60% (drizzle 670 -> 1093 MB). type-fest
+  K1 with `--checker-memory 256`: 450-570 MB against 575-690, same time.
+
 ## The 12-core box at 5f2cd699: the flag's laptop bench (2026-10-21, run by an agent on the human's laptop)
 Plan 90 section 3 item 2's ask. Same machine as below (on AC, `balanced`), pgo/tttt at 5f2cd699 (plan 86 stage 4f
 done). `scripts/bench.sh --runs 3 --checkers 24 --bun bun-canary --tscrs tsc-rs-0.7.0`, run twice back to back: plain,

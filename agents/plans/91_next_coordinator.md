@@ -23,9 +23,8 @@ graph only with a genuinely new insight; parallel workers are fine, waste is not
   the cores, up to the threads: vscode gets every thread, nothing else measured does); the 16 MB growing start per
   checker is gone; `--checker-memory` defaults to a quarter of RAM (256 MB..8 GB) and a stolen file starts a fresh
   checker only when the thief holds half its budget. Recycles are zero on everything measured; vscode's peak is ~5 GB
-  (2.3x bun), the source sweep's median 1.2x tsgo's and nothing above 2.1x. **The laptop bench of these defaults is
-  pending** (thrashers measured here: measurements.md "The thrashers with the flag") (the human runs `scripts/bench.sh --runs 3 --checkers 12 ...`; expected: vscode ~2.0 s from 2.45, the rest
-  equal); if a corpus lost, the policy is two lines in `auto_checker_count()` / `default_checker_memory()`.
+  (2.3x bun), the source sweep's median 1.2x tsgo's and nothing above 2.1x. **The laptop bench of these defaults is done** (measurements.md "at f2ad73c9": vscode 2.45 -> 1.93 s, nothing lost,
+  the defaults stay; memory vscode 5.4 GB).
 - **Checker speed (workers k1, k2):** callgrind instructions at K1, PGO + LTO, byte-identical (measurements.md "Stage 2
   session 2"; k1's base ee9501eb8 -> 859a7a6a2): vscode -5.3%, excalidraw -10.9%, drizzle -5.7%, effect -5.6%, zod
   -5.4%, tsc -3.3%, nest -1.4%. From structural commits (type-param instantiation and intersection cases out of big
@@ -83,8 +82,7 @@ x the all-core clock penalty). Levers left, by size, all design-independent:
 - Plan 58 (re-pin) when `npm view typescript dist-tags` shows 7.1.0 stable (2026-10-22: latest 7.0.2).
 
 ## 4. First hour
-1. Plan 89 §5's checks (tree clean, worktrees, disk, dist-tags). Ask the human for the laptop bench if section 1's
-   pending one hasn't happened; its outcome decides whether the defaults stay.
+1. Plan 89 §5's checks (tree clean, worktrees, disk, dist-tags). The laptop bench is done (the defaults stay).
 2. Spawn the merger with plan 89 §1's loop (the third session's scripts are gone with /tmp/merge3; 10 minutes to
    rewrite; `$ExpectType` belongs in every check batch now, it caught the one regression the batch missed).
 3. Two or three workers: the parser rewrite as a spike first (a token stream for one construct family, measured on

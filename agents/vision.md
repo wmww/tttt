@@ -59,7 +59,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   90's mandate on 2026-10-21 after the laptop bench; the mandate is a correct, faster checker (1.5x on vscode would be big).
 - **Defaults changed**: checkers go past the physical cores for big programs (one per 4 MB of checked source, up to the
   threads), no growing start, `--checker-memory` a quarter of RAM (256 MB..8 GB): recycles are zero on everything
-  measured, vscode peaks ~5 GB. The laptop bench of these is pending.
+  measured, vscode peaks ~5 GB. The laptop bench kept them (measurements.md "at f2ad73c9": vscode 1.93 s).
 - **Numbers**: K1 instructions -1.4..-5.6% (vscode -5.3%, excalidraw -10.9%) from structural commits; suite 13962 ->
   13972 / 14006 with 10 regression-tested fixes; confirmed tsgo artifacts recorded in bugs/tsgo_divergences.md.
 - **The parser is the next structural lever**: ~12% of vscode's K1 instructions, no hot site (a Parser copy per
