@@ -217,7 +217,8 @@ static_failable load_stdlib(Program* program) {
 }
 
 // The realpath() of directories real_path_of() met, by absolute path (null: it failed). glibc's realpath() readlinks
-// every component of the path (nest: 748 node_modules files, 8.9k failed readlinks under 418 distinct paths)
+// every component of the path (nest: 748 node_modules files, 8.9k failed readlinks under 418 distinct paths), so a
+// directory's is its parent's (worked out the same way, once) and its name unless it is a symlink: one lstat() each
 typedef char* RealDir;
 #define g_pro_key SvStr, svstr
 #define g_val RealDir, real_dir
@@ -227,6 +228,59 @@ static pthread_mutex_t real_dirs_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static char* real_path_plain(char const* path, char* resolved) {
     return realpath(path, resolved);
+}
+
+// dir: absolute, not "/"; the result is owned by real_dirs
+static char const* real_dir_of(csview dir) {
+    pthread_mutex_lock(&real_dirs_lock);
+    auto cached = hmap_real_dir_get(&real_dirs, dir);
+    bool known = cached != nullptr;
+    char* ret = known ? cached->second : nullptr;
+    pthread_mutex_unlock(&real_dirs_lock);
+    if (known) return ret;
+    char buf[PATH_MAX];
+    memcpy(buf, dir.buf, (size_t)dir.size);
+    buf[dir.size] = 0;
+    char resolved[PATH_MAX];
+    isize slash = dir.size;
+    while (slash > 0 && dir.buf[slash - 1] != '/') slash--;
+    csview base = csview_slice(dir, slash, dir.size);
+    struct stat st;
+    if (!base.size || csview_equals(base, ".") || csview_equals(base, "..")) {
+        char* found = real_path_plain(buf, resolved);
+        ret = found ? strdup(found) : nullptr;
+    } else if (lstat(buf, &st)) {
+        ret = nullptr;
+    } else if (S_ISLNK(st.st_mode)) {
+        char* found = real_path_plain(buf, resolved);
+        ret = found ? strdup(found) : nullptr;
+    } else {
+        // (The parent's, which a successful lstat() says exists)
+        char const* parent = slash <= 1 ? "/" : real_dir_of(csview_slice(dir, 0, slash - 1));
+        if (parent) {
+            size_t parent_len = strlen(parent);
+            ret = malloc(parent_len + 2 + (size_t)base.size);
+            panic_if(!ret, "out of memory");
+            memcpy(ret, parent, parent_len);
+            if (parent_len != 1) ret[parent_len++] = '/'; // (realpath("/x") is "/", not "")
+            memcpy(ret + parent_len, base.buf, (size_t)base.size);
+            ret[parent_len + (size_t)base.size] = 0;
+            if (parent_len + (size_t)base.size >= PATH_MAX) {
+                free(ret);
+                char* found = real_path_plain(buf, resolved);
+                ret = found ? strdup(found) : nullptr;
+            }
+        }
+    }
+    pthread_mutex_lock(&real_dirs_lock);
+    auto entry = hmap_real_dir_insert(&real_dirs, cstr_from_sv(dir), ret);
+    // (Another thread got there first: its answer, the same one)
+    if (!entry.inserted) {
+        free(ret);
+        ret = entry.ref->second;
+    }
+    pthread_mutex_unlock(&real_dirs_lock);
+    return ret;
 }
 
 // Follows symlinks like the real filesystem does, for the program's module resolution: `dir/base` is realpath(dir)
@@ -245,26 +299,7 @@ static cstr real_path_of(void* ctx, csview path) {
     if (!path.size || path.buf[0] != '/' || slash <= 1 || !base.size || csview_equals(base, ".") || csview_equals(base, "..")) {
         return real_path_plain(buf, resolved) ? cstr_from(resolved) : cstr_null;
     }
-    csview dir = csview_slice(path, 0, slash - 1);
-    pthread_mutex_lock(&real_dirs_lock);
-    auto cached = hmap_real_dir_get(&real_dirs, dir);
-    bool known = cached != nullptr;
-    char* dir_real = known ? cached->second : nullptr;
-    pthread_mutex_unlock(&real_dirs_lock);
-    if (!known) {
-        buf[slash - 1] = 0;
-        char* found = real_path_plain(buf, resolved);
-        buf[slash - 1] = '/';
-        dir_real = found ? strdup(found) : nullptr;
-        pthread_mutex_lock(&real_dirs_lock);
-        auto entry = hmap_real_dir_insert(&real_dirs, cstr_from_sv(dir), dir_real);
-        // (Another thread got there first: its answer, the same one)
-        if (!entry.inserted) {
-            free(dir_real);
-            dir_real = entry.ref->second;
-        }
-        pthread_mutex_unlock(&real_dirs_lock);
-    }
+    char const* dir_real = real_dir_of(csview_slice(path, 0, slash - 1));
     if (!dir_real) return cstr_null;
     size_t dir_len = strlen(dir_real);
     if (dir_len + 1 + (size_t)base.size >= PATH_MAX) return real_path_plain(buf, resolved) ? cstr_from(resolved) : cstr_null;
