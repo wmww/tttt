@@ -39,3 +39,19 @@ intersection's property symbol to bugs/type_core.md.
   own file (or record foreign partial errors per file and replay them when that file is checked).
   (That exact two-file shape matches at K1 and K2: the walk's own evaluation of the loop still runs uncached. A real
   repro needs the loop's assigned value memoized as done by the foreign check.)
+
+- arrayFrom return-void mutant, TS2339 'b' on 'unknown' (2026-10-22, instrumented tsgo; declined for now: one mutant,
+  no real-code sighting): `f(v, ({ b }) => { b; })` with `f<T>(x: Iterable<T>, cb: (t: T) => void)`, `v: void`. tsc's
+  first inference pass checks the arrow with SkipContextSensitive, which registers its deferred body check
+  (checkNodeDeferred comes first in checkFunctionExpressionOrObjectLiteralMethod); every candidate then fails at `v`
+  (getSignatureApplicabilityError stops at the first bad argument), so nothing context-checks the arrow, and the failed
+  call is deferred (resolveUntypedCall) *after* it. The arrow's deferred body check reads `b` first:
+  getTypeForBindingElement -> the parameter's lazy type (getContextuallyTypedParameterType: `unknown`, no pattern
+  fallback, which only assignParameterType does) -> TS2339 on unknown. resolveUntypedCall then assigns the parameter
+  its pattern type (`{ b: any }`, what the types baseline prints). No error when the call fails on arity (TS2554: the
+  arguments are first checked by resolveUntypedCall), when the arrow comes before the bad argument (it is context-checked
+  there: TS2345 on the arrow), or when only a nested function reads `b` (deferred after the call). tttt types the
+  types right (`b: any`) but its parameter pattern always takes the fallback in assign_contextual_signature_as() (expr.c)
+  before any element is typed. Modelling it: "this function was never context-checked before its deferred body", i.e.
+  every candidate of the call it is an argument of failed at an earlier argument; then an element read by its own body
+  checks against the raw contextual parameter type.
