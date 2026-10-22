@@ -5,16 +5,18 @@ missing 23% of fetches). This note is what was built and measured against it on 
 cachegrind's simulated I1 misses and instructions stand in), and what the laptop should confirm.
 
 **Use `fast/tttt`** (`scripts/fastbuild.sh`): the laptop and every timing use it; the measuring scripts (bench.sh,
-instrcount.sh, perfsweep.py, cgrank.py) take `scripts/fastbuild.sh --measured`, which is pgo/tttt until the laptop's
-counters confirm BOLT, then its `MEASURED=pgo` becomes `fast`. When the pipeline changes, fastbuild.sh changes and
-the path doesn't.
+instrcount.sh, perfsweep.py, cgrank.py) take `scripts/fastbuild.sh --measured`, fast/tttt since the laptop confirmed
+BOLT (measurements.md "The 12-core box at 8e3f4fb0": -3% wall at K1, icache misses -30%, L1 iTLB misses ~0; the op
+cache hit rate and frontend-bound ~50% unchanged: the working set). When the pipeline changes, fastbuild.sh changes
+and the path doesn't.
 
 ## The pipeline (2026-10-22)
-1. `scripts/pgobuild.sh`: LTO + PGO (pgo/tttt), with `-fno-reorder-blocks-and-partition -fno-plt`, linked with
+1. `scripts/pgobuild.sh`: GCC's LTO + PGO (pgo/tttt), with `-fno-reorder-blocks-and-partition -fno-plt`, linked with
    `--emit-relocs -z now`.
 2. `scripts/boltbuild.sh`: llvm-bolt (LLVM 21) in instrumentation mode on pgobuild's training set at K1 and at the
    defaults, then ext-tsp blocks, cdsort functions, hot/cold splitting, ICF (bolt/tttt). Hot text ~2.05 MB in its own
    2 MB-aligned segment.
+3. At startup, main.c's huge_text() puts the first 2 MB of that segment on an anonymous huge page (below).
 
 ## Measured (cachegrind, K1)
 | | zod I1 misses | drizzle | tsc (untrained) | vscode (untrained) | instructions |
@@ -108,4 +110,9 @@ the hot range (BOLT's hot text is 2.05 MB: the first page covers 97% of it).
 - `perf stat -e instructions:u,cycles:u,L1-icache-load-misses,iTLB-load-misses` for both, and fast/tttt with
   `TTTT_HUGE_TEXT=0` (huge text pages off) as the third column
 - nest's wall (`hyperfine -N`) with and without `TTTT_HUGE_TEXT=0`: the remap must cost it nothing measurable
-If BOLT wins on cycles, flip fastbuild.sh's `MEASURED` to `fast` (and re-save test/instrcount.txt with it).
+- loop peeling off, the one flag that cut I1 misses 5-10% (for +1-2% instructions): `PGO_DIR=pgo-np BOLT_DIR=bolt-np
+  PGO_CFLAGS=-fno-peel-loops scripts/boltbuild.sh`, then `bolt-np/tttt` against fast/tttt, cycles at K1 and the
+  defaults (op cache hit rate too: smaller hot code is what moves it)
+- optionally clang: `CC=clang PGO_DIR=pgo-clang BOLT_DIR=bolt-clang scripts/boltbuild.sh` (-2 to -5% instructions,
+  +8-12% I1 misses against GCC's)
+- profiling fast/tttt with perf: set `TTTT_HUGE_TEXT=0`, or the hot code shows as `//anon`
