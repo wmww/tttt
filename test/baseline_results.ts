@@ -1301,6 +1301,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInferPredicateOnlyForPredicateTarget': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInferRestTupleFixedPositions': {
         errors: true,
         symbols: true,

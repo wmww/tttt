@@ -108,3 +108,11 @@ intersection's property symbol to bugs/type_core.md.
   *up* (median of 7: 12.6 -> 25.9 ms, minor faults ~2.7k -> ~7.7k in that phase; typecheck sys 10.1 -> 7.8 ms) at load
   46 with whatever huge pages the box had. Neither box was quiet. Measure on the laptop: nest `--time` libs sys and
   wall, default against `TTTT_AST_SMALL_KB=0`. The RSS win stands either way (nest 210 -> 169 MB, react 293 -> 255).
+
+- (cor6, 2026-10-22) A missing TS2502 through a signature resolved while it is being resolved: tsc reports
+  `extra` (1,38) and (4,35) TS2502 plus TS7023 on h, tttt only a TS2345 against parameter type 'undefined'
+  (signature_resolve_slow()'s SW_LOOK_MINE hands the re-entry the partial parameters; tsc resolves each parameter's
+  type lazily, so the cycle lands on the parameter symbol). No real repository needed it yet (dev-3.0's spurious
+  "Expected 1-0 arguments" was the same re-entry, avoided by tsc's applyToReturnTypes order):
+  `function g(a: number, b: number = 1, extra?: ReturnType<typeof h>) { return a; }`
+  `function h(a: number, b?: number, extra?: Parameters<typeof h>[2]) { return g(a, b, extra); }  h(1, 2, 3);`

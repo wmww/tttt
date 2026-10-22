@@ -427,8 +427,10 @@ static void infer_from_params(
 static void infer_from_returns(
     Checker* me, Inference* inf, InferStep step, Signature const* source, Signature const* target, TyMapper const* mapper
 ) {
-    TyPredicate const* source_predicate = signature_predicate(me, source);
+    // (The source's predicate only for a target with one: inferring it from an unannotated source evaluates the source's
+    // returns, which may be what is being resolved, `Parameters<typeof f>` in a signature f's body calls)
     TyPredicate const* target_predicate = signature_predicate(me, target);
+    TyPredicate const* source_predicate = target_predicate ? signature_predicate(me, source) : nullptr;
     if (source_predicate && target_predicate && source_predicate->type && target_predicate->type &&
         source_predicate->is_this == target_predicate->is_this && source_predicate->asserts == target_predicate->asserts
     ) {
