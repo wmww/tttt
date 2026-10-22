@@ -33,12 +33,7 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 
 ## Mutation seed 2 leftovers (2026-10-07, `MUTATE_DIR=... scripts/mutate.py -n 8000 --seed 2`: 32 -> 13)
 Each one mutant:
-- tsc evaluation-order quirk, "an error reported while a type is computed early" (typeGuardsAsAssertions null-arg,
-  the other one, is fixed since d218d7336's loop partial reports): arrayFrom return-void: after a failed overload
-  `Array.from(v, ({ a }): B => ({ b: a }))` with `v: void`, tsc reports TS2339 'a' on 'unknown' only when the
-  body uses `a`: the binding element's type is computed (with error) from the contextual `unknown` before
-  assignContextualParameterTypes replaces unknown by the pattern's type (`f(v, ({ b }) => { b; })` errors,
-  `f(v, ({ b }) => {})` doesn't). tttt types elements once, lazily, from the final parameter type.
+- arrayFrom return-void: "Binding elements read before the contextual assignment" (seeds 61/62 below).
 - interfaceExtendingOptionalChain extends-object: `interface C1 extends Object?.Bar {}` is TS2499 *and* the name
   resolved as a type reference (TS2702 'Object' only refers to a type...; TS2503/TS2694 for others): tsc's
   getTypeReferenceName takes the optional chain as an entity name (isEntityNameExpression ignores `?.`). tttt keeps
@@ -63,7 +58,7 @@ Each one mutant:
   which declaration's resolution meets the cycle first.
 
 ## Mutation seed 17 leftovers (2026-10-07, `scripts/mutate.py --seed 17 -n 4000`: 13 -> 7)
-- Known families: arrayFrom null-arg (tsc's errors from early binding-element evaluation, see seed 2 above), noCircularitySelfReferentialGetter4 (circularity only an elaboration
+- Known families: arrayFrom null-arg (binding elements read before the contextual assignment, seeds 61/62), noCircularitySelfReferentialGetter4 (circularity only an elaboration
   finds, TS7022/TS7023), derivedTypeDoesNotRequireExtendsClause (diagnostic order at one position).
 
 ## Mutation seed 18 leftovers (2026-10-08, `MUTATE_DIR=... scripts/mutate.py -n 2000 --seed 18`: 11 -> 5)
@@ -244,10 +239,7 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
     elaboration of the failing satisfies runs inside `a`'s own initializer, asks for the `self` getter's type and finds
     `a` circular (TS7022 on a, TS7023 on self); tttt checks the satisfies after a's type is known. With a passing
     satisfies neither reports anything.
-  - destructuringWithGenericParameter with `genericFunction(null, ({greeting}) => ...)`: the first argument fails
-    before the context-sensitive arrow is ever checked, so tsc's error pass checks the arrow for the first time against
-    `(payload: unknown) => void` and reports TS2339 'greeting' on unknown; tttt's final types match tsc's (`{ greeting:
-    any }`) but it doesn't report it.
+  - destructuringWithGenericParameter null-arg: "Binding elements read before the contextual assignment" (seeds 61/62).
   - recursiveTypeInference with `def?:` (zod getters, #64192): tsc's TS2345 prints `$ZodNullable<$ZodType<...>>` where
     tttt has `any` in the object's shape: the re-entrant getter inference of re-entrancy stage D (notes/reentrancy.md).
   - destructuringWithGenericParameter with its `genericObject` declaration deleted: tsc's harness reports that the
@@ -269,15 +261,33 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
 error type, mixin check without a constructor base, combined union parameters' optionality, tuple elaboration,
 instanceof without a lib, function type parameters in the function's flow container, circular mapped key
 constraint, TS2208 for a mapped key). Left, each looked at:
-- **Binding elements typed before the contextual assignment** (arrayFrom return-void, destructuringWithGenericParameter
-  null-arg): `g2(v, ({ e }) => { e; })` with `v: void` failing `ArrayLike<T>` is TS2345 + TS2339 "Property 'e' does
-  not exist on type 'unknown'" in tsgo, only TS2345 in tttt (`g2(v, ({ e }) => {})`, no reference to e, is TS2345
-  alone in both). tsgo's checkFunctionExpressionOrObjectLiteralMethod queues the arrow's deferred check
-  (checkNodeDeferred) even under SkipContextSensitive, before the failed call queues its resolveUntypedCall; so the
-  body is checked first, `e` asks its parent parameter's type through getContextuallyTypedParameterType (T of the
-  failure candidate: unknown) without assignParameterType's binding pattern fallback, and the element reports. tttt
-  reports binding elements at the parameter, against the fallen-back `{ e: any }`. An evaluation-order artifact;
-  modelling it needs "body checked before contextual assignment" state per function, not cheap.
+- **Binding elements read before the contextual assignment** (arrayFrom return-void, destructuringWithGenericParameter
+  null-arg; known failing: test/cases/ttttDeferredBodyBeforeContextualParameters.ts; 2026-10-22 confirmed with an
+  instrumented tsgo, the stack at addDiagnostic). `f(v, ({ b }) => { b; })` with `f<T>(x: Iterable<T>, cb: (t: T) =>
+  void)` and `v: void` is TS2345 + TS2339 "Property 'b' does not exist on type 'unknown'" in tsgo, TS2345 alone in tttt.
+  Mechanism: a generic candidate's inference pass checks the arrow with SkipContextSensitive, and
+  checkFunctionExpressionOrObjectLiteralMethod's first statement queues its deferred body check (checkNodeDeferred).
+  Every candidate then fails at an earlier argument, so nothing context-checks the arrow (no second inference pass;
+  the reporting pass in Normal mode stops at the bad argument), and getCandidateForOverloadFailure queues the call
+  (resolveUntypedCall) *after* the arrow. checkDeferredNodes runs the body first: the read of `b` asks
+  getTypeForBindingElement -> the parameter's lazy type, getContextuallyTypedParameterType through the failure
+  candidate (`unknown`), without assignParameterType's pattern fallback -> TS2339 (TS2488 for an array pattern, TS2700
+  for a rest; for `{ g: { h } }` read through `h`, TS2339 on `g`). Then resolveUntypedCall assigns `{ b: any }`
+  (assignBindingElementTypes overwrites the element: the types baseline's `b: any`, which tttt matches). Probes:
+  - errors: the callback inside an object literal argument (`k(v, { cb: ({ b }) => { b; } })`), not the first
+    parameter (`(a, { b }) => ...`), a `function` expression, an expression body, an element with a default, a read in a
+    nested *function declaration* (checked with the body) or through `typeof b` in the body, an overload set all of
+    whose candidates fail at the first argument, and `cb: (t: unknown) => void` in a *generic* function (a type
+    literal there could contain type variables, so inference visits the argument).
+  - no error: an element the body doesn't read, a read only inside a nested arrow (queued after the call), a
+    non-generic callee (single candidate, Normal mode: the arrow is never visited before the call's deferred check),
+    the arrow before the failing argument (the reporting pass context-checks it: TS2345 on the arrow), an arity failure
+    (TS2554: no inference pass).
+  tttt's assign_contextual_signature_as() (expr.c) always takes the `unknown` -> pattern fallback before any element is
+  typed. A fix needs "inference-visited but never context-checked" for a function argument of a failed call
+  (which candidates ran inference, where each failed, F's argument index) plus "elements its own body reads":
+  a reconstruction of tsc's deferred-check order, declined 2026-10-22 (two mutants, no real-code sighting). Do it
+  when a real project shows it.
 - **TS2589 through a constraint check** (infiniteConstraints2 extends-object: `T extends Object[]` instead of
   `unknown[]` in Prepend): tsgo reports instantiation depth at `Prepend<T, Conv<...>>` (line 13), tttt nothing. The
   constraint check of `Conv<ExactExtract<U, T>, {a: number}>` against `Object[]` expands Conv recursively in tsgo;
@@ -314,10 +324,7 @@ Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechec
   tttt checks `satisfies` in the typecheck walk, after a's type is done. Same family, reversed (seed 62): spurious
   TS7022/TS7023/TS2502 in recursiveTypeInference add-optional (`_zod?:`), spurious TS2339 in
   noCircularitySelfReferentialGetter2 drop-as.
-- **Lazy TS2339 of a callback's binding element** (seed 61 destructuringWithGenericParameter null-arg):
-  `f(null, ({ a }) => { a.x() })` with `f<T>(o: G<T>, cb: (p: T) => void)` failing on the null: tsgo reports
-  "Property 'a' does not exist on type 'unknown'" only when the body uses `a` (a's type computed while the parameter
-  has the unknown contextual type), not for `({ a }) => {}`. Check order of a failed call; not attempted.
+- seed 61 destructuringWithGenericParameter null-arg: "Binding elements read before the contextual assignment" above.
 - seed 61 restElementWithInitializer2 delete-stmt (x2): the seeds 41/42 "Lazy name resolution" entry below.
 - seed 62 contextualTypesNegatedTypeLikeConstraintInGenericMappedType1 undefined-init (missing TS7034): the seeds 41/42
   `typeof x` implicit-any entry.

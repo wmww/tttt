@@ -945,6 +945,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDeferredBodyBeforeContextualParameters': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
     'ttttDeferredCheckErrorLocation': {
         errors: true,
         symbols: true,

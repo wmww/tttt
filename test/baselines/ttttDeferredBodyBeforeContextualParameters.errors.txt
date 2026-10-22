@@ -1,0 +1,42 @@
+ttttDeferredBodyBeforeContextualParameters.ts(11,22): error TS2345: Argument of type 'void' is not assignable to parameter of type 'ArrayLike<unknown> | Iterable<unknown>'.
+ttttDeferredBodyBeforeContextualParameters.ts(11,28): error TS2339: Property 'a' does not exist on type 'unknown'.
+ttttDeferredBodyBeforeContextualParameters.ts(15,17): error TS2345: Argument of type 'null' is not assignable to parameter of type 'GenericClass<unknown>'.
+ttttDeferredBodyBeforeContextualParameters.ts(15,26): error TS2339: Property 'greeting' does not exist on type 'unknown'.
+ttttDeferredBodyBeforeContextualParameters.ts(19,17): error TS2345: Argument of type 'null' is not assignable to parameter of type 'GenericClass<unknown>'.
+ttttDeferredBodyBeforeContextualParameters.ts(20,17): error TS2345: Argument of type 'null' is not assignable to parameter of type 'GenericClass<unknown>'.
+
+
+==== ttttDeferredBodyBeforeContextualParameters.ts (6 errors) ====
+    // Known failing (bugs/missing_checks.md "Binding elements read before the contextual assignment"). A generic call
+    // failing at an argument before a context-sensitive callback: tsgo's inference pass queues the callback's deferred
+    // body check (checkNodeDeferred, SkipContextSensitive), every candidate fails earlier so nothing context-checks it, and
+    // the call's own deferred check (resolveUntypedCall, which assigns the parameter its pattern type `{ b: any }`) comes
+    // after. The body reads `b` first: typed from the raw contextual `unknown`, TS2339. tttt always takes the pattern
+    // fallback before any element is typed. (The arrayFrom return-void and destructuringWithGenericParameter null-arg
+    // mutants.)
+    declare function from<T, U>(iterable: Iterable<T> | ArrayLike<T>, mapfn: (v: T, k: number) => U): U[];
+    declare const v: void;
+    interface B { b: string }
+    const r1: B[] = from(v, ({ a }): B => ({ b: a }));
+                         ~
+!!! error TS2345: Argument of type 'void' is not assignable to parameter of type 'ArrayLike<unknown> | Iterable<unknown>'.
+                               ~
+!!! error TS2339: Property 'a' does not exist on type 'unknown'.
+    
+    class GenericClass<T> { payload!: T; }
+    declare function genericFunction<T>(object: GenericClass<T>, callback: (payload: T) => void): void;
+    genericFunction(null, ({ greeting }) => {
+                    ~~~~
+!!! error TS2345: Argument of type 'null' is not assignable to parameter of type 'GenericClass<unknown>'.
+                             ~~~~~~~~
+!!! error TS2339: Property 'greeting' does not exist on type 'unknown'.
+        var s = greeting.toLocaleLowerCase();
+    });
+    // Not read by the body itself (only by a nested arrow, checked after the call): no error in tsgo either
+    genericFunction(null, ({ greeting }) => () => greeting);
+                    ~~~~
+!!! error TS2345: Argument of type 'null' is not assignable to parameter of type 'GenericClass<unknown>'.
+    genericFunction(null, ({ greeting }) => {});
+                    ~~~~
+!!! error TS2345: Argument of type 'null' is not assignable to parameter of type 'GenericClass<unknown>'.
+    

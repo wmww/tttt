@@ -1,0 +1,74 @@
+//// [test/cases/ttttDeferredBodyBeforeContextualParameters.ts] ////
+
+=== ttttDeferredBodyBeforeContextualParameters.ts ===
+// Known failing (bugs/missing_checks.md "Binding elements read before the contextual assignment"). A generic call
+// failing at an argument before a context-sensitive callback: tsgo's inference pass queues the callback's deferred
+// body check (checkNodeDeferred, SkipContextSensitive), every candidate fails earlier so nothing context-checks it, and
+// the call's own deferred check (resolveUntypedCall, which assigns the parameter its pattern type `{ b: any }`) comes
+// after. The body reads `b` first: typed from the raw contextual `unknown`, TS2339. tttt always takes the pattern
+// fallback before any element is typed. (The arrayFrom return-void and destructuringWithGenericParameter null-arg
+// mutants.)
+declare function from<T, U>(iterable: Iterable<T> | ArrayLike<T>, mapfn: (v: T, k: number) => U): U[];
+>from : <T, U>(iterable: Iterable<T> | ArrayLike<T>, mapfn: (v: T, k: number) => U) => U[]
+>iterable : ArrayLike<T> | Iterable<T>
+>mapfn : (v: T, k: number) => U
+>v : T
+>k : number
+
+declare const v: void;
+>v : void
+
+interface B { b: string }
+>b : string
+
+const r1: B[] = from(v, ({ a }): B => ({ b: a }));
+>r1 : B[]
+>from(v, ({ a }): B => ({ b: a })) : B[]
+>from : <T, U>(iterable: Iterable<T> | ArrayLike<T>, mapfn: (v: T, k: number) => U) => U[]
+>v : void
+>({ a }): B => ({ b: a }) : ({ a }: { a: any; }) => B
+>a : any
+>({ b: a }) : { b: any; }
+>{ b: a } : { b: any; }
+>b : any
+>a : any
+
+class GenericClass<T> { payload!: T; }
+>GenericClass : GenericClass<T>
+>payload : T
+
+declare function genericFunction<T>(object: GenericClass<T>, callback: (payload: T) => void): void;
+>genericFunction : <T>(object: GenericClass<T>, callback: (payload: T) => void) => void
+>object : GenericClass<T>
+>callback : (payload: T) => void
+>payload : T
+
+genericFunction(null, ({ greeting }) => {
+>genericFunction(null, ({ greeting }) => {    var s = greeting.toLocaleLowerCase();}) : void
+>genericFunction : <T>(object: GenericClass<T>, callback: (payload: T) => void) => void
+>({ greeting }) => {    var s = greeting.toLocaleLowerCase();} : ({ greeting }: { greeting: any; }) => void
+>greeting : any
+
+    var s = greeting.toLocaleLowerCase();
+>s : any
+>greeting.toLocaleLowerCase() : any
+>greeting.toLocaleLowerCase : any
+>greeting : any
+>toLocaleLowerCase : any
+
+});
+// Not read by the body itself (only by a nested arrow, checked after the call): no error in tsgo either
+genericFunction(null, ({ greeting }) => () => greeting);
+>genericFunction(null, ({ greeting }) => () => greeting) : void
+>genericFunction : <T>(object: GenericClass<T>, callback: (payload: T) => void) => void
+>({ greeting }) => () => greeting : ({ greeting }: { greeting: any; }) => () => any
+>greeting : any
+>() => greeting : () => any
+>greeting : any
+
+genericFunction(null, ({ greeting }) => {});
+>genericFunction(null, ({ greeting }) => {}) : void
+>genericFunction : <T>(object: GenericClass<T>, callback: (payload: T) => void) => void
+>({ greeting }) => {} : ({ greeting }: { greeting: any; }) => void
+>greeting : any
+

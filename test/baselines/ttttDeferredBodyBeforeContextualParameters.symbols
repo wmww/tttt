@@ -1,0 +1,78 @@
+//// [test/cases/ttttDeferredBodyBeforeContextualParameters.ts] ////
+
+=== ttttDeferredBodyBeforeContextualParameters.ts ===
+// Known failing (bugs/missing_checks.md "Binding elements read before the contextual assignment"). A generic call
+// failing at an argument before a context-sensitive callback: tsgo's inference pass queues the callback's deferred
+// body check (checkNodeDeferred, SkipContextSensitive), every candidate fails earlier so nothing context-checks it, and
+// the call's own deferred check (resolveUntypedCall, which assigns the parameter its pattern type `{ b: any }`) comes
+// after. The body reads `b` first: typed from the raw contextual `unknown`, TS2339. tttt always takes the pattern
+// fallback before any element is typed. (The arrayFrom return-void and destructuringWithGenericParameter null-arg
+// mutants.)
+declare function from<T, U>(iterable: Iterable<T> | ArrayLike<T>, mapfn: (v: T, k: number) => U): U[];
+>from : Symbol(from, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 0, 0))
+>T : Symbol(T, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 7, 22))
+>U : Symbol(U, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 7, 24))
+>iterable : Symbol(iterable, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 7, 28))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>T : Symbol(T, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 7, 22))
+>ArrayLike : Symbol(ArrayLike, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 7, 22))
+>mapfn : Symbol(mapfn, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 7, 65))
+>v : Symbol(v, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 7, 74))
+>T : Symbol(T, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 7, 22))
+>k : Symbol(k, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 7, 79))
+>U : Symbol(U, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 7, 24))
+>U : Symbol(U, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 7, 24))
+
+declare const v: void;
+>v : Symbol(v, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 8, 13))
+
+interface B { b: string }
+>B : Symbol(B, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 8, 22))
+>b : Symbol(B.b, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 9, 13))
+
+const r1: B[] = from(v, ({ a }): B => ({ b: a }));
+>r1 : Symbol(r1, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 10, 5))
+>B : Symbol(B, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 8, 22))
+>from : Symbol(from, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 0, 0))
+>v : Symbol(v, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 8, 13))
+>a : Symbol(a, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 10, 26))
+>B : Symbol(B, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 8, 22))
+>b : Symbol(b, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 10, 40))
+>a : Symbol(a, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 10, 26))
+
+class GenericClass<T> { payload!: T; }
+>GenericClass : Symbol(GenericClass, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 10, 50))
+>T : Symbol(T, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 12, 19))
+>payload : Symbol(GenericClass.payload, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 12, 23))
+>T : Symbol(T, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 12, 19))
+
+declare function genericFunction<T>(object: GenericClass<T>, callback: (payload: T) => void): void;
+>genericFunction : Symbol(genericFunction, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 12, 38))
+>T : Symbol(T, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 13, 33))
+>object : Symbol(object, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 13, 36))
+>GenericClass : Symbol(GenericClass, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 10, 50))
+>T : Symbol(T, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 13, 33))
+>callback : Symbol(callback, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 13, 60))
+>payload : Symbol(payload, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 13, 72))
+>T : Symbol(T, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 13, 33))
+
+genericFunction(null, ({ greeting }) => {
+>genericFunction : Symbol(genericFunction, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 12, 38))
+>greeting : Symbol(greeting, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 14, 24))
+
+    var s = greeting.toLocaleLowerCase();
+>s : Symbol(s, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 15, 7))
+>greeting : Symbol(greeting, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 14, 24))
+
+});
+// Not read by the body itself (only by a nested arrow, checked after the call): no error in tsgo either
+genericFunction(null, ({ greeting }) => () => greeting);
+>genericFunction : Symbol(genericFunction, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 12, 38))
+>greeting : Symbol(greeting, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 18, 24))
+>greeting : Symbol(greeting, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 18, 24))
+
+genericFunction(null, ({ greeting }) => {});
+>genericFunction : Symbol(genericFunction, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 12, 38))
+>greeting : Symbol(greeting, Decl(ttttDeferredBodyBeforeContextualParameters.ts, 19, 24))
+
