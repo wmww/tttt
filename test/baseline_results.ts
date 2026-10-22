@@ -2041,7 +2041,7 @@ const baselines = {
     'ttttSignatureReturnReenteredBelowCall': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ttttSignatureReturnUnresolvedParams': {
         errors: true,

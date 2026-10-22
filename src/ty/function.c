@@ -390,7 +390,7 @@ bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function) {
     return in_flight;
 }
 
-static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer);
+static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer, bool isolate);
 
 // The inferred return type if it is known already (tsc's signature.resolvedReturnType), else null
 Ty const* ty_function_return_known(Checker* me, FunctionImpl const* function) {
@@ -412,24 +412,24 @@ bool ty_function_return_circular(Checker* me, FunctionImpl const* function) {
 }
 
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
-    return function_return_type(me, function, false);
+    return function_return_type(me, function, false, true);
 }
 
 Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function) {
     my argument_return_depth++;
-    Ty const* ret = function_return_type(me, function, true);
+    Ty const* ret = function_return_type(me, function, true, false);
     my argument_return_depth--;
     return ret;
 }
 
 Ty const* ty_iife_return_type(Checker* me, FunctionImpl const* function) {
-    return function_return_type(me, function, true);
+    return function_return_type(me, function, true, true);
 }
 
 // The return type is inferred (any if it depended on itself, TS7023): the first inference to finish publishes it, a
 // nested one asked for from below a call's barrier included (tsc's `if signature.resolvedReturnType == nil`). The
 // record's word (plan 86 stage 4f): published when clean, this worker's own otherwise
-static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer) {
+static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer, bool isolate) {
     if (function_impl_rare(function)->constructed_class) return ty_class_instance_type(me, function_impl_rare(function)->constructed_class);
     // (A getter without an annotation is its setter's parameter annotation, body or not: tsc's getTypeOfAccessors)
     if (!function->ret_explicit && function_impl_setter_type(function)) return ty_from_node(me, function_impl_setter_type(function), function_lower_ctx);
@@ -463,7 +463,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
                 // A function expression nothing has checked yet: its context root first, which may infer it too
                 // (ty_settle_function_context(): the inferred return type sees the contextual one the walk gives it,
                 // whoever asks first, another checker of the shared graph included)
-                if (function->context_root && ty_settle_function_context(me, function)) return function_return_type(me, function, keep_outer);
+                if (function->context_root && ty_settle_function_context(me, function)) return function_return_type(me, function, keep_outer, isolate);
                 break;
         }
     }
@@ -473,7 +473,12 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     }
     u64 taint = sw_claim_fast(me, &memo->word, &memo->state);
     ty_resolving_push(me, RESOLVING_FUNCTION_RETURN, function);
-    FlowIsolation isolation = ty_flow_isolate(me);
+    // Self-contained (tsc's checkExpressionCached of the body), except for a function argument's contextual check
+    // (ty_argument_return_type(): tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod infers it with the
+    // argument's check mode, and checkExpressionCachedEx isolates only in CheckMode.Normal): a loop in progress around
+    // the call stays visible, its partial types included, and the memo below keeps that result like tsc's
+    // resolvedReturnType does
+    FlowIsolation isolation = isolate ? ty_flow_isolate(me) : (FlowIsolation){ my flow_uncached, my flow_loop_start, my flow_expr_generation };
     // (An object literal getter a call's resolution types: nothing in its body is remembered, see
     // ty_object_literal_accessor_type(); a result under flow_uncached is no clean one)
     if (my lazy_getter == function) my flow_uncached = isolation.uncached;
