@@ -613,25 +613,105 @@ static csview* lib_names_of(csview libs, isize* count) {
     return ret;
 }
 
-// The include walk's files for the load pool as it finds them, a batch at a time (program_load_ahead_roots())
-typedef struct EarlyRoots {
+// The include walk's root files, on a thread of its own when there's a load pool: the pool gets them a batch at a time
+// (program_load_ahead_roots()), and the loader each batch once the pool has it, in root order, so that it loads root N
+// while the walk looks for N + 1 (vscode: a 30-55 ms walk, then the loader's own ~85 ms, were one after the other)
+typedef struct RootStream {
     Program* program;
-    cstr paths[64];
-    isize count;
-} EarlyRoots;
+    ProjectSet* projects;
+    u32 project;
+    cstr batch[16]; // For the pool: the files the walk matched
+    isize batch_count;
+    StrList pending; // Roots in batch, not given to the loader yet
+    pthread_mutex_t lock; // roots and done
+    pthread_cond_t more;
+    StrList roots; // In order
+    bool done;
+    bool threaded;
+    pthread_t thread;
+} RootStream;
 
-static void early_roots_flush(EarlyRoots* me) {
-    csview views[c_arraylen(my paths)];
-    for (isize i = 0; i < my count; i++) views[i] = cstr_sv(&my paths[i]);
-    program_load_ahead_roots(my program, views, my count);
-    for (isize i = 0; i < my count; i++) cstr_drop(&my paths[i]);
-    my count = 0;
+static void root_stream_flush(RootStream* me) {
+    csview views[c_arraylen(my batch)];
+    for (isize i = 0; i < my batch_count; i++) views[i] = cstr_sv(&my batch[i]);
+    program_load_ahead_roots(my program, views, my batch_count);
+    for (isize i = 0; i < my batch_count; i++) cstr_drop(&my batch[i]);
+    my batch_count = 0;
+    if (!my pending.count) return;
+    if (my threaded) pthread_mutex_lock(&my lock);
+    for (isize i = 0; i < my pending.count; i++) str_list_push(&my roots, cstr_sv(&my pending.items[i]));
+    if (my threaded) {
+        pthread_cond_signal(&my more);
+        pthread_mutex_unlock(&my lock);
+    }
+    str_list_clear(&my pending);
 }
 
-static void early_root_found(void* ctx, csview path) {
-    EarlyRoots* me = ctx;
-    my paths[my count++] = cstr_from_sv(path);
-    if (my count == (isize)c_arraylen(my paths)) early_roots_flush(me);
+// (The walk hints a file before it says it's a root: the pool has every root before the loader does)
+static void root_stream_found(void* ctx, csview path, bool final) {
+    RootStream* me = ctx;
+    if (final) {
+        str_list_push(&my pending, path);
+        if (my pending.count >= 16) root_stream_flush(me);
+        return;
+    }
+    my batch[my batch_count++] = cstr_from_sv(path);
+    if (my batch_count == (isize)c_arraylen(my batch)) {
+        // (Not the loader's yet: pending stays)
+        StrList pending = my pending;
+        my pending = (StrList){0};
+        root_stream_flush(me);
+        my pending = pending;
+    }
+}
+
+static void root_stream_walk(RootStream* me) {
+    project_set_root_files_streamed(my projects, my project, root_stream_found, me);
+    root_stream_flush(me);
+    if (my threaded) pthread_mutex_lock(&my lock);
+    my done = true;
+    if (my threaded) {
+        pthread_cond_signal(&my more);
+        pthread_mutex_unlock(&my lock);
+    }
+}
+
+static void* root_stream_run(void* arg) {
+    root_stream_walk(arg);
+    return nullptr;
+}
+
+// Starts the walk: on a thread when the program has a load pool, else here and now
+static void root_stream_start(RootStream* me, bool threaded) {
+    pthread_mutex_init(&my lock, nullptr);
+    pthread_cond_init(&my more, nullptr);
+    my threaded = threaded && !pthread_create(&my thread, nullptr, root_stream_run, me);
+    if (!my threaded) root_stream_walk(me);
+}
+
+// The i-th root file (a copy: a short cstr's characters move with the list, which the walk grows), waiting for the
+// walk to find it; false past the last one
+static bool root_stream_at(RootStream* me, isize i, cstr* path) {
+    if (my threaded) pthread_mutex_lock(&my lock);
+    while (my threaded && i >= my roots.count && !my done) pthread_cond_wait(&my more, &my lock);
+    bool ret = i < my roots.count;
+    if (ret) cstr_assign_sv(path, cstr_sv(&my roots.items[i]));
+    if (my threaded) pthread_mutex_unlock(&my lock);
+    return ret;
+}
+
+// Waits for the walk's end (every early return of check_files() after root_stream_start() calls this)
+static void root_stream_finish(RootStream* me) {
+    if (my threaded) pthread_join(my thread, nullptr);
+    my threaded = false;
+}
+
+static void root_stream_drop(RootStream* me) {
+    root_stream_finish(me);
+    str_list_drop(&my roots);
+    str_list_drop(&my pending);
+    pthread_mutex_destroy(&my lock);
+    pthread_cond_destroy(&my more);
 }
 
 static_failable check_files(Options const* opts, Output* out, csview config, ProjectSet* projects, u32 project,
@@ -682,9 +762,11 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     // The config's root files, unless there are files on the command line. The options are final: the load pool
     // starts on the libs and on each file as the include walk finds it (vscode: 29 ms of walk, lib.dom's parse 13).
     // Not for a config with references, which may be a solution (no files: nothing would be loaded)
+    // (Streamed: the roots come from the walk's thread, root_stream_at(), and root_files stays empty)
+    RootStream stream = { .program = program, .projects = projects, .project = project };
+    bool streamed = false;
     if (config.size && !opts->path_count) {
         bool early = !project_set_at(projects, project)->has_references && !project_set_at(projects, project)->root_files_listed;
-        EarlyRoots early_roots = { .program = program };
         if (early) {
             cstr libs = opts->no_lib ? cstr_null : compiler_options_lib_files(program_options(program));
             isize lib_count = 0;
@@ -692,14 +774,19 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
             program_load_ahead_libs(program, lib_names, lib_count);
             c_free_n(lib_names, cstr_size(&libs) + 1);
             cstr_drop(&libs);
+            root_stream_start(&stream, program_has_load_pool(program));
+            streamed = true;
+        } else {
+            StrList const* listed = project_set_root_files(projects, project);
+            for (isize i = 0; i < listed->count; i++) str_list_push(&root_files, cstr_sv(&listed->items[i]));
         }
-        StrList const* listed = project_set_root_files_streamed(projects, project, early ? early_root_found : nullptr, &early_roots);
-        early_roots_flush(&early_roots);
-        for (isize i = 0; i < listed->count; i++) str_list_push(&root_files, cstr_sv(&listed->items[i]));
     }
     // (Libraries' errors are dropped once they're loaded: these come after)
-    bool has_inputs = opts->path_count + root_files.count > 0;
+    cstr first_root = cstr_null;
+    bool has_inputs = opts->path_count + root_files.count > 0 || (streamed && root_stream_at(&stream, 0, &first_root));
+    cstr_drop(&first_root);
     if (!has_inputs) {
+        root_stream_drop(&stream);
         // A solution config: only references (tsc says nothing, and builds nothing without -b). -b doesn't build it,
         // so not even its options are checked
         // (tsgo: a `references` array, even an empty one, makes a config without files no mistake: no TS18003)
@@ -732,7 +819,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     {
         // Parsing on the side: what the loader will want, as far as that's known now
         cstr libs = opts->no_lib ? cstr_null : compiler_options_lib_files(program_options(program));
-        isize lib_count = 0, root_count = opts->path_count + root_files.count;
+        isize lib_count = 0, root_count = opts->path_count + root_files.count; // (Streamed: queued already)
         csview* lib_names = lib_names_of(cstr_sv(&libs), &lib_count);
         csview* roots = c_new_n(csview, root_count + 1);
         for (isize i = 0; i < root_count; i++) {
@@ -749,6 +836,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         VecError earlier = errs->errors;
         errs->errors = (VecError){0};
         try (load_stdlib(program)) cleanup {
+            root_stream_drop(&stream);
             vec_error_drop(&earlier);
             vec_error_drop(&shown);
             destroy_program(program, errs, last);
@@ -763,8 +851,16 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     }
 
     SourceFile* source = nullptr;
-    for (intptr_t i = 0; i < opts->path_count + root_files.count; i++) {
-        csview path = i < opts->path_count ? csview_from(opts->paths[i]) : cstr_sv(&root_files.items[i - opts->path_count]);
+    cstr streamed_root = cstr_null;
+    for (intptr_t i = 0;; i++) {
+        csview path;
+        if (i < opts->path_count) path = csview_from(opts->paths[i]);
+        else if (streamed) {
+            if (!root_stream_at(&stream, i - opts->path_count, &streamed_root)) break;
+            path = cstr_sv(&streamed_root);
+        }
+        else if (i < opts->path_count + root_files.count) path = cstr_sv(&root_files.items[i - opts->path_count]);
+        else break;
         bool from_config = i >= opts->path_count;
         FailableResult loaded = program_load(program, path, &source);
         if (loaded.error) {
@@ -777,11 +873,15 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
             continue;
         }
         try (loaded) cleanup {
+            cstr_drop(&streamed_root);
+            root_stream_drop(&stream);
             str_list_drop(&root_files);
             vec_error_drop(&shown);
             destroy_program(program, errs, last);
         }
     }
+    cstr_drop(&streamed_root);
+    root_stream_drop(&stream);
     str_list_drop(&root_files);
     program_load_automatic_types(program);
     phase_done(opts, out, "load+parse files", &last_time);

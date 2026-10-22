@@ -190,6 +190,8 @@ void program_set_defer_bodies(Program* me, bool defer);
 // Whether some file had bodies deferred: an output that needs them all before checking (syntax errors that gate the
 // checking) has to run again without deferral
 bool program_has_deferred_bodies(Program const* me);
+// Whether loading runs on a load pool (started by the first program_load_ahead*() call when there are threads)
+bool program_has_load_pool(Program const* me);
 // After program_typecheck(): a deferred body's materialization could be told from the eager parse and walk (a syntax
 // error in a body, a signature that would have seen the body's names): the output is wrong, run again without deferral
 bool program_defer_failed(Program const* me);

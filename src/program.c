@@ -4077,6 +4077,10 @@ void program_set_defer_bodies(Program* me, bool defer) {
     my defer_bodies = defer;
 }
 
+bool program_has_load_pool(Program const* me) {
+    return my pool != nullptr;
+}
+
 bool program_has_deferred_bodies(Program const* me) {
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         if ((*i)->has_deferred_bodies) return true;

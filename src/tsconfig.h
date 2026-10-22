@@ -15,8 +15,11 @@
 failable tsconfig_load(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files);
 // Each file `include` matches as the walk finds it (absolute), before the final list's order and its filters (a
 // lower priority extension's sibling): what a caller may start reading early
-typedef void (*TsconfigFoundHook)(void* ctx, csview path);
-// tsconfig_load(), with found called for each file the walk matches
+// final: path is the next root file, in root order (each one once); else a file the walk matched, which may still be
+// left out (a hint for parsing ahead, with several include patterns: the order is known at the end)
+typedef void (*TsconfigFoundHook)(void* ctx, csview path, bool final);
+// tsconfig_load(), with found called for each root file as it's known, in order (and before, for several include
+// patterns, each file the walk matches)
 failable tsconfig_load_streamed(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files,
     TsconfigFoundHook found, void* found_ctx);
 

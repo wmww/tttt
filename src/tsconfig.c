@@ -902,11 +902,26 @@ static bool has_source_extension(ConfigLoad* me, csview name) {
     return false;
 }
 
+#define g_key isize, isize
+#include <cleat/generic/vec.h>
+#define g_key u64, u64
+#include <cleat/generic/vec.h>
+
 typedef struct Patterns {
     StrList include;
     StrList exclude;
     StrList json; // Found JSON files: only include patterns ending in `.json` take them, with resolveJsonModule
     csview walked; // A directory an earlier walk took whole (the config's own): not entered again (tsgo's visited)
+    // Streaming (a found hook, at most 64 include patterns): the roots are each pattern's files in walk order, pattern
+    // after pattern, a file skipped or removed for priority siblings in its own directory (take_found()). So a listed
+    // directory's files are decided, and the files of the first pattern not done yet (one no unlisted directory may
+    // match inside) are final: they go to out, and the hook, while the walk goes on
+    HMapPathKind* files; // What's in out, or skipped for a sibling, as collect_root_files() keeps it
+    StrList* out;
+    isize order_count;
+    StrList* ready; // Per pattern: decided roots, not in out yet (ready[emitting] goes at once)
+    isize emitting; // The first pattern not done
+    isize* pending; // Per pattern: unlisted directories it may match inside
 } Patterns;
 
 static bool is_excluded(Patterns const* patterns, csview path) {
@@ -970,9 +985,36 @@ static ListedEntry* list_directory(Fs const* in, csview dir, isize* count) {
 
 // The files of dir (and below) the include patterns match, each into the bucket of the first pattern that matches it
 // (tsgo's matchFileNames: one result list per include pattern, flattened in include order)
+static void take_found(ConfigLoad* me, HMapPathKind* files, StrList const* found, isize const* found_patterns,
+    isize* order_count, StrList* out, StrList* ready);
+
+// Streaming: what's final into out and the hook, from the first pattern not done on
+static void emit_ready(ConfigLoad* me, Patterns* patterns) {
+    for (;;) {
+        StrList* ready = &patterns->ready[patterns->emitting];
+        for (isize i = 0; i < ready->count; i++) {
+            str_list_push(patterns->out, cstr_sv(&ready->items[i]));
+            my found(my found_ctx, cstr_sv(&ready->items[i]), true);
+        }
+        str_list_clear(ready);
+        if (patterns->pending[patterns->emitting] || patterns->emitting + 1 >= patterns->include.count) return;
+        patterns->emitting++;
+    }
+}
+
+// Streaming: a directory joins (+1) or leaves (-1, listed) the unlisted ones of the patterns in mask
+static void pending_add(Patterns* patterns, u64 mask, isize delta) {
+    for (isize i = 0; i < patterns->include.count; i++) {
+        if (mask >> i & 1) patterns->pending[i] += delta;
+    }
+}
+
 static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrList* buckets, int depth) {
     if (depth > 64) return;
     StrList subdirs = {0};
+    Vecu64 subdir_masks = {0}; // Streaming: the patterns each subdirectory may hold files of
+    StrList here = {0}; // Streaming: this directory's files, and their patterns
+    Vecisize here_patterns = {0};
     isize entry_count = 0;
     ListedEntry* entries = list_directory(my fs, dir, &entry_count);
     for (isize e = 0; e < entry_count; e++) {
@@ -980,19 +1022,32 @@ static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrLis
         cstr path = path_join(dir, item.name);
         if (entries[e].is_directory >= 0 ? entries[e].is_directory : fs_is_directory(my fs, cstr_sv(&path))) {
             bool wanted = false;
-            for (isize i = 0; i < patterns->include.count && !wanted; i++) {
-                wanted = glob_may_match_inside(cstr_sv(&patterns->include.items[i]), cstr_sv(&path));
+            u64 mask = 0;
+            for (isize i = 0; i < patterns->include.count && (!wanted || patterns->out); i++) {
+                bool inside = glob_may_match_inside(cstr_sv(&patterns->include.items[i]), cstr_sv(&path));
+                wanted = wanted || inside;
+                mask |= (u64)inside << i;
             }
             // (Wildcards don't go into package directories or hidden ones, glob_may_match_inside() says, but a pattern
             // may name one: `./.vitepress/**/*.ts`)
             if (wanted && !is_excluded(patterns, cstr_sv(&path)) && !csview_equals_sv(cstr_sv(&path), patterns->walked)) {
                 str_list_push(&subdirs, cstr_sv(&path));
+                if (patterns->out) {
+                    vec_u64_push(&subdir_masks, mask);
+                    pending_add(patterns, mask, 1);
+                }
             }
         } else if (has_source_extension(me, item.name) && !is_excluded(patterns, cstr_sv(&path))) {
             for (isize i = 0; i < patterns->include.count; i++) {
                 if (glob_matches(cstr_sv(&patterns->include.items[i]), cstr_sv(&path), false)) {
-                    str_list_push(&buckets[i], cstr_sv(&path));
-                    if (my found) my found(my found_ctx, cstr_sv(&path));
+                    if (patterns->out) {
+                        str_list_push(&here, cstr_sv(&path));
+                        vec_isize_push(&here_patterns, i);
+                    } else {
+                        str_list_push(&buckets[i], cstr_sv(&path));
+                    }
+                    // (Not final yet: a hint for whoever parses ahead)
+                    if (my found) my found(my found_ctx, cstr_sv(&path), false);
                     break;
                 }
             }
@@ -1011,8 +1066,31 @@ static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrLis
     }
     for (isize e = 0; e < entry_count; e++) cstr_drop(&entries[e].name);
     free(entries);
-    for (isize i = 0; i < subdirs.count; i++) collect_files(me, patterns, cstr_sv(&subdirs.items[i]), buckets, depth + 1);
+    if (patterns->out) {
+        // (Pattern after pattern, like the whole list: siblings of different patterns remove each other in that order)
+        StrList ordered = {0};
+        Vecisize ordered_patterns = {0};
+        for (isize p = 0; p < patterns->include.count; p++) {
+            for (isize i = 0; i < here.count; i++) {
+                if (here_patterns.data[i] != p) continue;
+                str_list_push(&ordered, cstr_sv(&here.items[i]));
+                vec_isize_push(&ordered_patterns, p);
+            }
+        }
+        take_found(me, patterns->files, &ordered, ordered_patterns.data, &patterns->order_count, nullptr, patterns->ready);
+        str_list_drop(&ordered);
+        vec_isize_drop(&ordered_patterns);
+        emit_ready(me, patterns);
+    }
+    str_list_drop(&here);
+    vec_isize_drop(&here_patterns);
+    for (isize i = 0; i < subdirs.count; i++) {
+        // (Listed from here on, or never: too deep)
+        if (patterns->out) pending_add(patterns, subdir_masks.data[i], -1);
+        collect_files(me, patterns, cstr_sv(&subdirs.items[i]), buckets, depth + 1);
+    }
     str_list_drop(&subdirs);
+    vec_u64_drop(&subdir_masks);
 }
 
 // The directory a pattern can first match something in: its leading segments without wildcards
@@ -1093,11 +1171,52 @@ static bool has_higher_priority_sibling(ConfigLoad* me, HMapPathKind const* file
     return false;
 }
 
+// The files include patterns found (in their order) that are roots, into out (and the found hook) in that order, from
+// *order_count on. In the order the patterns found them, like tsc's wildcardFileMap: a file is skipped for a higher
+// priority sibling found before it, and removes the lower priority ones found before it, so `["**/*.js", "**/*.ts"]`
+// keeps `a.d.ts` and not `a.js`, the other order both. A sibling is in the file's directory: with one include pattern
+// one directory's files at a time give what all of them at once do
+// (Or, with ready, each root into ready[its pattern], found_patterns[i] being found[i]'s)
+static void take_found(ConfigLoad* me, HMapPathKind* files, StrList const* found, isize const* found_patterns,
+    isize* order_count, StrList* out, StrList* ready
+) {
+    StrList order = {0};
+    Vecisize order_patterns = {0};
+    isize base = *order_count;
+    for (isize i = 0; i < found->count; i++) {
+        csview path = cstr_sv(&found->items[i]);
+        if (has_higher_priority_sibling(me, files, path)) continue;
+        remove_lower_priority_siblings(files, path);
+        if (hmap_path_kind_get(files, path)) continue;
+        hmap_path_kind_insert(files, cstr_from_sv(path), (PathKind)(2 + base + order.count));
+        str_list_push(&order, path);
+        if (ready) vec_isize_push(&order_patterns, found_patterns[i]);
+    }
+    for (isize i = 0; i < order.count; i++) {
+        csview path = cstr_sv(&order.items[i]);
+        hmap_path_kind_value const* entry = hmap_path_kind_get(files, path);
+        if (!entry || entry->second != (PathKind)(2 + base + i)) continue;
+        if (ready) {
+            str_list_push(&ready[order_patterns.data[i]], path);
+            continue;
+        }
+        str_list_push(out, path);
+        if (my found) my found(my found_ctx, path, true);
+    }
+    vec_isize_drop(&order_patterns);
+    *order_count += order.count;
+    str_list_drop(&order);
+}
+
 static void collect_root_files(ConfigLoad* me, StrList* out) {
     for (isize i = 0; my files && i < my files->count; i++) {
         if (my files->items[i].tag != JSON_STRING) continue;
         cstr path = config_path(me, cstr_sv(&my files_dir), cstr_sv(&my files->items[i].string));
         str_list_push(out, cstr_sv(&path));
+        if (my found) {
+            my found(my found_ctx, cstr_sv(&path), false);
+            my found(my found_ctx, cstr_sv(&path), true);
+        }
         cstr_drop(&path);
     }
     if (my files && !my include) return;
@@ -1160,43 +1279,49 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
     }
     str_list_drop(&all);
     StrList* buckets = calloc((size_t)patterns.include.count + 1, sizeof(StrList));
+    HMapPathKind files = {0};
+    for (isize i = 0; i < out->count; i++) hmap_path_kind_insert(&files, cstr_clone(out->items[i]), 1);
+    // (Without streaming: one list per pattern, flattened in include order, decided at the end)
+    StrList* ready = nullptr;
+    isize* pending = nullptr;
+    if (my found && patterns.include.count && patterns.include.count <= 64) {
+        ready = calloc((size_t)patterns.include.count, sizeof(StrList));
+        pending = calloc((size_t)patterns.include.count, sizeof(isize));
+        panic_if(!ready || !pending, "out of memory");
+        patterns = (Patterns){ .include = patterns.include, .exclude = patterns.exclude, .files = &files, .out = out,
+            .ready = ready, .pending = pending };
+        // (Any pattern may match in a base not walked yet)
+        for (isize i = 0; i < bases.count; i++) pending_add(&patterns, ~(u64)0, 1);
+    }
     for (isize i = 0; i < bases.count; i++) {
+        if (patterns.out) pending_add(&patterns, ~(u64)0, -1);
         if (fs_is_directory(my fs, cstr_sv(&bases.items[i]))) {
             collect_files(me, &patterns, cstr_sv(&bases.items[i]), buckets, 0);
         }
         if (!i) patterns.walked = cstr_sv(&bases.items[0]);
+        if (patterns.out) emit_ready(me, &patterns);
+    }
+    if (patterns.out) {
+        // (Every pattern is done)
+        for (isize i = 0; i < patterns.include.count; i++) check(!pending[i] && !ready[i].count);
+        for (isize i = 0; i < patterns.include.count; i++) str_list_drop(&ready[i]);
+        free(ready);
+        free(pending);
     }
     for (isize i = 0; i < patterns.include.count; i++) {
         for (isize j = 0; j < buckets[i].count; j++) str_list_push(&found, cstr_sv(&buckets[i].items[j]));
         str_list_drop(&buckets[i]);
     }
     free(buckets);
-    // (In the order the patterns found them, like tsc's wildcardFileMap: a file is skipped for a higher priority sibling
-    // found before it, and removes the lower priority ones found before it, so `["**/*.js", "**/*.ts"]` keeps `a.d.ts`
-    // and not `a.js`, the other order both)
-    HMapPathKind files = {0};
-    for (isize i = 0; i < out->count; i++) hmap_path_kind_insert(&files, cstr_clone(out->items[i]), 1);
-    StrList order = {0};
-    for (isize i = 0; i < found.count; i++) {
-        csview path = cstr_sv(&found.items[i]);
-        if (has_higher_priority_sibling(me, &files, path)) continue;
-        remove_lower_priority_siblings(&files, path);
-        if (hmap_path_kind_get(&files, path)) continue;
-        hmap_path_kind_insert(&files, cstr_from_sv(path), (PathKind)(2 + order.count));
-        str_list_push(&order, path);
-    }
-    for (isize i = 0; i < order.count; i++) {
-        csview path = cstr_sv(&order.items[i]);
-        hmap_path_kind_value const* entry = hmap_path_kind_get(&files, path);
-        if (entry && entry->second == (PathKind)(2 + i)) str_list_push(out, path);
-    }
-    str_list_drop(&order);
+    isize order_count = 0;
+    if (!patterns.out) take_found(me, &files, &found, nullptr, &order_count, out, nullptr);
     // (tsc's wildCardJsonFileMap comes last)
     for (isize i = 0; i < patterns.json.count; i++) {
         csview path = cstr_sv(&patterns.json.items[i]);
         if (hmap_path_kind_get(&files, path)) continue;
         hmap_path_kind_insert(&files, cstr_from_sv(path), 2);
         str_list_push(out, path);
+        if (my found) my found(my found_ctx, path, true);
     }
     hmap_path_kind_drop(&files);
     str_list_drop(&patterns.json);
