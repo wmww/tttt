@@ -199,12 +199,15 @@ typedef struct MembersBuilder {
     // calls builder_unindex() (replacing a prop by one of the same name keeps it valid)
     NameIndex by_name;
     u32 indexed;
+    // The four arrays are in the arena, at their final size (never grown): builder_finish() takes them as they are
+    bool arena_arrays;
 } MembersBuilder;
 
 enum { BUILDER_INDEXED = 16 };
 
 #define builder_push(me, field, value) do { \
         if ((me)->field##_count == (me)->field##_cap) { \
+            check(!(me)->arena_arrays); \
             (me)->field##_cap = (me)->field##_cap ? (me)->field##_cap * 2 : 8; \
             (me)->field = realloc((me)->field, sizeof(*(me)->field) * (me)->field##_cap); \
             panic_if(!(me)->field, "out of memory"); \
@@ -593,13 +596,16 @@ static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
         ret->props_filter = filter;
     }
 #define FINISH(field, count_field, T) \
-    if (builder->field##_count) { \
+    if (builder->arena_arrays) { \
+        if (builder->field##_count) ret->field = builder->field; \
+        ret->count_field = builder->field##_count; \
+    } else if (builder->field##_count) { \
         T* copy = arena_new_n(&my arena, T, builder->field##_count); \
         memcpy(copy, builder->field, sizeof(T) * builder->field##_count); \
         ret->field = copy; \
         ret->count_field = builder->field##_count; \
     } \
-    if (builder->field) free(builder->field);
+    if (builder->field && !builder->arena_arrays) free(builder->field);
     FINISH(props, prop_count, Prop*)
     FINISH(call, call_count, Signature*)
     FINISH(construct, construct_count, Signature*)
@@ -3634,8 +3640,21 @@ static Members const* instantiate_members(
     Checker* me, Members const* source, TyMapper const* mapper, bool applies_type_args, bool this_only
 ) {
     MembersBuilder builder = {0};
-    // (At most the source's: one allocation rather than a growing one)
-    if (source->prop_count) {
+    // (At most the source's: one allocation rather than a growing one. Without bases nothing is added past the
+    // source's, and they are the result's arrays: in the arena, as builder_finish() would copy them)
+    if (!members_rare(source)->base_count) {
+        builder.arena_arrays = true;
+#define RESERVE(field, count) \
+        if (count) { \
+            builder.field = arena_new_n(&my arena, typeof(*builder.field), count); \
+            builder.field##_cap = count; \
+        }
+        RESERVE(props, source->prop_count)
+        RESERVE(call, source->call_count)
+        RESERVE(construct, source->construct_count)
+        RESERVE(index, source->index_count)
+#undef RESERVE
+    } else if (source->prop_count) {
         builder.props = malloc(sizeof(*builder.props) * source->prop_count);
         panic_if(!builder.props, "out of memory");
         builder.props_cap = source->prop_count;
