@@ -278,6 +278,30 @@ void dup_census_report(void) {
         types += per_checker_types[c], memory += per_checker_memory[c];
     }
     fprintf(stderr, "   total: %llu types, %.1f MB\n", (unsigned long long)types, (double)memory / (1 << 20));
+    // Per checker: how much of what it made another checker made too (a shared graph's most for it), and every one
+    for (u32 domain = DOMAIN_TYPE; domain <= DOMAIN_RELATION; domain += DOMAIN_RELATION - DOMAIN_TYPE) {
+        u64 own[32] = {0}, shared[32] = {0}, everyone[32] = {0};
+        for (u32 i = 0; i < census.cap; i++) {
+            if (!census.keys[i] || (census.values[i] >> 56) != domain) continue;
+            u32 mask = (u32)census.values[i];
+            u32 n = (u32)__builtin_popcount(mask);
+            for (u32 c = 0; c < k; c++) {
+                if (!(mask >> c & 1)) continue;
+                own[c]++;
+                if (n >= 2) shared[c]++;
+                if (n == k) everyone[c]++;
+            }
+        }
+        u64 sum_own = 0, sum_shared = 0, sum_every = 0;
+        for (u32 c = 0; c < k; c++) {
+            fprintf(stderr, "   %s checker %2u: %9llu, also another's %5.1f%%, every checker's %5.1f%%\n",
+                domain == DOMAIN_TYPE ? "types" : "relations", c, (unsigned long long)own[c],
+                own[c] ? 100.0 * (double)shared[c] / (double)own[c] : 0.0, own[c] ? 100.0 * (double)everyone[c] / (double)own[c] : 0.0);
+            sum_own += own[c], sum_shared += shared[c], sum_every += everyone[c];
+        }
+        fprintf(stderr, "   %s all checkers: also another's %5.1f%%, every checker's %5.1f%%\n", domain == DOMAIN_TYPE ? "types" : "relations",
+            sum_own ? 100.0 * (double)sum_shared / (double)sum_own : 0.0, sum_own ? 100.0 * (double)sum_every / (double)sum_own : 0.0);
+    }
     print_domain(DOMAIN_TYPE, "types", k);
     print_domain(DOMAIN_TYPES_KEY, "types table keys", k);
     print_domain(DOMAIN_LINKS_KEY, "links table keys", k);

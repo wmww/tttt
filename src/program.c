@@ -4897,6 +4897,56 @@ static u32 steal_file(Program* me, u32 c, u32 count) {
     }
 }
 
+// TTTT_STEAL_BLOCK=1 (the dup experiment): a thief takes a block of its victim's files in program order rather than
+// the last file each time: from the middle of the victim's unclaimed files forward, until it meets a claimed one,
+// then it picks a victim again. Neighbours (which share types) stay together, the victim keeps the first half
+static u32 steal_block(Program* me, u32 c, u32 count, u32* cursor) {
+    u32 total = (u32)vec_source_file_ptr_size(&my check_files);
+    if (*cursor != UINT32_MAX) {
+        u32 victim = my file_shares[*cursor];
+        for (u32 at = *cursor + 1; at < total; at++) {
+            if (my file_shares[at] != victim) continue;
+            if (atomic_load_explicit(&my file_checkers[at], memory_order_relaxed) != UINT32_MAX) break;
+            if (claim_file(me, at, c)) {
+                *cursor = at;
+                return at;
+            }
+            break;
+        }
+        *cursor = UINT32_MAX;
+    }
+    for (;;) {
+        u32 victim = UINT32_MAX;
+        u64 most = 0;
+        for (u32 v = 0; v < count; v++) {
+            if (v == c || atomic_load_explicit(&my share_states[v], memory_order_acquire) != 1) continue;
+            u64 left = atomic_load_explicit(&my share_left[v], memory_order_relaxed);
+            if (left > most) most = left, victim = v;
+        }
+        if (victim == UINT32_MAX) return UINT32_MAX;
+        // (The victim's unclaimed files: the block starts at the one in the middle of their bytes)
+        u64 unclaimed = 0;
+        for (u32 at = 0; at < total; at++) {
+            if (my file_shares[at] != victim || atomic_load_explicit(&my file_checkers[at], memory_order_relaxed) != UINT32_MAX) continue;
+            unclaimed += share_cost(vec_source_file_ptr_at(&my check_files, at)[0]) + 1;
+        }
+        if (!unclaimed) {
+            atomic_store_explicit(&my share_left[victim], 0, memory_order_relaxed);
+            continue;
+        }
+        u64 seen = 0;
+        for (u32 at = 0; at < total; at++) {
+            if (my file_shares[at] != victim || atomic_load_explicit(&my file_checkers[at], memory_order_relaxed) != UINT32_MAX) continue;
+            seen += share_cost(vec_source_file_ptr_at(&my check_files, at)[0]) + 1;
+            if (seen * 2 < unclaimed) continue;
+            if (claim_file(me, at, c)) {
+                *cursor = at;
+                return at;
+            }
+        }
+    }
+}
+
 // Checks share c of the files, then helps the others: once its own files are all taken, it takes the last ones of the
 // running share with the most left (steal_file()), so that the checkers finish together. Which checker checks a file
 // then depends on timing, but what a file reports doesn't depend on the checker (plan 62; nor on its history, plan 67)
@@ -5048,6 +5098,8 @@ static void check_share(Program* me, u32 c, u32 count) {
     isize scanned = 0; // Of checker->errs->errors, for declaration_walk_moot()
     bool moot_watch = my declaration_errs && !my emit_declarations && program_declaration_diagnostics_gated(me);
     bool steal = my steal_files && count > 1;
+    bool steal_blocks = getenv("TTTT_STEAL_BLOCK") != nullptr;
+    u32 steal_cursor = UINT32_MAX;
     for (u32 next = 0, first = my share_first[c];;) {
         u32 at = UINT32_MAX;
         if (first != UINT32_MAX && claim_file(me, first, c)) at = first;
@@ -5059,7 +5111,7 @@ static void check_share(Program* me, u32 c, u32 count) {
             }
         }
         if (at == UINT32_MAX && steal) {
-            at = steal_file(me, c, count);
+            at = steal_blocks ? steal_block(me, c, count, &steal_cursor) : steal_file(me, c, count);
             // (With a memory budget the first one starts in a fresh checker: its own files' types are little use in
             // another's region, and kept they'd stack a second warm state on the first. The source sweep's 285 biggest
             // at the defaults: wall -7.1%, peak +3.8% kept; -5.2%, +0.4% dropped)
