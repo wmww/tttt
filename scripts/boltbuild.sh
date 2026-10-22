@@ -7,6 +7,7 @@
 #
 #   scripts/boltbuild.sh            # rebuild only when pgo/tttt, llvm-bolt or this script changed
 #   scripts/boltbuild.sh --force    # retrain anyway
+#   BOLT_DIR=bolt-x BOLT_EXTRA=-plt=hot PGO_DIR=... scripts/boltbuild.sh   # an experiment (pgobuild.sh's knobs)
 #   BOLT=llvm-bolt-21 scripts/boltbuild.sh   # (llvm-bolt, merge-fdata from PATH by default, or the BOLT's directory)
 #
 # No perf needed: an instrumented copy of pgo/tttt counts every edge and writes a profile per process at exit. The
@@ -14,7 +15,7 @@
 # defaults. The profiles are deleted once merged.
 set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )/.."
-B=bolt
+B=${BOLT_DIR:-bolt}
 FORCE=
 test "${1:-}" != --force || FORCE=1
 LLVM_BOLT=${BOLT:-llvm-bolt}
@@ -25,7 +26,7 @@ PGO=$(scripts/pgobuild.sh)
 mkdir -p $B
 exec 9> $B/.lock
 flock 9
-STAMP=$( { sha256sum "$PGO"; "$LLVM_BOLT" --version | head -3; cat "$0"; } | sha256sum | cut -d' ' -f1)
+STAMP=$( { sha256sum "$PGO"; "$LLVM_BOLT" --version | head -3; cat "$0"; echo "${BOLT_EXTRA:-}"; } | sha256sum | cut -d' ' -f1)
 if test -z "$FORCE" && test -x $B/tttt && test "$(cat $B/.stamp 2>/dev/null)" = "$STAMP"; then
     echo $B/tttt
     exit 0
