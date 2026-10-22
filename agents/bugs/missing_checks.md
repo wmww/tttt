@@ -33,10 +33,8 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 
 ## Mutation seed 2 leftovers (2026-10-07, `MUTATE_DIR=... scripts/mutate.py -n 8000 --seed 2`: 32 -> 13)
 Each one mutant:
-- tsc evaluation-order quirks, both "an error reported while a type is computed early": (1) typeGuardsAsAssertions
-  null-arg: `result = someFrom(isSome(null) ? result.some : makeSome())` in a `while` loop is TS2339 'some' on 'None'
-  in tsc, from the loop's flow evaluation seeing `result` as only its initial `None` while the assignment's type is in
-  flight (same family as the vue loop-flow TS2538/TS4111 note); (2) arrayFrom return-void: after a failed overload
+- tsc evaluation-order quirk, "an error reported while a type is computed early" (typeGuardsAsAssertions null-arg,
+  the other one, is fixed since d218d7336's loop partial reports): arrayFrom return-void: after a failed overload
   `Array.from(v, ({ a }): B => ({ b: a }))` with `v: void`, tsc reports TS2339 'a' on 'unknown' only when the
   body uses `a`: the binding element's type is computed (with error) from the contextual `unknown` before
   assignContextualParameterTypes replaces unknown by the pattern's type (`f(v, ({ b }) => { b; })` errors,
@@ -58,20 +56,18 @@ Each one mutant:
   tttt. Still so.
 - Diagnostic order at one position (TS2741 before TS2454 at `[d1, d2]` against `Base[]`,
   derivedTypeDoesNotRequireExtendsClause with `extends Object`): tsc's check order; not looked into further.
-- webpack flagflip leftovers (unused imports only in a JSDoc `{T=}`; TS2488 once per union in nuia, also excalidraw)
-  and vue's loop-flow TS2538/TS4111 (errors tsc reports from inside loop flow evaluations, like the
-  typeGuardsAsAssertions mutant above): order-dependent laziness in tsc, see the TS 6.0 retarget notes in triage; no cheap tttt
-  emulation. The TS7022 `labels` note (class extending any, `const old = this.labels; this.labels = []; this.labels =
+- webpack flagflip leftovers (unused imports only in a JSDoc `{T=}`; TS2488 once per union in nuia, also excalidraw):
+  order-dependent laziness in tsc, see the TS 6.0 retarget notes in triage. (vue's loop-flow TS2538/TS4111 are fixed:
+  d218d7336 reports a loop's partial evaluations.) The TS7022 `labels` note (class extending any, `const old = this.labels; this.labels = []; this.labels =
   old;` in two methods: tsc TS7022 on the first `old` and on `labels`, tttt on both `old`s) is the same family:
   which declaration's resolution meets the cycle first.
 
 ## Mutation seed 17 leftovers (2026-10-07, `scripts/mutate.py --seed 17 -n 4000`: 13 -> 7)
-- Known families: typeGuardsAsAssertions null-arg and arrayFrom null-arg (tsc's errors from loop-flow / early
-  binding-element evaluation, see seed 2 above), noCircularitySelfReferentialGetter4 (circularity only an elaboration
+- Known families: arrayFrom null-arg (tsc's errors from early binding-element evaluation, see seed 2 above), noCircularitySelfReferentialGetter4 (circularity only an elaboration
   finds, TS7022/TS7023), derivedTypeDoesNotRequireExtendsClause (diagnostic order at one position).
 
 ## Mutation seed 18 leftovers (2026-10-08, `MUTATE_DIR=... scripts/mutate.py -n 2000 --seed 18`: 11 -> 5)
-All four are check-order effects of tsc's checker reporting during type computation, which tttt's separate
+All three are check-order effects of tsc's checker reporting during type computation, which tttt's separate
 type/typecheck walks don't reproduce; none has a cheap rule.
 - **`satisfies` elaboration reaching a getter in the declaration's own initializer** (2 mutants of
   noCircularitySelfReferentialGetter3/4: `const a = { prop: 42, get self() { return a; } } satisfies { prop: string;
@@ -85,11 +81,6 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   the flow walk of a later reference `x` passes the assignment `z = 10` and isMatchingReference calls
   getResolvedSymbol(z), which reports "Cannot find name 'z'". tttt's with-body scope (`Scope.with_body`) reports
   nothing. Reproducing it means reporting a with-body name's TS2304 when a flow query visits its assignment.
-- **The loop's partial type reported too** (mut1660, selfReferencingSpreadInLoop with `let additional = undefined`,
-  noImplicitAny, not strict): tsc says TS2488 twice at `...additional`, once for `undefined` (the auto type's first
-  pass while the loop's flow type is computed: getAssignedType checks the assignment with the partial type and its
-  diagnostics stay) and once for `any[] | undefined`. tttt reports the final one only. Same family as other
-  "diagnostics of a flow-time check" divergences.
 - **text TS2345, an inferred object literal printed without its computed-name syntax** (mut1928, symbolProperty22:
   `[Symbol.unscopablesX]`, an error-typed computed name): tsc prints the argument as `{ [x: number]: (s: any) => any;
   }` (the any-named key is a number index signature, and the instantiated type has no node to reuse the name from);
@@ -247,23 +238,6 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   (n.type === 'pseudo') n.nodes[0].each(ss => ss) })`. Emulating the poisoning means modelling which of tsgo's caches
   its deepest round fills: not planned. (vue's sloppy/nosnc flagflip cells match since 2026-10-15: a nullable
   related to a union asks for its key property first, and a function declaration's return type after its body.)
-- Flag-specific ones left (flagflip, 2026-10-14):
-  - vue/nuia TS2538 renderer.ts:2633 and vue/npafis TS4111 Teleport.ts:562, an auto-typed `let v` assigned from itself
-    in a loop (`while (u-- > 0) { result[u] = v; v = p[v] }`): tsgo's *final* type of v there is any (a probe's `const z:
-    string = v` before `v = p[v]` is fine in tsc) but it reports TS2538 anyway: the error comes from an intermediate
-    evaluation of `p[v]` during the loop analysis, with v's incomplete `number | undefined`, which tsgo's
-    checkExpression reports as it goes. tttt's check walk only reports from final types. Reduced (tsc TS2538 at
-    `p[v]`, tttt nothing): `function g(p: number[], result: number[], k: number) { let u, v; v = k; u = result.length;
-    v = result[u - 1]; while (u-- > 0) { result[u] = v; v = p[v] } }` under strict + noUncheckedIndexedAccess (without
-    the `v = k` both agree). Mirroring means reporting what the loop's incomplete evaluations report: architectural.
-    (2026-10-21: reduced further, `let y; while (arr.length) { y = arr[y] }` under nuia is TS2538 in tsc,
-    and `let node; node = el; while (node && node !== anchor) node = node.nextSibling` with `el: RN | null`, `RN` an
-    index signature, is TS4111 under npafis: tsc's types baseline prints the final `any` there, so the diagnostic is
-    the incomplete evaluation's. tttt's compute() reports nothing and check.c sees only final types.)
-    Mutation testing (seed 1021) found two more of the family: selfReferencingSpreadInLoop with `let additional =
-    undefined` (tsc's TS2488 "Type 'undefined' must have a '[Symbol.iterator]()'" at `[...additional, x]` in the loop)
-    and typeGuardsAsAssertions with `isSome(null)` (tsc's TS2339 names 'None', the loop's first-round type of `result`,
-    where tttt names the final `Optional<r>` with an elaboration). Five sightings: worth a plan if the corpora show one.
 - Other diagnostics tsc reports from an evaluation order tttt doesn't have (mutation testing seed 1021, 2026-10-21,
   not attempted):
   - noCircularitySelfReferentialGetter4 with `satisfies { prop: string; self: any }` (a failing satisfies): tsc's
@@ -278,18 +252,6 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
     tttt has `any` in the object's shape: the re-entrant getter inference of re-entrancy stage D (notes/reentrancy.md).
   - destructuringWithGenericParameter with its `genericObject` declaration deleted: tsc's harness reports that the
     emit resolver added a TS2339 (its "pre-emit / post-emit diagnostic counts" TS-1 line); a baseline-harness artifact.
-  - xstate/eopt +TS2322 input.test.ts:272 (2026-10-21: tsc relates two such distinct instantiations
-    structurally as unassignable too, `type A = { input?: number } & { [K in "input"]: unknown }` against an identical
-    B is TS2375 in both since ttttExactOptionalIntersectionTargetHead, which fixed tttt's TS2322 head there; so the
-    spurious one is only tttt's second instantiation): `spawn`'s `...[options]: SpawnOptions<TActor, TSrc>` compared between two
-    instantiations ("Two different types with this name exist"): `{ input?: number } & { [K in "input"]: unknown }` is
-    not assignable to itself structurally under exactOptionalPropertyTypes (the intersection's input keeps the missing
-    type), tsgo never compares it (the same cached instantiation: identity). Small probes reuse the instantiation in
-    tttt too; not reduced. (2026-10-20: reproduces in a program of the test file alone, with vitest's types,
-    only while `const child = createMachine(...)` (the `logic: typeof child`) is local to a function: hoisted to
-    the top level it matches. So tttt makes two instantiations of the options object where tsgo makes one, and tsgo's
-    isSourceIntersectionNeedingExtraCheck skips a source member identical to the target. Which instantiation key
-    differs wasn't found: no function-expression instance is made for child's arrow.)
   - xstate/sloppy and nosnc +TS5115: gone since flagflip.py runs tttt at --checkers 1 like its --singleThreaded tsc
     cache (2026-10-20: tsgo's own TS5115 places change with --checkers). webpack/nuia UmdLibraryPlugin.js (triage.md), the -TS7006 in vue's
     pluginScoped.ts (above).
@@ -357,9 +319,6 @@ Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechec
   "Property 'a' does not exist on type 'unknown'" only when the body uses `a` (a's type computed while the parameter
   has the unknown contextual type), not for `({ a }) => {}`. Check order of a failed call; not attempted.
 - seed 61 restElementWithInitializer2 delete-stmt (x2): the seeds 41/42 "Lazy name resolution" entry below.
-- seed 62 controlFlowForStatement delete-stmt: `for (x = 5; cond; x = x.length)`: tsgo's message has the loop's
-  first-iteration type `number`, tttt the final `string | number | boolean` (with the `number` elaboration): the
-  seeds 41/42 "Flow loop partial types in messages" entry.
 - seed 62 contextualTypesNegatedTypeLikeConstraintInGenericMappedType1 undefined-init (missing TS7034): the seeds 41/42
   `typeof x` implicit-any entry.
 - seed 62 conditionalContextualReturnSubstitutionCache drop-as (render): tttt adds the related TS2208 "This type
@@ -376,11 +335,6 @@ Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechec
 
 ## Mutation seeds 41/42 leftovers (2026-10-12: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 4000 --seed 41|42`)
 Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
-- **Flow loop partial types in messages** (seed 41 typeGuardsAsAssertions null-arg and str-to-num): an error inside
-  a loop whose expression is first checked during the loop's flow analysis is reported by tsgo with the incomplete
-  (first-iteration) type: `Property 'some' does not exist on type 'None'` where tttt says `Optional<r>` (with the
-  `None` elaboration). tttt checks once with the final type. Modelling it means reporting from the flow-loop
-  evaluation (tsgo's checkExpressionCached during getTypeAtFlowLoopLabel); plan-sized, deterministic in tsgo.
 - **TS7034/TS7005 for an auto-typed `let x = undefined` read through `typeof x` in type parameter positions**:
   fixed for a function's (signature's) type parameters by seed 81 (they're in its flow container); a type alias's
   `<X extends typeof a>` and `<X = typeof a>` say nothing in tsgo nor tttt (2026-10-16 probe).
@@ -432,8 +386,7 @@ type through the member fallback (`{ type: T }` to `Partial<X>`, `Partial<C<T>>`
 - jsonRawJSON2 ann-string-number (also seed 4's missing TS2430): harness only, the shared lib program's declaration
   order (harness.md "Shared lib programs"); the CLI reports it.
 - Known families: unknownSymbolOffContextualType1 (TS7022 circularity), conditionalContextualReturnSubstitutionCache
-  (TS2208 render), narrowingDestructuring (TS2700), typeGuardsAsAssertions (loop partial types), restElementWithInitializer2
-  (lazy TS2304), selfReferencingSpreadInLoop (TS2488 twice).
+  (TS2208 render), narrowingDestructuring (TS2700), restElementWithInitializer2 (lazy TS2304).
 
 ## Mutation seed 2026102102 (2026-10-20, -n 8000: 10 -> 8 / 4003 differ)
 Fixed: TS2678/TS2352 heads name the normalized pair like TS2322's (`1` against `string | undefined` is `number` to
@@ -460,5 +413,5 @@ is declared here" for `(string[] | number[]).splice`). Left, each looked at:
 Fixed: misplaced imports/exports' alias errors (TS2305/TS2307) reported when a spelling suggestion resolves them
 (SymbolRare.unreported_errs); lone surrogates and line-breaking characters escaped in template literal type text. Left,
 all known: arrayFrom return-void, recursiveClassBaseType return-void (TS2310), noCircularitySelfReferentialGetter4
-(satisfies elaboration), typeGuardsAsAssertions str-to-num (loop partial types), unicodeLineSeparatorInMultilineComment
+(satisfies elaboration), unicodeLineSeparatorInMultilineComment
 never-const (harness writes no errors baseline).
