@@ -7103,9 +7103,20 @@ static const uint8_t skip_char_class[256] = {
     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 };
 
-// A letter, digit, `_`, `$`, `\` or non-ASCII byte
+// A letter, digit, `_`, `$`, `\` or non-ASCII byte (the classes SKIP_WORD and SKIP_DIGIT, a table of its own: the
+// word loop is most of the skipper's instructions)
+static const bool skip_word_table[256] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+};
 static inline bool skip_word_char(char c) {
-    return (uint8_t)(skip_char_class[(uint8_t)c] - SKIP_WORD) <= SKIP_DIGIT - SKIP_WORD;
+    return skip_word_table[(uint8_t)c];
 }
 
 static inline bool skip_word_is(char const* start, char const* end, char const* keyword, size_t length) {
@@ -7157,14 +7168,24 @@ static char const* skip_balanced_braces_at(ParserShared* shared, char const* s, 
     };
     while (true) {
         char c = *s;
-        switch (skip_char_class[(uint8_t)c]) {
+        uint8_t class = skip_char_class[(uint8_t)c];
+        // (The common classes first, as branches: the switch's jump is an indirect branch on the character class,
+        // which mispredicts at nearly every token)
+        if (class == SKIP_WORD) goto word;
+        if (class == SKIP_SPACE) {
+            s++;
+            while (skip_char_class[(uint8_t)*s] == SKIP_SPACE) s++;
+            continue;
+        }
+        if (class == SKIP_OTHER) goto punctuator;
+        switch (class) {
             case SKIP_END:
                 return nullptr;
             case SKIP_SPACE:
                 s++;
                 while (skip_char_class[(uint8_t)*s] == SKIP_SPACE) s++;
                 continue;
-            case SKIP_WORD: {
+            case SKIP_WORD: word: {
                 char const* start = s;
                 for (s++; skip_word_char(*s); s++) {}
                 if (skip_word_is(start, s, "import", 6) || skip_word_is(start, s, "require", 7)) return nullptr;
@@ -7291,6 +7312,7 @@ static char const* skip_balanced_braces_at(ParserShared* shared, char const* s, 
             }
         }
         // A punctuator
+    punctuator:
         s++;
         last = LAST_PUNCTUATOR;
         before_last_char = last_char;
