@@ -777,6 +777,9 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     if (timeline_phase) timeline_phase("startup");
     ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
     Program* program = program_new(errs, opts->emit_view ? emit_view_fs(opts->emit_view) : fs);
+    // (--listFilesOnly reports every syntax error and checks nothing: the bodies would be parsed for it before any walk
+    // could list them, program_deferred_bodies_parse())
+    if (opts->list_files_only) defer = false;
     program_set_defer_bodies(program, defer);
     if (opts->emit_view) {
         program_set_realpath(program, emit_view_real_path, opts->emit_view);

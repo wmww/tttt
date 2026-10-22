@@ -4506,6 +4506,12 @@ bool program_deferred_bodies_parse(Program* me) {
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* file = *i;
         DeferredBodies* list = file->deferred_bodies;
+        // (Skipped bodies the resolve walk hasn't listed yet, before it ran: they can't be parsed from here, the caller
+        // runs again without deferral)
+        if (!list && file->has_deferred_bodies) {
+            ret = false;
+            break;
+        }
         if (!list || atomic_load(&list->materialized)) continue;
         // (Parsed into the materialization's memory and dropped: the bodies are pending again, as the parser left them)
         ErrorCtx scratch = { .phase = ERROR_PHASE_PARSE };

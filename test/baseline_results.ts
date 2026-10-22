@@ -955,6 +955,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDeferredBodySyntaxErrorWithOtherErrors': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeferredCheckErrorLocation': {
         errors: true,
         symbols: true,
