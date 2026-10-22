@@ -3501,6 +3501,24 @@ static ObjectLiteralProp* literal_builder_add(LiteralBuilder* builder, ObjectLit
     return &builder->props[builder->count++];
 }
 
+// Room for `count` properties in all (a literal's own: its items up to the next spread), one allocation rather than a
+// growing one
+static void literal_builder_reserve(LiteralBuilder* builder, u32 count) {
+    if (count <= builder->cap) return;
+    builder->cap = count;
+    builder->props = realloc(builder->props, sizeof(ObjectLiteralProp) * builder->cap);
+    panic_if(!builder->props, "out of memory");
+}
+
+// How many of an object literal's items from `from` on come before the next spread (or the end)
+static u32 object_items_before_spread(ObjectExpr const* object, ObjectExprItem const* from) {
+    u32 size = (u32)vec_object_expr_item_size(object);
+    ObjectExprItem const* end = size ? vec_object_expr_item_at(object, size - 1) + 1 : from;
+    u32 n = 0;
+    for (ObjectExprItem const* i = from; i < end && i->tag != OBJECT_ITEM_SPREAD; i++) n++;
+    return n;
+}
+
 static void literal_builder_drop(LiteralBuilder* builder) {
     free(builder->props);
     free(builder->skipped);
@@ -4635,11 +4653,17 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     literal_bind(me, object, &binding);
 
     LiteralMembers members = {0};
+    bool reserved = false;
     for_each (i, vec_object_expr_item, object) {
+        if (!reserved) {
+            literal_builder_reserve(&builder, object_items_before_spread(object, i));
+            reserved = true;
+        }
         if (i->tag == OBJECT_ITEM_SPREAD) {
             literal_members_flush(me, &members, builder.index, &builder.index_count, ctx.is_const);
             if (builder.count || builder.index_count) spread_acc_props(me, &spread, &builder);
             literal_builder_drop(&builder);
+            reserved = false;
             // (Its contextual type is the literal's as given: tsc's getContextualType of a SpreadAssignment)
             // (Reduced: the members of a union that are never, by conflicting discriminants, spread nothing; tsc's
             // getReducedType in checkObjectLiteral)

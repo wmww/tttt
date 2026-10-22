@@ -3157,7 +3157,7 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pa
         if (!(part->flags & TYF_OBJECT) || ty_members(me, part)->mapped) return source;
     }
     ObjectLiteralProp* props = nullptr;
-    u32 count = 0;
+    u32 count = 0, cap = 0;
     for (u32 i = 0; i < parts.len; i++) {
         Members const* members = ty_members(me, ty_apparent_type(me, parts.data[i]));
         for (u32 j = 0; j < members->prop_count; j++) {
@@ -3175,8 +3175,11 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pa
                 if (ty_get_prop(me, ty_apparent_type(me, parts.data[k]), name)) single = nullptr;
             }
             if (single && !(single->flags & PROP_READONLY) && found.type == prop_type(me, single)) {
-                props = realloc(props, sizeof(ObjectLiteralProp) * (count + 1));
-                panic_if(!props, "out of memory");
+                if (count == cap) {
+                    cap = cap ? cap * 2 : 8;
+                    props = realloc(props, sizeof(ObjectLiteralProp) * cap);
+                    panic_if(!props, "out of memory");
+                }
                 props[count++] = (ObjectLiteralProp){ .reuse = single };
                 continue;
             }
@@ -3186,8 +3189,11 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pa
             while (origin && origin->target && !origin->decl->decl_span_count) origin = origin->target;
             TypeNode const* annotation = origin ? ty_prop_annotation(origin) : nullptr;
             if (!annotation && found.prop) annotation = mapped_prop_annotation(found.prop);
-            props = realloc(props, sizeof(ObjectLiteralProp) * (count + 1));
-            panic_if(!props, "out of memory");
+            if (count == cap) {
+                cap = cap ? cap * 2 : 8;
+                props = realloc(props, sizeof(ObjectLiteralProp) * cap);
+                panic_if(!props, "out of memory");
+            }
             props[count++] = (ObjectLiteralProp){
                 .name = name,
                 .flags = found.flags & (u32)~(PROP_READONLY | PROP_GETTER | PROP_SETTER | PROP_ACCESSOR | PROP_CLASS_GETTER),
@@ -3436,7 +3442,7 @@ Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern, bool incl
 static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern) {
     if (pattern->tag == BINDING_OBJECT) {
         ObjectLiteralProp* props = nullptr;
-        u32 count = 0;
+        u32 count = 0, cap = 0;
         IndexInfo index = {0};
         u32 index_count = 0;
         bool has_computed = false;
@@ -3469,8 +3475,11 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
                 props[at] = prop;
                 continue;
             }
-            props = realloc(props, sizeof(ObjectLiteralProp) * (count + 1));
-            panic_if(!props, "out of memory");
+            if (count == cap) {
+                cap = cap ? cap * 2 : 8;
+                props = realloc(props, sizeof(ObjectLiteralProp) * cap);
+                panic_if(!props, "out of memory");
+            }
             props[count++] = prop;
         }
         // (tsc's getTypeFromObjectBindingPattern makes it without a symbol: no inferable index)
