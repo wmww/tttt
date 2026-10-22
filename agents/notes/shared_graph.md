@@ -112,6 +112,24 @@ sharing cheap. Even a perfect 1.0x work ratio gives drizzle only -20% per-file s
 only where plain recycling thrashes: dokploy and monkeytype run 2.2-2.5x faster (measurements.md "The thrashers with
 the flag").
 
+## The ceiling, measured (2026-10-22)
+The most a shared graph could take off a checker: the share of its check instructions that only repeat what one
+checker would do once, (W(K) - W(1)) / W(K), with W the instructions inside check_share (callgrind per thread,
+`--threads K --checkers K`, release build, worker "dup"; notes/duplication.md has the method and the census):
+| corpus | K12 | K24 |
+|---|---|---|
+| vscode | 8% | 12% |
+| effect | 13% | 18% |
+| excalidraw | 29% | 38% |
+| drizzle | 54% | 63% |
+This is the upper bound a shared graph could take off the critical path, before its own 1.2-1.6x per-instruction
+overhead: on vscode (~12% at K24) the overhead alone exceeds it; drizzle-like projects (their own generic code
+instantiated per checker) are the only case for reopening. Counting types overstates it: 44% / 52% of a vscode
+checker's types are also made by another, but they are cheap ones (literals, anonymous types); types every checker
+makes are only 3-5% of a checker's (excalidraw 10-13%). K12 -> K24 on vscode adds only +4.3% instructions (77.2 ->
+80.5 G against 70.9 G at K1): the laptop's +12 CPU s for K24 is SMT accounting (24 threads on 12 cores each counting
+full time), not duplicated work.
+
 ## Before reopening it
 1. **Hardware counters on the laptop** (the human's 12-core box has them): `perf stat -e
    cycles,instructions,cache-misses,LLC-load-misses,...` and `perf c2c record` on drizzle K12, flag against plain.
