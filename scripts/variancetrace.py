@@ -18,7 +18,10 @@ TTTT_DEBUG_VARIANCE=1 log (both single-threaded) have the same format:
     CACHE S -> T = R / MAYBE S -> T        answered by the relation cache / the maybe stack
 
 Markers print as SUB/SUPER/OTHER, type parameters with their ids (`TResult@205`), anonymous types as `#...`. Indentation
-is the source stack depth (tttt's REL< is one less). Logs and extracted blocks land in /tmp/tsgo-vartrace.
+is the source stack depth (tttt's REL< is one less). Logs and extracted blocks land in /tmp/tsgo-vartrace, which keeps
+the built tsgo and its Go cache (~90 MB and more) for the next run: delete it when done. tttt's raw log prefixes its
+lines with the checker's worker (`VAR> w0 Name ... vdepth=N`, `w0   REL< ...`), which read_log() strips; tsgo's log can
+hold bytes that make grep call it binary: `grep -a` when reading either by hand.
 """
 import argparse
 import os
@@ -232,13 +235,22 @@ def normalize_tsgo(line):
     return line
 
 
+def normalize_tttt(line):
+    # (tttt's lines carry the checker's worker, `w0 ` before a REL/CACHE/MAYBE line's indentation and after VAR's
+    # keyword, and VAR> its vdepth; the relation's type ids at the end)
+    line = re.sub(r'^w\d+ ', '', line)
+    line = re.sub(r'^(VAR[<>]|VAR circular) w\d+ ', r'\1 ', line)
+    line = re.sub(r' vdepth=\d+$', '', line)
+    return re.sub(r'  @[0-9,]+$', '', line)
+
+
 def read_log(path, tsgo):
     out = []
     for line in open(path, errors='replace'):
         line = line.rstrip('\n')
         if not re.match(r'^\s*(REL|PROP|CACHE|MAYBE|VAR)', line):
             continue
-        line = normalize_tsgo(line) if tsgo else re.sub(r'  @[0-9,]+$', '', line)
+        line = normalize_tsgo(line) if tsgo else normalize_tttt(line)
         out.append(re.sub(r'#[0-9a-f.]+', '#', line))
     return out
 
