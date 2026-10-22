@@ -2152,6 +2152,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttThisInstantiatedMethodErased': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
     'ttttThisOptionalPropertyAssignmentContext': {
         errors: true,
         symbols: true,

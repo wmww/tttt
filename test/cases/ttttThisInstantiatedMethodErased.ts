@@ -1,0 +1,22 @@
+// @strict: true
+// A generic class's own declared type has its members instantiated with `this` mapped to itself (tsgo's
+// resolveTypeReferenceMembers pads the type arguments with the type) wherever a declaration of the method possibly
+// references `this` (an implementation without a return type annotation does). `this` related to a union through its
+// constraint then compares `valid` as two instantiations of the method's type, pairwise with T erased: no error. tttt
+// reads the raw method type off the declared type and compares unerased (hono's request.ts, TS2769;
+// bugs/missing_checks.md "This-instantiated members")
+type Input = { in?: {}; out?: {} };
+type VT = { json: any; form: string };
+type ToData<T extends Input['out'], Target extends keyof VT> = T extends { [K in Target]: infer R } ? R : never;
+interface R { r: string }
+declare function parseBody(request: HonoRequest | R): void;
+
+export class HonoRequest<I extends Input['out'] = {}> {
+  parseBody() {
+    return parseBody(this)
+  }
+  valid<T extends keyof I & keyof VT>(target: T): ToData<I, T>
+  valid(target: keyof VT) {
+    return 0 as any
+  }
+}

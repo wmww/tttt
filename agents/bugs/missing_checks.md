@@ -160,6 +160,27 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   missing TS2430 (jsonRawJSON2: harness only, see seed 2026102101), spurious TS2693 (reachabilityChecksNoCrash1 never-const), missing TS2698
   (nestedSpreadsAndWidening), text TS2322 (templateLiteralTypeSurrogatePairConcatenation), and known families
   (TS2310, TS2590, TS7022, localTypeParameterInferencePriority, signatureCombiningRestParameters1). Not looked at.
+### This-instantiated members (design, not built; hono request.ts TS2769, 2026-10-22)
+Repro: `test/cases/ttttThisInstantiatedMethodErased.ts` (failing, 15 lines). tsgo: a class (and a non-thisless
+interface) is its own type reference, and resolveTypeReferenceMembers pads its type arguments with the type itself for
+`this` (`[I]` -> `[I, HonoRequest<I>]`), which differs from `[I, thisType]`, so the declared type's members are an
+instantiation with `this -> HonoRequest<I>`. A method's type is really instantiated (getObjectTypeInstantiation) only
+when `this` is among its outer type parameters after the isTypeParameterPossiblyReferenced filter over *all* its
+declarations: a declaration with a body and no return annotation counts, as does `this` in a signature (the overloaded
+`valid` qualifies through its implementation; the same method with only an annotated implementation doesn't, and tsc
+then fails like tttt). Through a receiver of type `this` (getTypeWithThisArgument(C, this): arguments equal the
+parameters) the members are the raw declared ones. signaturesRelatedTo's "instantiations of the same anonymous type"
+case (source and target Instantiated, same symbol) then compares pairwise with type parameters erased: `this` related
+to `HonoRequest | R` through its constraint compares `valid` of `HonoRequest<I>` (instance) to `valid` of
+`HonoRequest<{}>` (instance) erased, passing on `T extends keyof I & ...` vs `T extends never & ...`. tttt reads the raw
+method type off the declared type, so `same_signature_origin()` (relate.c: both TY_ANONYMOUS with one target) fails and
+the single-signature path compares unerased. What tttt would change: members resolution of a class/interface's own
+declared type gives a qualifying method (tsgo's possibly-referenced rule for `this`) an instance with `this -> the
+declared type`, while `this`'s apparent type keeps the raw members; same_signature_origin then works unchanged. Not the
+relation-only patch (treating a raw method type as an instance of itself): the relation can't tell a declared-type read
+from a `this` read, and tsc compares the latter unerased. Owner: whoever owns members resolution (hot path; an extra
+instance per qualifying method).
+
 ## Local vs export symbol split
 tsc keeps one local symbol per block for a name's exported and local declarations, tttt two symbols
 (function_local_symbol_decls() and check_export_merge() patch over it; hacks.md "Exported and local declarations").
