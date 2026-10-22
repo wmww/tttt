@@ -1,0 +1,49 @@
+//// [test/cases/ttttIntersectionToGenericMappedTarget.ts] ////
+
+=== ttttIntersectionToGenericMappedTarget.ts ===
+// A generic mapped target `{ [K in keyof U]?: X }` relates only a mapped source by tsc's rules (mappedTypeRelatedTo,
+// or S[K] against the template): an intersection whose members all fail it is not related as a whole by its (no)
+// members. tttt's member-by-member fallback for generic sources passed it, which made better-drizzle's variances
+// independent and hid a TS2502 behind a 2M-type runaway (source sweep refresh 5)
+function f<T, U>(
+>f : Symbol(f, Decl(ttttIntersectionToGenericMappedTarget.ts, 0, 0))
+>T : Symbol(T, Decl(ttttIntersectionToGenericMappedTarget.ts, 4, 11))
+>U : Symbol(U, Decl(ttttIntersectionToGenericMappedTarget.ts, 4, 13))
+
+    a: { x?: number } & { [K in Exclude<keyof T, "y">]?: string },
+>a : Symbol(a, Decl(ttttIntersectionToGenericMappedTarget.ts, 4, 17))
+>x : Symbol(x, Decl(ttttIntersectionToGenericMappedTarget.ts, 5, 8))
+>K : Symbol(K, Decl(ttttIntersectionToGenericMappedTarget.ts, 5, 27))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttIntersectionToGenericMappedTarget.ts, 4, 11))
+
+    b: { [K in keyof T]?: T[K] } & { [K in keyof U]?: boolean },
+>b : Symbol(b, Decl(ttttIntersectionToGenericMappedTarget.ts, 5, 66))
+>K : Symbol(K, Decl(ttttIntersectionToGenericMappedTarget.ts, 6, 10))
+>T : Symbol(T, Decl(ttttIntersectionToGenericMappedTarget.ts, 4, 11))
+>T : Symbol(T, Decl(ttttIntersectionToGenericMappedTarget.ts, 4, 11))
+>K : Symbol(K, Decl(ttttIntersectionToGenericMappedTarget.ts, 6, 10))
+>K : Symbol(K, Decl(ttttIntersectionToGenericMappedTarget.ts, 6, 38))
+>U : Symbol(U, Decl(ttttIntersectionToGenericMappedTarget.ts, 4, 13))
+
+) {
+    const d: { [K in keyof U]?: number } = b;
+>d : Symbol(d, Decl(ttttIntersectionToGenericMappedTarget.ts, 8, 9))
+>K : Symbol(K, Decl(ttttIntersectionToGenericMappedTarget.ts, 8, 16))
+>U : Symbol(U, Decl(ttttIntersectionToGenericMappedTarget.ts, 4, 13))
+>b : Symbol(b, Decl(ttttIntersectionToGenericMappedTarget.ts, 5, 66))
+
+    const e: { [K in Exclude<keyof T, "y">]?: string } = a;
+>e : Symbol(e, Decl(ttttIntersectionToGenericMappedTarget.ts, 9, 9))
+>K : Symbol(K, Decl(ttttIntersectionToGenericMappedTarget.ts, 9, 16))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttIntersectionToGenericMappedTarget.ts, 4, 11))
+>a : Symbol(a, Decl(ttttIntersectionToGenericMappedTarget.ts, 4, 17))
+
+    const g: { [K in keyof U]?: boolean } = b;
+>g : Symbol(g, Decl(ttttIntersectionToGenericMappedTarget.ts, 10, 9))
+>K : Symbol(K, Decl(ttttIntersectionToGenericMappedTarget.ts, 10, 16))
+>U : Symbol(U, Decl(ttttIntersectionToGenericMappedTarget.ts, 4, 13))
+>b : Symbol(b, Decl(ttttIntersectionToGenericMappedTarget.ts, 5, 66))
+}
+

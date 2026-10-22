@@ -229,6 +229,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttConditionalAliasVarianceDefaultConstraint': {
+        errors: undefined,
+        symbols: undefined,
+        types: undefined,
+    },
     'ttttConditionalCallableAgainstAnyFunction': {
         errors: true,
         symbols: true,
@@ -1430,6 +1435,11 @@ const baselines = {
         types: true,
     },
     'ttttIntersectionTargetThisProps': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttIntersectionToGenericMappedTarget': {
         errors: true,
         symbols: true,
         types: true,

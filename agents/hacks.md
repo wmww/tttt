@@ -437,8 +437,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   the memberless mapped types the fallback passes stand in for its rules between two generic mapped types (`Readonly<T>`
   to `T`). Carve-outs keep tsc's False for an object source without properties, arrays and non-variadic tuples, and
   (2026-10-20) any object source with non-generic keys (atproto's `$Typed`, mikro-orm's `OperatorMap<T>` against
-  `EntityProps<T>`). Returning outright loses circularConstrainedMappedTypeNoCrash, restTypeRetainsMappyness,
-  mappedTypeRelationships and zod's SortItem<output<T>> (generic keys) against `{ [K in keyof A | keyof B]: (A & B)[K] }`.
+  `EntityProps<T>`), and (2026-10-22, cor6) every intersection source: its members were each tried before (mapped
+  ones by the rules above), and the memberless pass made better-drizzle's `{...} & { [K in X<sub>]?: ... }` to
+  `{ [K in X<super>]?: ... }` True, its variances independent and its TS2502 cut a 2M-type runaway
+  (ttttIntersectionToGenericMappedTarget). What remains: a generic non-intersection source with generic keys (a type
+  parameter, an indexed access, a conditional, a generic mapped type that mapped_related() rejected). Returning outright
+  loses circularConstrainedMappedTypeNoCrash, restTypeRetainsMappyness, mappedTypeRelationships and zod's
+  SortItem<output<T>> (generic keys) against `{ [K in keyof A | keyof B]: (A & B)[K] }`.
 
 ## Type core (`src/ty/`)
 - **Two circularity diagnostics come from printing a type for its side effects** (the string is dropped):

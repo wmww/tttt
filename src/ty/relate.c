@@ -6387,7 +6387,7 @@ static Ternary structured_related_members(
         // HACK: a generic source falls through to the member-by-member comparison, which a mapped type without
         // members passes: it stands in for tsc's rules between two generic mapped types (mappedTypeRelatedTo), a
         // homomorphic Readonly<T> and T, and the like, which don't exist here yet
-        if (related || !(source->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return related;
+        if (related || !(source->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || source->kind == TY_INTERSECTION) return related;
         // (tsc's structuredTypeRelatedToWorker returns False for a generic mapped target unless the source is a mapped
         // type too, whatever else it is; generic_mapped_target_related() isn't complete enough to rely on that: zod's
         // SortItem<output<T>> against its Flatten-like `{ [K in keyof A | keyof B]: (A & B)[K] }` needs the fallback.
