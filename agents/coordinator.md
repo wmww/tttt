@@ -30,6 +30,11 @@ wants to talk to you at any time, so between reports you are idle and the agents
   rather than fund constant factors.
 - A diagnosis track with a written verdict can settle several open questions at once: "dup" (notes/duplication.md)
   closed both the scheduling question and the shared graph's ceiling in one worker-session.
+- A diagnosis track that ends "don't build" is a result, not a failure, and costs about one worker-session: budget
+  for it. In one round five of them (duplication, variance sharing, a cost-estimate deal, interning names, clang)
+  each closed a direction for good.
+- Shortcuts in a dispatch (the parser's first-word dispatch, quick character tests) land with a `VERIFY_GATES`-style
+  build: the fast path checked against the slow path, panicking on disagreement, run over the suite and corpora.
 - **Unfixed divergences become known-failing tests** in `test/cases` (the results file records per-component
   pass/fail), so the next attempt starts from a repro. Decline heuristics that reconstruct tsc's check order (the
   deferred-body one): they pass a test and fail the next shape.
@@ -77,9 +82,11 @@ after every ~30 picks of checker code (it finds what the batch can't: a memory c
 K-dependences, a history dependence; once it caught the one regression the batch missed); stop after a long idle
 spell. Have it rewrite its pick/check scripts (ten minutes) rather than hunting for old ones.
 
-Lessons of the 2026-10-22 round for the merger: the per-batch gate must not include vscode's 25-minute callgrind (once
-per round, at the end); it reports per landed batch (what landed, its gate numbers), not per cycle; anything touching
-malloc tuning (`mallopt`, `M_TOP_PAD`) at many threads needs an RSS gate next to the wall.
+Lessons for the merger: the per-batch gate must not include vscode's 25-minute callgrind (once per round, at the
+end); it reports per landed batch (what landed, its gate numbers), not per cycle; anything touching malloc tuning
+(`mallopt`, `M_TOP_PAD`) at many threads needs an RSS gate next to the wall; commits that touch only scripts or
+`agents/` skip the oracle gates. A merger applying a rule the human already stated (speed over memory: the 16 KB
+checker policy at +13% RSS) without asking you is doing its job.
 
 ## While they run
 - **Decide fast, in a paragraph with reasons.** Workers ask for decisions (design, gate relaxation, budget overrun)
@@ -101,6 +108,11 @@ malloc tuning (`mallopt`, `M_TOP_PAD`) at many threads needs an RSS gate next to
 - A win is a number against the same base build in the same worktree, A/B interleaved, load stated. "Within noise"
   is not a win. A rarer flake without a named mechanism is not a fix. Attribute instruction jumps before celebrating
   them (a -15% on drizzle was mostly a memory policy, not checker speed).
+- **Check a surprising number's instrument before chasing it.** A census counter that summed type ids across id
+  chunks once reported a "25x blow-up"; one more measurement with a different counter dispelled it.
+- **Cycles-level claims need the laptop.** Cachegrind's icache proxy over-predicted `-fno-peel-loops` and
+  under-predicted BOLT; interning looked good in instructions and lost in cycles. Ask the human for `perf stat` on
+  the laptop before a layout, compiler or memory-system change becomes a decision.
 - Tests and oracles are the gate, speed on real projects is the goal, correctness is never traded. A feature faster
   on some projects and slower on others is a policy question (when to turn it on), not a default.
 - Write each verdict where the next reader looks: design knowledge in `agents/notes/`, numbers with the command and

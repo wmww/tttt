@@ -3,9 +3,9 @@ The live list of directions and ideas, roughly in order (vision.md "Direction" s
 is known, where the numbers are. Delete an entry when it lands, leaving its numbers in measurements.md; add new ones
 where they fit the order. Uninvestigated items go to triage.md, known bugs to `bugs/*.md`.
 
-Starting point: measurements.md "Oracle totals (2026-10-22, 2989c0f05)" and "The 12-core box at f2ad73c9".
-`test/instrcount.txt` is at a recycle-free K1 (the memory default), so a jump against it needs attribution (policy or
-code) before it is celebrated.
+Starting point: measurements.md "Oracle totals (2026-10-23, d01aee7a8)" and the laptop's three sections of
+2026-10-22 (at 2989c0f0, 8e3f4fb0, 277be4bc). `test/instrcount.txt` is fast/tttt (BOLT) at a recycle-free K1, so a
+jump against it needs attribution (policy, build or code) before it is celebrated.
 
 ## Always first: the re-pin to TypeScript 7.1.0 stable
 When `npm view typescript dist-tags` shows `latest` 7.1.x (on 2026-10-22: latest 7.0.2, next 7.1.0-dev, beta
@@ -29,35 +29,47 @@ Done when `grep -rn fed0bf24 scripts src test thirdparty/*.sh` is empty, no orac
 suite's lost list is fixed or written up. tsgo's `.tsbuildinfo` `version` string would matter only if a buildinfo is
 ever written (it isn't).
 
-The re-pin above is direction 5 (vision.md "Direction").
+The re-pin above is direction 6 (vision.md "Direction"). The human's priorities for the rest: distinctly faster than
+bun; threading efficiency on mid-size and small projects is the key; easy wins first; the correctness long tail
+continues.
 
-## 1. The parser as a structural project
-~12% of vscode's K1 instructions with no hot site (a `Parser` copy per speculative attempt, 74M child creations for
-138 MB of source, no token stream), and on the check phase's critical path at the defaults: deferred bodies are parsed
-on the checker threads. First measure parse CPU inside the check phase with `bench/timeline/` (the whole-process
-timeline tool) at the defaults on vscode, so the win is priced before the rewrite. Then a token per position and node
-arenas, a rewrite of src/parser.c with the suite and `scripts/syntaxstats.py` as its oracle (error recovery stays: the
-one list/commit-point framework, vision.md "Decisions"). A spike on one construct family measured on vscode's parse CPU
-is a fine first step if its code becomes the skeleton.
+## 1. The small-program floor (front end, easy wins first)
+fe3's leads (2026-10-23; numbers from nest and vscode on this box, strace and the timeline):
+- **lib.dom's parse**: 2.4 MB on one thread, 12-20 ms of nest's libs phase; the chunked parse is sketched in
+  notes/front_end.md "The parser" (the walk is already chunked: `TTTT_WALK_CHUNK_BYTES`).
+- **A persistent thread pool**: nest starts 71 threads (react 67), each phase creates and joins its own (~1 ms on
+  nest). ~58 thread-locals assume one phase per thread: audit them first.
+- **Link in parallel per import-cycle level** (bun's design, notes/bun_concurrency.md): 30-40 ms on vscode.
+- **Stats from directory listings** in CachedFs: nest 7.8k `newfstatat` + 10k `readlink` (8.4k failing), vscode
+  8.2k + 10.7k.
+- **The module resolver's lock**: `module_resolver_resolve_shared`'s lock is ~57% of vscode's blocked load-phase
+  samples. nest's remaining futexes are 85% the load pool's own mutex and condvars.
+- **`clock_gettime` as real syscalls** (nest 4.4k, vscode 21k): some clock isn't vDSO-served.
+- The `read()` hybrid for files under 16 KB (`TTTT_TEXT_READ_BELOW`) covers 97% of nest's files, 44% of its bytes;
+  its chunks must stay `MAP_POPULATE`.
+Gates: the suite, corpora, threadcheck/checkerdiff byte-identical; malloc or thread changes an RSS gate at many
+threads; walls from the laptop.
 
-## 2. The memory system
-IPC is ~1.2 and cachegrind estimates half the cycles stalled; checker constant factors are mined out (0.1-0.5% a site,
-notes/checker_speed.md). The stall ranking there (instruction footprint ~42%, hash table first probes ~10%, Ty header
-reads ~5%) is a simulation: before choosing between hash-table layout (8-byte entries, hot kinds in their own table),
-`Ty` header layout and allocation volume, get the laptop's hardware counters: `perf stat` and `perf record` at K1 and
-at the defaults, topdown, on vscode and drizzle. Lazy message formatting (2.6% on drizzle) is blocked on hacks.md's
-"Two circularity diagnostics come from printing a type for its side effects" being fixed tsc's way first.
+## 2. Checker threads' malloc heaps
+Checker threads grow their glibc heaps 4 KB at a time: ~13k `mprotect`s on vscode, 3-7% of checker samples (mm lock
+held for writing while others fault). Sites: lazy_type_state 7141, declare_class_members 1816, declare_symbol_flags
+1435, literal_builder_add 911, unused_register 619 (triage.md). Move them into the checker's arena; `M_TOP_PAD` does
+not help (tried). unused_register's cross-arena free is already fixed (malloc-lock waits 8% -> 0.6% of samples).
 
-## 3. Front end round 2 (after the laptop's timeline)
-Round 1 landed (the include walk on its own thread streaming roots to the loader, prefetch in link's alias loop, module
-refs on threads, a 16 MB malloc top pad during the front end, `absolute_path_fast`). Next, once the laptop's
-`bench/timeline/` run shows what is left serial: names interned per program (link, declare and the walk compare names
-in source text today), then the two-phase link (notes/front_end.md; decided against at the old ~2.5 s wall, worth
-re-checking). Any malloc tuning (`M_TOP_PAD` and friends) needs an RSS gate at many threads.
+## 3. Code footprint
+Still ~50% frontend-bound after BOLT and huge text (op cache hit 63%, icache misses 23% of fetches at 2989c0f0):
+the working set is what is left. Candidates in notes/code_layout.md: fewer inlined copies, relate.c's inline-unit
+growth, the parser's hot path. Every claim confirmed with the laptop's counters (cachegrind's icache proxy misjudged
+both `-fno-peel-loops` and BOLT).
 
 ## 4. Correctness long tail (continuous)
 New real-code sightings first; every unfixed divergence gets a known-failing test in `test/cases`. Grep `bugs/` for a
 repository's name before investigating it (the source sweep's leftovers are all written up there). Open:
+- **The third refresh (cor3)**: 40 repositories, day one 115 / 122 projects (94.3%), 4 root causes: TypeBox's
+  Record/Enum partial, a Vue auto-import global, a spurious TS7022, a TS2322 on select options.
+- **The bun-lockfile slice** next: 16 application repositories with only a `bun.lock` were skipped because
+  `thirdparty/ensure-sources.sh` has no `bun install` (a pinned bun, `--frozen-lockfile --ignore-scripts`; wt-cor3's
+  triage entry and repos.txt's "Refresh 4" comment).
 - **hono's TS2769**: tsgo keeps a this-instantiated method type apart from the declared one, tttt merges them (design
   in bugs/sourcesweep_build.md; known-failing test ttttThisInstantiatedMethodErased).
 - **The seed-62 spurious getter circularities** (recursiveTypeInference `_zod?` line 28, noCircularitySelfReferentialGetter2
@@ -67,8 +79,15 @@ repository's name before investigating it (the source sweep's leftovers are all 
 - **The error pass's first check of a callback argument** (TS2339), **the binding-element family**:
   bugs/missing_checks.md.
 - Mutation seeds yield less each time; parser-recovery mutants (58-77 per seed, `scripts/mutate.py`,
-  `failstats.py --syntax`) are untouched. Oracle refreshes with repositories picked by a new rule (vision.md
-  "Decisions").
+  `failstats.py --syntax`) are untouched.
+
+## 5. Mid-size threading: a design memo, not a build
+The duplication across checkers is inherent per checker (vscode 1.09x at K12, drizzle 2.15x; notes/duplication.md);
+affinity, block stealing, cost-estimate dealing, the shared graph and variance sharing are measured and closed
+(vision.md "Decisions"). The one shape not yet tried is bun's: types published at creation into one hash-consed
+store, results in per-file batches into dense tables, ~90% never published (notes/bun_concurrency.md). A memo must
+first show how tttt's output stays deterministic without bun's rollback (which needs id-free ordering). Only then a
+prototype, measured on drizzle (the laptop: the shared-graph flag's -26% instructions bought only -9% cycles there).
 
 ## Smaller ideas
 - **A snapshot-style recycle for the thrashers** (dokploy, monkeytype, supabase studio): bugs/perf_leads.md "Shared

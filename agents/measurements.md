@@ -14,8 +14,8 @@ Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only whe
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
 ## How to measure (notes that still hold)
-- **Instructions**: `scripts/instrcount.sh` (callgrind, K1 T1, pgo/tttt since 2026-10-19; saved in `test/instrcount.txt`,
-  vscode 68.31 G there at 7f3cd4fbb). Callgrind counts run ~3% above `perf stat -e instructions:u`: don't compare across tools. At
+- **Instructions**: `scripts/instrcount.sh` (callgrind, K1 T1, fast/tttt since 92828ad6e (pgo/tttt 2026-10-19 ..
+  10-22): `fastbuild.sh --measured`; saved in `test/instrcount.txt`, vscode 66.36 G there at d01aee7a8). Callgrind counts run ~3% above `perf stat -e instructions:u`: don't compare across tools. At
   K1 the counts include recycling's warm-ups (type-fest, drizzle, vscode recycle at 256 MB): compare with
   `--checker-memory off` for the checker's own work. instrcount gives valgrind a 64 MB main stack (type-fest's
   IntRange needs ~16 MB). A worktree with symlinked corpora can measure some corpora differently (nest +8% once):
@@ -885,17 +885,39 @@ claim_and_measure() is gone (not just off). Base = de94e1179 (lock on, stamps of
   (lock) 0.417 / 0.439: the lock's +54% is gone and the flag now beats the defaults. Effect defaults 0.267 / 0.271,
   flag 0.293 / 0.297, base flag 0.281 / 0.286: effect is still +10% over the defaults (it was +17% at G2).
 
-## Oracle totals (2026-10-22, 2989c0f05)
-The merger's final `scripts/oracles.py` of the fourth coordinator's first round, at ai-main 2989c0f05 (the previous
-totals were 8a2bb4b38's, earlier on 2026-10-22: `git log -S'Oracle totals (2026-10-22, 8a2bb4b38)' --
-agents/measurements.md`). Suite 13979 / 14015 (was 13972 / 14006), 0 lost; the two failing own tests fail by design
-(ttttThisInstantiatedMethodErased: hono's this-instantiated members; ttttDeferredBodyBeforeContextualParameters: tsc's
-deferred-body check order). The same with `--no-defer-bodies`; `--checker-memory 0`: 0 of 17652 differ. Every corpus
-0/0 but vue 0/2 (tsgo's TS5115 runaway artifact), DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 16 / 2 / 2
-(was 18 / 3 / 2; all 20 left are vue pluginScoped.ts, won't fix), source sweep `--sample 4` 1272 / 1274 (the full
-sweep is clean on angular-cli now), `-b` sweep 411 / 416, dtsdiff 1328 / 1350 projects (105145 / 106222 files), clidiff
-3824 / 3831, kdiff 3 / 3814 and recycle 3 / 3814 (rxjs, sequelize x2: tsgo-shared), perfsweep worst types ratio 1.40
-(lit tsserver-plugin). Instructions: "Single-threaded checker speed" below and `test/instrcount.txt`.
+## Oracle totals (2026-10-23, d01aee7a8)
+The merger's `scripts/oracles.py` after wt-fe3's round, at d01aee7a8 (main c3440976e; the previous totals were
+2989c0f05's: `git log -S'Oracle totals (2026-10-22, 2989c0f05)' -- agents/measurements.md`). Suite 13982 / 14018 (was
+13979 / 14015), 0 lost; the two failing own tests fail by design (ttttThisInstantiatedMethodErased: hono's
+this-instantiated members; ttttDeferredBodyBeforeContextualParameters: tsc's deferred-body check order). The same with
+`--no-defer-bodies`; `--checker-memory 0`: 0 of 17655 differ. Every corpus 0/0 but vue 0/2 (tsgo's TS5115 runaway
+artifact), DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 16 / 2 / 2 (all vue pluginScoped.ts, won't fix),
+source sweep `--sample 4` 1272 / 1274, `-b` sweep 411 / 416, dtsdiff 1328 / 1350 projects, clidiff 3824 / 3831, kdiff
+3 / 3814, recycle 3 / 3814 (rxjs, sequelize x2: tsgo-shared; plus one timeout under load, unconfirmed), perfsweep
+median check ratio 0.19, worst types ratio 1.40 (lit tsserver-plugin).
+
+**The round's instructions** (`scripts/instrcount.sh`, callgrind K1, fast/tttt, `test/instrcount.txt` at 92828ad6e ->
+d01aee7a8; the parser round, the front end rounds 2/3 and the correctness fixes together), G:
+
+| corpus | before | after | |
+|---|---|---|---|
+| vscode | 68.14 | 66.36 | -2.6% |
+| nest | 0.944 | 0.914 | -3.1% |
+| tsc | 3.690 | 3.582 | -2.9% |
+| webpack | 7.778 | 7.564 | -2.7% |
+| react | 1.140 | 1.116 | -2.1% |
+| excalidraw | 5.704 | 5.590 | -2.0% |
+| effect | 7.403 | 7.264 | -1.9% |
+| valibot, vue, xstate, zod | | | -1.7..-1.8% |
+| drizzle, tanstack-router | | | -1.1% |
+| type-fest | 8.182 | 8.138 | -0.5% |
+
+The parser's part (notes/front_end.md "The parser"): vscode's parse 11.04 -> 9.50 G (-14%), child parsers 73M -> 41M;
+K1 tsc -2.3..-2.9%, webpack -2.1..-2.8%, nest -1.9..-3.1%. Front end syscalls: nest readlink 7.7k -> 1.4k (realpath
+cache per directory), vscode mmap 12.8k -> 4.1k (`read()` below 16 KB), nest's export-star link 12 -> 1.4 ms; checker
+malloc-lock waits 8% -> 0.6% of samples (unused_register). Walls, cycles and hardware counters for the same round are
+the laptop's: "The 12-core box at 2989c0f0" (the bench against bun, topdown), "... at 8e3f4fb0" (BOLT, interning
+declined), "... at 277be4bc" (huge text, -fno-peel-loops, clang, the shared-graph flag on drizzle).
 
 ## Oracle totals with and without the shared graph (2026-10-21/22, plain at 9032ae214 and 8d693aeb5)
 Suite 13962 / 13996 (dts 1887 / 1909; `scripts/passcount.py`), `--no-defer-bodies` and `--checker-memory 0` unchanged,
