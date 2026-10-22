@@ -46,3 +46,5 @@ intersection's property symbol to bugs/type_core.md.
   `[0 0 0]` (tsgo covariant-unreliable, tttt invariant), the tables `[16]` against `[17]`, `AnyColumn` 24 against 8,
   `PgColumnBuilder`'s last 4 (independent) against 3. drizzle's output matches anyway; `--block NAME` shows one side by
   side. Unexamined: which side's measurement order differs first.
+
+- Types baselines: import type specifiers differ from tsgo's. With `moduleResolution: bundler` tttt prints `import("./x.js")` where tsgo prints `import("./x")`; with nodenext + allowImportingTsExtensions tttt keeps `.ts`, tsgo drops it. Seen in test/cases/ttttTypeofLocalFreeParams.ts while its options were being chosen (repro: that file with `// @module: esnext` / `// @moduleResolution: bundler`).
