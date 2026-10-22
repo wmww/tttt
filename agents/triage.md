@@ -68,3 +68,15 @@ intersection's property symbol to bugs/type_core.md.
   was almost all of them; also Hikari, SveltyCMS, better-svelte-email, gramio, StreamBot, mcp-linker: repos.txt's
   "Refresh 4" comment lists them). Adding `bun install --frozen-lockfile --ignore-scripts` (a pinned bun next to the
   pinned node) would open that slice: modern application code, where private projects live.
+
+- The oracle's recycle mode (`scripts/oracles.py` -> `scripts/kdiff.py -k 1 -m 0`, 300 s per side) times out
+  dokploy/apps/dokploy under load (2026-10-22, two oracles runs at load ~25-30): alone with the oracle's flags
+  (`--threads 1 --checkers 1 --checker-memory 0`) it takes 310-322 s at load 26 and exits 0, slow not stuck (kdiff.py's
+  docstring: ~270 s quiet). Either raise that mode's cap to 600 s in oracles.py/kdiff.py or accept the "1 timed out"
+  noise in the recycle line.
+
+- The perfsweep tsgo cache (`test/perfsweep/tsgo.jsonl.gz`) lacks the source sweep refresh 4's 40 repos (~71 projects):
+  the oracles run at d5d4cb2fc measured them at load ~25 (a slow tsgo side flatters tttt), so it wasn't committed; that
+  loaded copy is at /tmp/wt-merge-scratch/perfsweep-tsgo-d5d4cb2fc.jsonl.gz (scratch, may be gone). Regenerate the new
+  projects' lines from the main tree when `uptime` shows load < 4 (`scripts/perfsweep.py --tsc` or its per-project
+  refresh) and commit that file alone.
