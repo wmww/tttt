@@ -209,7 +209,7 @@ same-named property pairs that relate as distinct types (`sourceProp != targetPr
   ty_resolving_cycle() is hit there): the literal's mentions are first asked while its getter is lazy (unknown, keyed
   by the whole mapper) and later answered (identity), so the same literal has instances of both kinds, and which ones
   meet in a relation decides the verdict. Making the early "unknown" permanent passes the corpus test but not this
-  probe, which **fails on ai-main already** (tsgo is clean): `/tmp/a-probes/zod-getter-probe.ts` content, a function
+  probe, which **fails on main already** (tsgo is clean): `/tmp/a-probes/zod-getter-probe.ts` content, a function
   with `const TaskListNodeSchema = z.strictObject({ type: z.literal("taskList"), get content() { return
   z.array(z.tuple([TaskListNodeSchema, z.union([TaskListNodeSchema])])).min(1); } })`, `type T = z.infer<typeof
   TaskListNodeSchema>`, a recursive `_T = { type: "taskList"; content: [_T, _T][] }` and `const y: _T = x as T` (spurious

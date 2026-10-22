@@ -4,10 +4,10 @@ lasts: no fixed sessions, no fixed number of workers. This is advice from the co
 human instruction overrides any line here.
 
 ## The job
-Turn the human's goal into a few parallel tracks, keep `ai-main` green, decide, and relay. You mostly don't code:
+Turn the human's goal into a few parallel tracks, keep `main` green, decide, and relay. You mostly don't code:
 your context is the scarce resource, so read reports, notes and measurements, never transcripts or dumps. The human
 wants to talk to you at any time, so between reports you are idle and the agents' messages wake you. You own
-`agents/` and the commits on `ai-main`; anyone may write code or edit vision.md when that is the most useful thing.
+`agents/` and the commits on `main`; anyone may write code or edit vision.md when that is the most useful thing.
 
 ## Before spawning anything
 1. **Check the premise with numbers you can see.** A direction in todo.md is a hypothesis, not an order: read the
@@ -54,7 +54,7 @@ brief, you don't understand the task yet. The common rules, each learned from an
   killed one. Kill by a PID you started. Never `rm` a path built from a shell variable (literal paths, or
   `"${S:?}"/...`).
 - Commit early with real messages; never amend or rebase an already-made commit (the merger picks by hash); rebase
-  onto `ai-main` before a new commit once other tracks touch the same files.
+  onto `main` before a new commit once other tracks touch the same files.
 - Validate: the suite (`scripts/fasttest.sh --summary`), the corpora, byte-identical output across checker and
   thread counts (`checkerdiff.py`, `threadcheck.sh`), instruction counts against the base built in the same worktree
   (`scripts/instrcount.sh --bin`; worktree numbers aren't comparable with `test/instrcount.txt`).
