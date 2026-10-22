@@ -1,0 +1,84 @@
+//// [test/cases/ttttInferRestTupleFixedPositions.ts] ////
+
+=== ttttInferRestTupleFixedPositions.ts ===
+// A rest parameter of a tuple type starting with fixed elements: those are parameters of their own, and the rest of
+// the source goes to what follows them (tsc's applyToParameterTypes with getParameterCount/getEffectiveRestType)
+type R0<F> = F extends (...args: [1, ...infer R]) => void ? R : never;
+>R0 : Symbol(R0, Decl(ttttInferRestTupleFixedPositions.ts, 0, 0))
+>F : Symbol(F, Decl(ttttInferRestTupleFixedPositions.ts, 2, 8))
+>F : Symbol(F, Decl(ttttInferRestTupleFixedPositions.ts, 2, 8))
+>args : Symbol(args, Decl(ttttInferRestTupleFixedPositions.ts, 2, 24))
+>R : Symbol(R, Decl(ttttInferRestTupleFixedPositions.ts, 2, 45))
+>R : Symbol(R, Decl(ttttInferRestTupleFixedPositions.ts, 2, 45))
+
+declare const a: R0<(...args: []) => void>;
+>a : Symbol(a, Decl(ttttInferRestTupleFixedPositions.ts, 3, 13))
+>R0 : Symbol(R0, Decl(ttttInferRestTupleFixedPositions.ts, 0, 0))
+>args : Symbol(args, Decl(ttttInferRestTupleFixedPositions.ts, 3, 21))
+
+declare const b: R0<() => void>;
+>b : Symbol(b, Decl(ttttInferRestTupleFixedPositions.ts, 4, 13))
+>R0 : Symbol(R0, Decl(ttttInferRestTupleFixedPositions.ts, 0, 0))
+
+declare const c: R0<(x: 1) => void>;
+>c : Symbol(c, Decl(ttttInferRestTupleFixedPositions.ts, 5, 13))
+>R0 : Symbol(R0, Decl(ttttInferRestTupleFixedPositions.ts, 0, 0))
+>x : Symbol(x, Decl(ttttInferRestTupleFixedPositions.ts, 5, 21))
+
+declare const d: R0<(x: 1, y: 2) => void>;
+>d : Symbol(d, Decl(ttttInferRestTupleFixedPositions.ts, 6, 13))
+>R0 : Symbol(R0, Decl(ttttInferRestTupleFixedPositions.ts, 0, 0))
+>x : Symbol(x, Decl(ttttInferRestTupleFixedPositions.ts, 6, 21))
+>y : Symbol(y, Decl(ttttInferRestTupleFixedPositions.ts, 6, 26))
+
+declare const e: R0<(x: 1, ...ys: string[]) => void>;
+>e : Symbol(e, Decl(ttttInferRestTupleFixedPositions.ts, 7, 13))
+>R0 : Symbol(R0, Decl(ttttInferRestTupleFixedPositions.ts, 0, 0))
+>x : Symbol(x, Decl(ttttInferRestTupleFixedPositions.ts, 7, 21))
+>ys : Symbol(ys, Decl(ttttInferRestTupleFixedPositions.ts, 7, 26))
+
+type Shift<A extends Array<any>> = ((...args: A) => void) extends (...args: [A[0], ...infer R]) => void ? R : never;
+>Shift : Symbol(Shift, Decl(ttttInferRestTupleFixedPositions.ts, 7, 53))
+>A : Symbol(A, Decl(ttttInferRestTupleFixedPositions.ts, 9, 11))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>args : Symbol(args, Decl(ttttInferRestTupleFixedPositions.ts, 9, 37))
+>A : Symbol(A, Decl(ttttInferRestTupleFixedPositions.ts, 9, 11))
+>args : Symbol(args, Decl(ttttInferRestTupleFixedPositions.ts, 9, 67))
+>A : Symbol(A, Decl(ttttInferRestTupleFixedPositions.ts, 9, 11))
+>R : Symbol(R, Decl(ttttInferRestTupleFixedPositions.ts, 9, 91))
+>R : Symbol(R, Decl(ttttInferRestTupleFixedPositions.ts, 9, 91))
+
+declare const s0: Shift<[]>;
+>s0 : Symbol(s0, Decl(ttttInferRestTupleFixedPositions.ts, 10, 13))
+>Shift : Symbol(Shift, Decl(ttttInferRestTupleFixedPositions.ts, 7, 53))
+
+declare const s1: Shift<Shift<[]>>;
+>s1 : Symbol(s1, Decl(ttttInferRestTupleFixedPositions.ts, 11, 13))
+>Shift : Symbol(Shift, Decl(ttttInferRestTupleFixedPositions.ts, 7, 53))
+>Shift : Symbol(Shift, Decl(ttttInferRestTupleFixedPositions.ts, 7, 53))
+
+declare const s2: Shift<[1, 2, 3]>;
+>s2 : Symbol(s2, Decl(ttttInferRestTupleFixedPositions.ts, 12, 13))
+>Shift : Symbol(Shift, Decl(ttttInferRestTupleFixedPositions.ts, 7, 53))
+
+type R1<F> = F extends (a: string, ...args: [number, ...infer R]) => void ? R : never;
+>R1 : Symbol(R1, Decl(ttttInferRestTupleFixedPositions.ts, 12, 35))
+>F : Symbol(F, Decl(ttttInferRestTupleFixedPositions.ts, 14, 8))
+>F : Symbol(F, Decl(ttttInferRestTupleFixedPositions.ts, 14, 8))
+>a : Symbol(a, Decl(ttttInferRestTupleFixedPositions.ts, 14, 24))
+>args : Symbol(args, Decl(ttttInferRestTupleFixedPositions.ts, 14, 34))
+>R : Symbol(R, Decl(ttttInferRestTupleFixedPositions.ts, 14, 61))
+>R : Symbol(R, Decl(ttttInferRestTupleFixedPositions.ts, 14, 61))
+
+declare const f: R1<(a: string) => void>;
+>f : Symbol(f, Decl(ttttInferRestTupleFixedPositions.ts, 15, 13))
+>R1 : Symbol(R1, Decl(ttttInferRestTupleFixedPositions.ts, 12, 35))
+>a : Symbol(a, Decl(ttttInferRestTupleFixedPositions.ts, 15, 21))
+
+declare const g: R1<(a: string, b: number, c: boolean) => void>;
+>g : Symbol(g, Decl(ttttInferRestTupleFixedPositions.ts, 16, 13))
+>R1 : Symbol(R1, Decl(ttttInferRestTupleFixedPositions.ts, 12, 35))
+>a : Symbol(a, Decl(ttttInferRestTupleFixedPositions.ts, 16, 21))
+>b : Symbol(b, Decl(ttttInferRestTupleFixedPositions.ts, 16, 31))
+>c : Symbol(c, Decl(ttttInferRestTupleFixedPositions.ts, 16, 42))
+

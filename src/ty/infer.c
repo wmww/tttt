@@ -331,6 +331,48 @@ static Ty const* source_type_at(Checker* me, Signature const* sig, u32 i, TyMapp
     return ty_rest_element_type(me, rest);
 }
 
+static u32 tuple_fixed_length(TupleShape const* shape);
+
+// The rest type of a rest parameter of type `type` past its tuple's leading fixed elements (tsc's getEffectiveRestType),
+// null for a tuple without a variable part
+static Ty const* effective_rest_type(Checker* me, Ty const* type) {
+    TupleShape const* shape = ty_is_tuple(type) ? ty_tuple_shape(type) : nullptr;
+    u32 fixed = shape ? tuple_fixed_length(shape) : 0;
+    if (!fixed) return type;
+    return fixed < shape->arity ? ty_slice_tuple(me, shape, ty_reference_args(me, type), fixed, 0) : nullptr;
+}
+
+// From the parameters of `source` from position `pos` on to a rest parameter type of the target (tsc's
+// applyToParameterTypes: getRestTypeAtPosition(source, paramCount) to the target's effective rest type)
+static void infer_from_rest_params(
+    Checker* me, Inference* inf, InferStep step, Signature const* source, u32 pos, TyMapper const* mapper, Ty const* target_rest
+) {
+    SigResolved const* source_r = sig_res(me, source);
+    // `(...args: A) => any`: the rest of the source's parameters as a tuple
+    // (A lone rest parameter as it is, unless it's a tuple: its elements are parameters, and tsc's
+    // getRestTypeAtPosition makes a new tuple of them, mutable unless inferring to a const type parameter;
+    // only the variable tail tsc's getEffectiveRestType slices off a tuple starting with one is mutable
+    // either way: `(...args: readonly [s: string]) => R` infers `[s: string]` for `Fn<infer P>`)
+    Ty const* rest = pos < source_r->param_count && source_r->params[pos].rest && pos + 1 == source_r->param_count ?
+        ty_instantiate(me, source_r->params[pos].type, mapper) : nullptr;
+    bool starts_variable = false;
+    if (rest && ty_is_tuple(rest) && !ty_is_generic_tuple(me, rest)) {
+        TupleShape const* shape = ty_tuple_shape(rest);
+        starts_variable = shape->arity && (shape->flags[0] & TUPLE_ELEMENT_REST);
+        rest = nullptr;
+    }
+    if (rest) {
+        // (A rest parameter of type any is any[]: tsc's getEffectiveRestType)
+        if (rest->kind == TY_INTRINSIC && (rest->flags & TYF_ANY)) rest = ty_array(me, rest, false);
+        infer_step(me, inf, step, rest, target_rest);
+        return;
+    }
+    // (Readonly for a const type parameter that isn't constrained to a mutable array-like, tsc's
+    // applyToParameterTypes)
+    bool readonly = !starts_variable && ty_is_const_type_variable(me, target_rest, 0) && !ty_some_mutable_array_like(me, target_rest);
+    infer_step(me, inf, step, signature_params_tuple(me, source, pos, mapper, readonly), target_rest);
+}
+
 // From the `this` and parameter types of `source` (instantiated with `mapper`) to those of `target` (tsc's
 // applyToParameterTypes)
 static void infer_from_params(
@@ -344,30 +386,25 @@ static void infer_from_params(
     for (u32 i = 0; i < target_r->param_count; i++) {
         SigParam const* target_param = &target_r->params[i];
         if (target_param->rest) {
-            // `(...args: A) => any`: the rest of the source's parameters as a tuple
-            // (A lone rest parameter as it is, unless it's a tuple: its elements are parameters, and tsc's
-            // getRestTypeAtPosition makes a new tuple of them, mutable unless inferring to a const type parameter;
-            // only the variable tail tsc's getEffectiveRestType slices off a tuple starting with one is mutable
-            // either way: `(...args: readonly [s: string]) => R` infers `[s: string]` for `Fn<infer P>`)
-            Ty const* rest = i < source_r->param_count && source_r->params[i].rest && i + 1 == source_r->param_count ?
-                ty_instantiate(me, source_r->params[i].type, mapper) : nullptr;
-            bool starts_variable = false;
-            if (rest && ty_is_tuple(rest) && !ty_is_generic_tuple(me, rest)) {
-                TupleShape const* shape = ty_tuple_shape(rest);
-                starts_variable = shape->arity && (shape->flags[0] & TUPLE_ELEMENT_REST);
-                rest = nullptr;
+            // A rest parameter of a tuple type: its leading fixed elements are parameters of their own, paired by
+            // position while the source has parameters there, and what follows them (if anything) is the rest type
+            // the rest of the source goes to (tsc's getParameterCount and getEffectiveRestType: `(...args: [A[0],
+            // ...infer R])` against `(...args: []) => void` infers `[]` for R)
+            TupleShape const* shape = ty_is_tuple(target_param->type) ? ty_tuple_shape(target_param->type) : nullptr;
+            u32 fixed = shape ? tuple_fixed_length(shape) : 0;
+            if (fixed) {
+                TyList elements = ty_reference_args(me, target_param->type);
+                u32 j = 0;
+                for (; j < fixed; j++) {
+                    Ty const* source_type = source_type_at(me, source, i + j, mapper);
+                    if (!source_type) break;
+                    infer_step(me, inf, step, source_type, elements.data[j]);
+                }
+                Ty const* rest = effective_rest_type(me, target_param->type);
+                if (rest) infer_from_rest_params(me, inf, step, source, i + j, mapper, rest);
+                break;
             }
-            if (rest) {
-                // (A rest parameter of type any is any[]: tsc's getEffectiveRestType)
-                if (rest->kind == TY_INTRINSIC && (rest->flags & TYF_ANY)) rest = ty_array(me, rest, false);
-                infer_step(me, inf, step, rest, target_param->type);
-            } else {
-                // (Readonly for a const type parameter that isn't constrained to a mutable array-like, tsc's
-                // applyToParameterTypes)
-                bool readonly = !starts_variable && ty_is_const_type_variable(me, target_param->type, 0) &&
-                    !ty_some_mutable_array_like(me, target_param->type);
-                infer_step(me, inf, step, signature_params_tuple(me, source, i, mapper, readonly), target_param->type);
-            }
+            infer_from_rest_params(me, inf, step, source, i, mapper, target_param->type);
             break;
         }
         Ty const* source_type = source_type_at(me, source, i, mapper);
@@ -375,9 +412,10 @@ static void infer_from_params(
             // Past the source's parameters, a rest parameter of the target still gets the rest of them: none, `[]`
             // (tsc's applyToParameterTypes: getRestTypeAtPosition(source, paramCount))
             SigParam const* last = target_r->param_count ? &target_r->params[target_r->param_count - 1] : nullptr;
-            if (last && last->rest) {
-                bool readonly = ty_is_const_type_variable(me, last->type, 0) && !ty_some_mutable_array_like(me, last->type);
-                infer_step(me, inf, step, signature_params_tuple(me, source, i, mapper, readonly), last->type);
+            Ty const* rest = last && last->rest ? effective_rest_type(me, last->type) : nullptr;
+            if (rest) {
+                bool readonly = ty_is_const_type_variable(me, rest, 0) && !ty_some_mutable_array_like(me, rest);
+                infer_step(me, inf, step, signature_params_tuple(me, source, i, mapper, readonly), rest);
             }
             break;
         }

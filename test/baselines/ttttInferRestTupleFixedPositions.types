@@ -1,0 +1,59 @@
+//// [test/cases/ttttInferRestTupleFixedPositions.ts] ////
+
+=== ttttInferRestTupleFixedPositions.ts ===
+// A rest parameter of a tuple type starting with fixed elements: those are parameters of their own, and the rest of
+// the source goes to what follows them (tsc's applyToParameterTypes with getParameterCount/getEffectiveRestType)
+type R0<F> = F extends (...args: [1, ...infer R]) => void ? R : never;
+>R0 : R0<F>
+>args : [1, ...R]
+
+declare const a: R0<(...args: []) => void>;
+>a : []
+>args : []
+
+declare const b: R0<() => void>;
+>b : []
+
+declare const c: R0<(x: 1) => void>;
+>c : []
+>x : 1
+
+declare const d: R0<(x: 1, y: 2) => void>;
+>d : [y: 2]
+>x : 1
+>y : 2
+
+declare const e: R0<(x: 1, ...ys: string[]) => void>;
+>e : string[]
+>x : 1
+>ys : string[]
+
+type Shift<A extends Array<any>> = ((...args: A) => void) extends (...args: [A[0], ...infer R]) => void ? R : never;
+>Shift : Shift<A>
+>args : A
+>args : [A[0], ...R]
+
+declare const s0: Shift<[]>;
+>s0 : []
+
+declare const s1: Shift<Shift<[]>>;
+>s1 : []
+
+declare const s2: Shift<[1, 2, 3]>;
+>s2 : [2, 3]
+
+type R1<F> = F extends (a: string, ...args: [number, ...infer R]) => void ? R : never;
+>R1 : R1<F>
+>a : string
+>args : [number, ...R]
+
+declare const f: R1<(a: string) => void>;
+>f : []
+>a : string
+
+declare const g: R1<(a: string, b: number, c: boolean) => void>;
+>g : [c: boolean]
+>a : string
+>b : number
+>c : boolean
+
