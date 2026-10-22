@@ -345,3 +345,46 @@ grid-engine https://github.com/Annoraaq/grid-engine.git d4ebe91146613e427d1d6edc
 ion-phaser https://github.com/proyecto26/ion-phaser.git 95a11ddce19868003b4de4658a1da043a7f76d23
 pi-bolt https://github.com/opensec-git/Pi-Bolt.git e72a0063fa1c79751453b1c1cb84421a10429e78
 tsdav https://github.com/natelindev/tsdav.git 078da17c304d0c18b1c9d9760e8013c398b3c273
+# Refresh 5 (2026-10-22, cor6), the application-code rule of refresh 4 for the repos it skipped: those whose only
+# lockfile is bun's (bun.lock/bun.lockb, installed with a pinned bun by ensure-sources.sh). Refresh 4's 16 skipped hits
+# that pass its tsconfig criteria (better-svelte-email and frost have no root tsconfig.json, gramio has a deno.json,
+# roamgate's tsconfig sets none of the settings), then `scripts/reposearch.py appbun` on the topics bun, elysia, hono,
+# drizzle-orm, sveltekit, nextjs, bunjs, remix, nuxt, express, fastify, trpc, react-native, expo, tauri, electron-app,
+# chrome-extension, obsidian-plugin, telegram-bot, discord-bot, threejs, svelte, solidjs, vite, cli, mcp, ai (3 per
+# topic). Checked out at their default branch's HEAD that day.
+hikari https://github.com/coremvp/Hikari.git b171e7fd1f1ee422d233ca532203b43cf7e78607
+sveltycms https://github.com/SveltyCMS/SveltyCMS.git 80d9384d6d473191d762ed31d03b6cd69110fd4b
+mkfd https://github.com/TBosak/mkfd.git ccfeb1f4c9db701f9e3656af2d975991a993e25d
+favicon-api https://github.com/vemetric/favicon-api.git 31096a431a63a9ab059603ad5aff5981d9c7b261
+photography-website https://github.com/ECarry/photography-website.git 1b987df6a66b3731dd15060f6abe28969793f553
+openbio https://github.com/vanxh/openbio.git 7ca0b84784c351e632aecd04b98a6ffe9fb6a014
+mcp-linker https://github.com/milisp/mcp-linker.git 6714b6e28576f3ab2704f3c5cce6d86bbb1e29a5
+honeypot https://github.com/RiskyMH/honeypot.git 9ce2c997a03ede73be3f8c5e56d7bc1057b4aab0
+streambot https://github.com/ysdragon/StreamBot.git c67f6b715c3168c21531fdaaa54f94b0b9e50fa0
+termdom https://github.com/bikeshaving/termdom.git 3b172167498356f5fc052cd8b5acde440cd5ea71
+dev-3.0 https://github.com/h0x91b/dev-3.0.git 1e3004915e8810fc8dd90571612d19c2c23fbb01
+syncular https://github.com/syncular/syncular.git 280d1e5daf85ab7fc719760f1693a08d9dbb3bc5
+engineering-notebook https://github.com/prime-radiant-inc/engineering-notebook.git b0a34caa4b59e466652572310fd043a9548027c2
+# tfm-tui: dropped, its bun install fails (a file: dependency on a sibling checkout, ../opentui-fork)
+#tfm-tui https://github.com/clarkarch/tfm-tui.git face8a20b61013b7966a059787dfb6106bf9730d
+emailthing https://github.com/RiskyMH/EmailThing.git 73d5c3bae921ada5bf2117a67d29ab298c81afbe
+elysia-rate-limit https://github.com/rayriffy/elysia-rate-limit.git ecb2515744cbcbad18fc511c1934f1497e32742c
+rayriffy-h https://github.com/rayriffy/rayriffy-h.git 3346f2ac24701d839760f1b9f793455256f09fa3
+elysia-react-router https://github.com/kravetsone/elysia-react-router.git 3c6321cd125bae03b7d848965f7dfd576672b284
+kebo https://github.com/kebo-ai/kebo.git ff48c77fa017e6b9f3e6327eb62971687377a903
+better-drizzle https://github.com/almeidazs/better-drizzle.git fa36e3ab51334def019ddd3a0d39f70642872585
+better-hono https://github.com/alwaysnomads/better-hono.git c43fe3c41108ccfa6e250c98533be50b425339e0
+songsterr-downloader https://github.com/Metaphysics0/songsterr-downloader.git 1a2c0b42faf716cb609ee7c0fbb855d32ba4a4a7
+super-sitemap https://github.com/jasongitmail/super-sitemap.git 8090852ed610984f89a89bcf27f3828dfaad557b
+# shadcn-themer: dropped, its bun.lock is out of date (`--frozen-lockfile` fails)
+#shadcn-themer https://github.com/miketromba/shadcn-themer.git 2839f4b3d3623d42503828a56aa3effe26ed89b1
+# payload-auth-plugin: dropped, its packageManager is pnpm but its only lockfile is bun's (pnpm's frozen install has no lockfile)
+#payload-auth-plugin https://github.com/UPDOT/payload-auth-plugin.git 3fd277251479bfaa5aa2140634d02d53b0b4f04c
+discord-bot-template https://github.com/caru-ini/discord-bot-template.git 202f75802d474954624862e11835d6d705d75b4a
+bun-pty https://github.com/sursaone/bun-pty.git 14ac2cabec8484d0f02234ef300b2b46c4b908fe
+trpc-bun-adapter https://github.com/cah4a/trpc-bun-adapter.git 2897fb64e7ed4b5e0e6a717fec0a2790ebba2f5e
+orca-q https://github.com/cin12211/orca-q.git 3142fe610bfba19112ba8976539b5c6d3278066b
+audnexus https://github.com/laxamentumtech/audnexus.git 8216b070ab1271c8637aa91cc37cffa07b78a39a
+finopenpos https://github.com/JoaoHenriqueBarbosa/FinOpenPOS.git 948bac8e9a9a17fdd4e1a1e95c3bf6c35dd054e6
+# clarity: dropped, its bun install fails (a private registry, npm.hugeicons.com: 401)
+#clarity https://github.com/SchroederNathan/clarity.git 297e699ea03902d4f3172aa7b1f3ddbc2ef8900c

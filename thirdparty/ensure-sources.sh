@@ -129,6 +129,7 @@ def install(name, d):
            'YARN_ENABLE_GLOBAL_CACHE': 'true', 'YARN_GLOBAL_FOLDER': f'{CACHE}/berry', 'YARN_ENABLE_TELEMETRY': '0',
            'HUSKY': '0', 'PUPPETEER_SKIP_DOWNLOAD': '1', 'ELECTRON_SKIP_BINARY_DOWNLOAD': '1',
            'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD': '1', 'CYPRESS_INSTALL_BINARY': '0'}
+    shown = [os.path.basename(cmd[0])] + cmd[1:3]
     start = time.time()
     try:
         p = subprocess.run(cmd, cwd=d, env=env, capture_output=True, text=True, timeout=1800)
@@ -140,8 +141,8 @@ def install(name, d):
         with DEDUPE_LOCK:
             dedupe(d)
         with open(os.path.join(d, '.tttt-installed'), 'w') as f:
-            f.write(' '.join(cmd[:3]) + '\n')
-    return name, ' '.join(cmd[:3]), rc, f'{time.time() - start:.0f}s' if rc == 0 else tail
+            f.write(' '.join(shown) + '\n')
+    return name, ' '.join(shown), rc, f'{time.time() - start:.0f}s' if rc == 0 else tail
 
 
 def prune(d):
