@@ -8083,6 +8083,11 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         if (source->kind == TY_INTERSECTION) source = ty_regular(me, normalized_intersection(me, source, false));
         if (source == target) return TERNARY_TRUE;
     }
+    // A type parameter is related to exactly its constraint (tsc's isRelatedTo fast path: otherwise a union target, a
+    // large `keyof` one, is broken down first and its every member compared with the type parameter's constraint)
+    if (source->kind == TY_TYPE_PARAM && st->relation != TY_RELATION_IDENTITY && ty_param_constraint(me, source) == target) {
+        return TERNARY_TRUE;
+    }
     Ty const* stripped = ty_strip_nullable_target(me, source, target);
     // (What's left is normalized too: tsc's getNormalizedType(nullStrippedTarget, writing))
     while (stripped != target && (stripped->kind == TY_INDEXED || stripped->kind == TY_CONDITIONAL || stripped->kind == TY_SUBSTITUTION)) {
