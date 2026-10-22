@@ -2953,7 +2953,8 @@ void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs) {
     }
     Atom const* name = access_name(me, access);
     Ty const* object = ty_optional_expression_type(me, ty_expr_type(me, &access->expr), access->optional_chain, nullptr);
-    MemberRefs refs = {0};
+    MemberRefs refs; // (Read below its len only: zeroing its 260 bytes on every property access cost vscode ~0.15%)
+    refs.len = 0;
     int readonly = name ? member_refs(me, object, name, &refs, 0) : -1;
     if (readonly < 0 && !(object->flags & TYF_ANY)) {
         // Through a readonly index signature (tsc's getPropertyTypeForIndexType with isDeleteTarget)
@@ -2987,7 +2988,8 @@ void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs) {
 // A key of a union written through (`o[k] = v`, k: "a" | "b") that names a readonly property: 1, 0 if it names a
 // writable one, -1 if it names none (tsc's getPropertyTypeForIndexType with AccessFlags.Writing, isAssignmentToReadonlyEntity)
 static int readonly_key_member(Checker* me, PropertyExpr const* access, Ty const* object, Atom const* name) {
-    MemberRefs member = {0};
+    MemberRefs member;
+    member.len = 0;
     int readonly = member_refs(me, object, name, &member, 0);
     if (readonly <= 0) return readonly;
     // (A class's own readonly property through `this` in its constructor)
@@ -3028,7 +3030,8 @@ static Ty const* written_union_key(Checker* me, PropertyExpr const* access) {
 }
 
 bool ty_is_readonly_assignment(Checker* me, PropertyExpr const* access, Ty const* object) {
-    MemberRefs refs = {0};
+    MemberRefs refs;
+    refs.len = 0;
     if (readonly_assignment(me, access, object, &refs)) return true;
     // (Through a union of keys, one readonly property makes the whole access the error type: tsc's
     // getIndexedAccessTypeOrUndefined gives up when a key's getPropertyTypeForIndexType does)
@@ -4688,7 +4691,8 @@ void ty_check_destructured_member(
 ) {
     if (object->flags & TYF_ANY) return;
     Atom const* name = ty_literal_name(me, key);
-    MemberRefs refs = {0};
+    MemberRefs refs;
+    refs.len = 0;
     if (!name || member_refs(me, object, name, &refs, 0) < 0) return;
     for (u32 i = 0; unused_enabled() && i < refs.len; i++) {
         // `({ m } = this)` in m itself isn't a read of m (tsc's markPropertyAsReferenced with rightIsThis). HACK: by
@@ -4877,13 +4881,15 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
     }
     if ((object->flags & TYF_ANY) || is_global_this(object)) return;
     Atom const* name = access_name(me, access);
-    MemberRefs refs = {0};
+    MemberRefs refs;
+    refs.len = 0;
     if (!name && unused_enabled()) {
         // `this[k]` with `k: "a" | "b"` reads both
         Ty const* key = ty_regular(me, ty_access_key_type(me, access));
         for (u32 i = 0; key->kind == TY_UNION && i < key->composite.types.len; i++) {
             Atom const* member_name = ty_literal_name(me, key->composite.types.data[i]);
-            MemberRefs member = {0};
+            MemberRefs member;
+            member.len = 0;
             if (!member_name || member_refs(me, object, member_name, &member, 0) < 0) continue;
             for (u32 j = 0; j < member.len; j++) mark_member_referenced(me, member.props[j], access);
         }
