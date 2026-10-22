@@ -112,6 +112,22 @@ end's split", "The 12-core box at efb91998", "The config glob next to the load p
   observable and the loader could take the roots while the libs parse, putting the whole libs phase off the critical
   path (more than the chunked parse saves). Risk: everything keyed on load order before collection (include reasons,
   module ref order, error order of the loader's own diagnostics) must move to the walk's order too.
+  **The design (2026-10-23, fe5; not built, the human's decision)**: the file order mostly holds already:
+  program_order_stdlib_first() re-sorts lib files to the front by lib-name index after loading (at resolve and for
+  --listFilesOnly), and collect_walk() rebuilds the order only with duplicate packages, which libs never lead into.
+  Load timing is still visible in four places: (1) the include-reason order of a lib both in the config's `lib` and in
+  a root's `/// <reference lib>` (the config's reason first today); (2) the parent a lib is recorded under
+  (`load_children`/`load_roots`) when a root references it first; (3) the libs phase's loader errors, which main.c
+  drops (a lib finished later would leak its parse errors into the roots' list); (4) `is_stdlib`, a pool entry parsed
+  as the other kind. Proposal: when the loader would wait on a lib still parsing (in practice lib.dom), it remembers it
+  and goes on to the roots; it finishes the remembered libs, in order, with no loading parent, `loading_stdlib` set and
+  the libs phase's error handling, at the end of loading or as soon as anything references one
+  (program_add_source_idempotent() finds a remembered path), so reasons, children and errors come out as today. lib.dom
+  has no `/// <reference lib>` children: finishing it later only adds it to the map and the file list. Gain: the
+  loader's blocked time in the libs phase (laptop nest ~8 ms before the chunked parse, ~4 ms likely now; 0.7-23 ms,
+  median ~8, on the loaded 16-vCPU box), overlapped with its own root work (~11 ms CPU on nest): ~4-8 ms of nest's ~80
+  ms wall. ~1 day in program_add_source_idempotent() and main.c's libs phase. Gates: the suite (lib reference tests),
+  scenarios.py, clidiff --corpora, threadcheck.
 - **A persistent thread pool** (2026-10-23, fe4; designed, not built: ~1 ms on nest for 1-2 days and a thread-local
   risk). Today threads start in 7+ places per run, each phase creating and joining its own: the load pool
   (load_pool_new()), the include walk's root stream (main.c), resolve lanes (program.c resolve_lane_thread), module-refs
