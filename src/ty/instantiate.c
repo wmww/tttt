@@ -1369,8 +1369,10 @@ static Ty const** active_slot(ActiveMapper* am, u64 key, bool insert) {
 static Ty const* instantiate_structured(Checker* me, Ty const* ty, TyMapper const* mapper, bool tail);
 
 // A type parameter is a lookup in the mapper (it never pushes an active mapper nor enters the instantiation stack): it
-// stays out of instantiate_structured()'s frame, whose prologue was most of what half of the calls cost
-Ty const* ty_instantiate_mapped(Checker* me, Ty const* ty, TyMapper const* mapper, bool tail) {
+// stays out of instantiate_structured()'s frame, whose prologue was most of what half of the calls cost. Out of line:
+// LTO inlined it into ty_instantiate()'s ~110 call sites (~220 bytes each), 4-6% of drizzle's and zod's I1 misses
+// with the call costing no instructions (agents/notes/code_layout.md "Inlining")
+[[gnu::noinline]] Ty const* ty_instantiate_mapped(Checker* me, Ty const* ty, TyMapper const* mapper, bool tail) {
     if (ty->kind != TY_TYPE_PARAM) return instantiate_structured(me, ty, mapper, tail);
     if (my instantiation_depth >= MAX_INSTANTIATION_DEPTH || my instantiation_count >= MAX_INSTANTIATION_COUNT) {
         ty_instantiation_limit_reached(me);
