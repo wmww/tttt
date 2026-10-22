@@ -107,6 +107,15 @@ and the oracle that would show it wrong. How things work belongs in documentatio
     the body).
 
 ## Parser
+- **A program with a syntax error is loaded twice when it has deferred bodies** (`program_deferred_bodies_parse()`,
+  `check_files()`, plan 78): a gated program (syntactic diagnostics only) must report the syntax errors of every function
+  body, but the bodies are only listed (`SourceFile.deferred_bodies`) by the resolve walk, which a gated program parses
+  before or never runs; with skipped bodies and no list it returns false and `check_files()` runs the whole program again
+  without deferral (`--listFilesOnly` doesn't defer at all). tsc parses each file once and reports from that parse.
+  Correct: the parser records each file's skipped bodies itself (a list it owns, in source order), and a gated program
+  parses just those for their diagnostics, no second load. Rare: only programs with syntax errors (clidiff over every
+  project: none of the 3831 changed). Oracle: the CLI on a.ts `function f() { let x = ; }` plus b.ts `const y = ;`
+  (both TS1109, like tsc), timed under `TTTT_DEFER_STATS=1` (the restarts count).
 - `unique symbol` placement (TS1335): checked while parsing through `ParserShared.unique_allowed_at`
   (`parse_type_inner`, `expect_annotation_type`), not on the tree (checkGrammarTypeOperatorNode), and never in JSDoc,
   where tsc asks the tag's host. Oracle: JS suite tests / mutate.py.

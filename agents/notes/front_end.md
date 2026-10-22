@@ -107,10 +107,35 @@ end's split", "The 12-core box at efb91998", "The config glob next to the load p
   of `../` names (137 M), clones of cached results (100 M: a refcounted `ResolvedModule` would remove them).
 
 ## The parser
-~12% of vscode's K1 instructions with no hot site (74 M child `Parser` creations for 138 MB of source, the top site
-10%); ~0.9 s single-threaded on vscode, ~150 MB/s. Structural: a `Parser` copy per speculative attempt, identifiers
-re-scanned by each failing alternative, a malloc per node (arenas per file exist since 2026-10-16). The lever is a
-real token per position and node arenas: a rewrite of src/parser.c with the whole suite (and `scripts/syntaxstats.py`)
-as its oracle. It parallelizes already, so it is CPU (and 4-core wall) more than many-core wall: show parse on the
-critical path at the defaults before starting it. Error recovery stays as it is (one list/commit-point framework,
-documentation.md "Error recovery").
+Measured 2026-10-22 (worker "parser", branch wt-parser; callgrind on the pgo build): the parser was 17.4% of vscode's
+K1 instructions at the defaults (eager parse 4.44 G with the body skipper's 0.87 G, deferred bodies 7.49 G parsed by the
+checkers: 7.4% of checker-thread CPU samples at the defaults, 8.2% at --threads 4) and 16.3% with --no-defer-bodies;
+the laptop's counters put it at 9.8% of cycles (a higher IPC than the checker's). tsgo's own parser takes 1.5x tttt's
+instructions on TypeScript6's compiler (1.01 G against 0.665 G), so a tsc-shaped rewrite was declined; so was a token
+cache (re-scans were only ~30% of identifier and trivia work, a sixth of the parse). What cost was failed attempts
+(~32% of parse cycles, 44 M of 73 M child parsers failed): a statement's first word now picks the branches
+(`statement_word()`), and a dozen parse functions fail on a character none of their branches start with before making a
+child parser (`GATE_FAIL`). Parse instructions on vscode 11.04 -> 9.50 G (-14%), K1 -2.6%; child parsers 73 M -> 41 M.
+
+What's left in the profile (vscode, -O3): grammar code and dispatch ~35%, allocation ~15% (`reuse_or_bump()` scanning
+the free-class masks, list growth in parse_append_statement_sequence(), whose elements are pointed at while built),
+trivia ~13% (the per-character loop of hop_whitespace_slow(), not re-scanning), identifiers ~10%, Parser
+create/merge/fail ~8% (a smaller Parser or cheaper parse_fail(): 1-2% of the parse, not done), literals ~5%, spans 4%,
+token lookahead 3.4%. The skipper (skip_balanced_braces_at()) is table-driven already; what would halve it is a scan that
+stops only at `{}()[]'"`/<` and decides a `/` by looking back at the previous token: ~0.4 G on vscode, not done.
+
+Not built: a chunked parse of a big declaration file (lib.dom.d.ts, 2.4 MB, ~75 M instructions, ~11 ms on a laptop core,
+the bound of small projects' libs phase). Sketch: a depth-0 scan for top-level statement starts (strings, comments,
+template literal types and braces only: no regex or JSX in a declaration file; ~5-6 instructions a byte, ~14 M, ~19% of
+the parse and serial), then the chunks parsed on the load pool's threads, each with a ParserShared of its own, their
+statements, errors (in order; the same-position dedup across a boundary aside) and module refs (`/// <reference>`,
+imports: source order matters) appended in order, the file's AstArena taking ranges from several threads (a lock in
+add_range()). ~6-7 ms off lib.dom's critical path at 8 threads (11 -> 4-5 ms); 1-2 days. The statement dispatch doesn't
+make the scan cheaper (it's character-level, like the skipper).
+
+Tools from that round (in its commit messages): a build that runs every branch a quick test skipped and panics if one
+would have succeeded (the statement dispatch was verified so, then removed), and `-DVERIFY_GATES`, which keeps doing that
+for the GATE_FAIL tests (and checks tok_at()'s and starts_with_followed_by_word_break()'s fast paths against their slow
+ones): run its baseline_tests (with and without --no-defer-bodies) and `tttt --listFilesOnly` over the corpora and the
+source sweep's tsconfigs after touching a test. Per-function attempt/failure counters were a temporary patch (Parser
+creation per `__func__`, rdtsc of maximal failed subtrees).
