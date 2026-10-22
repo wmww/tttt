@@ -50,8 +50,12 @@ typedef struct DirListing {
     char* names;
 } DirListing;
 
-// A directory's listing, made at the first probe of a path in it the path cache can't answer
+enum { LISTING_MAX_ENTRIES = 512, LIST_AT_MISS = 3 };
+
+// A directory's listing, made at the LIST_AT_MISS-th probe of a path in it the path cache can't answer (the ones
+// before stat)
 typedef struct DirState {
+    u32 misses;
     DirListing* listing;
 } DirState;
 
@@ -90,10 +94,17 @@ struct CachedFs {
     Shard shards[SHARD_COUNT];
 };
 
+// (Cheap: every entry of a listed directory is hashed, most never looked up. Its length and first and last 8 bytes)
+static u32 name_hash(char const* name, isize size) {
+    uint64_t a = 0, b = 0;
+    memcpy(&a, name, (size_t)(size < 8 ? size : 8));
+    if (size > 8) memcpy(&b, name + size - 8, 8);
+    uint64_t h = (a ^ (b * 0x9E3779B97F4A7C15u) ^ (uint64_t)size) * 0xFF51AFD7ED558CCDu;
+    return (u32)(h >> 32);
+}
+
 static Shard* shard_of(CachedFs* me, csview path) {
-    uint32_t hash = 2166136261u;
-    for (isize i = 0; i < path.size; i++) hash = (hash ^ (uint8_t)path.buf[i]) * 16777619u;
-    return &my shards[hash % SHARD_COUNT];
+    return &my shards[name_hash(path.buf, path.size) % SHARD_COUNT];
 }
 
 // What answering `known` (with yes or no) tells about the rest
@@ -104,11 +115,6 @@ static ProbeBits implied(ProbeBits bits) {
     return bits;
 }
 
-static u32 name_hash(char const* name, isize size) {
-    uint32_t hash = 2166136261u;
-    for (isize i = 0; i < size; i++) hash = (hash ^ (uint8_t)name[i]) * 16777619u;
-    return hash;
-}
 
 // The directory's entries, or an unusable listing if it can't be read (a missing directory is a usable empty one)
 static DirListing* list_directory(char const* dir) {
@@ -129,6 +135,12 @@ static DirListing* list_directory(char const* dir) {
         long got = syscall(SYS_getdents64, fd, buf, sizeof(buf));
         if (got <= 0) {
             failed = got < 0;
+            break;
+        }
+
+        // (A big directory, a node_modules root, isn't worth reading for the few names asked in it: those stat)
+        if (ret->count + (u32)(got / 24) > LISTING_MAX_ENTRIES) {
+            failed = true;
             break;
         }
         for (long at = 0; at < got;) {
@@ -252,16 +264,27 @@ static ProbeBits probe_listing(CachedFs* me, csview path) {
     pthread_mutex_lock(&shard->lock);
     auto state = hmap_dir_state_get_mut(&shard->dirs, key);
     DirListing const* listing = state ? state->second.listing : nullptr;
-    pthread_mutex_unlock(&shard->lock);
+    bool list = false;
     if (!listing) {
+        if (!state) state = hmap_dir_state_insert(&shard->dirs, cstr_from_sv(key), (DirState){0}).ref;
+        list = ++state->second.misses == LIST_AT_MISS;
+    }
+    pthread_mutex_unlock(&shard->lock);
+    if (list) {
         // (Listed outside the lock: two threads may both list it, and agree. Listing at the first probe beat waiting
         // for a few: nest 23.3k probing syscalls without listings, 17.8k listing at the third, 15.6k at the first;
         // vscode, whose include glob lists its sources already, 78k, 78k and 74k)
         DirListing* made = list_directory(dir);
         pthread_mutex_lock(&shard->lock);
-        // (If another thread's got there first, insert drops ours)
-        listing = hmap_dir_state_insert(&shard->dirs, cstr_from_sv(key), (DirState){ .listing = made }).ref->second.listing;
+        state = hmap_dir_state_get_mut(&shard->dirs, key);
+        // (Only the LIST_AT_MISS-th miss lists: no state means forget() cleared it meanwhile, and the listing is stale)
+        if (state && !state->second.listing) {
+            state->second.listing = made;
+            listing = made;
+            made = nullptr;
+        }
         pthread_mutex_unlock(&shard->lock);
+        if (made) dir_state_drop(&(DirState){ .listing = made });
     }
     if (!listing || !listing->usable) return 0;
     switch (listing_kind(listing, base)) {
@@ -281,14 +304,12 @@ static bool probe(Fs const* fs, csview path, ProbeBits known, ProbeBits yes, boo
     ProbeBits bits = cached ? cached->second : 0;
     pthread_mutex_unlock(&shard->lock);
     if (bits & known) return bits & yes;
-    // (Not cached by path: a listing's answers aren't, they're one lookup away already)
+    // (Cached by path like a stat's answer: the next probe of the path is one lookup)
     ProbeBits listed = probe_listing(me, path);
-    if (listed & known) return listed & yes;
-    // (Asked outside the lock: two threads may both ask, and agree)
-    bool answer = ask(my inner, path);
+    bool answer = listed & known ? (listed & yes) != 0 : ask(my inner, path); // (Outside the lock: two threads may both ask, and agree)
     pthread_mutex_lock(&shard->lock);
     auto entry = hmap_probe_bits_insert(&shard->probes, cstr_from_sv(path), 0);
-    entry.ref->second = implied(entry.ref->second | known | (answer ? yes : 0));
+    entry.ref->second = implied(entry.ref->second | listed | known | (answer ? yes : 0));
     pthread_mutex_unlock(&shard->lock);
     return answer;
 }
