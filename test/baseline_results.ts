@@ -230,9 +230,9 @@ const baselines = {
         types: true,
     },
     'ttttConditionalConstraintDeepCut': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ttttConditionalIdentityInstantiationKeepsDistributed': {
         errors: true,

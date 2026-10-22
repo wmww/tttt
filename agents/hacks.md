@@ -379,14 +379,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   where tsc's getReducedType would reduce through `"a" | undefined` too. Correct: getUniqueLiteralFilledInstantiation.
 - `conditional_source_related()` relates the distributive constraint without tsc's hasNonCircularBaseConstraint(source)
   gate: computing it inside an alias's resolution gives spurious TS2456 (type-fest's `_ConditionalPickDeep`, crawlee).
-  Correct: lazier alias references, or the gate after the alias resolves. Its default-constraint step also pushes the
-  target on the deep-nesting stack (tsc: RecursionFlags.Source only). It's observable: the same target pushed at each
-  level is deeply nested by itself, so once the source is too the pair is Maybe: `function g<M extends readonly
-  string[], k extends keyof M>(x: M[k] extends Object ? M[k] : never) { const a: string | number | symbol = x }` is
-  TS2322 in tsc, nothing here (mutant declarationEmitNestedAnonymousMappedType extends-object). tsc's way (2026-10-20,
-  react 1.39 -> 2.54 G instructions, 39.5k -> 167k types (tsgo: 133k), and largeTupleTypes then gets a
-  spurious TS2799 (tttt's GrowExp chain goes deeper than tsgo's before the 10-deep conditional source cut-off: compare
-  the stacks with an instrumented tsgo before retrying).
+  Correct: lazier alias references, or the gate after the alias resolves.
 - `resolved_base_constraint()` simplifies indexed accesses, and conditionals only when `may_simplify_conditional()`
   sees a `T extends U ? T : never` shape as written (all conditionals: mikro-orm/seeder 2.3x types); misses a branch
   that becomes the check type through the mapper. Types without type variables are their own base constraint except

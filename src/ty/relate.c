@@ -5683,16 +5683,16 @@ static Ternary conditional_source_related(Checker* me, RelationState* st, Ty con
     Ty const* true_branch = inferred_true_branch(me, source);
     if (true_branch->flags & TYF_ANY) true_branch = ty_intrinsic(me, TY_NEVER);
     else if (false_branch->flags & TYF_ANY) false_branch = ty_intrinsic(me, TY_NEVER);
-    // HACK: tsc relates the default constraint with RecursionFlags.Source; pushing the target too (a deep-nesting
-    // cut-off tsc doesn't have) saves react-hook-form's Path/FieldPathValue chains 10% of the react corpus
-    // (A union source: some member for the comparable relation, each one otherwise. In the order of their union, by id:
-    // tsc relates getUnionType([trueConstraint, falseConstraint]) member by member, and stops at the first that fails)
+    // (Pushing only the source on the deep-nesting stacks, tsc's RecursionFlags.Source: the same target pushed at every
+    // level would cut chains tsc follows, typebox's TCompare. A union source: some member for the comparable relation,
+    // each one otherwise. In the order of their union, by id: tsc relates getUnionType([trueConstraint,
+    // falseConstraint]) member by member, and stops at the first that fails)
     bool some = st->relation == TY_RELATION_COMPARABLE;
     Ty const* first = false_branch->id < true_branch->id ? false_branch : true_branch;
     Ty const* second = first == true_branch ? false_branch : true_branch;
-    Ternary related = is_related_to(me, st, first, target, false);
-    if (some && !related) related = is_related_to(me, st, second, target, false);
-    else if (related && !some) related &= is_related_to(me, st, second, target, false);
+    Ternary related = is_related_to_side(me, st, first, target, false, 2);
+    if (some && !related) related = is_related_to_side(me, st, second, target, false, 2);
+    else if (related && !some) related &= is_related_to_side(me, st, second, target, false, 2);
     if (related) return related;
     // Plan 57: tsgo's check type is the distributed twin T' (whose constraint is T), so its first distributive constraint
     // is the conditional with the branches' T' mapped back to T; tttt keeps T as the check type, and relates those
