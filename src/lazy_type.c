@@ -233,6 +233,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 
     // THREADSAFETY: slots belong to one checker, which belongs to one thread
     LazyMemo* state = lazy_type_state(me);
+    bool outermost_expr = false; // (An expression's first evaluation, not one nested in it)
     // --shared-graph (one test without it): a tainted declaration read (lazy_type_get() sends those here), or one another
     // checker evaluated cleanly
     TyGraph* graph = current_checker->graph;
@@ -285,6 +286,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
             return ty_intrinsic(current_checker, TY_CIRCULAR);
         }
     }
+    outermost_expr = my tag == LAZY_TYPE_EXPR && !state->evaluation_started;
     state->evaluation_started = true;
     evaluate:;
 
@@ -358,6 +360,10 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
         }
         state->evaluated = lazy_type_id(result);
         state->done = true;
+    } else if (outermost_expr && result && state->evaluated == ty_intrinsic(current_checker, TY_CIRCULAR)->id) {
+        // An expression's runaway re-entry bailed below its first evaluation: that one still has its own result (tsc's
+        // checkExpression isn't memoized, the outer call returns what it computed), not the bail's
+        state->evaluated = lazy_type_id(result);
     }
 #ifdef TTTT_TAINT
     taint_end(taint_frame, taint_kind, me, me, lazy_memo_evaluated(state));
