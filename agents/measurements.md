@@ -30,6 +30,23 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## Fresh repositories, third rule (2026-10-23)
+Refresh 4 (cor3, repos.txt "Refresh 4"): application code by GitHub topic (nextjs, remix, sveltekit, nuxt, express,
+fastify, hono, trpc, react-native, expo, tauri, electron-app, chrome-extension, obsidian-plugin, homebridge-plugin,
+telegram-bot, discord-bot, threejs, p5js, phaser, bun), 40..400 stars, the first 2 per topic with a root lockfile and a
+less covered tsconfig setting (`scripts/reposearch.py app`): 40 repos, 122 projects (nuxt has none: both candidates
+and the third extend a generated `.nuxt` config; 16 bun-only hits skipped, triage.md). **Day one (48c7ffdf0, before
+any fix): 115 / 122 projects match (94.3%), 36 / 40 repos**, 0 crashes, 0 timeouts, 7 spurious, 0 missing. Root
+causes, all checker, none config-level: pi-bolt's TypeBox Record (4 projects, ~120 diagnostics: a target-pushing
+deep-nesting HACK makes an eager conditional "definitely true"), bekuto3d (a `declare global { export type { X } from
+"vue" }` re-export, binder), hermes-ide (TS7022: for-of variable isolated from the loops in progress), youtube-enhancer
+(TS2322: a generic type literal's literal conflict left unreduced). **After (aba95017e): 117 / 122 (95.9%), 38 / 40
+repos**; pi-bolt and bekuto3d left (bugs/sourcesweep_checker.md, known-failing repros), plus three tuple fixes found on
+the way. By plan 77's scale (>= 90% day one) the checker still generalizes, a point below the two earlier refreshes
+(96.1%, 97.1%). Perf on the three biggest (perfsweep, K1 vs tsgo single-threaded): types ratios 0.61-0.72, check
+0.19-0.46. Instructions (callgrind, fast/tttt) against the branch point: within 0.2% everywhere (drizzle +0.19%,
+type-fest +0.11%).
+
 ## Memory budget sweep on vscode (2026-10-22, 16 vCPUs, loaded)
 `--checker-memory` at the defaults otherwise (16 threads), typecheck phase wall / peak RSS:
 
