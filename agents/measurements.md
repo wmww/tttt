@@ -15,7 +15,7 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
 
 ## How to measure (notes that still hold)
 - **Instructions**: `scripts/instrcount.sh` (callgrind, K1 T1, fast/tttt since 92828ad6e (pgo/tttt 2026-10-19 ..
-  10-22): `fastbuild.sh --measured`; saved in `test/instrcount.txt`, vscode 66.36 G there at d01aee7a8). Callgrind counts run ~3% above `perf stat -e instructions:u`: don't compare across tools. At
+  10-22): `fastbuild.sh --measured`; saved in `test/instrcount.txt`, vscode 66.35 G there at 0a400eb6f). Callgrind counts run ~3% above `perf stat -e instructions:u`: don't compare across tools. At
   K1 the counts include recycling's warm-ups (type-fest, drizzle, vscode recycle at 256 MB): compare with
   `--checker-memory off` for the checker's own work. instrcount gives valgrind a 64 MB main stack (type-fest's
   IntRange needs ~16 MB). A worktree with symlinked corpora can measure some corpora differently (nest +8% once):
@@ -45,7 +45,9 @@ repos**; pi-bolt and bekuto3d left (bugs/sourcesweep_checker.md, known-failing r
 the way. By plan 77's scale (>= 90% day one) the checker still generalizes, a point below the two earlier refreshes
 (96.1%, 97.1%). Perf on the three biggest (perfsweep, K1 vs tsgo single-threaded): types ratios 0.61-0.72, check
 0.19-0.46. Instructions (callgrind, fast/tttt) against the branch point: within 0.2% everywhere (drizzle +0.19%,
-type-fest +0.11%).
+type-fest +0.11%). **Round three** fixed pi-bolt (f38a8b493, the relation HACK's removal: 13 / 13) and bekuto3d
+(4a482aba3 and 0a400eb6f, global re-exports and tsc's augmentation-reference model): all 122 expected, unconfirmed
+until the next full sweep.
 
 ## Memory budget sweep on vscode (2026-10-22, 16 vCPUs, loaded)
 `--checker-memory` at the defaults otherwise (16 threads), typecheck phase wall / peak RSS:
@@ -902,39 +904,48 @@ claim_and_measure() is gone (not just off). Base = de94e1179 (lock on, stamps of
   (lock) 0.417 / 0.439: the lock's +54% is gone and the flag now beats the defaults. Effect defaults 0.267 / 0.271,
   flag 0.293 / 0.297, base flag 0.281 / 0.286: effect is still +10% over the defaults (it was +17% at G2).
 
-## Oracle totals (2026-10-23, d01aee7a8)
-The merger's `scripts/oracles.py` after wt-fe3's round, at d01aee7a8 (main c3440976e; the previous totals were
-2989c0f05's: `git log -S'Oracle totals (2026-10-22, 2989c0f05)' -- agents/measurements.md`). Suite 13982 / 14018 (was
-13979 / 14015), 0 lost; the two failing own tests fail by design (ttttThisInstantiatedMethodErased: hono's
-this-instantiated members; ttttDeferredBodyBeforeContextualParameters: tsc's deferred-body check order). The same with
-`--no-defer-bodies`; `--checker-memory 0`: 0 of 17655 differ. Every corpus 0/0 but vue 0/2 (tsgo's TS5115 runaway
-artifact), DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 16 / 2 / 2 (all vue pluginScoped.ts, won't fix),
-source sweep `--sample 4` 1272 / 1274, `-b` sweep 411 / 416, dtsdiff 1328 / 1350 projects, clidiff 3824 / 3831, kdiff
-3 / 3814, recycle 3 / 3814 (rxjs, sequelize x2: tsgo-shared; plus one timeout under load, unconfirmed), perfsweep
-median check ratio 0.19, worst types ratio 1.40 (lit tsserver-plugin).
+## Oracle totals (2026-10-23, 0a400eb6f)
+The merger's `scripts/oracles.py` after round three, at 0a400eb6f (main 4ebdb0179 adds only the revert 52ce0a84d,
+which changes youtube-enhancer alone; the previous totals were d01aee7a8's: `git log -S'Oracle totals (2026-10-23,
+d01aee7a8)' -- agents/measurements.md`). Suite 13993 / 14029 (was 13982 / 14018; dts 1888 / 1910), 0 lost; the two
+failing own tests fail by design (ttttThisInstantiatedMethodErased: hono's this-instantiated members;
+ttttDeferredBodyBeforeContextualParameters: tsc's deferred-body check order; the refresh's known-failing repros for
+pi-bolt and bekuto3d pass since). The same with `--no-defer-bodies`; `--checker-memory 0`: 0 of 17666 differ. Every
+corpus 0/0 but vue 0/2 (tsgo's TS5115 runaway artifact), DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 16 /
+2 / 2 (all vue pluginScoped.ts, won't fix), source sweep `--sample 4` 1301 / 1303 (with refresh 4: 288 repositories,
+5364 projects; the full sweep at 4430f1512 was 5352 / 5364, pi-bolt x4 and bekuto3d fixed since: ~5357 expected,
+es-toolkit, monkeytype, hono x2, better-auth, discordx and sunmao left), `-b` sweep 411 / 416, dtsdiff 1328 / 1350
+projects, clidiff 3899 / 3907, kdiff 3 / 3890, recycle 3 / 3890 (rxjs, sequelize x2: tsgo-shared). youtube-enhancer's
+spurious TS2589 + TS5114 appeared with 20fa22369 (the indexed-access recursion identity) and is gone with its revert
+52ce0a84d (triage.md). perfsweep median check ratio 0.17, worst types ratio ~1.40 (lit tsserver-plugin;
+youtube-enhancer 0.67 after the revert).
 
-**The round's instructions** (`scripts/instrcount.sh`, callgrind K1, fast/tttt, `test/instrcount.txt` at 92828ad6e ->
-d01aee7a8; the parser round, the front end rounds 2/3 and the correctness fixes together), G:
+**The round's instructions** (`scripts/instrcount.sh`, callgrind K1, fast/tttt, `test/instrcount.txt` at
+d01aee7a8 -> 0a400eb6f), G:
 
 | corpus | before | after | |
 |---|---|---|---|
-| vscode | 68.14 | 66.36 | -2.6% |
-| nest | 0.944 | 0.914 | -3.1% |
-| tsc | 3.690 | 3.582 | -2.9% |
-| webpack | 7.778 | 7.564 | -2.7% |
-| react | 1.140 | 1.116 | -2.1% |
-| excalidraw | 5.704 | 5.590 | -2.0% |
-| effect | 7.403 | 7.264 | -1.9% |
-| valibot, vue, xstate, zod | | | -1.7..-1.8% |
-| drizzle, tanstack-router | | | -1.1% |
-| type-fest | 8.182 | 8.138 | -0.5% |
+| react | 1.116 | 1.518 | +36.0% |
+| type-fest | 8.138 | 8.705 | +7.0% |
+| nest | 0.914 | 0.916 | +0.2% |
+| drizzle, excalidraw, tanstack-router, vscode, vue | | | -0.0..+0.1% (vscode 66.36 -> 66.35) |
+| tsc, xstate, zod | | | -0.1..-0.4% |
+| valibot | 2.658 | 2.633 | -0.9% |
+| webpack | 7.564 | 7.473 | -1.2% |
+| effect | 7.264 | 7.173 | -1.3% |
 
-The parser's part (notes/front_end.md "The parser"): vscode's parse 11.04 -> 9.50 G (-14%), child parsers 73M -> 41M;
-K1 tsc -2.3..-2.9%, webpack -2.1..-2.8%, nest -1.9..-3.1%. Front end syscalls: nest readlink 7.7k -> 1.4k (realpath
-cache per directory), vscode mmap 12.8k -> 4.1k (`read()` below 16 KB), nest's export-star link 12 -> 1.4 ms; checker
-malloc-lock waits 8% -> 0.6% of samples (unused_register). Walls, cycles and hardware counters for the same round are
-the laptop's: "The 12-core box at 2989c0f0" (the bench against bun, topdown), "... at 8e3f4fb0" (BOLT, interning
-declined), "... at 277be4bc" (huge text, -fno-peel-loops, clang, the shared-graph flag on drizzle).
+react's and type-fest's rises are f38a8b493 (247d87ac5's message has the table): the conditional_source_related HACK
+removed, so tttt does tsc's relation work on react-hook-form's Path/PathImpl (tsgo 84.6k relations / 133k types on
+react, tttt 93.4k / 89.6k after, 21.8k / 39.5k before: the wrong answer's price); accepted (vision.md "Decisions").
+Front end, measured on this box (16 vCPUs, loaded; walls for the laptop to confirm): the chunked parse of declaration
+files >= 512 KB took nest's libs wait on lib.dom ~14 -> ~8 ms; the 16 KB checker policy nest -20% wall at +13% RSS;
+LazySlots in the checker's arena vscode `mprotect` 18231 -> 22 (glibc grows a non-main arena's heap by exactly the
+top allocation, so `M_TOP_PAD` never applied); resolver shards 64 -> 1024 took the load phase's blocked share
+26-56% -> 0-6%; CPU-clock reads only under flags 4.4k syscalls -> 0 on nest; realpath from the parent readlink 1.8k
+-> 9; directory listings in CachedFs +0.45% instructions on nest (accepted); load pool wakeups react futex 1.45k ->
+0.89k; the noinline splits (ty_instantiate_mapped ~110 copies, hop_whitespace_slow ~30) simulated I1 misses
+-4.5..-6%, hot text 2.17 -> 2.04 MB. Small-project memory, `--time`'s new fault counts: react typecheck 16.8k minor
+faults at the defaults against 7.7k at T1, peak ~300 MB against ~169 (triage.md).
 
 ## Oracle totals with and without the shared graph (2026-10-21/22, plain at 9032ae214 and 8d693aeb5)
 Suite 13962 / 13996 (dts 1887 / 1909; `scripts/passcount.py`), `--no-defer-bodies` and `--checker-memory 0` unchanged,

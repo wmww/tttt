@@ -8,64 +8,85 @@ faster; correctness is never traded. Completeness first in the sense that nothin
 be fast or can't be complete. The suite's baselines are the first oracle, not the goal; real projects that are clean
 under tsc are the second.
 
-## State (2026-10-23: oracles at d01aee7a8, main c3440976e; the laptop at 2989c0f0, 8e3f4fb0 and 277be4bc)
+## State (2026-10-23: oracles at 0a400eb6f, main 4ebdb0179; the laptop at 2989c0f0, 8e3f4fb0 and 277be4bc)
 - **Target: TypeScript 7.1** (`main` at the 7.1 nightly fed0bf24, `thirdparty/typescript`; re-pin to 7.1.0 stable
-  when it is on npm: todo.md). Suite with own tests and the dts component **13982 / 14018**, the same with
-  `--no-defer-bodies`, `--checker-memory 0` 0 of 17655 differ; two of tttt's own tests fail by design (known-failing
-  tests for unfixed divergences: ttttThisInstantiatedMethodErased, hono's this-instantiated members;
+  when it is on npm: todo.md). Suite with own tests and the dts component **13993 / 14029** (dts 1888 / 1910), the
+  same with `--no-defer-bodies`, `--checker-memory 0` 0 of 17666 differ; two of tttt's own tests fail by design
+  (known-failing tests for unfixed divergences: ttttThisInstantiatedMethodErased, hono's this-instantiated members;
   ttttDeferredBodyBeforeContextualParameters, tsc's deferred-body check order); the native suite's last 12
   configurations are argued or one-test mechanisms (bugs/tsgo_divergences.md).
 - **Drop-in `tsc --noEmit`, and drop-in `tsc` where the config only emits declarations**, TypeScript and JavaScript
-  alike. clidiff (the whole `--pretty false` output on every corpus and source sweep project) **3824 / 3831**, dtsdiff
+  alike. clidiff (the whole `--pretty false` output on every corpus and source sweep project) **3899 / 3907**, dtsdiff
   **1328 / 1350** projects. Refused: `--watch`, `--incremental`'s `.tsbuildinfo`, `--showConfig`, `--explainFiles`,
   `--init` (parked by the human). JS emit is out of scope.
 - **Real code**: corpora 0 / 0 everywhere but vue (0 / 2, a tsgo runaway artifact), DT sweep 8595 / 8595,
   `$ExpectType` 68640 / 68640, flagflip 16 / 2 / 2 (all 20 vue pluginScoped.ts, tsgo's TS5115 runaway: won't fix),
-  scenarios 221 / 0 failed, source sweep quarter sample 1272 / 1274 (full 5235 / 5242 on 2026-10-20; angular-cli
-  clean since), `-b` sweep 411 / 416 solutions (the 5 are tsgo's), kdiff 3 / 3814, recycle 3 / 3814 (rxjs, sequelize
-  x2: tsgo-shared; one more timed out under load once, unconfirmed), perfsweep median check ratio 0.19, worst types
-  ratio 1.40. Every source sweep leftover is a confirmed tsgo artifact or a written-up design
-  (bugs/sourcesweep_checker.md, bugs/sourcesweep_build.md). A third refresh (cor3, 40 new repositories) matched
-  115 / 122 on day one (94.3%): todo.md.
+  scenarios 221 / 0 failed, source sweep (288 repositories, 5364 projects since the fourth refresh) quarter sample
+  1301 / 1303; the full sweep was 5352 / 5364 at 4430f1512, pi-bolt x4 and bekuto3d fixed since, so ~5357 / 5364
+  expected with es-toolkit, monkeytype, hono x2, better-auth, discordx and sunmao left, each a confirmed tsgo artifact
+  or a written-up design (bugs/sourcesweep_checker.md, bugs/sourcesweep_build.md); `-b` sweep 411 / 416 solutions
+  (the 5 are tsgo's), kdiff 3 / 3890, recycle 3 / 3890 (rxjs, sequelize x2: tsgo-shared), perfsweep median check
+  ratio 0.17, worst types ratio ~1.40 (lit tsserver-plugin). The fourth refresh (40 application repositories) matched
+  115 / 122 on day one (94.3%), 117 / 122 after five fixes; pi-bolt and bekuto3d were fixed in round three, so all
+  122 should match (unconfirmed until the next full sweep).
 - **Speed** (the human's 12-core laptop, 24 threads; measurements.md "The 12-core box at 2989c0f0", "... at
   8e3f4fb0", "... at 277be4bc"): **tttt leads or ties bun canary's wall on every corpus** at the defaults; vscode
   1.70 s against bun's 1.74 (was 1.93 at f2ad73c9: the front end ~250 ms, was ~500). Single-threaded tttt is fastest
   everywhere. Hardware counters: tttt is **frontend-bound** (53% of slots at K1; icache misses 23% of fetches, op
-  cache hit 63%, 5.4 MB of text), IPC 1.42 at K1, 0.76 at the defaults. BOLT took -3.2% K1 wall (-2..-4% at the
-  defaults, icache misses -30%), the hot text on a 2 MB huge page -4.6% wall / -3.6% cycles at K1 (-1.2% at the
-  defaults, L1 iTLB misses 30x fewer). What is left at the defaults: the small-program floor (thread starts, lib.dom's
-  serial parse, syscalls: todo.md 1) and duplicated work across checkers (vscode 1.09x at K12, mostly inherent:
-  notes/duplication.md).
+  cache hit 63%, 5.4 MB of text), IPC 1.42 at K1, 0.76 at the defaults. BOLT took -3.2% K1 wall, the hot text on a
+  2 MB huge page -4.6% wall at K1 (-1.2% at the defaults). Round three's front end and footprint work (chunked parse
+  of big declaration files, 16 KB checker policy, fewer syscalls and lock waits, two noinline splits) is unmeasured on
+  the laptop yet (todo.md "For the human"). What is left at the defaults: the small-program floor (thread starts,
+  the libs phase on the critical path, per-checker memory: todo.md 1) and duplicated work across checkers (vscode
+  1.09x at K12, mostly inherent: notes/duplication.md).
 - **The shipped build is `scripts/fastbuild.sh` -> `fast/tttt`**: GCC LTO + PGO, `-fno-plt`, `-z now`, then an
   llvm-bolt layout (llvm-bolt is a dependency), the hot text on a huge page at startup (`huge_text()`, verified via
-  smaps_rollup, `TTTT_HUGE_TEXT=0/2`). The measuring scripts take their binary from `fastbuild.sh --measured`.
-  `release/` (plain -O3) stays the edit-test build.
+  smaps_rollup, with an `MADV_COLLAPSE` retry; `TTTT_HUGE_TEXT=0/2`). The measuring scripts take their binary from
+  `fastbuild.sh --measured`. `release/` (plain -O3) stays the edit-test build.
 - **Memory**: the quarter-of-RAM `--checker-memory` default costs vscode 5.4 GB (K1 4.1 GB). Recycling costs 15-20%
   of check time on vscode at small budgets and ~2 GB of the peak is the program plus per-thread state whatever the
   budget: structural, deferred until we are distinctly faster. The checker policy of one per 16 KB of source spends
-  some RSS for wall on small programs (nest -20% wall at +13% RSS).
-- Instructions: `test/instrcount.txt` (fast/tttt, every corpus, at d01aee7a8). The 2026-10-22/23 round took vscode
-  68.14 -> 66.37 G (-2.6%), nest -3.1%, tsc -2.9%, webpack -2.7%, the rest -0.5..-2.1% (measurements.md "Oracle
-  totals"); the parser alone took vscode's parse 11.04 -> 9.50 G (-14%).
+  some RSS for wall on small programs (nest -20% wall at +13% RSS); per-checker memory is the small-project fault
+  lever (react 16.8k typecheck faults at the defaults against 7.7k at T1: triage.md).
+- Instructions: `test/instrcount.txt` (fast/tttt, every corpus, at 0a400eb6f). Round three left vscode flat (66.35
+  G; 68.14 at 92828ad6e before round two), effect -1.3%, webpack -1.2%, valibot -0.9%, and took **react +36%** and
+  type-fest +7% for removing a relation HACK (tsc's own relation work: Decisions; measurements.md "Oracle totals").
 
-## Direction (2026-10-23, after the round at d01aee7a8; the items and their numbers are in todo.md)
+## Direction (2026-10-23, after round three at 0a400eb6f; the items and their numbers are in todo.md)
 The human's priorities: distinctly faster than bun; threading efficiency on mid-size and small projects is the key;
 easy wins first; the correctness long tail continues.
-1. **The small-program floor**: lib.dom's chunked parse, a persistent thread pool, link in parallel per import-cycle
-   level (bun's design), stats from directory listings, the module resolver's lock in vscode's load phase, the
-   non-vDSO `clock_gettime`.
-2. **Checker threads' malloc heaps**: the hot lazy allocations (lazy_type_state, declare_class_members, ...) into the
-   checker's arena (13k `mprotect`s on vscode, 3-7% of checker samples).
-3. **Code footprint**: still ~50% frontend-bound after BOLT and huge text; the working set is what is left (fewer
-   inlined copies, relate.c's inline-unit growth, the parser's hot path: notes/code_layout.md).
-4. **The correctness long tail, continuously**: cor3's 4 root causes, then the bun-lockfile slice of the source
-   sweep; hono's this-instantiation design, the seed-62 getter circularities, the loop-pass K-dependence hole.
-5. **Mid-size threading** as a design memo only: the one sharing shape not yet tried is bun's (types published at
-   creation into one hash-consed store, per-file batches of results, ~90% never published); the memo must first show
-   how determinism survives without bun's rollback.
+0. **For the human**: the "loader not blocking on libs" design (notes/front_end.md, decide whether to build it);
+   laptop confirmations of round three (chunked parse, directory listings, the 16 KB policy, huge text's
+   determinism, the noinline I1 gain, react's new cost).
+1. **Per-checker memory on small projects**: arenas starting on huge pages, 8 sets of intern tables, per-thread
+   malloc heaps (react's typecheck faults 16.8k at the defaults against 7.7k at T1).
+2. **Code footprint**: the parser's hot path and the giant functions' source size; still ~50% frontend-bound
+   (notes/code_layout.md, `scripts/inlinedup.py`).
+3. **The rest of the small-program floor**: the load pool's finish-file lock (now its top blocked wait), the link
+   phase's page faults before any parallel link.
+4. **The correctness long tail, continuously**: the indexed-access recursion identity re-landed with a repro from
+   youtube-enhancer; the TS2536 recursive conditional alias; bun-lockfile install support (16 skipped repositories);
+   the next refresh by a new rule when the human reports new divergences.
+5. **Mid-size threading** as a design memo only: the one sharing shape not yet tried is bun's batched publication
+   (types published at creation into one hash-consed store, ~90% never published); the memo must first show how
+   determinism survives without bun's rollback.
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **A semantics commit lands only with a repro or the full source sweep** (2026-10-23): the indexed-access recursion
+  identity (tsc's rule, landed without a repro "needed only in combination with" the removed HACK) regressed
+  youtube-enhancer, outside the quarter sample (1.16M types against tsgo's 211k, a spurious TS2589); the full run
+  caught it and it was reverted (triage.md).
+- **The conditional_source_related HACK's removal is accepted at react +36%, type-fest +7% instructions**
+  (2026-10-23, f38a8b493): tttt now does the relation work tsc does on react-hook-form's Path/PathImpl (tsgo 84.6k
+  relations / 133k types on react, tttt 93.4k / 89.6k; the old 21.8k / 39.5k was the wrong answer's price) and
+  pi-bolt's TypeBox chain is fixed. Price a hack's removal against tsc's work, not the hack's speed; a one-commit
+  revert if the human decides otherwise.
+- **No persistent thread pool for now** (2026-10-23, fe4): ~1 ms on nest for 1-2 days of work and a 58-thread-local
+  audit; the design and the audit are in notes/front_end.md. **The loader not blocking on libs** is designed, not
+  built (4-8 ms of nest's ~80, a day in program.c's riskiest ordering code): the human decides.
+- **Directory listings in CachedFs landed at the +0.5% instruction bar** (2026-10-23; nest +0.45%, syscalls down by
+  thousands): the laptop judges the wall.
 - **The shared type graph is parked** (2026-10-21/22): built correct by construction and in the tree behind
   `TTTT_SHARED_GRAPH=1`, but at K12 each of its instructions costs 1.2-1.6x plain's, which outweighs the duplicated
   work it saves on ordinary projects, and its output still differs under load on effect (~1%). It wins 2.2-2.5x only
@@ -79,13 +100,16 @@ easy wins first; the correctness long tail continues.
 - **Cross-checker duplication is mostly inherent; no scheduler** (2026-10-22/23, notes/duplication.md): check-phase
   instructions K12/K1 vscode 1.09x (K24 1.14x), effect 1.15x, excalidraw 1.41x, drizzle 2.15x, half to three quarters
   inherent. Import-graph affinity, block stealing and dealing by a per-file cost estimate (bun's identifier count) were
-  all measured negative or within 1-2% on vscode: not built. Stealing already ends at the costliest file.
+  all measured negative or within 1-2% on vscode: not built (a cost estimate predicts no better than bytes).
+  Stealing already ends at the costliest file.
 - **Variance sharing is closed** (2026-10-22, `TTTT_VARIANCE_CENSUS`, `scripts/variancecensus.py`): a shared
   variance isn't K-independent by construction, the clean share is under 1% of K12 instructions, and drizzle's
-  duplicated variance work is tsc's own per-closure cost (tsgo pays it too).
+  duplicated variance work is tsc's own per-closure cost (tsgo pays it too); the "25x blow-up" seen
+  on the way was a census counter summing type ids across id chunks.
 - **Bun's concurrency is not adoptable whole** (2026-10-22, notes/bun_concurrency.md): bun publishes selectively in
   batches and keeps its output deterministic by rollback, which needs id-free type ordering (parity-breaking for us).
-  What applies: link in parallel per import-cycle level (30-40 ms on vscode), a persistent pool, a chunked lib parse.
+  What applied: the chunked parse of big declaration files (landed), a persistent pool (designed, declined for now),
+  link in parallel per import-cycle level (30-40 ms on vscode; after link's page faults).
   Its type-store shape is the one sharing design not yet tried (todo.md, a memo first).
 - **GCC, BOLT and huge text** (2026-10-22, the laptop at 8e3f4fb0 and 277be4bc): the shipped build is GCC LTO + PGO
   relaid out by llvm-bolt (-3.2% K1 wall) with the hot text on a 2 MB huge page (-4.6% K1 wall). clang compiles but
@@ -158,18 +182,19 @@ easy wins first; the correctness long tail continues.
   (`text_sigbus()`).
 
 ## Built and holding
-Hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks), tsc-shaped binder with persistent
-symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity relation, stable type ordering,
-mapper instantiation, tsc's inference flow (return mappers included) and ContextChecked/context anchors, one
-circularity stack with resolution barriers, conditional/mapped/indexed/template/substitution types, deferred
+Hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks), tsc-shaped binder with
+persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity relation, stable type
+ordering, mapper instantiation, tsc's inference flow (return mappers included) and ContextChecked/context anchors,
+one circularity stack with resolution barriers, conditional/mapped/indexed/template/substitution types, deferred
 references, flow graph + narrowing, module resolution + tsconfig with tsgo's two-phase file collection, iteration
-protocol, generators, `this` types, mixins, decorators, union origins, elaboration, JSX, tsc's type printer and symbol
-chains, the pseudochecker, JSDoc + CommonJS + expandos as 7 has them, parallel loading / declaring / resolving /
-checking with the output independent of the checker count, work stealing, checker recycling, deferred function
-bodies, per-file AST arenas, mapped source text, declaration diagnostics, the declaration writer with comments and
-maps for TypeScript and JavaScript, project references / `-b` through emitted declarations, 7.1's content mappers,
-tsc's laziness and deferred checks, 7.1's language, in-flight state as per-checker records, one atom table and one
-type-id space per program, the shared graph behind its flag. ~150k lines of C.
+protocol, generators, `this` types, mixins, decorators, union origins, elaboration, JSX, tsc's type printer and
+symbol chains, the pseudochecker, JSDoc + CommonJS + expandos as 7 has them, parallel loading / chunked parsing of
+big declaration files / declaring / resolving / checking with the output independent of the checker count, work
+stealing, checker recycling, deferred function bodies, per-file AST arenas, mapped source text, declaration
+diagnostics, the declaration writer with comments and maps for TypeScript and JavaScript, project references / `-b`
+through emitted declarations, 7.1's content mappers, tsc's laziness and deferred checks, 7.1's language, in-flight
+state as per-checker records, one atom table and one type-id space per program, the shared graph behind its flag.
+~150k lines of C.
 
 ## Absent or approximated
 Pseudochecker gaps (bugs/display.md "Pseudochecker gaps"), namespace-import clones (cloneTypeAsModuleType), member
@@ -186,8 +211,8 @@ core. All checker state is in `Checker`; the AST is read-only while checking. Wh
   attempts copy a `Parser` (child parsers on vscode 73M -> 41M after the round), no token stream: cheaper than tsgo's
   already, so targeted fixes. The debug build's suite aborts at a parser check (triage.md).
 - **Binder**: declare runs in parallel for files that declare only into their own tables (96% of vscode's files);
-  link is serial (alias resolution's order is observable; bun links in parallel per import-cycle level, the next
-  step: todo.md 1, notes/bun_concurrency.md); the resolve walk shards per file, big declaration files in chunks
+  link is serial (alias resolution's order is observable; bun links in parallel per import-cycle level, worth it
+  only once link is real work after its page faults: notes/bun_concurrency.md, notes/front_end.md); the resolve walk shards per file, big declaration files in chunks
   (hacks.md "Parallelism contract").
 - **Threading**: any new checker-wide memo that *reports* must be tagged `Error.once_key`, and anything written to
   AST/binder state during checking is a race (the frozen guards log it; TSan on the corpora is the net:

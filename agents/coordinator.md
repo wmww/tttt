@@ -32,7 +32,8 @@ wants to talk to you at any time, so between reports you are idle and the agents
   closed both the scheduling question and the shared graph's ceiling in one worker-session.
 - A diagnosis track that ends "don't build" is a result, not a failure, and costs about one worker-session: budget
   for it. In one round five of them (duplication, variance sharing, a cost-estimate deal, interning names, clang)
-  each closed a direction for good.
+  each closed a direction for good; a design written and not built (the persistent pool, the loader not blocking on
+  libs) is a result of the same kind, handed to the human with its price.
 - Shortcuts in a dispatch (the parser's first-word dispatch, quick character tests) land with a `VERIFY_GATES`-style
   build: the fast path checked against the slow path, panicking on disagreement, run over the suite and corpora.
 - **Unfixed divergences become known-failing tests** in `test/cases` (the results file records per-component
@@ -85,7 +86,8 @@ spell. Have it rewrite its pick/check scripts (ten minutes) rather than hunting 
 Lessons for the merger: the per-batch gate must not include vscode's 25-minute callgrind (once per round, at the
 end); it reports per landed batch (what landed, its gate numbers), not per cycle; anything touching malloc tuning
 (`mallopt`, `M_TOP_PAD`) at many threads needs an RSS gate next to the wall; commits that touch only scripts or
-`agents/` skip the oracle gates. A merger applying a rule the human already stated (speed over memory: the 16 KB
+`agents/` skip the oracle gates. Per-landing reports and keeping vscode's callgrind out of the batch are what keep
+the merger's latency down. A merger applying a rule the human already stated (speed over memory: the 16 KB
 checker policy at +13% RSS) without asking you is doing its job.
 
 ## While they run
@@ -110,6 +112,11 @@ checker policy at +13% RSS) without asking you is doing its job.
   them (a -15% on drizzle was mostly a memory policy, not checker speed).
 - **Check a surprising number's instrument before chasing it.** A census counter that summed type ids across id
   chunks once reported a "25x blow-up"; one more measurement with a different counter dispelled it.
+- **A semantics change is gated by the full source sweep or a repro, not the sample.** A commit described as "needed
+  only in combination with" something else, landed without its own repro, is the one that regresses: one blew up a
+  project outside the quarter sample and only the full run caught it.
+- **Price a hack's removal against tsc's own work**, not against the hack's speed: removing a relation hack cost
+  react +36% instructions, and tsgo's relation and type counts showed that was tsc's work, not a new runaway.
 - **Cycles-level claims need the laptop.** Cachegrind's icache proxy over-predicted `-fno-peel-loops` and
   under-predicted BOLT; interning looked good in instructions and lost in cycles. Ask the human for `perf stat` on
   the laptop before a layout, compiler or memory-system change becomes a decision.
