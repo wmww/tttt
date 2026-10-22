@@ -439,6 +439,17 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   mappedTypeRelationships and zod's SortItem<output<T>> (generic keys) against `{ [K in keyof A | keyof B]: (A & B)[K] }`.
 
 ## Type core (`src/ty/`)
+- **Two circularity diagnostics come from printing a type for its side effects** (the string is dropped):
+  lower_node()'s TYPE_INDEXED case prints an anonymous object whose indexed access failed (`ty_to_cstr(object)`), so
+  that resolving its member types makes `type A = { a: A }["x"]` circular like `{ a: A }["a"]`; the satisfies case of
+  ty/expr.c's expression computation prints the target of a failed `satisfies`, so that the return type in flight of
+  `const f = () => 1 satisfies typeof f` is circular (TS7023, `() => any`). tsc gets both from its own resolution order:
+  getIndexedAccessType with its accessNode and checkSatisfiesExpression build their messages (typeToString) right
+  there, and the printer's resolution of members is what runs into the circularity. Correct: resolve what the message
+  would resolve (the object's member types, the target's types) explicitly at those two points, so that display has
+  no observable effect. That is what would make lazy or skipped message formatting safe (notes/checker_speed.md: the
+  display of errors a `@ts-expect-error` suppresses is 2.6% of drizzle). Oracle: the suite's circularity tests
+  (TS2502/TS7022/TS7023) with display stubbed out at those sites.
 - The shared graph's converted words (notes/shared_graph.md) keep a default-path state byte next to each (Prop.type_flight, Signature.res_flight,
   ret_flight, predicate_flight, TyObjectState.members_flight, MappedInfo.template_flight, TyParamState's three): without --shared-graph in flight is that byte, with it the worker's Overlay. They
   go with the plain path, once the flag is the default. Measured at D: all sit in padding holes (only FunctionReturn
