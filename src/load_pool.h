@@ -36,6 +36,8 @@ void load_pool_queue_each(LoadPool* me, csview const* paths, bool const* is_stdl
 // is_stdlib, with its parse errors moved to errs; null if the loader has to parse it itself, and then no worker will.
 // The loader runs LoadPoolParse too then, with the compiler options set
 SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* errs);
+// Whether a worker is parsing path or it is queued (load_pool_take() would wait for it or parse it): nothing changes
+bool load_pool_in_flight(LoadPool* me, csview path);
 // For TTTT_LOAD_POOL_STATS: how long the loader spent parsing a file load_pool_take() left to it
 void load_pool_note_inline(LoadPool* me, double ms);
 

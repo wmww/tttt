@@ -506,6 +506,14 @@ SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* 
     return ret;
 }
 
+bool load_pool_in_flight(LoadPool* me, csview path) {
+    pthread_mutex_lock(&my lock);
+    auto found = hmap_load_entry_ptr_get(&my by_path, path);
+    bool ret = found && (found->second->state == LOAD_PARSING || found->second->state == LOAD_QUEUED);
+    pthread_mutex_unlock(&my lock);
+    return ret;
+}
+
 void load_pool_note_inline(LoadPool* me, double ms) {
     my inline_ms += ms;
 }

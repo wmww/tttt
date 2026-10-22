@@ -941,7 +941,11 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         // (What's been reported so far, the config's syntax errors, is kept aside from the libraries' errors)
         VecError earlier = errs->errors;
         errs->errors = (VecError){0};
-        try (load_stdlib(program)) cleanup {
+        // (Not waiting for a library a load worker is still on: the roots meanwhile, program_set_defer_libs())
+        program_set_defer_libs(program, !getenv("TTTT_NO_DEFER_LIBS"));
+        FailableResult libs_loaded = load_stdlib(program);
+        program_set_defer_libs(program, false);
+        try (libs_loaded) cleanup {
             root_stream_drop(&stream);
             vec_error_drop(&earlier);
             vec_error_drop(&shown);
@@ -989,6 +993,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     cstr_drop(&streamed_root);
     root_stream_drop(&stream);
     str_list_drop(&root_files);
+    program_finish_deferred_libs(program, "after the roots", c_sv(""));
     program_load_automatic_types(program);
     phase_done(opts, out, "load+parse files", &last_time);
     // (The syntax errors of deferred bodies are only found when they're parsed: an output that has to have them all

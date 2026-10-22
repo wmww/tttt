@@ -89,6 +89,15 @@ static const char* program_phase_get_str(ProgramPhase phase) {
 
 #define CHANGE_PHASE(from, to) ASSERT_PHASE(from); my phase = to;
 
+// A library the libs phase left to the pool worker parsing it, with what loading it had then (Program.deferred_libs)
+typedef struct DeferredLib {
+    cstr path; // Canonical
+    SourceFile* parent; // Program.loading_parent: null for a library the options name, else the library referring to it
+    Span site; // Program.include_site and include_kind (a `/// <reference lib>` between libraries: INCLUDE_REFERENCE)
+    IncludeKind kind;
+    bool set_included_at; // Loaded through program_load_reference_path(), which sets SourceFile.included_at
+} DeferredLib;
+
 typedef struct Program {
     ProgramPhase phase;
     // The content mappers' processes (plan 56), made by the first mapped file program_make_source() reads (a load
@@ -138,6 +147,14 @@ typedef struct Program {
     SourceFile* loading_parent;
     VecSourceFilePtr load_roots;
     bool collected;
+    // program_set_defer_libs(): a library a pool worker is still on when the libs phase gets to it is remembered with
+    // what loading it then had (DeferredLib) and loaded later, program_finish_deferred_libs()
+    bool defer_libs;
+    bool finishing_libs;
+    bool lib_deferred; // program_add_source_idempotent() just remembered one (returning null)
+    struct DeferredLib* deferred_libs;
+    u32 deferred_lib_count, deferred_lib_cap;
+    double deferred_libs_since; // (TTTT_LOAD_POOL_STATS)
     // tsc's getPackagesMap: the package name of every module resolution that found a file of a package, whether one of
     // them was a declaration file
     HMapPackageFlag packages;
@@ -353,6 +370,8 @@ static void program_drop(Program* me) {
     hmap_box_source_file_drop(&my source_files_map);
     hmap_source_file_ptr_drop(&my files_by_package_id);
     vec_source_file_ptr_drop(&my load_roots);
+    for (u32 i = 0; i < my deferred_lib_count; i++) cstr_drop(&my deferred_libs[i].path);
+    free(my deferred_libs);
     hmap_source_file_ptr_drop(&my emit_blocked);
     hmap_package_flag_drop(&my packages);
     vec_source_file_ptr_drop(&my source_files_ordered);
@@ -1931,12 +1950,148 @@ static SourceFile* program_lookup_canonical(Program const* me, csview canonical)
     return ret;
 }
 
+
+static isize stdlib_priority(SourceFile const* source);
+static SourceFile* program_add_source_idempotent(Program* me, csview path);
+
+static double deferred_libs_now_ms(void) {
+    struct timespec now;
+    timespec_get(&now, TIME_UTC);
+    return (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6;
+}
+
+static void program_defer_lib(Program* me, csview canonical) {
+    if (my deferred_lib_count == my deferred_lib_cap) {
+        my deferred_lib_cap = my deferred_lib_cap ? my deferred_lib_cap * 2 : 4;
+        my deferred_libs = realloc(my deferred_libs, sizeof(DeferredLib) * my deferred_lib_cap);
+        panic_if(!my deferred_libs, "out of memory");
+    }
+    if (!my deferred_lib_count) my deferred_libs_since = deferred_libs_now_ms();
+    my deferred_libs[my deferred_lib_count++] = (DeferredLib){
+        .path = cstr_from_sv(canonical), .parent = my loading_parent, .site = my include_site, .kind = my include_kind,
+        .set_included_at = my include_kind == INCLUDE_REFERENCE,
+    };
+}
+
+// TTTT_DEFER_LIBS=all: every library the libs phase meets is deferred, pool or not (the oracle of deferral: the output
+// must be what TTTT_NO_DEFER_LIBS=1 gives)
+static bool defer_all_libs(void) {
+    static int all = -1;
+    if (all < 0) all = getenv("TTTT_DEFER_LIBS") && !strcmp(getenv("TTTT_DEFER_LIBS"), "all");
+    return all;
+}
+
+void program_set_defer_libs(Program* me, bool defer) {
+    my defer_libs = defer && (program_pool(me) || defer_all_libs());
+}
+
+static void program_finish_deferred_lib(Program* me, DeferredLib const* lib) {
+    my loading_parent = lib->parent;
+    my include_site = lib->site;
+    my include_kind = lib->kind;
+    my include_package_id = c_sv("");
+    my loading_stdlib = true;
+    my node_modules_depth = 0;
+    SourceFile* file = program_add_source_idempotent(me, cstr_sv(&lib->path));
+    my include_kind = INCLUDE_NONE;
+    my include_site = span_null;
+    if (file && lib->set_included_at && !span_valid(file->included_at)) file->included_at = lib->site;
+#ifdef DEBUG_BUILD
+    // (What the serial path gives it: a library file, sorted with the libraries, under the parent it was met in)
+    check(file && file->is_stdlib && stdlib_priority(file) != INTPTR_MAX);
+    bool found_under_parent = !lib->parent;
+    if (lib->parent) {
+        for (u32 j = 0; j < lib->parent->load_child_count && !found_under_parent; j++) found_under_parent = lib->parent->load_children[j] == file;
+    } else {
+        for_each (j, vec_source_file_ptr, &my load_roots) found_under_parent |= *j == file;
+    }
+    check(found_under_parent);
+#endif
+}
+
+// The libraries the libs phase deferred, in the order it met them, each loaded as the libs phase would have: from its
+// parent with its include reason, `loading_stdlib`, outside node_modules, without the compiler options of whatever is
+// loading now (reset, then restored) and with its errors dropped like the libs phase's (main.c). What can differ from a
+// load that waited: where in its parent's load_children it is and the order of a library's include reasons, neither of
+// which is observable for a library (program_order_stdlib_first() sorts them by name; include reasons are only shown
+// for emitted files)
+void program_finish_deferred_libs(Program* me, char const* when, csview wanted) {
+    if (!my deferred_lib_count || my finishing_libs) return;
+    double start = deferred_libs_now_ms();
+    SourceFile* parent = my loading_parent;
+    Span site = my include_site;
+    IncludeKind kind = my include_kind;
+    csview package_id = my include_package_id;
+    bool loading_stdlib = my loading_stdlib;
+    bool defer = my defer_libs;
+    u32 depth = my node_modules_depth;
+    CompilerOptions const* options = compiler_options_private;
+    VecError errors = my errs->errors;
+    my errs->errors = (VecError){0};
+    my finishing_libs = true;
+    my defer_libs = false;
+    compiler_options_private = nullptr;
+    set_compiler_options(&my options);
+    // Asked for one file (wanted), the ones already parsed first and only until it is there: their order isn't
+    // observable either, and the one lib.dom.d.ts's worker is still on may not be needed for it (nest: @types/node's
+    // `/// <reference lib>`s come early in the roots)
+    u32 total = my deferred_lib_count, finished = 0;
+    bool found = false;
+    for (u32 pass = wanted.size ? 0 : 1; pass < 2 && !found; pass++) {
+        u32 kept = 0;
+        for (u32 i = 0; i < my deferred_lib_count; i++) {
+            DeferredLib* lib = &my deferred_libs[i];
+            bool now = !found && (pass || !my pool || !load_pool_in_flight(my pool, cstr_sv(&lib->path)));
+            if (!now) {
+                my deferred_libs[kept++] = *lib;
+                continue;
+            }
+            program_finish_deferred_lib(me, lib);
+            cstr_drop(&lib->path);
+            finished++;
+            found = wanted.size && program_lookup_canonical(me, wanted);
+        }
+        my deferred_lib_count = kept;
+    }
+    if (getenv("TTTT_LOAD_POOL_STATS")) {
+        double end = deferred_libs_now_ms();
+        eprintln("load: ", (i64)finished, " of ", (i64)total, " deferred libs finished ", when, wanted.size ? " " : "",
+            wanted, " ", start - my deferred_libs_since, " ms after the first was deferred, in ", end - start, " ms");
+    }
+    clear_compiler_options();
+    compiler_options_private = options;
+    vec_error_drop(&my errs->errors);
+    my errs->errors = errors;
+    my finishing_libs = false;
+    my defer_libs = defer;
+    my loading_parent = parent;
+    my include_site = site;
+    my include_kind = kind;
+    my include_package_id = package_id;
+    my loading_stdlib = loading_stdlib;
+    my node_modules_depth = depth;
+}
+
 static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
 
     cstr storage = cstr_null;
     csview canonical_view = program_canonical_view(me, path, &storage);
     SourceFile* cached_source = program_lookup_canonical(me, canonical_view);
+    // (After the libs phase, a library file the program doesn't have yet may be one the libs phase left to its worker,
+    // or under one: the remembered ones are loaded first, as they would have been, program_finish_deferred_libs(). In
+    // the libs phase a library met again is remembered again, so that each reference is replayed)
+    if (!cached_source && my deferred_lib_count && !my finishing_libs && !my defer_libs &&
+        csview_equals_sv(dirname_of(canonical_view), dirname_of(cstr_sv(&my deferred_libs[0].path)))
+    ) {
+        // (The view may be a memo's, which loading changes: a copy, canonical already)
+        cstr wanted = cstr_from_sv(canonical_view);
+        cstr_drop(&storage);
+        program_finish_deferred_libs(me, "for", cstr_sv(&wanted));
+        storage = wanted;
+        canonical_view = cstr_sv(&storage);
+        cached_source = program_lookup_canonical(me, canonical_view);
+    }
     if (cached_source) {
         record_include_reason(me, cached_source);
         // A source file is already created for this path
@@ -1947,6 +2102,14 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         return found;
     }
 
+    // The libs phase doesn't wait for a library a worker is still on (lib.dom.d.ts): it goes on to the roots, and the
+    // library is loaded later in what loading it had now (program_finish_deferred_libs())
+    if (my defer_libs && my loading_stdlib && (defer_all_libs() || (program_pool(me) && load_pool_in_flight(my pool, canonical_view)))) {
+        program_defer_lib(me, canonical_view);
+        cstr_drop(&storage);
+        my lib_deferred = true;
+        return nullptr;
+    }
     cstr canonical_path = cstr_size(&storage) ? storage : cstr_from_sv(canonical_view);
     // No source file is created for this path: a load pool worker may have parsed it, else parse it here
     program_resolver(me);
@@ -2211,11 +2374,17 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
 
     // Add the source file to the program
     if (!my loading_stdlib) my include_kind = INCLUDE_ROOT;
+    my lib_deferred = false;
     SourceFile* main_source = program_add_source_idempotent(me, path);
     my include_kind = INCLUDE_NONE;
     if (main_source && !my loading_stdlib) main_source->is_root = true;
 
     clear_compiler_options();
+    // (A library left to its worker, program_finish_deferred_libs())
+    if (!main_source && my lib_deferred) {
+        my lib_deferred = false;
+        return ok(nullptr);
+    }
 
     // An unreadable entry point isn't a TypeScript-level diagnostic: it has no span to attach to, so
     // error_ctx_error_d() would just drop it. Report it to our caller instead.
@@ -4310,6 +4479,8 @@ void program_resolve_names(Program* me) {
     double last = 0;
     resolve_step_done("", &last);
     program_report_content_mapper_options(me);
+    // (main.c finished them after the roots: another way of loading still must)
+    program_finish_deferred_libs(me, "at resolve", c_sv(""));
     program_collect_files(me);
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
     // Loading is over: what the pool parsed for nothing goes

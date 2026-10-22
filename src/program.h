@@ -79,6 +79,13 @@ void program_load_ahead_roots(Program* me, csview const* roots, isize root_count
 // The packages that are part of every program: the `types` option, else everything in the type roots (`typeRoots`,
 // else node_modules/@types from the config's or the current directory upwards). Call it after the root files
 void program_load_automatic_types(Program* me);
+// The libs phase (main.c): with a load pool, a library a worker is still on when the loader gets to it is remembered
+// and loaded later, by program_finish_deferred_libs(), so that the loader goes on to the roots meanwhile. Loading it
+// later changes nothing observable (see there)
+void program_set_defer_libs(Program* me, bool defer);
+// Loads the remembered libraries as the libs phase would have (`when` and `wanted` for TTTT_LOAD_POOL_STATS): once
+// the roots are loaded, and by the loader itself as soon as it is asked for one. Every phase after loading needs them
+void program_finish_deferred_libs(Program* me, char const* when, csview wanted);
 
 // The file at path if it is part of the program (loaded or imported), null otherwise
 SourceFile* program_find_source(Program const* me, csview path);
