@@ -85,6 +85,108 @@ D1 read misses up 2.07 -> 2.13% on tsc); splitting is_related_to(), recursive_re
 caches (instructions up or flat). The parser is ~12% of vscode's instructions with no hot site (74M child Parser
 creations for 138 MB of source, the top site 10%): structural.
 
+## The 12-core box at 277be4bc: huge text, -fno-peel-loops, clang (2026-10-22)
+Run by an agent on the human's laptop (the box of the sections below): AC, `balanced`, Firefox open (~1.5% of the box
+in `top`), nothing else running. Built in a detached worktree of origin/wt-layout (277be4bc) **in /tmp (tmpfs)**, with
+one local, uncommitted change: main's `scripts/boltbuild.sh` (e790f109, the GOT-free instrumentation runtime; wt-layout
+predates it, and Arch's llvm-bolt runtime fails without it). fast/tttt = bolt/tttt (GCC PGO + BOLT), hot window
+`__hot_start..__hot_end` 2.47 MB, of which the first 2 MB go on the huge page. `perf stat -e
+cycles,instructions,iTLB-load-misses,bp_l1_tlb_miss_l2_tlb_hit,L1-icache-load-misses` on vscode
+(`src/tsconfig.corpus.json --noEmit --pretty false`). K1 is `--checkers 1 --threads 1` pinned to CPU 2 (`taskset`, a Zen
+5 core); the defaults unpinned. The clock varies between runs under `balanced` (4.75-4.85 GHz at K1), so **pinned
+cycles** are the number to read.
+
+**1. Hot text on a 2 MB huge page (on against `TTTT_HUGE_TEXT=0`), fast/tttt.** The page is in place during a run: an
+anonymous `r-xp` 2 MB mapping at `__hot_start` with `AnonHugePages: 2048 kB` in smaps, the rest of the hot window
+file-backed after it.
+
+| | vscode K1 on | K1 off | vscode defaults on | defaults off | nest on | nest off |
+|---|---|---|---|---|---|---|
+| runs | -r 10 | -r 10 | 5 alternating rounds of -r 4 | | 5 alternating rounds of -r 10 (2 earlier non-alternating -r 10 pairs agree: a tie) | |
+| wall s | **9.158** (+-0.4%) | 9.599 | **2.035** (every round) | 2.059 | 0.0789 | 0.0783 |
+| cycles G | **44.99** (-3.6%) | 46.67 | **95.96** (-1.2%) | 97.09 | 1.270 | 1.272 |
+| instructions G | 64.93 | 64.93 | 76.24 | 76.21 | 1.20 | 1.20 |
+| IPC | 1.44 | 1.39 | 0.79 | 0.79 | 0.95 | 0.95 |
+| L1 iTLB misses (L2 hits) per 1000 instructions | **0.22** | 6.59 | **0.20** | 5.36 | 0.6 | 2.8 |
+| iTLB-load-misses (L2 misses) | 0.03 M | 0.15 M | **11.4 M** | 68.6 M | 0.03 M | 0.06 M |
+| L1-icache-load-misses per 1000 instructions | **7.76** (-13%) | 8.88 | **7.05** (-18%) | 8.59 | 6.07 | 6.22 |
+
+| `-M PipelineL1 -r 3` | K1 on | K1 off | defaults on | defaults off |
+|---|---|---|---|---|
+| wall s | 9.23 | 9.60 | 1.92 | 2.05 |
+| frontend / backend / bad spec / retiring % | 51.1 / 24.8 / 7.9 / 16.0 | 50.7 / 25.7 / 7.6 / 15.5 | 47.7 / 25.8 / 3.2 / 9.2 (SMT 11.7) | 48.9 / 24.9 / 3.2 / 9.0 (SMT 11.7) |
+
+- **Huge text is a win: -4.6% wall and -3.6% cycles at K1, -1.2% at the defaults (all 5 alternating rounds), nest a
+  tie** (its 2 MB copy and fault don't show at 78 ms). The L1 iTLB nearly stops missing (30x fewer), the defaults'
+  iTLB L2 misses drop 6x, and the icache misses fall too (13-18%: fewer page walks competing with fetch, presumably).
+  Retiring +0.5 point at K1; the topdown split barely moves otherwise.
+- The first defaults A/B (-r 10 each, not alternating) read on 1.884 / off 1.787 s against the cycles' -2%, and the
+  PipelineL1 runs 1.92 / 2.05: wall at the defaults drifts more than the effect under `balanced`; the alternating
+  rounds are the result.
+- **"Off" isn't the 8e3f4fb0 section's BOLT number**: there, BOLT alone had 0.13 L1 iTLB misses per 1000 at K1; today
+  main's fast/tttt (92828ad6, from the ext4 checkout) reads 6.6 like this build's off from tmpfs (one -r 3 of this
+  build copied to ext4: 1.6, no FilePmdMapped in smaps either). Something gave 8e3f4fb0's runs large or huge text
+  mappings (file THP or large folios in the page cache?) that today's runs don't get; unexplained, but huge_text()
+  makes it deterministic.
+- Some batches with the page on show 4 KB-level iTLB rates (clang K1 round 3: 3.5 per 1000; nest's first on round 2.4;
+  no-peel zod 0.8-1.6): the page wasn't taken in some runs (`huge_pages_take()` or the THP allocation failing right
+  after a previous run freed its memory?); not investigated.
+
+**2 and 3. -fno-peel-loops and clang, against fast/tttt** (`PGO_DIR=pgo-peel PGO_CFLAGS=-fno-peel-loops
+BOLT_DIR=bolt-peel` and `CC=clang PGO_DIR=pgo-clang BOLT_DIR=bolt-clang scripts/boltbuild.sh`, each its own PGO
+training and BOLT layout; huge text on for all three). Hot windows: GCC 2.47 MB, no-peel 2.34 MB, **clang 3.67 MB**
+(the huge page covers 2 MB of it). vscode output byte-identical for all three. 4 rounds, the order reversed after 2;
+vscode -r 5 per round, drizzle and zod -r 10; medians of the 4 rounds (cycles per round in brackets):
+
+| | GCC (fast/tttt) | -fno-peel-loops | clang |
+|---|---|---|---|
+| vscode K1 wall s | 9.41 | 9.32 (-0.9%) | 9.55 (+1.5%) |
+| vscode K1 cycles G | 45.01 [46.90 44.56 44.38 45.47] | **44.58 (-1.0%)** [45.33 44.46 44.41 44.70] | 45.63 (+1.4%) [45.68 45.39 45.59 46.24] |
+| vscode K1 instructions G / icache misses | 64.93 / 505 M | 65.73 (+1.2%) / 484 M (-4.2%) | 66.23 (+2.0%) / 509 M (+0.7%) |
+| vscode K1 L1 iTLB misses | 14.5 M | 13.4 M | 37.0 M |
+| vscode defaults wall s / cycles G | 1.958 / 97.05 | 1.892 (-3.4%) / 98.50 (+1.5%) | 1.966 (+0.4%) / 98.85 (+1.9%) |
+| vscode defaults instructions G / icache misses | 76.36 / 535 M | 77.39 (+1.3%) / 514 M (-3.9%) | 78.13 (+2.3%) / 537 M |
+| drizzle wall s / cycles G / instructions G / icache | 0.287 / 8.29 / 8.84 / 63 M | 0.284 (-1.0%) / 8.26 (-0.3%) / 9.17 (+3.7%) / 61 M (-3.8%) | 0.290 (+0.9%) / 8.42 (+1.6%) / 9.45 (+6.9%) / 62 M (-2.1%) |
+| zod wall s / cycles G / instructions G / icache | 0.199 / 5.50 / 5.53 / 43 M | 0.193 (-3.3%) / 5.45 (-1.1%) / 5.65 (+2.1%) / 42 M (-3.1%) | 0.197 (-1.0%) / 5.51 (0.0%) / 5.80 (+4.9%) / 42 M (-1.7%) |
+
+- **-fno-peel-loops: a small win, at the edge of the noise.** K1 cycles -1.0% (lower in 3 of 4 rounds, a tie in the
+  4th; round 1's GCC run was disturbed: 5x its usual iTLB L2 misses), zod -1.1%, drizzle -0.3%; the defaults' wall
+  -3.4% but their cycles +1.5% (the defaults' wall is the noisiest number here). Instructions +1.2-3.7% as predicted;
+  icache misses -3 to -4% on hardware, less than cachegrind's simulated 5-10%. Worth taking only with another round
+  (or `instrcount.sh`-style cycles on the corpora) to confirm.
+- **clang: no, decided.** Worse at K1 in every round (+1.4% cycles), +1.9% cycles at the defaults, +1.6% drizzle, a
+  tie on zod. **On hardware clang executes more instructions, not fewer**: +2.0% on vscode K1, +2.3% at the defaults,
+  +6.9% drizzle, +4.9% zod (cachegrind's proxy said -6% on vscode; that run's builds or counting differ from these
+  BOLTed binaries': unexplained). Its icache misses are level with GCC's (+0.7% K1, -2% on the small corpora), and its
+  1.2 MB larger hot window spills past the huge page: 2.5x the L1 iTLB misses at K1, 6x at the defaults.
+
+**4. Bench** (`scripts/bench.sh --runs 3 --checkers 12`, fast/tttt as built, huge text on), best wall s / CPU s
+(median run) / peak MB, against the 8e3f4fb0 section's fast columns (BOLT, no huge text):
+
+| corpus | default | 8e3f4fb0 | K12 | 8e3f4fb0 | single | 8e3f4fb0 | tsgo | tsgo single |
+|---|---|---|---|---|---|---|---|---|
+| TypeScript6 | 0.25 / 1.20 / 485 | 0.22 / 1.17 / 501 | 0.23 / 1.21 / 486 | 0.21 / 1.19 / 503 | 0.45 / 0.45 / 231 | 0.44 / 0.44 / 231 | 0.58 / 2.86 / 508 | 1.09 / 2.04 / 426 |
+| type-fest | 0.21 / 1.42 / 921 | | 0.25 / 1.45 / 905 | | 0.61 / 0.61 / 565 | | 3.94 / 19.2 / 5567 | 5.90 / 15.1 / 4428 |
+| valibot | 0.14 / 1.26 / 513 | | 0.14 / 1.24 / 514 | | 0.36 / 0.35 / 258 | | 0.69 / 4.59 / 844 | 1.47 / 3.03 / 634 |
+| bulletproof-react | 0.09 / 0.38 / 327 | | 0.09 / 0.71 / 422 | | 0.14 / 0.14 / 150 | | 0.43 / 2.58 / 452 | 0.58 / 1.42 / 324 |
+| nestjs-boilerplate | 0.06 / 0.43 / 291 | 0.07 / 0.42 / 300 | 0.06 / 0.51 / 300 | 0.06 / 0.48 / 319 | 0.13 / 0.14 / 135 | 0.13 / 0.13 / 134 | 0.14 / 1.38 / 269 | 0.29 / 0.62 / 216 |
+| webpack | 0.28 / 2.78 / 872 | | 0.28 / 2.85 / 886 | | 1.00 / 1.00 / 557 | | 1.84 / 10.1 / 1429 | 3.28 / 5.97 / 1267 |
+| zod | 0.21 / 1.91 / 849 | 0.20 / 1.86 / 860 | 0.20 / 1.91 / 827 | 0.19 / 1.82 / 848 | 0.54 / 0.54 / 440 | 0.50 / 0.50 / 442 | 1.19 / 8.61 / 1326 | 2.20 / 4.42 / 975 |
+| xstate | 0.13 / 1.12 / 470 | | 0.13 / 1.11 / 470 | | 0.28 / 0.28 / 196 | | 0.44 / 2.90 / 476 | 0.81 / 1.79 / 373 |
+| drizzle | 0.33 / 3.19 / 1103 | 0.29 / 2.75 / 1106 | 0.29 / 2.93 / 1103 | 0.28 / 2.72 / 1106 | 0.63 / 0.65 / 467 | 0.63 / 0.63 / 466 | 1.48 / 10.6 / 1644 | 2.00 / 4.02 / 923 |
+| vue | 0.17 / 1.71 / 550 | | 0.17 / 1.66 / 552 | | 0.55 / 0.55 / 307 | | 0.86 / 5.25 / 787 | 1.78 / 3.69 / 686 |
+| effect | 0.29 / 3.07 / 987 | 0.28 / 2.95 / 933 | 0.29 / 3.09 / 993 | 0.27 / 2.91 / 942 | 1.07 / 1.07 / 684 | 1.03 / 1.03 / 621 | 1.59 / 9.47 / 1562 | 3.26 / 6.97 / 1319 |
+| vscode | **1.81** / 33.1 / 5348 | 1.81 / 32.9 / 5362 | 2.01 / 22.3 / 4989 | 1.97 / 22.7 / 5004 | **9.23** / 9.28 / 4088 | 9.13 / 9.18 / 4091 | 7.77 / 55.4 / 7639 | 19.47 / 34.5 / 6955 |
+| excalidraw | 0.21 / 2.17 / 738 | | 0.22 / 2.28 / 733 | | 0.67 / 0.68 / 372 | | 1.46 / 11.5 / 1839 | 2.12 / 4.02 / 925 |
+| tanstack-router | 0.19 / 1.54 / 575 | | 0.19 / 1.57 / 576 | | 0.50 / 0.49 / 313 | | 1.20 / 6.51 / 913 | 2.00 / 4.27 / 669 |
+| TS6 -b | 0.53 / 2.92 / 520 | | - | | - | | 1.28 / 7.23 / 706 | 2.42 / 4.52 / 522 |
+
+- Level with 8e3f4fb0 within the 10 ms granularity and the session's drift (vscode 1.81 default, single 9.23 against
+  9.13; drizzle's default 0.33 against its K12 0.29 is one slow set). The bench doesn't show huge text's 4.6%: it ran
+  last, after ~30 minutes of back-to-back runs, while part 1's A/B ran alternating within minutes; read the A/B, not
+  this table, for the effect. Effect's single-threaded peak 684 MB against 621-626 in the earlier sections is new and
+  not looked into.
+
 ## The 12-core box at 8e3f4fb0: BOLT and interning A/B (2026-10-22)
 Run by an agent on the human's laptop (the box of the 2989c0f0 section below): AC, `balanced`, but **Firefox open**
 (~25% of a core) and load 3-5 before each step (10 during B's runs, our own). llvm-bolt wasn't installed (Arch
