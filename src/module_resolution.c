@@ -242,7 +242,7 @@ static cstr concat_normalized(csview dir, csview rest) {
     return dir.size == 1 ? cstr_d("/", rest) : cstr_d(dir, "/", rest);
 }
 
-static cstr absolute_path_fast(csview cwd, csview path) {
+cstr absolute_path_fast(csview cwd, csview path) {
     bool rooted = path.size && path.buf[0] == '/';
     // (Most paths are normalized already: resolved files, the program's canonical paths)
     if (path_is_normalized(path)) {

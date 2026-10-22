@@ -3256,7 +3256,10 @@ static void program_verify_project_files(Program* me) {
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile const* file = *i;
         if (!emit_source_may_be_emitted(me, file)) continue;
-        cstr absolute = absolute_path_of(cwd, cstr_sv(&file->canonical_path));
+        // (vscode: absolute_path_of() per file was most of this loop's 41 M instructions, serial before the declare)
+        csview canonical = cstr_sv(&file->canonical_path);
+        cstr absolute = path_is_drive_rooted(cwd) || path_is_drive_rooted(canonical) ? absolute_path_of(cwd, canonical) :
+            absolute_path_fast(cwd, canonical);
         // (tsgo's ContainsFilePath: the directory itself counts, `rootDir` naming the file; a case-insensitive host
         // compares Unicode lower cases, ToFileNameLowerCase)
         bool fold = o->case_insensitive_file_names;

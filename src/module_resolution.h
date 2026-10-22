@@ -136,6 +136,10 @@ static inline bool path_is_drive_rooted(csview path) {
     return path.size == 2 || path.buf[2] == '/' || path.buf[2] == '\\';
 }
 
+// absolute_path_of(cwd, path) without a drive root (path_is_drive_rooted()) in either, faster: one buffer, normalized
+// paths (the program's canonical ones, resolved files) joined without a walk of their segments
+cstr absolute_path_fast(csview cwd, csview path);
+
 static inline bool module_name_is_relative(csview name) {
     // tsc's isExternalModuleNameRelative(): "./", "../", ".", ".." (either slash), or rooted (isRootedDiskPath: POSIX or
     // UNC, a DOS drive `c:/` or `c:`). Not a URL `scheme://authority/`: getEncodedRootLength encodes its root as a
