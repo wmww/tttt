@@ -299,7 +299,22 @@ constraint, TS2208 for a mapped key). Left, each looked at:
 ## Mutation seeds 61/62 leftovers (2026-10-14: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 4000 --seed 61|62`)
 Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechecks of each other). Left, each looked at:
 - **Spurious circularity on getters** (seed 62, not the satisfies one, which is fixed): TS7022/TS7023/TS2502 in
-  recursiveTypeInference add-optional (`_zod?:`), TS2339 in noCircularitySelfReferentialGetter2 drop-as. Not looked into.
+  recursiveTypeInference add-optional (`_zod?:` on line 28, `$ZodString`'s), TS2339 in
+  noCircularitySelfReferentialGetter2 drop-as. Not looked into; not the expression-memo bail below (unchanged with it
+  patched, 2026-10-22).
+- **An expression's nested runaway bail overwrites its outer evaluation** (latent, no observable case found;
+  2026-10-22). lazy_type_evaluate_inner() (lazy_type.c) lets a LAZY_TYPE_EXPR be re-entered 8 times, then marks the
+  memo done as TY_CIRCULAR; the outermost evaluation then finishes with `state->done` set and its own result is
+  dropped, so the expression's type is any for good. tsc's checkExpression isn't memoized: the outer call returns its
+  own result. Seen when ty_satisfies_elaboration_reads() went through check_assignable(): for `const f = () => 42
+  satisfies typeof f` the TS1360 report prints `() => ...`, display_signature() asks pseudo_equivalent() whether the
+  arrow's return expression reads as its return type (tsgo's serializeReturnTypeForSignature does the same read,
+  stopped by its maxSerializationLevel), which evaluates the satisfies expression in flight again, recursively, until
+  the bail: `42 satisfies typeof f : any` in noTypeToStringRecursion's types. So the read is tsc's too; the divergence
+  is the memo. A 4-line fix (the outermost evaluation, `!state->evaluation_started` on entry, keeps its own result over
+  a nested TY_CIRCULAR) changes no suite test and fixes that case; not committed for want of a reachable repro (the
+  walk reports after computations, and call argument errors inside an in-flight arrow, `const f = () => g(f)`, pass
+  either way). Worth doing when a case shows.
 - seed 61 destructuringWithGenericParameter null-arg: "Binding elements read before the contextual assignment" above.
 - seed 61 restElementWithInitializer2 delete-stmt (x2): the seeds 41/42 "Lazy name resolution" entry below.
 - seed 62 contextualTypesNegatedTypeLikeConstraintInGenericMappedType1 undefined-init (missing TS7034): the seeds 41/42
