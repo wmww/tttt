@@ -37,3 +37,5 @@ intersection's property symbol to bugs/type_core.md.
   checker later reads finished memos for a.ts (`flow_expr_type_in` returns a done memo, no rerun), so a.ts's TS2538 could
   be missing at K1 and present at K16. Not seen by checkerdiff/kdiff yet; if it shows, rerun the partial pass for the
   own file (or record foreign partial errors per file and replay them when that file is checked).
+  (That exact two-file shape matches at K1 and K2: the walk's own evaluation of the loop still runs uncached. A real
+  repro needs the loop's assigned value memoized as done by the foreign check.)
