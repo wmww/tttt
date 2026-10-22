@@ -30,11 +30,18 @@ end's split", "The 12-core box at efb91998", "The config glob next to the load p
   The workers are off a CPU for ~35% of their parse jobs even quiet (1.5 of 2.3 s): mmap of each file 19% of their
   blocked samples, the resolver's rwlock and package_json_of 7-8%, glibc's heap-growth mprotect ~10% (21k calls),
   the pool's mutex 3%; parse is <36% of their samples.
+- **After 2026-10-22's cuts (loaded box, load 15-65 all session: walls are relative only, the laptop must retake them)**:
+  the walk no longer precedes the loader (config phase, now until the first root, 92-261 -> 6-14 ms; main thread CPU
+  in config+load 176-203 -> 132-166 ms); link's alias loop lower in 5/5 pairs with prefetching; module refs on 16
+  threads; options' per-file paths 41 -> 10 M instructions. Not yet retaken quietly: the T16 table above is before
+  them, and T4 (laptop-class) and nest have no quiet timeline at all. Link at T4 read 82-96 ms against 52-56 at T1
+  and T16 in every run (unexplained: check on the laptop).
 - Tools: `tttt --time` (phases with the main thread's CPU), `TTTT_LOAD_POOL_STATS=1` (the loader's own work, waits,
   inline parses), `TTTT_LOAD_POOL_INLINE=1` (why each inline parse happened), `TTTT_RESOLVE_TIMES=1` (declare, link's
   steps, walk), `TTTT_FILE_TIMES=1` (per-file check timeline), `TTTT_DEFER_STATS=1` (materializations over 10 ms),
-  and the main-thread wall sampler `bench/sampler/` (LD_PRELOAD, `timer_create`, `report.py --under/--exclude/
-  --callers`), which stands in for perf on the shared box.
+  the main-thread wall sampler `bench/sampler/` (LD_PRELOAD, `timer_create`, `report.py --under/--exclude/
+  --callers`), and the whole-process timeline `bench/timeline/` (every thread's schedstat and stacks per phase,
+  `timeline.py OUT --skip @libc`), which stand in for perf on the shared box.
 
 ## Done
 - The loader's serial work (2026-10-16): the loader takes the workers' resolutions (`SourceFile.preresolved`),
@@ -49,6 +56,12 @@ end's split", "The 12-core box at efb91998", "The config glob next to the load p
 - Parallel declare (`program_declare_files()`, `declares_in_isolation()`: 10604 of vscode's 11015 files); module refs
   on threads unless a pattern has augmentations; webpack's CommonJS export walk moved onto the load pool (declare
   40 -> 18 ms).
+- 2026-10-22: a 16 MB malloc top pad through the front end (main(): glibc's mprotect per 128 KB of heap growth took
+  the mmap lock for writing 21k times on vscode; reset before checking, peak RSS within 1%). The include walk on its
+  own thread, streaming final roots to the loader in root order (main.c's RootStream, tsconfig.c's take_found()/
+  emit_ready(): see the commit for the invariant). Link's alias loop prefetched four stages ahead
+  (link_prefetch_aliases()). Module refs on threads with pattern augmentations (their finders deferred to program
+  order). program_verify_project_files() through absolute_path_fast().
 - Checker balance: work stealing (`steal_file()`), costliest file first (`share_first`: -6% on TypeScript6 at 4
   cores, a wash on 12).
 
@@ -66,6 +79,13 @@ end's split", "The 12-core box at efb91998", "The config glob next to the load p
   Only deferring nested bodies inside a deferred one would split it.
 - **A cost model for the deal**: the biggest file bounds type-fest and TypeScript6; size predicts nothing
   (union-to-tuple.ts is 1.4 KB and 180 ms), bun's identifier-count model wouldn't see type-level evaluation either.
+- **An adaptive load pool mutex** (PTHREAD_MUTEX_ADAPTIVE_NP, and the condvar signals after the unlock), for the
+  loader's ~20% of load-phase samples in load_pool_take()'s lock at T16: worse in 3/3 pairs at load 60 (spinning while
+  the holder is preempted), unmeasurable quiet here. Try it on the laptop only if a quiet timeline shows lock waits.
+- **Interning names for link**: symbol_table_get_own()'s memcmp is a hit's confirmation (hash and length matched),
+  its cost the miss on the name in the declaring file's text. A per-program atom per name (pointer equality) would
+  remove it and the source-text misses in declare and the walk too; inline 8-byte prefixes wouldn't (vscode's export
+  names are long). Link is otherwise latency: the rest is ModuleRef/PortItem/SymbolAlias chasing.
 - **Loader leftovers** at T1 (2026-10-16): real resolution (11k misses, ~170 M instructions), the resolver's `join()`
   of `../` names (137 M), clones of cached results (100 M: a refcounted `ResolvedModule` would remove them).
 
