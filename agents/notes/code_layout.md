@@ -29,13 +29,31 @@ the path doesn't.
   smaller I1 effects than that are noise; instructions are stable to ~0.05%.
 - `-fno-plt`: ~98 M PLT calls per training profile (libc) become GOT calls; BOLT's `-plt=hot` (with -z now) got the
   same within noise, -fno-plt is simpler and helps pgo/tttt too.
+- `-z now`'s startup cost: the dynamic loader's whole startup is ~45k cycles for 251 relocations either way
+  (`LD_DEBUG=statistics`; LD_BIND_NOW=1 on the lazy binary: 41.6k vs 46.7k cycles), i.e. < 5 us. -fno-plt resolves
+  its GOT entries at load anyway.
 - BOLT's `-hugify` does nothing on the VM: in THP madvise mode its runtime only madvises the file-backed text, which
   needs `CONFIG_READ_ONLY_THP_FOR_FS` (unset there).
 - Output byte-identical (stdout, exit code) pgo vs bolt on every corpus at K1 and 4 threads; vscode peak RSS equal.
+
+## Huge pages for the hot text (main.c's huge_text())
+At startup, the first 2 MB of BOLT's hot segment (an executable PT_LOAD with p_align >= 2 MB, so pgo/ and release/
+binaries are left alone) are copied into a 2 MB-aligned anonymous MADV_HUGEPAGE page, which mremap(MREMAP_FIXED)
+moves over the text atomically. Gated by huge_pages_take()'s free-block budget (no synchronous compaction), skipped
+under valgrind (LD_PRELOAD has vgpreload) and with `TTTT_HUGE_TEXT=0`. Verified in smaps: `AnonHugePages: 2048 kB` on
+the hot range (BOLT's hot text is 2.05 MB: the first page covers 97% of it).
+- Cost: ~0.35 ms of sys time per process on the loaded VM (`--version`, 3x200 runs, CPU time: 0.63 vs 0.27 ms sys):
+  the kernel zeroing the huge page, the 2 MB copy, the buddyinfo read. Under the 1 ms budget for nest's 70 ms; the
+  laptop should time nest with and without TTTT_HUGE_TEXT=0.
+- RSS: +2 MB anonymous at most (the file pages it replaces were mostly resident anyway).
+- perf attributes the hot code to an anonymous mapping (`//anon`): profile with `TTTT_HUGE_TEXT=0`.
+- The VM can't measure the iTLB effect (cachegrind models no TLB): the laptop's `iTLB-load-misses` decides.
 
 ## For the laptop
 `scripts/fastbuild.sh` then, on vscode (`-p thirdparty/corpora/vscode/src/tsconfig.corpus.json --noEmit`):
 - `perf stat -M PipelineL1` and `-M PipelineL2` at `--threads 1 --checkers 1`, pgo/tttt against fast/tttt
 - the same at the defaults
-- `perf stat -e instructions:u,cycles:u,L1-icache-load-misses,iTLB-load-misses` for both
+- `perf stat -e instructions:u,cycles:u,L1-icache-load-misses,iTLB-load-misses` for both, and fast/tttt with
+  `TTTT_HUGE_TEXT=0` (huge text pages off) as the third column
+- nest's wall (`hyperfine -N`) with and without `TTTT_HUGE_TEXT=0`: the remap must cost it nothing measurable
 If BOLT wins on cycles, flip fastbuild.sh's `MEASURED` to `fast` (and re-save test/instrcount.txt with it).
