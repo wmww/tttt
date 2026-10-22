@@ -302,8 +302,10 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 
     // Declarations evaluate self-contained, see ty_flow_isolate(). (A variable's initializer only around its full check,
     // initialized_binding_evaluate_assigned_type(): tsc's getQuickTypeOfExpression comes first, outside
-    // checkExpressionCached, and sees the loops in progress)
-    bool isolate = my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_INITIALIZED_BINDING;
+    // checkExpressionCached, and sees the loops in progress. A for-of variable's iterable too: tsc's
+    // checkRightHandSideOfForOf checks it with checkNonNullExpression, uncached, so the loop around the for-of whose
+    // back edge needs the variable (`sibling === node` narrowing `node`) answers its partial type instead of a cycle)
+    bool isolate = my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_INITIALIZED_BINDING && my tag != LAZY_TYPE_FOR_EACH_LOOP_VAR;
     FlowIsolation isolation = {0};
     if (isolate) isolation = ty_flow_isolate(current_checker);
 

@@ -1125,6 +1125,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttForOfIterableSeesLoopInProgress': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttForceTupleNestedElaboration': {
         errors: true,
         symbols: true,
@@ -1170,6 +1175,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'ttttGlobalAugmentationReExport': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'ttttGlobalThisClassBase': {
         errors: true,
