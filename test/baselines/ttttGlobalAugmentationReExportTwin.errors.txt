@@ -1,0 +1,41 @@
+globals.d.ts(4,3): error TS2666: Exports and export assignments are not permitted in module augmentations.
+globals.d.ts(5,3): error TS2666: Exports and export assignments are not permitted in module augmentations.
+globals.d.ts(6,3): error TS2666: Exports and export assignments are not permitted in module augmentations.
+main.ts(3,33): error TS2322: Type 'string' is not assignable to type 'number'.
+main.ts(4,14): error TS2322: Type 'string' is not assignable to type 'number'.
+main.ts(5,26): error TS2304: Cannot find name 'version'.
+
+
+==== lib.ts (0 errors) ====
+    export type MaybeRef<T> = T | { value: T };
+    export interface Box { size: number }
+    export declare const version: string;
+    export namespace NS { export type Inner = number }
+==== globals.d.ts (3 errors) ====
+    export {}
+    declare global {
+      const version: typeof import('./lib').version
+      export type { MaybeRef } from './lib'
+      ~~~~~~
+!!! error TS2666: Exports and export assignments are not permitted in module augmentations.
+      export type { Box as GlobalBox } from './lib'
+      ~~~~~~
+!!! error TS2666: Exports and export assignments are not permitted in module augmentations.
+      export * as LibNS from './lib'
+      ~~~~~~
+!!! error TS2666: Exports and export assignments are not permitted in module augmentations.
+    }
+==== main.ts (3 errors) ====
+    export const x: MaybeRef<number> = 1;
+    export const b: GlobalBox = { size: 1 };
+    export const bad: GlobalBox = { size: "no" };
+                                    ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+!!! related TS6500 lib.ts:2:24: The expected type comes from property 'size' which is declared here on type 'Box'
+    export const n: LibNS.NS.Inner = "no";
+                 ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export const v: string = version;
+                             ~~~~~~~
+!!! error TS2304: Cannot find name 'version'.
+    

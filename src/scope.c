@@ -1485,8 +1485,13 @@ static SymbolTable* scope_declaration_table(Scope* me, bool exported) {
     switch (my kind) {
         case SCOPE_GLOBAL:
         case SCOPE_SCRIPT:
-        case SCOPE_GLOBAL_AUGMENTATION:
             return &my binder->globals;
+
+        case SCOPE_GLOBAL_AUGMENTATION:
+            // (With an export declaration in it (TS2666) only what is exported is global, the rest the augmentation's
+            // locals: tsc's declareModuleMember without NodeFlags.ExportContext)
+            if (exported || my export_context) return &my binder->globals;
+            break;
 
         case SCOPE_MODULE:
         case SCOPE_NAMESPACE:
@@ -2214,8 +2219,11 @@ void scope_add_port(Scope* me, PortItem* item) {
         if (!item->type_only) check_require_exports_collision(me, item->decl_name, false);
     }
     bool exported = port_item_declares_export(item);
-    // (`declare global { export { a as b } }` declares globals, TS2666 aside)
-    bool global_export = item->tag == PORT_EXPORT_SPECIFIC && my kind == SCOPE_GLOBAL_AUGMENTATION;
+    // (`declare global { export { a as b } }` declares globals, TS2666 aside, and so do re-exports: `export type { A }
+    // from "m"`, unplugin-auto-import's. tsc's binder puts an export specifier in its container's exports,
+    // mergeModuleAugmentation merges a global augmentation's into the globals)
+    bool global_export = (item->tag == PORT_EXPORT_SPECIFIC || item->tag == PORT_REEXPORT_SPECIFIC ||
+        item->tag == PORT_REEXPORT_GATHER) && my kind == SCOPE_GLOBAL_AUGMENTATION;
     // (In a function or block, TS1233: tsc's binder declares it in the block's locals all the same)
     bool block_export = port_item_is_export(item) && (my kind == SCOPE_FUNCTION || my kind == SCOPE_BLOCK);
     if (port_item_is_export(item) && !(my container && my kind != SCOPE_ENUM) && !global_export && !block_export) {

@@ -1,0 +1,64 @@
+//// [test/cases/ttttGlobalAugmentationReExportTwin.ts] ////
+
+=== lib.ts ===
+export type MaybeRef<T> = T | { value: T };
+>MaybeRef : Symbol(MaybeRef, Decl(lib.ts, 0, 0))
+>T : Symbol(T, Decl(lib.ts, 0, 21))
+>T : Symbol(T, Decl(lib.ts, 0, 21))
+>value : Symbol(value, Decl(lib.ts, 0, 31))
+>T : Symbol(T, Decl(lib.ts, 0, 21))
+
+export interface Box { size: number }
+>Box : Symbol(Box, Decl(lib.ts, 0, 43))
+>size : Symbol(Box.size, Decl(lib.ts, 1, 22))
+
+export declare const version: string;
+>version : Symbol(version, Decl(lib.ts, 2, 20))
+
+export namespace NS { export type Inner = number }
+>NS : Symbol(NS, Decl(lib.ts, 2, 37))
+>Inner : Symbol(Inner, Decl(lib.ts, 3, 21))
+
+=== globals.d.ts ===
+export {}
+declare global {
+>global : Symbol(global, Decl(globals.d.ts, 0, 9))
+
+  const version: typeof import('./lib').version
+>version : Symbol(version, Decl(globals.d.ts, 2, 7))
+>version : Symbol(globalThis.LibNS.version, Decl(lib.ts, 2, 20))
+
+  export type { MaybeRef } from './lib'
+>MaybeRef : Symbol(MaybeRef, Decl(globals.d.ts, 3, 15))
+
+  export type { Box as GlobalBox } from './lib'
+>Box : Symbol(globalThis.GlobalBox, Decl(lib.ts, 0, 43))
+>GlobalBox : Symbol(GlobalBox, Decl(globals.d.ts, 4, 15))
+
+  export * as LibNS from './lib'
+>LibNS : Symbol(LibNS, Decl(globals.d.ts, 5, 8))
+}
+=== main.ts ===
+export const x: MaybeRef<number> = 1;
+>x : Symbol(x, Decl(main.ts, 0, 12))
+>MaybeRef : Symbol(MaybeRef, Decl(globals.d.ts, 3, 15))
+
+export const b: GlobalBox = { size: 1 };
+>b : Symbol(b, Decl(main.ts, 1, 12))
+>GlobalBox : Symbol(GlobalBox, Decl(globals.d.ts, 4, 15))
+>size : Symbol(size, Decl(main.ts, 1, 29))
+
+export const bad: GlobalBox = { size: "no" };
+>bad : Symbol(bad, Decl(main.ts, 2, 12))
+>GlobalBox : Symbol(GlobalBox, Decl(globals.d.ts, 4, 15))
+>size : Symbol(size, Decl(main.ts, 2, 31))
+
+export const n: LibNS.NS.Inner = "no";
+>n : Symbol(n, Decl(main.ts, 3, 12))
+>LibNS : Symbol(LibNS, Decl(globals.d.ts, 5, 8))
+>NS : Symbol(globalThis.LibNS.NS, Decl(lib.ts, 2, 37))
+>Inner : Symbol(globalThis.LibNS.NS.Inner, Decl(lib.ts, 3, 21))
+
+export const v: string = version;
+>v : Symbol(v, Decl(main.ts, 4, 12))
+

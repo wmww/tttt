@@ -1191,6 +1191,11 @@ const baselines = {
         symbols: false,
         types: false,
     },
+    'ttttGlobalAugmentationReExportTwin': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttGlobalThisClassBase': {
         errors: true,
         symbols: true,
