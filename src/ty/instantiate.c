@@ -99,7 +99,12 @@ static Ty const* const* mapper_list(Checker* me, Ty const* const* data, u32 len)
     u64 hash = len;
     for (u32 i = 0; i < len; i++) hash = (hash ^ (uintptr_t)data[i]) * 0x9e3779b97f4a7c15ull;
     TyList* slot = &my mapper_lists[hash >> 54];
-    if (slot->len == len && !memcmp(slot->data, data, sizeof(*data) * len)) return slot->data;
+    // (Lists are a few types: a loop beats memcmp()'s call)
+    if (slot->len == len) {
+        u32 i = 0;
+        while (i < len && slot->data[i] == data[i]) i++;
+        if (i == len) return slot->data;
+    }
     *slot = ty_list_copy(me, data, len);
     return slot->data;
 }
@@ -117,7 +122,9 @@ TyMapper const* ty_mapper_new(Checker* me, TyList sources, TyList targets) {
 TyMapper const* ty_compose_mappers(Checker* me, TyMapper const* inner, TyMapper const* outer) {
     if (!inner || !inner->len) return outer;
     u32 cap = inner->len + outer->len;
-    Ty const** pairs = malloc(sizeof(Ty const*) * cap * 2);
+    Ty const* stack_buf[32];
+    Ty const** pairs = cap * 2 <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * cap * 2);
+    panic_if(!pairs, "out of memory");
     Ty const** sources = pairs;
     Ty const** targets = pairs + cap;
     u32 len = 0;
@@ -134,7 +141,7 @@ TyMapper const* ty_compose_mappers(Checker* me, TyMapper const* inner, TyMapper 
         }
     }
     TyMapper const* ret = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
-    free(pairs);
+    if (pairs != stack_buf) free(pairs);
     return ret;
 }
 
@@ -154,7 +161,8 @@ TyMapper const* ty_mapper_without(Checker* me, TyMapper const* mapper, TyList pa
         for (u32 j = 0; j < params.len; j++) dropped += mapper->sources[i] == params.data[j];
     }
     if (!dropped) return mapper;
-    Ty const** pairs = malloc(sizeof(Ty const*) * mapper->len * 2);
+    Ty const* stack_buf[32];
+    Ty const** pairs = mapper->len * 2 <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * mapper->len * 2);
     panic_if(!pairs, "out of memory");
     Ty const** sources = pairs;
     Ty const** targets = pairs + mapper->len;
@@ -167,7 +175,7 @@ TyMapper const* ty_mapper_without(Checker* me, TyMapper const* mapper, TyList pa
         targets[len++] = mapper->targets[i];
     }
     TyMapper const* ret = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
-    free(pairs);
+    if (pairs != stack_buf) free(pairs);
     return ret;
 }
 
@@ -179,7 +187,9 @@ static TyMapper const* without_own_infers(Checker* me, Ty const* root, TyMapper 
 // The mapper with source mapped to target instead of whatever it mapped it to
 TyMapper const* ty_mapper_with(Checker* me, TyMapper const* mapper, Ty const* source, Ty const* target) {
     u32 cap = mapper->len + 1;
-    Ty const** pairs = malloc(sizeof(Ty const*) * cap * 2);
+    Ty const* stack_buf[32];
+    Ty const** pairs = cap * 2 <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * cap * 2);
+    panic_if(!pairs, "out of memory");
     Ty const** sources = pairs;
     Ty const** targets = pairs + cap;
     u32 len = 0;
@@ -191,7 +201,7 @@ TyMapper const* ty_mapper_with(Checker* me, TyMapper const* mapper, Ty const* so
     sources[len] = source;
     targets[len++] = target;
     TyMapper const* ret = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
-    free(pairs);
+    if (pairs != stack_buf) free(pairs);
     return ret;
 }
 
@@ -487,7 +497,8 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
         // Distributes over a union (tsc's mapTypeWithAlias): `Mutable<A | B>` is `Mutable<A> | Mutable<B>` by the
         // name it was written with. Primitives map to themselves
         u32 len = list->composite.types.len;
-        Ty const** parts = malloc(sizeof(Ty const*) * len);
+        Ty const* stack_parts[16];
+        Ty const** parts = len <= c_arraylen(stack_parts) ? stack_parts : malloc(sizeof(Ty const*) * len);
         panic_if(!parts, "out of memory");
         for (u32 i = 0; i < len; i++) {
             Ty const* part = list->composite.types.data[i];
@@ -496,7 +507,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
         Ty const* alias_buf[16];
         TyList alias_args = instantiate_alias_args(me, ty, outer, alias_buf);
         Ty const* ret = ty_union(me, parts, len, ty->alias, alias_args);
-        free(parts);
+        if (parts != stack_parts) free(parts);
         return ret;
     }
     // An intersection of arrays and tuples maps each of them (tsc's isArrayOrTupleOrIntersection)
@@ -1090,7 +1101,9 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
 #endif
     } else {
         // Only what changes: identity mappings say nothing
-        Ty const** sources = malloc(sizeof(Ty const*) * (len ? len * 2 : 1));
+        Ty const* stack_sources[32];
+        Ty const** sources = len * 2 <= c_arraylen(stack_sources) ? stack_sources : malloc(sizeof(Ty const*) * len * 2);
+        panic_if(!sources, "out of memory");
         Ty const** kept = sources + len;
         u32 kept_len = 0;
         // (Mapping every outer type parameter to itself is the conditional type as written: tsgo seeds
@@ -1112,7 +1125,7 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
         TyMapper const* restricted = ty_mapper_new(
             me, (TyList){ .data = sources, .len = kept_len }, (TyList){ .data = kept, .len = kept_len }
         );
-        free(sources);
+        if (sources != stack_sources) free(sources);
         u32 limit_hits = my instantiation_limit_hits;
         ret = resolve_conditional_instance(me, root, restricted, distributed);
         // A result cut short by the instantiation limits (TS2589) isn't what this instantiation is: it is remembered only
