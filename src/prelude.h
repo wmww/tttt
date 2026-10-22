@@ -35,6 +35,7 @@ typedef struct DebugEnv {
     bool debug_variance;       // TTTT_DEBUG_VARIANCE: the relations of variance measurements, like an instrumented tsgo
     bool parallel_resolve;     // TTTT_PARALLEL_RESOLVE: resolve names on --threads threads even for a few files (tests)
     bool file_times;           // TTTT_FILE_TIMES: each checked file's check time (with its deferred checks) on stderr
+    bool dup_census;           // TTTT_DUP_CENSUS: cross-checker duplication by fingerprint after checking (ty/dupcensus.c)
     bool debug_containers;     // TTTT_DEBUG_CONTAINERS: getSymbolChain's sorted candidate containers and their specifiers
     bool resolve_times;        // TTTT_RESOLVE_TIMES: name resolution's steps (declare, link, the walk...) timed on stderr
     // TTTT_HUGEPAGES: 1 madvises every arena chunk for huge pages, 0 none; unset, as many as the system has free

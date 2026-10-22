@@ -54,6 +54,7 @@ core_files = files(
     'ty/taint.c',
     'ty/graph.c',
     'ty/graph_debug.c',
+    'ty/dupcensus.c',
     'ty/graph_sched.c',
     'ty/overlay.c',
     'ty/atom_table.c',

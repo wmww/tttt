@@ -4758,6 +4758,10 @@ static void check_segment_after(Program* me, Checker* checker, u32 c, u32 const*
 }
 
 // A fresh checker for share c, reporting where the last one did
+// (ty/dupcensus.c, TTTT_DUP_CENSUS=1)
+void dup_census_add(Checker* me, u32 share);
+void dup_census_report(void);
+void dup_census_file(u32 share, u32 at, u64 bytes);
 #ifdef TTTT_SURVIVORS
 void survivors_report(Checker const* me);
 #endif
@@ -4766,6 +4770,7 @@ static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
 #ifdef TTTT_SURVIVORS
     survivors_report(old);
 #endif
+    if (debug_env.dup_census) dup_census_add(old, c);
     Checker* checker = checker_new(me);
     checker->errs = old->errs;
     checker->recycles = old->recycles + 1;
@@ -5083,6 +5088,7 @@ static void check_share(Program* me, u32 c, u32 count) {
         segment[segment_count++] = at;
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
+        if (debug_env.dup_census) dup_census_file(c, at, share_cost(source));
         check_file(me, checker, source, at);
         if (my graph) graph_lead_done(me, c);
         // (Plan 86 stage 4f: a worker that kept a tainted value of a word another worker published meanwhile goes by its
@@ -5222,6 +5228,17 @@ static void deal_files(Program* me) {
         my file_shares[index++] = (u32)((before + size / 2) * runs / (bytes ? bytes : 1) % my checker_count);
         before += size;
     }
+    // (TTTT_DUP_DEAL=PATH: the experiment's deal, a checker per checked file, one per line (ty/dupcensus.c's model))
+    char const* deal_path = getenv("TTTT_DUP_DEAL");
+    FILE* deal = deal_path ? fopen(deal_path, "r") : nullptr;
+    if (deal) {
+        for (u32 at = 0; at < total; at++) {
+            unsigned share;
+            panic_if(fscanf(deal, "%u", &share) != 1 || share >= my checker_count, "TTTT_DUP_DEAL: a checker below ", my checker_count, " per file");
+            my file_shares[at] = share;
+        }
+        fclose(deal);
+    }
     for (u32 c = 0; c < my checker_count; c++) {
         atomic_init(&my share_states[c], 0);
         atomic_init(&my share_left[c], 0);
@@ -5240,6 +5257,28 @@ static void deal_files(Program* me) {
         if (costliest_first && cost > first_cost[c]) first_cost[c] = cost, my share_first[c] = at;
     }
     free(first_cost);
+    // (TTTT_DUP_GRAPH=PATH, ty/dupcensus.c's offline model: per checked file its index, source bytes, whether it is the
+    // default library's, its path and the checked files it imports)
+    char const* graph_path = getenv("TTTT_DUP_GRAPH");
+    FILE* graph = graph_path ? fopen(graph_path, "w") : nullptr;
+    if (graph) {
+        u32* check_index = c_new_n(u32, vec_source_file_ptr_size(&my source_files_ordered) + 1);
+        for (isize i = 0; i < vec_source_file_ptr_size(&my source_files_ordered); i++) check_index[i] = UINT32_MAX;
+        for (u32 at = 0; at < total; at++) check_index[vec_source_file_ptr_at(&my check_files, at)[0]->program_order] = at;
+        for (u32 at = 0; at < total; at++) {
+            SourceFile const* source = vec_source_file_ptr_at(&my check_files, at)[0];
+            fprintf(graph, "%u %llu %d %s", at, (unsigned long long)share_cost(source), (int)source->is_stdlib, cstr_str(&source->canonical_path));
+            for (u32 r = 0; r < source->module_ref_count; r++) {
+                SourceFile const* file = source->module_refs[r]->file;
+                if (file && file->program_order < vec_source_file_ptr_size(&my source_files_ordered) && check_index[file->program_order] != UINT32_MAX) {
+                    fprintf(graph, " %u", check_index[file->program_order]);
+                }
+            }
+            fprintf(graph, "\n");
+        }
+        free(check_index);
+        fclose(graph);
+    }
 }
 
 u64 program_checked_source_bytes(Program const* me) {
@@ -5649,6 +5688,10 @@ void program_typecheck(Program* me) {
         }
     }
     recheck_stale_undefined_props(me, checker_errs, count);
+    if (debug_env.dup_census) {
+        for (u32 c = 0; c < count; c++) dup_census_add(my checkers[c], c);
+        dup_census_report();
+    }
     my binder->frozen = false;
     my errs->frozen = false;
     if (my graph && getenv("TTTT_GRAPH_STATS")) graph_print_stats(my graph);

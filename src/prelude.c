@@ -28,6 +28,7 @@ static void read_debug_env() {
         .debug_variance = getenv("TTTT_DEBUG_VARIANCE") != nullptr,
         .parallel_resolve = getenv("TTTT_PARALLEL_RESOLVE") != nullptr,
         .file_times = getenv("TTTT_FILE_TIMES") != nullptr,
+        .dup_census = getenv("TTTT_DUP_CENSUS") != nullptr,
         .debug_containers = getenv("TTTT_DEBUG_CONTAINERS") != nullptr,
         .resolve_times = getenv("TTTT_RESOLVE_TIMES") != nullptr,
         .huge_pages = getenv("TTTT_HUGEPAGES") ? (int8_t)(strcmp(getenv("TTTT_HUGEPAGES"), "0") != 0) : -1,
