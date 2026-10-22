@@ -29,8 +29,13 @@ is about half the cycles. Shares of it:
   intern table probes at their load factors) and per-element work proportional to the inputs (type-fest's tuples of
   hundreds of elements are hashed, compared and scanned per reference). Per-site wins left are 0.1-0.5%.
 - Seen and left: ty_check_member_modifiers() looks the accessed property up again after the access resolved it
-  (member_refs(): ~0.5% of vscode; needs the access's props kept per node); drizzle prints its 41 errors' types in
-  ~5% of its instructions (2963 display pairs for 308 output lines: reports made and dropped); the malloc family is
+  (member_refs(): ~0.5% of vscode; keeping the access's props per node is 1.7M accesses on vscode, ~27 MB at 16 bytes
+  each: skipped, memory). The dropped reports behind drizzle's display cost are errors a `@ts-expect-error` suppresses
+  (drizzle 240 of 273, vue 382 of 390, effect 203 of 208, webpack 19 of 442, vscode 35 of 45: type tests): explained
+  and printed in full, then dropped by program_apply_comment_directives(). Their display is 2.6% of drizzle (huge
+  types), under 0.5% of vue, effect and webpack; the explaining runs themselves are relation work tsc does too.
+  Skipping the display of a suppressed error isn't free of observable effects: printing resolves member types, which
+  tttt relies on for circularity diagnostics (lower.c's indexed access TS2339 path, expr.c's satisfies TS7023); the malloc family is
   ~2% of drizzle and excalidraw, spread over sites of 0.1-0.3% each (inference's candidate arrays, builder_finish()'s
   copies), most of the rest the loader's and the parser's strings (cstr_append_n from module resolution and
   parse_binding_type_ex). Object literal item atoms on the AST: checker_atom() for literal items is ~0.25% of
