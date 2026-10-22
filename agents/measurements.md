@@ -30,6 +30,21 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## Fresh repositories, fourth rule: bun lockfiles (2026-10-22)
+Refresh 5 (cor6, repos.txt "Refresh 5"): the application-code rule of refresh 4 for repos whose only lockfile is bun's,
+installed with a pinned bun 1.4.3 (ensure-sources.sh): refresh 4's 16 skipped hits (12 pass its tsconfig criteria) plus
+`scripts/reposearch.py appbun` over bun-centric and application topics; 32 picked, 4 dropped (installs), 28 repos, 100
+projects. **Day one (4f5f43116, before any fix): 94 / 100 projects (94.0%), 24 / 28 repos**, 0 crashes, 0 timeouts.
+Root causes: kebo (TS2882 `moment/locale/es`: a typesVersions pattern without a file didn't fall back; an MST model
+cycle), better-drizzle (a 4.23x types runaway behind tsc's TS2502: a generic mapped target passed an intersection
+source by the members fallback HACK, which made variances independent; then two TS2344 from a reporting-pass quirk of
+alias variances on conditional types), dev-3.0 (`Parameters<typeof f>` re-entering a half-resolved signature through
+a type-predicate lookup tsc doesn't make), emailthing (typesVersions tested against 6.0 instead of tsgo's 7.1.0-dev:
+bun-types' `>=7.1` import-attribute modules missed). **After (769d64973): 97 / 100 (97.0%), 26 / 28 repos**; left:
+kebo's MST cycle (eager signature parameters, bugs/sourcesweep_checker.md) and better-drizzle's K-dependent second
+TS2502 plus two TS2578. better-drizzle at K1: 2.08M -> 364k types (tsgo 492k), types ratio 4.23 -> 0.74. Instructions
+(callgrind, release builds) flat within 0.4% across the corpora for the relation fixes.
+
 ## Fresh repositories, third rule (2026-10-23)
 Refresh 4 (cor3, repos.txt "Refresh 4"): application code by GitHub topic (nextjs, remix, sveltekit, nuxt, express,
 fastify, hono, trpc, react-native, expo, tauri, electron-app, chrome-extension, obsidian-plugin, homebridge-plugin,
