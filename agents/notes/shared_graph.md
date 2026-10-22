@@ -159,8 +159,11 @@ full time), not duplicated work.
    not the symbol's: subjects clean in some checkers and tainted in others exist on three of the four corpora (drizzle
    11, zod 3, effect 2), with differing values (drizzle's MakeColumnConfig clean `010101` in 8 checkers, `010901` in one,
    tainted by an earlier deep-cut relation; PgArrayBuilder `0103` at K1, `0109` in two K12 checkers), so first clean
-   publisher wins is not K-independent by construction. Clean values never disagreed (~3600). The lever is the cost of
-   the tainted measurements themselves, which varies 25x by history (SingleStoreSelectBuilder 19k-751k types).
+   publisher wins is not K-independent by construction. Clean values never disagreed (~3600). What remains is tsc's
+   semantics: each checker measures the dialects' big generic closures (SingleStoreSession, PgSelectBuilder...: 200-270
+   M instructions and 500-680 deep cuts each, in every checker that enters them first; tsgo --singleThreaded makes
+   comparable types there, 44k against tttt's 30k), and which subject of a closure is entered first only moves the cost
+   between subjects.
 
 ## What bun does differently (read from its source at 6bb5dc19, 2026-10-20)
 One content-keyed hash-consed store for every type, signature and mapper, created into directly with global ids from

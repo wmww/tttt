@@ -3596,7 +3596,7 @@ static void measure_variances(Checker* me, VarianceSubject subject, VarianceClai
         Symbol const* sym = subject_symbol(subject);
         vlog("VAR> w%u %.*s depth=%u vdepth=%u\n", (unsigned)my graph_worker, (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "", my variance_stack_len, (unsigned)my variance_depth);
     }
-    u32 types_before = my next_type_id;
+    u32 types_before = checker_type_count(me);
     for (u32 i = 0; i < claim->len; i++) {
         // Variance annotations (`in T`, `out T`, `in out T`) are taken as they are (tsc's getVariancesWorker), those of
         // every declaration of a merged interface together
@@ -3630,7 +3630,7 @@ static void measure_variances(Checker* me, VarianceSubject subject, VarianceClai
             unsigned tsgo = (v & 7) | (v & VARIANCE_UNMEASURABLE ? 8 : 0) | (v & VARIANCE_UNRELIABLE ? 16 : 0);
             n += snprintf(line + n, sizeof(line) - (size_t)n, i ? " %u" : "%u", tsgo);
         }
-        if (n < 4000) snprintf(line + n, sizeof(line) - (size_t)n, "] stored=%s types=%u\n", claim->done ? "false" : "true", my next_type_id - types_before);
+        if (n < 4000) snprintf(line + n, sizeof(line) - (size_t)n, "] stored=%s types=%u\n", claim->done ? "false" : "true", checker_type_count(me) - types_before);
         vlog("%s", line);
     }
     if (pushed) my variance_stack_len--;
@@ -3776,13 +3776,13 @@ static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) 
     u64 group_start = graph_taint_now, internal_start = my variance_internal_events;
     VarianceClaim claim = { .declared = subject.declared, .alias = subject.alias, .len = subject.params.len, .in_group = in_group };
     u64 census_taint = graph_taint_now, census_internal = my variance_internal_events, census_cuts = my deep_cuts;
-    u32 census_types = my next_type_id, census_depth = my variance_depth;
+    u32 census_types = checker_type_count(me), census_depth = my variance_depth;
     ty_claim_push(me, CLAIM_VARIANCES, &claim.claim, subject_ptr, !subject.declared);
     measure_variances(me, subject, &claim);
     ty_claim_pop(me, CLAIM_VARIANCES, &claim.claim);
     if (__builtin_expect(debug_env.variance_census, 0)) variance_census_line(me, subject, &claim, census_depth,
         graph_taint_now - census_taint == my variance_internal_events - census_internal, my deep_cuts - census_cuts,
-        my next_type_id - census_types);
+        checker_type_count(me) - census_types);
     if (slot && !in_group && claim.done) {
         // (Poisoned: this checker's own, a read of it a taint event, by the caller first)
         graph_memo_taint_block(me, intern_slot(me, &my links, key, 2));
