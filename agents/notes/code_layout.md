@@ -72,6 +72,36 @@ builds (which differ by <= 0.5% in I1 misses and 0.1% in instructions here). Ins
 - ICF: BOLT's `-icf=all` folds only 4 functions (GCC's -fipa-icf, on at -O2, got the rest); `-fno-semantic-interposition`
   and `-fvisibility=hidden` change nothing in a PIE executable.
 
+## Inlining (2026-10-22, ck2: one copy of what LTO/PGO duplicated)
+`scripts/inlinedup.py` ranks the inlined functions whose copies are hot in many hosts (callgrind --dump-instr on a
+`-g` PGO build, DWARF's inlined_subroutine ranges): hot instructions outside the biggest copy, I1 misses in the copies.
+Each candidate below is a `[[gnu::noinline]]`, a full fastbuild.sh, cachegrind at K1 against two base builds (which
+differ by ~1.5% in I1 misses; instructions by <0.1%). I1 misses / instructions, cumulative on what was kept:
+
+| change | hot text | zod | drizzle | tsc (untrained) | verdict |
+|---|---|---|---|---|---|
+| base (2 builds) | 2.173 MB | 66.0 M / 3.623 G | 69.5 M / 4.487 G | 49.1 M / 3.606 G | |
+| ty_instantiate_mapped() (LTO had it in ~110 call sites of the inline ty_instantiate()) | -5 KB | -3.6% / = | -5.1% / = | -0.3% / = | kept (6863a4294) |
+| + hop_whitespace_slow() (PGO had it, hop_comment() with it, in ~30 parser callers at ~2 KB) | -130 KB | -0.9% / = | -1.1% / = | -4.4% / = | kept (b83258c34) |
+| + ty_mapper_new() | -14 KB | -0.7% / +0.3% | -1.2% / +0.4% | +1% / = | no |
+| + hash_words() | -19 KB | -1% / +0.5% | -2% / +0.5% | -1% / +0.2% | no |
+| + ty_get_prop() | -20 KB | +1% / +0.4% | +1% / +0.7% | +1.5% / +0.3% | no |
+| + intern_get/slot/lookup/has() (the probe loop's constant-count copies) | -20 KB | -3.3% / +0.9% | -3.8% / +1.1% | +3% / +0.3% | no |
+| + ty_get_object_prop() (3 inlined ty_get_prop()s, 11 hot copies) | | | | | GCC's bogus -Wstringop-overflow in props_related_impl() (the LTO inlining shift "Relations" warns of): not built |
+| + mapper_list() (2 builds) | -7 KB | -2.5% / +0.3% | -2.6% / +0.4% | +1.5% / +0.1% | no |
+
+- vscode (untrained, one build each), base against both kept: I1 misses 1206 -> 1172 M (-2.8%), instructions +0.14%.
+- What is duplicated and hot after the two kept ones is the intern table's probe (intern_find, hash_words: specialized
+  per constant key length in each caller, so one copy costs instructions), ty_members()/ty_object_state()/arena_alloc()
+  (a dozen instructions in 55-60 hosts each: a call costs more than the copy) and ty_get_prop(). Nothing left there
+  pays for its call under the 0.3% instruction budget; three candidates in a row showed nothing, so the round stopped.
+- Most copies sit in their hosts' cold blocks, which BOLT moves out of the hot text: bytes of copies (DWARF alone)
+  overstate the lever; rank by hot instructions (inlinedup.py), not size.
+- The giant functions (structured_related_members 20 KB of hot text, expr_typecheck 20 KB, instantiate_inner 13 KB)
+  are big by their own source, not by inlining (DWARF: ~3 KB of inlined code in structured_related_members); their
+  misses are capacity misses on entry (resolve_with_signatures_inner, infer_type_arguments: 60-75 misses per 1000
+  instructions), which only less code on the path would fix.
+
 ## clang against GCC
 `CC=clang PGO_DIR=... BOLT_DIR=... scripts/boltbuild.sh` builds clang's LTO + PGO (+ BOLT) beside the default.
 Cachegrind at K1, instructions / I1 misses / stall estimate (clang 21.1.8, GCC 15.2):
@@ -116,3 +146,5 @@ the hot range (BOLT's hot text is 2.05 MB: the first page covers 97% of it).
 - optionally clang: `CC=clang PGO_DIR=pgo-clang BOLT_DIR=bolt-clang scripts/boltbuild.sh` (-2 to -6% instructions,
   +8-12% I1 misses against GCC's: worth a cycles A/B on vscode)
 - profiling fast/tttt with perf: set `TTTT_HUGE_TEXT=0`, or the hot code shows as `//anon`
+- the two noinline commits (6863a4294, b83258c34): fast/tttt against a build of b113f6fb6, cycles and
+  `L1-icache-load-misses` at K1 and the defaults (the parse one matters most at the defaults: every thread parses)
