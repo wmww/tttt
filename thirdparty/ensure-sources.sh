@@ -11,12 +11,13 @@
 #
 # The installs run under a pinned node 24 (thirdparty/node/, fetched here; the system node is too old for recent pnpm
 # and many `engines` fields), with corepack picking each repo's `packageManager`. Only the installs: tsc and tttt's
-# oracles run under the system node. A failed install is reported and leaves the repo without a marker (drop it from
-# the manifest with a comment, don't patch it).
+# oracles run under the system node. A repo whose only lockfile is bun's installs with a pinned bun
+# (thirdparty/node/bun-*/, `bun install --frozen-lockfile --ignore-scripts`). A failed install is reported and leaves
+# the repo without a marker (drop it from the manifest with a comment, don't patch it).
 set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 exec python3 -I - "$@" <<'EOF'
-import concurrent.futures, hashlib, json, os, shutil, sqlite3, subprocess, sys, threading, time, urllib.request
+import base64, concurrent.futures, hashlib, json, os, shutil, sqlite3, subprocess, sys, threading, time, urllib.request
 
 NODE_VERSION = 'v24.21.0'
 NODE_SHA256 = 'fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6'
@@ -24,6 +25,11 @@ HERE = os.getcwd()
 SOURCES = os.path.join(HERE, 'sources')
 CACHE = os.path.join(SOURCES, '.cache')
 NODE_BIN = os.path.join(HERE, 'node', f'node-{NODE_VERSION}-linux-x64', 'bin')
+# Bun, for the repos whose only lockfile is bun's (bun.lock, or the older binary bun.lockb): npm's @oven/bun-linux-x64
+# package, unpacked next to node (thirdparty/node/ is untracked and shared with the worktrees)
+BUN_VERSION = '1.4.3'
+BUN_SHA512 = 'RArgnpjeXjaGzjp5h7Rs89cUYJutO8IyqR3itE8OBaBzEt8KNm2jp/YozxBHq4eFovwrQLryeSwTAcmiT+zcoA=='
+BUN = os.path.join(HERE, 'node', f'bun-{BUN_VERSION}', 'package', 'bin', 'bun')
 MANIFEST = os.path.join(HERE, '..', 'test', 'sourcesweep', 'repos.txt')
 # What tsc and tttt read from node_modules; the rest (maps, binaries, docs, native addons) is ~half the bytes
 KEEP = ('.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs', '.json')
@@ -40,6 +46,22 @@ def ensure_node():
     if hashlib.sha256(open(tarball, 'rb').read()).hexdigest() != NODE_SHA256:
         sys.exit(f'{name}: sha256 mismatch')
     subprocess.run(['tar', 'xf', tarball, '-C', os.path.dirname(tarball)], check=True)
+    os.remove(tarball)
+
+
+def ensure_bun():
+    if os.path.exists(BUN):
+        return
+    d = os.path.dirname(os.path.dirname(os.path.dirname(BUN)))
+    os.makedirs(d, exist_ok=True)
+    tarball = os.path.join(d, 'bun.tgz')
+    print(f'fetching bun {BUN_VERSION}', flush=True)
+    urllib.request.urlretrieve(
+        f'https://registry.npmjs.org/@oven/bun-linux-x64/-/bun-linux-x64-{BUN_VERSION}.tgz', tarball)
+    if base64.b64encode(hashlib.sha512(open(tarball, 'rb').read()).digest()).decode() != BUN_SHA512:
+        sys.exit('bun: sha512 mismatch')
+    subprocess.run(['tar', 'xzf', tarball, '-C', d], check=True)
+    os.chmod(BUN, 0o755)
     os.remove(tarball)
 
 
@@ -81,6 +103,9 @@ def install_command(d):
             return ['corepack', pm.split('+')[0] if pm else 'yarn@1', 'install', '--ignore-scripts', '--ignore-engines',
                     '--frozen-lockfile', f'--cache-folder={CACHE}/yarn1']
         return ['corepack', 'yarn', 'install', '--mode=skip-build']
+    if pm.startswith('bun') or (not has('package-lock.json') and (has('bun.lock') or has('bun.lockb'))):
+        # (Only where bun's is the only lockfile: the repos with bun's next to another one keep that one's manager)
+        return [BUN, 'install', '--frozen-lockfile', '--ignore-scripts', f'--cache-dir={CACHE}/bun']
     if has('package-lock.json'):
         return [os.path.join(NODE_BIN, 'npm'), 'ci', '--ignore-scripts', '--legacy-peer-deps', '--no-audit', '--no-fund',
                 f'--cache={CACHE}/npm']
@@ -183,6 +208,7 @@ def main():
     todo = [r for r in repos if not os.path.exists(os.path.join(SOURCES, r[0], '.tttt-installed'))]
     if todo:
         ensure_node()
+        ensure_bun()
     failed = []
 
     def one(r):
