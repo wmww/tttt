@@ -949,6 +949,14 @@ static int listed_entry_compare(void const* a, void const* b) {
     return strcmp(cstr_str(&((ListedEntry const*)a)->name), cstr_str(&((ListedEntry const*)b)->name));
 }
 
+static thread_local TsconfigListedHook listed_hook;
+static thread_local void* listed_ctx;
+
+void tsconfig_set_listed_hook(TsconfigListedHook hook, void* ctx) {
+    listed_hook = hook;
+    listed_ctx = ctx;
+}
+
 // dir's entries sorted by name (fs_listdir_sorted's order), each a directory or not where the listing says so: readdir's
 // d_type on the real filesystem (a symlink's isn't its target's: unknown). A stat per entry was most of vscode's walk
 static ListedEntry* list_directory(Fs const* in, csview dir, isize* count) {
@@ -971,6 +979,18 @@ static ListedEntry* list_directory(Fs const* in, csview dir, isize* count) {
             };
         }
         closedir(directory);
+        if (listed_hook) {
+            csview* names = malloc(sizeof(csview) * (size_t)(n + 1));
+            signed char* kinds = malloc((size_t)(n + 1));
+            panic_if(!names || !kinds, "out of memory");
+            for (isize i = 0; i < n; i++) {
+                names[i] = cstr_sv(&ret[i].name);
+                kinds[i] = ret[i].is_directory;
+            }
+            listed_hook(listed_ctx, dir, names, kinds, n);
+            free(names);
+            free(kinds);
+        }
     } else if (in != fs) {
         for_each (item, fs_listdir, in, dir) {
             if (n == cap) ret = realloc(ret, sizeof(ListedEntry) * (size_t)(cap *= 2));

@@ -22,6 +22,11 @@ typedef void (*TsconfigFoundHook)(void* ctx, csview path, bool final);
 // patterns, each file the walk matches)
 failable tsconfig_load_streamed(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files,
     TsconfigFoundHook found, void* found_ctx);
+// Each directory the include walk lists on the real filesystem, on the thread that set it (thread-local: the walk of
+// one config, main.c's root stream): its entries' names, and for each 1 a directory, 0 a regular file, -1 unknown (a
+// symlink, another kind). For the program's CachedFs, which would list most of them again resolving imports
+typedef void (*TsconfigListedHook)(void* ctx, csview dir, csview const* names, signed char const* is_directory, isize count);
+void tsconfig_set_listed_hook(TsconfigListedHook hook, void* ctx);
 
 // What's wrong with an `extends` (tsc's config parsing diagnostics: reported, and the config goes on without it): TS5083
 // for a config that can't be read (no location, config empty), TS6053/TS18051 at the name in `config` (absolute path;

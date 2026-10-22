@@ -764,7 +764,10 @@ static void root_stream_found(void* ctx, csview path, bool final) {
 }
 
 static void root_stream_walk(RootStream* me) {
+    // (The directories it lists answer module resolution's probes: vscode listed 1.4k of them twice)
+    tsconfig_set_listed_hook(program_offer_listing, my program);
     project_set_root_files_streamed(my projects, my project, root_stream_found, me);
+    tsconfig_set_listed_hook(nullptr, nullptr);
     root_stream_flush(me);
     if (my threaded) pthread_mutex_lock(&my lock);
     my done = true;

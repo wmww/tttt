@@ -296,6 +296,56 @@ static ProbeBits probe_listing(CachedFs* me, csview path) {
     }
 }
 
+void cached_fs_offer_listing(CachedFs* me, csview dir, csview const* names, signed char const* is_directory, isize count) {
+    if (!my listings || dir.size + 2 >= PATH_MAX) return;
+    // (The directory's key as a probe of a path in it makes it)
+    char path[PATH_MAX], key_buf[PATH_MAX];
+    memcpy(path, dir.buf, (size_t)dir.size);
+    memcpy(path + dir.size, "/x", 2);
+    isize key_size = 0;
+    csview base;
+    if (!split_for_listing(me, csview_from_n(path, dir.size + 2), key_buf, &key_size, &base)) return;
+    csview key = csview_from_n(key_buf, key_size);
+    Shard* shard = shard_of(me, key);
+    pthread_mutex_lock(&shard->lock);
+    auto state = hmap_dir_state_get(&shard->dirs, key);
+    bool known = state && state->second.listing;
+    pthread_mutex_unlock(&shard->lock);
+    if (known) return;
+    DirListing* made = c_new(DirListing, { .count = (u32)count });
+    isize names_size = 0;
+    for (isize i = 0; i < count; i++) names_size += names[i].size;
+    made->names = malloc((size_t)names_size + 1);
+    made->entries = malloc(sizeof(DirEntry) * (size_t)(count + 1));
+    u32 slots = 16;
+    while (slots < made->count * 2) slots *= 2;
+    made->mask = slots - 1;
+    made->slots = calloc(slots, sizeof(u32));
+    panic_if(!made->names || !made->entries || !made->slots, "out of memory");
+    names_size = 0;
+    u32 kept = 0;
+    for (isize i = 0; i < count; i++) {
+        if (names[i].size > UINT16_MAX) continue;
+        memcpy(made->names + names_size, names[i].buf, (size_t)names[i].size);
+        uint8_t kind = is_directory[i] > 0 ? ENTRY_DIRECTORY : is_directory[i] == 0 ? ENTRY_FILE : ENTRY_ASK;
+        made->entries[kept] = (DirEntry){ .name = (u32)names_size, .size = (uint16_t)names[i].size, .kind = kind };
+        names_size += names[i].size;
+        u32 at = name_hash(names[i].buf, names[i].size) & made->mask;
+        while (made->slots[at]) at = (at + 1) & made->mask;
+        made->slots[at] = ++kept;
+    }
+    made->count = kept;
+    made->usable = true;
+    pthread_mutex_lock(&shard->lock);
+    auto entry = hmap_dir_state_insert(&shard->dirs, cstr_from_sv(key), (DirState){0});
+    if (!entry.ref->second.listing) {
+        entry.ref->second.listing = made;
+        made = nullptr;
+    }
+    pthread_mutex_unlock(&shard->lock);
+    if (made) dir_state_drop(&(DirState){ .listing = made });
+}
+
 static bool probe(Fs const* fs, csview path, ProbeBits known, ProbeBits yes, bool (*ask)(Fs const*, csview)) {
     CachedFs* me = (CachedFs*)fs;
     Shard* shard = shard_of(me, path);

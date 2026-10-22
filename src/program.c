@@ -4506,6 +4506,11 @@ void program_set_defer_bodies(Program* me, bool defer) {
     my defer_bodies = defer;
 }
 
+void program_offer_listing(void* program, csview dir, csview const* names, signed char const* is_directory, isize count) {
+    Program* me = program;
+    cached_fs_offer_listing(my cached_fs, dir, names, is_directory, count);
+}
+
 bool program_has_load_pool(Program const* me) {
     return my pool != nullptr;
 }
