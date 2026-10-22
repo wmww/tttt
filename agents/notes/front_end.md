@@ -12,6 +12,24 @@ end's split", "The 12-core box at efb91998", "The config glob next to the load p
 - The 16-vCPU box, vscode T16 (2026-10-21): config + libs + load+parse 189 ms best, link ~50 ms (aliases 43 serial),
   config glob 29 ms alone (250 M instructions: glob_matches(), path strings), 55-80 ms next to the parsing pool (SMT
   and all-core clocks, not locks: measured with the wall sampler).
+- **The timeline, vscode T16 on the 16-vCPU box (8 cores, SMT2), quiet, 2026-10-22 at 08a80d88** (`bench/timeline/`):
+  352 ms to the end of resolve. The main thread is the critical path through config+load: busy 60-100% from 0 to 176
+  ms (glob 56 ms CPU, then the loader's own 85 ms), while the pool, at ~10-12 busy, finishes parsing at 148 ms and
+  idles for the loader's last 28 ms. Then 70 ms with the pool idle (declare merge, module refs, link).
+
+  | ms | phase | wall | main CPU | main thread | pool |
+  |---|---|---|---|---|---|
+  | 0-64 | config | 64 | 56 | the glob: glob_matches 18%, list_directory 25% | parsing, ~10.5 busy |
+  | 64-176 | libs + load+parse files | 122 | 89 (+19 blocked) | loader: load_pool_take's lock ~20%, add_made_source, include reasons, hashing | ~10-12 busy to 148 ms, then idle |
+  | 176-188 | collect files, pool end, file scopes | 12 | 12 | emit_source_may_be_emitted, load_pool_destroy's frees | idle |
+  | 188-208 | declare in isolation | 20 | 17 | | bursts, ~5.5x |
+  | 208-278 | declare merge 8, between 2, module refs 9, link 56 | 75 | 75 | resolve_alias_target_in 32%, symbol_table_get_own + memcmp ~30% | idle |
+  | 278-328 | parallel walk | 48 | 44 | | ~11x |
+  | 328-335 | shard merge 5, remaining aliases 3 | 8 | 8 | | idle |
+
+  The workers are off a CPU for ~35% of their parse jobs even quiet (1.5 of 2.3 s): mmap of each file 19% of their
+  blocked samples, the resolver's rwlock and package_json_of 7-8%, glibc's heap-growth mprotect ~10% (21k calls),
+  the pool's mutex 3%; parse is <36% of their samples.
 - Tools: `tttt --time` (phases with the main thread's CPU), `TTTT_LOAD_POOL_STATS=1` (the loader's own work, waits,
   inline parses), `TTTT_LOAD_POOL_INLINE=1` (why each inline parse happened), `TTTT_RESOLVE_TIMES=1` (declare, link's
   steps, walk), `TTTT_FILE_TIMES=1` (per-file check timeline), `TTTT_DEFER_STATS=1` (materializations over 10 ms),
