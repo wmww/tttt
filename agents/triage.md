@@ -58,6 +58,10 @@ intersection's property symbol to bugs/type_core.md.
   unused_register 619, builder_sort_stable_from 190, builder_find_prop 183, check_object 153. M_TOP_PAD during
   checking doesn't change the count (128 KB / 1 MB / 4 MB tried). For a checker-speed worker: move those allocations
   into the checker's arena.
+  Fixed (ck2, d1c9ff999): a non-main glibc arena's heap grows by exactly what the allocation at its top needs
+  (sysmalloc's grow_heap ignores M_TOP_PAD there, hence no effect), so every long-lived checker-thread malloc past the
+  high-water mark cost an mprotect; nearly all were lazy_type_state()'s memo pages (the other sites only happened to
+  allocate at the top), now in the checker's arena: vscode 18231 -> 22 mprotects. The temporaries stay malloc.
 
 - Bun-only repositories (2026-10-22, source sweep refresh 4): 16 GitHub search hits for the application-code rule had
   only a `bun.lock`/`bun.lockb` and were skipped, because thirdparty/ensure-sources.sh has no bun install (the bun topic

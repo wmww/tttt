@@ -73,8 +73,8 @@ typedef struct LazySlots {
     // The checker's arena, which the memo pages and directories are bumped out of (they die with the checker): as
     // malloc they grew each checker thread's glibc heap a page at a time (a non-main arena's heap has no top pad: an
     // mprotect() a page, 7k on vscode, each taking the mm lock for writing). Null: malloc
+    // (checker_memory() counts them in the arena's total)
     Arena* arena;
-    u64 arena_bytes; // What of the arena's total they are (checker_memory() doesn't count them, as when they were malloc's)
 } LazySlots;
 
 // The program's types by id (plan 86 stage 4c): ids come in blocks of a chunk (65536) from one atomic counter, so the

@@ -969,7 +969,7 @@ u32 checker_type_count(Checker const* me) {
 }
 
 u64 checker_memory(Checker const* me) {
-    u64 bytes = my arena.total - my lazy.arena_bytes;
+    u64 bytes = my arena.total;
     bytes += ((u64)my types.cap + my intersection_props.cap + my links.cap) * sizeof(InternEntry);
     bytes += (u64)my node_links.cap * sizeof(LinkEntry);
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) bytes += (u64)my relations[i].cap * (sizeof(u64) + 1);

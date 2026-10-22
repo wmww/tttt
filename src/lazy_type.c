@@ -36,7 +36,6 @@ void lazy_slots_new_block(void) {
 // A zeroed memo page or directory (lazy_type_state())
 static void* lazy_slots_table(LazySlots* slots, size_t bytes) {
     if (!slots->arena) return zeroed_table(1, bytes);
-    slots->arena_bytes += bytes;
     return arena_alloc(slots->arena, bytes);
 }
 
