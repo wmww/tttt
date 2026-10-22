@@ -92,6 +92,7 @@ typedef struct LoadPool {
     isize taken, inline_parses, inline_unqueued; // (Parsed by the loader: of those, never queued)
     double wait_ms, busy_ms, busy_cpu_ms, started_at, helped_ms, inline_ms;
     double loader_cpu_at; // The loader's CPU time when the pool started (it makes and destroys it)
+    bool stats; // TTTT_LOAD_POOL_STATS: CPU time is a real syscall (no vDSO for CLOCK_THREAD_CPUTIME_ID), 2 a file
 } LoadPool;
 
 static double thread_cpu_ms(void) {
@@ -200,7 +201,7 @@ static void load_pool_run(LoadPool* me, LoadEntry* entry) {
     // (Nobody else touches the entry's path, errs or file while it's parsing)
     struct timespec start, end;
     timespec_get(&start, TIME_UTC);
-    double cpu_start = thread_cpu_ms();
+    double cpu_start = my stats ? thread_cpu_ms() : 0;
     Rank outer_rank = current_rank;
     u32 outer_children = current_children;
     current_rank = entry->rank;
@@ -209,7 +210,7 @@ static void load_pool_run(LoadPool* me, LoadEntry* entry) {
     current_rank = outer_rank;
     current_children = outer_children;
     timespec_get(&end, TIME_UTC);
-    double cpu = thread_cpu_ms() - cpu_start;
+    double cpu = my stats ? thread_cpu_ms() - cpu_start : 0;
     pthread_mutex_lock(&my lock);
     my busy_cpu_ms += cpu;
     my busy_ms += (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
@@ -274,7 +275,8 @@ LoadPool* load_pool_new(
     struct timespec now;
     timespec_get(&now, TIME_UTC);
     my started_at = (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6;
-    my loader_cpu_at = thread_cpu_ms();
+    my stats = getenv("TTTT_LOAD_POOL_STATS");
+    my loader_cpu_at = my stats ? thread_cpu_ms() : 0;
     for (u32 t = 0; t < threads; t++) {
         panic_if(pthread_create(&my threads[t], &attr, load_pool_worker, me), "couldn't start a loader thread");
     }
@@ -412,7 +414,7 @@ void load_pool_destroy(LoadPool* me) {
         cstr_drop(&entry->path);
         free(entry);
     }
-    if (getenv("TTTT_LOAD_POOL_STATS")) {
+    if (my stats) {
         eprintln("load pool: ", my thread_count, " threads, ", vec_load_entry_ptr_size(&my entries), " paths, ", my taken,
             " preparsed files taken, ", my inline_parses, " parsed by the loader (", my inline_unqueued, " never queued), ", wasted, " parsed for nothing, ", never,
             " never started");
