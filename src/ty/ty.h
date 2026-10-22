@@ -2896,6 +2896,7 @@ bool ty_check_assignable_to_access(Checker* me, Ty const* source, Ty const* targ
 // A `using` (TS2850) or `await using` (TS2851) initializer: disposable, null or undefined
 void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Span span, ErrorCtx* errs);
 void ty_check_satisfies(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs); // TS1360
+void ty_satisfies_elaboration_reads(Checker* me, Ty const* source, Ty const* target, Expr const* expr);
 // A class or interface that doesn't fit what it extends or implements: TS2416 at each of `members` (its own) that
 // doesn't fit the base's, else `ts_code` with "<what> 'D' <relation> 'B'." at `span` (tsc's issueMemberSpecificError)
 typedef struct HeritageMember {

@@ -46,9 +46,6 @@ Each one mutant:
   tttt prints `ComponentOptionsProperties<Data>`.
 
 ## Triage drain 2026-10-07: checker items re-checked, not fixed
-- Circularity only an elaboration finds: `const a = { prop: 42, get self() { return a } } satisfies { prop: string;
-  self: any }` is TS7022 + TS7023 in tsc (elaborateError types the getter while `a` is resolving), only the TS2322 in
-  tttt. Still so.
 - Diagnostic order at one position (TS2741 before TS2454 at `[d1, d2]` against `Base[]`,
   derivedTypeDoesNotRequireExtendsClause with `extends Object`): tsc's check order; not looked into further.
 - webpack flagflip leftovers (unused imports only in a JSDoc `{T=}`; TS2488 once per union in nuia, also excalidraw):
@@ -58,19 +55,12 @@ Each one mutant:
   which declaration's resolution meets the cycle first.
 
 ## Mutation seed 17 leftovers (2026-10-07, `scripts/mutate.py --seed 17 -n 4000`: 13 -> 7)
-- Known families: arrayFrom null-arg (binding elements read before the contextual assignment, seeds 61/62), noCircularitySelfReferentialGetter4 (circularity only an elaboration
-  finds, TS7022/TS7023), derivedTypeDoesNotRequireExtendsClause (diagnostic order at one position).
+- Known families: arrayFrom null-arg (binding elements read before the contextual assignment, seeds 61/62),
+  derivedTypeDoesNotRequireExtendsClause (diagnostic order at one position).
 
 ## Mutation seed 18 leftovers (2026-10-08, `MUTATE_DIR=... scripts/mutate.py -n 2000 --seed 18`: 11 -> 5)
-All three are check-order effects of tsc's checker reporting during type computation, which tttt's separate
+Both are check-order effects of tsc's checker reporting during type computation, which tttt's separate
 type/typecheck walks don't reproduce; none has a cheap rule.
-- **`satisfies` elaboration reaching a getter in the declaration's own initializer** (2 mutants of
-  noCircularitySelfReferentialGetter3/4: `const a = { prop: 42, get self() { return a; } } satisfies { prop: string;
-  self: any }`). tsc's checkSatisfiesExpression relates and elaborates while `a`'s type is being resolved;
-  elaborateElementwise reads every target property of the source (`self` -> the getter's return type -> `a`), which
-  is circular: TS7022 at `a`, TS7023 at `self`. tttt checks `satisfies` in the typecheck walk (expr.c EXPR_AS_TYPE),
-  after `a`'s type is known. Fix would be doing the satisfies relation (and on failure, the property reads the
-  elaboration does) in ty/expr.c's satisfies case while the declaration is in flight; only matters when it fails.
 - **TS2304 inside a `with` body found through flow analysis** (mut1335, sourceMapValidationStatements: a deleted
   `var z` makes `z = 10` in `with (obj) { ... }` unresolvable). tsc never checks the body (checkWithStatement), but
   the flow walk of a later reference `x` passes the assignment `z = 10` and isMatchingReference calls
@@ -235,10 +225,6 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   related to a union asks for its key property first, and a function declaration's return type after its body.)
 - Other diagnostics tsc reports from an evaluation order tttt doesn't have (mutation testing seed 1021, 2026-10-21,
   not attempted):
-  - noCircularitySelfReferentialGetter4 with `satisfies { prop: string; self: any }` (a failing satisfies): tsc's
-    elaboration of the failing satisfies runs inside `a`'s own initializer, asks for the `self` getter's type and finds
-    `a` circular (TS7022 on a, TS7023 on self); tttt checks the satisfies after a's type is known. With a passing
-    satisfies neither reports anything.
   - destructuringWithGenericParameter null-arg: "Binding elements read before the contextual assignment" (seeds 61/62).
   - recursiveTypeInference with `def?:` (zod getters, #64192): tsc's TS2345 prints `$ZodNullable<$ZodType<...>>` where
     tttt has `any` in the object's shape: the re-entrant getter inference of re-entrancy stage D (notes/reentrancy.md).
@@ -298,11 +284,6 @@ constraint, TS2208 for a mapped key). Left, each looked at:
   `Derived1`, which needs Derived1's structure) while Derived1's base types resolve: circular. `return undefined as
   any` relates to anything without resolving Derived1. tttt checks the class expression later, outside the
   resolution. Architectural (eager checks inside type resolution).
-- **TS7022/TS7023 from a satisfies elaboration** (noCircularitySelfReferentialGetter4 num-to-str): `const a = { prop:
-  "42", get self() { return a; } } satisfies { prop: number; self: any }`: tsgo's failed satisfies check elaborates
-  every property during a's initializer (elaborateElementwise reads `self`'s type -> a, circular); the passing
-  relation never reads it (target `any` short-circuits isPropertySymbolTypeRelated). tttt checks satisfies after a's
-  type is done. Same shape as the TS2310 one.
 - **Instantiated type parameter constraint printed through its declaration node** (text TS2322,
   contextualTypesNegatedTypeLikeConstraintInGenericMappedType2 never-const): `const matcher: never = typeTags<Value>()`
   prints P's constraint as `{ readonly [Tag in Tags<"_tag", Value> & string]: (_: Extract<Value, ...>) => any; }` in
@@ -317,13 +298,8 @@ constraint, TS2208 for a mapped key). Left, each looked at:
 
 ## Mutation seeds 61/62 leftovers (2026-10-14: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 4000 --seed 61|62`)
 Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechecks of each other). Left, each looked at:
-- **Circularity met by a check tsgo runs inside a type computation** (seed 61 noCircularitySelfReferentialGetter3/4
-  ann-number-string): `const a = { prop: 42, get self() { return a } } satisfies { prop: string; self: any }`: tsgo's
-  checkSatisfiesExpression runs while a's type is computed, its failure elaborates every property
-  (elaborateObjectLiteral reads `self`'s getter type) and that meets a in flight: TS7022 on a, TS7023 on self, a: any.
-  tttt checks `satisfies` in the typecheck walk, after a's type is done. Same family, reversed (seed 62): spurious
-  TS7022/TS7023/TS2502 in recursiveTypeInference add-optional (`_zod?:`), spurious TS2339 in
-  noCircularitySelfReferentialGetter2 drop-as.
+- **Spurious circularity on getters** (seed 62, not the satisfies one, which is fixed): TS7022/TS7023/TS2502 in
+  recursiveTypeInference add-optional (`_zod?:`), TS2339 in noCircularitySelfReferentialGetter2 drop-as. Not looked into.
 - seed 61 destructuringWithGenericParameter null-arg: "Binding elements read before the contextual assignment" above.
 - seed 61 restElementWithInitializer2 delete-stmt (x2): the seeds 41/42 "Lazy name resolution" entry below.
 - seed 62 contextualTypesNegatedTypeLikeConstraintInGenericMappedType1 undefined-init (missing TS7034): the seeds 41/42
@@ -359,9 +335,6 @@ Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
   conditional `P extends Object` (was `void`) relates `ReducerAction[]` while ReducerAction's alias is being resolved
   (recursiveArrayNotCircular extends-object); TS7022/TS7024 when a reduce callback returns the variable it
   initializes (unknownSymbolOffContextualType1 swap-stmts). See "Circularity tsc finds and tttt doesn't".
-- seed 42 narrowingDestructuring literal-type: `(({ kind, ...rest }) => rest)(t)` with t narrowed to never: tttt says
-  TS2700 for the rest of never, tsgo nothing (`rest: any`); the parameter's contextual never isn't the binding
-  element's parent type there. Not found where.
 - seed 42 objectRestNegative undefined-init (strictNullChecks off): `let o = undefined; var { ...m, a } = o` is TS2700
   in tsgo when the pattern has another element (the initializer isn't widened to any under the pattern's contextual
   type), not with the rest alone; tttt reports neither and then TS2322 instead of TS2741 for `({ b, ...na } = o)`.
@@ -372,11 +345,6 @@ Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
 ## Mutation seed 2026102001 (2026-10-20, -n 3000: 5 / 1552 differ)
 Fixed: a computed key naming no property against a generic mapped contextual type, recursive-return skip with type
 arguments / through exported variables. Left:
-- **satisfies elaboration evaluating a getter in flight** (noCircularitySelfReferentialGetter3/4 with `prop: number`
-  against `satisfies { prop: string; self: any }`): tsc checks `satisfies` while typing `a`'s initializer, and
-  elaborateElementwise reads every property's type, `get self() { return a }` included, while `a` is in flight:
-  TS7022 on a, TS7023 on self. tttt checks satisfies in the check walk, after `a` is typed. Only on failing
-  satisfies of self-referencing getters.
 - arrayFrom return-void (the binding-element entry above).
 
 ## Mutation seed 2026102101 (2026-10-20, -n 8000: 10 / 4102 differ)
@@ -393,7 +361,7 @@ type through the member fallback (`{ type: T }` to `Partial<X>`, `Partial<C<T>>`
 - jsonRawJSON2 ann-string-number (also seed 4's missing TS2430): harness only, the shared lib program's declaration
   order (harness.md "Shared lib programs"); the CLI reports it.
 - Known families: unknownSymbolOffContextualType1 (TS7022 circularity), conditionalContextualReturnSubstitutionCache
-  (TS2208 render), narrowingDestructuring (TS2700), restElementWithInitializer2 (lazy TS2304).
+  (TS2208 render), restElementWithInitializer2 (lazy TS2304).
 
 ## Mutation seed 2026102102 (2026-10-20, -n 8000: 10 -> 8 / 4003 differ)
 Fixed: TS2678/TS2352 heads name the normalized pair like TS2322's (`1` against `string | undefined` is `number` to
@@ -413,12 +381,11 @@ is declared here" for `(string[] | number[]).splice`). Left, each looked at:
   A tsgo text quirk, not mirrored.
 - unicodeLineSeparatorInMultilineComment never-const: tsgo's CLI reports the TS2322 like tttt; its test harness writes
   no errors baseline for that file. Not a tttt bug.
-- Known: noCircularitySelfReferentialGetter3 (satisfies elaboration), conditionalContextualReturnSubstitutionCache
+- Known: conditionalContextualReturnSubstitutionCache
   (TS2208), complicatedIndexedAccess... (position, seed 2026102101).
 
 ## Mutation seed 1022 (2026-10-21, cor2, -n 8000: 8 -> 6 / 4185 differ)
 Fixed: misplaced imports/exports' alias errors (TS2305/TS2307) reported when a spelling suggestion resolves them
 (SymbolRare.unreported_errs); lone surrogates and line-breaking characters escaped in template literal type text. Left,
-all known: arrayFrom return-void, recursiveClassBaseType return-void (TS2310), noCircularitySelfReferentialGetter4
-(satisfies elaboration), unicodeLineSeparatorInMultilineComment
+all known: arrayFrom return-void, recursiveClassBaseType return-void (TS2310), unicodeLineSeparatorInMultilineComment
 never-const (harness writes no errors baseline).

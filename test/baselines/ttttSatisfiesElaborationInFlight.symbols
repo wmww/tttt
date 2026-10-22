@@ -1,0 +1,75 @@
+//// [test/cases/ttttSatisfiesElaborationInFlight.ts] ////
+
+=== ttttSatisfiesElaborationInFlight.ts ===
+// tsc relates a satisfies expression while the declaration's type is computed (checkSatisfiesExpression is part of
+// checkExpression), and a failed relation's elaboration reads the type of every property of the literal the target
+// has (elaborateElement), the getter's return type included: that meets the declaration in flight, TS7022 + TS7023.
+// tttt ran the relation then, not the elaboration (the noCircularitySelfReferentialGetter3/4 mutants).
+const a = { prop: "42", get self() { return a; } } satisfies { prop: number; self: any };
+>a : Symbol(a, Decl(ttttSatisfiesElaborationInFlight.ts, 4, 5))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 4, 11))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 4, 23))
+>a : Symbol(a, Decl(ttttSatisfiesElaborationInFlight.ts, 4, 5))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 4, 62))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 4, 76))
+
+const b = { get self() { return b; }, prop: "42" } satisfies { prop: number; self: any };
+>b : Symbol(b, Decl(ttttSatisfiesElaborationInFlight.ts, 5, 5))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 5, 11))
+>b : Symbol(b, Decl(ttttSatisfiesElaborationInFlight.ts, 5, 5))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 5, 37))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 5, 62))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 5, 76))
+
+const c = { inner: { prop: "42", get self() { return c; } } } satisfies { inner: { prop: number; self: any } };
+>c : Symbol(c, Decl(ttttSatisfiesElaborationInFlight.ts, 6, 5))
+>inner : Symbol(inner, Decl(ttttSatisfiesElaborationInFlight.ts, 6, 11))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 6, 20))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 6, 32))
+>c : Symbol(c, Decl(ttttSatisfiesElaborationInFlight.ts, 6, 5))
+>inner : Symbol(inner, Decl(ttttSatisfiesElaborationInFlight.ts, 6, 73))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 6, 82))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 6, 96))
+
+const d = [{ prop: "42", get self() { return d; } }] satisfies { prop: number; self: any }[];
+>d : Symbol(d, Decl(ttttSatisfiesElaborationInFlight.ts, 7, 5))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 7, 12))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 7, 24))
+>d : Symbol(d, Decl(ttttSatisfiesElaborationInFlight.ts, 7, 5))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 7, 64))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 7, 78))
+
+// The target has no `self`, or a method: nothing reads a circular type
+const e = { prop: "42", get self() { return e; } } satisfies { prop: number };
+>e : Symbol(e, Decl(ttttSatisfiesElaborationInFlight.ts, 9, 5))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 9, 11))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 9, 23))
+>e : Symbol(e, Decl(ttttSatisfiesElaborationInFlight.ts, 9, 5))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 9, 62))
+
+const f = { prop: "42", self() { return f; } } satisfies { prop: number; self: any };
+>f : Symbol(f, Decl(ttttSatisfiesElaborationInFlight.ts, 10, 5))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 10, 11))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 10, 23))
+>f : Symbol(f, Decl(ttttSatisfiesElaborationInFlight.ts, 10, 5))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 10, 58))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 10, 72))
+
+// The relation alone reads it (against `string`, not `any`): circular, then the any fits, no TS2322
+const g = { prop: 42, get self() { return g; } } satisfies { prop: number; self: string };
+>g : Symbol(g, Decl(ttttSatisfiesElaborationInFlight.ts, 12, 5))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 12, 11))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 12, 21))
+>g : Symbol(g, Decl(ttttSatisfiesElaborationInFlight.ts, 12, 5))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 12, 60))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 12, 74))
+
+// Passing: nothing is circular
+const h = { prop: 42, get self() { return h; } } satisfies { prop: number; self: any };
+>h : Symbol(h, Decl(ttttSatisfiesElaborationInFlight.ts, 14, 5))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 14, 11))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 14, 21))
+>h : Symbol(h, Decl(ttttSatisfiesElaborationInFlight.ts, 14, 5))
+>prop : Symbol(prop, Decl(ttttSatisfiesElaborationInFlight.ts, 14, 60))
+>self : Symbol(self, Decl(ttttSatisfiesElaborationInFlight.ts, 14, 74))
+

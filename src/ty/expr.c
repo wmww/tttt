@@ -6421,6 +6421,12 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 cstr printed = ty_to_cstr(me, type);
                 cstr_drop(&printed);
             }
+            if (!(type->flags & TYF_ERROR)) {
+                // Its elaboration too, which reads the type of every property of the literal the target has
+                // (elaborateElement): `get self() { return a }` meets `const a = {...} satisfies T` in flight (TS7022,
+                // TS7023). What it reports is the walk's (expr.c)
+                ty_satisfies_elaboration_reads(me, checked, type, &as_type->expr);
+            }
             return type->flags & TYF_ERROR ? type : checked; // (tsc's checkSatisfiesExpressionWorker)
         }
 

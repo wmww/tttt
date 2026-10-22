@@ -1,0 +1,73 @@
+ttttSatisfiesElaborationInFlight.ts(5,7): error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttSatisfiesElaborationInFlight.ts(5,13): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttSatisfiesElaborationInFlight.ts(5,29): error TS7023: 'self' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+ttttSatisfiesElaborationInFlight.ts(6,7): error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttSatisfiesElaborationInFlight.ts(6,17): error TS7023: 'self' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+ttttSatisfiesElaborationInFlight.ts(6,39): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttSatisfiesElaborationInFlight.ts(7,7): error TS7022: 'c' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttSatisfiesElaborationInFlight.ts(7,22): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttSatisfiesElaborationInFlight.ts(7,38): error TS7023: 'self' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+ttttSatisfiesElaborationInFlight.ts(8,7): error TS7022: 'd' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttSatisfiesElaborationInFlight.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttSatisfiesElaborationInFlight.ts(8,30): error TS7023: 'self' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+ttttSatisfiesElaborationInFlight.ts(10,13): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttSatisfiesElaborationInFlight.ts(11,13): error TS2322: Type 'string' is not assignable to type 'number'.
+ttttSatisfiesElaborationInFlight.ts(13,7): error TS7022: 'g' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+ttttSatisfiesElaborationInFlight.ts(13,27): error TS7023: 'self' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+
+
+==== ttttSatisfiesElaborationInFlight.ts (16 errors) ====
+    // tsc relates a satisfies expression while the declaration's type is computed (checkSatisfiesExpression is part of
+    // checkExpression), and a failed relation's elaboration reads the type of every property of the literal the target
+    // has (elaborateElement), the getter's return type included: that meets the declaration in flight, TS7022 + TS7023.
+    // tttt ran the relation then, not the elaboration (the noCircularitySelfReferentialGetter3/4 mutants).
+    const a = { prop: "42", get self() { return a; } } satisfies { prop: number; self: any };
+          ~
+!!! error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+!!! related TS6500 ttttSatisfiesElaborationInFlight.ts:5:64: The expected type comes from property 'prop' which is declared here on type '{ prop: number; self: any; }'
+                                ~~~~
+!!! error TS7023: 'self' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const b = { get self() { return b; }, prop: "42" } satisfies { prop: number; self: any };
+          ~
+!!! error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                    ~~~~
+!!! error TS7023: 'self' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+                                          ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+!!! related TS6500 ttttSatisfiesElaborationInFlight.ts:6:64: The expected type comes from property 'prop' which is declared here on type '{ prop: number; self: any; }'
+    const c = { inner: { prop: "42", get self() { return c; } } } satisfies { inner: { prop: number; self: any } };
+          ~
+!!! error TS7022: 'c' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                         ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+!!! related TS6500 ttttSatisfiesElaborationInFlight.ts:7:84: The expected type comes from property 'prop' which is declared here on type '{ prop: number; self: any; }'
+                                         ~~~~
+!!! error TS7023: 'self' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const d = [{ prop: "42", get self() { return d; } }] satisfies { prop: number; self: any }[];
+          ~
+!!! error TS7022: 'd' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                 ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+!!! related TS6500 ttttSatisfiesElaborationInFlight.ts:8:66: The expected type comes from property 'prop' which is declared here on type '{ prop: number; self: any; }'
+                                 ~~~~
+!!! error TS7023: 'self' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    // The target has no `self`, or a method: nothing reads a circular type
+    const e = { prop: "42", get self() { return e; } } satisfies { prop: number };
+                ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+!!! related TS6500 ttttSatisfiesElaborationInFlight.ts:10:64: The expected type comes from property 'prop' which is declared here on type '{ prop: number; }'
+    const f = { prop: "42", self() { return f; } } satisfies { prop: number; self: any };
+                ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+!!! related TS6500 ttttSatisfiesElaborationInFlight.ts:11:60: The expected type comes from property 'prop' which is declared here on type '{ prop: number; self: any; }'
+    // The relation alone reads it (against `string`, not `any`): circular, then the any fits, no TS2322
+    const g = { prop: 42, get self() { return g; } } satisfies { prop: number; self: string };
+          ~
+!!! error TS7022: 'g' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                              ~~~~
+!!! error TS7023: 'self' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    // Passing: nothing is circular
+    const h = { prop: 42, get self() { return h; } } satisfies { prop: number; self: any };
+    

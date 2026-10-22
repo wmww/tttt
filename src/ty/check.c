@@ -1077,6 +1077,16 @@ void ty_check_satisfies(Checker* me, Ty const* source, Ty const* target, Span sp
     check_assignable(me, HEAD_SATISFIES, source, target, span, expr, errs);
 }
 
+// What tsc's checkSatisfiesExpression reads while the satisfies expression's type is computed, before the walk reports
+// on it: a failed relation's elaboration (elaborateElement reads the type of every property of the literal the target
+// has). What it reports is dropped (the walk's ty_check_satisfies() says it)
+void ty_satisfies_elaboration_reads(Checker* me, Ty const* source, Ty const* target, Expr const* expr) {
+    if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return;
+    ErrorCtx scratch = error_ctx_init();
+    elaborate_error(me, HEAD_SATISFIES, expr, source, target, &scratch);
+    error_ctx_drop(&scratch);
+}
+
 void ty_check_variance_annotations(Checker* me, Symbol const* owner, Generic const* generic, bool is_alias, ErrorCtx* errs) {
     if (!owner || generic_empty(generic)) return;
     for (u32 i = 0; i < (u32)vec_generic_item_size(&generic->items); i++) {

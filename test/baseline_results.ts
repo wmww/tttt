@@ -2008,6 +2008,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSatisfiesElaborationInFlight': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttScriptConflictExpandoHost': {
         errors: true,
         symbols: true,

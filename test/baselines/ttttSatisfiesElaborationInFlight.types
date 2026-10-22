@@ -1,0 +1,101 @@
+//// [test/cases/ttttSatisfiesElaborationInFlight.ts] ////
+
+=== ttttSatisfiesElaborationInFlight.ts ===
+// tsc relates a satisfies expression while the declaration's type is computed (checkSatisfiesExpression is part of
+// checkExpression), and a failed relation's elaboration reads the type of every property of the literal the target
+// has (elaborateElement), the getter's return type included: that meets the declaration in flight, TS7022 + TS7023.
+// tttt ran the relation then, not the elaboration (the noCircularitySelfReferentialGetter3/4 mutants).
+const a = { prop: "42", get self() { return a; } } satisfies { prop: number; self: any };
+>a : any
+>{ prop: "42", get self() { return a; } } satisfies { prop: number; self: any } : { prop: string; readonly self: any; }
+>{ prop: "42", get self() { return a; } } : { prop: string; readonly self: any; }
+>prop : string
+>"42" : "42"
+>self : any
+>a : any
+>prop : number
+>self : any
+
+const b = { get self() { return b; }, prop: "42" } satisfies { prop: number; self: any };
+>b : any
+>{ get self() { return b; }, prop: "42" } satisfies { prop: number; self: any } : { readonly self: any; prop: string; }
+>{ get self() { return b; }, prop: "42" } : { readonly self: any; prop: string; }
+>self : any
+>b : any
+>prop : string
+>"42" : "42"
+>prop : number
+>self : any
+
+const c = { inner: { prop: "42", get self() { return c; } } } satisfies { inner: { prop: number; self: any } };
+>c : any
+>{ inner: { prop: "42", get self() { return c; } } } satisfies { inner: { prop: number; self: any } } : { inner: { prop: string; readonly self: any; }; }
+>{ inner: { prop: "42", get self() { return c; } } } : { inner: { prop: string; readonly self: any; }; }
+>inner : { prop: string; readonly self: any; }
+>{ prop: "42", get self() { return c; } } : { prop: string; readonly self: any; }
+>prop : string
+>"42" : "42"
+>self : any
+>c : any
+>inner : { prop: number; self: any; }
+>prop : number
+>self : any
+
+const d = [{ prop: "42", get self() { return d; } }] satisfies { prop: number; self: any }[];
+>d : any
+>[{ prop: "42", get self() { return d; } }] satisfies { prop: number; self: any }[] : { prop: string; readonly self: any; }[]
+>[{ prop: "42", get self() { return d; } }] : { prop: string; readonly self: any; }[]
+>{ prop: "42", get self() { return d; } } : { prop: string; readonly self: any; }
+>prop : string
+>"42" : "42"
+>self : any
+>d : any
+>prop : number
+>self : any
+
+// The target has no `self`, or a method: nothing reads a circular type
+const e = { prop: "42", get self() { return e; } } satisfies { prop: number };
+>e : { prop: string; readonly self: any; }
+>{ prop: "42", get self() { return e; } } satisfies { prop: number } : { prop: string; readonly self: { prop: string; readonly self: any; }; }
+>{ prop: "42", get self() { return e; } } : { prop: string; readonly self: { prop: string; readonly self: any; }; }
+>prop : string
+>"42" : "42"
+>self : { prop: string; readonly self: any; }
+>e : { prop: string; readonly self: any; }
+>prop : number
+
+const f = { prop: "42", self() { return f; } } satisfies { prop: number; self: any };
+>f : { prop: string; self(): any; }
+>{ prop: "42", self() { return f; } } satisfies { prop: number; self: any } : { prop: string; self(): { prop: string; self(): any; }; }
+>{ prop: "42", self() { return f; } } : { prop: string; self(): { prop: string; self(): any; }; }
+>prop : string
+>"42" : "42"
+>self : () => { prop: string; self(): any; }
+>f : { prop: string; self(): any; }
+>prop : number
+>self : any
+
+// The relation alone reads it (against `string`, not `any`): circular, then the any fits, no TS2322
+const g = { prop: 42, get self() { return g; } } satisfies { prop: number; self: string };
+>g : any
+>{ prop: 42, get self() { return g; } } satisfies { prop: number; self: string } : { prop: number; readonly self: any; }
+>{ prop: 42, get self() { return g; } } : { prop: number; readonly self: any; }
+>prop : number
+>42 : 42
+>self : any
+>g : any
+>prop : number
+>self : string
+
+// Passing: nothing is circular
+const h = { prop: 42, get self() { return h; } } satisfies { prop: number; self: any };
+>h : { prop: number; readonly self: any; }
+>{ prop: 42, get self() { return h; } } satisfies { prop: number; self: any } : { prop: number; readonly self: { prop: number; readonly self: any; }; }
+>{ prop: 42, get self() { return h; } } : { prop: number; readonly self: { prop: number; readonly self: any; }; }
+>prop : number
+>42 : 42
+>self : { prop: number; readonly self: any; }
+>h : { prop: number; readonly self: any; }
+>prop : number
+>self : any
+
