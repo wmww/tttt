@@ -1069,6 +1069,10 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         bool declarations_only = (gated || getenv("TTTT_DECLARATIONS_ONLY")) && typecheck && !opts->expect_types;
         if (declarations_only) program_set_declarations_only(program, true);
         mallopt(M_TOP_PAD, 128 << 10); // (glibc's default, see main())
+        // What the front end freed goes back before the checkers grow: the load workers' heaps, their 16 MB pads, the
+        // resolver's caches (nest at the defaults: peak RSS -4 MB, react -8; 0.3 ms on nest, 1 ms on vscode).
+        // TTTT_NO_TRIM=1: kept
+        if (!getenv("TTTT_NO_TRIM")) malloc_trim(0);
         if (typecheck) program_typecheck(program);
         // (Checked, every body was materialized: program_typecheck() says if one parsed otherwise)
         if (defer && (program_defer_failed(program) ||
