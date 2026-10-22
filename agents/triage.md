@@ -58,3 +58,9 @@ intersection's property symbol to bugs/type_core.md.
   unused_register 619, builder_sort_stable_from 190, builder_find_prop 183, check_object 153. M_TOP_PAD during
   checking doesn't change the count (128 KB / 1 MB / 4 MB tried). For a checker-speed worker: move those allocations
   into the checker's arena.
+
+- Bun-only repositories (2026-10-22, source sweep refresh 4): 16 GitHub search hits for the application-code rule had
+  only a `bun.lock`/`bun.lockb` and were skipped, because thirdparty/ensure-sources.sh has no bun install (the bun topic
+  was almost all of them; also Hikari, SveltyCMS, better-svelte-email, gramio, StreamBot, mcp-linker: repos.txt's
+  "Refresh 4" comment lists them). Adding `bun install --frozen-lockfile --ignore-scripts` (a pinned bun next to the
+  pinned node) would open that slice: modern application code, where private projects live.
