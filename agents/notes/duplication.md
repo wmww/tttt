@@ -55,3 +55,25 @@ No change. Past K8-K12, drizzle and excalidraw add 15-25% total work for a criti
 (excalidraw flat from K12; drizzle -28% K12 -> K24). The rule already exceeds the physical cores only for vscode,
 where K12 -> K24 costs +4.3% instructions: its CPU seconds are SMT accounting. The laptop should confirm vscode's wall
 and CPU at K12 / K16 / K24 and drizzle's wall at K8 / K12.
+
+## A per-file cost estimate for dealing and stealing: measured, not built (fe3, 2026-10-22)
+bun deals by identifiers + type nodes per file and steals half of the longest unstarted run (bun_concurrency.md §1).
+Measured offline at `--threads 1 --checkers 12`: per-file check ms (`TTTT_FILE_TIMES`, mean of 2 runs), the checked
+files in order (`TTTT_DUP_GRAPH`), and as the estimate a lexical count of non-keyword identifier tokens per file
+(bun's count without its type-node term; no parser hook). deal_files()' rule replayed with bytes and with the
+estimate, and list schedules of 12 checkers on the measured ms. Longest checker / mean, ms:
+
+| corpus | corr(ms, bytes / est.) | bytes deal | est. deal | bytes + today's tail steal | est. + half-run steal | costliest file |
+|---|---|---|---|---|---|---|
+| type-fest | 0.05 / 0.04 | 209 / 64 | 254 / 64 | 175 | 173 | 138 (union-to-tuple.ts) |
+| TypeScript6 | 0.98 / 0.98 | 199 / 50 | 199 / 50 | 188 | 188 | 188 (checker.ts) |
+| excalidraw | 0.89 / 0.85 | 126 / 86 | 156 / 86 | 106 | 106 | 106 (App.tsx) |
+| effect | 0.84 / 0.89 | 152 / 106 | 150 / 106 | 108 | 110 | 66 |
+| drizzle | 0.42 / 0.42 | 132 / 93 | 149 / 93 | 110 | 111 | 35 |
+
+The estimate predicts no better than bytes (type-fest: neither predicts anything, its cost is type-level evaluation),
+deals worse on 3 of 5, and with stealing every variant sits at the costliest file (type-fest, TypeScript6,
+excalidraw) or within 2% of the mean (effect); drizzle's 1.17-1.19 is the same either way. Far below the 5% bar: not
+built. The schedules ignore warm-up moving with the deal (per-file ms were measured in today's deal), which can't
+change the picture: the floors are single files. The script was /tmp/wt-fe3-scratch/est/study.py (gone with the
+worktree's scratch; ~150 lines, easy to redo).
