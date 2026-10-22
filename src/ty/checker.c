@@ -23,7 +23,8 @@
 // arenas of a few KB, populated 1 MB each: 55% of its link)
 [[gnu::noinline]] static void arena_populate(ArenaChunk* chunk) {
     uintptr_t from = ((uintptr_t)chunk->data + chunk->populated) & ~(uintptr_t)4095;
-    size_t step = chunk->used < ((size_t)64 << 10) ? (size_t)64 << 10 : chunk->used > ((size_t)1 << 20) ? (size_t)1 << 20 : chunk->used;
+    size_t ahead = chunk->huge ? chunk->used : chunk->used / 4;
+    size_t step = ahead < ((size_t)64 << 10) ? (size_t)64 << 10 : ahead > ((size_t)1 << 20) ? (size_t)1 << 20 : ahead;
     size_t to = chunk->used + step < chunk->cap ? chunk->used + step : chunk->cap;
     uintptr_t end = ((uintptr_t)chunk->data + to) & ~(uintptr_t)4095;
     if (end > from) madvise((void*)from, end - from, MADV_POPULATE_WRITE);
