@@ -36,6 +36,58 @@ the path doesn't.
   needs `CONFIG_READ_ONLY_THP_FOR_FS` (unset there).
 - Output byte-identical (stdout, exit code) pgo vs bolt on every corpus at K1 and 4 threads; vscode peak RSS equal.
 
+## Compiler flags measured and declined (deliverable 2)
+Each row a full PGO + BOLT build with the flag added (PGO_CFLAGS/BOLT_EXTRA), cachegrind at K1 against two baseline
+builds (which differ by <= 0.5% in I1 misses and 0.1% in instructions here). Instructions / I1 misses:
+
+| flag | text | zod | drizzle | tsc | verdict |
+|---|---|---|---|---|---|
+| baseline (2 builds) | 4.20 MB, hot 2.06 MB | 3.689 G / 66.0 M | 4.544 G / 68.3 M | 3.715 G / 49.4 M | |
+| `-O2` | 3.60, hot 1.64 | +9.1% / -3% | +9.8% / -9% | +8.1% / 0% | no |
+| `-Os` | 2.73, hot 1.20 | +72% / -16% | +72% / -26% | +73% / -3% | no |
+| `--param=max-inline-insns-auto=10` | 3.74, hot 1.71 | +8.4% / -3% | +8.3% / -7% | +8.3% / -3% | no |
+| `--param=inline-unit-growth=20` | 3.98, hot 1.92 | +1.3% / +1% | +1.3% / -1% | +1.3% / +2% | no |
+| `--param=inline-unit-growth=80` | = | = / +0.5% | = / = | = / +1% | the limit doesn't bind |
+| `-falign-functions=16 -falign-jumps=1 -falign-loops=1 -falign-labels=1` | -0.7% | = / = | = / = | = / +2% | no |
+| `-fno-tree-vectorize` | = | = / -0.5% | = / -0.6% | -0.2% / = | noise |
+| `-fno-ipa-cp-clone` | = | = / +0.5% | -0.1% / = | = / +1.5% | no |
+| `-fno-split-paths -fno-tracer` | 4.12, hot 2.02 | +0.8% / -2.6% | +0.9% / -2.9% | +0.6% / -2.3% | marginal |
+| `-fno-unroll-loops` | = | = / = | = / +2% | = / = | no |
+| `--param=max-unroll-times=2` | = | = / = | = / = | = / = | no |
+| **`-fno-peel-loops`** | 4.03, hot 1.95 | **+2.0% / -9.2%** | **+2.1% / -10.3%** | **+1.1% / -5.4%** | laptop candidate |
+| `--param=max-peeled-insns=40` | 4.12, hot 2.00 | +0.4% / -2.1% | +0.3% / -2.7% | +0.4% / -2.4% | marginal |
+| `--param=max-peel-times=4` | 4.17 | +0.2% / -1.7% | +0.2% / -1.4% | +0.3% / -0.4% | no |
+| `--param=max-completely-peel-times=4` | 4.18 | +0.6% / = | +0.5% / +1% | +1.6% / = | no |
+| BOLT `-align-functions=16` / `=32` | = | = / +4.4% / +2.3% | = / +4.6% / +2.7% | = / +4.8% / +2.4% | no |
+
+- PGO already compiles never-executed functions for size and BOLT moves them out of the hot text, so `-Os` on cold
+  units (the brief's idea) can't shrink the hot footprint; `-Os` everywhere shows the ceiling: hot text halves, I1
+  misses -16 to -26%, at +72% instructions.
+- Loop peeling (GCC enables it with profile feedback) is the one lever in reach: `-fno-peel-loops` takes 110 KB of
+  hot text and 5-10% of the I1 misses for +1-2% instructions. Over the 1% instruction budget, so not in pgobuild.sh;
+  the laptop can A/B it in cycles with `PGO_DIR=pgo-np BOLT_DIR=bolt-np PGO_CFLAGS=-fno-peel-loops
+  scripts/boltbuild.sh` against fast/tttt.
+- ICF: BOLT's `-icf=all` folds only 4 functions (GCC's -fipa-icf, on at -O2, got the rest); `-fno-semantic-interposition`
+  and `-fvisibility=hidden` change nothing in a PIE executable.
+
+## clang against GCC
+`CC=clang PGO_DIR=... BOLT_DIR=... scripts/boltbuild.sh` builds clang's LTO + PGO (+ BOLT) beside the default.
+Cachegrind at K1, instructions / I1 misses / stall estimate (clang 21.1.8, GCC 15.2):
+
+| | zod | drizzle | tsc |
+|---|---|---|---|
+| gcc -O3 | 4.405 G / 121.3 M / 2.13 G | 5.481 G / 113.3 M / 2.26 G | 4.328 G / 100.7 M / 1.78 G |
+| clang -O3 | +3.3% / +4.7% / +7.5% | +3.1% / +3.1% / +6.6% | +3.7% / +3.8% / +4.5% |
+| gcc PGO | 3.696 G / 79.3 M / 1.71 G | 4.554 G / 81.8 M / 1.95 G | 3.720 G / 60.0 M / 1.37 G |
+| clang PGO | -3.2% / = / +6.4% | -1.6% / -0.5% / +5.6% | -4.7% / +1.2% / +3.6% |
+| gcc PGO + BOLT | 3.690 G / 66.0 M / 1.57 G | 4.546 G / 68.1 M / 1.81 G | 3.716 G / 50.1 M / 1.27 G |
+| clang PGO + BOLT | -3.2% / +9.6% / +11.5% | -1.6% / +7.8% / +9.4% | -4.7% / +11.8% / +7.1% |
+
+Text: gcc -O3 5.23 MB, clang -O3 4.30 MB; gcc PGO 4.40 MB, clang PGO 7.57 MB (its profile-guided inlining). clang's
+PGO build executes 2-5% fewer instructions but its hot text is 3.57 MB after BOLT against GCC's 2.06 MB, and
+the I1 misses and the stall estimate are 7-12% worse: by the proxies GCC stays. The laptop could still A/B cycles
+(fewer instructions against a bigger footprint), but nothing here says clang wins.
+
 ## Huge pages for the hot text (main.c's huge_text())
 At startup, the first 2 MB of BOLT's hot segment (an executable PT_LOAD with p_align >= 2 MB, so pgo/ and release/
 binaries are left alone) are copied into a 2 MB-aligned anonymous MADV_HUGEPAGE page, which mremap(MREMAP_FIXED)

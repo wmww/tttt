@@ -5,6 +5,8 @@
 #
 #   scripts/pgobuild.sh            # (re)train only when the sources, the compiler or this script changed
 #   scripts/pgobuild.sh --force    # retrain anyway
+#   CC=clang PGO_DIR=pgo-clang scripts/pgobuild.sh   # clang's LTO + PGO instead (llvm-profdata merges its
+#                                  # profiles; for the laptop's compiler A/B, agents/notes/code_layout.md)
 #   PGO_DIR=pgo-x PGO_CFLAGS='-fno-plt' PGO_LDFLAGS='-Wl,-z,now' scripts/pgobuild.sh   # an experiment beside pgo/
 #                                  # (extra compiler and linker flags, space-separated; scripts/boltbuild.sh passes
 #                                  # them through and takes BOLT_DIR)
@@ -21,7 +23,10 @@ FORCE=
 test "${1:-}" != --force || FORCE=1
 
 # The stamp: every source the build reads, the compiler, the build files and this script (the training set)
-STAMP=$( { gcc --version | head -1
+CC=${CC:-gcc}
+CLANG=
+case "$($CC --version | head -1)" in *clang*) CLANG=1 ;; esac
+STAMP=$( { $CC --version | head -1
            find src thirdparty/cleat -type f \( -name '*.c' -o -name '*.h' -o -name meson.build \) | LC_ALL=C sort | xargs cat
            cat meson.build thirdparty/meson.build "$0"; echo "${PGO_CFLAGS:-}|${PGO_LDFLAGS:-}"; } | sha256sum | cut -d' ' -f1)
 if test -z "$FORCE" && test -x $B/tttt && test "$(cat $B/.stamp 2>/dev/null)" = "$STAMP"; then
@@ -59,11 +64,26 @@ array() { local a=() x; for x in "$@"; do a+=("'$x'"); done; (IFS=,; echo "[${a[
 # shellcheck disable=SC2086
 LINK=$(array -Wl,--emit-relocs -Wl,-z,now ${PGO_LDFLAGS:-})
 # shellcheck disable=SC2086
-CARGS=(-fno-reorder-blocks-and-partition -fno-plt ${PGO_CFLAGS:-})
-if test ! -e $B/build.ninja; then
-    meson setup $B --buildtype release -Db_lto=true -Db_pgo=generate "-Dc_args=$(array "${CARGS[@]}")" "-Dc_link_args=$LINK" >&2
+CARGS=(-fno-plt ${PGO_CFLAGS:-})
+if test -z "$CLANG"; then
+    CARGS=(-fno-reorder-blocks-and-partition "${CARGS[@]}")
+    GEN=(-Db_pgo=generate "-Dc_args=$(array "${CARGS[@]}")" "-Dc_link_args=$LINK")
+    USE=(-Db_pgo=use "-Dc_args=$(array -Wno-missing-profile "${CARGS[@]}")")
 else
-    meson configure $B -Db_pgo=generate "-Dc_args=$(array "${CARGS[@]}")" "-Dc_link_args=$LINK" >&2
+    # (Not meson's b_pgo: clang's raw profiles need llvm-profdata, the one of clang's own version)
+    PROF=$(realpath -m $B/profraw)
+    PROFDATA=llvm-profdata-$($CC --version | sed -n 's/.*clang version \([0-9]*\).*/\1/p;q')
+    command -v "$PROFDATA" > /dev/null || PROFDATA=llvm-profdata
+    # shellcheck disable=SC2086
+    GEN=(-Db_pgo=off "-Dc_args=$(array "${CARGS[@]}" -fprofile-generate=$PROF)"
+         "-Dc_link_args=$(array -Wl,--emit-relocs -Wl,-z,now ${PGO_LDFLAGS:-} -fprofile-generate=$PROF)")
+    USE=("-Dc_args=$(array "${CARGS[@]}" -fprofile-use=$(realpath -m $B)/tttt.profdata -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date)" "-Dc_link_args=$LINK")
+    rm -rf "$PROF"
+fi
+if test ! -e $B/build.ninja; then
+    CC=$CC meson setup $B --buildtype release -Db_lto=true "${GEN[@]}" >&2
+else
+    meson configure $B "${GEN[@]}" >&2
 fi
 find $B -name '*.gcda' -delete
 ninja -C $B tttt >&2
@@ -94,7 +114,8 @@ for P in "${TRAIN[@]}"; do
 done
 
 # Functions the training never reached have no profile: that's -Wmissing-profile, which -Werror would make fatal
-meson configure $B -Db_pgo=use "-Dc_args=$(array -Wno-missing-profile "${CARGS[@]}")" >&2
+test -z "$CLANG" || "$PROFDATA" merge -o $B/tttt.profdata "$PROF" >&2
+meson configure $B "${USE[@]}" >&2
 ninja -C $B tttt >&2
 echo "$STAMP" > $B/.stamp
 echo $B/tttt
