@@ -5770,7 +5770,16 @@ u64 program_checked_source_bytes(Program const* me) {
 
 // program_set_checkers(0): one checker per thread, but not more than one per CHECKER_BYTES of checked source (the
 // default library's files aside): each checker builds the global and library types it uses again, which a small
-// project's few files don't win back. Past the cap (the physical cores), one per SMT_CHECKER_BYTES
+// project's few files don't win back. Past the cap (the physical cores), one per SMT_CHECKER_BYTES. Never more than
+// checked bytes / the largest checked file's bytes, rounded up (below)
+static u64 largest_checked_source_bytes(Program const* me) {
+    u64 largest = 0;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        if (source_file_is_checked(*i) && !(*i)->is_stdlib && (u64)cstr_size(&(*i)->contents) > largest) largest = (u64)cstr_size(&(*i)->contents);
+    }
+    return largest;
+}
+
 static u32 auto_checker_count(Program const* me) {
     u64 bytes = program_checked_source_bytes(me);
     u64 count = bytes / CHECKER_BYTES;
@@ -5779,7 +5788,19 @@ static u32 auto_checker_count(Program const* me) {
         u64 smt = bytes / SMT_CHECKER_BYTES;
         threads = smt > threads ? threads : smt > my checker_cap ? (u32)smt : my checker_cap;
     }
-    return count < 1 ? 1 : count > threads ? threads : (u32)count;
+    u32 result = count < 1 ? 1 : count > threads ? threads : (u32)count;
+    // and not more than the largest checked file's share of the source (rounded up): a program bounded by
+    // one file (checker.ts is 2.9 MB of TypeScript6's 9.7 checked) has its critical path in that file whatever the
+    // count, and every checker beyond the share only adds CPU and memory. The 12-core laptop confirms: TypeScript6 at
+    // --checkers 4 199.7 ms best against 208.9 at the default 8-12, with 32% less CPU (here K4 against K8 at one
+    // thread: 5% fewer instructions, longest checker +3%). Of the other corpora only TypeScript6 is capped
+    u64 largest = largest_checked_source_bytes(me);
+    if (largest > 0) {
+        u64 share = (bytes + largest - 1) / largest;
+        if (share < 1) share = 1;
+        if (result > share) result = (u32)share;
+    }
+    return result;
 }
 
 static void check_shares_run(CheckShares* me) {
