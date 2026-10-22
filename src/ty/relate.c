@@ -207,7 +207,6 @@ typedef struct ConstraintStack {
 } ConstraintStack;
 static Ty const* base_constraint(Checker* me, Ty const* ty, ConstraintStack const* stack);
 static Ty const* recursion_identity(Ty const* ty);
-static Ty const* recursion_key(Checker* me, Ty const* ty);
 
 // Relation cache
 
@@ -4997,7 +4996,7 @@ static Ty const* resolved_base_constraint(Checker* me, Ty const* ty, ConstraintS
 #endif
     // We always explore at least 10 levels of nested constraints, then up to 50 while the type's recursion identity
     // isn't on the stack yet (tsc's getResolvedBaseConstraint: a safety stop for long cycles of generated types)
-    void const* identity = recursion_identity(recursion_key(me, ty));
+    void const* identity = recursion_identity(ty);
     if (!identity) identity = ty;
     u32 len = stack ? stack->len : 0;
     bool deep = false;
@@ -6760,6 +6759,11 @@ static Ty const* recursion_identity(Ty const* ty) {
         // and falls back to the type itself)
         case TY_ANONYMOUS: return ty->anonymous.target ? ty->anonymous.target : ty;
         case TY_CONDITIONAL: return ty->conditional.root;
+        case TY_INDEXED: {
+            Ty const* object = ty;
+            while (object->kind == TY_INDEXED) object = object->indexed.object;
+            return object;
+        }
         // (Anything else is its own, as in tsc: the same type on a stack again counts. tsc tracks type parameters by
         // their symbol, which tttt's clones of one don't share)
         default: return ty;
@@ -6797,20 +6801,9 @@ static Ty const* mapped_target_with_symbol(Checker* me, Ty const* ty) {
     return ty;
 }
 
-// What `ty` stands for in deep nesting (tsc's getRecursionIdentityTarget): an indexed access its object type, an
-// instantiated mapped type unwrapped (mapped_target_with_symbol()), both as far as they go: `GrowExp<...>[number]` at
-// every level of a chain is the conditional type it indexes, whose identity is its root
+// What `ty` stands for in deep nesting: an instantiated mapped type unwrapped (mapped_target_with_symbol())
 static Ty const* recursion_key(Checker* me, Ty const* ty) {
-    for (;;) {
-        if (ty->kind == TY_INDEXED) {
-            ty = ty->indexed.object;
-            continue;
-        }
-        if (!is_mapped_instance(ty)) return ty;
-        Ty const* target = mapped_target_with_symbol(me, ty);
-        if (target == ty || target->kind != TY_INDEXED) return target;
-        ty = target;
-    }
+    return is_mapped_instance(ty) ? mapped_target_with_symbol(me, ty) : ty;
 }
 
 // A stack entry's recursion identity, worked out once when it's pushed: an intersection's key (tagged with bit 0) has
