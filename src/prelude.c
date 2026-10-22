@@ -40,6 +40,11 @@ static void read_debug_env() {
         .defer_stats = getenv("TTTT_DEFER_STATS") != nullptr,
         .order_stats = getenv("TTTT_ORDER_STATS") != nullptr,
         .order_seed = getenv("TTTT_ORDER_SEED") ? strtoull(getenv("TTTT_ORDER_SEED"), nullptr, 0) : 0,
+        .nesting_order = !getenv("TTTT_NESTING_ORDER") ? 0 : !strcmp(getenv("TTTT_NESTING_ORDER"), "count") ? 1 :
+            !strcmp(getenv("TTTT_NESTING_ORDER"), "seed") ? 2 :
+            !strcmp(getenv("TTTT_NESTING_ORDER"), "content") ? 3 : 0,
+        .rollback_stats = getenv("TTTT_ROLLBACK_STATS") != nullptr,
+        .deep_hit_no_taint = getenv("TTTT_DEEP_HIT_NO_TAINT") != nullptr,
     };
 }
 

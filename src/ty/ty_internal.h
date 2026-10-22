@@ -336,6 +336,9 @@ u32 ty_tuple_fixed_length(TupleShape const* shape);
 // cached per type (ty_order_key()), equal keys by ty_compare_tie()
 u64 ty_order_key(Ty const* t);
 int ty_compare_tie(Ty const* a, Ty const* b, u64 key);
+u64 ty_seeded_id(u32 id);                  // A type id as TTTT_ORDER_SEED orders it (the id unseeded)
+int ty_compare_ids(Ty const* a, Ty const* b); // Distinct types in (seeded) id order
+u32 ty_height(Checker const* checker, Ty const* t); // TTTT_NESTING_ORDER=content: bun's Rank height (order.c)
 u32 ty_order_rank(Ty const* t);
 static inline int ty_compare(Ty const* a, Ty const* b) {
     if (a == b) return 0;

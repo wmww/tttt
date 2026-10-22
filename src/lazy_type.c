@@ -259,6 +259,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 
     if (state->evaluation_started) {
         TAINT_EVENT(TAINT_IN_FLIGHT_LAZY);
+        if (__builtin_expect(debug_env.rollback_stats, 0)) rollback_cycle(me);
         // Circularity is a property of declarations (that is where tsc detects and reports it): asked for again while in
         // flight, a declaration is any, and it and everything resolved since is part of the cycle (tsc's
         // pushTypeResolution failing, see ty_resolving_push()). What they reach finds out when it finishes.

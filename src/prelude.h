@@ -54,6 +54,15 @@ typedef struct DebugEnv {
     bool order_stats;          // TTTT_ORDER_STATS: how often ty_compare_tie() fell back to type ids, by site and kind
     // TTTT_ORDER_SEED: a nonzero seed permutes ty_compare_tie()'s type-id fallbacks (is the id order observable?)
     u64 order_seed;
+    // TTTT_NESTING_ORDER (sg2's id-order audit): what is_deeply_nested_as() takes for "newer": unset or "id" the type
+    // ids (tsc's), "count" push order alone (every entry newer than the one below it: bun's id-free test without its
+    // heights), "seed" the ids permuted by TTTT_ORDER_SEED, "content" bun's id-free test (relate.rs is_at_least_as_new:
+    // the type's height, then push order on the stack; order.c ty_height())
+    uint8_t nesting_order;
+    // TTTT_ROLLBACK_STATS (sg2's rollback-rate audit): one `RB` line per checked file on stderr (program order, checker,
+    // thread CPU ns, types made, cycle keys closed, limit hits, deep cuts), and the census' VC lines name the file
+    bool rollback_stats;
+    bool deep_hit_no_taint; // TTTT_DEEP_HIT_NO_TAINT: a relation cache hit concluded under a deep cut is no taint event
 } DebugEnv;
 extern DebugEnv debug_env;
 

@@ -224,7 +224,7 @@ static int cmp_mappers(TyMapper const* a, TyMapper const* b) {
 
 // TTTT_ORDER_STATS / TTTT_ORDER_SEED (plan 86 stage 4's gate): ty_compare_tie()'s type-id fallbacks counted by site
 // and kind, and permuted by a seed so that whether their order shows in the output can be measured
-enum { ID_SITE_FINAL, ID_SITE_STRING_TWIN, ID_SITE_CONDITIONAL_ROOT, ID_SITE_INSTANTIATION_EXPR, ID_SITE_COUNT };
+enum { ID_SITE_FINAL, ID_SITE_STRING_TWIN, ID_SITE_CONDITIONAL_ROOT, ID_SITE_INSTANTIATION_EXPR, ID_SITE_BRANCH_ORDER, ID_SITE_COUNT };
 enum {
     ID_ANON_SPREAD_ALT = TY_EVOLVING_ARRAY + 1, ID_ANON_LITERAL, ID_ANON_INSTANTIATED, ID_ANON_FUNCTION, ID_ANON_NODE,
     ID_ANON_MODULE, ID_ANON_OTHER, ID_ANON_LITERAL_TWIN, ID_KIND_COUNT
@@ -233,7 +233,7 @@ static _Atomic i64 id_fallbacks[ID_SITE_COUNT][ID_KIND_COUNT];
 static _Atomic i64 tie_calls;
 
 static void order_stats_print(void) {
-    static char const* const sites[ID_SITE_COUNT] = { "final", "string-twin", "conditional-root", "instantiation-expr" };
+    static char const* const sites[ID_SITE_COUNT] = { "final", "string-twin", "conditional-root", "instantiation-expr", "branch-order" };
     static char const* const kinds[ID_KIND_COUNT] = { "intrinsic", "literal", "type-param", "declared", "reference",
         "anonymous", "union", "intersection", "keyof", "indexed", "conditional", "substitution", "template", "string-mapping",
         "evolving-array", "anon-spread-alt", "anon-literal", "anon-instantiated", "anon-function", "anon-node",
@@ -270,6 +270,133 @@ static int cmp_ids(u32 site, u32 kind, u32 ida, u32 idb) {
         if (pa != pb) return pa < pb ? -1 : 1;
     }
     return ida < idb ? -1 : 1;
+}
+
+// A type id as the seed orders it (TTTT_ORDER_SEED; unseeded the id): what other id-ordered decisions use under the
+// audit (unique symbols' escaped names, deep nesting's "newer" under TTTT_NESTING_ORDER=seed)
+u64 ty_seeded_id(u32 id) {
+    return debug_env.order_seed ? permuted_id(id) : id;
+}
+
+// TTTT_NESTING_ORDER=content (the id-order audit): a type's height as bun's Rank has it (types.rs): one more than the
+// greatest height of any type its identity mentions (arguments, a mapper's sources and targets, members, an alias's
+// arguments, an origin...), 1 if none: so a type is higher than every type it is built from. A content property, the
+// same in every checker. Memoized per thread (cleared when the thread's checker changes)
+typedef struct HeightSlot { Ty const* ty; u32 height; } HeightSlot;
+static thread_local HeightSlot* height_slots;
+static thread_local u32 height_cap, height_len;
+static thread_local u64 height_owner;
+
+static u32 height_of(Ty const* t, u32 depth);
+
+static u32 height_list(Ty const* const* list, u32 len, u32 depth) {
+    u32 h = 0;
+    for (u32 i = 0; i < len; i++) if (list[i]) { u32 x = height_of(list[i], depth); if (x > h) h = x; }
+    return h;
+}
+
+static u32 height_mapper(TyMapper const* m, u32 depth) {
+    if (!m) return 0;
+    u32 a = height_list(m->sources, m->len, depth), b = height_list(m->targets, m->len, depth);
+    return a > b ? a : b;
+}
+
+static u32 height_compute(Ty const* t, u32 depth) {
+    u32 h = height_list(t->alias_args.data, t->alias_args.len, depth);
+#define H(x) do { u32 x_ = (x); if (x_ > h) h = x_; } while (0)
+    switch ((TyKind)t->kind) {
+        case TY_LITERAL:
+            if (t->literal.regular) H(height_of(t->literal.regular, depth));
+            break;
+        case TY_REFERENCE:
+            H(height_of(t->reference.target, depth));
+            if (t->reference.this_arg) H(height_of(t->reference.this_arg, depth));
+            if (t->reference.deferred) H(height_mapper(t->reference.deferred->mapper, depth));
+            else H(height_list(t->reference.args.data, t->reference.args.len, depth));
+            break;
+        case TY_ANONYMOUS:
+            if (t->anonymous.target) H(height_of(t->anonymous.target, depth));
+            H(height_mapper(t->anonymous.mapper, depth));
+            break;
+        case TY_UNION:
+        case TY_INTERSECTION:
+            H(height_list(t->composite.types.data, t->composite.types.len, depth));
+            if (t->composite.origin) H(height_of(t->composite.origin, depth));
+            break;
+        case TY_KEYOF:
+            H(height_of(t->keyof.operand, depth));
+            break;
+        case TY_INDEXED:
+            H(height_of(t->indexed.object, depth));
+            H(height_of(t->indexed.index, depth));
+            break;
+        case TY_CONDITIONAL:
+            if (t->conditional.root && t->conditional.root != t) H(height_of(t->conditional.root, depth));
+            H(height_of(t->conditional.check, depth));
+            H(height_of(t->conditional.extends, depth));
+            H(height_mapper(t->conditional.mapper, depth));
+            break;
+        case TY_SUBSTITUTION:
+            H(height_of(t->substitution.base, depth));
+            H(height_of(t->substitution.constraint, depth));
+            break;
+        case TY_TEMPLATE_LITERAL:
+            H(height_list(t->template_literal.types.data, t->template_literal.types.len, depth));
+            break;
+        case TY_STRING_MAPPING:
+            H(height_of(t->string_mapping.type, depth));
+            break;
+        default:
+            break;
+    }
+#undef H
+    return h + 1;
+}
+
+static u32 height_of(Ty const* t, u32 depth) {
+    if (depth > 200) return 1; // (A guard: identities are built bottom-up, so this never happens)
+    if (height_cap) {
+        u32 i = (u32)(((uintptr_t)t >> 3) * 0x9E3779B97F4A7C15ull >> 32) & (height_cap - 1);
+        while (height_slots[i].ty) {
+            if (height_slots[i].ty == t) return height_slots[i].height;
+            i = (i + 1) & (height_cap - 1);
+        }
+    }
+    u32 h = height_compute(t, depth + 1);
+    if (height_len * 2 >= height_cap) {
+        u32 old_cap = height_cap;
+        HeightSlot* old = height_slots;
+        height_cap = old_cap ? old_cap * 2 : 1024;
+        height_slots = calloc(height_cap, sizeof(HeightSlot));
+        panic_if(!height_slots, "out of memory");
+        for (u32 j = 0; j < old_cap; j++) {
+            if (!old[j].ty) continue;
+            u32 i = (u32)(((uintptr_t)old[j].ty >> 3) * 0x9E3779B97F4A7C15ull >> 32) & (height_cap - 1);
+            while (height_slots[i].ty) i = (i + 1) & (height_cap - 1);
+            height_slots[i] = old[j];
+        }
+        free(old);
+    }
+    u32 i = (u32)(((uintptr_t)t >> 3) * 0x9E3779B97F4A7C15ull >> 32) & (height_cap - 1);
+    while (height_slots[i].ty) i = (i + 1) & (height_cap - 1);
+    height_slots[i] = (HeightSlot){ t, h };
+    height_len++;
+    return h;
+}
+
+u32 ty_height(Checker const* checker, Ty const* t) {
+    if (checker->height_generation != height_owner) {
+        free(height_slots);
+        height_slots = nullptr;
+        height_cap = height_len = 0;
+        height_owner = checker->height_generation;
+    }
+    return height_of(t, 0);
+}
+
+// Two distinct types in id order, permuted by the seed (relate.c's conditional branches, related in id order)
+int ty_compare_ids(Ty const* a, Ty const* b) {
+    return cmp_ids(ID_SITE_BRANCH_ORDER, a->kind, a->id, b->id);
 }
 
 // The symbol of an object type, as tsc's compareSymbols(t.symbol) would place it: a position, or none

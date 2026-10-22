@@ -14,6 +14,31 @@ void graph_taint_bump(void) {
     Checker* checker = current_checker;
     if (checker && checker->memo_taint && checker->memo_taint->pending_len) graph_memo_sweep(checker);
 }
+#ifdef TTTT_TAINT_SITES
+typedef struct TaintSite { char const* file; int line; int reason; } TaintSite;
+static thread_local TaintSite* taint_sites;
+static thread_local u64 taint_sites_cap;
+void graph_taint_bump_at(int reason, char const* file, int line) {
+    u64 at = graph_taint_now;
+    if (at >= taint_sites_cap) {
+        u64 cap = taint_sites_cap ? taint_sites_cap * 2 : 1 << 16;
+        while (cap <= at) cap *= 2;
+        taint_sites = realloc(taint_sites, cap * sizeof(TaintSite));
+        panic_if(!taint_sites, "out of memory");
+        memset(taint_sites + taint_sites_cap, 0, (cap - taint_sites_cap) * sizeof(TaintSite));
+        taint_sites_cap = cap;
+    }
+    taint_sites[at] = (TaintSite){ file, line, reason };
+    graph_taint_bump();
+}
+char const* graph_taint_site(u64 at) {
+    static thread_local char buf[256];
+    if (at >= taint_sites_cap || !taint_sites[at].file) return "-";
+    char const* f = strrchr(taint_sites[at].file, '/');
+    snprintf(buf, sizeof buf, "%s:%d:%d", f ? f + 1 : taint_sites[at].file, taint_sites[at].line, taint_sites[at].reason);
+    return buf;
+}
+#endif
 #endif
 
 // The private values and copies in flight (Overlay.map): open addressing with linear probing, deletion by backward

@@ -1401,6 +1401,7 @@ struct Checker {
     u32 stamp_next;
     u64 stamp_disagreements; // Deep nesting decisions the id order would have made otherwise (TTTT_GRAPH_STATS)
     u64 stamp_decisions;
+    u64 height_generation; // TTTT_NESTING_ORDER=content: which checker ty_height()'s per-thread memo belongs to
     // Memo kinds' private intern entries made since the last graph_memo_flush(), the table in the low two bits (0
     // types, 1 links, 2 intersection_props), with instantiation_limit_hits when made: each goes into the shared table
     // once its value is there (plan 86 4d), unless the instantiation limits ran out meanwhile
@@ -1559,6 +1560,11 @@ void ty_check_destructured_member(
 Atom const* checker_atom(Checker* me, csview sv);
 u32 checker_type_count(Checker const* me); // How many types it made (tttt --time)
 u32 ty_stamp(Checker* me, Ty const* ty); // --first-touch-stamps (Checker.stamps)
+extern thread_local void const* rollback_cycles[64]; // TTTT_ROLLBACK_STATS (checker.c)
+extern thread_local u32 rollback_cycle_count;
+extern thread_local char const* rollback_file;
+void rollback_cycle(void const* key);
+
 Atom const* ty_index_atom(Checker* me, u32 index); // "0", "1"... (an index's property name)
 static inline Ty const* ty_intrinsic(Checker const* me, TyIntrinsic i) { return my intrinsics[i]; }
 

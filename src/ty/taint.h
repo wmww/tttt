@@ -126,10 +126,18 @@ void graph_fp_result(unsigned kind, void const* subject, void const* result, boo
 // drizzle's instructions for 33k events)
 extern thread_local uint64_t graph_taint_now;
 [[gnu::cold, gnu::noinline]] void graph_taint_bump(void);
+#ifdef TTTT_TAINT_SITES
+// (sg2's audit build, -DTTTT_TAINT_SITES: every event's site logged by its counter value, graph_taint_site())
+[[gnu::cold, gnu::noinline]] void graph_taint_bump_at(int reason, char const* file, int line);
+char const* graph_taint_site(uint64_t at); // "file:line:reason" of the event that bumped the counter from `at`
+#define TAINT_EVENT(reason) graph_taint_bump_at(reason, __FILE__, __LINE__)
+#define TAINT_IF(reason, condition) ((reason) == TAINT_PEEK ? (condition) : (condition) ? (graph_taint_bump_at(reason, __FILE__, __LINE__), true) : false)
+#else
 #define TAINT_EVENT(reason) graph_taint_bump()
-#define TAINT_FLOW() ((void)0)
 // (The lenient rule: a peek is no event)
 #define TAINT_IF(reason, condition) ((reason) == TAINT_PEEK ? (condition) : (condition) ? (graph_taint_bump(), true) : false)
+#endif
+#define TAINT_FLOW() ((void)0)
 #define TAINT_BEGIN(name) ((void)0)
 #define TAINT_END(name, kind, object, subject, result) ((void)0)
 #define TAINT_READ(kind, object) ((void)0)

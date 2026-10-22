@@ -5568,7 +5568,29 @@ static void check_share(Program* me, u32 c, u32 count) {
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
         if (debug_env.dup_census) dup_census_file(c, at, share_cost(source));
+        struct timespec rb_cpu;
+        u32 rb_limits = checker->instantiation_limit_hits, rb_types = checker_type_count(checker);
+        u64 rb_cuts = checker->deep_cuts;
+        if (__builtin_expect(debug_env.rollback_stats, 0)) {
+            rollback_file = cstr_str(&source->canonical_path);
+            rollback_cycle_count = 0;
+            clock_gettime(CLOCK_THREAD_CPUTIME_ID, &rb_cpu);
+        }
         check_file(me, checker, source, at);
+        if (__builtin_expect(debug_env.rollback_stats, 0)) {
+            // (Its line: RB order checker cpu_ns types limit_hits deep_cuts cycles path keys...)
+            struct timespec rb_end;
+            clock_gettime(CLOCK_THREAD_CPUTIME_ID, &rb_end);
+            char keys[64 * 20];
+            int kn = 0;
+            keys[0] = 0;
+            for (u32 i = 0; i < rollback_cycle_count && i < 64; i++) kn += snprintf(keys + kn, sizeof keys - (size_t)kn, " %p", rollback_cycles[i]);
+            fprintf(stderr, "RB %u %u %lld %u %u %llu %u %s%s\n", source->program_order, c,
+                (long long)(rb_end.tv_sec - rb_cpu.tv_sec) * 1000000000ll + (rb_end.tv_nsec - rb_cpu.tv_nsec),
+                checker_type_count(checker) - rb_types, checker->instantiation_limit_hits - rb_limits,
+                (unsigned long long)(checker->deep_cuts - rb_cuts), rollback_cycle_count, rollback_file, keys);
+            rollback_file = nullptr;
+        }
         if (my graph) graph_lead_done(me, c);
         // (Plan 86 stage 4f: a worker that kept a tainted value of a word another worker published meanwhile goes by its
         // Overlay first, on every fast path. Its file is done: it hands over to a fresh worker, whose history starts

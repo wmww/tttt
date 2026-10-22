@@ -788,6 +788,10 @@ static Checker* checker_make(Program* program, bool join_graph) {
     my lazy.directory = program_type_directory(program);
     my lazy.arena = &my arena;
     my next_type_id = type_directory_block(my lazy.directory);
+    {
+        static _Atomic u64 height_generations;
+        my height_generation = ++height_generations;
+    }
     if (program_first_touch_stamps(program)) {
         my stamps = zeroed_table(1u << LAZY_TYPE_DIR_BITS, sizeof(u32*));
         panic_if(!my stamps, "out of memory");
@@ -1098,7 +1102,7 @@ Ty const* ty_unique_symbol(Checker* me, UniqueSymbolDecl const* decl) {
         ret->literal.value = (Value){ .tag = VALUE_UNDEFINED };
         ret->literal.unique = decl;
         csview name = span_valid(decl->member) ? span_sv(decl->member) : decl->owner ? decl->owner->name : c_sv("");
-        cstr escaped = cstr_d("__@", name, "@", ret->id);
+        cstr escaped = cstr_d("__@", name, "@", ty_seeded_id(ret->id));
         ret->literal.string = checker_atom(me, cstr_sv(&escaped));
         cstr_drop(&escaped);
         // (Its name is the winner's to map, with --shared-graph)
@@ -4553,10 +4557,21 @@ void ty_debug_reentry(Checker* me, char const* event, Span at) {
     fprintf(stderr, "TTTT %s %s:%u\n", event, cstr_str(path), span_line_index(at) + 1);
 }
 
+// TTTT_ROLLBACK_STATS: the cycles the file being checked closed, by key (program.c prints them per file)
+thread_local void const* rollback_cycles[64];
+thread_local u32 rollback_cycle_count;
+thread_local char const* rollback_file;
+void rollback_cycle(void const* key) {
+    for (u32 i = 0; i < rollback_cycle_count && i < 64; i++) if (rollback_cycles[i] == key) return;
+    if (rollback_cycle_count < 64) rollback_cycles[rollback_cycle_count] = key;
+    rollback_cycle_count++;
+}
+
 void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key) {
     for (u32 i = my resolving_len; i-- > my resolving_start;) {
         if (my resolving[i].key == key && my resolving[i].kind == kind) {
             TAINT_EVENT(TAINT_CYCLE);
+            if (__builtin_expect(debug_env.rollback_stats, 0)) rollback_cycle(key);
             for (u32 j = i; j < my resolving_len; j++) my resolving[j].circular = true;
             return;
         }
@@ -4567,6 +4582,7 @@ void ty_resolving_cycle_across_calls(Checker* me, ResolvingKind kind, void const
     for (u32 i = my resolving_len; i-- > 0;) {
         if (my resolving[i].key == key && my resolving[i].kind == kind) {
             TAINT_EVENT(TAINT_CYCLE);
+            if (__builtin_expect(debug_env.rollback_stats, 0)) rollback_cycle(key);
             for (u32 j = i; j < my resolving_len; j++) my resolving[j].circular = true;
             return;
         }
@@ -4584,6 +4600,7 @@ void ty_resolving_pattern_cycle(Checker* me, void const* key, Binding const* pat
             while (root->parent) root = root->parent;
             if (root != pattern) continue;
             TAINT_EVENT(TAINT_CYCLE);
+            if (__builtin_expect(debug_env.rollback_stats, 0)) rollback_cycle(key);
             for (u32 k = j; k < my resolving_len; k++) my resolving[k].circular = true;
             return;
         }

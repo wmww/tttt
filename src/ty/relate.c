@@ -3725,8 +3725,12 @@ static inline void variances_read(Checker* me, Variances const* variances) {
 // measurement's subject: what a nested measurement then gets depends on where it was entered, drizzle's View measured
 // inside another one came out unreliable)
 static void variance_claim_read(Checker* me, VarianceClaim const* claim) {
-    if (my variance_stack_len && my variance_stack[my variance_stack_len - 1] == claim) my variance_internal_events++;
-    TAINT_EVENT(TAINT_IN_FLIGHT_OTHER);
+    if (my variance_stack_len && my variance_stack[my variance_stack_len - 1] == claim) {
+        my variance_internal_events++;
+        TAINT_EVENT(TAINT_IN_FLIGHT_OTHER); // (Separate sites for the audit build's census, TTTT_TAINT_SITES: internal)
+        return;
+    }
+    TAINT_EVENT(TAINT_IN_FLIGHT_OTHER); // (an enclosing measurement's claim)
 }
 
 // Measures what is neither in the links nor in flight, under a claim of its own. --shared-graph on threads (plan 86
@@ -3735,7 +3739,7 @@ static void variance_claim_read(Checker* me, VarianceClaim const* claim) {
 // poisoned); poisoned, it is measured privately. Nobody waits for anybody
 // TTTT_VARIANCE_CENSUS: `VC checker depth symbol:kind name values clean deep_cuts types` (scripts/variancecensus.py)
 [[gnu::cold, gnu::noinline]] static void variance_census_line(
-    Checker* me, VarianceSubject subject, VarianceClaim const* claim, u32 depth, bool clean, u64 cuts, u32 types
+    Checker* me, VarianceSubject subject, VarianceClaim const* claim, u32 depth, bool clean, u64 cuts, u32 types, u64 taint_from
 ) {
     Symbol const* sym = subject_symbol(subject);
     char values[512];
@@ -3744,9 +3748,22 @@ static void variance_claim_read(Checker* me, VarianceClaim const* claim) {
     for (u32 i = 0; done && i < done->len && n < 500; i++) n += snprintf(values + n, sizeof(values) - (size_t)n, "%02x", done->data[i]);
     if (!done) snprintf(values, sizeof(values), "none");
     else if (!n) snprintf(values, sizeof(values), "empty");
-    fprintf(stderr, "VC %u %u %p:%u %s%.*s %s %d %llu %u\n", my census_id, depth, (void const*)sym,
+#ifdef TTTT_TAINT_SITES
+    // (The audit build: the sites of the measurement's events, after the nine fields)
+    char sites[4096];
+    int sn = 0;
+    sites[0] = 0;
+    for (u64 at = taint_from; at < graph_taint_now && sn < 3800; at++) {
+        sn += snprintf(sites + sn, sizeof(sites) - (size_t)sn, " %s", graph_taint_site(at));
+    }
+#else
+    (void)taint_from;
+    char const* sites = "";
+#endif
+    fprintf(stderr, "VC %u %u %p:%u %s%.*s %s %d %llu %u%s%s%s\n", my census_id, depth, (void const*)sym,
         subject.declared ? (u32)subject.declared->declared.kind : 99u, subject.declared ? "" : "alias:",
-        (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "", values, (int)clean, (unsigned long long)cuts, types);
+        (int)(sym ? sym->name.size : 0), sym ? sym->name.buf : "", values, (int)clean, (unsigned long long)cuts, types, sites,
+        rollback_file ? " @" : "", rollback_file ? rollback_file : "");
 }
 
 static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) {
@@ -3784,7 +3801,7 @@ static Variances const* claim_and_measure(Checker* me, VarianceSubject subject) 
     ty_claim_pop(me, CLAIM_VARIANCES, &claim.claim);
     if (__builtin_expect(debug_env.variance_census, 0)) variance_census_line(me, subject, &claim, census_depth,
         graph_taint_now - census_taint == my variance_internal_events - census_internal, my deep_cuts - census_cuts,
-        checker_type_count(me) - census_types);
+        checker_type_count(me) - census_types, census_taint);
     if (slot && !in_group && claim.done) {
         // (Poisoned: this checker's own, a read of it a taint event, by the caller first)
         graph_memo_taint_block(me, intern_slot(me, &my links, key, 2));
@@ -5688,7 +5705,7 @@ static Ternary conditional_source_related(Checker* me, RelationState* st, Ty con
     // each one otherwise. In the order of their union, by id: tsc relates getUnionType([trueConstraint,
     // falseConstraint]) member by member, and stops at the first that fails)
     bool some = st->relation == TY_RELATION_COMPARABLE;
-    Ty const* first = false_branch->id < true_branch->id ? false_branch : true_branch;
+    Ty const* first = false_branch == true_branch || ty_compare_ids(false_branch, true_branch) < 0 ? false_branch : true_branch;
     Ty const* second = first == true_branch ? false_branch : true_branch;
     Ternary related = is_related_to_side(me, st, first, target, false, 2);
     if (some && !related) related = is_related_to_side(me, st, second, target, false, 2);
@@ -6848,12 +6865,58 @@ static bool intersection_has_identity(Checker* me, Ty const* key, Ty const* iden
     return ret;
 }
 
+// TTTT_NESTING_ORDER (the id-order audit): "newer" by push order alone (count) or by seeded ids (seed)
+[[gnu::noinline]] static bool is_deeply_nested_audit(
+    Checker* me, Ty const* identity, Ty const* ty, Ty const* const* stack, uintptr_t const* entries, u32 depth, u32 max
+) {
+    if (debug_env.nesting_order == 3) {
+        // bun's is_at_least_as_new(): by height, equal heights by push order (the first place a type is on this
+        // stack; `ty`, about to be pushed, after all unless it is there already). bun takes the first push on either
+        // stack: here this stack's alone
+        u32 count = 0;
+        Ty const* last = nullptr;
+        u32 last_height = 0, last_push = 0;
+        for (u32 i = 0; i <= depth; i++) {
+            Ty const* t = i < depth ? stack[i] : ty;
+            if (i < depth) {
+                uintptr_t entry = entries ? entries[i] : ty_recursion_entry(me, stack[i]);
+                if (entry != (uintptr_t)identity && !((entry & 1) && intersection_has_identity(me, (Ty const*)(entry & ~(uintptr_t)1), identity))) {
+                    continue;
+                }
+            }
+            u32 push = i;
+            for (u32 j = 0; j < i && j < depth; j++) if (stack[j] == t) { push = j; break; }
+            u32 height = ty_height(me, t);
+            bool newer = !last || t == last || height > last_height || (height == last_height && push >= last_push);
+            if (newer && ++count >= max) return true;
+            last = t;
+            last_height = height;
+            last_push = push;
+        }
+        return false;
+    }
+    bool count_only = debug_env.nesting_order == 1;
+    u32 count = 0;
+    u64 last = 0;
+    for (u32 i = 0; i < depth; i++) {
+        uintptr_t entry = entries ? entries[i] : ty_recursion_entry(me, stack[i]);
+        if (entry != (uintptr_t)identity && !((entry & 1) && intersection_has_identity(me, (Ty const*)(entry & ~(uintptr_t)1), identity))) {
+            continue;
+        }
+        u64 key = count_only ? 0 : ty_seeded_id(stack[i]->id);
+        if (key >= last && ++count >= max) return true;
+        last = key;
+    }
+    return (count_only ? 0 : ty_seeded_id(ty->id)) >= last && ++count >= max;
+}
+
 // Whether `identity` is on the stack at least `max` times counting `ty` (the type about to go on it, which has it),
 // each newer than the one before. `entries` are the stack's ty_recursion_entry(), null to work them out
 static bool is_deeply_nested_as(
     Checker* me, Ty const* identity, Ty const* ty, Ty const* const* stack, uintptr_t const* entries, u32 depth, u32 max
 ) {
     if (my stamps) return is_deeply_nested_stamped(me, identity, ty, stack, entries, depth, max);
+    if (__builtin_expect(debug_env.nesting_order, 0)) return is_deeply_nested_audit(me, identity, ty, stack, entries, depth, max);
     u32 count = 0;
     u32 last_id = 0;
     for (u32 i = 0; i < depth; i++) {
@@ -6893,6 +6956,9 @@ static bool is_deeply_nested_max(Checker* me, Ty const* ty, uintptr_t entry, Ty 
 static void relation_deep_cut(Checker* me) {
     my relation_deep_seen = true;
     my deep_cuts++;
+    // (TTTT_NESTING_ORDER=content: the cut is a function of the stack's contents, not of the history's ids, so no event
+    // by itself; a later hit of what it concluded still is one, below, unless TTTT_DEEP_HIT_NO_TAINT=1)
+    if (__builtin_expect(debug_env.nesting_order == 3, 0)) return;
     TAINT_EVENT(TAINT_LIMIT);
 }
 
@@ -7064,7 +7130,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     if (cached & CACHE_INDEX_INFERRED) st->index_inferred = true;
     if (__builtin_expect(cached & CACHE_DEEP, 0)) {
         my relation_deep_seen = true;
-        TAINT_EVENT(TAINT_READ_TAINTED);
+        if (!debug_env.deep_hit_no_taint) TAINT_EVENT(TAINT_READ_TAINTED);
     }
     // A measurement of variances that goes through the pair again is as unreliable as the first one was
     if (cached & CACHE_UNRELIABLE) report_variance(me, source, VARIANCE_UNRELIABLE);
@@ -8219,7 +8285,7 @@ static bool check_related(
         unsigned cached = relation_cache_get(&my relations[relation], relation_key_of(me, source, target, &constrained));
         if (__builtin_expect(cached & CACHE_DEEP, 0)) {
             my relation_deep_seen = true;
-            TAINT_EVENT(TAINT_READ_TAINTED);
+            if (!debug_env.deep_hit_no_taint) TAINT_EVENT(TAINT_READ_TAINTED);
         }
         cached &= CACHE_SUCCEEDED | CACHE_FAILED;
         if (cached) return cached == CACHE_SUCCEEDED;
