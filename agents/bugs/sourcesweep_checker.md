@@ -299,23 +299,41 @@ Refresh 4 (repos.txt "Refresh 4": application code, 40..400 stars). Fixed: herme
 evaluated isolated from the loops in progress), youtube-enhancer's TS2322 (a generic type literal instantiation's
 literal property conflict left unreduced), and two tuple bugs found on the way (`[...Conditional]` treated as an array
 rest element; a spread instantiated to `undefined`). Left:
-- **pi-bolt, TypeBox (+TS7053 x87, +TS2353 x31, +TS2345)**: `Type.Record(Type.Enum(["off", "minimal", ...]), V)` is
-  `{ off: V }` in tttt, every key in tsc. TypeBox's TBroaden filters with `TCompare<Type, Left> extends 2 | 0`, and
-  TCompare's default `Extends = [TExtends<{}, L, R>, TExtends<{}, R, L>]` is a tuple (not generic), so the alias's
-  conditional is decided eagerly for generic L, R (getConditionalType's restrictive check). There tttt relates
-  `TExtendsLeft<{}, Ca1<X>, Ca1<Y>>` to `TExtendsTrue<TProperties>` through conditional_source_related()'s default
-  constraint, which pushes the *target* too (the HACK there: tsc relates the default constraint with
-  RecursionFlags.Source; pushing the target saves react-hook-form's Path chains ~10% of the react corpus): the same
-  TExtendsTrue on every level makes the target "expanding", the source's TExtendsRight levels too, and the cut answers
-  Maybe, which the restrictive check takes as "definitely true": `TCompare<X, Y> extends 2 | 0` is true for every X, Y.
-  tsgo instrumented (getConditionalType and recursiveTypeRelatedTo) answers False there. Relating the default
-  constraint source-only (or redoing a Maybe concluded through a cut that way) fixes it and the repro
-  (test/cases/ttttConditionalConstraintDeepCut.ts, known failing), but loses largeTupleTypes: with the target pushed
-  source-only, tttt's relation of `Tuple<I, E>` to `readonly any[]` runs largeTupleTypes' GrowExpRev chain (union
-  members, then indexed accesses' constraints) to the depth-100 backstop where tsgo stops near depth 22, and the
-  instantiations on the way report TS2799. Why tsgo stops there isn't known yet (getRecursionIdentity of the indexed
-  accesses, `[...A, ...P[0]][N]`, is the first suspect: tsgo's is the deferred tuple reference's node). Removing the
-  HACK needs that and a perf check on react.
+- **pi-bolt, TypeBox (+TS7053 x87, +TS2353 x31, +TS2345; 4 projects)**: `Type.Record(Type.Enum(["off", "minimal",
+  ...]), V)` is `{ off: V }` in tttt, every key in tsc. Repro: test/cases/ttttConditionalConstraintDeepCut.ts (known
+  failing, standalone, no TypeBox). Mechanism:
+  - TypeBox's TBroadenFilter tests `TCompare<Type, Left> extends 2 | 0`; TCompare's default parameter
+    `Extends = [TExtends<{}, L, R>, TExtends<{}, R, L>]` is a tuple, not a generic type, so getConditionalType decides
+    the alias eagerly for generic L, R: permissive check (`[any, any]`, true), then the restrictive check
+    `[TExtendsLeft<{}, Ca1<X>, Ca1<Y>>, ...]` against `[TExtendsTrueLike, TExtendsTrueLike]` (tsgo: false, deferred;
+    tttt: Maybe, taken as true, so TCompare<X, Y> extends 0 for all X, Y and Broaden keeps only the first literal).
+  - The Maybe comes from src/ty/relate.c conditional_source_related(), the comment "HACK: tsc relates the default
+    constraint with RecursionFlags.Source; pushing the target too (a deep-nesting cut-off tsc doesn't have) saves
+    react-hook-form's Path/FieldPathValue chains 10% of the react corpus": the default constraint's branches go through
+    plain is_related_to(), which pushes the target as well. TExtendsLeft's chain relates a conditional per level
+    against the same `TExtendsTrue<TProperties>` (a member of the TExtendsTrueLike union target), so after 3 levels the
+    target stack is "expanding", and with the TExtendsRight levels the source too: expanding == 3, Maybe
+    (TTTT_DEBUG_RELATE_NESTED prints `nested D (S/T)`, source/target stack depths, since this round: tsgo's stays at
+    target depth 2-3 there, tttt's climbs to 5+).
+  - Fix that works for the repro: relate the default constraint with is_related_to_side(..., 2), or keep the hack and
+    redo a TERNARY_MAYBE concluded while my deep_cuts grew, source-only, with a RelationState flag so nested
+    constraints don't retry again (nested retries compound; truncate the maybe stack to before the first attempt). Both
+    leave the suite with one loss: largeTupleTypes (TS2799 at its `lengthRange` signature).
+  - The largeTupleTypes cost: source-only, tttt relates `Tuple<I, E>` to `readonly any[]` down its
+    GrowExp/GrowExpRev chain (union members, then indexed accesses' constraints: the chain doesn't pass through
+    conditional_source_related(), whose 10-deep check never fires) to the depth-100 backstop, building
+    `[...A, ...P[0]]` tuples past 10000 elements; tsgo's same chain stops near depth 22 (Maybe). Suspects for tsgo's
+    stop: (1) getRecursionIdentity of the indexed accesses `[...A, ...P[0]][N]`: tsgo walks to the object type and
+    uses the deferred tuple reference's node (or the tuple target), so every level shares one identity and the source
+    goes expanding at 3, where tttt's recursion_identity() for TY_INDEXED returns the object type itself (a new type
+    per level); (2) the constraint tsgo computes for those indexed accesses (getBaseConstraint's depth/circularity
+    limits may stop before tttt's constraint_of_type() does). Before either, three real tuple bugs on that path were
+    fixed (TS2624 for `[...Conditional]`, `...undefined` spreads, `[][0]` TS2493). Then drop the HACK and measure
+    react's instructions (scripts/instrcount.sh --bin against a fastbuild of the branch point).
+  - How it was found: tsgo built with an overlay (agents/notes/instrumenting_tsgo.md) printing getConditionalType's
+    permissive/restrictive results for check types containing "TExtends" and every recursiveTypeRelatedTo result
+    (source/target stack lengths, expandingFlags) while that restrictive check runs. Build with a private GOCACHE: the
+    shared one was being trimmed by another worker's `--env` mid-build.
 - **bekuto3d (+TS2304 MaybeRefOrGetter x2, +TS7006)**: unplugin-auto-import's auto-imports.d.ts declares Vue's types
   globally with `declare global { export type { MaybeRefOrGetter, ... } from 'vue' }`. tsc binds the re-export inside
   the global augmentation as global names (TS2666 at the export, silenced there by `// @ts-nocheck`); tttt doesn't
