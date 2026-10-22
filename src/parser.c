@@ -441,6 +441,49 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
 #define shrink_list(vec_kind, vec) do { \
         if ((vec)->size && (vec)->size < (vec)->capacity) vec_kind##_shrink_to_fit(vec); \
     } while (0)
+// A list built on the thread's scratch stack and allocated once, at its exact size, when it's finished
+// (scratch_list_finish()): growing a list in the arena moves it at nearly every growth, its elements' nodes having been
+// allocated after it. Lists nest (an argument's own call), each on top of the ones still being built; a list abandoned
+// by a failed attempt is simply overwritten. Elements are copied in and out by value: nothing may point at them while
+// the list is being built
+typedef struct ScratchList {
+    size_t base;
+    isize count;
+} ScratchList;
+
+static thread_local struct { char* data; size_t top, capacity; } scratch;
+
+static inline ScratchList scratch_list_begin(void) {
+    return (ScratchList){ .base = (scratch.top + 15) & ~(size_t)15 };
+}
+
+static void scratch_grow(size_t needed) {
+    size_t capacity = scratch.capacity ? scratch.capacity : 4096;
+    while (capacity < needed) capacity *= 2;
+    scratch.data = realloc(scratch.data, capacity);
+    check(scratch.data);
+    scratch.capacity = capacity;
+}
+
+static inline void scratch_list_push(ScratchList* me, void const* element, size_t size) {
+    size_t at = my base + (size_t)my count * size;
+    if (at + size > scratch.capacity) scratch_grow(at + size);
+    memcpy(scratch.data + at, element, size);
+    my count++;
+    scratch.top = at + size;
+}
+
+// The elements in the arena (null for none); the list's scratch is given back
+static void* scratch_list_finish(ScratchList* me, size_t size) {
+    void* ret = nullptr;
+    if (my count) {
+        ret = ast_malloc(my count * (isize)size);
+        memcpy(ret, scratch.data + my base, (size_t)my count * size);
+    }
+    scratch.top = my base;
+    return ret;
+}
+
 static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret);
 static bool parse_statement(Parser* parent, bool toplevel, Statement* ret);
 static inline bool expect_statement(Parser* parent, bool toplevel, Statement* ret);
@@ -7977,6 +8020,7 @@ static bool parse_object(Parser* parent, ObjectExpr* ret) {
 static bool parse_object_ex(Parser* parent, ObjectExpr* ret, bool brace_expected) {
     Parser p = parser(parent);
     *ret = vec_object_expr_item_init();
+    ScratchList list = {0};
 
     const char* open = p.pos;
     bool open_parsed = hop_char(&p, '{');
@@ -7987,6 +8031,7 @@ static bool parse_object_ex(Parser* parent, ObjectExpr* ret, bool brace_expected
     hop_whitespace(&p);
 
     // tsc's parseDelimitedList with considerSemicolonAsDelimiter
+    list = scratch_list_begin();
     u32 saved_context = list_enter(&p, PARSING_OBJECT_LITERAL_MEMBERS);
     while (!at_eof(&p, p.pos) && *p.pos != '}') {
         ObjectExprItem item;
@@ -7995,7 +8040,7 @@ static bool parse_object_ex(Parser* parent, ObjectExpr* ret, bool brace_expected
             if (list_abort_or_skip(&p, PARSING_OBJECT_LITERAL_MEMBERS)) break;
             continue;
         }
-        list_push(vec_object_expr_item, ret, item);
+        scratch_list_push(&list, &item, sizeof(item));
         hop_whitespace(&p);
         if (hop_char(&p, ',') || at_eof(&p, p.pos) || *p.pos == '}') {
             hop_whitespace(&p);
@@ -8007,7 +8052,7 @@ static bool parse_object_ex(Parser* parent, ObjectExpr* ret, bool brace_expected
         hop_whitespace(&p);
     }
     list_leave(&p, saved_context);
-    shrink_list(vec_object_expr_item, ret);
+    *ret = (ObjectExpr){ .data = scratch_list_finish(&list, sizeof(ObjectExprItem)), .size = list.count, .capacity = list.count };
 
     // (Without its `{`, no related information: parseExpectedMatchingBrackets with openParsed false)
     if (open_parsed ? !expect_closing(&p, '}', open) : !expect_char(&p, '}')) {
@@ -9115,7 +9160,7 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
     hop_whitespace(&p);
 
     // tsc's parseDelimitedList(ArgumentExpressions)
-    *args = vec_expr_init();
+    ScratchList list = scratch_list_begin();
     u32 saved_context = list_enter(&p, PARSING_ARGUMENT_EXPRESSIONS);
     while (!at_eof(&p, p.pos) && *p.pos != ')' && *p.pos != ';') {
         const char* start = p.pos;
@@ -9130,7 +9175,7 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
             expect_expr(&p, expr_ctx_null, &arg);
         }
         if (arg.tag == EXPR_SPREAD && arg.spread->tag == EXPR_ARRAY) arg.spread->spread_into_call = true;
-        list_push(vec_expr, args, arg);
+        scratch_list_push(&list, &arg, sizeof(arg));
         hop_whitespace(&p);
         if (hop_char(&p, ',')) {
             hop_whitespace(&p);
@@ -9147,7 +9192,7 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
         const char* open = parent->pos;
         while (p.pos > open + 1 && is_js_ascii_space(p.pos[-1])) p.pos--;
     }
-    shrink_list(vec_expr, args);
+    *args = (VecExpr){ .data = scratch_list_finish(&list, sizeof(Expr)), .size = list.count, .capacity = list.count };
 
     return parse_success(&p);
 }
