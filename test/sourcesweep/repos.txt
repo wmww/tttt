@@ -284,3 +284,64 @@ typeorm-fixtures https://github.com/RobinCK/typeorm-fixtures.git 9a26e30b8a803a7
 typedorm https://github.com/typedorm/typedorm.git cddbfa1fad7c664b9aa2612ccb18b85595fa840d
 discordx https://github.com/discordx-ts/discordx.git 017c6e8c34908e6ca359bed9986fff43c0ce41cc
 typescript-rest https://github.com/thiagobustamante/typescript-rest.git 43231cad663196888bc2ac1378dee7f323812527
+# Refresh 4 (2026-10-22, cor3), a fifth selection rule aimed at application code and less idiomatic TypeScript:
+# GitHub search per topic (nextjs, remix, sveltekit, nuxt, express, fastify, hono, trpc, react-native, expo, tauri,
+# electron-app, chrome-extension, obsidian-plugin, homebridge-plugin, telegram-bot, discord-bot, threejs, p5js, phaser,
+# bun), language TypeScript, stars 40..400, pushed after 2025-10-22, size < 200 MB, sorted by stars; per topic the
+# first 2 not in this manifest with a root package.json, a root pnpm/yarn/npm lockfile, no deno.json, and a root
+# tsconfig.json (extends followed) setting one of: strict off or absent, allowJs/checkJs, paths/baseUrl,
+# moduleResolution node/node10, jsx react/preserve, experimentalDecorators, isolatedModules/verbatimModuleSyntax,
+# references (scripts/reposearch.py app). Checked out at their default branch's HEAD that day. Skipped by the search,
+# bun lockfile only (ensure-sources.sh has no bun install): coremvp/Hikari, Konixy/better-svelte-email,
+# SveltyCMS/SveltyCMS, TBosak/mkfd, vemetric/favicon-api, ECarry/photography-website, vanxh/openbio,
+# milisp/mcp-linker, gramiojs/gramio, RiskyMH/honeypot, ysdragon/StreamBot, bikeshaving/termdom, elitan/frost,
+# h0x91b/dev-3.0, powerfooI/roamgate, syncular/syncular.
+dbackup https://github.com/Skyfay/DBackup.git 42a636ced453462d545218f8931b02b8e656152e
+mantine-analytics-dashboard https://github.com/design-sparx/mantine-analytics-dashboard.git 3428a4cec37bbc647c4e3635d63fb33ce0be9831
+base-stack https://github.com/code-forge-io/base-stack.git 55395245b3655ffe2a1fe97c269c1f7fceaa85eb
+remix-cloudflare-template https://github.com/edmundhung/remix-cloudflare-template.git 53e69bcc5a0ce44fb0332c71232a2e004d4aedfe
+sveltekit-flash-message https://github.com/ciscoheat/sveltekit-flash-message.git befc25eae75a0232ee5d313094817c22c2aa6cc6
+# compress.lol: dropped, its root tsconfig.json extends a generated config (.svelte-kit/tsconfig.json, a build step tsgo needs first: TS5083)
+#compress.lol https://github.com/sowahq/compress.lol.git 94309753c5ebcab55123ab8ebb7f7d9d9b8016af
+# nuxt-graphql-client: dropped, its root tsconfig.json extends a generated config (playground/.nuxt/tsconfig.json, a build step tsgo needs first: TS5083)
+#nuxt-graphql-client https://github.com/Diizzayy/nuxt-graphql-client.git f8a8b9aa57076eef2a073f38f7bba57a074a6c5c
+# nuxt-gtag: dropped, its root tsconfig.json extends a generated config (.nuxt/tsconfig.json, a build step tsgo needs first: TS5083)
+#nuxt-gtag https://github.com/johannschopplich/nuxt-gtag.git 679aa53a7dfaf5faceece5441118d7859b0c8c52
+typescript-mern-starter https://github.com/shanhuiyang/TypeScript-MERN-Starter.git e8470167d4e8d939ca0446a70db0d7b40a94ef83
+node-express-mongoose-typescript-boilerplate https://github.com/saisilinus/node-express-mongoose-typescript-boilerplate.git 278143db5b01d5281649a968c18b40ae709f2ec7
+sveltekit-rate-limiter https://github.com/ciscoheat/sveltekit-rate-limiter.git 2d5b9d3f6b7a07fb5fdd0d928a45bf538a42b379
+# nuxt: no fit, the third (meshtastic/web-flasher) extends .nuxt/tsconfig.json too
+kitajs https://github.com/kitajs/kitajs.git 3d06a86a3842a5f5e80a1cb047cf4a162fdd0362
+graceful-server https://github.com/gquittet/graceful-server.git b42b5e7b5a4d2f3b74024d470b57c4812076e6a2
+# tnks-data-table: dropped, its pnpm-lock.yaml is out of date (`--frozen-lockfile` fails)
+#tnks-data-table https://github.com/jacksonkasi1/tnks-data-table.git 44cb7921f3b8e17734a7b0ec59efa7259e86132f
+bulletproof-nextjs-starter https://github.com/yeasin2002/bulletproof-nextjs-starter.git d971435143ad39c4b31323a54a70035203154a7a
+resolvehq https://github.com/mirza-rizvi/ResolveHQ.git f8387462e77f39ecd6ae9ecdf86984eaa1d8f7fe
+aural-oss https://github.com/1146345502/aural-oss.git 6f85feea999cff2b123366b1b85e634a7366037f
+serverless-adapter https://github.com/H4ad/serverless-adapter.git f602f4d6fcb7481de833f12ac3e6011d0ee7f1b0
+react-native-photo-manipulator https://github.com/guhungry/react-native-photo-manipulator.git 54a8a10d8d36830e29c1affd54568ee798a46959
+react-native-sqlite-2 https://github.com/craftzdog/react-native-sqlite-2.git 773f93f07d98590eabf0ae8b480154224a6af505
+react-native-image-marker https://github.com/JimmyDaddy/react-native-image-marker.git 6f7f9500887c727926f6e38896f5722a63e322d7
+rnui.dev https://github.com/mrpmohiburrahman/rnui.dev.git 0612e2b0124bdfb137f62138841e4c6b6c134eb5
+tauri2-svelte5-shadcn https://github.com/alysonhower/tauri2-svelte5-shadcn.git 08d97a10b7b1343c0ca71acbde08596dd1b4908e
+hermes-ide https://github.com/hermes-hq/hermes-ide.git ed4b2315d00fb47dc0fcf5fe640b48985e7cfe45
+pi-app https://github.com/justhil/pi-app.git a5058b232ce7c0611ac2d432a2db8fa74f953c16
+realm-studio https://github.com/realm/realm-studio.git b501e044ad59010d45cd8b773f1b96149aa302e2
+youtube-enhancer https://github.com/YouTube-Enhancer/extension.git 6b1a2f6384071cc995dc7e6e06f02c6d3c66da37
+goodlib-zlib-goodreads-extension https://github.com/NubPlayz/GoodLib-Zlib-Goodreads-extension.git f299d9034d590a607684a99842683057f743728b
+obsidian-modal-form https://github.com/danielo515/obsidian-modal-form.git 85a719bb173ab1bfeb00a6f4300e6f13b089f042
+obsidian-front-matter-title https://github.com/snezhig/obsidian-front-matter-title.git c03f9ceb718f2617695be92e97731b82d9ae0db8
+homebridge-xiaomi-roborock-vacuum https://github.com/homebridge-xiaomi-roborock-vacuum/homebridge-xiaomi-roborock-vacuum.git d925e02a565efbefdd490719b5a7a7fe3af6e9a8
+homebridge-z2m https://github.com/itavero/homebridge-z2m.git 52272ba418881f405f066207525eee32f300c8c5
+lnp2pbot https://github.com/lnp2pBot/bot.git 6d91a794d03da0789f88331c28039e95724c3fc9
+hamster-kombat-telegram-mini-app-clone https://github.com/nikandr-surkov/Hamster-Kombat-Telegram-Mini-App-Clone.git c04448c5c324a1d0dce5650327f05b8de3badf64
+bastion https://github.com/TheBastionBot/Bastion.git 18e39bb84d907f9bfaffeea31237ec7385350d9f
+amazonmonitor https://github.com/SpikeHD/AmazonMonitor.git fe2ed8271881f6dd922c7f0b82ac3fcdeec688b9
+bekuto3d https://github.com/LittleSound/bekuto3d.git f2bc103b31d1a184858c0c3814e61249469cad00
+flight-path https://github.com/jeantimex/flight-path.git 3e48cf54741f73861032cb9f73329a0928ef595b
+p5.capture https://github.com/tapioca24/p5.capture.git 13f21ba60e2c0f3b9ddd5b4f9c0889afb2a1fd38
+image-map-creator https://github.com/n-peugnet/image-map-creator.git 1dc5c2aa2dfdff02c405ad9383467f4a15ea7d68
+grid-engine https://github.com/Annoraaq/grid-engine.git d4ebe91146613e427d1d6edc94ee32f01eb8cdda
+ion-phaser https://github.com/proyecto26/ion-phaser.git 95a11ddce19868003b4de4658a1da043a7f76d23
+pi-bolt https://github.com/opensec-git/Pi-Bolt.git e72a0063fa1c79751453b1c1cb84421a10429e78
+tsdav https://github.com/natelindev/tsdav.git 078da17c304d0c18b1c9d9760e8013c398b3c273

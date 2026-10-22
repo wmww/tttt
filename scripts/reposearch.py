@@ -8,6 +8,10 @@ root package.json, a root lockfile and a root tsconfig.json (local `extends` fol
   scripts/reposearch.py checkjs TOPIC,TOPIC... PER   # language JavaScript, checkJs
   scripts/reposearch.py build TOPIC,TOPIC... PER     # language TypeScript, a solution: `references` (tsc -b)
   scripts/reposearch.py decorators TOPIC,TOPIC... PER  # language TypeScript, experimentalDecorators
+  scripts/reposearch.py app TOPIC,TOPIC... PER       # application code (refresh 4): stars 40..400, pushed in the last
+      year, no deno.json; a root tsconfig with a less covered setting (strict off or partial, allowJs/checkJs, paths/
+      baseUrl, moduleResolution node/node10, jsx react/preserve, experimentalDecorators, isolatedModules/
+      verbatimModuleSyntax, references); prints the matched settings too
 
 Prints `topic owner/name stars default-branch`; pin each with `git ls-remote URL HEAD` and append it to repos.txt
 under a comment saying the rule (refresh 2, 2026-10-18, is the example). Files are read from raw.githubusercontent.com.
@@ -51,6 +55,7 @@ picked = []
 for topic in topics:
     lang = 'JavaScript' if mode == 'checkjs' else 'TypeScript'
     q = f'topic:{topic}+language:{lang}+stars:300..3000+pushed:>2025-06-01+size:<200000'
+    if mode == 'app': q = f'topic:{topic}+language:TypeScript+stars:40..400+pushed:>2025-10-22+size:<200000'
     res = get(f'https://api.github.com/search/repositories?q={q}&sort=stars&order=desc&per_page=100')
     time.sleep(7)
     n = 0
@@ -58,7 +63,11 @@ for topic in topics:
         full = r['full_name']
         if full.lower() in existing or r['fork'] or r['archived']: continue
         if raw(full, 'package.json') is None: continue
-        if not any(raw(full, f) is not None for f in ('pnpm-lock.yaml', 'yarn.lock', 'package-lock.json')): continue
+        if not any(raw(full, f) is not None for f in ('pnpm-lock.yaml', 'yarn.lock', 'package-lock.json')):
+            if mode == 'app' and (raw(full, 'bun.lockb') is not None or raw(full, 'bun.lock') is not None):
+                print('#skip', topic, full, 'bun lockfile only (ensure-sources.sh has no bun install)', flush=True)
+            continue
+        if mode == 'app' and (raw(full, 'deno.json') is not None or raw(full, 'deno.jsonc') is not None): continue
         c = strip(config_text(full, 'tsconfig.json'))
         if not c: continue
         if mode == 'dts':
@@ -67,10 +76,19 @@ for topic in topics:
             ok = re.search(r'"references"\s*:\s*\[\s*\{', c)
         elif mode == 'decorators':
             ok = re.search(r'"experimentalDecorators"\s*:\s*true', c)
+        elif mode == 'app':
+            feats = [k for k, rx in (
+                ('nonstrict', r'"strict"\s*:\s*false'), ('allowJs', r'"(allowJs|checkJs)"\s*:\s*true'),
+                ('paths', r'"(paths|baseUrl)"\s*:'), ('node10', r'"moduleResolution"\s*:\s*"node(10)?"'),
+                ('jsx', r'"jsx"\s*:\s*"(react|preserve)"'), ('decorators', r'"experimentalDecorators"\s*:\s*true'),
+                ('isolated', r'"(isolatedModules|verbatimModuleSyntax)"\s*:\s*true'),
+                ('references', r'"references"\s*:\s*\[\s*\{')) if re.search(rx, c, re.I)]
+            if not re.search(r'"strict"\s*:', c): feats.insert(0, 'nostrict')
+            ok = bool(feats)
         else:
             ok = re.search(r'"checkJs"\s*:\s*true', c)
         if not ok: continue
         existing.add(full.lower())
-        print(topic, full, r['stargazers_count'], r['default_branch'], flush=True)
+        print(topic, full, r['stargazers_count'], r['default_branch'], *(feats if mode == 'app' else ()), flush=True)
         n += 1
         if n >= per: break
