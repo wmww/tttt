@@ -27,6 +27,7 @@ CORPORA = {
     'excalidraw': 'thirdparty/corpora/excalidraw/tsconfig.corpus.json',
     'type-fest': 'thirdparty/corpora/type-fest',
     'vue': 'thirdparty/corpora/vue/tsconfig.corpus.json',
+    'vscode': 'thirdparty/corpora/vscode/src/tsconfig.corpus.json',
 }
 
 

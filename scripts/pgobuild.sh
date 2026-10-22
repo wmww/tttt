@@ -43,10 +43,17 @@ while test -n "$EXE"; do
     sleep 1
 done
 
+# For scripts/boltbuild.sh, which relays this binary out: --emit-relocs keeps the static relocations in it (not
+# loaded) so llvm-bolt can move functions and blocks, and -fno-reorder-blocks-and-partition keeps GCC from splitting
+# each function's cold blocks into a `.cold` fragment of its own: BOLT can't attribute a profile across the split (its
+# CFG discontinuity metric at 60% on the hottest functions; the bolted binary had 5-10% more I1 misses than this one
+# instead of 17% fewer). Neutral on this binary itself under cachegrind (agents/notes/code_layout.md)
+LINK=-Wl,--emit-relocs
+CARGS=-fno-reorder-blocks-and-partition
 if test ! -e $B/build.ninja; then
-    meson setup $B --buildtype release -Db_lto=true -Db_pgo=generate >&2
+    meson setup $B --buildtype release -Db_lto=true -Db_pgo=generate -Dc_args=$CARGS -Dc_link_args=$LINK >&2
 else
-    meson configure $B -Db_pgo=generate -Dc_args= >&2
+    meson configure $B -Db_pgo=generate -Dc_args=$CARGS -Dc_link_args=$LINK >&2
 fi
 find $B -name '*.gcda' -delete
 ninja -C $B tttt >&2
@@ -77,7 +84,7 @@ for P in "${TRAIN[@]}"; do
 done
 
 # Functions the training never reached have no profile: that's -Wmissing-profile, which -Werror would make fatal
-meson configure $B -Db_pgo=use -Dc_args=-Wno-missing-profile >&2
+meson configure $B -Db_pgo=use "-Dc_args=['-Wno-missing-profile','$CARGS']" >&2
 ninja -C $B tttt >&2
 echo "$STAMP" > $B/.stamp
 echo $B/tttt
