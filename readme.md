@@ -19,19 +19,25 @@ nightly commit, into `thirdparty/typescript` along with the Go toolchain it need
 which also builds its CLI); `thirdparty/ensure-corpora.sh` and `thirdparty/ensure-sources.sh` fetch the real-world
 corpora and the source sweep's repositories.
 
-To compile and run:
+To build the fastest binary (what the benchmarks measure):
+```bash
+scripts/fastbuild.sh                  # prints fast/tttt: LTO + GCC PGO, then llvm-bolt layout (~3 min on 4 cores)
+fast/tttt path/to/source.ts           # or: fast/tttt -p path/to/project (tsconfig.json), or -b like tsc -b
+```
+`fast/tttt` is always the current fastest build; `scripts/fastbuild.sh` is the one place that defines what that is
+(today `scripts/pgobuild.sh`, trained on a few of the pinned corpora, then `scripts/boltbuild.sh`, which needs
+`llvm-bolt`; without it, use `pgo/tttt`). For development, a plain optimized build without the training step:
 ```bash
 meson setup release --buildtype release
 ninja -C release
-release/tttt path/to/source.ts        # or: release/tttt -p path/to/project (tsconfig.json), or -b like tsc -b
+release/tttt path/to/source.ts
 ```
-For the fastest binary (what the benchmarks measure, ~15% fewer instructions), `scripts/pgobuild.sh` builds `pgo/tttt`
-with LTO and GCC's profile-guided optimization, trained on a few of the pinned corpora (~3 min on 4 cores).
 
 tttt is meant as a drop-in `tsc` for checking: the same command lines and tsconfigs, the same diagnostics in the same
 formats (`--pretty false` byte for byte, the pretty one when the output is a terminal) and exit codes (tsc 7's: 1 with
-any error). It **only checks**: nothing is emitted, every run behaves like `tsc --noEmit` (no `.js`, `.d.ts` or
-`.tsbuildinfo` is written, `--watch` isn't supported). `--checkers`, `--builders`, `--singleThreaded` and `-q` are
+any error). It checks, and emits only declarations: every run behaves like `tsc --noEmit`, except that a project whose
+config has `emitDeclarationOnly` gets its `.d.ts` and `.d.ts.map` files written like `tsc` does (no `.js`, no
+`.tsbuildinfo`; `--watch` isn't supported). `--checkers`, `--builders`, `--singleThreaded` and `-q` are
 tsgo's; `release/tttt --help` lists the rest.
 
 Scripts useful for development (all rebuild first; `CLAUDE.md` has the full list):
