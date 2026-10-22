@@ -3236,7 +3236,9 @@ static Ternary index_signatures_related(
 // normalizes `[...X]` for an X that isn't a type variable when it makes the tuple (a mapped type over an array,
 // `{ [S in K]: [a: number] }[K]` simplified), tttt keeps X, whose elements are X[number]
 static bool is_rest_array(Checker* me, Ty const* rest) {
-    if (rest->kind == TY_TYPE_PARAM) return false;
+    // (An indexed access or a conditional type too: `I[]` against `[...Tuple<I, S>]` is TS2624, tsc's Variadic flag
+    // kept for an InstantiableNonPrimitive spread)
+    if (rest->kind == TY_TYPE_PARAM || (rest->flags & TYF_DEFERRED)) return false;
     if (rest->kind == TY_ANONYMOUS && (rest->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_generic_mapped(me, rest)) return false;
     return true;
 }
@@ -7184,7 +7186,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     if (debug_env.debug_relate_nested) {
         cstr source_str = ty_to_cstr(me, source);
         cstr target_str = ty_to_cstr(me, target);
-        log_info("nested ", st->depth, ": '", source_str, "' -> '", target_str, "': ", (u32)result, unreliable ? " (unreliable)" : "",
+        log_info("nested ", st->depth, " (", st->source_depth, "/", st->target_depth, "): '", source_str, "' -> '", target_str, "': ", (u32)result, unreliable ? " (unreliable)" : "",
             st->expanding == 3 ? " (deeply nested)" : "");
         c_drop(cstr, &source_str, &target_str);
     }

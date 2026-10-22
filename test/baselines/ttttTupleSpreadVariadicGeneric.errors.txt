@@ -1,0 +1,31 @@
+ttttTupleSpreadVariadicGeneric.ts(4,92): error TS2574: A rest element type must be an array type.
+ttttTupleSpreadVariadicGeneric.ts(5,5): error TS2322: Type 'I[]' is not assignable to type '[...Tup<I, S>]'.
+  Source provides no match for variadic element at position 0 in target.
+ttttTupleSpreadVariadicGeneric.ts(6,5): error TS2322: Type 'I[]' is not assignable to type '[...[I[], I[]][K]]'.
+  Source provides no match for variadic element at position 0 in target.
+ttttTupleSpreadVariadicGeneric.ts(7,5): error TS2322: Type 'I[]' is not assignable to type '[...Tup<I, S>, I]'.
+  Source provides no match for variadic element at position 0 in target.
+
+
+==== ttttTupleSpreadVariadicGeneric.ts (4 errors) ====
+    // A tuple's spread of a conditional or indexed access type stays variadic (tsc's createNormalizedTupleType keeps an
+    // InstantiableNonPrimitive element Variadic): an array is no match for it (TS2624), as for a type parameter
+    type Tup<T, N extends number> = number extends N ? T[] : N extends 0 ? [] : [T];
+    function f<I, S extends number, K extends keyof [I[], I[]]>(a: I[], b: [...Tup<I, S>], c: [...[I[], I[]][K]], d: [...Tup<I, S>, I]) {
+                                                                                               ~~~~~~~~~~~~~~~~
+!!! error TS2574: A rest element type must be an array type.
+        b = a;
+        ~
+!!! error TS2322: Type 'I[]' is not assignable to type '[...Tup<I, S>]'.
+!!! error TS2322:   Source provides no match for variadic element at position 0 in target.
+        c = a;
+        ~
+!!! error TS2322: Type 'I[]' is not assignable to type '[...[I[], I[]][K]]'.
+!!! error TS2322:   Source provides no match for variadic element at position 0 in target.
+        d = a;
+        ~
+!!! error TS2322: Type 'I[]' is not assignable to type '[...Tup<I, S>, I]'.
+!!! error TS2322:   Source provides no match for variadic element at position 0 in target.
+        a = b;
+    }
+    
