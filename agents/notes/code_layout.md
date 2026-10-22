@@ -76,17 +76,17 @@ builds (which differ by <= 0.5% in I1 misses and 0.1% in instructions here). Ins
 `CC=clang PGO_DIR=... BOLT_DIR=... scripts/boltbuild.sh` builds clang's LTO + PGO (+ BOLT) beside the default.
 Cachegrind at K1, instructions / I1 misses / stall estimate (clang 21.1.8, GCC 15.2):
 
-| | zod | drizzle | tsc |
-|---|---|---|---|
-| gcc -O3 | 4.405 G / 121.3 M / 2.13 G | 5.481 G / 113.3 M / 2.26 G | 4.328 G / 100.7 M / 1.78 G |
-| clang -O3 | +3.3% / +4.7% / +7.5% | +3.1% / +3.1% / +6.6% | +3.7% / +3.8% / +4.5% |
-| gcc PGO | 3.696 G / 79.3 M / 1.71 G | 4.554 G / 81.8 M / 1.95 G | 3.720 G / 60.0 M / 1.37 G |
-| clang PGO | -3.2% / = / +6.4% | -1.6% / -0.5% / +5.6% | -4.7% / +1.2% / +3.6% |
-| gcc PGO + BOLT | 3.690 G / 66.0 M / 1.57 G | 4.546 G / 68.1 M / 1.81 G | 3.716 G / 50.1 M / 1.27 G |
-| clang PGO + BOLT | -3.2% / +9.6% / +11.5% | -1.6% / +7.8% / +9.4% | -4.7% / +11.8% / +7.1% |
+| | zod | drizzle | tsc | vscode |
+|---|---|---|---|---|
+| gcc -O3 | 4.405 G / 121.3 M / 2.13 G | 5.481 G / 113.3 M / 2.26 G | 4.328 G / 100.7 M / 1.78 G | 80.70 G / 2259 M / 41.4 G |
+| clang -O3 | +3.3% / +4.7% / +7.5% | +3.1% / +3.1% / +6.6% | +3.7% / +3.8% / +4.5% | +1.9% / +3.2% / +2.2% |
+| gcc PGO | 3.696 G / 79.3 M / 1.71 G | 4.554 G / 81.8 M / 1.95 G | 3.720 G / 60.0 M / 1.37 G | 68.55 G / 1435 M / 33.1 G |
+| clang PGO | -3.2% / = / +6.4% | -1.6% / -0.5% / +5.6% | -4.7% / +1.2% / +3.6% | -6.0% / +1.1% / +1.3% |
+| gcc PGO + BOLT | 3.690 G / 66.0 M / 1.57 G | 4.546 G / 68.1 M / 1.81 G | 3.716 G / 50.1 M / 1.27 G | 68.45 G / 1212 M / 30.9 G |
+| clang PGO + BOLT | -3.2% / +9.6% / +11.5% | -1.6% / +7.8% / +9.4% | -4.7% / +11.8% / +7.1% | -6.0% / +10.2% / +4.7% |
 
 Text: gcc -O3 5.23 MB, clang -O3 4.30 MB; gcc PGO 4.40 MB, clang PGO 7.57 MB (its profile-guided inlining). clang's
-PGO build executes 2-5% fewer instructions but its hot text is 3.57 MB after BOLT against GCC's 2.06 MB, and
+PGO build executes 2-6% fewer instructions (6% on vscode, untrained) but its hot text is 3.57 MB after BOLT against GCC's 2.06 MB, and
 the I1 misses and the stall estimate are 7-12% worse: by the proxies GCC stays. The laptop could still A/B cycles
 (fewer instructions against a bigger footprint), but nothing here says clang wins.
 
@@ -113,6 +113,6 @@ the hot range (BOLT's hot text is 2.05 MB: the first page covers 97% of it).
 - loop peeling off, the one flag that cut I1 misses 5-10% (for +1-2% instructions): `PGO_DIR=pgo-np BOLT_DIR=bolt-np
   PGO_CFLAGS=-fno-peel-loops scripts/boltbuild.sh`, then `bolt-np/tttt` against fast/tttt, cycles at K1 and the
   defaults (op cache hit rate too: smaller hot code is what moves it)
-- optionally clang: `CC=clang PGO_DIR=pgo-clang BOLT_DIR=bolt-clang scripts/boltbuild.sh` (-2 to -5% instructions,
-  +8-12% I1 misses against GCC's)
+- optionally clang: `CC=clang PGO_DIR=pgo-clang BOLT_DIR=bolt-clang scripts/boltbuild.sh` (-2 to -6% instructions,
+  +8-12% I1 misses against GCC's: worth a cycles A/B on vscode)
 - profiling fast/tttt with perf: set `TTTT_HUGE_TEXT=0`, or the hot code shows as `//anon`
