@@ -1,4 +1,4 @@
-# Realistic affinity: local search on import-closure sets (what the resolver knows), scored on the true type sets
+# Realistic affinity: local search on import-closure sets (what the resolver knows), scored on the true type sets (README.md)
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from model import *
@@ -22,21 +22,22 @@ def closures(rows, depth=None):
         out.append(np.array(sorted(seen), np.int64))
     return out
 if __name__ == '__main__':
-    name = sys.argv[1]
-    recs = load(f'../{name}.dump', [1])
-    rows = load_graph(f'../{name}.graph')
+    # python3 graph_ls.py DUMP GRAPH K...: the deal against local search on import closures (depth: all, 2), scored on
+    # the dump's true type sets
+    dump, graph = sys.argv[1], sys.argv[2]
+    Ks = [int(k) for k in sys.argv[3:]] or [12]
+    recs = load(dump, [1])
+    rows = load_graph(graph)
     assert len(rows) == len(recs), (len(rows), len(recs))
-    byat = {r[0]: r for r in recs}
     uniq = len(np.unique(np.concatenate([r[2] for r in recs])))
     w = np.array([max(r[1], 1) for r in rows], np.int64)
-    for depth in [None, 2]:
+    for depth in [None, 2, 1]:
         cl = closures(rows, depth)
         print(f"closure depth {depth}: mean size {np.mean([len(c) for c in cl]):.0f}", flush=True)
-        for K in [int(k) for k in sys.argv[2:]]:
+        for K in Ks:
             a = deal(recs, K)
             per = cost(recs, a, K); l = loads(recs, a, K)
             print(f"  K{K} deal x{sum(per)/uniq:.3f} load {max(l)/(sum(l)/K):.2f}", flush=True)
             b = local_search(recs, a, K, slack=1.1, dense=cl, weights=w)
             per = cost(recs, b, K); l = loads(recs, b, K)
             print(f"  K{K} closure local search: x{sum(per)/uniq:.3f} max {max(per)} load {max(l)/(sum(l)/K):.2f}", flush=True)
-    

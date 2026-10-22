@@ -1,8 +1,6 @@
-# Offline model of file-to-checker assignments (ty/dupcensus.c). Dumps: TTTT_DUP_CENSUS=1 TTTT_DUP_DUMP=NAME.dump tttt --checker-memory 0 ...,
-# TTTT_DUP_GRAPH=NAME.graph; scripts here read ../NAME.dump and ../NAME.graph relative to their cwd. python3 model.py NAME.dump K...
-# prints the current deal's predicted types (sum of per-checker unions) and a greedy; local_search() is the oracle bound
-# Offline model of checker assignments: per-file key sets (TTTT_DUP_DUMP at --checkers 1 --checker-memory 0), the
-# cost of an assignment = sum over checkers of |union of their files' sets| (sampled 1/4)
+# Offline model of file-to-checker assignments (README.md): per-file key sets (TTTT_DUP_DUMP), an assignment's cost =
+# the sum over checkers of the union of their files' sets (sampled 1/4).
+#   python3 model.py DUMP [K...]      (DOMAINS=1: types only, the history-stable domain; unset: every domain)
 import sys, numpy as np
 def load(path, domains=None):
     data = open(path, 'rb').read()
