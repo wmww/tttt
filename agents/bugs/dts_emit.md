@@ -1,16 +1,16 @@
-# Declaration emit: what still differs from tsgo (plan 64, closed)
+# Declaration emit: what still differs from tsgo (closed)
 
-**Plan 64 closed 2026-10-16** (todo entry 5 of the eighteenth window). Its decisions that still hold: no synthetic AST
+**Declaration emit closed 2026-10-16.** Its decisions that still hold: no synthetic AST
 (the writer prints text from the source AST and `Ty`s, documentation.md "Declaration emit"); one walk with two sinks
 (`declaration_emit.c`'s diagnostics walk, the writer a second pass in the checker that checked the file); tttt emits
-only where the options emit declarations alone (`emitDeclarationOnly`), never JavaScript; no `.tsbuildinfo` (plan 76
+only where the options emit declarations alone (`emitDeclarationOnly`), never JavaScript; no `.tsbuildinfo` (the CLI modes (parked: todo.md)
 decides incremental). Validation met: suite dts in the headline (1834 / 1859, JavaScript tests included since this
 entry: 351 / 352), dtsdiff >= 90% of projects (96.8%), clidiff `--emit`; `dtsdiff.py --kdiff 16` differs on 3 / 292
 of a quarter sample by tsgo's own per-checker undefinedProperties history (below, "Member order").
 
-State 2026-10-19 (agent A, after refresh 2's projects): `scripts/dtsdiff.py` **1246 / 1274 projects, 99736 / 100826
+State 2026-10-19 (after refresh 2's projects): `scripts/dtsdiff.py` **1246 / 1274 projects, 99736 / 100826
 files** in a worktree (1028 of the misses are corpus:effect's and corpus:tsc's `.d.ts.map` sources, a worktree
-artifact; was 1242 / 99652 that morning). 2026-10-18 (todo entry 6, four agents): 1211 / 1233, 96675 / 96726; clidiff `--emit` 403 / 410. What the pass taught: tsc keys object instantiations
+artifact; was 1242 / 99652 that morning). 2026-10-18 : 1211 / 1233, 96675 / 96726; clidiff `--emit` 403 / 410. What the pass taught: tsc keys object instantiations
 on the alias they're made for (an import's alias names an unaliased instance, `type N = Readonly<X>` is a type of its
 own), checks type-parameter references syntactically (the Block rule; merged class/interface owners by node), and
 makes a mapped tuple's error rest element unknown. **Most of what's left is tsgo's checker split** (its weighted
@@ -25,19 +25,18 @@ size on real code, each with an example:
   local; TS has it too). Guesses from one or two tests each are in hacks.md ("JavaScript declaration emit guesses").
   JavaScript declaration diagnostics are reported like TypeScript's since this entry (no file written then); left
   on real code: query's `root.tsdown.config.d.ts.map` (17 projects, a JSDoc type literal member's mapped end) and
-  create-t3-app's `prettier.config.d.mts.map` were fixed by todo entry 5's agent, as were the missing TypeScript files
+  create-t3-app's `prettier.config.d.mts.map` were fixed on 2026-10-18, as were the missing TypeScript files
   (mermaid, sequelize, zigbee2mqtt: none left).
-- **Import specifier choice** (agent A 2026-10-15 ported tsgo 7.1's rules: augmented module names, the import lookup
+- **Import specifier choice** (2026-10-15 ported tsgo 7.1's rules: augmented module names, the import lookup
   in the enclosing location's mode, no container cap, no package copies as containers, existing imports only through
   their realpath, program-wide dependency links by package directory, exports conditions by the target's format;
   `TTTT_DEBUG_CONTAINERS=1` shows the candidates). Left (~4 projects): mcp-sdk/examples
-  `import("node_modules/hono/dist/types/hono")` vs tttt's `.../dist/types`: matches at `--checkers 1` (agent C
-  2026-10-18), so it's the per-checker KEY_EXTENDED_CONTAINERS memo below with tttt's file distribution; babel's `eslint.config.d.ts` and react-three-fiber's `three`
+  `import("node_modules/hono/dist/types/hono")` vs tttt's `.../dist/types`: matches at `--checkers 1` (2026-10-18), so it's the per-checker KEY_EXTENDED_CONTAINERS memo below with tttt's file distribution; babel's `eslint.config.d.ts` and react-three-fiber's `three`
   specifiers matched in 2026-10-19 runs. corpus:react's `@testing-library/react` vs `/dom` is a worktree
   artifact (the right one from the real path). tsgo's checker-wide memo of a successful import lookup
   (KEY_EXTENDED_CONTAINERS, filled from inside an import declaration) makes names depend on what a checker printed
   first, as in tsgo; tttt's checkers don't split files like tsgo's.
-- **Member order** (agent C 2026-10-16 fixed arktype's filtering `as` clauses, JS classes' `this.x` members, the
+- **Member order** (2026-10-16 fixed arktype's filtering `as` clauses, JS classes' `this.x` members, the
   isDeclarationContainedBy offset quirk of mixins): tsgo sorts every resolved object type's properties by
   compareSymbols (getNamedMembers), tttt sorts at Members build (builder_sort_stable). What's left:
   - `?: undefined` members of normalized object literal unions (postiz-app `*.provider.d.ts`, slate
@@ -45,7 +44,7 @@ size on real code, each with an example:
     react-navigation's `getShadowStyle` `?: never` too): tsgo's getUndefinedProperty caches one symbol per name per
     checker, declared where the first property it was made for is, so the order depends on which files that checker
     met first (4 checkers, FENNEL's split; a gated project's emit walk, last file first under `--singleThreaded`).
-    **tttt's choice is history-independent since 2026-10-21** (worker "filler", `undefined_choice()` in members.c,
+    **tttt's choice is history-independent since 2026-10-21** (`undefined_choice()` in members.c,
     ty.h's UndefinedProps): one program-wide entry per name, the candidate first in declaration order among those some
     file's check meets, else among those only the emit walk does; prints of a choice a later candidate replaced are
     recorded per file and those files checked again at the end of program_typecheck()
@@ -75,17 +74,17 @@ size on real code, each with an example:
     type made first) and the other way in tttt (filetest repro; a declared `signal` matches). tttt's rest type
     (object_rest_type, rest_literal) gets a later id than the spread's object.
   - trpc next-prisma `context.d.ts`, ui `registry-health/directory.d.ts`: uninvestigated.
-- **Checker types, uninvestigated** (agent C's leftovers, 2026-10-15; effect's query-repro fixed 2026-10-18 by agent
-  D's permissive wildcard fixes): excalidraw `tests/helpers/api.d.ts` (tsgo keeps `declare
+- **Checker types, uninvestigated** (2026-10-15 leftovers; effect's query-repro fixed 2026-10-18 by the permissive wildcard
+  fixes): excalidraw `tests/helpers/api.d.ts` (tsgo keeps `declare
   const { h }: Window & typeof globalThis;`); feathers `next?: HookContext` (tsgo names the unresolved NextFunction
   through another unresolved import alias, the unknown-symbol quirk below).
-- **isTypeParameterPossiblyReferenced leftovers** (agent A 2026-10-18 did the Block rule and merged owners by node:
+- **isTypeParameterPossiblyReferenced leftovers** (2026-10-18 did the Block rule and merged owners by node:
   `TypeFlow.scope`, a function body's Block or a class/interface declaration's owner, set by the resolve walk; the
   order-dependent `LowerCtx.merged_owner` is gone). Not modelled: the `this` type of a class around a method body
   (tsc's Block rule makes it possibly referenced; the Block marker carries only OuterGenerics, which a class without
   type parameters has none of, and the deferred body walk doesn't see the class's marker), and a context-sensitive
   function's inferred signature type parameters (tsc's getOuterTypeParameters adds them).
-- **`typeof this` in an object literal, types baseline** (agent C 2026-10-16 fixed the declaration side: headlessui's
+- **`typeof this` in an object literal, types baseline** (2026-10-16 fixed the declaration side: headlessui's
   TS5088 matches). Printing a cyclic object literal whose methods mention `typeof this`, tsgo expands one level more
   than tttt: its `this` there is the fresh object literal type (getContextualThisParameterType without a contextual
   type: getWidenedType of the literal's own, fresh, type), a different type from the variable's regular one, so the
@@ -102,7 +101,7 @@ size on real code, each with an example:
   annotation, tttt reprints with `| undefined` and double quotes; a two-file probe matches, the real case doesn't);
   arktype bounds `OneCharComparator` and vscode instantiationService `const enum TraceType` locals tsgo keeps
   (painting, not reproduced small).
-- **"type text" leftovers** (agent B 2026-10-16 fixed trpc's alias/spread reuse and AsyncIterable args, feathers'
+- **"type text" leftovers** (2026-10-16 fixed trpc's alias/spread reuse and AsyncIterable args, feathers'
   mapped literals and contravariant aliased intersections, fumadocs' implied infer constraints, ts-mixer's abstract
   constructor parens, tanstack-table's contextual intersection, slate, vitest, nextra, pi keybindings). Left:
   - ui `registry/config.d.ts` (its ZodEnum fixed 2026-10-18): left is `parseRegistryBaseParts`'s `error?: undefined`
@@ -112,31 +111,31 @@ size on real code, each with an example:
     returning `{ ...ctx, dependencyVersions: { ...pkg.devDependencies, ...ctx.dependencyVersions, '@feathersjs/cli':
     version } }` through `.then`s) is applied twice: tsgo's result keeps two distinct `{ '@feathersjs/cli': any }`
     intersection members (instantiations of the literal under two mappers), tttt makes one (it interns them), and
-    tsgo's spread type no longer reuses the properties' nodes. Not reduced (agent B 2026-10-18).
+    tsgo's spread type no longer reuses the properties' nodes. Not reduced (2026-10-18).
   - react-scan `Component<P>` vs `Component<Attributes, {}>`: fixed (a local function with expandos is an anonymous
     type now, instantiated: is_local_expando_function()). The `Readonly<{...}>` reprinted where tsc
     no longer reuses an alias body's annotation: hacks.md "An alias body's homomorphic mapped instance".
-    react-three-fiber `ReadonlyArray<...>` reuse: see agent A's note. (mockoon's `Observable<any>` fixed
+    react-three-fiber `ReadonlyArray<...>` reuse: see the 2026-10-15 note above. (mockoon's `Observable<any>` fixed
     2026-10-21: ttttContravariantInferenceOfUnresolvedName.) vueuse
     `.test/mount.d.ts`: `defineComponent({ components: Comp, ... })` where tsgo prints Comp's `DefineComponent<...>`
     expanded (its constructor type & ComponentOptionsBase...) and tttt keeps the alias: alias lost somewhere in Vue's
     inference, not reduced. headlessui's use-controllable matched in 2026-10-18 runs (an order effect, may come back). effect's and excalidraw's others: see "Checker types, uninvestigated"
     (effect ExecutionPlan and fiberRuntime fixed 2026-10-16).
   - `export default undefined`: tsgo writes it as an identifier export, tttt as `declare const _default: undefined`.
-- **Fixed 2026-10-20 (agent A)**: react-three-fiber's react-native mock: the rest of a mapped type over a mapped type
+- **Fixed 2026-10-20 **: react-three-fiber's react-native mock: the rest of a mapped type over a mapped type
   (`Readonly<Omit<ViewProps, 'children'>>`) reuses the annotations of the properties the inner one maps
   (lower.c's mapped_prop_annotation(), ttttRestOfNestedMappedReusesAnnotation). The "map: its .d.ts differs" bucket is
   the maps of files whose .d.ts are in other buckets (babel-parser, mcp-sdk, slate). telegraf's map and vscode's
   modifier unchanged (entries below and above).
-- **Painting gaps** (dtsdiff "import"; agent A 2026-10-15 fixed inferred predicates, late bound members, readonly enum
+- **Painting gaps** (dtsdiff "import"; 2026-10-15 fixed inferred predicates, late bound members, readonly enum
   fields, enum-valued keys, every statement of a painted merged name, private constructors' parameter properties,
-  painted destructurings' types; agent C 2026-10-16 fixed unresolved-import names reused across files, export lists
+  painted destructurings' types; 2026-10-16 fixed unresolved-import names reused across files, export lists
   past 64 names, a namespace's export list, value-only `export =` property imports used as types, the first walk
   printing without type parameter names (discord.js's ActivityType), augmentation-kept imports (vue)). What's left in
-  the bucket is type text whose names differ (checker-side, the import line follows; agent D 2026-10-18 fixed yup's
+  the bucket is type text whose names differ (checker-side, the import line follows; 2026-10-18 fixed yup's
   imported distributive alias, gemini-cli's `f?: T` generic argument instantiation, effect's late-painted merged const):
   excalidraw `ExcalidrawFreeDrawElement`, slate-hyperscript.
-- **Reused nodes' text, remaining** (agent B 2026-10-15 fixed escapes, comments around type nodes, extends-clause
+- **Reused nodes' text, remaining** (2026-10-15 fixed escapes, comments around type nodes, extends-clause
   parentheses, `typeof f` in unions, empty multi-line tuples, synthesized literals): still open, each small:
   a parenthesized type's inner node's comments (`( /** c */ A)`: tttt keeps one `parenthesized` flag, no node);
   comments on their own line before a list delimiter (emitListItems' emitLeadingComments(previousSibling.End()));
@@ -150,11 +149,11 @@ size on real code, each with an example:
   annotation from another file, `Plugin<Plugin>`, ttttDeclarationUnknownImportRenamed; a reused `typeof X` too,
   ttttDeclarationUnknownImportTypeof) and paints that import; a
   type printed from its type (not a reused node) may still not paint it (unverified).
-- **Declaration maps** (stage 5 done; agent C 2026-10-16 modelled tsgo's per-enclosing-declaration serializedTypes
+- **Declaration maps** (stage 5 done; 2026-10-16 modelled tsgo's per-enclosing-declaration serializedTypes
   cache, TyPrintedTypes: a type printed again in the same scope is an unmapped clone, a signature with parameters a
   new scope; mapped types left out since tttt interns instantiations tsgo doesn't). `scripts/dtsdiff.py -k 'map:'`
   lists the rest, single files: babel-types `_skip`, lit (`NodeListOf`, `[Symbol`, `'_` constructor), redux-toolkit
-  helpers `K (})`, telegraf `(tg`. Agent B 2026-10-18: the cache is per *enclosing declaration*, which a class's
+  helpers `K (})`, telegraf `(tg`. 2026-10-18: the cache is per *enclosing declaration*, which a class's
   property declarations share (the class) and a function's parameters share (Walk.class_printed_types,
   printed_next); a keyword annotation's file is its signature's (TyDisplay.node_file); a class literal's methods
   tsgo instantiates for `this` have fresh type parameters (method_this_instantiated(): not thisless, or more than
@@ -162,13 +161,13 @@ size on real code, each with an example:
   Not modelled: the printer flags in tsgo's cache key; a type reprinted in a new signature scope misses mappings
   tsgo has (probe: an object literal with `use: () => p, withArg: (x: number) => p` of an inline conditional).
 
-## 2026-10-16 worktree agent (wt-a): JS maps / missing files / small buckets, leftovers
+## 2026-10-16: JS maps / missing files / small buckets, leftovers
 - **telegraf `as (tg.MessageEntity & { type: SelectedTypes; ... })[]`**: tsgo reuses the node with only the local alias
   reference replaced (partial reuse); tttt prints from the type (same text, no mappings).
 - Suite JS dts quirks left as tsgo bugs: jsdocTemplateTagDefault (`= ` empty default), jsdocReadonlyDeclarations
   (`readonly constructor`), jsdocAccessibilityTagsDeclarations (`c;`).
 
-## 2026-10-18 worktree agent B: babel-parser and friends
+## 2026-10-18: babel-parser and friends
 - **babel-parser `maybeAsyncOrAccessorProp(...): boolean`** (tsgo) vs tttt's `prop is typeof prop & {...}`: a tsgo
   checker-distribution quirk, not emulated. `tsc --singleThreaded` prints the predicate like tttt (so do
   `--checkers 1/2` on the probe below; 3+ print `boolean`). In a checker that resolves `new A().m` before checking
@@ -179,7 +178,7 @@ size on real code, each with an example:
   matters), c.ts `export const v = new A().m;` with `--checkers 3`. tsgo single-threaded also differs from its
   default on babel-parser's `parseVarStatement`/`parseExportSpecifier` (`any` by default, as tttt).
 
-## 2026-10-18 worktree agent D leftovers
+## 2026-10-18 leftovers (second list)
 - **sequelize/packages/core `readonly models: any`** (tsgo) vs tttt's `ModelSetView<Dialect>`: tsgo itself prints
   `ModelSetView<Dialect>` with `--checkers 1` and `any` with its default 4: a circularity that depends on which checker
   checks what first (the TS7022 that differs by checker count in tsgo too, CLAUDE.md's kdiff note). Not worth
@@ -189,7 +188,7 @@ size on real code, each with an example:
   b: 1 }) => x)`).
 
 
-## Refresh 2 leftovers (agent A, 2026-10-19, todo entry 6 of the window)
+## Refresh 2 leftovers (2026-10-19)
 Fixed: vest's `typeof ns.x` (a spread namespace's alias export is the alias: spread_alias), the checkJs projects'
 maps and types (rocket 315 / 316, eslint-plugin-jsdoc 336 / 338, markdown-magic and its packages all match), lit's
 class literal fields (pseudo types), babel and react-three-fiber specifiers (match now, not by a fix of this pass).
@@ -200,14 +199,14 @@ Left:
   TRules out of scope. tttt's is wrong too: it should print the instantiation (`DropFirst<Parameters<typeof
   arrayRules.equals>>`), which still won't match tsgo. Not worth emulating tsgo's symbol mix-up.
 - **eslint-plugin-jsdoc**: 5 files match `tsgo --singleThreaded` (checker split); its maps, rocket's `{string=}` and
-  markdown-magic's all match since agent A's second pass (2026-10-19).
+  markdown-magic's all match since the second pass (2026-10-19).
 - **`/** @type {{a: number}} */ export default { a: 1 }`**: tsgo maps the member to the literal's property when the tag's
   type and the literal's agree (with an extra optional member it maps the tag, like tttt).
 - **telegraf** partial reuse (below, unchanged: tsgo reuses the asserted node with only a local alias reference
   replaced, a reuse mode tttt's printer doesn't have; not cheap), **vueuse `.test/mount.d.ts`** mismatches again (also at this
   pass's base commit) after matching in the morning's full run: an order or environment effect.
 
-## 2026-10-20 agent C (real-code fan-out)
+## 2026-10-20 (real-code pass)
 Fixed: ts-proto's `| //` then `/** doc */` union members (lazy indentation, ttttDeclarationUnionMemberLineThenJsdoc),
 snaps-cli's `builtIns?: any` (a return-mapped contextual type that is any falls back to the parameter type),
 effect matcher's template literal map (types mapped at their starts), headlessui-vue's `$slots: Slots` (an alias

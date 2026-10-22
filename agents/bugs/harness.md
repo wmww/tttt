@@ -68,7 +68,7 @@
     in the program because: Matched by include pattern ..." chain (the program doesn't know which spec matched).
     Config diagnostics of references are only for the program's own config's direct references (tsc walks them
     transitively, reported on the parent config).
-- Widening the DefinitelyTyped oracles (ex plan 44 stage 3, not done): install more real npm dependencies for the
+- Widening the DefinitelyTyped oracles (from the DT breadth sweep, not done): install more real npm dependencies for the
   packages tsc rejects with TS2307/TS2688 (webpack 5, postcss, moment...: regenerate
   `corpora-locks/DefinitelyTyped.package.json` and rerun `scripts/sweep.py --tsc -f` for the affected packages; tens
   of packages each); beyond DT, the shipped `.d.ts` of the top-N npm packages with a generated test importing each.
@@ -89,8 +89,8 @@
   /newroot/run/credentials/serial-getty@ttyS1.service: Invalid argument" (a host mount bwrap can't remount
   read-only) made a whole corpus "no output". Not seen again. If it recurs: bind only the dirs the probe needs
   instead of `/`, or retry the bwrap call once on that message.
-## TS 7.1 window leftovers (triage 2026-10-09)
-- `--showConfig`, `--explainFiles`, `--watch`, `--init` are refused (exit 1): plan 76 sizes them. `--listFiles` and
+## TS 7.1 retarget leftovers (2026-10-09)
+- `--showConfig`, `--explainFiles`, `--watch`, `--init` are refused (exit 1): the CLI modes (parked: todo.md) sizes them. `--listFiles` and
   `--listFilesOnly` match tsgo on probes (2026-10-16) but no oracle compares them.
 - `tsgo_skips_configuration()` still reads module/moduleResolution as written to skip tsgo's removed configurations;
   `@module: none` no longer parses (TS6046), so such configurations run with the default module unless they have no
@@ -114,7 +114,7 @@
   - vitest/test/coverage-test, query-codemods (older entries, not rechecked).
   - apollo-client/integration-tests/vite: truncation (`DeepPartial<...>` in tsc, printed in full in tttt) and two
     missing `'undefined & TData' is not assignable to type 'RegExp & ...'` lines in a deep TS2322 chain (also at the
-    session start's binary, deterministic).
+    an earlier binary, deterministic).
 - File include explanations (program_error_explaining_file()): type reference directives, automatic type directives
   and lib files aren't recorded as reasons.
 - source sweep `+TS6059` (react-router/packages/create-react-router, 11 projects in 2 repos): a file outside rootDir

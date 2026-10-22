@@ -3,13 +3,13 @@ Numbers are in `measurements.md`; this is what to try next. Profile with callgri
 ./release/tttt -q files...`, then `callgrind_annotate [--inclusive=yes]`; no `perf` on the dev box). The release build
 has no debug info: for line-level annotation (`callgrind_annotate --auto=yes`) build a copy with
 `meson setup /tmp/relg --buildtype release -Dc_args=-g` (same code, same instruction counts). Compare
-instruction counts across sessions, not wall times. `--time` prints the resident set after each phase and the
+instruction counts across runs, not wall times. `--time` prints the resident set after each phase and the
 checker's arena size and type count. Memory: `scripts/memtrack.sh -p DIR` for the malloc heap (live blocks per phase by
 allocating function; massif's extra-heap estimate is wrong for glibc), `scripts/arenasites.sh -p DIR` for the mmapped binder
 and checker arenas by call site.
 
-## The types-ratio tail and K1 check ratios (perf session 2026-10-18, todo entry 5)
-**date-fns/pkgs/docs 1.62 -> 0.64** (34483 -> 13679 types, tsgo 21221; worst of the perfsweep for ten sessions, after
+## The types-ratio tail and K1 check ratios (2026-10-18 perf work)
+**date-fns/pkgs/docs 1.62 -> 0.64** (34483 -> 13679 types, tsgo 21221; worst of the perfsweep for ten passes, after
 round 2's 0.94 below had regressed unnoticed): `is_generic_operand()` and `is_string_index_signature_only()` expanded
 an anonymous type to learn whether it is a generic mapped type, where tsc's isGenericMappedType reads the declaration
 (`ty_generic_mapped()`). Found with `scripts/variancetrace.py`'s per-measurement type counts (VAR< `types=N`, both
@@ -18,7 +18,7 @@ overload (58, 212, ... 8238 against tsgo's 3), then gdb on `indexed()` creating 
 (`break checker.c:LINE if fresh != 0 && me->variance_depth > 0`, `bt 80`, aggregated by function). The other
 predicates that asked `ty_members(me, ty)->mapped` only to decide genericity went the same way (the next commit:
 681 perfsweep projects -56k types); the remaining `ty_members(...)->mapped` reads use the mapped info itself.
-What was left above 1.3 (2026-10-20, agent C): rpg-js vue-gui 1.49 -> 1.00 and query's vue examples were vue's
+What was left above 1.3 (2026-10-20): rpg-js vue-gui 1.49 -> 1.00 and query's vue examples were vue's
 `typeof globalThis extends { window: unknown }`: props_related_impl() related the `window` property's `Window & typeof
 globalThis` to `unknown`, and is_related_to() reduced it first (never_reduced_prop() resolving every property both
 sides have, ~600 types); tsc's isPropertySymbolTypeRelated returns True for an any/unknown target property. The
@@ -26,7 +26,7 @@ lightweight-charts plugins (1.63 -> 1.23) were `window as unknown as any`: check
 relation of the comparable relation before normalizing only for indexed/conditional/substitution targets, not for
 reduced unions and intersections. Left there: ~80 types per program from array_this_props() resolving every Array
 method's type to find those mentioning `this` (tsc instantiates them lazily), the first tuple's members; harmless. **The check-time tail is noise**: perfsweep's "> 1" K1 check
-ratios (ethereumjs 2.4, dokploy 1.2, arktype 1.25) were tttt under load (another session's kdiff, load 8 on 4 vCPUs)
+ratios (ethereumjs 2.4, dokploy 1.2, arktype 1.25) were tttt under load (a concurrent kdiff, load 8 on 4 vCPUs)
 against tsgo's cached quiet times: measured back to back, ethereumjs statemanager 0.33 s vs 0.39-0.56, dokploy 6.0 vs
 10.2, arktype 4.6 vs 7.8. Compare live (`tsc --tsBuildInfoFile /tmp/x` for composite projects: without it tsgo writes
 `dist/tsconfig.tsbuildinfo` into the checkout, perfsweep.py deletes such strays) before chasing a check ratio.
@@ -35,7 +35,7 @@ tuple_shapes_related ~15%) is ~9.6k tuples of ~340 elements related elementwise,
 analysis 16% inclusive with no hot spot.
 
 ## Instructions the triage of 2026-10-18 added (accepted)
-Against the session start (4d387955), callgrind: excalidraw +2.95% (7.344 -> 7.561 G), drizzle +0.95%, the rest under
+Against the starting commit (4d387955), callgrind: excalidraw +2.95% (7.344 -> 7.561 G), drizzle +0.95%, the rest under
 1%. excalidraw's is 44b8b83a (an alias body's mapped twin, `type A = Readonly<{...}>`, instantiated back into the
 ordinary instance under any mapper, as tsc's couldContainTypeVariables does): +750 types (+0.5%), subtype relations
 18750 -> 19872, strict subtype 27318 -> 28680 at K1. Semantics tsc shares, so accepted; if excalidraw's types ratio
@@ -43,9 +43,8 @@ against tsgo (`scripts/perfsweep.py --corpora`) rose too, look at which unions n
 drizzle's is b3c2fbfa (deferred references normalized in the relation) and ece423b2 (inference visits a pair once
 per mode). `test/instrcount.txt` saved after them.
 
-## Deferred bodies (plan 78, closed 2026-10-17)
-vscode K1 T1 is 13.5 s deferred against 13.1 eager (+3%; K1 T4 +1%, the defaults +2%, measurements.md "Plan 78 stage
-3"). Where it goes (`TTTT_DEFER_STATS=1`, `--time`): materializing the bodies the first time costs ~1.69 s against the
+## Deferred bodies (closed 2026-10-17)
+vscode K1 T1 is 13.5 s deferred against 13.1 eager (+3%; K1 T4 +1%, the defaults +2%, measurements.md "Deferred bodies' cost"). Where it goes (`TTTT_DEFER_STATS=1`, `--time`): materializing the bodies the first time costs ~1.69 s against the
 eager parse and walk's ~1.38 (cold source text and binder state, per-file setup), re-materializing ~740 files 0.23 s,
 the skip scan ~8 instructions per body byte (`skip_balanced_braces()`, ~0.7 G on vscode). Leads: materialize single
 bodies for cross-file demands (95% are inferred return types; the walk's cross-body writes, `is_assigned*`,
@@ -57,7 +56,7 @@ and walks only the demanded body (documentation.md "Deferred bodies"): vscode de
 bodies instead of 43k (0.80 -> 0.16 s CPU), K1 1.2k of 16k. Left: the first materialization's cost (cold state), the
 skip scan.
 
-## Shared warm state at the defaults (perf session 2026-10-18, todo entry 8)
+## Shared warm state at the defaults (2026-10-18 perf work)
 **inbox-zero was not warm state**: it reports ~22k errors (tsc too), and `error_ctx_merge()` inserted them one at a
 time (quadratic): ~380 ms merging the checkers' contexts, ~500 ms more in the resolve walk's per-file shard merges at
 the root project. Fixed (one-pass merge): inbox-zero 1.29 -> 0.85 s (bun 0.86), apps/web 1.28 -> 0.86 (bun 0.97).
@@ -77,29 +76,29 @@ slowest file. Tried (prototypes, all reverted):
 - a learned budget shared by the checkers, a jump to what was held after a short segment: no change;
 - recycle only once the segment did 4x its slowest file's work: dokploy 2.01 s, monkeytype 0.77, react-select's
   tests 0.54 -> 0.31, but the corpora's peaks rise past bun's (zod 275 -> 377 MB, effect 332 -> 432, drizzle 372 ->
-  440, tsc 207 -> 249): plan 81 stage 2's frontier again, already declined by the insights;
+  440, tsc 207 -> 249): the defaults' memory budget's frontier again, already declined;
 - the same guard only at the cap (no corpus ever recycles at its cap): ~-7% on the thrashers, too little, since
   they thrash mostly below it;
 - retiring a checker that thrashes at its cap (its files stolen, the others' budgets grow): retires too late
   (dokploy once, near the end; monkeytype never).
 No signal found that separates these from the corpora: held/budget overshoot (type-fest 3.7x), slowest-file share of
 the segments (type-fest 61% vs karakeep 60%), node_modules declaration bytes per checked byte (react-select 0.83,
-drizzle 2.8) all overlap. What's left is the insights' frontier call (a guard costing the corpora's memory against
+drizzle 2.8) all overlap. What's left is the frontier call (a guard costing the corpora's memory against
 bun) or a re-derivation measure that isn't time or bytes (e.g. types a fresh checker makes that the previous
 incarnation also made, counted by declaration).
-**Plan 85's census answered that (2026-10-18, measurements.md "Plan 85's census")**: what a fresh incarnation
+**What the checkers re-derive answered that (2026-10-18, measurements.md "What the checkers re-derive")**: what a fresh incarnation
 rebuilds is instantiations of the project's own code, not declaration files' declarations (2-6% of the extra), so
 no up-front shared layer helps. One untried design for the recycle half, **a memory-snapshot recycle**: put all of a
 checker's memory (arena, intern and link tables, relation caches, LazySlots pages, its side arrays) in one
 memfd-backed region, snapshot it after the warm-up (the segment's first file) and recycle by remapping the region
 MAP_PRIVATE over the snapshot at the same addresses: the warm state comes back for page faults instead of 1.5-2 s of
 re-derivation (dokploy), pointers stay valid, and the output is that of a checker that checked the warm-up files
-(already allowed: plan 67). Bound: `--checker-memory off` at K4, real threads: monkeytype -59% CPU, dokploy -53%,
+(already allowed: checker recycling). Bound: `--checker-memory off` at K4, real threads: monkeytype -59% CPU, dokploy -53%,
 the mid corpora -3 to -26% (so it can't pass a 30% bar there), with the snapshot's pages held for the run. Costs: every
 malloc a checker does goes to a region allocator, and what lives outside the checker but counts its holds
 (DeferredBodies refs, `held`) must be reconciled at each restore. Only worth a plan if the thrashers matter.
 
-## What the recycle budget costs at the defaults (perf session 2026-10-17, todo entry 8)
+## What the recycle budget costs at the defaults (2026-10-17 perf work)
 The corpora at the defaults against `--checker-memory off` (best of 2, 4 checkers): 11.43 s / 4573 MB against 9.99 s /
 10023 MB, +14% wall (drizzle +34%, excalidraw +27%, zod +22%, vscode +15%). Callgrind of excalidraw and zod at the
 defaults against off (and drizzle at K1 16 MB against off): ~90% of the extra instructions is re-deriving types
@@ -108,7 +107,7 @@ tables growing again from 64 entries per incarnation (`intern_grow()`, its memse
 and checker_drop() nothing. On vscode re-materializing deferred bodies is ~20% of it (0.65 s CPU of ~3.2 s; 1295
 re-materializations of 648 files). **Tried, declined**: never dropping a file's bodies again after its first
 re-materialization (vscode defaults 1293 -> 648 re-materializations, -0.1 s wall, **+160 MB peak**: the re-materialized
-files are big). What's left: per-body re-materialization (the lead above), or the policy (fewer recycles: plan 81's
+files are big). What's left: per-body re-materialization (the lead above), or the policy (fewer recycles: the defaults' memory budget's
 frontier). General instruction cuts pay back at every budget (entry 8: zod -7%, excalidraw -5%).
 Measured, not worth it alone: pre-sizing a recycled checker's tables (they count against the 16 MB budget: more
 recycles), a lower intern load factor (linear probing at up to 75% averages ~3 extra probes a lookup, ~3% of drizzle,
@@ -121,7 +120,7 @@ quiet rerun of the worst 14 is trustworthy). Quiet: nothing worse than 1.25x its
 costs more than it parallelises. A full quiet run (`--defaults -j 1`, ~10 min) is still to do: the cheap check after
 any change to `check_share()` or the checker-count heuristics.
 
-## Perf + real code session (2026-10-16, todo entry 9)
+## Perf + real code work (2026-10-16)
 Fixed: keyof of an object type rebuilt per instantiation (folo's i18next keys: one 10-line file 3.5 G), tuple
 element names printf'd per instance (26% of type-fest), qsort's indirect comparator in builder_finish(), a quadratic
 duplicate scan in intersection(). Left, measured:
@@ -134,7 +133,7 @@ duplicate scan in intersection(). Left, measured:
   arktype's types (148k types, 1.3 s alone); no pathology found.
 - effect, drizzle, webpack, vue self profiles: nothing above 6% (interning, instantiation, flow), no quadratic site.
 
-## Immediate distributive constraints (plan 61 stage 2, 2026-10-13)
+## Immediate distributive constraints (2026-10-13)
 tanstack-router 5.337 -> 5.401 G (+1.1%), xstate +0.3%: from base constraints and getSimplifiedTypeOrConstraint taking
 the check type's one-step constraint (tsc's) instead of its base constraint, so a conditional's constraint goes
 through more instantiations. react +0.5% from `conditional_source_related()` relating the immediate distributive
@@ -150,7 +149,7 @@ and pinia/nuxt +8% total. lib.dom.d.ts is ~32 ms of it. The callgrind split: int
 projects ever matter. (`ty_keyof` of the big tag/event maps rebuilt and sorted per call: fixed 2026-10-16, keyof of an
 object type is remembered per type, the empty dom project 460.7 -> 412.5 M.)
 
-## Perf at breadth (plan 59): `scripts/perfsweep.py` ranks the outliers
+## Perf at breadth: `scripts/perfsweep.py` ranks the outliers
 Stage 2 (2026-10-12) drained every project above 1.5x tsgo's types (measurements.md "Perf at breadth": worst 16.4 ->
 1.55, total 96.0M -> 71.3M types against tsgo's 127.9M, worst RSS ratio 2.48 -> 0.95). The mechanisms, for the next
 outlier: instantiations keyed by the whole mapper where tsgo keys by the outer type parameters the declaration
@@ -162,7 +161,7 @@ karakeep/packages/plugins 1.40. Recipe: `scripts/perfsweep.py -f '^PROJECT$'` re
 the file, then which type kinds grow (`scripts/arenasites.sh`); instrumented tsgo builds (overlay outside the shared
 tree) answer "does tsgo make these too".
 
-## Plan 59 stage 2 leftovers (agent D)
+## Perf-at-breadth leftovers (2026-10-12, D)
 Fixed (2026-10-12): dokploy x4 (`typeof f<T>` / `typeof ns.x` free params, 2.3 -> 0.69), arktype/ark/docs (this-only
 references share thisless base signatures, 1.51 -> 0.92), linkwarden/apps/mobile (union flattening skips repeated
 types: IconSymbol.tsx 1.54 s -> 0.14 s, RSS 517 -> 239 MB), mcp-sdk/packages/core-internal (declaration printing
@@ -190,10 +189,10 @@ repomix/website/server: hono's MiddlewareHandler like nitro/examples/hono). Left
 - **Worktrees load symlinked sources twice** (the "Pathologies" entry below): arktype and arktype/ark/docs show ~40
   spurious TS2339/TS2300/TS7006 in a worktree (files under both `thirdparty/sources/...` and `../../home/...`), none in
   the main tree. Compare source sweep runs of the same worktree only.
-- Wall times of this session are meaningless (load 20+ on 4 cores): remeasure linkwarden/apps/mobile and
+- Wall times of that pass are meaningless (load 20+ on 4 cores): remeasure linkwarden/apps/mobile and
   mcp-sdk/packages/core-internal check-time ratios on a quiet machine (`scripts/perfsweep.py -f`); their types ratios
   (0.87, 0.83) were never the problem.
-### Plan 59 stage 2 leftovers (agent A)
+### Perf-at-breadth leftovers (2026-10-12, A)
 Fixed (types ratio before -> after): date-fns/pkgs/docs 16.4 -> 1.6 (overloads' type parameters made a method type's
 free parameters unknown), feathers/packages/typebox 7.0 -> 1.1 (object literal instances keyed by the whole mapper),
 lit ssr-react 2.4 -> 0.65 and the small React projects (every JSX.IntrinsicElements member's property types resolved
@@ -220,7 +219,7 @@ same-named property pairs that relate as distinct types (`sourceProp != targetPr
   `ZodObject<any, $strict>`-like at the second level. Next step: find where the `any` comes from (it isn't a
   declaration cycle; maybe the reentrant "evaluate again below the call's barrier" in lazy_type_evaluate_inner()).
 - **angular-components/tools/extract-tokens 1.62** (1.01M vs 627k): all of it is checking immutable@5's immutable.d.ts,
-  the immutable-js/type-definitions cause (agent B's).
+  the immutable-js/type-definitions cause.
 - **karakeep/packages/plugins 1.43, found but not committed** (round 2): the RedisClientType alias variances (26k types)
   come from infer_from()'s alias shortcut, which tsgo runs through invokeOnce (inferFromAliasTypeArguments): there the
   pair `RedisClientType<_M...>` (node-redis's `duplicate()` return, reached through the client's methods during the
@@ -245,42 +244,42 @@ same-named property pairs that relate as distinct types (`sourceProp != targetPr
   intersection or union has: check whether tttt's intersections carry TYF_OBJECT (excluding them didn't change this
   case).
 
-## Compare relation counts with tsc first (2026-10-06 perf session)
+## Compare relation counts with tsc first (2026-10-06 perf work)
 `tttt --time --checkers 1 -p X` prints each relation cache's size; `tsc -p X --noEmit --extendedDiagnostics` prints
 tsc's (Assignability / Subtype / Strict subtype / Identity cache size, both count failures and nested pairs). A
 corpus where tttt's count is several times tsc's is missing one of tsc's shortcuts: that is how vue's 228k strict
-subtype pairs (tsc 15k) led to three ports worth -13% (measurements.md "Perf session"). To find the source, wrap
+subtype pairs (tsc 15k) led to three ports worth -13% (measurements.md "Relation counts against tsc"). To find the source, wrap
 `ty_is_related()` with a temporary log of each top-level query that grows a cache by more than ~100 entries (current
 node span, both types), and compare one such query with a patched tsc (`isRelatedTo` wrapped to print both types and
 the result, memory note "instrument a tsc copy"); `TTTT_DEBUG_RELATE_NESTED=1` on a probe shows tttt's pairs. Left
-after that session: tanstack-router's assignable 236k vs tsc's 174k (looked at briefly: the biggest growers are
+after that work: tanstack-router's assignable 236k vs tsc's 174k (looked at briefly: the biggest growers are
 variance probes of zod's classes from link.test.tsx, `Omit<UseLinkPropsOptions...>` against React's anchor props, and
 expect-type's `KeyType` against a ~300-literal key union per assertion in link.test-d.tsx, all of which tsc relates
 the same way as far as its code says; not compared with a patched tsc), vue's identity 18k vs 28k and type-fest/react
 well below tsc (fine). On the pinned corpora tttt makes fewer types than tsc; on the source sweep a multiple of
-tsc's is how this session's pathologies showed (next section).
+tsc's is how that work's pathologies showed (next section).
 
-## The source sweep finds pathologies (2026-10-08 perf session)
+## The source sweep finds pathologies (2026-10-08 perf work)
 Rank `scripts/sourcesweep.py` projects by tttt/tsc time (median 0.075; read /tmp/sourcesweep-tttt.json against
 test/sourcesweep/tsc.jsonl.gz, only projects tsc takes >= 2 s on), skip the ones tsc checks degraded (TS6305 unbuilt
 references, thousands of TS2307/TS7031: tsc does less work there, babel-traverse, rxjs, better-auth), then
 `TTTT_FILE_TIMES=1` for the file, a single-file `-p` probe (a temporary tsconfig with `files` next to the project's,
 since paths and node_modules resolve from there; delete it after), and compare `--time`'s type count with tsc's
 `--extendedDiagnostics`. **Type counts are a signal here**: every pathology found had tttt making 5-12x tsc's types.
-Fixed that session: `typeof` of a top-level name made a literal generic (karakeep, 55 s), keyof of 70 unions
+Fixed then: `typeof` of a top-level name made a literal generic (karakeep, 55 s), keyof of 70 unions
 quadratic (headlessui), top-level object literal types instantiated per mapper (mcp-sdk, 5.5x types); later (agent ta) function expression
 types keyed by the whole mapper (docmost/apps/server 2.19M types -> 153k, typecheck 2.7 s -> 0.4 s: now by what the
 resolved signature mentions, `ty_function_type_mentions()`). Open:
-- immutable-js/type-definitions: fixed by plan 59 stage 2 (canonical signatures, 997k -> 292k types, tsgo 564k).
+- immutable-js/type-definitions: fixed by perf at breadth (canonical signatures, 997k -> 292k types, tsgo 564k).
 
-## Parallelism (from the finished plans 36, 41, 44, 45; numbers in measurements.md)
-- **Parallel declare and link** (ex plan 45 stage 3, "maybe never"): vscode's resolve phase was declare 40 + link 28
+## Parallelism (from the finished parallel checking, project references, DT breadth sweep and parallel name resolution work; numbers in measurements.md)
+- **Parallel declare and link** (from parallel name resolution, "maybe never"): vscode's resolve phase was declare 40 + link 28
   ms against a walk of ~200 ms on 4 threads (510 serial; 2026-10-05). Declare writes `Binder.globals`, ambient
   modules and namespace exports shared by files: per-file tables merged in program order (tsc's mergeSymbolTable
   order). Making merged type parameters in declare (tsc makes them in its binder) would also let the files
   `binder_mark_serial_resolves()` walks on the main thread go parallel (18 files / 0.9 MB of vscode). Measure the
-  serial remainder against the wall at vscode scale first: below ~10% isn't worth it. Plan 72 (2026-10-15) measured
-  it: vscode 150 ms, webpack 48, ~8% / ~16% at 12 cores: "not now", after the loader's serial work (plan 72 stage 1).
+  serial remainder against the wall at vscode scale first: below ~10% isn't worth it. Core scaling (notes/front_end.md, 2026-10-15) measured
+  it: vscode 150 ms, webpack 48, ~8% / ~16% at 12 cores: "not now", after the loader's serial work (core scaling (notes/front_end.md)).
 - **Lexical import pre-scan for the load pool** (tsc's preProcessFile: `import`/`export ... from`, `require(`,
   `import(`, `/// <reference`) so a file's children are queued before its full parse. Discovery is a critical path
   for deep `.d.ts` import chains (nest: 4 workers no faster than 2 in the 2026-09-28 prototype), but the landed pool
@@ -289,13 +288,13 @@ resolved signature mentions, `ty_function_type_mentions()`). Open:
 - **Checker balance**: whole-file partitioning is bounded by the biggest file (tsc's checker.ts, zod's
   deep-partial.test.ts). Dealing by content size was tried and reverted (bytes are a poor cost proxy: JS vs
   declarations, and scattering a directory's files duplicates shared types); `deal_files()` cuts program order into 2
-  runs per checker, and a checker done with its share takes the tail of a running one's (work stealing, plan 72,
+  runs per checker, and a checker done with its share takes the tail of a running one's (work stealing, core scaling (notes/front_end.md),
   2026-10-17). What's left is the biggest file: only a cost model (per-file check time of a previous run, or type
   counts) could start it first. Sharing types
-  between checkers is not a lever (2026-10-08, measurements.md "Perf session"). tsgo 7.1's import-graph FENNEL
+  between checkers is not a lever (2026-10-08, measurements.md "Relation counts against tsc"). tsgo 7.1's import-graph FENNEL
   partitioner (compiler/checkerpool.go), prototyped with bytes for node counts, duplicated 2-21% more types than the
-  contiguous runs (2026-10-13, plan 62).
-- **`-b` over many projects** (ex plan 41 stage 2): per-program name resolution of referenced projects' sources is
+  contiguous runs (2026-10-13).
+- **`-b` over many projects** (from project references): per-program name resolution of referenced projects' sources is
   the biggest phase of `-b` on tsc-src and typescript-eslint (summed over programs). Not done: a cross-program file
   cache (parsing is no longer the cost after `skip_typed_body()`), sharing resolved reference sources between
   programs (resolve writes into the AST, so only with the lib program's freeze-and-overlay treatment).
@@ -303,14 +302,14 @@ resolved signature mentions, `ty_function_type_mentions()`). Open:
   programs): measured not worth it on the sweep (2026-10-05: median package 41 ms, startup ~6 ms). Revisit only for a
   watch/LSP mode or if `-b` profiles show lib loading.
 
-## Leftovers of the 2026-10-05 perf session (todo entry 8)
+## Leftovers of the 2026-10-05 perf work
 - **react** (+3.7% from a4aa6c6b's distributive constraints of `T & {}`): `base_constraint()` is memoized at depth 0
   now (1.695 -> 1.682 G). The rest is first computations: ~120k instructions each through `ty_simplified` of nested
   indexed accesses (react-hook-form's Path chains). Reading the memo at depth > 0 too gave 1.648 but made the display
   of `Compute<A[K]>` (computedTypesKeyofNoIndexSignatureType) expand without end: something in
   `display_mapped` -> `expand_generic_homomorphic` -> `ty_apparent_type` relies on the depth cutoff of base
   constraints to stop. tsc caches every base constraint with a circularity stack instead of a depth cutoff; porting
-  that (plan 39's stack) would allow the all-depth memo.
+  that (the resolution stack) would allow the all-depth memo.
 - **vue** (+3.4% from 9444083d): mostly inherent. Widened component-option literals are no longer subtypes of vue's
   weak options types, so ~630 multi-overload calls (`h(Comp, ...)` in vue's tests) fail tsc's subtype round and redo
   every overload in the assignable round, as tsc does. 7e159aa6 took a quarter back (arguments checked and related one
@@ -323,17 +322,17 @@ resolved signature mentions, `ty_function_type_mentions()`). Open:
   instructions of instantiation/interning under `measure_variances`). Some depth limit or cache makes a measurement's
   cost depend on what was measured before; finding which could make measurements cheaper in every order.
 
-## Where the time goes now (perf session 2026-09-29, after the fixes of that session)
+## Where the time goes now (2026-09-29 perf work, after those fixes)
 Measure with `scripts/instrcount.sh` (all corpora, or `--bin` another build); bisect regressions by building old commits in
 a worktree (`git worktree add /tmp/wt-perf <commit>`, symlink `thirdparty/{typescript,typescript-gopath,go,corpora}`, `meson setup`
 once, then `git checkout -f X && ninja`) and running `scripts/instrcount.sh --bin`. Keyed caches in `my links`
-(`intern_get`/`intern_slot` with a `KEY_*`) are the cheap fix for "the same computation again": the session's wins
+(`intern_get`/`intern_slot` with a `KEY_*`) are the cheap fix for "the same computation again": that work's wins
 were mostly tsc caches tttt lacked (two-member unions, intersections by members, assignment-reduced types).
 - **drizzle** (15.7 G): variance measurements are 40% (207 of them, ~30 M instructions each, nested:
   `*SelectBuilder` -> `Create*SelectFromBuilderMode` -> `*SelectBase`). Compared with tsc (`VARIANCES=1
   scripts/tscinstcount.js`): the same flags, and tsc spends 100k-470k instantiations on the same ones. Not a tttt bug; making
   each measurement cheaper is instantiation speed in general (`instantiate_inner` 19% self, `intern_get` 10%).
-- **vue** (8.2 G): `first_unfit_argument_skipping` (call.c) 13%: the conditional skipTrue hack (todo entry 5's
+- **vue** (8.2 G): `first_unfit_argument_skipping` (call.c) 13%: the conditional skipTrue hack ('s
   plan-sized hacks). `ty_union_subtype_reduced` 3.5%.
 - **valibot** (5.4 G): `identity_structured` 53% inclusive: expect-type's identity comparisons of schema types in
   `*.test-d.ts`, most of it `prop_type` resolving instantiated property types (inherent) and nested relations.
@@ -348,19 +347,19 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
 - **webpack** (3.7 G, +12% over f0dd10eb): flat profile; the growth is the JS features added since (expandos,
   CommonJS, JSDoc), not one regression.
 
-## Memory (plans/67_memory_against_bun.md first: checker recycling, then the program; plan 75 declined the compact AST (deleted: `git show a458a07a~1:agents/plans/75_memory_endgame.md`); measurements.md "Memory breakdown" the corpus table)
+## Memory (checker recycling first, then the program; the compact-AST decision was no-go (deleted: `git show a458a07a~1:agents/plans/75_memory_endgame.md`); measurements.md "Memory breakdown" the corpus table)
 - **K1's peak is the checker's sawtooth** (2026-10-17, measurements.md "The K1 budget"): vscode at one checker sits at
   ~1050 MB after each recycle and ~1450 before the next (the budget, 256 MB at K1, counts the arena and tables; the
   materializations and LazyMemo pages ride on top). 128 MB at K1 is -15% peak / +2% wall on the corpora (vscode
   -248 MB at +1.5%) but +6% / -8.5% on the sweep's 169 biggest (folo renderer +62%, mikro-orm/tests +19%: the shared
   graph re-derived per recycle); 192 is +3% / -2% there. No signal found that tells the two apart (segment lengths
   overlap): the budget would need a deterministic measure of what a recycle re-derives.
-- **A copying checker recycle (plan 79, declined 2026-10-17; measurements.md "Plan 79")**: what survives a recycle
+- **A copying checker recycle (declined 2026-10-17; measurements.md "A copying checker recycle")**: what survives a recycle
   from declaration-level roots is 35% of vscode's arena at 64 MB (10-27 MB a recycle) and 37-57% of dokploy's, over
   the plan's 25% gate (drizzle 13%, type-fest 3%). On vscode a recycle's re-derivation costs ~15-35 ms, about what a
   precise copy of ~20 MB would, and K1's peak is the program's already: copying buys no time there and needs a precise
   tracer for every arena struct (Ty variants, Members, Prop, Signature, mappers, ~140 key kinds' values) plus pinning
-  the deferred bodies survivors point into (plan 78's drops). A generational arena is no cheaper: types made by
+  the deferred bodies' survivors point into (what a drop puts back). A generational arena is no cheaper: types made by
   expression checks get interned and then reached from declared types' lazy members (old -> young through the intern
   tables needs a promotion, i.e. a copy), and an old generation grows to the share's whole declared world where
   recycling bounds it. Where copying would pay is drizzle/zod-like shared graphs (recycles +10-18% wall at 64 MB):
@@ -370,7 +369,7 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
 - (2026-10-16) Recycling only pays past the warm-up: `check_share()` recycles once a checker holds more than its
   budget *and* twice what it held after its segment's first file (dokploy 55 -> 3 s at K4; elsewhere unchanged). A
   program whose warm state exceeds the budget now holds ~2x its warm state per checker instead of thrashing.
-- **The AST's allocation** (plan 63, closed 2026-10-16; its measurements are in measurements.md "Plan 63"): the AST is
+- **The AST's allocation** (the struct diet, closed 2026-10-16; its measurements are in measurements.md "Per-file AST arenas and huge pages"): the AST is
   in per-file arenas (`ast_alloc.h`). What is left of it:
   - **The drop is still a walk**: `block_drop()` frees the AST's malloc'd parts (the strings the parser doesn't seal,
     `ast_cstr_seal()`: enum member names, computed key texts, JSDoc; rare structs made after the parse, ModuleRef
@@ -381,15 +380,15 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   - Lists are still grown by doubling and shrunk (`list_push`/`shrink_list`): the outgrown buffers are reused by
     later allocations (3% of vscode's 1.32 GB is still free when its file ends). Lists built on a per-parser scratch
     stack and copied out exact would remove the churn, not much memory.
-  - **After plan 78 the AST diet is small change** (plan 80, closed and deleted 2026-10-17: `git show 420b6ef4:agents/plans/80_ast_boxing.md`): vscode after names holds 1.32M Exprs
+  - **After deferred bodies the AST diet is small change** (mapped source text work, closed and deleted 2026-10-17: `git show 420b6ef4:agents/plans/80_ast_boxing.md`): vscode after names holds 1.32M Exprs
     (95 MB) and ~470 MB of AST, diffuse. Leads, each under the 50 MB gate: ClassItem 448 B: **not a lead**
     (counted 2026-10-17: vscode has 80k methods, 49k fields, 11k constructors, 63 MB; methods are the union's biggest
     variant, so boxing the FunctionImpl grows memory, +9 MB, and exact per-kind sizes save ~7 MB), FunctionArg 200, PortStatement 216 +
     ModuleRef 112 per import (~67 MB of import/export after names), Expr boxing ~-15..20, 8-byte spans ~-35.
-  - Struct diet leftovers (plan 63 stage 1b, < 120 MB together, not scheduled): **Expr 72 -> 64** (the union is 40
+  - Struct diet leftovers (< 120 MB together, not scheduled): **Expr 72 -> 64** (the union is 40
     because of IdentifierExpr: `symbol` into the union when it differs from `target`, with a 2-bit kind and a per-file
     side table for the union's other users; 54 `identifier_symbol()` readers, every union writer through a migrating
-    setter; a session of its own), **Binding element-only fields** behind a `BindingElement*` (37k of 700k bindings,
+    setter; a day of work of its own), **Binding element-only fields** behind a `BindingElement*` (37k of 700k bindings,
     ~-18 MB, ~110 readers), **Symbol** 152 -> 144 (bit fields; `is_assigned*` are written by resolve threads and must
     stay bytes), the ResolvedModule cache is dropped after names now. PropertyExpr 128 -> 112
     needs its name span derived from the source text (lower.c's synthesized accesses name keys from elsewhere). Not
@@ -399,9 +398,9 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
     blocks meanwhile, or the kernel's background compaction freeing more, aren't seen. The malloc heap (source text,
     checker intern tables and LazyMemo pages) gets none since the glibc re-exec went: the intern tables could move to
     mmapped, madvised memory if a profile shows their faults.
-- Checker-side levers left by plan 60 stage 1 (2026-10-12, vscode numbers; the plan was deleted when plan 63 took over
+- Checker-side levers left by the memory work (2026-10-12, vscode numbers; the plan was deleted when the struct diet and per-file AST arenas took over
   its AST and binder stages):
-  - Where the checker's memory was at plan 60's start (e043e9e2; LazyMemo, CallResolution, PropDecl, Members and the
+  - Where the checker's memory was at the memory work's start (e043e9e2; LazyMemo, CallResolution, PropDecl, Members and the
     interned lists shrank since):
     - **Checker malloc** (outside the arena, per checker, so 4x at K4): `lazy_type_evaluate_inner`'s LazyMemo pages
       **222 MB** (36k zeroed pages of 24-byte memos), the intern tables **202 MB** (3 tables, 16-byte entries, load
@@ -434,20 +433,20 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
     strace shows no allocation after typecheck. Probably the kernel's per-CPU RSS counters lagging; use `/usr/bin/time`.
 - 2026-10-12: tuple targets share their element type parameters (`Checker.tuple_params`) and tuple element props a
   read-only `ty_prop_decl_value_name`: type-fest 2.06 -> 0.80 GB. The rest of the old candidate list (a ~40-byte
-  instantiated Prop, the `Signature` split, interned lists keyed by their ids) is plan 60 stage 1.
-- **Recycling's cost is redone shared work** (2026-10-15 perf session): type-fest's +21% instructions at K1 (2
+  instantiated Prop, the `Signature` split, interned lists keyed by their ids) is the 2026-10-12 memory work.
+- **Recycling's cost is redone shared work** (2026-10-15 perf work): type-fest's +21% instructions at K1 (2
   recycles) is mostly one file, `extract-rest-element.ts` (0.3 ms warm, 157 ms in a fresh checker: a `TupleOf<999>`
   split an earlier file already did; tsgo takes 1.1 s on that file alone). drizzle's single recycle at ~90% of its
   share costs +14% instructions for -61 MB. Tried a tail rule (no recycle when the share's remaining bytes are under a
   quarter of what the segment checked, the checker allowed 1.25x its budget then): drizzle K1 -8% wall, but at the
   defaults (T4) no time gained and +60..90 MB peaks (drizzle, effect, type-fest): dropped. Nothing cheap predicts
-  which files share a big type graph; a shared frozen type layer is the only real fix (plan 67 "options", rejected).
-- **Duplication across checkers** (plan 67, 2026-10-14: small, +19% of vscode's arena at T4; each checker's own
+  which files share a big type graph; a shared frozen type layer is the only real fix (rejected under measurements.md "A copying checker recycle").
+- **Duplication across checkers** (checker recycling, 2026-10-14: small, +19% of vscode's arena at T4; each checker's own
   linear growth is the problem, which recycling bounds; no shared lib layer): files are dealt in contiguous runs (deal_files(), 10-05): drizzle 1688 -> 1337
   MB at K=4. One run per checker would be 1277 MB and cut valibot's *total* checker time 28% (837 -> 600 ms), but
   balances worse with bytes as the cost proxy. A better cost model (type counts or times of a previous run) or shared
   lib/global types between checkers would take the rest.
-- **AST and binder diet done** (plan 43, 2026-10-05; numbers in measurements.md): every corpus is below tsgo's peak
+- **AST and binder diet done** (2026-10-05; numbers in measurements.md): every corpus is below tsgo's peak
   RSS at one checker now. Tools: `scripts/memtrack.sh -p DIR` (live malloc heap per phase by allocating function, with the
   share of all-zero words and Spans: 66% zero before, 45% after) and `scripts/arenasites.sh`. The pattern that worked: rare
   fields behind one owned side struct (`*_rare()` reads a shared all-null static, `*_rare_mut()` allocates on first
@@ -464,8 +463,8 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   (tttt 361k), 332k on valibot (tttt 385k). On sweep projects they were (section above).
 
 ## Time
-- **Scaling probes** (2026-10-14 perf session, `scripts/scaleprobe.py [-k KIND] [-n N]`): one declaration or block
-  with N members/statements/elements, timed against tsgo `--singleThreaded` (8k and 32k by default, ~3 min). Fixed that session (all were quadratic in tttt, linear in tsgo): array literal element contexts, statement
+- **Scaling probes** (2026-10-14 perf work, `scripts/scaleprobe.py [-k KIND] [-n N]`): one declaration or block
+  with N members/statements/elements, timed against tsgo `--singleThreaded` (8k and 32k by default, ~3 min). Fixed then (all were quadratic in tttt, linear in tsgo): array literal element contexts, statement
   reachability (tsgo's lastFlowNode memo), object literal / interface / class member duplicate and overload checks
   (name indexes: `src/name_index.h`, LiteralBuilder/MembersBuilder/MemberTables lazy indexes, ClassDecl namesake
   chains). Linear on both or better than tsgo: unions, switch, if/else chains, `+` and `&&` chains (tsgo takes 73 s
@@ -473,11 +472,11 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   calls, type alias chains. Superlinear on both: a chain of N classes each extending the previous (1000: tttt 16 s /
   4 GB, tsgo 365 s / 20 GB), CommonJS `module.exports.cN = ...` (32k: 13 s on both). Rerun after big
   checker changes; add a kind (the KINDS table) when a real project shows a slow file (`TTTT_FILE_TIMES=1`).
-  **`--emit`** (2026-10-15 perf session: emitDeclarationOnly + declarationMap): six quadratic paths in the declaration
+  **`--emit`** (2026-10-15 perf work: emitDeclarationOnly + declarationMap): six quadratic paths in the declaration
   walk and the map encoder fixed (one long line's map columns, object literal member lookup, class overload
   implementations, namespace export stripping, function properties, merged overload entries; e.g. 32k-member union
   of objects 57 -> 0.09 s, object literal 3.4 -> 0.05 s). Every kind is now linear with emit except what is
-  superlinear on both sides anyway (tuple, union, switch, params, aliases, cjs). JS kinds: tsgo only (plan 64 stage 6).
+  superlinear on both sides anyway (tuple, union, switch, params, aliases, cjs). JS kinds: tsgo only (JavaScript declaration emit).
 - `jsdoc_before_ex()` walked back to the line start from every JSDoc host (minified lines: 3.9% of webpack), fixed
   2026-10-14; what's left of JSDoc in webpack is parsing the comments themselves (`parse_jsdoc_comment` ~2.3%).
 - **Variance measurements** match tsc's reporting now (09-28: only where the marker occurs in the source, at tsc's
@@ -510,14 +509,14 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   `expr_lookup_names_logical`, the checker, `expr_compile_test_info_inner` and `expr_drop`. Threads get smaller
   stacks: matters for parallelism.
 - The suite: the slowest tests left are the React-typings JSX ones (~1 s each: react16.d.ts per test).
-- **Thread startup per program** (plan 36 stage 3): `baseline_tests --checkers 4 --threads 4` takes 38 s against 24 s
+- **Thread startup per program** (parallel checking): `baseline_tests --checkers 4 --threads 4` takes 38 s against 24 s
   at `--threads 1` (same output): ~1 ms per program for starting and joining 3 threads (8 MB stacks, glibc arenas).
   Irrelevant for one CLI run; a persistent pool (stage 1's load pool) fixes it for a watch/LSP mode or a threaded
   harness. With fewer checked files than checkers, the empty checkers still build their global types (~0.2 ms each).
 
-- **valibot +2.5% instructions** since the corpus session (todo entry 8): generic homomorphic mapped types get index
+- **valibot +2.5% instructions** since the corpus work: generic homomorphic mapped types get index
   signatures from their constraint, eagerly instantiated. tsc's addMemberForKeyTypeWorker instantiates index
-  values eagerly too (plan 42 planning), so the difference is *whether* the members get resolved: look for the caller
+  values eagerly too (from the laziness work), so the difference is *whether* the members get resolved: look for the caller
   that asks a generic mapped type's members where tsc relates/infers through the mapped type itself.
 
 - **Tuples' `this` members, type-fest +0.2%, xstate +0.26%** (`retarget_this_props()`, members.c): a tuple's
@@ -547,7 +546,7 @@ cost type-fest +0.8% because the skipped property types got resolved later by co
 from ty_cond_branch_type / tuple_element_type); limited to getters in d361bdba. Why a later resolution lowers more (a
 memo that only fills on the early path?) isn't known: worth finding, it may cost elsewhere too.
 
-## Plan 59 stage 2 leftovers (agent B)
+## Perf-at-breadth leftovers (2026-10-12, B)
 - **rxjs/packages/rxjs: fixed** (types ratio 2.62 -> 0.45, RSS 1943 -> 477 MB). It was not a missing cache: three spec
   files' `expectTypeOf(x).toEqualTypeOf<Observable<...>>()` mismatches print expect-type's MismatchInfo constraint, a
   mapped type over Observable's ~110 methods (each a DeepBrand of its overloads). tsgo truncates the message at ~160
@@ -555,7 +554,7 @@ memo that only fills on the early path?) isn't known: worth finding, it may cost
   one-assertion probe, against 200k without it). tttt printed all of it. Now `display_over()` in ty_display.c (hacks.md).
   Its property order still differs (tttt puts the unique-symbol keys first), so the elaboration names `[buffer]` where
   tsgo names `drop`: the union order of `keyof A | keyof B`.
-- **immutable-js/type-definitions** (1.77, handed to agent C, who found the same file under sass in quill, vite, vitest,
+- **immutable-js/type-definitions** (1.77, where the same file was found the same file under sass in quill, vite, vitest,
   soybean-admin and lucide): all of it is the interface heritage checks (OrderedMap -> Map: 717k tttt types against
   92k for tsgo). Nested relation counts are similar (97k vs 87k), but tttt makes ~1.8x the anonymous instances (606k
   vs 336k) and type references (185k vs 106k), with fewer signature instantiations than tsgo (tsgo: 412k
@@ -563,7 +562,7 @@ memo that only fills on the early path?) isn't known: worth finding, it may cost
   instantiation of every parameter type. tsgo instantiates parameter symbols lazily. Lead: lazy SigParam types.
   Instrumented-tsgo recipe: patched copies of checker.go/relater.go built with `go build -overlay X.json -o /tmp/...
   ./cmd/tsc` from `thirdparty/typescript/tsc`, so built/ isn't touched.
-## Plan 59 stage 2 leftovers (agent C)
+## Perf-at-breadth leftovers (2026-10-12, C)
 - **Lazy parameter types of instantiated signatures** (tsc's instantiateSymbol: an instantiated signature's parameter
   symbols get their types when asked for). `signature_resolve()` instantiates every parameter type of an instantiated
   signature eagerly, so signatures that are only erased (overloads compared pairwise), counted or base-instantiated
@@ -580,7 +579,7 @@ memo that only fills on the early path?) isn't known: worth finding, it may cost
   composite mapper is lazy: maps through inner then outer on lookup, no up-front instantiation of inner's targets).
 - **immutable.d.ts after the canonical signature fix**: 292k types against tsgo's 595k (the whole sweep's immutable
   projects are at types ratio 0.43-0.57 now, from 1.3-1.8). Nothing left there.
-- (2026-10-14, agent C) TS2574's check of generic variadic tuple elements (type.c, tsgo's checkTupleType ->
+- (2026-10-14) TS2574's check of generic variadic tuple elements (type.c, tsgo's checkTupleType ->
   isArrayLikeType, the same relation tsgo runs) costs type-fest +0.84% instructions (19.08 -> 19.25 G). 60 checks;
   three `...MergeDeepArrayOrTupleElements<PickRestType<D>, PickRestType<S>, Options>` (merge-deep.d.ts:167/193/219) take
   ~22 of the 25 ms: relating that conditional to `readonly any[]` goes through its default constraint into the whole

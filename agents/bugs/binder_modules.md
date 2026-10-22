@@ -4,7 +4,7 @@ Leftovers of the 2026-10-07 triage (binder/modules share), pruned 2026-10-09 aga
 and what a fix needs. JS/JSDoc-specific items are in bugs/js.md.
 
 ## Export= clones and merges through aliases
-Done (plan 69, deleted 2026-10-15): cross-file merges into aliases (binder_link_alias_merges(),
+Done (alias merges, deleted 2026-10-15): cross-file merges into aliases (binder_link_alias_merges(),
 merge_into_umd_globals()), an alias a merge went through (SymbolRare.merge_detached), an augmentation of a module whose
 `export =` is a cloned namespace import (SymbolRare.export_equals_clone), combined value+interface imports
 (SymbolAlias.combined_type). The suite has no test of these left; new divergences go here.
@@ -23,7 +23,7 @@ merge_into_umd_globals()), an alias a merge went through (SymbolRare.merge_detac
   since nothing declares them). A computed `[1n]` is TS2464, unchanged.
 
 ## Multi-file/JS mutation run, seed 16 (`MUTATE_DIR=/tmp/wt-b-mutate scripts/mutate.py --tests multi,js -n 3000 --seed 16`)
-22 of 3000 differed; 12 fixed (commits of 2026-10-07), the JS leftovers went to plan 26 (since retired; bugs/js.md). TypeScript ones (mut0806 and mut2320 rechecked as probes 2026-10-09: still differ):
+22 of 3000 differed; 12 fixed (commits of 2026-10-07), the JS leftovers went to the JS stage-2 work (since retired; bugs/js.md). TypeScript ones (mut0806 and mut2320 rechecked as probes 2026-10-09: still differ):
 - mut0806 (typeGuardNarrowsIndexedAccessOfKnownProperty8, `export const key: never = "a"`): spurious TS2564 for
   `[a.key]: string` that the constructor assigns as `this[a.key]`. tsc's tryGetNameFromEntityNameExpression falls back
   to the initializer's type when the annotation gives no name, so the access is named "a" and matches; tttt goes by
@@ -38,7 +38,7 @@ Declarations merged into a UMD global (`export as namespace X` plus a script dec
 whatever the file order; tsc drops the UMD global when a script declared the name first. A conflicting target is
 skipped silently, where tsc reports it against the resolved target. (Moved from hacks.md, 2026-10-08.)
 
-## TS 7.1 window leftovers (triage 2026-10-09)
+## TS 7.1 retarget leftovers (2026-10-09)
 - TS expandos follow tsgo's binder, but the binder still adds 6.0's SYMBOL_DECL_EXPANDO to the host (filtered in
   symbol_declaration_spans(), ignored by is_nested_expando_function()): the checker's expando rules want that namespace
   meaning. A real port of bindDeferredExpandoAssignment would drop it. Class statics aren't in host->exports at bind

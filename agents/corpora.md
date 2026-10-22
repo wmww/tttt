@@ -1,7 +1,7 @@
 # The pinned corpora (reference)
 What each `scripts/realworld.py --corpus X` corpus is and what it exercises; `thirdparty/ensure-corpora.sh` and
 `corpora-locks/*.overlay` pin them. Every corpus is 0 / 0 against tsgo 7.1 but vue 0 / 2 (bugs/sourcesweep_checker.md;
-measurements.md has the latest). This file replaced plan 19 ("the corpora to zero", complete 2026-10-15); its
+measurements.md has the latest). This file replaced the corpora-to-zero work ("the corpora to zero", complete 2026-10-15); its
 per-corpus history (counts at pinning, the fixes, by cause) is in git (`git log -- agents/plans/19_corpora_to_zero.md`)
 and the probes in `test/probes/plan19/<corpus>/`.
 
@@ -43,5 +43,5 @@ and the probes in `test/probes/plan19/<corpus>/`.
   fix. Estimates by grouping codes were often off by 5x: rank by sampled root cause.
 
 ## Seen on the way
-Plan 19's "seen on the way, not corpus-visible" list was re-probed 2026-10-19: all match tsgo now but drizzle's
+The corpora-to-zero work's "seen on the way, not corpus-visible" list was re-probed 2026-10-19: all match tsgo now but drizzle's
 neon-http TS7023 shape, moved to bugs/type_core.md ("TS7023 through a handler's inferred return").

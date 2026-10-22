@@ -1,13 +1,12 @@
 # Triage
-Uninvestigated items: dump here what you don't want to deal with now. Triage sessions drain this into `bugs/*.md`,
-plans, or fixes.
+Uninvestigated items: dump here what you don't want to deal with now. Whoever picks an item up drains it into a fix, `bugs/*.md`, or `todo.md`.
 
-Last drained 2026-10-20 (triage session, todo entry 6 of the twenty-third window). mikro-orm's `string[]` against
+Last drained 2026-10-20. mikro-orm's `string[]` against
 `OperatorMap<T> & FilterObject<T>` was IntersectionState.Target leaking into the generic mapped target's template
 comparison (fixed; the fallback cut is wide again, mikro-orm's probe 258k types against tsgo's 393k, its chain
 identical; the general stickiness is fixed since, 2026-10-21). never_reduced_literal_prop() honours
 HasNeverType (fixed). The combined import's member symbols went to bugs/binder_modules.md, the apparently-any
-intersection's property symbol to bugs/type_core.md. Plan 86's done stage 1 condensed.
+intersection's property symbol to bugs/type_core.md. 
 
 
 - tttt -b on TypeScript6/src reserves ~12 GB of address space on 16 cores (ast_alloc.c:83 panic under ulimit -v 12 GB; realworld.py's and clidiff.py's caps raised to 48: typescript-eslint's -b reserves 22-28 GB, the same at 4eadfcc74, varying run to run with the load): look at the per-thread/per-builder AST and arena reservation sizes, they scale with the core count.
@@ -19,3 +18,6 @@ intersection's property symbol to bugs/type_core.md. Plan 86's done stage 1 cond
   default constraint's union members against the whole intersection and repeats `C<X>` to `D<X>` inside it; tttt
   reports the D<X> member directly (test/cases/ttttIntersectionStateNotPassedToConditionalBranches.ts, as an
   assignment instead of the overload)
+
+- Source sweep policy (2026-10-08 idea, unexplored): if checking every `tsconfig*.json` turns out noisy, mine each
+  repository's own `tsc` invocations from its package.json scripts instead.

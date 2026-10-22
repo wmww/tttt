@@ -1,16 +1,16 @@
 # Measurements
 The latest of each kind of measurement. **Replace a section when re-measuring** (keep its date and commit); don't
-append history, git has it. Older per-session sections (oracle tallies, plan stage logs, superseded perf tables) were
+append history, git has it. Older sections (oracle tallies, stage logs, superseded perf tables) were
 condensed on 2026-10-20 into "Past conclusions" below; the full log is `git show a9c5e07da:agents/measurements.md`.
 
 ## Machine and caveats
 AMD EPYC-Turin, 4 vCPUs = 2 cores x 2 SMT threads (KVM), 31 GB; Ubuntu 26.04, GCC 15.2, node 22.22. The oracle (tsc)
-is tsgo 7.1.0-dev fed0bf24 (`thirdparty/typescript`, plan 54; every cache since 2026-10-09). `scripts/bench.sh` compares against the pinned tsgo only (since 2026-10-12). Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
-them: compare walls only within one session. Callgrind instruction counts (`valgrind --tool=callgrind ./release/tttt
--q --keep-going -p DIR`) are the stable measure across sessions. Neither side is clean on webpack, drizzle, vue, effect and
+is tsgo 7.1.0-dev fed0bf24 (`thirdparty/typescript`; every cache since 2026-10-09). `scripts/bench.sh` compares against the pinned tsgo only (since 2026-10-12). Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
+them: compare walls only within one sitting. Callgrind instruction counts (`valgrind --tool=callgrind ./release/tttt
+-q --keep-going -p DIR`) are the stable measure across days. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same (file, line, code) on both (realworld.py), so equal work (and the same
 text since 2026-10-18 but webpack's TS5115 name order, `scripts/clidiff.py --corpora`). **The 12-core machine** (the human's
-Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human says a session runs
+Framework laptop, Ryzen AI 9 HX 370, 12 cores / 24 threads) is measured only when the human runs something
 there (`nproc` 24): its section below; it is the one to read for core scaling.
 
 ## How to measure (notes that still hold)
@@ -31,18 +31,18 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
 ## The thrashers with the flag (2026-10-21, this box)
-Coordinator, pgo/tttt at ee9501eb8, quiet box, best of 3, wall s / CPU s / peak MB, plain -> `TTTT_SHARED_GRAPH=1`:
+pgo/tttt at ee9501eb8, quiet box, best of 3, wall s / CPU s / peak MB, plain -> `TTTT_SHARED_GRAPH=1`:
 
 | project | defaults | K12 T12 |
 |---|---|---|
 | dokploy/apps/dokploy | 1.87 / 13.1 / 1900 -> 0.86 / 6.3 / 1700 | 1.85 / 18.7 / 2700 -> 0.84 / 8.1 / 1800 |
 | monkeytype/frontend | 0.72 / 5.2 / 800 -> 0.31 / 2.1 / 600 | 0.71 / 7.0 / 1000 -> 0.29 / 2.8 / 700 |
 
-2 of 9 dokploy flag K12 runs took 2.42 s / 23 CPU s: the lockstep recycle sg found (plan 86 "Stage 4f: the perf
+2 of 9 dokploy flag K12 runs took 2.42 s / 23 CPU s: the lockstep recycle (notes/shared_graph.md "The perf
 accounting"). These are the only projects measured where the flag wins big (recycling thrash in plain).
 
-## Stage 2 session 2 (2026-10-22, worker k1; this box, 4 vCPUs shared with other agents)
-Single-threaded checker speed, base ee9501eb8 -> 859a7a6a2 (plan 86 stage 2). **Callgrind K1 instructions, PGO + LTO
+## Single-threaded checker speed (2026-10-22, ee9501eb8 -> 859a7a6a2; this box, 4 vCPUs shared with other agents)
+Base ee9501eb8 -> 859a7a6a2. **Callgrind K1 instructions, PGO + LTO
 builds of both** (`pgobuild.sh` without ensure-corpora): vscode 77.79 -> 73.69 G (-5.3%), excalidraw 6.51 -> 5.80
 (-10.9%), drizzle 5.60 -> 5.28 (-5.7%), effect 8.14 -> 7.68 (-5.6%), zod 4.22 -> 3.99 (-5.4%), tsc 3.87 -> 3.74
 (-3.3%), nest 1.007 -> 0.993 (-1.4%). Release (-O3) vscode at 934908c76: 91.56 -> 88.62 G.
@@ -64,7 +64,7 @@ caches (instructions up or flat). The parser is ~12% of vscode's instructions wi
 creations for 138 MB of source, the top site 10%): structural.
 
 ## The 12-core box at f2ad73c9: the new defaults' laptop bench (2026-10-21, run by an agent on the human's laptop)
-Plan 91 section 1's ask (checkers past the cores for big programs, `--checker-memory` a quarter of RAM). Same machine
+The new defaults (checkers past the cores for big programs, `--checker-memory` a quarter of RAM). Same machine
 as below (on AC, `balanced`, load ~1), pgo/tttt retrained at f2ad73c9, `scripts/bench.sh --runs 3 --checkers 12` (no
 bun/tsc-rs: their binaries were scratch). Best wall s / CPU s (median run) / peak MB; "5f2cd699 K12/K1" is the table
 below's plain columns:
@@ -98,8 +98,8 @@ below's plain columns:
   K1 with `--checker-memory 256`: 450-570 MB against 575-690, same time.
 
 ## The 12-core box at 5f2cd699: the flag's laptop bench (2026-10-21, run by an agent on the human's laptop)
-Plan 90 section 3 item 2's ask. Same machine as below (on AC, `balanced`), pgo/tttt at 5f2cd699 (plan 86 stage 4f
-done). `scripts/bench.sh --runs 3 --checkers 24 --bun bun-canary --tscrs tsc-rs-0.7.0`, run twice back to back: plain,
+The shared graph's release bench. Same machine as below (on AC, `balanced`), pgo/tttt at 5f2cd699 (the shared graph's
+end state). `scripts/bench.sh --runs 3 --checkers 24 --bun bun-canary --tscrs tsc-rs-0.7.0`, run twice back to back: plain,
 then with `TTTT_SHARED_GRAPH=1` ("flag"; it also reran bun/tsc-rs/tsgo, which agree with the first pass within
 noise). bun canary `1.4.3-canary.20261019.1` (the same as below). Best wall s / CPU s (median run) / peak MB:
 
@@ -134,7 +134,7 @@ noise). bun canary `1.4.3-canary.20261019.1` (the same as below). Best wall s / 
   14, ties valibot/zod/xstate, loses nest (0.08 / 0.06), drizzle (0.32 / 0.27; the flag's K24 0.24 wins) and vscode. Single-threaded tttt is fastest everywhere (vscode 12.4 against bun 15.6 and tsc-rs 16.1).
 - Raw outputs were scratch (not kept); rerun the command above to reproduce.
 
-## The config glob next to the load pool (2026-10-21, worker fe, this box: 16 vCPUs / 8 cores, load 10-25)
+## The config glob next to the load pool (2026-10-21, this box: 16 vCPUs / 8 cores, load 10-25)
 Since 0eca94ef9 the pool parses while the include glob walks; the glob (vscode, T16) went from 28-30 ms to 68-81 ms.
 `--time` now prints the main thread's CPU time per phase: the glob's is 30-32 ms alone and 55-59 ms next to the
 pool, so the extra wall is on-CPU, not waiting. The sampler (CPU mode against wall mode, 10-12 runs each) shows no
@@ -153,7 +153,7 @@ wall s / CPU s): TypeScript6 0.24-0.27 / 1.1 on, 0.21-0.26 / 1.1 off; type-fest 
 box's -6% on TypeScript6 doesn't show (its wall is 0.24 s here, the front end is most of it). vscode's front end at
 K12: libs 40 ms, load+parse files 259 ms (loader waited 14 ms; it parsed 83 ms itself, 744 of 11035 files; workers
 busy 5.6 of 7.2 s), resolve names 203 ms (declare 71, link 51, walk 44), typecheck 1852 ms: **~0.5 s of vscode's
-2.5 s is the front end**, as plan 86 stage 3 assumed.
+2.5 s is the front end**, as the front-end estimate assumed.
 
 **Full bench**: `scripts/bench.sh --runs 3 --checkers 24 --bun bun-canary --tscrs tsc-rs-0.7.0`, bun canary
 `1.4.3-canary.20261019.1` (1.4.4-canary.1+6bb5dc195); best wall s / CPU s (median run) / peak MB:
@@ -182,13 +182,13 @@ busy 5.6 of 7.2 s), resolve names 203 ms (declare 71, link 51, walk 44), typeche
 - **bun canary still beats tttt's default wall on vscode (2.05 against 2.47-2.67), drizzle (0.30 / 0.35), nest (0.06
   / 0.09) and ties excalidraw, xstate, valibot**; tttt wins the other 8 and every K1 (1.5-7x), and uses less CPU
   everywhere at the defaults (vscode 28.6 against 44.2 s). Nothing landed since 2026-10-19 that should change this:
-  plan 86 stage 4 is the lever.
+  the shared graph was the lever then (since parked: notes/shared_graph.md).
 - bun's "single-threaded" CPU exceeds its wall on several corpora (TypeScript6 0.69 s wall / 1.07 s CPU, vue,
   tanstack) and its best and median differ widely: it isn't strictly one thread. Compare medians for bun single.
 - tsc-rs and tsgo: unchanged picture (tsc-rs --fast is the closest tsgo-exact competitor, vscode 3.02 s at 35.6 s CPU
   and 6.4 GB).
 
-## Costliest file first and the front end's split (2026-10-20, todo entry 4; this box, 4 vCPUs, release build)
+## Costliest file first and the front end's split (2026-10-20; this box, 4 vCPUs, release build)
 Each checker now starts with its share's biggest file (`deal_files()`'s `share_first`; `TTTT_NO_COSTLIEST_FIRST=1`
 turns it off). Best of 5 at the defaults (K4 T4), wall / CPU s / peak MB, before -> after: TypeScript6/src/compiler
 0.31 / 0.92 / 235 -> 0.29 / 0.90 / 262, type-fest 0.49 / 1.42 / 413 -> 0.48 / 1.40 / 413; webpack, zod, xstate,
@@ -199,7 +199,8 @@ end time per checker) shows:
 - TypeScript6: checker.ts alone is the critical path, ~65 ms materializing its deferred bodies (serial, the file's
   lock) and 195 ms checking it cold, while the other three finish at ~190 ms. `--no-defer-bodies` is 0.27 s: the
   biggest file's body parse sits on the critical path when it is checked first. Splitting one file's materialization,
-  or parsing the costliest file's bodies up front in the loader, are the levers left; both are stage 3 material.
+  or parsing the costliest file's bodies up front in the loader, are the levers left; both are front-end work
+  (notes/front_end.md).
 - type-fest: size predicts nothing. union-to-tuple.ts is 1.4 KB and 180 ms at K1, the next are int-range.ts (2.3 KB,
   68 ms) and array-reverse.ts. bun's cost model (identifiers in expressions + type nodes) wouldn't see them either:
   their cost is type-level evaluation. So no second cost model was tried.
@@ -219,11 +220,11 @@ The front end (`--time`, `TTTT_LOAD_POOL_STATS=1`, `TTTT_RESOLVE_TIMES=1`), ms:
 On vscode at T4 the load pool's workers are busy 1779 of 1953 ms, so load is CPU-bound here (1953 / 4 = 488 ms).
 The loader's own work is 279 ms, 201 ms of it parsing 3075 of 11035 files itself, because they weren't preparsed
 yet when it needed their imports. On 12 cores the parse CPU is ~163 ms, so **the loader's serial 279 ms is the
-front end's floor, then declare + link's 138 ms**. Stage 3's order: (1) the import pre-scan, so that the loader
+front end's floor, then declare + link's 138 ms**. The front end's order then: (1) the import pre-scan, so that the loader
 never parses; (2) parallel declare and link; (3) the parser itself, which is CPU and so helps 4-core boxes most.
 webpack and effect show the same shape at a smaller scale (their pools are saturated at T4).
 
-## PGO + LTO shipped (2026-10-19, todo entry 1; plan 86 stage 1)
+## PGO + LTO shipped (2026-10-19)
 `scripts/pgobuild.sh` (pgo/tttt) is what bench.sh, instrcount.sh and perfsweep.py measure from now on. Callgrind
 (`scripts/instrcount.sh`, re-saved: compare against it, not older release numbers) against release -O3:
 tsc 4.530 -> 3.893 G (-14.1%, untrained), type-fest -12.9%, valibot -15.1%, react -12.7%, nest -11.5%, webpack
@@ -253,7 +254,7 @@ best wall s / CPU s / peak MB; drizzle's defaults above its K1 is the 4-core box
 The bun developer claimed a 1.5-2x speedup in `bun check` over 1.4.3. It is oven-sh/bun PR #45800 ("`bun check`: 1.4x
 to 7.8x faster on large projects"), merged 2026-10-19 00:42 UTC, and it is in `@oven/bun-linux-x64@1.4.3-canary.20261019.1`
 (`--revision` 1.4.4-canary.1+6bb5dc195). The PR's ideas: one heavy-first file queue with no step barriers and results
-shared in small commits; union order from type contents rather than ids (our plan 86 stage 4 question); per-member
+shared in small commits; union order from type contents rather than ids (the shared graph's question); per-member
 union property position sets; memoized inference and cached conditional/mapped parts; 20-byte expressions; labelled
 tuples sharing members; a parallel loader. Same box as the section below, best of 3, wall s / CPU s / peak MB:
 | corpus | tttt K12 | bun 1.4.3 | bun canary | 1.4.3 / canary wall | tttt K1 | bun 1.4.3 single | bun canary single | 1.4.3 / canary single |
@@ -332,7 +333,7 @@ runs with `--incremental false` (a leftover `.tsbuildinfo` made it a fake 1.35 s
 React and friends): K12 `--checker-memory off` 1.30 s / 12.8 / 3154, `--checker-memory 1024` 1.65 s / 16.4 / 1980,
 K4 off 1.83 s / 9.8 / 2331. perf_leads.md's snapshot recycle is aimed at exactly this. Output: tttt had tsgo's 10
 plus 7 spurious TS2322 (4 fixed with ttttBindingDefaultGenericOptional, 3 in triage.md); bun reports 1 error (none
-of the 9 TS7031). Bun on vscode the same day: 2.48-2.93 s over one session (same 1.4.3 binary that measured 2.92 /
+of the 9 TS7031). Bun on vscode the same day: 2.48-2.93 s over one sitting (same 1.4.3 binary that measured 2.92 /
 3.01 on 2026-10-16 / 18: machine state, not bun; `npm view @oven/bun-linux-x64 dist-tags`: latest 1.4.3, the
 1.4.4 canary no faster), tttt K12 2.69-2.81, K24 2.47-2.67: **a tie on vscode at the defaults**, tttt at ~57% of
 bun's CPU.
@@ -349,13 +350,13 @@ times** (`TTTT_FILE_TIMES=1`) / recycles / peak:
 | K12 `--threads 12 --checker-memory off` | 2.37 s | 1.75 s | 17.1 s | 0 | 5.0 GB |
 | K6 `--threads 12` | 3.77 s | 3.19 s | 16.0 s | 150 | 1.37 GB |
 | K4 `--threads 12` | 4.91 s | 4.31 s | 14.6 s | 119 | 1.27 GB |
-- **All-core clocks alone slow a checker 1.62x** (the spinning-cores row). 8.8 x 1.62 x 1.19 (plan 72's K12
-  duplication) = 17.0 s against the 17.1 measured without recycling: duplication ~1.2x, recycling 5-8% of check
+- **All-core clocks alone slow a checker 1.62x** (the spinning-cores row). 8.8 x 1.62 x 1.19 (the K12
+  duplication measured on the 4-vCPU box, 2026-10-15) = 17.0 s against the 17.1 measured without recycling: duplication ~1.2x, recycling 5-8% of check
   time (for 3.5 GB), the rest is clocks. The checker-side ceiling on vscode here: zero duplication and recycling
   would make the check ~14.2 / 12 = 1.2 s against 2.06, wall ~1.8 s against 2.68 (**1.5x**); the front end (libs
   0.04 + load/parse 0.33 + resolve 0.25 s at the defaults) is at its serial floor (loader ~0.3, declare/link 0.15).
   drizzle: per-file sum K1 0.69 s, K12 2.8-3.2 s (duplication 1.4x serialized), wall 0.39 -> floor ~0.15.
-- Plan 85's census measured at `--threads 1` (serialized checkers), which hides clocks and memory contention: price
+- The census of what checkers re-derive measured at `--threads 1` (serialized checkers), which hides clocks and memory contention: price
   many-core work by per-file sums under real parallel runs, with the spinning-cores row as the floor.
 - Minor page faults: K1 215k, K12 401k (recycling) / 374k (off); kernel time 2.4 s of 24 s CPU at K12.
 - Hardware level (drizzle K1, cachegrind): 6.4 G instructions, LL misses 19.3 M (3 per 1000 instructions, ~1.5 s of
@@ -376,7 +377,7 @@ its wall single-threaded: GC threads). Output: tsc-rs byte-identical to tsgo on 
 plugin diagnostics); tttt on 11 / 14 (vue 2 spurious TS7006; webpack and drizzle same (file, line, code), other
 elaboration text); bun differs on the five corpora with errors and reports none on vscode.
 
-## Checkers per physical core (2026-10-18, todo entry 1, 99676b23 + the policy)
+## Checkers per physical core (2026-10-18, 99676b23 + the policy)
 **Oversubscribed** (`--threads 24 --checkers K` on these 4 vCPUs): wall means nothing, CPU (user + sys) and peak are
 the many-core costs without the 12-core box's SMT and clock effects (which inflate its CPU further: drizzle K24 6.37
 s there vs 3.81 here). Median of 3, CPU s / peak MB (K1 at 24 threads parses in parallel and has 23 materialize-ahead
@@ -401,10 +402,10 @@ helpers, so it isn't `--singleThreaded`):
 | monkeytype/frontend | 0.86 / 504 | 5.01 / 643 | 8.07 / 856 | 9.57 / 1083 | 13.89 / 1719 | 1.45, 1.59 |
 - On the corpora CPU grows slowly with K (vscode +15% K4 -> K12), the thrashers almost linearly: each dokploy checker
   rebuilds a ~170 MB warm state (`--time`: every checker holds 170-226 MB at most and recycles 2-4 times at any K),
-  ~1.5-2 CPU s each. That is plan 85's subject; the policy only stops paying it twice per core.
+  ~1.5-2 CPU s each. That is the next section's subject; the policy only stops paying it twice per core.
 - Budgets at K12 (`--checker-memory M`, so no 16 MB start): 1152 (96 each) vs the default's growing start: monkeytype
   CPU 4.93 vs 9.57 (peak 1219 vs 1083), drizzle 2.61 vs 3.05 (775 vs 689), vscode 24.4 vs 26.9 (**2707 vs 1538**);
-  dokploy at 200 each 21.2 vs 28.1 CPU at the same peak. Plan 81's frontier again: not changed.
+  dokploy at 200 each 21.2 vs 28.1 CPU at the same peak. The budget frontier again ("The several-checker budget"): not changed.
 **Real threads** (`--threads 4`, this box: 2 cores x 2 SMT), wall s / CPU s / peak MB:
 | project | K2 | K3 | K4 | K2 / K4 wall |
 |---|---|---|---|---|
@@ -421,13 +422,13 @@ helpers, so it isn't `--singleThreaded`):
 | dokploy/apps/dokploy | 3.62 / 7.54 / 929 | 2.62 / 7.32 / 1160 | 3.00 / 11.19 / 1214 | 1.21 |
 | monkeytype/frontend | 1.16 / 2.36 / 443 | 1.31 / 3.86 / 433 | 1.31 / 4.92 / 521 | 0.89 |
   (react, nest, xstate, vue within 1.14.) The SMT sibling buys 15-26% wall on 2 cores: vscode K2 would tie bun
-  (7.70 vs 7.73, plan 67 "Where it stands").
+  (7.70 vs 7.73, "Memory against bun on the 4-vCPU box" below).
 - **Policy shipped** (`default_checker_cap()`, main.c): without `--checkers`, the checkers are at most the physical
   cores (distinct package/core ids among the affinity's CPUs in sysfs), but every thread up to 4. Here: 4 as before
   (`--threads 24` now 4 too: oversubscribing takes `--checkers`). 12 cores / 24 threads: 12, where K12 -> K24 bought
   0-11% wall (vscode 2.81 vs 2.50 s, bun 2.92, 2026-10-16) for the CPU and peak above. Confirmed there on 2026-10-19 ("The 12-core box with PGO + LTO": K24 costs +40-160% CPU for 0-15% wall).
 
-## Plan 85's census: what the checkers re-derive (2026-10-18, todo entry 2, 6ae5f65a)
+## What the checkers re-derive (2026-10-18, 6ae5f65a)
 **Work vs inflation** (CPU s, best of 2): `--threads 1` runs every checker on one thread, so its CPU is the work
 done; `--threads 4` K4 is this box's default (2 cores x 2 SMT). `off` is `--checker-memory off` (no recycling):
 | project | K1 | K4 | K4 off | K12 | K12 off | threads 4: K4 | K4 off |
@@ -455,9 +456,9 @@ done; `--threads 4` K4 is this box's default (2 cores x 2 SMT). `off` is `--chec
   monkeytype at `--threads 1`, K1 5.9 G vs K12 39.2 G instructions: every hot function x6.6 (union_with_origin,
   ty_instantiate_mapped, intern_slot, recursive_related...), the same profile scaled. The rebuilt graph is the
   project's own `.ts` code instantiating its libraries (dokploy's trpc router of zod schemas, drizzle's own sources),
-  which no up-front layer can hold. Plan 85 closed on this (vision.md).
+  which no up-front layer can hold. The shared declared layer was closed on this (vision.md "Decisions").
 
-## Plan 86 gate G2: `--shared-graph` on threads (2026-10-21; history: the lock, waits and redo it measures are deleted, see "Plan 86 stage 4f: the end state"; b97b6f4ac, this box: 16 vCPUs shared with other agents)
+## Shared graph gate G2: `--shared-graph` on threads (2026-10-21; history: the lock, waits and redo it measures are deleted, see "Shared graph end state"; b97b6f4ac, this box: 16 vCPUs shared with other agents)
 Release build (not PGO), `-q --keep-going --noEmit`, best of 3 by wall; load 4.8-6.8 (other agents). Columns: wall s,
 CPU s (user+sys), peak RSS MB. K1 = `--threads 1 --checkers 1`; def = no flags; defK / shK = `--threads K --checkers K`
 without / with `--shared-graph` (which turns recycling off).
@@ -495,25 +496,25 @@ without / with `--shared-graph` (which turns recycling off).
   drizzle 300 loaded runs (an effect K12 loop beside it) all K1's; vscode 5 / 5 (2.16-2.26 s, 4.56-4.58 GB, no redo),
   TypeScript6's compiler 5 / 5; all 13 other `-p` corpora at K4 and K12 twice each K1's output.
 
-## Plan 86 stage 4f: the end state (2026-10-22, wt-d c60fa6257 on 22d3ce85a; plan 86 "Stage 4f: done")
+## Shared graph end state (2026-10-22, c60fa6257 on 22d3ce85a; notes/shared_graph.md)
 `TTTT_SHARED_GRAPH=1`, this box (16 vCPUs shared, load 5-18). No waits, no redos (deleted). 20-run K12 tables 20/20 on
 drizzle, zod, effect, excalidraw, nest; 300 loaded drizzle runs 0 differ, 100 loaded effect 1 (Schema.tst.ts(2936,39));
 vscode 5/5; seeds drizzle 191/200 (the query.ts(139,3) TS2322), effect 300/300, zod, excalidraw, nest 100/100; TSan 28
 runs (vscode aside) one group, fixed. Work (cgtc.sh) K12/K1 drizzle 1.305 (6.714 / 5.145 G), zod 1.285 (5.602 / 4.360),
 effect 1.134 (9.324 / 8.220); against plain K1 1.36x, 1.35x. Wall best of 7, K12 T12 shared / defaults: drizzle 0.239
-/ 0.309 s, zod 0.211 / 0.241, effect 0.355 / 0.336. kdiff with the flag: 8 / 3814 (plain 3). Before wt-perf's PERF 1/2,
+/ 0.309 s, zod 0.211 / 0.241, effect 0.355 / 0.336. kdiff with the flag: 8 / 3814 (plain 3). Before the K1 overhead cuts below,
 the flag's K1 cost was drizzle +14.6%, zod +12.9%, nest +10.4%, effect +10.2% instructions over plain (callgrind,
-typecheck only; by function in plan 86's D progress). Default path over the stage (plain release, db9ca5304 to the head
+typecheck only; by function in the design log that notes/shared_graph.md points to). Default path over the stage (plain release, db9ca5304 to the head
 before the deletions): drizzle -1.6%, zod, nest, effect within 0.1%, tsc +0.8% (other tracks' commits included).
 
-## Plan 86 4f PERF: the flag's K1 overhead (2026-10-22, wt-perf)
+## Shared graph K1 overhead (2026-10-22)
 Callgrind whole process, K1 T1 `--checker-memory off`, `TTTT_SHARED_GRAPH=1` over the plain path (base 3fb334159):
 drizzle +11.66% -> +4.06%, zod +11.30% -> +4.25%, nest +2.19% -> +0.71%. By group (drizzle / zod, % of plain): Overlay
 and word slow paths 4.09/3.97 -> 1.92/1.93 (claims as a stack), shared intern tables + shard mutexes 5.13/4.80 ->
 0.02/0.03 (nothing published or probed while one checker is alone on the graph), memo taint hit test 0.75/0.66 and
-first-touch stamps 0.81/1.03 unchanged. K12 work (cgtc.sh) -1 to -2%; K12 wall within noise (plan 86 "PERF" note).
+first-touch stamps 0.81/1.03 unchanged. K12 work (cgtc.sh) -1 to -2%; K12 wall within noise.
 
-## Plan 86 4e item 1: the variance lock removed, first-touch stamps on under the flag (2026-10-22, wt-design4f)
+## Shared graph without the variance lock, first-touch stamps on under the flag (2026-10-22)
 Release build, this box (16 vCPUs shared, load 7-16 during the runs). `--shared-graph` now turns stamps on; the lock in
 claim_and_measure() is gone (not just off). Base = de94e1179 (lock on, stamps off), built in the same scratch.
 - **Determinism** (K12 T12 against K1's output, `scripts/sharedgraph/`): 20-run tables drizzle 20, zod 20, excalidraw
@@ -521,7 +522,7 @@ claim_and_measure() is gone (not just off). Base = de94e1179 (lock on, stamps of
   effect K12 loop beside it) all K1's (redos 0-8 a run, median 2: without the lock redos are common again); vscode 5 /
   5. Effect's TS7006 is not the lock's: effect 60 more runs give 1 diff with this build, 1 with base + stamps, 1 with
   base as it is (`test/Schema/TestUtils.ts(45,20) TS7006` there): a lost contextual parameter type, ~1.5% of loaded
-  effect runs with or without the lock (the stage 4f design's subject, not chased).
+  effect runs with or without the lock (the by-construction design's subject, not chased).
 - **checkerdiff / threadcheck equivalent** (`TTTT_SHARED_GRAPH=1`, pretty, `--keep-going --checker-memory off`; every
   corpus K1 against K4 twice, K4 at T4 three times, K12 at T12): all 16 corpora identical.
 - **Work** (`cgtc.sh`, callgrind Ir in the typecheck and worker threads): drizzle flag K1 5.319 G (base 5.284: the
@@ -531,8 +532,8 @@ claim_and_measure() is gone (not just off). Base = de94e1179 (lock on, stamps of
   (lock) 0.417 / 0.439: the lock's +54% is gone and the flag now beats the defaults. Effect defaults 0.267 / 0.271,
   flag 0.293 / 0.297, base flag 0.281 / 0.286: effect is still +10% over the defaults (it was +17% at G2).
 
-## Oracle totals (2026-10-22: the merger's final run of the third coordinator session, 8a2bb4b38)
-The merger's full `scripts/oracles.py` at ai-main 8a2bb4b38; box load ~20, so perfsweep's times are inflated. Suite 13972 /
+## Oracle totals (2026-10-22, 8a2bb4b38)
+The full `scripts/oracles.py` at ai-main 8a2bb4b38; box load ~20, so perfsweep's times are inflated. Suite 13972 /
 14006 (dts 1888 / 1910; `--no-defer-bodies` 13972; `--checker-memory 0`: 0 of 17643 differ), every corpus 0/0 but vue
 0/2, DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 18 / 3 / 2, source sweep `--sample 4` 1272 / 1274, `-b` sweep
 411 / 416, dtsdiff 1328 / 1350 projects (105145 / 106222 files, +7 as tsgo `--singleThreaded`), clidiff 3824 / 3831
@@ -540,21 +541,21 @@ The merger's full `scripts/oracles.py` at ai-main 8a2bb4b38; box load ~20, so pe
 worst types ratio 1.40 (lit tsserver-plugin), median check ratio 0.29 under load. With `TTTT_SHARED_GRAPH=1`:
 checkerdiff drizzle/zod identical, TSan drizzle T4 + T12 clean.
 **Instructions** (PGO, `test/instrcount.txt` saved at 9f979e91c, now at a recycle-free K1: the memory default alone is
--11.9% drizzle / -6.2% zod of these), session start -> end: nest 0.942 -> 0.932 G (-1.1%), drizzle 5.548 -> 4.601
+-11.9% drizzle / -6.2% zod of these), ee9501eb8 -> 8a2bb4b38: nest 0.942 -> 0.932 G (-1.1%), drizzle 5.548 -> 4.601
 (-17.1%), zod 4.204 -> 3.731 (-11.3%), effect 8.069 -> 7.449 (-7.7%), tsc 3.865 -> 3.709 (-4.0%); against the previous
 save: vscode 76.85 -> 68.45 (-10.9%), excalidraw -11.0%, tanstack-router -7.5%, xstate -6.1%, type-fest -5.4%, vue
 -5.2%, valibot -5.1%, webpack -3.3%, react -2.5%.
 
-## Oracle totals (2026-10-23: the merger's last full `scripts/oracles.py` runs, 2026-10-21/22, plain at 9032ae214 and 8d693aeb5)
+## Oracle totals with and without the shared graph (2026-10-21/22, plain at 9032ae214 and 8d693aeb5)
 Suite 13962 / 13996 (dts 1887 / 1909; `scripts/passcount.py`), `--no-defer-bodies` and `--checker-memory 0` unchanged,
 every corpus 0/0 but vue 0/2, DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 18 / 3 / 2, source sweep `--sample
 4` 1272 / 1274 (1271 at 9032ae214: CONDP's angular-cli regression, fixed at the cause by cff135035; full: 5235 / 5242
 on 2026-10-20), `-b` sweep 411 / 416, clidiff 3824 / 3831, dtsdiff 1327 / 1350 projects (+7 as tsgo
 `--singleThreaded`; the history dependence fixed: vscode 9929 / 9929, vitest/ui a tsgo check-order artifact), kdiff 3
 and recycle 3 (rxjs/packages/rxjs, sequelize, sequelize/packages/core: tsgo-shared), perfsweep worst types ratio 1.40
-(lit tsserver-plugin). **With `TTTT_SHARED_GRAPH=1`** (the merger's double run at 9032ae214): the same everywhere but
+(lit tsserver-plugin). **With `TTTT_SHARED_GRAPH=1`** (the double run at 9032ae214): the same everywhere but
 kdiff 16 / 3814 at that commit (flag-only: mikro-orm x3 (C), trpc x3 and dokploy (V), folo renderer, trpc/examples/nuxt
-(W), renovate, react-navigation x2, folo ssr, redux-toolkit), 8 / 3814 at the end state (plan 86 "Stage 4f: done");
+(W), renovate, react-navigation x2, folo ssr, redux-toolkit), 8 / 3814 at the end state;
 the release criterion wants them equal. **The final double run at 8d693aeb5** (the end state, code-identical to 5f2cd6996):
 plain exactly as above; the flagged run identical on every line but two: the effect corpus 21 / 0 spurious once (the
 Schema.tst.ts(2936,39) cascade, ~1% of loaded runs, residue C+V) and kdiff 8 / 3814 (plain's 3 plus folo/apps/desktop/
@@ -564,10 +565,10 @@ of these (20-30 minutes when the box is loaded: a generous background timeout); 
 paragraph, once it's stale.
 
 ## Past conclusions
-Condensed from the per-session sections (2026-09-28 .. 2026-10-19); `git log -S'<heading>' -- agents/measurements.md`
+Condensed from older sections (2026-09-28 .. 2026-10-19); `git log -S'<heading>' -- agents/measurements.md`
 finds the full section. The `###` headings are the names other notes cite.
 
-### Plan 81 planning (2026-10-17, ad4e1701)
+### Checker density priced (2026-10-17, ad4e1701)
 Census at one checker without recycling (`scripts/arenasites.sh -p P --checker-memory 100000`), arena MB / types:
 valibot 137 / 224k, webpack 182 / 320k, zod 276 / 369k, excalidraw 140 / 151k, effect 359 / 533k, vscode 1482 /
 2.39M; the big sites are `ty_alloc` (~108 B per type, vscode 278 MB), instantiated Props (56 B, vscode 135), Members
@@ -575,27 +576,39 @@ valibot 137 / 224k, webpack 182 / 320k, zod 276 / 369k, excalidraw 140 / 151k, e
 (~95; effect ~60). **Priced density items** (arena MB saved at K1, valibot / webpack / zod / excalidraw / effect /
 vscode): instantiated Prop 56 -> 40 B (6.5, 6.6, 18, 3.2, 8.9, 39); instantiated Signature 160 -> ~64 B (1.7, 3.3,
 8.6, 1.4, 8, 17); compact object literal PropDecl (2.9, 4.5, 1.3, 9.7, 2, 64); namespace export props without a
-PropDecl (effect 25-42: shared members since stage 2); mappers sharing stable lists (a content-checked cache since stage 2); instantiated props_by_name from the
+PropDecl (effect 25-42: members shared since, below); mappers sharing stable lists (a content-checked cache since, below); instantiated props_by_name from the
 source's permutation (3.3, 5.4, 9.5, 3.5, 5.8, 30); intern keys -20% (3.6, 4.6, 5, 4, 6.5, 35); per-kind Ty layouts
 -15% (3.4, 5.4, 6, 2.5, 8.6, 42). All eight: 18-24% of the arena, ~10-13% of the peak; most touch hundreds of
 readers. bun's memory *falls* from one thread to two while its CPU rises 15-50% (it re-derives rather than keeps);
 duplication across K4 without recycling is +27-49% of K1's arena, so a shared frozen declared layer saves less than
 the budget does.
 
-### Plan 81 stage 1 (2026-10-17)
+### The several-checker budget (2026-10-17; "Plan 81 stage 1" in code comments)
 The several-checker budget: 16 MB each, doubling after a segment of fewer than 16 files ("16 b16", shipped as
 `program_set_checker_memory_shared()`, only without `--checker-memory`). Corpora sum at 4 checkers: 96 MB each 11.3 s
 / 7184 MB, 16 b16 12.7 / 4865 (9 / 14 at or below bun's peak). The source sweep's 174 biggest: +14% wall, -22.5%
 summed peak, 96% faster than bun. **No policy met the gate** (10 / 14 below bun, tail within +10%): the corpora want
 low budgets, the tail wants few recycles. Other frontier points: 16 g4 b32 +8% / -19.5%, 24 b32 +10% / -18%.
 
-### Plan 81 stage 2 (2026-10-17)
+### Namespace members and mapper lists (2026-10-17)
 `import * as ns` shares the module namespace type's members (effect: 3068 namespace types, 42 MB) and mapper lists go
 through a content-checked cache (effect copied lists 37 -> 8 MB); effect's K1 arena 359 -> 279 MB. The tail barely
 moved (wall -0.4%, summed peak -0.7%). **What a recycle costs is the rebuild, not the recycle**: `checker_recycled()`
 is ~1 ms; the next segment re-deriving a shared graph (react-select's tests rebuild csstype/React, ~20 MB, ~120 ms)
 is the cost. Tried, not merged: the warm-up guard as the most any one file of the segment added (tail -5.8% wall,
 +6% peak; drizzle and excalidraw above bun).
+
+### Memory against bun on the 4-vCPU box (2026-10-14 .. 18)
+Bun 1.4.3 checks each file "in a clean state" and bounds its checker memory (vscode at one thread flat at 1.36 GB
+after load). tttt's checker grew linearly then (vscode K1 +150-170 MB/s, ~190 KB per checked file never read again;
+4261 MB peak), which recycling fixed: byte-identical output at every budget, even a fresh checker per file. At 256 MB:
+vscode K1 13.18 s / 4190 MB -> 13.50 / 2575 (9 recycles), T4 5.80 / 4786 -> 6.01 / 2858; type-fest K1 1.42 / 738 ->
+1.65 / 380. A fresh checker's warm-up was ~16 ms on vscode; drizzle's files each pull in a big shared graph (+23% at
+K1 B=128). The bench of 2026-10-18 (`scripts/bench.sh --runs 3 --bun`, best wall s / peak MB, defaults): tttt faster
+than bun on all 14 corpora (vscode 6.36 / 1168 vs 7.73 / 1559, type-fest 0.52 / 419 vs 2.01 / 569, effect 0.64 / 327
+vs 1.37 / 312), at or below bun's peak on 8 and within 1.16x on the rest; single-threaded at or below bun's peak on 7
+(vscode 13.78 / 1361 vs 20.14 / 1409). tsgo used more memory on all 14 (vscode 8016 / 6628 MB). The full tables:
+`git show af936072c:agents/plans/67_memory_against_bun.md`.
 
 ### The K1 budget (2026-10-17)
 K1 stays at 256 MB: 128 saves vscode ~250 MB (1450 -> 1202) and the 15 corpora -15% peak for +2% wall, but the
@@ -605,95 +618,95 @@ ClassItem's FunctionImpl declined (methods are the biggest variant; exact sizes 
 
 ### The checkers' budget (2026-10-17)
 Floor 128 -> 96 MB each at the defaults (vscode +1.7% wall for -200 MB; 80 costs the sweep +5%); since replaced by
-plan 81 stage 1's growing start. The tail is dokploy-like: one file grows a fresh checker by ~70 MB (a drizzle schema
+the several-checker budget's growing start (itself gone since 2026-10-22). The tail is dokploy-like: one file grows a fresh checker by ~70 MB (a drizzle schema
 behind tRPC) in ~100 ms; drizzle re-derives its graph across many files (db.ts, session.ts, select.ts: +20-27 MB each).
 **Dropped**: a warm-up guard on the largest single-file growth (same frontier; type-fest's checkers grew to 767 MB); a
 time-based guard would make cuts timing-dependent. `program_set_checker_memory_cap()` (1536 MB together, 64 each at
 least) binds only past 16 checkers.
 
-### Plan 79, a copying checker recycle (2026-10-17; declined)
+### A copying checker recycle (2026-10-17; declined)
 Survivors from declaration-level roots at each recycle (`scripts/survivors.sh`): vscode 35% of the arena at 64 MB
 (10-27 MB a recycle), dokploy 37-57%, drizzle 13-20%, type-fest 3-5%. Re-derivation per recycle is ~14-36 ms on
 vscode; a precise copy of ~20 MB (~1.5M objects, intern tables rehashed) costs about as much, and at K1 the peak is
 already the program's. Declined.
 
-### Plan 80 (2026-10-17)
+### Mapped source text (2026-10-17)
 Source text mapped (MAP_PRIVATE) and released at recycles, ResolvedModule cache dropped: vscode after names 1029 ->
 843 MB, peak K1 1584 -> 1447, wall +1.3-1.9% (re-faulting text). Mapping without releasing was *worse* than read()
 (1640 MB); releasing per file cost +2.7% (TLB shootdowns), per 256 MB segment +0.9%.
 
-### Plan 78 stage 3 (2026-10-17)
+### Deferred bodies' cost (2026-10-17)
 Deferred bodies against eager (`--no-defer-bodies`) on vscode: K1 T4 +1.1%, defaults +2.0%, K1 T1 13.47 vs 13.08 s
-(+3%). Huge pages for materialization slabs took stage 2's +4% back to that (page faults 636k -> 307k at T1);
+(+3%). Huge pages for materialization slabs took the body drops' +4% back to that (page faults 636k -> 307k at T1);
 carrying owner-made materializations across recycles kept their chunks (+150 MB peak), so cross-made ones use a lasting
 small-page slab. Materializing costs ~1.69 s single-threaded on vscode against the eager parse and walk's ~1.38,
 re-materializing 0.23 s (single-body re-materialization of 2026-10-18 took the defaults' 0.80 s CPU to 0.16).
-Stage 2 (drop materializations with the last checker incarnation) took vscode K1 2490 -> 1574 MB; stage 1's upper
+Dropping materializations with the last checker incarnation took vscode K1 2490 -> 1574 MB; the upper
 bound (every body skipped) was vscode -1263 MB after names.
 
-### Plan 75 (2026-10-16)
+### Compact AST (2026-10-16; no-go)
 Compact AST **no-go**: vscode's AST 1367 MB holds 557 MB of zero words, but diffuse (no site past 50 MB; sparse
 optional fields and empty vectors, not union padding); exact-size Expr variants reach ~165 MB at most, under the
 400 MB gate. Other estimates: 12-byte spans ~60 MB, 8-byte spans ~120 MB (~570 `.buf` sites), 32-bit node references
 ~40 MB. A lone checker keeps 256 MB (128 costs drizzle +12%).
 
-### Plan 63 (2026-10-14 .. 16)
-Stage 2: per-file AST arenas (`ast_owns()` by address; frees of arena memory are no-ops after the parse) and huge
+### Per-file AST arenas and huge pages (2026-10-14 .. 16)
+Per-file AST arenas (`ast_owns()` by address; frees of arena memory are no-ops after the parse) and huge
 pages. Madvising every arena chunk on a long-running, fragmented machine made vscode **9.39 s with 13.9k compaction
 stalls** against 6.17 s without: chunks are now madvised only while a `/proc/buddyinfo` budget lasts
 (`huge_pages_take()`), with `MADV_POPULATE_WRITE` prefaulting. Oracle: `compact_stall` and `thp_fault_alloc` in
 `/proc/vmstat` around a vscode run. vscode 8.14 s / 2779 MB -> 5.91 / 2727 at the defaults (the glibc re-exec gone).
 
-### Plan 67 stage 2 items 2-3 (2026-10-15)
+### vscode K1 against bun's program memory (2026-10-15)
 vscode K1 against bun 1.4.3 at one thread then: program after names 2191 MB vs bun ~1300; check on top ~360 MB vs
 ~80; peak 2549 vs ~1400. The gap was the AST representation (782 MB of zero words) plus the recycling budget; the
-struct diet was declared done (< 120 MB left). Since then deferred bodies, plan 80 and the budgets brought vscode K1
+struct diet was declared done (< 120 MB left). Since then deferred bodies, mapped source text and the budgets brought vscode K1
 to ~1370 MB (the 12-core table above).
 
 ### The 12-core machine: checkers per K (2026-10-16, f760ecdc)
 Release build, K24 default then. K4 -> K12 scaled 1.2-2.0x; **past 12 almost nothing** (K12 -> K24 0-11% on vscode,
 webpack, effect; 0 elsewhere) while each checker past 4 added ~170 MB on vscode: the origin of the physical-core cap
 and the 1.5 GB total budget cap. A fresh checker on a one-line esnext+dom program holds a 7 MB arena (13k types): the
-libraries aren't the floor. Plan 72's lines there: vscode load phase 389 ms (loader waited 6 ms, workers 59% busy),
+libraries aren't the floor. The front end there: vscode load phase 389 ms (loader waited 6 ms, workers 59% busy),
 declare + link 130 ms (5% of wall), webpack's 45 ms (15%: its serial declare, since fixed to 18 ms).
 
 ### Memory breakdown (2026-10-12, e043e9e2)
-Before plans 60-80: vscode K1 5220 MB (AST 2.17 GB, binder ~0.6, checker arena 1.82 GB, LazyMemo 222 MB, intern
+Before the memory work of 2026-10-12..17: vscode K1 5220 MB (AST 2.17 GB, binder ~0.6, checker arena 1.82 GB, LazyMemo 222 MB, intern
 tables 202 MB). Today's per-corpus peaks are the bench tables above. The tuple fix (targets share element type
 parameters) took type-fest's K1 arena 1906 -> 695 MB, types 4.78M -> 217k.
 
 ### Perf at breadth (2026-10-12)
-Plan 59 stage 2 drained every project above 1.5x tsgo's types: types ratio median 0.76 -> 0.68, worst 16.4 -> 1.55
+The perf-at-breadth pass drained every project above 1.5x tsgo's types: types ratio median 0.76 -> 0.68, worst 16.4 -> 1.55
 (date-fns docs, feathers typebox, nitro, rxjs, nuxt...); peak RSS ratio worst 2.48 -> 0.95; total types 96.0M ->
 71.3M against tsgo's 127.9M. A types ratio above ~1.5 is a missing cache or a runaway.
 
-### Perf session (2026-10-06 and 2026-10-07)
+### Relation counts against tsc (2026-10-06 and 2026-10-07)
 Compare relation cache sizes (`tttt --time --checkers 1`) with tsc's `--extendedDiagnostics`: vue's strict-subtype
 228k pairs against tsc's 15k led to three tsc shortcuts (same-index members of union pairs, an intersection's key
 property in subtype reduction, object-to-primitive) worth vue -13.5%, drizzle -17.5%. On 2026-10-07 the four
 checkers redid ~24% of K1's type work on vscode; work volume at K1 was close to tsc's (vscode types 2.57M vs 2.89M,
-assignable 960k vs 1008k). Sharing types between checkers was judged not a lever (plan 85's census confirmed it
+assignable 960k vs 1008k). Sharing types between checkers was judged not a lever ("What the checkers re-derive" confirmed it
 2026-10-18).
 
 ### Smaller results worth remembering
-- Checker work stealing (2026-10-17, plan 72): -5.2% summed wall on the sweep's 285 biggest, peaks flat.
+- Checker work stealing (2026-10-17): -5.2% summed wall on the sweep's 285 biggest, peaks flat.
 - Gated runs (options/syntax diagnostics) parse only deferred bodies for syntax errors instead of a full restart
   (2026-10-17): gated sweep projects -25% wall.
-- Plan 72 stage 1 (2026-10-16): the loader's serial work, vscode load T4 940 -> 805 ms, `newfstatat` 194k -> 43k.
+- The loader's serial work (2026-10-16): vscode load T4 940 -> 805 ms, `newfstatat` 194k -> 43k.
   Load discovery (a pre-scan) stays unjustified: the loader waits 6-8 ms.
-- Plan 62 (2026-10-13/14): output independent of K; tsgo's import-graph FENNEL partitioner duplicated 2-21% more
+- Output independent of K (2026-10-13/14): tsgo's import-graph FENNEL partitioner duplicated 2-21% more
   types than contiguous runs. Below 64 KB of checked source more checkers buy nothing (one per 64 KB).
-- Declaration emit's cost (plan 64, 2026-10-15): +1.3-4.4% over `--noEmit --declaration` at K1; maps add ~0-4%.
-- Plan 67 stage 1 (2026-10-15): recycling at 256 MB took vscode K1 4190 -> 2575 MB for +2.4% wall.
-- Parallel name resolution (plan 45, 2026-10-05): vscode resolve 593 -> 283 ms; declare and link stay serial.
-- Refreshes (plan 77 and its successors): new TypeScript repos match >= 96% on day one, the checker generalizes;
+- Declaration emit's cost (2026-10-15): +1.3-4.4% over `--noEmit --declaration` at K1; maps add ~0-4%.
+- Checker recycling (2026-10-15): at 256 MB it took vscode K1 4190 -> 2575 MB for +2.4% wall.
+- Parallel name resolution (2026-10-05): vscode resolve 593 -> 283 ms; declare and link stay serial.
+- Refreshes (2026-10-17 and after): new TypeScript repos match >= 96% on day one, the checker generalizes;
   JavaScript (checkJs) is where new code finds bugs. The `-p` sweep only walked `tsconfig.json` until 2026-10-19.
-- Instructions history: drizzle +50% in 2026-10-17 went unnoticed two sessions (an intersection target's properties
+- Instructions history: drizzle +50% in 2026-10-17 went unnoticed for two days (an intersection target's properties
   not seeing the intersection as `this`: variance measurements related ever longer intersections). Investigate any
   flagged instrcount rise before committing.
 
-### Plan 77, fresh repositories (2026-10-17)
+### Fresh repositories (2026-10-17)
 How a refresh is run (repos.txt's "Plan 77" comment: GitHub topics, 300-3000 stars, the first 3 per topic with a root
 lockfile): append rows to `test/sourcesweep/repos.txt`, `thirdparty/ensure-sources.sh NAMES`, `scripts/sourcesweep.py
 --tsc-new`, `scripts/dtsdiff.py --tsc -f RE`, then both with `-f '^(names)(/|$)'`; record day one before any fix.
-Plan 77's 28 repos: 195 / 203 projects on day one (96.1%), two checker root causes, 203 / 203 after.
+The first refresh's 28 repos: 195 / 203 projects on day one (96.1%), two checker root causes, 203 / 203 after.

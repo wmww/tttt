@@ -36,9 +36,9 @@ passing tests).
   type `{ [k: string]: H<t.Node> } & { [k: string]: H<t.Aliases> }` (H a function | object union) gives a method
   parameter NodePath<t.Aliases> in tsc, NodePath<t.Node> in tttt: which unresolved member (tsc keeps named error
   types, tttt collapses them to any) survives the intersection of contextual signatures. Depends on the named error
-  types item (triage "Plan 48 stage 4 leftovers"); broken packages only.
+  types item (triage "TS 6.0 retarget leftovers"); broken packages only.
 
-- **Call resolution leftovers of the inference-flow port (ex plan 38 "not done", each untried, no failing test
+- **Call resolution leftovers of the inference-flow port (from the inference-flow port's "not done", each untried, no failing test
   known)**: `ty_call_effects()` (call.c, flow.c's getEffectsSignature) resolves a call on its own, without contextual
   type, where tsc takes getResolvedSignature (would need the chosen signature in `CallResolution`); JSX elements
   (`ty_resolve_jsx_element()`) aren't remembered per node like calls (`KEY_CALL_RESOLUTION`), they resolve per
@@ -46,16 +46,16 @@ passing tests).
   the applicability check only: leaving them out of the first inference round lost zod's `pick([z.object, ...])` and
   xstate inferences, because tttt marks literals from syntax where tsc skips only where a contextual signature exists
   (checkFunctionExpressionOrObjectLiteralMethod under SkipGenericFunctions): a port marks from the contextual type.
-- **Inference context by ancestry** (ex plan 51's optional item, kept: it prevents a class of latent bugs).
+- **Inference context by ancestry** (from the contextual-check state work's optional item, kept: it prevents a class of latent bugs).
   `my outer_inference` is dynamic state saved/cleared/restored at ~15 sites in call.c; tsc's getInferenceContext
   finds the innermost inferring call by walking up from the node. A stack of (node, OuterInference) pushed per
   argument check and looked up by span containment would replace the save/restore sites and stop the flow engine's
-  leak (`V_LOGAUD=1` in plan 51's prototype C, see git history: 121 entries where flow narrowing evaluates an
-  unrelated type-guard call while another call infers). No baseline change expected; plan 51 stage 3's latent bug
+  leak (`V_LOGAUD=1` in the contextual-check state work's prototype C, see git history: 121 entries where flow narrowing evaluates an
+  unrelated type-guard call while another call infers). No baseline change expected; the contextual-check state work's latent bug
   (`infer_rest_variadic()`'s first pass forgetting to set `my outer_inference`) is the kind it would prevent.
 - Eager predicate inference during instantiation (`inference_mapper` -> `signature_predicate` ->
   `ty_infer_type_predicate` checks a body; tsc reads predicates lazily). Its test (recursiveGenericSignature
-  Instantiation) passes; do it if another shows up (ex plan 42 stage 4).
+  Instantiation) passes; do it if another shows up (from the laziness work).
 
 ## Relations, instantiation, reduction
 - (atproto probe, 2026-10-20; symbols baseline only) Property access on an intersection whose apparent type is any
@@ -146,7 +146,7 @@ passing tests).
 - (2026-10-07) node (4 `$ExpectType`, all versions): `[value: number] | [value: number]` from two declarations: tsc's
   tuple targets are keyed by their labels' declarations (getTupleTargetType's namedMemberDeclarations), tttt's by the
   label names, so the two tuples are one type and the union collapses.
-## Circularity (plan 29 stage 3 leftovers; the resolution stack's are in missing_checks.md)
+## Circularity (deferred references leftovers; the resolution stack's are in missing_checks.md)
 - recursiveConditionalTypes (types only): `unbox(b4)` fixed 2026-10-15 (ttttRecursiveUnionInferenceDepth), and the
   getter's lazy typing since (ttttLiteralGetterDuringResolution: an object literal getter a call's resolution types
   has `this` any in an argument literal, the literal's own type in a literal nested in one; computed uncached so the
@@ -156,14 +156,14 @@ passing tests).
   W); tttt types the getter while checking the literal, so `this` is the literal as far as it is built, and unbox's
   inference then gets one candidate more (`{ readonly value: any }` where tsgo infers `{ readonly value: { readonly
   value: any } }`), and the deferred `this` prints differently. Needs object literal getter properties typed lazily
-  (a Prop whose type is the getter's, resolved on first ask, shared by the widened copy): a session, broad (widening,
+  (a Prop whose type is the getter's, resolved on first ask, shared by the widened copy): medium-sized, broad (widening,
   freshness, relations of literals).
 - type-fest's `test-d/opaque.ts` (~90% of type-fest's check time) runs into TS2589 at line 68 (`Tagged`/`UnwrapTagged`
   over `TagContainer`) plus four TS7022 tsc doesn't report: a correctness bug with a perf symptom.
 - Spurious TS7022 on `const can = composite && o?.e && !out` when the type of `e` mentions an unresolved name (`Map`
   without lib es2015). Probe: test/probes/plan08/alias_optional_chain.ts minus its `@target`.
 - `check_with()` (ty/expr.c) computes an expression with a contextual type outside the LazyType, so no cycle detection
-  (`let [x = x] = []` is stopped by the pattern's names being on the resolution stack, plan 39; other contextual
+  (`let [x = x] = []` is stopped by the pattern's names being on the resolution stack; other contextual
   self-references can still overflow the stack).
 - Mutually recursive object literal getters through generic calls (probe test/probes/triage/getter_cycle.ts, zod's
   getter-schema shape with toy types): tsc reports TS7022 on all three variables and TS7023 on both getters, tttt
@@ -175,8 +175,8 @@ passing tests).
   (strictNullChecks): tsc's checkClassExpression -> checkClassLikeDeclaration runs eagerly inside D's
   getBaseConstructorTypeOfClass; relating `() => undefined` to `() => D` calls isWeakType(D), which needs D's members
   while its base constructor resolves: TS2506 + TS2310, D ends with no base (types print `typeof (Anonymous class)`).
-  tttt defers class expression members and meets neither cycle. Plan 39 territory, low value.
-- TS7023 through a handler's inferred return (re-probed 2026-10-19, from plan 19's drizzle notes):
+  tttt defers class expression members and meets neither cycle. Resolution-stack territory, low value.
+- TS7023 through a handler's inferred return (re-probed 2026-10-19, from the corpora-to-zero work's (corpora.md) drizzle notes):
   `test/probes/plan19/drizzle/proxy_recursive_wrap2.ts` (`--strict`), `function wrap2(target: object) { return
   Q(target, { get(target, p) { return wrap2(target); } }) }` with `Q<T>(t: T, h: { get?(target: T, p: string): any
   }): T`: tttt reports TS7023 on both functions of the probe (the generic `wrap` too), tsgo nothing. The drizzle
@@ -185,7 +185,7 @@ passing tests).
   (contextuallyCheckFunctionExpressionOrObjectLiteralMethod decides `get`'s return type from its body too) wasn't
   worked out. Not corpus-visible.
 ## Classes and declarations
-- Plan 32 leftovers: a class extending a base that constructs `any` should get tsc's anyBaseTypeIndexInfo
+- Mixin leftovers: a class extending a base that constructs `any` should get tsc's anyBaseTypeIndexInfo
   (`[x: string]: any`) instead of the `ty_has_unresolved_base()` gate; tsc's display of `new Outer<string>().m` clones
   generic method type parameters (`Outer<string>.Outer.m<U>.In`).
 - (triage 2026-10-15, re-probed) An object literal method merged with a late-bound one (`declare const m: "mm"; {
@@ -205,7 +205,7 @@ passing tests).
   real code (no oracle shows it).
 
 ## Narrowing and flow
-- **Destructured references and widening** (ex plan 49; tsc's getNarrowedTypeOfSymbol re-reads a binding element of
+- **Destructured references and widening** (from the destructured-references work; tsc's getNarrowedTypeOfSymbol re-reads a binding element of
   a `const` (for-of/for-in `const` too) or never-assigned parameter pattern of >= 2 elements from the *unwidened*
   parent type when the parent is a union, even when flow narrows nothing; widening drops object-literal-ness;
   ContainsWideningType propagates from own properties only). tttt: `ty_destructured_narrowed_type()` (flow.c),
@@ -273,7 +273,7 @@ passing tests).
 - Generators: no next type inferred from how `yield` results are used (tsc's getReturnTypeFromBody collects
   contextual types of yield expressions); `ty_generator_context` filters only unions.
 
-## TS 7.1 window leftovers (triage 2026-10-09)
+## TS 7.1 retarget leftovers (2026-10-09)
 - Type member accessors (done 2026-10-15, duplicateIdentifierChecks): each `get`/`set` signature is an InterfaceMember
   of its own (accessor_kind), interface_members_bind() partitions a member list like tsc's declareSymbol (a conflicting
   declaration is a symbol of its own, `conflicting`, not a member; an accessor conflicting with another kind makes the
@@ -286,7 +286,7 @@ passing tests).
 - TS5114/TS5115/TS2589 limits: tsgo's eager-base runaway is modelled since 2026-10-15 (members.c probe_eager_bases(),
   documentation.md "Eager base runaways"; keyofGenericExtendingClassDoubleLayer passes, mutuallyRecursiveInference
   matches tsgo's CLI and is argued in tsgo_divergences.md). recursiveMappedTypes hits it elsewhere (TS2589 vs TS2502);
-  recursiveIndexedAccessSimplification (agent B 2026-10-15: the cause is the union member, probe `type Recur<T> = (T
+  recursiveIndexedAccessSimplification (2026-10-15: the cause is the union member, probe `type Recur<T> = (T
   extends unknown[] ? {} : { [K in keyof T]?: Recur<T[K]> }) | [...Recur<T>[number][]]; function f<T>(r: Recur<T>) {
   const n: number = r; }`: tsgo prints `Recur<T>[number][] | ...`, tttt `any[] | ...`. tsgo resolves a tuple with a
   variadic element eagerly and normalizes `[...A]` to the deferred array A, whose element `Recur<T>[number]` stays a
@@ -315,7 +315,7 @@ passing tests).
   test binary, `go test -overlay ... -c ./internal/testrunner`) showed the counts agree until ~11k, then tsgo reuses a
   cached `{ w: number; h: number; }` object that tttt prints afresh: a type identity difference (tsgo's object is the
   same type as one printed earlier in the line, tttt's another instance), inside `Partial<A & B & ...>` arguments.
-  Find which instance (spread/intersection property types) and why tttt makes a new one; ~a session.
+  Find which instance (spread/intersection property types) and why tttt makes a new one; about a day of work.
   2026-10-15 (agent D, instrumented tsgo probe binary logging approximateLength at every typeToTypeNode, against the
   same log from ty_display()): the first divergence is earlier, at length ~11k (text offset ~6.8k of the line),
   `... & N["props"] & Dimensions> | undefined) & Dimensions)) | (Partial<...`: tsgo visits `undefined` and then
@@ -339,7 +339,7 @@ passing tests).
   parameters), tttt `[OB]`; both then fail the same assignment (webpack's HookMap TS2322, fixed 2026-10-12 by the
   any-key index read), only the message's types differ.
 - types/redux-define (DT sweep): TS2344 "only assignable to the non-distributed 'SubAction'" (distributed type
-  parameters, plan 57's area).
+  parameters, the distributed type parameters' area).
 - flagflip xstate/eopt: one spurious TS2322 (input.test.ts:272, a spawn signature); vue/nuia 2 spurious + 2 other-code.
 
 ## The conditional type-variable walk resolves signatures tsc never looks at
@@ -349,7 +349,7 @@ still to be inferred from bodies, type parameter constraints. tsc never looks th
 instantiates lazily, and the relation asks only for what it compares. Over a class whose method needs the mapped type
 being resolved that is a cycle (TS2615/TS2502), and whether it happens depends on what a checker resolved first.
 
-Patched (2026-10-13, plan 62 stage 1) for the two "is it a function" idioms only: `callable_definitely_related()`
+Patched (2026-10-13) for the two "is it a function" idioms only: `callable_definitely_related()`
 takes the true branch of `X extends (...args: any[]) => any` and `X extends Function` for a callable X before any walk
 (dexie's NonInsertProps, mikro-orm's CleanKeys; test ttttConditionalCallableAgainstAnyFunction). Any other extends
 type over such a class still walks.

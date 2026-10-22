@@ -1,0 +1,77 @@
+# tsc's re-entrancy and tttt's approximations
+Research of 2026-10-20/21 (the full write-up: `git show af936072c:agents/plans/88_reentrancy.md`). The general
+model is real, but only one of its paths matters on real code, and that path is gated by tttt pushing return contexts
+down eagerly. Read this before touching any in-flight check. Tool: `scripts/reentrytrace.py` (instrumented tsgo with
+`TSGO_REENTRY=1` against tttt's `TTTT_DEBUG_REENTRY=1`).
+
+## tsc's model (tsgo 7.1, checker.go / relater.go)
+- One stack, `typeResolutions`, of (entity, property) pairs around a symbol's type (0), base constructor (1), alias
+  declared type (2), signature return type (3), base constraint (4), type arguments (5), base types (6), write type
+  (7), initializerIsUndefined (8), alias target (9).
+- `findResolutionCycleStartIndex` looks only down to `resolutionStart`. Two places move it to the top:
+  getResolvedSignature for a call's *first* resolution (`cached == nil`), and getVariancesWorker for the *outermost*
+  measurement. Below the barrier nothing is a cycle: the entity is computed again, nested, above the barrier, where a
+  third request finds the cycle. Termination comes from barriers being set once per call / outermost measurement.
+- Every cache is written "if still unset" after the work: the nested result finishes first and wins. For calls the
+  nested resolution's `links.resolvedSignature` replaces the outer's, and its diagnostics are reported (better-auth).
+- `isResolvingReturnTypeOfSignature` uses the same scan: a return type in flight below the barrier is "not
+  resolving", so getContextualReturnType asks for it and re-enters return type inference.
+- Unguarded: resolveStructuredTypeMembers and getTypeOfInstantiatedSymbol have no in-flight state; they recurse
+  until the instantiation depth (100, TS5115/TS2589) or count (5M) limit, and the instantiation that hits it becomes
+  the error type for good.
+
+## tttt's model (per-site, documentation.md "LazyType")
+- `Checker.resolving` and `Checker.barriers` (ty_barrier_push(): a call's first resolution, the outermost variance
+  measurement); `ty_resolving_reenters()` holds each site's rule.
+- Declarations and inferred return types re-enter below the call barrier every time, like tsc (barrier termination;
+  the old "once" flags were removed 2026-10-21 with every oracle byte-identical; the suite never fired ONCE).
+- Aliases re-enter only below the outermost variance measurement (alias_reenters(), the apollo fix 7238e629e).
+- Symbol properties re-enter below the call barrier up to depth 4 (`prop_reentry_depth`; without a bound only the
+  barrier would stop it), instantiated properties up to 200.
+- Base types look for their cycle across barriers (ty_resolving_cycle_across_calls(): a shortcut to tsc's outcome).
+- A call in flight is resolved again, but the nested result is dropped (the outer one is kept).
+- Members cache while in flight and never re-enter; members_reentered_unguarded() synthesizes tsc's TS5115 (hacks.md).
+- Return contexts are computed eagerly at function entry (function_impl_enter_return_context()), so the
+  own-signature case sees "in flight above the barrier" and gets no context; tsc asks later, below the inner call's
+  barrier, and re-enters.
+
+## The census (tsgo on every `-p` corpus but vscode and a quarter of the source sweep, 1362 projects)
+| event (tsc) | corpora | source sweep quarter | tttt |
+|---|---|---|---|
+| REENTER 3 (return type) below a call barrier | 557 (valibot, xstate, excalidraw, effect, vue, zod) | 87 projects, 1190 | 0 |
+| ... reached through RETINFLIGHT (own signature's contextual return) | all | 85 projects, 1155 | 0 |
+| NESTEDSIG (nested call result replaced the outer) | 14 | 44 projects, 100 | dropped |
+| MEMBERS (members re-resolved while resolving) | 35 (zod, webpack's zod d.ts to depth 24, vue) | 45 projects, 122 | never |
+| REENTER 0 (symbol type) below a call barrier | 0 | 7 projects, 9 | 0 |
+| REENTER 0 below a variance barrier | 0 | 7 projects, 9 (angular-components' aria tree.ts, crawlee) | not modelled |
+| REENTER 1 / 4 (base constructor / constraint) | 3 (effect TaggedClass) / 0 | 0 / 1 (angular-cli) | 0 |
+| REENTER 2 (alias) | 0 | 0 | apollo only |
+tttt reaches tsc's answers through another order on valibot, xstate, excalidraw, effect, vue and mikro-orm/tests.
+Where it doesn't: better-auth's -TS2345 (lynx-store.ts:65, react-store.ts:67: RETINFLIGHT -> REENTER 3 -> NESTEDSIG
+with a different nested result; a 20-line `ba.ts` repro in bugs/sourcesweep_build.md), vue 0 / 2 and arktype's TS5115
+(MEMBERS nesting to the limit; `r1.ts` in bugs/sourcesweep_checker.md: tsgo nests one type's members 33 deep).
+
+## Experiments (reverted)
+1. Aliases re-entering below the call barrier too (tsc's rule): suite unchanged, mikro-orm/tests gained TS2456/TS7022/
+   TS7023 at defineEntity.test.ts:205-215 because of the then-present "once" flag. Redo it now that the flag is gone.
+2. The outermost variance measurement moving `resolving_start` for declarations and returns too: loses
+   classVarianceResolveCircularity2's TS7022 (the nested call and variance paths differ).
+Lesson: the pieces only work together; generalizing one site's rule while the others keep their approximations moves
+the divergence.
+
+## Outstanding stages
+- **C. Nested call results supersede**: call_return_type()'s nested resolution stores its result; the outer keeps the
+  nested one (tsc's `links.resolvedSignature != resolvingSignature`) and the nested diagnostics are reported; with
+  tsc's chooseOverload rule for a single NoConstraintChecks candidate (#64192). Alone it changes nothing (tried
+  2026-10-19): nothing re-enters until D.
+- **D. Return contexts pulled, not pushed**: the return expression's contextual type computed when a consumer asks,
+  so the own-signature case re-enters (the one re-entry real code does at volume, 6% of projects). `Checker.return_
+  context` is a value passed down to ty_check_expr(); a pull model needs a lazy-context sentinel or forcing "F's return
+  context" in resolve_call() after the barrier is set. Known to matter: better-auth's 2 diagnostics and the zod getter
+  case (bugs/missing_checks.md). Do it with a contextual-typing rework, not alone.
+- **E. Members without in-flight state**: won't fix unless members.c adopts tsc's resolution order (bases instantiated
+  with the reference's arguments); which instantiation is the 100th decides the error type. vue's 2 and arktype's
+  TS5115 stay (bugs/tsgo_divergences.md).
+Validation for any of them: the suite, classVarianceResolveCircularity2 and ttttAliasReentersBelowVarianceBarrier,
+mikro-orm/tests, crawlee, angular-components, tiptap, karakeep, dyad, solid, b4run unchanged; better-auth's -TS2345
+gone after C+D; kdiff byte-identical.

@@ -1,7 +1,7 @@
 # Display bugs (types/symbols baselines)
 What tttt prints differently from tsc, where the underlying type is right (or nearly). `scripts/displaydiff.py` ranks the
 mechanisms across the suite (`other` is mostly type-core bugs the types baseline shows first); these are the known
-rules. Plan 21 (closed) did the bulk. Pruned 2026-10-09 against the tsgo 7.1 suite: every named test fails there;
+rules. The type-display work (closed) did the bulk. Pruned 2026-10-09 against the tsgo 7.1 suite: every named test fails there;
 probe files (`*.ts` without a test name) weren't re-run.
 
 ## Aliases
@@ -43,7 +43,7 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   valibot/type-fest.
 
 - **Order dependence of `Array<T>` vs `T[]`**: an annotation's display depended on when the global Array type was
-  first built (moot since plan 37 D builds Array at checker start), but the mechanism is still there for other global
+  first built (moot since the tsc mechanism ports build Array at checker start), but the mechanism is still there for other global
   generics: if `X<T>` vs another spelling flips with `-f` vs a full run or with `--checkers`, find what the printer
   keys on.
 
@@ -95,7 +95,7 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   property checks and JSX spread attributes read the builder's other fields (and object literal widening may rebuild
   the properties).
 
-## Triage 2026-10-07 (agent C): display/printer leftovers, each reproduced, root cause where found
+## Triage 2026-10-07 : display/printer leftovers, each reproduced, root cause where found
 - **Named error types**: tttt already models tsc 6's unresolved-name error types (ty_unresolved(): one any/error type
   per name and argument types, printed as the reference; tsc's getUnresolvedSymbolForEntityName + errorTypes, never
   instantiated, an indexed access of it is itself). Since 2026-10-07 the arguments are types, not reprinted nodes
@@ -129,7 +129,7 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   tttt, extHostTypeConverters.ts:673/688 and three more): not looked at again; the e.ts-style repro in the 2026-10-07
   triage stands. Likely elaborateObjectLiteral's order (tsc elaborates the first property whose *declared* target
   property fails with an expression it can descend into, and stops at the first reported one per literal).
-## TS 7.1 window leftovers (triage 2026-10-09; fan-out agents C/D, 7.1 new tests)
+## TS 7.1 retarget leftovers (2026-10-09; 7.1 new tests)
 - `implements`/interface `extends` qualifiers are `any` in tsgo's types baseline (ported as observed in
   baseline_test_traversal.c); the checker path that makes them any wasn't found.
 - Index symbols of a destructuring assignment's rest (`({ ...r } = strMap); r.z`): tsgo's getRestType gets the object
@@ -152,23 +152,23 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 - Relation paths that differ from tsgo's (not elaboration rules): reactReduxLikeDeferredInferenceAllowsAssignment and
   circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (tsgo elaborates 9 levels;
   missing_checks.md has the two fixes tried).
-- The pseudochecker (syntax-based declaration types: `a`'s line printing a whole initializer's syntax) is plan 55.
+- The pseudochecker's syntax-based declaration types (`a`'s line printing a whole initializer's syntax): "Pseudochecker gaps" below.
 - `Partial<{ a: number } & (object extends R ? { c?: F } : { c: F })>`'s `p.c` (trpc's shape; errors fixed by
   adbed7b9): tsgo's symbol has both declarations of `c` (`Decl(1, 70), Decl(1, 82)`), tttt only the first: the
   homomorphic mapped property over the conditional's union keeps one declaration.
 - `type D = { get d(); set d(v: number) }`: `d` is number in tsgo (the typed setter says it), any in tttt; an
   accessor pair in a type literal/interface takes its type from the getter side only.
-- **`typeof s` vs `unique symbol` in messages** (found 2026-10-12, agent B): with `declare const s1: unique symbol`,
+- **`typeof s` vs `unique symbol` in messages** (found 2026-10-12): with `declare const s1: unique symbol`,
   `let v: "a" | typeof s1 = ...; const r: number = v;` makes tsgo print `string | typeof s1` and tttt `string | unique
   symbol`. A mapped type's property of that type prints `unique symbol` on both sides. tsgo's typeToTypeNode names
   the symbol when the type isn't AllowUniqueESSymbolType and the symbol is accessible. Find which flags the message's
   typeToString passes there.
 
-## Suite tail leftovers (2026-10-12 fan-out, agent C: TS tests failing types/symbols only)
+## Suite tail leftovers (2026-10-12: TS tests failing types/symbols only)
 Looked at, root cause where found, not fixed (one test each unless named):
 - es6ExportEqualsInterop/nodeModulesJson/import_reference-to-type-alias/importedAliasesInTypePositions/
   escapedIdentifiers/tripleSlashReferenceAbsoluteWindowsPath/symbolProperty44: fixed in the harness (2026-10-12).
-- $ExpectType leftovers (2026-10-14, agent D; 68637/68640):
+- $ExpectType leftovers (2026-10-14; 68637/68640):
   - map-to-obj-tests.ts:9/12: `MapToObj(new Map([["hello", "world"]]))` with `MapToObj<K extends string | number |
     symbol, V>(map: Map<K, V>): Record<K, V>`: tsc infers the inner `new Map`'s K as string, tttt keeps "hello" (the
     literal's contextual type through the return mapper is the outer K, whose constraint is primitive, which tttt's
@@ -188,7 +188,7 @@ the other expanded one more level before visitedTypes stops it. tttt has one typ
 earlier:
 - jsFunctionWithPrototypeNoErrorTruncationNoCrash (types): `Color.prototype = { negate: function () { return this } }`:
   tsgo's `Color` prints `negate: () => { negate: () => any; ... }` where tttt prints `negate: () => any`; only the
-  parameterless methods (negate, greyscale) expand. Fully traced with an instrumented tsgo (2026-10-15, agent C;
+  parameterless methods (negate, greyscale) expand. Fully traced with an instrumented tsgo (2026-10-15;
   checkObjectLiteral/getContextualThisParameterType/getTypeOfSymbol in the checker, createAnonymousTypeNodeEx/
   visitAndTransformType/createCyclicStructurePlaceholder in the node builder). Three tsgo behaviours combine:
   1. The checker checks the literal three times (getWidenedTypeForAssignmentDeclaration for the `prototype` symbol: P;
@@ -205,25 +205,25 @@ earlier:
   Matching needs all three in tttt: a second literal type for the prototype assignment (checker identity), the
   syntactic printing of parameterless function expressions, and a printer cache with tsgo's keys and lifetime (per
   enclosing declaration, across the lines of a types baseline). Each is a real tsgo mechanism, but together they only
-  reproduce an incidental output; not worth a session now (decided 2026-10-15; reconsider if the printer cache shows up
+  reproduce an incidental output; not worth the time now (decided 2026-10-15; reconsider if the printer cache shows up
   in other tests or dtsdiff buckets).
 - A JavaScript `{}` container's initializer (`var o = {}; o.self = o`): tsgo prints `>{} : { self: { self: any; }; }`,
   tttt `{ self: any; }` (the variable's lines agree). In ttttLocalExpandoCyclicPrint's probe, left out of the test.
 Size: a fresh/regular distinction for object literal types at display (or a real fresh type identity, which
 relations and widening already approximate with flags): investigate how far tttt's TYF_FRESH/regular handling goes
-for object literals before choosing; ~1 session.
+for object literals before choosing; about a day of work.
 
 
 ## CLI text mismatches (clidiff `text` verdicts)
-Same diagnostics by (file, line, column, code), other text. After the 2026-10-18 fan-out (`scripts/clidiff.py`, 3675
-projects): 3667 match, **1 `text`** (was 54; babel-traverse and tiptap fixed by agent C 2026-10-19), 7 `diagnostics` (bugs/sourcesweep_checker.md), 0 order/exit code/crash.
+Same diagnostics by (file, line, column, code), other text. After the 2026-10-18 pass (`scripts/clidiff.py`, 3675
+projects): 3667 match, **1 `text`** (was 54; babel-traverse and tiptap fixed 2026-10-19), 7 `diagnostics` (bugs/sourcesweep_checker.md), 0 order/exit code/crash.
 Each needs a cut-down repro first (`scripts/clidiff.py -f '^PROJECT$' -v`; `-k KIND --last` lists a bucket's
 diagnostics). Left:
-- **apollo-client/integration-tests/vite** (agent C 2026-10-19 fixed its `... | ...`, `(...)` and `{}` placeholders;
+- **apollo-client/integration-tests/vite** (2026-10-19 fixed its `... | ...`, `(...)` and `{}` placeholders;
   left, each its own mechanism): ObservableQuery.ts:680's missing `'undefined & TData' ... 'RegExp & ...'` lines fixed
-  2026-10-20 (agent B: best_matching_type() for an intersection source with generic keys);
+  2026-10-20 (best_matching_type() for an intersection source with generic keys);
   ObservableQuery.ts:559's `{ data: ... ? TComplete : CustomMaybeMaskedImplementation<...>; ... 4 more ...; }` where
-  tttt prints the last alias argument (length counted lower before it; 2026-10-20, agent B: the only `text` left of
+  tttt prints the last alias argument (length counted lower before it; 2026-10-20: the only `text` left of
   the whole clidiff run. The header line matches, `{ [complete]?: infer TComplete | undefined; }` and `<...>`; the
   three chain lines print the extends type as written, `{ [complete]?: infer TComplete; }` (reused node, 12 chars
   shorter), and there tsgo still elides `<...>` while tttt doesn't: suspect tsgo counts the reused node's type, or the
@@ -239,3 +239,42 @@ diagnostics). Left:
   both CLIs) narrowed graphql-yoga's to colliding list members.
 - Corpora: all match but vue's two `diagnostics` (known); webpack's zod TS5115 order was the missing-properties scan
   typing the source (cfcd8174).
+
+## Pseudochecker gaps
+`src/ty/pseudo.c` ports tsgo's `internal/pseudochecker` (syntax-based declaration types, 2026-10-12): the types
+printer, declaration emit and the isolatedDeclarations TS9xxx reports use it (`declaration_diagnostics.c`). What is
+left (the full write-up: `git show af936072c:agents/plans/55_pseudochecker.md`):
+- **Messages**: a message printed from its expression (`reuse_nodes`, `d.approx`) uses the pseudo type in tsgo too.
+  tsgo counts approximateLength for each reused node by its source range including leading trivia
+  (`tryReuseExistingNodeHelper`: Direct annotations, literals, reused names, type parameters) and nothing for the
+  keywords and structure pseudoTypeToNode makes; Inferred parts count as typeToTypeNode does. tttt's `display_node`
+  counts text + 1. Port that counting into `display_pseudo`, drop the `!d.approx` gates (and `!d.reused`: not inside
+  reused nodes either), then the message-only slices (`TyDisplay.literal_value`, `pseudo_object_literal()`/
+  `pseudo_object_length()`, the "`return x as T` from nowhere" branch of display_signature_inner). Check with
+  `scripts/errtextdiff.py` (truncation buckets).
+- **Then delete the slices** the pseudo path precedes, one at a time with the suite as the check: in
+  `display_signature_inner` `single_return_node`/`single_return_function`/`single_return_keyword`/
+  `single_return_assertion`/`single_return_quoted_literal`, `TyDisplay.syntactic_function` and the parameter branches
+  (`asserted`, `primitive_literal_keyword`, the initializer function); in `display_structure`'s property loop
+  `literal_initializer`, `initializer_function`, `syntactic_getter`; in `src/ty/expr.c` `check_object_literal`'s
+  `asserted` for `a: x as T` and the synthesized single-quoted literal node (PropDecl.asserted would then only carry
+  annotations of spread/mapped/reverse-mapped properties: give those a pseudo Direct instead).
+- **Builder gaps**: class property declarations are built (`pseudo_of_field()`) but only declaration emit uses them
+  (not printed members of a class's structural type); expandos (`typeFromExpandoProperty`); JSDoc (`FullSignature`,
+  `@type` on properties only partly); a variable's own contextual place (`pseudo_of_variable` takes `PseudoPlace{0}`:
+  a variable inside a callback is contextually typed to tsgo); binding elements (NoResult).
+- **isolatedDeclarations leftovers** (checked against tsgo with `--declaration --isolatedDeclarations` flipped on 400
+  clean source sweep projects: missing/spurious TS9xxx 4944/7352 before, 714/1 after; 487 of the missing are in
+  projects with unrelated type errors, where the CLI drops declaration diagnostics): properties past a truncation
+  (monkeytype contracts' TS7056), knip's schema/configuration.ts (42: spreads of zod shapes `...x.shape` in huge
+  printed types), react-navigation routers' TS9039 for `State` (8). Probe: tsgo `-p P --noEmit --declaration
+  --isolatedDeclarations --tsBuildInfoFile /tmp/x` against `tttt -p P --declaration --isolatedDeclarations`, TS9xxx
+  only.
+- **Known traps**: `isContextuallyTyped` stops at nothing (a variable inside a callback's body is contextual);
+  instantiated signatures get tsgo's fresh type parameters (`pseudo_enter_signature`), reused nodes print through the
+  mapper (`mapped_by`) but equivalence doesn't apply it. Not pseudo: genericCallOnMemberReturningClosedOverObject's
+  expression lines (an object literal instantiated inside its own generic method's signature is a new instantiation
+  per level in tttt; tsgo's outer type parameters exclude the method's), and the `this` type of an object literal
+  method being the literal's widened type itself (tsgo's getWidenedType(checkExpressionCached(literal)) is another
+  type, so it prints one level deeper; the pseudo return type hides this where the method's return is printed from
+  syntax).

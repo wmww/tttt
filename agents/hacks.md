@@ -4,15 +4,15 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 `bugs/*.md`, triage.md or a plan. `grep -rn HACK src` finds the code-side markers.
 
 ## Global state, memory, parallelism
-- **Plan 86 4f's shared words keep a state byte each for the default path** (`FunctionReturn.state`,
+- **The shared graph's words (notes/shared_graph.md) keep a state byte each for the default path** (`FunctionReturn.state`,
   `SymbolLinks.declared_state`, `TyObjectState.base_state`...): without --shared-graph in flight is that byte, as S0
   designed (overlay.h); with it the byte is never touched. Correct: the Overlay for both (the claims are a stack with a
-  filter since plan 86's PERF note, a push and a load, cheaper than the map probe that was the measured reason). And function_return_type() counts an argument's return inferred under an outer inference
-  as tainted wholesale (keep_outer), where only the reads of the outer inference need to be (plan 86 "P2 progress").
+  filter since the flag's K1 overhead cuts (measurements.md "Shared graph K1 overhead"), a push and a load, cheaper than the map probe that was the measured reason). And function_return_type() counts an argument's return inferred under an outer inference
+  as tainted wholesale (keep_outer), where only the reads of the outer inference need to be (the design log's "P2 progress", which notes/shared_graph.md points to).
 - **A graph with one checker publishes nothing until a second one adopts** (InternTable.others null while alone;
   graph.c graph_adopt()'s publish_identities() catches up): correct only because a lone checker's second one comes when
   the first isn't running (start, its own file boundary, the recheck after the join). A path adopting a checker while
-  the first runs alone would race the catch-up (plan 86 "PERF" note).
+  the first runs alone would race the catch-up (the design log's "PERF" note, which notes/shared_graph.md points to).
 - `ast_free()` / `ast_delete()` (ast_alloc.c): the AST arenas trust the size they're given, and a too-big one hands
   the next allocation of that size someone else's bytes. `ast_delete()` takes `sizeof(*p)`, so a box allocated short
   (`property_dot_new()`, `require_ports` arrays) needs its real size at every free; nothing checks it. Correct: a
@@ -22,7 +22,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `huge_pages_take()` (prelude.c): whether an arena chunk is madvised for huge pages is decided by a budget of the free
   2 MB blocks `/proc/buddyinfo` listed at the first call, a guess at what the kernel can give without compacting
   synchronously. Correct: whatever the kernel would tell us (nothing does, short of watching `compact_stall` in
-  `/proc/vmstat`). Oracle: `compact_stall` and `thp_fault_alloc` around a vscode run (measurements.md "Plan 63").
+  `/proc/vmstat`). Oracle: `compact_stall` and `thp_fault_alloc` around a vscode run (measurements.md "Per-file AST arenas and huge pages").
 - `source_text_map()` (source_file.c): source text is a MAP_PRIVATE mapping of the file wrapped in a hand-built long
   `cstr` (STC's private layout: `cstr_l_set_cap`), and `source_texts_release()` drops its pages at every recycle. A
   file changed by another process mid-run is read changed, a truncated one reads as ending there (`text_sigbus()` maps
@@ -75,7 +75,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   once), so a TS2589 near the 5M limit, and circular variance measurements (which follow the files a checker saw), can
   depend on `--checkers`. Oracle: `scripts/kdiff.py`, `checkerdiff.py`.
 
-- Deferred bodies (plan 78; how they work and what a drop puts back: documentation.md "Deferred bodies"). The
+- Deferred bodies (how they work and what a drop puts back: documentation.md "Deferred bodies"). The
   approximations:
   - Body walk outputs are read through materializing accessors (`function_impl_walked()`, trailing `_` on the raw
     fields); left raw: an untyped uninitialized field's `ts_assigned_` (`class_untyped_field_ts_assigned()`, the parser
@@ -132,7 +132,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   skipped), `question_dot_after()`, an object literal missing `}` (`parse_object`), a bodyless accessor's TS1005,
   `json_check_value()`'s TS1328 (tsc: after a comment). A `span_from` on a parent's anchor inside a child parser before
   `parse_success` truncates. Correct: real token full starts. Oracle: errtextdiff.py positions.
-- Error recovery (plan 27; documentation.md "Error recovery"): `list_abort_or_skip()` skips a token that starts an
+- Error recovery (documentation.md "Error recovery"): `list_abort_or_skip()` skips a token that starts an
   element of the list itself; the fail cache ignores `parsing_context`; `parse_binding_content()` stops at the first bad
   element; a committed arrow whose parameters fail falls back to a parenthesized expression; `tok_scan_end()` is a second
   token notion next to `hop_token()`; `parse_jsx_attributes` approximates isInSomeParsingContext. Oracle:
@@ -228,7 +228,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `without_unit()` (ty/flow.c): the `!==`-a-unit filter of a union is memoized per (union, unit), KEY_FLOW_NOT_UNIT.
   This assumes is_not_unit_comparable_to's answers never change, but they come from comparability relations and base
   constraints, which tsc recomputes each time (a relation answered "maybe" inside a cycle could differ later). It is
-  a perf memo, plan 86 stage 2. Oracle: `scripts/oracles.py` byte-identical; drop the memo if a divergence traces
+  a perf memo from the single-threaded memory-system work. Oracle: `scripts/oracles.py` byte-identical; drop the memo if a divergence traces
   back to it.
 - Evolving arrays: switch clauses narrow the final array, not the `TY_EVOLVING_ARRAY`. Oracle: suite evolving-array
   tests, flagflip noImplicitAny cells.
@@ -297,7 +297,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   class exclusions, and a type parameter whose apparent type is any is the error type (tsc: isAnyLike, any). Both
   print `any`, so no oracle sees it; the any-base and generic mapped gates are gone (2026-10-17).
 - Contextual `this` (`ty_contextual_this_type`): through the anchor once the call is resolved, else the literal's last
-  context (`KEY_LITERAL_CONTEXT`, last wins; tsc's pushed contextual type, a push/pop stack is plan 51 stage 3 item 3);
+  context (`KEY_LITERAL_CONTEXT`, last wins; tsc's pushed contextual type, a push/pop stack is the contextual-check state work);
   `ThisType<T>` found by name, instantiated with `ty_instantiate_fixing()`.
 
 ## Expressions and contextual typing (`ty/expr.c`, `ty/access.c`)
@@ -366,7 +366,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   (`ty_check_static_heritage`, TS2417: it relates to each intersection member plainly to name the one that fails, which
   tsc's single run does inside typeRelatedToEachType).
 - `is_reducible_intersection()` (checker.c) looks for a literal property against a type parameter one in the shape
-  tsc's never-filled instantiation would reduce; an optional literal's undefined is stripped first (as before plan 82),
+  tsc's never-filled instantiation would reduce; an optional literal's undefined is stripped first (as before the optional-properties-carrying-undefined change),
   where tsc's getReducedType would reduce through `"a" | undefined` too. Correct: getUniqueLiteralFilledInstantiation.
 - `conditional_source_related()` relates the distributive constraint without tsc's hasNonCircularBaseConstraint(source)
   gate: computing it inside an alias's resolution gives spurious TS2456 (type-fest's `_ConditionalPickDeep`, crawlee).
@@ -375,7 +375,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   level is deeply nested by itself, so once the source is too the pair is Maybe: `function g<M extends readonly
   string[], k extends keyof M>(x: M[k] extends Object ? M[k] : never) { const a: string | number | symbol = x }` is
   TS2322 in tsc, nothing here (mutant declarationEmitNestedAnonymousMappedType extends-object). tsc's way (2026-10-20,
-  agent C): react 1.39 -> 2.54 G instructions, 39.5k -> 167k types (tsgo: 133k), and largeTupleTypes then gets a
+  react 1.39 -> 2.54 G instructions, 39.5k -> 167k types (tsgo: 133k), and largeTupleTypes then gets a
   spurious TS2799 (tttt's GrowExp chain goes deeper than tsgo's before the 10-deep conditional source cut-off: compare
   the stacks with an instrumented tsgo before retrying).
 - `resolved_base_constraint()` simplifies indexed accesses, and conditionals only when `may_simplify_conditional()`
@@ -439,7 +439,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   mappedTypeRelationships and zod's SortItem<output<T>> (generic keys) against `{ [K in keyof A | keyof B]: (A & B)[K] }`.
 
 ## Type core (`src/ty/`)
-- Plan 86 4f's converted words keep a default-path state byte next to each (Prop.type_flight, Signature.res_flight,
+- The shared graph's converted words (notes/shared_graph.md) keep a default-path state byte next to each (Prop.type_flight, Signature.res_flight,
   ret_flight, predicate_flight, TyObjectState.members_flight, MappedInfo.template_flight, TyParamState's three): without --shared-graph in flight is that byte, with it the worker's Overlay. They
   go with the plain path, once the flag is the default. Measured at D: all sit in padding holes (only FunctionReturn
   shrinks, 16 -> 8 B, and MappedInfo, TyCondBranch, SymbolLinks by 8 B with repacking); two byte stores per
@@ -447,28 +447,28 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - The per-read shadow test (`!my graph_shadowed` on every word's fast path: sw_get(), ty_members(), sig_res() & co):
   0.2-0.6% of K1 instructions (zod -0.6% without it) for 0-1 shadowed words a K12 run. The alternative, a shadowed
   worker giving its file up at once to a fresh worker, needs a mid-file abort (the redo's longjmp, its leaks, a
-  per-file error context), deleted at plan 86 4f D; kept as a future lever. sw_look_fast() & co (ty.h) inline the default path of overlay.c's functions.
+  per-file error context), deleted with the shared graph (notes/shared_graph.md); kept as a future lever. sw_look_fast() & co (ty.h) inline the default path of overlay.c's functions.
 - TyParamState.circular (members.c ty_param_constraint_is_circular()) is a word with no in-flight state: a re-entry
   computes it again and the first answer stays. Without a graph that is a first-wins CAS, as before.
 - signature_copied() (members.c): a copy of a signature whose resolution is in flight here gets a snapshot record
   published as resolved; before the words the copy's state stayed in flight forever with the snapshot, so a done-ness
   peek of the copy now says resolved. No oracle shows it.
-- `--shared-graph` (ty/graph.c, plan 86 stage 4f) is deterministic by construction except for the open items in plan 86's
+- `--shared-graph` (ty/graph.c, notes/shared_graph.md) is deterministic by construction except for the open items in notes/shared_graph.md's
   "Stage 4f: done" (kdiff groups C and W, seeds' drizzle TS2322, effect's Schema.tst.ts one-off). Identities go out at creation (intern_set()), memo kinds as their computation ends (graph_memo_flush()). A
   memo kind's slot must never hold an in-flight placeholder (a flush would publish it: KEY_IN_FLIGHT is the marker,
-  plan 86 4f D), nor a flag be set later on a hash-consed type (OBJECT_MODULE_CLONE). A side table entry that describes a shared object (a
+  notes/shared_graph.md), nor a flag be set later on a hash-consed type (OBJECT_MODULE_CLONE). A side table entry that describes a shared object (a
   property's write type, its synthetic parts) must be an identity kind, published before the
   object is reachable: graph_kind_class() lists the ones found so far (KEY_PROP_WRITE_TYPE, KEY_SYNTHETIC_PROP_PARTS,
   KEY_PROP_MAPPED_TYPE), more may hide behind a flag on a shared struct (KEY_ALIAS_MARKER is history: published
-  at creation it changed excalidraw at K12 threads; a memo kind until plan 86 4f P3 made it scratch, each checker's
+  at creation it changed excalidraw at K12 threads; a memo kind until the shared graph work made it scratch, each checker's
   own marker instances, once poisoned variance groups are measured by every worker).
-  (Prop.write_type_known and SymbolLinks.base_cycle are gone, plan 86 4f P1: a KEY_PROP_WRITE_TYPE entry's presence,
+  (Prop.write_type_known and SymbolLinks.base_cycle are gone, the shared graph work: a KEY_PROP_WRITE_TYPE entry's presence,
   MembersRare.base_cycle with SymbolLinks.base_constructor_cycle.) ty_interface_in_base_cycle()'s own walk is a word
   (SymbolLinks.interface_cycle). TSan with the flag is far from clean: `scripts/sharedgraph/tsan.sh` found ~55 distinct report groups
-  over the 14 `-p` corpora at T4/T12 (2026-10-21; the list is plan 86 4e item 1's "Stage 4f gates"), most of them
+  over the 14 `-p` corpora at T4/T12 (2026-10-21; the list is the design log's "Stage 4f gates", which notes/shared_graph.md points to), most of them
   lazy fields on shared types read plainly beside another worker's write. graph_kind_class() puts KEY_FLOW_NARROWED /
   KEY_FLOW_DISCRIMINANT (census: SHARE) with the scratch kinds, and treats identity records (SymbolLinks,
-  FunctionReturn) as published whatever their contents' taint. Since plan 86 4f P3 the intern memo kinds' taint is
+  FunctionReturn) as published whatever their contents' taint. Since the shared graph work the intern memo kinds' taint is
   runtime (graph.c's MemoTaint, every checker on a graph): a computation's start is its key's miss, found again at the
   put through a per-checker direct-mapped miss table (4096 slots; a pushed-out miss leaves its start in a floor bucket
   of 1024 that any put of a key not in the table takes, so it is never taken for clean: at worst a key sharing the
@@ -479,10 +479,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   publish whatever their taint, like identities: a tainted value of theirs reaches the others. A clean variance group rewinds graph_taint_now to its start
   (claim_and_measure()): its internal events (its own claims read) don't taint its callers; sound because nothing
   started inside the group is still in flight, but it is the one place the counter goes backwards.
-- Re-entry below resolution barriers (plan 88): tsc re-enters anything in flight below `resolutionStart` (a call's
+- Re-entry below resolution barriers (notes/reentrancy.md): tsc re-enters anything in flight below `resolutionStart` (a call's
   first resolution, the outermost variance measurement) and stops only when a request is above a barrier; tttt
   approximates per site: declarations and inferred return types re-enter below the call barrier every time, as tsc
-  does (plan 88 stage B, 2026-10-21), aliases only below the variance barrier
+  does (barrier termination, notes/reentrancy.md, 2026-10-21), aliases only below the variance barrier
   (alias_reenters()), symbol properties to depth 4 (prop_type_slow()'s `prop_reentry_depth`), base types find their
   cycle across barriers (ty_resolving_cycle_across_calls()), a call re-resolved while in flight drops the nested result
   (call_return_type()), and members never re-enter (members_reentered_unguarded() synthesizes the TS5115). The
@@ -517,12 +517,12 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   outer T relation as Maybe). Right rule: tsc's whole-intersection comparison; flagflip/sweep would show misses.
 - Instantiation keys of object literals and JavaScript function expressions by mentions, not by outer type parameters
   (tsc's getObjectTypeInstantiation): `object_literal_type_mentions()` / `ty_function_type_mentions()` (contextual
-  parameters could carry a call's type parameters, plan 51); unknown mentions fall back to the whole mapper (perf:
+  parameters could carry a call's type parameters; the contextual-check state work); unknown mentions fall back to the whole mapper (perf:
   docmost 2.2M types), and `declared_inside()` (`instantiate_anonymous()`) drops only parameters declared inside the
   node. An object literal with a getter has instances of both kinds (zod's recursive-types.test.ts depends on which
   meet). The identity depends on history: "unknown" is a peek (a property type not computed yet), and so is
   `literal_instance_is_itself()` (members and property types peeked); under `--shared-graph` the first instantiator
-  fixes it for everyone (plan 86 4f, the IDENT note). TypeScript function expressions are keyed by
+  fixes it for everyone (the shared graph's design log, the IDENT note: notes/shared_graph.md). TypeScript function expressions are keyed by
   `ty_function_outer_type_params()` now (tsc's way; on drizzle, effect, excalidraw, zod and nest no function's computed
   mentions were outside that set). Right rule: the same for object literals (needs the literal's scope) and JavaScript
   (JSDoc `@template`s aren't in the scopes' OuterGenerics); perfsweep types ratio and zod show it.
@@ -533,7 +533,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Stable type ordering (`ty/order.c`) ties still broken by tttt ids: roots without `outer`, deferred references with no
   cheap node position (`type_node_start()`), two nodes at one token, position-less unique symbols, intrinsic variants,
   same-symbol anonymous types with equal mappers. Shows as union order (displaydiff, expecttypes "union order"); `TTTT_ORDER_STATS=1` counts
-  them by class and `TTTT_ORDER_SEED=N` permutes them (plan 86's gate). Spread alternatives are keyed structurally.
+  them by class and `TTTT_ORDER_SEED=N` permutes them (the union-order gate, notes/shared_graph.md). Spread alternatives are keyed structurally.
 - Pseudo types (`ty/pseudo.c`): `pseudo_of_variable()` always gets a non-contextual place (tsgo: a variable inside a
   callback is contextual); `Pseudo.in_const` is syntactic (tsgo: isConstContext); `pseudo_enter_signature()` treats an
   instantiated signature's type parameters as fresh by mention; `reused_node_length()` ignores comments in the range;
@@ -753,7 +753,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 
 ## Harness and tools
 - **The taint prototype's hooks** (`TAINT_*` in lazy_type.c, checker.c's intern hooks, members.c, relate.c, lower.c,
-  function.c, conditional.c, instantiate.c, flow.c, expr.c, ty.h; plan 86 "Gate G0 result"): compiled out unless
+  function.c, conditional.c, instantiate.c, flow.c, expr.c, ty.h; the taint prototype, notes/shared_graph.md): compiled out unless
   `-DTTTT_TAINT`, but the explicit kinds' early returns are wrapped in `TAINT_IF()`, which makes them harder to read.
   Kept so cleandiff can be rerun after each stage 4a-4c refactor. Delete them once the overlay protocol (4d) records
   the same events for real. `instantiate.c`'s `TTTT_TAINT_EXP_TWIN` block is an experiment (G0's M1) and goes with M1's
@@ -771,7 +771,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   them).
 - The CLI checks a config that would emit JavaScript as `noEmit` (`Options.implicit_no_emit`): its emit-only option
   diagnostics (TS5055/5056 of .js outputs) are missing and noEmitOnError's exit code is 2 where tsc's is 1;
-  `scenarios.py` drops `EMIT_ONLY_CODES` (TS5011/5055/5056) from emitting commands. Lifts with JS emit (plan 64).
+  `scenarios.py` drops `EMIT_ONLY_CODES` (TS5011/5055/5056) from emitting commands. Lifts with JS emit.
 - JavaScript declaration diagnostics (`declaration_diagnostics_check()`): `check_commonjs_exports()` repeats the
   CommonJS exports' serialization (for painting) into a scratch context, `check_js_commonjs_exports()` having reported
   them. `export_specifier_local()` (check_entity_name()): a module export merging `export { x }` with a dotted
@@ -783,7 +783,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   the tag's column when the description starts on the next line; `jsdoc_tag_description()`, `{@link}` copied
   as written); `ty_jsdoc_name_is_type()` copies tsgo eliding the import of a JSDoc name its fallback resolves as a
   value (tsgo's own `.d.ts` then doesn't resolve).
-- JavaScript declaration emit (`declaration_emit.c`, plan 64 stage 6): CommonJS exports are found by a syntactic
+- JavaScript declaration emit (`declaration_emit.c`): CommonJS exports are found by a syntactic
   walk (`collect_commonjs()`, `ast_walk_statement()`), not the binder's export symbols; whether a member's name
   "resolves elsewhere" (tsgo's GetReferencedValueDeclaration) is looked up from the file's scope wherever the
   assignment is; a class expression's self-reference (tsgo's watchedClassSymbol) is found by writing the class into a
@@ -803,7 +803,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `append_compiler_options()` sends only the options tttt has, not tsgo's whole CompilerOptions JSON (paths, lib,
   strings): a mapper reading those gets nothing.
 - Not done: the `locale` initialize parameter, mapper protocol/stderr logging, declaration output names for mapped
-  files (unchecked since tttt emits declarations, plan 64), `-b`'s tsbuildinfo `contentMapperIdentities`.
+  files (unchecked since tttt emits declarations), `-b`'s tsbuildinfo `contentMapperIdentities`.
 - `node_in_mapped_file()` (ty_display.c, declaration maps): a reused TypeNode doesn't know its file; found from one of
   its spans, a keyword by comparing the text at its offset. Correct: TypeNodes knowing their file. Shown by: dtsdiff.py.
 - `graph_fresh_worker()` (program.c), `--shared-graph`'s shadowed-worker hand-over: the retired checker stays allocated

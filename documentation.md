@@ -1,5 +1,7 @@
 # tttt Documentation
 
+"plan N" (and "plan N stage K") here, in code comments and in scripts is a historical tag: the plans were deleted on 2026-10-22 and resolve to `git show af936072c:agents/plans/` (design knowledge still needed is in `agents/notes/`).
+
 ## Programs
 The repository contains three programs.
 

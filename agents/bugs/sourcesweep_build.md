@@ -1,7 +1,7 @@
 # The source sweep's solutions: `tsc -b` against `tttt -b`
 `scripts/sourcesweep.py --build`: every `tsconfig*.json` with `references` that no other config of its repo
 references, built by tsgo with `-b --force` in a bwrap overlay of `thirdparty/sources` (cache
-`test/sourcesweep/tsc-build.jsonl.gz`, `--build --tsc[-new]`) and checked by `tttt -b --no-write`. Since plan 87
+`test/sourcesweep/tsc-build.jsonl.gz`, `--build --tsc[-new]`) and checked by `tttt -b --no-write`. Since `-b` reads emitted declarations
 stage 1 (2026-10-20) `-b` reads its references' emitted declarations like tsc -b (documentation.md "Project
 references"), so the old "by design" verdicts (errors inside emitted declarations, body-only imports, tsgo emit bugs
 leaking downstream) are gone: **409 / 416** (apollo cacheOverride and signatures/modern fixed since).
@@ -27,7 +27,7 @@ Left (2026-10-20, by project; + spurious, - missing):
   `useCallback(() => listenKeys(store as any, keys, emitChange))` with `declare function useCallback<T>(cb: T): T`.
   The same family as the apollo fix (tsc re-entering what is in flight below a barrier; tttt re-enters only aliases
   below a variance measurement, `alias_reenters()`).
-  Plan 88 (2026-10-20) has the model and a census: this RETINFLIGHT -> REENTER 3 -> NESTEDSIG chain is the one
+  Re-entrancy (notes/reentrancy.md, 2026-10-20) has the model and a census: this RETINFLIGHT -> REENTER 3 -> NESTEDSIG chain is the one
   re-entry real code does at volume (6% of projects), tttt never takes it (eager return contexts) and still matches
   everywhere else; fixing it is stages B-D (pulled return contexts), deferred.
 - hono (tsconfig.build.json): +TS2769 2 (request.ts:214, a `-p` bug): `parseBody(this, options)` with `this` against
@@ -61,5 +61,5 @@ default builders reports TS2307s the whole-solution build doesn't; `--builders 1
 earlier, hacks.md) gets all of atproto but this one; not worth chasing.
 
 Perf: jest's `__tests__` builds (every package gated by TS5108) are declaration-walked only
-(`program_set_declarations_only()`). Plan 87 stage 2 (share parsed declaration files across a build's programs) is
+(`program_set_declarations_only()`). Sharing parsed declaration files across a build's programs (todo.md) is
 the next `-b` perf step.

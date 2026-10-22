@@ -1,6 +1,6 @@
 # JavaScript and JSDoc: open divergences
 `scripts/jsstats.py` (after `scripts/failstats.py`) lists the failing JS tests by feature. documentation.md "JSDoc" /
-"CommonJS" describe what exists. The suite/JS tail fan-out of 2026-10-12 (agent D) fixed 41 of the 63 JS tests left (with agent A's duplicate diagnostics);
+"CommonJS" describe what exists. The suite/JS tail pass of 2026-10-12 fixed 41 of the 63 JS tests left (with a duplicate-diagnostics fix);
 what remains is below, each with what was found.
 
 ## Binding and merging
@@ -28,7 +28,7 @@ check_js_this_properties()), and outside isolatedDeclarations a CommonJS file's 
 variable, `Object.defineProperty(exports, "n", { value: e })` and `exports.x = e` (not a function or class)
 serialized like variables (check_js_commonjs_exports(): TS4023, TS5088...). Not walked: JS functions and classes,
 expandos, JSDoc typedefs/namespaces, `module.exports = { ... }` literals, ES module exports of JS files, a base class's
-inference fallback; the full JS declaration emit is plan 64 stage 6. No suite test left.
+inference fallback; the full JS declaration emit is the JavaScript declaration emit work. No suite test left.
 
 ## Older binder gaps (written against tsc 6, before the JS rework: recheck against tsgo before working on one)
 - `exports.x =` next to `module.exports = {...}`.
@@ -44,7 +44,7 @@ inference fallback; the full JS declaration emit is plan 64 stage 6. No suite te
 - Mutant one-offs (JS mutants 2026-10-09): TS2540 read-only `NS` (ensureNoCrashExportAssignmentDefineProperrtyPotentialMerge),
   moduleExportAlias5 TS2339, jsDeclarationsFunctions TS2323 (`export { j }` twice).
 
-## Unfiled suite failure (triage 2026-10-14, plan 66)
+## Unfiled suite failure (triage 2026-10-14)
 - Assigning a function to a class's static method (`class L { static m() {} }` then `L.m = function (q) {}`; a class
   expression's too, `var K = class {...}`, `ns.sub = class {...}`) misses tsgo's TS2322 "Type '(q: any) => void' is
   not assignable to type '() => void'" (found next to ttttExpandoClassExpressionStatics, triage 2026-10-14).
