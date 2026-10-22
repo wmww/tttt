@@ -2257,6 +2257,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTypeofLocalFreeParams': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTypeofThisObjectLiteralContainer': {
         errors: true,
         symbols: true,

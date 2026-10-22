@@ -1,0 +1,577 @@
+//// [test/cases/ttttTypeofLocalFreeParams.ts] ////
+
+=== src/types.ts ===
+import type { StateMachine } from './StateMachine';
+>StateMachine : StateMachine<TAction, TGuard, TDelay, TStateValue, TTag, TInput, TOutput, TEmitted, TStateMeta, TStateSchema, TTransitionMeta>
+
+import { Spawner } from './spawn';
+>Spawner : any
+
+export type Compute<A> = { [K in keyof A]: A[K] } & unknown;
+>Compute : { [K in keyof A]: A[K]; }
+
+export type InputFrom<T> =
+>InputFrom : InputFrom<T>
+
+  T extends StateMachine<
+    infer _TContext,
+    infer _TEvent,
+    infer _TChildren,
+    infer _TActor,
+    infer _TAction,
+    infer _TGuard,
+    infer _TDelay,
+    infer _TStateValue,
+    infer _TTag,
+    infer TInput,
+    infer _TTransitionMeta
+  >
+    ? TInput
+    : T extends ActorLogic<
+          infer _TEmitted
+        >
+      ? TInput
+      : never;
+
+export type ConditionalRequired<
+>ConditionalRequired : ConditionalRequired<T, Condition>
+
+  T,
+  Condition extends boolean
+> = Condition extends true ? Required<T> : T;
+>true : true
+
+export type SingleOrArray<T> = readonly T[] | T;
+>SingleOrArray : SingleOrArray<T>
+
+type DistributeActors<
+>DistributeActors : DistributeActors<TContext, TEvent, TActor, TAction, TGuard, TDelay, TEmitted, TTransitionMeta, TSpecificActor>
+
+  TContext extends MachineContext,
+  TEvent extends EventObject,
+  TActor extends ProvidedActor,
+  TAction extends ParameterizedObject,
+  TGuard extends ParameterizedObject,
+  TDelay extends string,
+  TEmitted extends EventObject,
+  TTransitionMeta extends MetaObject,
+  TSpecificActor extends ProvidedActor
+> = TSpecificActor extends { src: infer TSrc }
+>src : TSrc
+
+  ?
+      | Compute<
+          {
+            input?:
+>input : Mapper<TContext, TEvent, InputFrom<TSpecificActor["logic"]>, TEvent> | undefined
+
+              | Mapper<
+                  TContext,
+                  TEvent,
+                  InputFrom<TSpecificActor['logic']>,
+                  TEvent
+                >
+            onError?:
+>onError : any
+
+              | SingleOrArray<
+                  TransitionConfigOrTarget<
+                    TTransitionMeta
+                  >
+                >;
+
+            onSnapshot?:
+>onSnapshot : any
+
+              | SingleOrArray<
+                  TransitionConfigOrTarget<
+                    TTransitionMeta
+                  >
+                >;
+          } & { [K in RequiredActorOptions<TSpecificActor>]: unknown }
+        >
+      | {
+          input?:
+>input : any
+
+            | SingleOrArray<
+                TransitionConfigOrTarget<
+                  TTransitionMeta
+                >
+              >;
+
+          onSnapshot?:
+>onSnapshot : any
+
+            | SingleOrArray<
+                TransitionConfigOrTarget<
+                  TTransitionMeta
+                >
+              >;
+        }
+  : never;
+
+export type InvokeConfig<
+>InvokeConfig : {} | DistributeActors<TContext, TEvent, TActor, TAction, TGuard, TDelay, TEmitted, TTransitionMeta, TActor>
+
+  TContext extends MachineContext,
+  TEvent extends EventObject,
+  TActor extends ProvidedActor,
+  TAction extends ParameterizedObject,
+  TGuard extends ParameterizedObject,
+  TDelay extends string,
+  TEmitted extends EventObject,
+  TTransitionMeta extends MetaObject
+> =
+  IsLiteralString<TActor['src']> extends true
+>true : true
+
+    ? DistributeActors<
+        TContext,
+        TEvent,
+        TActor,
+        TAction,
+        TGuard,
+        TDelay,
+        TEmitted,
+        TTransitionMeta,
+        TActor
+      >
+    : {
+      };
+
+export type AnyInvokeConfig = InvokeConfig<
+>AnyInvokeConfig : any
+
+  any // TTransitionMeta
+>;
+
+export interface StateNodeConfig<
+  TTransitionMeta extends MetaObject = TStateMeta
+> {
+  invoke?: SingleOrArray<
+>invoke : SingleOrArray<{ [x: string]: unknown; input?: Mapper<TContext, TEvent, any, TEvent>; onError?: SingleOrArray<TransitionConfigOrTarget<TTransitionMeta_1>>; onSnapshot?: SingleOrArray<TransitionConfigOrTarget<TTransitionMeta_1>>; } | { input?: SingleOrArray<TransitionConfigOrTarget<TTransitionMeta_1>>; onSnapshot?: SingleOrArray<TransitionConfigOrTarget<TTransitionMeta_1>>; } | {}> | undefined
+
+    InvokeConfig<
+      TContext,
+      TEvent,
+      TActor,
+      TAction,
+      TGuard,
+      TDelay,
+      TEmitted,
+      TTransitionMeta
+    >
+  >;
+  route?: RouteTransitionConfig<
+>route : any
+
+    TTransitionMeta
+  >;
+}
+
+export type AnyStateNodeConfig = StateNodeConfig<
+>AnyStateNodeConfig : AnyStateNodeConfig
+
+  any // transition meta
+>;
+
+export interface StateNodeDefinition<
+> {
+  invoke: Array<
+>invoke : InvokeDefinition<TTransitionMeta>[]
+
+    InvokeDefinition<
+      TTransitionMeta
+    >
+  >;
+}
+
+type InitialContext<
+>InitialContext : InitialContext<TContext, TActor, TInput, TEvent>
+
+  TContext extends MachineContext,
+  TActor extends ProvidedActor,
+  TInput,
+  TEvent extends EventObject
+> = ({
+}: {
+  spawn: Spawner<TActor>;
+>spawn : Spawner<TActor>
+
+  input: TInput;
+>input : TInput
+
+  self: ActorRef<
+>self : ActorRef<MachineSnapshot<TODO>, AnyEventObject>
+
+    MachineSnapshot<
+      TODO // State schema
+    >,
+    AnyEventObject
+  >;
+}) => TContext;
+
+export type MachineConfig<
+>MachineConfig : MachineConfig<TContext, TEvent, TActor, TAction, TGuard, TDelay, TTag, TInput, TTransitionMeta>
+
+  TContext extends MachineContext,
+  TEvent extends EventObject,
+  TActor extends ProvidedActor = ProvidedActor,
+  TAction extends ParameterizedObject = ParameterizedObject,
+  TGuard extends ParameterizedObject = ParameterizedObject,
+  TDelay extends string = string,
+  TTag extends string = string,
+  TInput = any,
+  TTransitionMeta extends MetaObject = TStateMeta
+> = (Omit<
+  StateNodeConfig<
+    DoNotInfer<TTransitionMeta>
+  >,
+  'output'
+> & {
+}) &
+  (MachineContext extends TContext
+    ? { context?: InitialContext<LowInfer<TContext>, TActor, TInput, TEvent> }
+>context : InitialContext<LowInfer<TContext>, TActor, TInput, TEvent> | undefined
+
+    : { context: InitialContext<LowInfer<TContext>, TActor, TInput, TEvent> });
+>context : InitialContext<LowInfer<TContext>, TActor, TInput, TEvent>
+
+export interface MachineTypes<
+  TContext extends MachineContext,
+  TEvent extends EventObject,
+  TActor extends ProvidedActor,
+  TTransitionMeta extends MetaObject = TStateMeta
+> {
+  actors?: TActor;
+>actors : TActor | undefined
+}
+
+export interface RaiseActionOptions<
+> {
+}
+
+export type Mapper<
+>Mapper : Mapper<TContext, TExpressionEvent, TResult, TEvent>
+
+  TContext extends MachineContext,
+  TExpressionEvent extends EventObject,
+  TResult,
+  TEvent extends EventObject
+> = (args: {
+>args : { context: TContext; self: ActorRef<AnyEventObject>; }
+
+  context: TContext;
+>context : TContext
+
+  self: ActorRef<
+>self : ActorRef<AnyEventObject>
+
+    AnyEventObject
+  >;
+}) => TResult;
+
+export interface TransitionDefinition<
+> {
+  select<TSelected>(
+>select : <TSelected>() => Readable<TSelected>
+
+  ): Readable<TSelected>;
+}
+
+export type AnyActorRef = ActorRef<
+>AnyActorRef : ActorRef<EmittedFrom<T>>
+
+  EmittedFrom<T>
+>;
+
+export type InterpreterFrom<
+>InterpreterFrom : any
+
+> =
+  ReturnTypeOrValue<T> extends StateMachine<
+    infer _TTransitionMeta
+  >
+    ? InternalMachineImplementations<
+        ResolvedStateMachineTypes<
+          TEmitted
+        >
+      >
+    : never;
+
+export type RequiredActorOptions<TActor extends ProvidedActor> =
+>RequiredActorOptions : undefined extends InputFrom<TActor["logic"]> ? never : "input"
+
+  | (undefined extends InputFrom<TActor['logic']> ? never : 'input');
+
+export interface ResolvedStateMachineTypes<
+> {
+}
+
+export type GetConcreteByKey<
+>GetConcreteByKey : any
+
+> = T & Record<TKey, TValue>;
+
+=== src/StateMachine.ts ===
+export class StateMachine<
+>StateMachine : StateMachine<TAction, TGuard, TDelay, TStateValue, TTag, TInput, TOutput, TEmitted, TStateMeta, TStateSchema, TTransitionMeta>
+
+  TAction extends ParameterizedObject,
+  TGuard extends ParameterizedObject,
+  TDelay extends string,
+  TStateValue extends StateValue,
+  TTag extends string,
+  TInput,
+  TOutput,
+  TEmitted extends EventObject,
+  TStateMeta extends MetaObject,
+  TStateSchema extends StateSchema,
+  TTransitionMeta extends MetaObject = TStateMeta
+> {
+  public restoreSnapshot(
+>restoreSnapshot : (_actorScope: ActorScope<MachineSnapshot<TStateSchema>, TEmitted>) => MachineSnapshot<TStateSchema>
+
+    _actorScope: ActorScope<
+>_actorScope : ActorScope<MachineSnapshot<TStateSchema>, TEmitted>
+
+      MachineSnapshot<
+        TStateSchema
+      >,
+      TEmitted
+    >
+  ): MachineSnapshot<
+    TStateSchema
+  > {
+    const snapshotChildren: Record<
+>snapshotChildren : any
+      {
+      }
+    > = (snapshot as any).children;
+>(snapshot as any).children : any
+>(snapshot as any) : any
+>snapshot as any : any
+>snapshot : any
+>children : any
+
+  }
+}
+
+=== src/createMachine.ts ===
+import { StateMachine } from './StateMachine';
+>StateMachine : typeof StateMachine
+
+import {
+  MachineConfig,
+>MachineConfig : any
+
+  MachineTypes,
+>MachineTypes : any
+
+} from './types';
+
+export function createMachine<
+>createMachine : <TContext extends MachineContext, TActor extends ProvidedActor, TInput>(config: { types?: MachineTypes<TContext, TEvent, TActor, TTransitionMeta>; } & MachineConfig<TContext, TEvent, TActor, TAction, TGuard, TDelay, TTag, TInput, TTransitionMeta>, implementations?: InternalMachineImplementations<ResolvedStateMachineTypes<TEmitted>>) => StateMachine<TContext, TEvent, Cast<ToChildren<TActor>, Record<string, AnyActorRef | undefined>>, TActor, TAction, TGuard, TDelay, StateValue, TTag & string, TInput, TTransitionMeta>
+
+  TContext extends MachineContext,
+  TActor extends ProvidedActor,
+  TInput,
+>(
+  config: {
+>config : { types?: MachineTypes<TContext, TEvent, TActor, TTransitionMeta>; } & Omit<import("./types").StateNodeConfig<DoNotInfer<TTransitionMeta>>, "output"> & (MachineContext extends TContext ? { context?: ({}: { spawn: import("./spawn").Spawner<TActor>; input: TInput; self: ActorRef<MachineSnapshot<TODO>, AnyEventObject>; }) => LowInfer<TContext_1>; } : { context: ({}: { spawn: import("./spawn").Spawner<TActor>; input: TInput; self: ActorRef<MachineSnapshot<TODO>, AnyEventObject>; }) => LowInfer<TContext_1>; })
+
+    types?: MachineTypes<
+>types : MachineTypes<TContext, TEvent, TActor, TTransitionMeta> | undefined
+
+      TContext,
+      TEvent,
+      TActor,
+      TTransitionMeta
+    >;
+  } & MachineConfig<
+    TContext,
+    TEvent,
+    TActor,
+    TAction,
+    TGuard,
+    TDelay,
+    TTag,
+    TInput,
+    TTransitionMeta
+  >,
+  implementations?: InternalMachineImplementations<
+>implementations : any
+
+    ResolvedStateMachineTypes<
+      TEmitted
+    >
+  >
+): StateMachine<
+  TContext,
+  TEvent,
+  Cast<ToChildren<TActor>, Record<string, AnyActorRef | undefined>>,
+  TActor,
+  TAction,
+  TGuard,
+  TDelay,
+  StateValue,
+  TTag & string,
+  TInput,
+  TTransitionMeta
+> {
+}
+
+=== src/spawn.ts ===
+import {
+  ConditionalRequired,
+>ConditionalRequired : any
+
+  InputFrom,
+>InputFrom : any
+
+  RequiredActorOptions,
+>RequiredActorOptions : any
+
+} from './types';
+type SpawnOptions<
+>SpawnOptions : SpawnOptions<TActor, TSrc>
+
+  TActor extends ProvidedActor,
+  TSrc extends TActor['src']
+> = TActor extends {
+}
+  ? ConditionalRequired<
+      [
+        options?: {
+          input?: InputFrom<TActor['logic']>;
+>input : InputFrom<TActor["logic"]> | undefined
+
+        } & { [K in RequiredActorOptions<TActor>]: unknown }
+      ],
+      IsNotNever<RequiredActorOptions<TActor>>
+    >
+  : never;
+
+export type Spawner<TActor extends ProvidedActor> =
+>Spawner : { <TSrc extends TActor['src']>(...[options]: SpawnOptions<TActor, TSrc>): ActorRefFromLogic<GetConcreteByKey<TActor, 'src', TSrc>['logic']>; <TLogic extends AnyActorLogic>(...[options]: ConditionalRequired<[options?: {} & { [K in RequiredLogicInput<TLogic>]: unknown; }], IsNotNever<RequiredLogicInput<TLogic>>>): ActorRefFromLogic<TLogic>; } | (<TLogic extends AnyActorLogic | string>(src: TLogic, ...[options]: ConditionalRequired<[options?: {} & (TLogic extends AnyActorLogic ? { [K in RequiredLogicInput<TLogic>]: unknown; } : {})], IsNotNever<TLogic extends AnyActorLogic ? RequiredLogicInput<TLogic> : never>>) => TLogic extends AnyActorLogic ? ActorRefFromLogic<TLogic> : AnyActorRef)
+
+  IsLiteralString<TActor['src']> extends true
+>true : true
+
+    ? {
+        <TSrc extends TActor['src']>(
+          ...[options]: SpawnOptions<TActor, TSrc>
+>options : ({ input?: InputFrom<TActor_1['logic']>; } & { [x: string]: unknown; }) | undefined
+
+        ): ActorRefFromLogic<GetConcreteByKey<TActor, 'src', TSrc>['logic']>;
+        <TLogic extends AnyActorLogic>(
+          ...[options]: ConditionalRequired<
+>options : { [x: string]: unknown; } | undefined
+
+            [
+              options?: {
+              } & { [K in RequiredLogicInput<TLogic>]: unknown }
+            ],
+            IsNotNever<RequiredLogicInput<TLogic>>
+          >
+        ): ActorRefFromLogic<TLogic>;
+      }
+    : <TLogic extends AnyActorLogic | string>(
+        src: TLogic,
+>src : TLogic
+
+        ...[options]: ConditionalRequired<
+>options : ({} & (TLogic extends AnyActorLogic ? { [x: string]: unknown; } : {})) | undefined
+
+          [
+            options?: {
+            } & (TLogic extends AnyActorLogic
+              ? { [K in RequiredLogicInput<TLogic>]: unknown }
+              : {})
+          ],
+          IsNotNever<
+            TLogic extends AnyActorLogic ? RequiredLogicInput<TLogic> : never
+          >
+        >
+      ) => TLogic extends AnyActorLogic
+        ? ActorRefFromLogic<TLogic>
+        : AnyActorRef;
+
+=== t.ts ===
+import { createMachine } from './src/createMachine';
+>createMachine : <TContext extends MachineContext, TActor extends ProvidedActor, TInput>(config: { types?: import("./src/types").MachineTypes<TContext, TEvent, TActor, TTransitionMeta>; } & import("./src/types").MachineConfig<TContext, TEvent, TActor, TAction, TGuard, TDelay, TTag, TInput, TTransitionMeta>, implementations?: InternalMachineImplementations<ResolvedStateMachineTypes<TEmitted>>) => import("./src/StateMachine").StateMachine<TContext, TEvent, Cast<ToChildren<TActor>, Record<string, AnyActorRef | undefined>>, TActor, TAction, TGuard, TDelay, StateValue, TTag & string, TInput, TTransitionMeta>
+
+function f() {
+>f : () => void
+
+    const child = createMachine({
+>child : import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, ProvidedActor, TAction, TGuard, TDelay, StateValue, any, number, TTransitionMeta>
+>createMachine({      context: ({ input }: { input: number }) => {      }    }) : import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, ProvidedActor, TAction, TGuard, TDelay, StateValue, any, number, TTransitionMeta>
+>createMachine : <TContext extends MachineContext, TActor extends ProvidedActor, TInput>(config: { types?: import("./src/types").MachineTypes<TContext, TEvent, TActor, TTransitionMeta>; } & import("./src/types").MachineConfig<TContext, TEvent, TActor, TAction, TGuard, TDelay, TTag, TInput, TTransitionMeta>, implementations?: InternalMachineImplementations<ResolvedStateMachineTypes<TEmitted>>) => import("./src/StateMachine").StateMachine<TContext, TEvent, Cast<ToChildren<TActor>, Record<string, AnyActorRef | undefined>>, TActor, TAction, TGuard, TDelay, StateValue, TTag & string, TInput, TTransitionMeta>
+>{      context: ({ input }: { input: number }) => {      }    } : { context: ({ input }: { input: number; }) => void; }
+
+      context: ({ input }: { input: number }) => {
+>context : ({ input }: { input: number; }) => void
+>({ input }: { input: number }) => {      } : ({ input }: { input: number; }) => void
+>input : number
+>input : number
+      }
+    });
+
+    const machine = createMachine(
+>machine : import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, { logic: import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, ProvidedActor, TAction, TGuard, TDelay, StateValue, any, number, TTransitionMeta>; }, TAction, TGuard, TDelay, StateValue, any, unknown, TTransitionMeta>
+>createMachine(      {        types: {} as {          actors: {            logic: typeof child;          };          context: {          };        },        context: ({ input }) => ({        }),        invoke: {          input: ({ context }) => {          }        }      },      {        actors: {        }      }    ) : import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, { logic: import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, ProvidedActor, TAction, TGuard, TDelay, StateValue, any, number, TTransitionMeta>; }, TAction, TGuard, TDelay, StateValue, any, unknown, TTransitionMeta>
+>createMachine : <TContext extends MachineContext, TActor extends ProvidedActor, TInput>(config: { types?: import("./src/types").MachineTypes<TContext, TEvent, TActor, TTransitionMeta>; } & import("./src/types").MachineConfig<TContext, TEvent, TActor, TAction, TGuard, TDelay, TTag, TInput, TTransitionMeta>, implementations?: InternalMachineImplementations<ResolvedStateMachineTypes<TEmitted>>) => import("./src/StateMachine").StateMachine<TContext, TEvent, Cast<ToChildren<TActor>, Record<string, AnyActorRef | undefined>>, TActor, TAction, TGuard, TDelay, StateValue, TTag & string, TInput, TTransitionMeta>
+      {
+>{        types: {} as {          actors: {            logic: typeof child;          };          context: {          };        },        context: ({ input }) => ({        }),        invoke: {          input: ({ context }) => {          }        }      } : { types: { actors: { logic: import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, ProvidedActor, TAction, TGuard, TDelay, StateValue, any, number, TTransitionMeta>; }; context: {}; }; context: ({ input }: { spawn: import("./src/spawn").Spawner<{ logic: import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, ProvidedActor, TAction, TGuard, TDelay, StateValue, any, number, TTransitionMeta>; }>; input: unknown; self: ActorRef<MachineSnapshot<TODO>, AnyEventObject>; }) => {}; invoke: { input: ({ context }: { context: TContext; self: ActorRef<AnyEventObject>; }) => void; }; }
+
+        types: {} as {
+>types : { actors: { logic: import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, ProvidedActor, TAction, TGuard, TDelay, StateValue, any, number, TTransitionMeta>; }; context: {}; }
+>{} as {          actors: {            logic: typeof child;          };          context: {          };        } : { actors: { logic: import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, ProvidedActor, TAction, TGuard, TDelay, StateValue, any, number, TTransitionMeta>; }; context: {}; }
+>{} : {}
+
+          actors: {
+>actors : { logic: import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, ProvidedActor, TAction, TGuard, TDelay, StateValue, any, number, TTransitionMeta>; }
+
+            logic: typeof child;
+>logic : import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, ProvidedActor, TAction, TGuard, TDelay, StateValue, any, number, TTransitionMeta>
+>child : import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, ProvidedActor, TAction, TGuard, TDelay, StateValue, any, number, TTransitionMeta>
+
+          };
+          context: {
+>context : {}
+
+          };
+        },
+        context: ({ input }) => ({
+>context : ({ input }: { spawn: import("./src/spawn").Spawner<{ logic: import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, ProvidedActor, TAction, TGuard, TDelay, StateValue, any, number, TTransitionMeta>; }>; input: unknown; self: ActorRef<MachineSnapshot<TODO>, AnyEventObject>; }) => {}
+>({ input }) => ({        }) : ({ input }: { spawn: import("./src/spawn").Spawner<{ logic: import("./src/StateMachine").StateMachine<MachineContext, TEvent, Cast<ToChildren<TActor>, Record<string, any>>, ProvidedActor, TAction, TGuard, TDelay, StateValue, any, number, TTransitionMeta>; }>; input: unknown; self: ActorRef<MachineSnapshot<TODO>, AnyEventObject>; }) => {}
+>input : unknown
+>({        }) : {}
+>{        } : {}
+
+        }),
+        invoke: {
+>invoke : { input: ({ context }: { context: TContext; self: ActorRef<AnyEventObject>; }) => void; }
+>{          input: ({ context }) => {          }        } : { input: ({ context }: { context: TContext; self: ActorRef<AnyEventObject>; }) => void; }
+
+          input: ({ context }) => {
+>input : ({ context }: { context: TContext; self: ActorRef<AnyEventObject>; }) => void
+>({ context }) => {          } : ({ context }: { context: TContext; self: ActorRef<AnyEventObject>; }) => void
+>context : TContext
+          }
+        }
+      },
+      {
+>{        actors: {        }      } : { actors: {}; }
+
+        actors: {
+>actors : {}
+>{        } : {}
+        }
+      }
+    );
+}
+
+

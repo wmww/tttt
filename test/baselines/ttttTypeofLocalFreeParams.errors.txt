@@ -1,0 +1,849 @@
+src/StateMachine.ts(2,19): error TS2304: Cannot find name 'ParameterizedObject'.
+src/StateMachine.ts(3,18): error TS2304: Cannot find name 'ParameterizedObject'.
+src/StateMachine.ts(5,23): error TS2552: Cannot find name 'StateValue'. Did you mean 'TStateValue'?
+src/StateMachine.ts(9,20): error TS2304: Cannot find name 'EventObject'.
+src/StateMachine.ts(10,22): error TS2304: Cannot find name 'MetaObject'.
+src/StateMachine.ts(11,24): error TS2552: Cannot find name 'StateSchema'. Did you mean 'TStateSchema'?
+src/StateMachine.ts(12,27): error TS2304: Cannot find name 'MetaObject'.
+src/StateMachine.ts(15,18): error TS2304: Cannot find name 'ActorScope'.
+src/StateMachine.ts(16,7): error TS2304: Cannot find name 'MachineSnapshot'.
+src/StateMachine.ts(21,6): error TS2304: Cannot find name 'MachineSnapshot'.
+src/StateMachine.ts(24,29): error TS2314: Generic type 'Record' requires 2 type argument(s).
+src/StateMachine.ts(27,10): error TS2304: Cannot find name 'snapshot'.
+src/createMachine.ts(8,20): error TS2304: Cannot find name 'MachineContext'.
+src/createMachine.ts(9,18): error TS2304: Cannot find name 'ProvidedActor'.
+src/createMachine.ts(15,7): error TS2552: Cannot find name 'TEvent'. Did you mean 'Event'?
+src/createMachine.ts(17,7): error TS2552: Cannot find name 'TTransitionMeta'. Did you mean 'TransitionEvent'?
+src/createMachine.ts(21,5): error TS2552: Cannot find name 'TEvent'. Did you mean 'Event'?
+src/createMachine.ts(23,5): error TS2304: Cannot find name 'TAction'.
+src/createMachine.ts(24,5): error TS2304: Cannot find name 'TGuard'.
+src/createMachine.ts(25,5): error TS2304: Cannot find name 'TDelay'.
+src/createMachine.ts(26,5): error TS2304: Cannot find name 'TTag'.
+src/createMachine.ts(28,5): error TS2552: Cannot find name 'TTransitionMeta'. Did you mean 'TransitionEvent'?
+src/createMachine.ts(30,21): error TS2304: Cannot find name 'InternalMachineImplementations'.
+src/createMachine.ts(31,5): error TS2304: Cannot find name 'ResolvedStateMachineTypes'.
+src/createMachine.ts(32,7): error TS2304: Cannot find name 'TEmitted'.
+src/createMachine.ts(35,4): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+src/createMachine.ts(37,3): error TS2552: Cannot find name 'TEvent'. Did you mean 'Event'?
+src/createMachine.ts(38,3): error TS2304: Cannot find name 'Cast'.
+src/createMachine.ts(38,8): error TS2304: Cannot find name 'ToChildren'.
+src/createMachine.ts(38,43): error TS2304: Cannot find name 'AnyActorRef'.
+src/createMachine.ts(40,3): error TS2304: Cannot find name 'TAction'.
+src/createMachine.ts(41,3): error TS2304: Cannot find name 'TGuard'.
+src/createMachine.ts(42,3): error TS2304: Cannot find name 'TDelay'.
+src/createMachine.ts(43,3): error TS2304: Cannot find name 'StateValue'.
+src/createMachine.ts(44,3): error TS2304: Cannot find name 'TTag'.
+src/createMachine.ts(46,3): error TS2552: Cannot find name 'TTransitionMeta'. Did you mean 'TransitionEvent'?
+src/spawn.ts(7,18): error TS2304: Cannot find name 'ProvidedActor'.
+src/spawn.ts(17,7): error TS2304: Cannot find name 'IsNotNever'.
+src/spawn.ts(21,36): error TS2304: Cannot find name 'ProvidedActor'.
+src/spawn.ts(22,3): error TS2304: Cannot find name 'IsLiteralString'.
+src/spawn.ts(26,12): error TS2304: Cannot find name 'ActorRefFromLogic'.
+src/spawn.ts(26,30): error TS2304: Cannot find name 'GetConcreteByKey'.
+src/spawn.ts(27,25): error TS2304: Cannot find name 'AnyActorLogic'.
+src/spawn.ts(31,27): error TS2304: Cannot find name 'RequiredLogicInput'.
+src/spawn.ts(33,13): error TS2304: Cannot find name 'IsNotNever'.
+src/spawn.ts(33,24): error TS2304: Cannot find name 'RequiredLogicInput'.
+src/spawn.ts(35,12): error TS2304: Cannot find name 'ActorRefFromLogic'.
+src/spawn.ts(37,23): error TS2304: Cannot find name 'AnyActorLogic'.
+src/spawn.ts(42,33): error TS2304: Cannot find name 'AnyActorLogic'.
+src/spawn.ts(43,25): error TS2304: Cannot find name 'RequiredLogicInput'.
+src/spawn.ts(46,11): error TS2304: Cannot find name 'IsNotNever'.
+src/spawn.ts(47,28): error TS2304: Cannot find name 'AnyActorLogic'.
+src/spawn.ts(47,44): error TS2304: Cannot find name 'RequiredLogicInput'.
+src/spawn.ts(50,27): error TS2304: Cannot find name 'AnyActorLogic'.
+src/spawn.ts(51,11): error TS2304: Cannot find name 'ActorRefFromLogic'.
+src/spawn.ts(52,11): error TS2304: Cannot find name 'AnyActorRef'.
+src/types.ts(19,17): error TS2304: Cannot find name 'ActorLogic'.
+src/types.ts(22,9): error TS2304: Cannot find name 'TInput'.
+src/types.ts(33,20): error TS2304: Cannot find name 'MachineContext'.
+src/types.ts(34,18): error TS2304: Cannot find name 'EventObject'.
+src/types.ts(35,18): error TS2304: Cannot find name 'ProvidedActor'.
+src/types.ts(36,19): error TS2304: Cannot find name 'ParameterizedObject'.
+src/types.ts(37,18): error TS2304: Cannot find name 'ParameterizedObject'.
+src/types.ts(39,20): error TS2304: Cannot find name 'EventObject'.
+src/types.ts(40,27): error TS2304: Cannot find name 'MetaObject'.
+src/types.ts(41,26): error TS2304: Cannot find name 'ProvidedActor'.
+src/types.ts(55,19): error TS2304: Cannot find name 'TransitionConfigOrTarget'.
+src/types.ts(62,19): error TS2304: Cannot find name 'TransitionConfigOrTarget'.
+src/types.ts(71,17): error TS2304: Cannot find name 'TransitionConfigOrTarget'.
+src/types.ts(78,17): error TS2304: Cannot find name 'TransitionConfigOrTarget'.
+src/types.ts(86,20): error TS2304: Cannot find name 'MachineContext'.
+src/types.ts(87,18): error TS2304: Cannot find name 'EventObject'.
+src/types.ts(88,18): error TS2304: Cannot find name 'ProvidedActor'.
+src/types.ts(89,19): error TS2304: Cannot find name 'ParameterizedObject'.
+src/types.ts(90,18): error TS2304: Cannot find name 'ParameterizedObject'.
+src/types.ts(92,20): error TS2304: Cannot find name 'EventObject'.
+src/types.ts(93,27): error TS2304: Cannot find name 'MetaObject'.
+src/types.ts(95,3): error TS2304: Cannot find name 'IsLiteralString'.
+src/types.ts(110,31): error TS2314: Generic type 'InvokeConfig' requires 8 type argument(s).
+src/types.ts(115,27): error TS2304: Cannot find name 'MetaObject'.
+src/types.ts(115,40): error TS2304: Cannot find name 'TStateMeta'.
+src/types.ts(119,7): error TS2304: Cannot find name 'TContext'.
+src/types.ts(120,7): error TS2552: Cannot find name 'TEvent'. Did you mean 'Event'?
+src/types.ts(121,7): error TS2304: Cannot find name 'TActor'.
+src/types.ts(122,7): error TS2304: Cannot find name 'TAction'.
+src/types.ts(123,7): error TS2304: Cannot find name 'TGuard'.
+src/types.ts(124,7): error TS2304: Cannot find name 'TDelay'.
+src/types.ts(125,7): error TS2304: Cannot find name 'TEmitted'.
+src/types.ts(129,11): error TS2304: Cannot find name 'RouteTransitionConfig'.
+src/types.ts(141,5): error TS2304: Cannot find name 'InvokeDefinition'.
+src/types.ts(142,7): error TS2552: Cannot find name 'TTransitionMeta'. Did you mean 'TransitionEvent'?
+src/types.ts(148,20): error TS2304: Cannot find name 'MachineContext'.
+src/types.ts(149,18): error TS2304: Cannot find name 'ProvidedActor'.
+src/types.ts(151,18): error TS2304: Cannot find name 'EventObject'.
+src/types.ts(156,9): error TS2304: Cannot find name 'ActorRef'.
+src/types.ts(157,5): error TS2304: Cannot find name 'MachineSnapshot'.
+src/types.ts(158,7): error TS2304: Cannot find name 'TODO'.
+src/types.ts(160,5): error TS2304: Cannot find name 'AnyEventObject'.
+src/types.ts(165,20): error TS2304: Cannot find name 'MachineContext'.
+src/types.ts(166,18): error TS2304: Cannot find name 'EventObject'.
+src/types.ts(167,18): error TS2304: Cannot find name 'ProvidedActor'.
+src/types.ts(167,34): error TS2304: Cannot find name 'ProvidedActor'.
+src/types.ts(168,19): error TS2304: Cannot find name 'ParameterizedObject'.
+src/types.ts(168,41): error TS2304: Cannot find name 'ParameterizedObject'.
+src/types.ts(169,18): error TS2304: Cannot find name 'ParameterizedObject'.
+src/types.ts(169,40): error TS2304: Cannot find name 'ParameterizedObject'.
+src/types.ts(173,27): error TS2304: Cannot find name 'MetaObject'.
+src/types.ts(173,40): error TS2304: Cannot find name 'TStateMeta'.
+src/types.ts(176,5): error TS2552: Cannot find name 'DoNotInfer'. Did you mean 'NoInfer'?
+src/types.ts(181,4): error TS2304: Cannot find name 'MachineContext'.
+src/types.ts(182,34): error TS2552: Cannot find name 'LowInfer'. Did you mean 'NoInfer'?
+src/types.ts(183,33): error TS2552: Cannot find name 'LowInfer'. Did you mean 'NoInfer'?
+src/types.ts(186,20): error TS2304: Cannot find name 'MachineContext'.
+src/types.ts(187,18): error TS2304: Cannot find name 'EventObject'.
+src/types.ts(188,18): error TS2304: Cannot find name 'ProvidedActor'.
+src/types.ts(189,27): error TS2304: Cannot find name 'MetaObject'.
+src/types.ts(189,40): error TS2304: Cannot find name 'TStateMeta'.
+src/types.ts(199,20): error TS2304: Cannot find name 'MachineContext'.
+src/types.ts(200,28): error TS2304: Cannot find name 'EventObject'.
+src/types.ts(202,18): error TS2304: Cannot find name 'EventObject'.
+src/types.ts(205,9): error TS2304: Cannot find name 'ActorRef'.
+src/types.ts(206,5): error TS2304: Cannot find name 'AnyEventObject'.
+src/types.ts(213,6): error TS2304: Cannot find name 'Readable'.
+src/types.ts(216,27): error TS2304: Cannot find name 'ActorRef'.
+src/types.ts(217,3): error TS2304: Cannot find name 'EmittedFrom'.
+src/types.ts(217,15): error TS2304: Cannot find name 'T'.
+src/types.ts(222,3): error TS2304: Cannot find name 'ReturnTypeOrValue'.
+src/types.ts(222,21): error TS2304: Cannot find name 'T'.
+src/types.ts(222,32): error TS2707: Generic type 'StateMachine<TAction, TGuard, TDelay, TStateValue, TTag, TInput, TOutput, TEmitted, TStateMeta, TStateSchema, TTransitionMeta>' requires between 10 and 11 type arguments.
+src/types.ts(225,7): error TS2304: Cannot find name 'InternalMachineImplementations'.
+src/types.ts(226,9): error TS2315: Type 'ResolvedStateMachineTypes' is not generic.
+src/types.ts(227,11): error TS2304: Cannot find name 'TEmitted'.
+src/types.ts(232,49): error TS2304: Cannot find name 'ProvidedActor'.
+src/types.ts(240,5): error TS2304: Cannot find name 'T'.
+src/types.ts(240,16): error TS2304: Cannot find name 'TKey'.
+src/types.ts(240,22): error TS2304: Cannot find name 'TValue'.
+
+
+==== src/types.ts (80 errors) ====
+    import type { StateMachine } from './StateMachine';
+    import { Spawner } from './spawn';
+    export type Compute<A> = { [K in keyof A]: A[K] } & unknown;
+    export type InputFrom<T> =
+      T extends StateMachine<
+        infer _TContext,
+        infer _TEvent,
+        infer _TChildren,
+        infer _TActor,
+        infer _TAction,
+        infer _TGuard,
+        infer _TDelay,
+        infer _TStateValue,
+        infer _TTag,
+        infer TInput,
+        infer _TTransitionMeta
+      >
+        ? TInput
+        : T extends ActorLogic<
+                    ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ActorLogic'.
+              infer _TEmitted
+            >
+          ? TInput
+            ~~~~~~
+!!! error TS2304: Cannot find name 'TInput'.
+          : never;
+    
+    export type ConditionalRequired<
+      T,
+      Condition extends boolean
+    > = Condition extends true ? Required<T> : T;
+    
+    export type SingleOrArray<T> = readonly T[] | T;
+    
+    type DistributeActors<
+      TContext extends MachineContext,
+                       ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MachineContext'.
+      TEvent extends EventObject,
+                     ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'EventObject'.
+      TActor extends ProvidedActor,
+                     ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ProvidedActor'.
+      TAction extends ParameterizedObject,
+                      ~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ParameterizedObject'.
+      TGuard extends ParameterizedObject,
+                     ~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ParameterizedObject'.
+      TDelay extends string,
+      TEmitted extends EventObject,
+                       ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'EventObject'.
+      TTransitionMeta extends MetaObject,
+                              ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MetaObject'.
+      TSpecificActor extends ProvidedActor
+                             ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ProvidedActor'.
+    > = TSpecificActor extends { src: infer TSrc }
+      ?
+          | Compute<
+              {
+                input?:
+                  | Mapper<
+                      TContext,
+                      TEvent,
+                      InputFrom<TSpecificActor['logic']>,
+                      TEvent
+                    >
+                onError?:
+                  | SingleOrArray<
+                      TransitionConfigOrTarget<
+                      ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TransitionConfigOrTarget'.
+                        TTransitionMeta
+                      >
+                    >;
+    
+                onSnapshot?:
+                  | SingleOrArray<
+                      TransitionConfigOrTarget<
+                      ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TransitionConfigOrTarget'.
+                        TTransitionMeta
+                      >
+                    >;
+              } & { [K in RequiredActorOptions<TSpecificActor>]: unknown }
+            >
+          | {
+              input?:
+                | SingleOrArray<
+                    TransitionConfigOrTarget<
+                    ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TransitionConfigOrTarget'.
+                      TTransitionMeta
+                    >
+                  >;
+    
+              onSnapshot?:
+                | SingleOrArray<
+                    TransitionConfigOrTarget<
+                    ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TransitionConfigOrTarget'.
+                      TTransitionMeta
+                    >
+                  >;
+            }
+      : never;
+    
+    export type InvokeConfig<
+      TContext extends MachineContext,
+                       ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MachineContext'.
+      TEvent extends EventObject,
+                     ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'EventObject'.
+      TActor extends ProvidedActor,
+                     ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ProvidedActor'.
+      TAction extends ParameterizedObject,
+                      ~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ParameterizedObject'.
+      TGuard extends ParameterizedObject,
+                     ~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ParameterizedObject'.
+      TDelay extends string,
+      TEmitted extends EventObject,
+                       ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'EventObject'.
+      TTransitionMeta extends MetaObject
+                              ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MetaObject'.
+    > =
+      IsLiteralString<TActor['src']> extends true
+      ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'IsLiteralString'.
+        ? DistributeActors<
+            TContext,
+            TEvent,
+            TActor,
+            TAction,
+            TGuard,
+            TDelay,
+            TEmitted,
+            TTransitionMeta,
+            TActor
+          >
+        : {
+          };
+    
+    export type AnyInvokeConfig = InvokeConfig<
+                                  ~~~~~~~~~~~~~
+      any // TTransitionMeta
+    ~~~~~~~~~~~~~~~~~~~~~~~~
+    >;
+    ~
+!!! error TS2314: Generic type 'InvokeConfig' requires 8 type argument(s).
+    
+    export interface StateNodeConfig<
+      TTransitionMeta extends MetaObject = TStateMeta
+                              ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MetaObject'.
+                                           ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TStateMeta'.
+    > {
+      invoke?: SingleOrArray<
+        InvokeConfig<
+          TContext,
+          ~~~~~~~~
+!!! error TS2304: Cannot find name 'TContext'.
+          TEvent,
+          ~~~~~~
+!!! error TS2552: Cannot find name 'TEvent'. Did you mean 'Event'?
+!!! related TS2728 lib.dom.d.ts:--:--: 'Event' is declared here.
+          TActor,
+          ~~~~~~
+!!! error TS2304: Cannot find name 'TActor'.
+          TAction,
+          ~~~~~~~
+!!! error TS2304: Cannot find name 'TAction'.
+          TGuard,
+          ~~~~~~
+!!! error TS2304: Cannot find name 'TGuard'.
+          TDelay,
+          ~~~~~~
+!!! error TS2304: Cannot find name 'TDelay'.
+          TEmitted,
+          ~~~~~~~~
+!!! error TS2304: Cannot find name 'TEmitted'.
+          TTransitionMeta
+        >
+      >;
+      route?: RouteTransitionConfig<
+              ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'RouteTransitionConfig'.
+        TTransitionMeta
+      >;
+    }
+    
+    export type AnyStateNodeConfig = StateNodeConfig<
+      any // transition meta
+    >;
+    
+    export interface StateNodeDefinition<
+    > {
+      invoke: Array<
+        InvokeDefinition<
+        ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'InvokeDefinition'.
+          TTransitionMeta
+          ~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'TTransitionMeta'. Did you mean 'TransitionEvent'?
+!!! related TS2728 lib.dom.d.ts:--:--: 'TransitionEvent' is declared here.
+        >
+      >;
+    }
+    
+    type InitialContext<
+      TContext extends MachineContext,
+                       ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MachineContext'.
+      TActor extends ProvidedActor,
+                     ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ProvidedActor'.
+      TInput,
+      TEvent extends EventObject
+                     ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'EventObject'.
+    > = ({
+    }: {
+      spawn: Spawner<TActor>;
+      input: TInput;
+      self: ActorRef<
+            ~~~~~~~~
+!!! error TS2304: Cannot find name 'ActorRef'.
+        MachineSnapshot<
+        ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MachineSnapshot'.
+          TODO // State schema
+          ~~~~
+!!! error TS2304: Cannot find name 'TODO'.
+        >,
+        AnyEventObject
+        ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'AnyEventObject'.
+      >;
+    }) => TContext;
+    
+    export type MachineConfig<
+      TContext extends MachineContext,
+                       ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MachineContext'.
+      TEvent extends EventObject,
+                     ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'EventObject'.
+      TActor extends ProvidedActor = ProvidedActor,
+                     ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ProvidedActor'.
+                                     ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ProvidedActor'.
+      TAction extends ParameterizedObject = ParameterizedObject,
+                      ~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ParameterizedObject'.
+                                            ~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ParameterizedObject'.
+      TGuard extends ParameterizedObject = ParameterizedObject,
+                     ~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ParameterizedObject'.
+                                           ~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ParameterizedObject'.
+      TDelay extends string = string,
+      TTag extends string = string,
+      TInput = any,
+      TTransitionMeta extends MetaObject = TStateMeta
+                              ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MetaObject'.
+                                           ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TStateMeta'.
+    > = (Omit<
+      StateNodeConfig<
+        DoNotInfer<TTransitionMeta>
+        ~~~~~~~~~~
+!!! error TS2552: Cannot find name 'DoNotInfer'. Did you mean 'NoInfer'?
+      >,
+      'output'
+    > & {
+    }) &
+      (MachineContext extends TContext
+       ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MachineContext'.
+        ? { context?: InitialContext<LowInfer<TContext>, TActor, TInput, TEvent> }
+                                     ~~~~~~~~
+!!! error TS2552: Cannot find name 'LowInfer'. Did you mean 'NoInfer'?
+        : { context: InitialContext<LowInfer<TContext>, TActor, TInput, TEvent> });
+                                    ~~~~~~~~
+!!! error TS2552: Cannot find name 'LowInfer'. Did you mean 'NoInfer'?
+    
+    export interface MachineTypes<
+      TContext extends MachineContext,
+                       ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MachineContext'.
+      TEvent extends EventObject,
+                     ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'EventObject'.
+      TActor extends ProvidedActor,
+                     ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ProvidedActor'.
+      TTransitionMeta extends MetaObject = TStateMeta
+                              ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MetaObject'.
+                                           ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TStateMeta'.
+    > {
+      actors?: TActor;
+    }
+    
+    export interface RaiseActionOptions<
+    > {
+    }
+    
+    export type Mapper<
+      TContext extends MachineContext,
+                       ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MachineContext'.
+      TExpressionEvent extends EventObject,
+                               ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'EventObject'.
+      TResult,
+      TEvent extends EventObject
+                     ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'EventObject'.
+    > = (args: {
+      context: TContext;
+      self: ActorRef<
+            ~~~~~~~~
+!!! error TS2304: Cannot find name 'ActorRef'.
+        AnyEventObject
+        ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'AnyEventObject'.
+      >;
+    }) => TResult;
+    
+    export interface TransitionDefinition<
+    > {
+      select<TSelected>(
+      ): Readable<TSelected>;
+         ~~~~~~~~
+!!! error TS2304: Cannot find name 'Readable'.
+    }
+    
+    export type AnyActorRef = ActorRef<
+                              ~~~~~~~~
+!!! error TS2304: Cannot find name 'ActorRef'.
+      EmittedFrom<T>
+      ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'EmittedFrom'.
+                  ~
+!!! error TS2304: Cannot find name 'T'.
+    >;
+    
+    export type InterpreterFrom<
+    > =
+      ReturnTypeOrValue<T> extends StateMachine<
+      ~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ReturnTypeOrValue'.
+                        ~
+!!! error TS2304: Cannot find name 'T'.
+                                   ~~~~~~~~~~~~~
+        infer _TTransitionMeta
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+      >
+    ~~~
+!!! error TS2707: Generic type 'StateMachine<TAction, TGuard, TDelay, TStateValue, TTag, TInput, TOutput, TEmitted, TStateMeta, TStateSchema, TTransitionMeta>' requires between 10 and 11 type arguments.
+        ? InternalMachineImplementations<
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'InternalMachineImplementations'.
+            ResolvedStateMachineTypes<
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~
+              TEmitted
+    ~~~~~~~~~~~~~~~~~~
+              ~~~~~~~~
+!!! error TS2304: Cannot find name 'TEmitted'.
+            >
+    ~~~~~~~~~
+!!! error TS2315: Type 'ResolvedStateMachineTypes' is not generic.
+          >
+        : never;
+    
+    export type RequiredActorOptions<TActor extends ProvidedActor> =
+                                                    ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ProvidedActor'.
+      | (undefined extends InputFrom<TActor['logic']> ? never : 'input');
+    
+    export interface ResolvedStateMachineTypes<
+    > {
+    }
+    
+    export type GetConcreteByKey<
+    > = T & Record<TKey, TValue>;
+        ~
+!!! error TS2304: Cannot find name 'T'.
+                   ~~~~
+!!! error TS2304: Cannot find name 'TKey'.
+                         ~~~~~~
+!!! error TS2304: Cannot find name 'TValue'.
+    
+==== src/StateMachine.ts (12 errors) ====
+    export class StateMachine<
+      TAction extends ParameterizedObject,
+                      ~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ParameterizedObject'.
+      TGuard extends ParameterizedObject,
+                     ~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ParameterizedObject'.
+      TDelay extends string,
+      TStateValue extends StateValue,
+                          ~~~~~~~~~~
+!!! error TS2552: Cannot find name 'StateValue'. Did you mean 'TStateValue'?
+      TTag extends string,
+      TInput,
+      TOutput,
+      TEmitted extends EventObject,
+                       ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'EventObject'.
+      TStateMeta extends MetaObject,
+                         ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MetaObject'.
+      TStateSchema extends StateSchema,
+                           ~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'StateSchema'. Did you mean 'TStateSchema'?
+      TTransitionMeta extends MetaObject = TStateMeta
+                              ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MetaObject'.
+    > {
+      public restoreSnapshot(
+        _actorScope: ActorScope<
+                     ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ActorScope'.
+          MachineSnapshot<
+          ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MachineSnapshot'.
+            TStateSchema
+          >,
+          TEmitted
+        >
+      ): MachineSnapshot<
+         ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MachineSnapshot'.
+        TStateSchema
+      > {
+        const snapshotChildren: Record<
+                                ~~~~~~~
+          {
+    ~~~~~~~
+          }
+    ~~~~~~~
+        > = (snapshot as any).children;
+    ~~~~~
+!!! error TS2314: Generic type 'Record' requires 2 type argument(s).
+             ~~~~~~~~
+!!! error TS2304: Cannot find name 'snapshot'.
+    
+      }
+    }
+    
+==== src/createMachine.ts (24 errors) ====
+    import { StateMachine } from './StateMachine';
+    import {
+      MachineConfig,
+      MachineTypes,
+    } from './types';
+    
+    export function createMachine<
+      TContext extends MachineContext,
+                       ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MachineContext'.
+      TActor extends ProvidedActor,
+                     ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ProvidedActor'.
+      TInput,
+    >(
+      config: {
+        types?: MachineTypes<
+          TContext,
+          TEvent,
+          ~~~~~~
+!!! error TS2552: Cannot find name 'TEvent'. Did you mean 'Event'?
+!!! related TS2728 lib.dom.d.ts:--:--: 'Event' is declared here.
+          TActor,
+          TTransitionMeta
+          ~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'TTransitionMeta'. Did you mean 'TransitionEvent'?
+!!! related TS2728 lib.dom.d.ts:--:--: 'TransitionEvent' is declared here.
+        >;
+      } & MachineConfig<
+        TContext,
+        TEvent,
+        ~~~~~~
+!!! error TS2552: Cannot find name 'TEvent'. Did you mean 'Event'?
+!!! related TS2728 lib.dom.d.ts:--:--: 'Event' is declared here.
+        TActor,
+        TAction,
+        ~~~~~~~
+!!! error TS2304: Cannot find name 'TAction'.
+        TGuard,
+        ~~~~~~
+!!! error TS2304: Cannot find name 'TGuard'.
+        TDelay,
+        ~~~~~~
+!!! error TS2304: Cannot find name 'TDelay'.
+        TTag,
+        ~~~~
+!!! error TS2304: Cannot find name 'TTag'.
+        TInput,
+        TTransitionMeta
+        ~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'TTransitionMeta'. Did you mean 'TransitionEvent'?
+!!! related TS2728 lib.dom.d.ts:--:--: 'TransitionEvent' is declared here.
+      >,
+      implementations?: InternalMachineImplementations<
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'InternalMachineImplementations'.
+        ResolvedStateMachineTypes<
+        ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ResolvedStateMachineTypes'.
+          TEmitted
+          ~~~~~~~~
+!!! error TS2304: Cannot find name 'TEmitted'.
+        >
+      >
+    ): StateMachine<
+       ~~~~~~~~~~~~~
+      TContext,
+    ~~~~~~~~~~~
+      TEvent,
+    ~~~~~~~~~
+      ~~~~~~
+!!! error TS2552: Cannot find name 'TEvent'. Did you mean 'Event'?
+!!! related TS2728 lib.dom.d.ts:--:--: 'Event' is declared here.
+      Cast<ToChildren<TActor>, Record<string, AnyActorRef | undefined>>,
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      ~~~~
+!!! error TS2304: Cannot find name 'Cast'.
+           ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ToChildren'.
+                                              ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'AnyActorRef'.
+      TActor,
+    ~~~~~~~~~
+      TAction,
+    ~~~~~~~~~~
+      ~~~~~~~
+!!! error TS2304: Cannot find name 'TAction'.
+      TGuard,
+    ~~~~~~~~~
+      ~~~~~~
+!!! error TS2304: Cannot find name 'TGuard'.
+      TDelay,
+    ~~~~~~~~~
+      ~~~~~~
+!!! error TS2304: Cannot find name 'TDelay'.
+      StateValue,
+    ~~~~~~~~~~~~~
+      ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'StateValue'.
+      TTag & string,
+    ~~~~~~~~~~~~~~~~
+      ~~~~
+!!! error TS2304: Cannot find name 'TTag'.
+      TInput,
+    ~~~~~~~~~
+      TTransitionMeta
+    ~~~~~~~~~~~~~~~~~
+      ~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'TTransitionMeta'. Did you mean 'TransitionEvent'?
+!!! related TS2728 lib.dom.d.ts:--:--: 'TransitionEvent' is declared here.
+    > {
+    ~
+!!! error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+    }
+    
+==== src/spawn.ts (20 errors) ====
+    import {
+      ConditionalRequired,
+      InputFrom,
+      RequiredActorOptions,
+    } from './types';
+    type SpawnOptions<
+      TActor extends ProvidedActor,
+                     ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ProvidedActor'.
+      TSrc extends TActor['src']
+    > = TActor extends {
+    }
+      ? ConditionalRequired<
+          [
+            options?: {
+              input?: InputFrom<TActor['logic']>;
+            } & { [K in RequiredActorOptions<TActor>]: unknown }
+          ],
+          IsNotNever<RequiredActorOptions<TActor>>
+          ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'IsNotNever'.
+        >
+      : never;
+    
+    export type Spawner<TActor extends ProvidedActor> =
+                                       ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ProvidedActor'.
+      IsLiteralString<TActor['src']> extends true
+      ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'IsLiteralString'.
+        ? {
+            <TSrc extends TActor['src']>(
+              ...[options]: SpawnOptions<TActor, TSrc>
+            ): ActorRefFromLogic<GetConcreteByKey<TActor, 'src', TSrc>['logic']>;
+               ~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ActorRefFromLogic'.
+                                 ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'GetConcreteByKey'.
+            <TLogic extends AnyActorLogic>(
+                            ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'AnyActorLogic'.
+              ...[options]: ConditionalRequired<
+                [
+                  options?: {
+                  } & { [K in RequiredLogicInput<TLogic>]: unknown }
+                              ~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'RequiredLogicInput'.
+                ],
+                IsNotNever<RequiredLogicInput<TLogic>>
+                ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'IsNotNever'.
+                           ~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'RequiredLogicInput'.
+              >
+            ): ActorRefFromLogic<TLogic>;
+               ~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ActorRefFromLogic'.
+          }
+        : <TLogic extends AnyActorLogic | string>(
+                          ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'AnyActorLogic'.
+            src: TLogic,
+            ...[options]: ConditionalRequired<
+              [
+                options?: {
+                } & (TLogic extends AnyActorLogic
+                                    ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'AnyActorLogic'.
+                  ? { [K in RequiredLogicInput<TLogic>]: unknown }
+                            ~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'RequiredLogicInput'.
+                  : {})
+              ],
+              IsNotNever<
+              ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'IsNotNever'.
+                TLogic extends AnyActorLogic ? RequiredLogicInput<TLogic> : never
+                               ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'AnyActorLogic'.
+                                               ~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'RequiredLogicInput'.
+              >
+            >
+          ) => TLogic extends AnyActorLogic
+                              ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'AnyActorLogic'.
+            ? ActorRefFromLogic<TLogic>
+              ~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ActorRefFromLogic'.
+            : AnyActorRef;
+              ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'AnyActorRef'.
+    
+==== t.ts (0 errors) ====
+    import { createMachine } from './src/createMachine';
+    function f() {
+        const child = createMachine({
+          context: ({ input }: { input: number }) => {
+          }
+        });
+    
+        const machine = createMachine(
+          {
+            types: {} as {
+              actors: {
+                logic: typeof child;
+              };
+              context: {
+              };
+            },
+            context: ({ input }) => ({
+            }),
+            invoke: {
+              input: ({ context }) => {
+              }
+            }
+          },
+          {
+            actors: {
+            }
+          }
+        );
+    }
+    
+    

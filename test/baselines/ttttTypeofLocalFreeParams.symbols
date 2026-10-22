@@ -1,0 +1,1077 @@
+//// [test/cases/ttttTypeofLocalFreeParams.ts] ////
+
+=== src/types.ts ===
+import type { StateMachine } from './StateMachine';
+>StateMachine : Symbol(StateMachine, Decl(types.ts, 0, 13))
+
+import { Spawner } from './spawn';
+>Spawner : Symbol(Spawner, Decl(types.ts, 1, 8))
+
+export type Compute<A> = { [K in keyof A]: A[K] } & unknown;
+>Compute : Symbol(Compute, Decl(types.ts, 1, 34))
+>A : Symbol(A, Decl(types.ts, 2, 20))
+>K : Symbol(K, Decl(types.ts, 2, 28))
+>A : Symbol(A, Decl(types.ts, 2, 20))
+>A : Symbol(A, Decl(types.ts, 2, 20))
+>K : Symbol(K, Decl(types.ts, 2, 28))
+
+export type InputFrom<T> =
+>InputFrom : Symbol(InputFrom, Decl(types.ts, 2, 60))
+>T : Symbol(T, Decl(types.ts, 3, 22))
+
+  T extends StateMachine<
+>T : Symbol(T, Decl(types.ts, 3, 22))
+>StateMachine : Symbol(StateMachine, Decl(types.ts, 0, 13))
+
+    infer _TContext,
+>_TContext : Symbol(_TContext, Decl(types.ts, 5, 9))
+
+    infer _TEvent,
+>_TEvent : Symbol(_TEvent, Decl(types.ts, 6, 9))
+
+    infer _TChildren,
+>_TChildren : Symbol(_TChildren, Decl(types.ts, 7, 9))
+
+    infer _TActor,
+>_TActor : Symbol(_TActor, Decl(types.ts, 8, 9))
+
+    infer _TAction,
+>_TAction : Symbol(_TAction, Decl(types.ts, 9, 9))
+
+    infer _TGuard,
+>_TGuard : Symbol(_TGuard, Decl(types.ts, 10, 9))
+
+    infer _TDelay,
+>_TDelay : Symbol(_TDelay, Decl(types.ts, 11, 9))
+
+    infer _TStateValue,
+>_TStateValue : Symbol(_TStateValue, Decl(types.ts, 12, 9))
+
+    infer _TTag,
+>_TTag : Symbol(_TTag, Decl(types.ts, 13, 9))
+
+    infer TInput,
+>TInput : Symbol(TInput, Decl(types.ts, 14, 9))
+
+    infer _TTransitionMeta
+>_TTransitionMeta : Symbol(_TTransitionMeta, Decl(types.ts, 15, 9))
+
+  >
+    ? TInput
+>TInput : Symbol(TInput, Decl(types.ts, 14, 9))
+
+    : T extends ActorLogic<
+>T : Symbol(T, Decl(types.ts, 3, 22))
+>ActorLogic : Symbol(ActorLogic)
+
+          infer _TEmitted
+>_TEmitted : Symbol(_TEmitted, Decl(types.ts, 19, 15))
+
+        >
+      ? TInput
+>TInput : Symbol(TInput)
+
+      : never;
+
+export type ConditionalRequired<
+>ConditionalRequired : Symbol(ConditionalRequired, Decl(types.ts, 22, 14))
+
+  T,
+>T : Symbol(T, Decl(types.ts, 24, 32))
+
+  Condition extends boolean
+>Condition : Symbol(Condition, Decl(types.ts, 25, 4))
+
+> = Condition extends true ? Required<T> : T;
+>Condition : Symbol(Condition, Decl(types.ts, 25, 4))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(types.ts, 24, 32))
+>T : Symbol(T, Decl(types.ts, 24, 32))
+
+export type SingleOrArray<T> = readonly T[] | T;
+>SingleOrArray : Symbol(SingleOrArray, Decl(types.ts, 27, 45))
+>T : Symbol(T, Decl(types.ts, 29, 26))
+>T : Symbol(T, Decl(types.ts, 29, 26))
+>T : Symbol(T, Decl(types.ts, 29, 26))
+
+type DistributeActors<
+>DistributeActors : Symbol(DistributeActors, Decl(types.ts, 29, 48))
+
+  TContext extends MachineContext,
+>TContext : Symbol(TContext, Decl(types.ts, 31, 22))
+>MachineContext : Symbol(MachineContext)
+
+  TEvent extends EventObject,
+>TEvent : Symbol(TEvent, Decl(types.ts, 32, 34))
+>EventObject : Symbol(EventObject)
+
+  TActor extends ProvidedActor,
+>TActor : Symbol(TActor, Decl(types.ts, 33, 29))
+>ProvidedActor : Symbol(ProvidedActor)
+
+  TAction extends ParameterizedObject,
+>TAction : Symbol(TAction, Decl(types.ts, 34, 31))
+>ParameterizedObject : Symbol(ParameterizedObject)
+
+  TGuard extends ParameterizedObject,
+>TGuard : Symbol(TGuard, Decl(types.ts, 35, 38))
+>ParameterizedObject : Symbol(ParameterizedObject)
+
+  TDelay extends string,
+>TDelay : Symbol(TDelay, Decl(types.ts, 36, 37))
+
+  TEmitted extends EventObject,
+>TEmitted : Symbol(TEmitted, Decl(types.ts, 37, 24))
+>EventObject : Symbol(EventObject)
+
+  TTransitionMeta extends MetaObject,
+>TTransitionMeta : Symbol(TTransitionMeta, Decl(types.ts, 38, 31))
+>MetaObject : Symbol(MetaObject)
+
+  TSpecificActor extends ProvidedActor
+>TSpecificActor : Symbol(TSpecificActor, Decl(types.ts, 39, 37))
+>ProvidedActor : Symbol(ProvidedActor)
+
+> = TSpecificActor extends { src: infer TSrc }
+>TSpecificActor : Symbol(TSpecificActor, Decl(types.ts, 39, 37))
+>src : Symbol(src, Decl(types.ts, 41, 28))
+>TSrc : Symbol(TSrc, Decl(types.ts, 41, 39))
+
+  ?
+      | Compute<
+>Compute : Symbol(Compute, Decl(types.ts, 1, 34))
+          {
+            input?:
+>input : Symbol(input, Decl(types.ts, 44, 11))
+
+              | Mapper<
+>Mapper : Symbol(Mapper, Decl(types.ts, 195, 1))
+
+                  TContext,
+>TContext : Symbol(TContext, Decl(types.ts, 31, 22))
+
+                  TEvent,
+>TEvent : Symbol(TEvent, Decl(types.ts, 32, 34))
+
+                  InputFrom<TSpecificActor['logic']>,
+>InputFrom : Symbol(InputFrom, Decl(types.ts, 2, 60))
+>TSpecificActor : Symbol(TSpecificActor, Decl(types.ts, 39, 37))
+
+                  TEvent
+>TEvent : Symbol(TEvent, Decl(types.ts, 32, 34))
+
+                >
+            onError?:
+>onError : Symbol(onError, Decl(types.ts, 51, 17))
+
+              | SingleOrArray<
+>SingleOrArray : Symbol(SingleOrArray, Decl(types.ts, 27, 45))
+
+                  TransitionConfigOrTarget<
+>TransitionConfigOrTarget : Symbol(TransitionConfigOrTarget)
+
+                    TTransitionMeta
+>TTransitionMeta : Symbol(TTransitionMeta, Decl(types.ts, 38, 31))
+
+                  >
+                >;
+
+            onSnapshot?:
+>onSnapshot : Symbol(onSnapshot, Decl(types.ts, 57, 18))
+
+              | SingleOrArray<
+>SingleOrArray : Symbol(SingleOrArray, Decl(types.ts, 27, 45))
+
+                  TransitionConfigOrTarget<
+>TransitionConfigOrTarget : Symbol(TransitionConfigOrTarget)
+
+                    TTransitionMeta
+>TTransitionMeta : Symbol(TTransitionMeta, Decl(types.ts, 38, 31))
+
+                  >
+                >;
+          } & { [K in RequiredActorOptions<TSpecificActor>]: unknown }
+>K : Symbol(K, Decl(types.ts, 65, 17))
+>RequiredActorOptions : Symbol(RequiredActorOptions, Decl(types.ts, 229, 12))
+>TSpecificActor : Symbol(TSpecificActor, Decl(types.ts, 39, 37))
+
+        >
+      | {
+          input?:
+>input : Symbol(input, Decl(types.ts, 67, 9))
+
+            | SingleOrArray<
+>SingleOrArray : Symbol(SingleOrArray, Decl(types.ts, 27, 45))
+
+                TransitionConfigOrTarget<
+>TransitionConfigOrTarget : Symbol(TransitionConfigOrTarget)
+
+                  TTransitionMeta
+>TTransitionMeta : Symbol(TTransitionMeta, Decl(types.ts, 38, 31))
+
+                >
+              >;
+
+          onSnapshot?:
+>onSnapshot : Symbol(onSnapshot, Decl(types.ts, 73, 16))
+
+            | SingleOrArray<
+>SingleOrArray : Symbol(SingleOrArray, Decl(types.ts, 27, 45))
+
+                TransitionConfigOrTarget<
+>TransitionConfigOrTarget : Symbol(TransitionConfigOrTarget)
+
+                  TTransitionMeta
+>TTransitionMeta : Symbol(TTransitionMeta, Decl(types.ts, 38, 31))
+
+                >
+              >;
+        }
+  : never;
+
+export type InvokeConfig<
+>InvokeConfig : Symbol(InvokeConfig, Decl(types.ts, 82, 10))
+
+  TContext extends MachineContext,
+>TContext : Symbol(TContext, Decl(types.ts, 84, 25))
+>MachineContext : Symbol(MachineContext)
+
+  TEvent extends EventObject,
+>TEvent : Symbol(TEvent, Decl(types.ts, 85, 34))
+>EventObject : Symbol(EventObject)
+
+  TActor extends ProvidedActor,
+>TActor : Symbol(TActor, Decl(types.ts, 86, 29))
+>ProvidedActor : Symbol(ProvidedActor)
+
+  TAction extends ParameterizedObject,
+>TAction : Symbol(TAction, Decl(types.ts, 87, 31))
+>ParameterizedObject : Symbol(ParameterizedObject)
+
+  TGuard extends ParameterizedObject,
+>TGuard : Symbol(TGuard, Decl(types.ts, 88, 38))
+>ParameterizedObject : Symbol(ParameterizedObject)
+
+  TDelay extends string,
+>TDelay : Symbol(TDelay, Decl(types.ts, 89, 37))
+
+  TEmitted extends EventObject,
+>TEmitted : Symbol(TEmitted, Decl(types.ts, 90, 24))
+>EventObject : Symbol(EventObject)
+
+  TTransitionMeta extends MetaObject
+>TTransitionMeta : Symbol(TTransitionMeta, Decl(types.ts, 91, 31))
+>MetaObject : Symbol(MetaObject)
+
+> =
+  IsLiteralString<TActor['src']> extends true
+>IsLiteralString : Symbol(IsLiteralString)
+>TActor : Symbol(TActor, Decl(types.ts, 86, 29))
+
+    ? DistributeActors<
+>DistributeActors : Symbol(DistributeActors, Decl(types.ts, 29, 48))
+
+        TContext,
+>TContext : Symbol(TContext, Decl(types.ts, 84, 25))
+
+        TEvent,
+>TEvent : Symbol(TEvent, Decl(types.ts, 85, 34))
+
+        TActor,
+>TActor : Symbol(TActor, Decl(types.ts, 86, 29))
+
+        TAction,
+>TAction : Symbol(TAction, Decl(types.ts, 87, 31))
+
+        TGuard,
+>TGuard : Symbol(TGuard, Decl(types.ts, 88, 38))
+
+        TDelay,
+>TDelay : Symbol(TDelay, Decl(types.ts, 89, 37))
+
+        TEmitted,
+>TEmitted : Symbol(TEmitted, Decl(types.ts, 90, 24))
+
+        TTransitionMeta,
+>TTransitionMeta : Symbol(TTransitionMeta, Decl(types.ts, 91, 31))
+
+        TActor
+>TActor : Symbol(TActor, Decl(types.ts, 86, 29))
+
+      >
+    : {
+      };
+
+export type AnyInvokeConfig = InvokeConfig<
+>AnyInvokeConfig : Symbol(AnyInvokeConfig, Decl(types.ts, 107, 8))
+>InvokeConfig : Symbol(InvokeConfig, Decl(types.ts, 82, 10))
+
+  any // TTransitionMeta
+>;
+
+export interface StateNodeConfig<
+>StateNodeConfig : Symbol(StateNodeConfig, Decl(types.ts, 111, 2))
+
+  TTransitionMeta extends MetaObject = TStateMeta
+>TTransitionMeta : Symbol(TTransitionMeta, Decl(types.ts, 113, 33))
+>MetaObject : Symbol(MetaObject)
+>TStateMeta : Symbol(TStateMeta)
+
+> {
+  invoke?: SingleOrArray<
+>invoke : Symbol(StateNodeConfig.invoke, Decl(types.ts, 115, 3))
+>SingleOrArray : Symbol(SingleOrArray, Decl(types.ts, 27, 45))
+
+    InvokeConfig<
+>InvokeConfig : Symbol(InvokeConfig, Decl(types.ts, 82, 10))
+
+      TContext,
+>TContext : Symbol(TContext)
+
+      TEvent,
+>TEvent : Symbol(TEvent)
+
+      TActor,
+>TActor : Symbol(TActor)
+
+      TAction,
+>TAction : Symbol(TAction)
+
+      TGuard,
+>TGuard : Symbol(TGuard)
+
+      TDelay,
+>TDelay : Symbol(TDelay)
+
+      TEmitted,
+>TEmitted : Symbol(TEmitted)
+
+      TTransitionMeta
+>TTransitionMeta : Symbol(TTransitionMeta, Decl(types.ts, 113, 33))
+
+    >
+  >;
+  route?: RouteTransitionConfig<
+>route : Symbol(StateNodeConfig.route, Decl(types.ts, 127, 4))
+>RouteTransitionConfig : Symbol(RouteTransitionConfig)
+
+    TTransitionMeta
+>TTransitionMeta : Symbol(TTransitionMeta, Decl(types.ts, 113, 33))
+
+  >;
+}
+
+export type AnyStateNodeConfig = StateNodeConfig<
+>AnyStateNodeConfig : Symbol(AnyStateNodeConfig, Decl(types.ts, 131, 1))
+>StateNodeConfig : Symbol(StateNodeConfig, Decl(types.ts, 111, 2))
+
+  any // transition meta
+>;
+
+export interface StateNodeDefinition<
+>StateNodeDefinition : Symbol(StateNodeDefinition, Decl(types.ts, 135, 2))
+
+> {
+  invoke: Array<
+>invoke : Symbol(StateNodeDefinition.invoke, Decl(types.ts, 138, 3))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+
+    InvokeDefinition<
+>InvokeDefinition : Symbol(InvokeDefinition)
+
+      TTransitionMeta
+>TTransitionMeta : Symbol(TTransitionMeta)
+
+    >
+  >;
+}
+
+type InitialContext<
+>InitialContext : Symbol(InitialContext, Decl(types.ts, 144, 1))
+
+  TContext extends MachineContext,
+>TContext : Symbol(TContext, Decl(types.ts, 146, 20))
+>MachineContext : Symbol(MachineContext)
+
+  TActor extends ProvidedActor,
+>TActor : Symbol(TActor, Decl(types.ts, 147, 34))
+>ProvidedActor : Symbol(ProvidedActor)
+
+  TInput,
+>TInput : Symbol(TInput, Decl(types.ts, 148, 31))
+
+  TEvent extends EventObject
+>TEvent : Symbol(TEvent, Decl(types.ts, 149, 9))
+>EventObject : Symbol(EventObject)
+
+> = ({
+}: {
+  spawn: Spawner<TActor>;
+>spawn : Symbol(spawn, Decl(types.ts, 152, 4))
+>Spawner : Symbol(Spawner, Decl(types.ts, 1, 8))
+>TActor : Symbol(TActor, Decl(types.ts, 147, 34))
+
+  input: TInput;
+>input : Symbol(input, Decl(types.ts, 153, 25))
+>TInput : Symbol(TInput, Decl(types.ts, 148, 31))
+
+  self: ActorRef<
+>self : Symbol(self, Decl(types.ts, 154, 16))
+>ActorRef : Symbol(ActorRef)
+
+    MachineSnapshot<
+>MachineSnapshot : Symbol(MachineSnapshot)
+
+      TODO // State schema
+>TODO : Symbol(TODO)
+
+    >,
+    AnyEventObject
+>AnyEventObject : Symbol(AnyEventObject)
+
+  >;
+}) => TContext;
+>TContext : Symbol(TContext, Decl(types.ts, 146, 20))
+
+export type MachineConfig<
+>MachineConfig : Symbol(MachineConfig, Decl(types.ts, 161, 15))
+
+  TContext extends MachineContext,
+>TContext : Symbol(TContext, Decl(types.ts, 163, 26))
+>MachineContext : Symbol(MachineContext)
+
+  TEvent extends EventObject,
+>TEvent : Symbol(TEvent, Decl(types.ts, 164, 34))
+>EventObject : Symbol(EventObject)
+
+  TActor extends ProvidedActor = ProvidedActor,
+>TActor : Symbol(TActor, Decl(types.ts, 165, 29))
+>ProvidedActor : Symbol(ProvidedActor)
+>ProvidedActor : Symbol(ProvidedActor)
+
+  TAction extends ParameterizedObject = ParameterizedObject,
+>TAction : Symbol(TAction, Decl(types.ts, 166, 47))
+>ParameterizedObject : Symbol(ParameterizedObject)
+>ParameterizedObject : Symbol(ParameterizedObject)
+
+  TGuard extends ParameterizedObject = ParameterizedObject,
+>TGuard : Symbol(TGuard, Decl(types.ts, 167, 60))
+>ParameterizedObject : Symbol(ParameterizedObject)
+>ParameterizedObject : Symbol(ParameterizedObject)
+
+  TDelay extends string = string,
+>TDelay : Symbol(TDelay, Decl(types.ts, 168, 59))
+
+  TTag extends string = string,
+>TTag : Symbol(TTag, Decl(types.ts, 169, 33))
+
+  TInput = any,
+>TInput : Symbol(TInput, Decl(types.ts, 170, 31))
+
+  TTransitionMeta extends MetaObject = TStateMeta
+>TTransitionMeta : Symbol(TTransitionMeta, Decl(types.ts, 171, 15))
+>MetaObject : Symbol(MetaObject)
+>TStateMeta : Symbol(TStateMeta)
+
+> = (Omit<
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+
+  StateNodeConfig<
+>StateNodeConfig : Symbol(StateNodeConfig, Decl(types.ts, 111, 2))
+
+    DoNotInfer<TTransitionMeta>
+>DoNotInfer : Symbol(DoNotInfer)
+>TTransitionMeta : Symbol(TTransitionMeta, Decl(types.ts, 171, 15))
+
+  >,
+  'output'
+> & {
+}) &
+  (MachineContext extends TContext
+>MachineContext : Symbol(MachineContext)
+>TContext : Symbol(TContext, Decl(types.ts, 163, 26))
+
+    ? { context?: InitialContext<LowInfer<TContext>, TActor, TInput, TEvent> }
+>context : Symbol(context, Decl(types.ts, 181, 7))
+>InitialContext : Symbol(InitialContext, Decl(types.ts, 144, 1))
+>LowInfer : Symbol(LowInfer)
+>TContext : Symbol(TContext, Decl(types.ts, 163, 26))
+>TActor : Symbol(TActor, Decl(types.ts, 165, 29))
+>TInput : Symbol(TInput, Decl(types.ts, 170, 31))
+>TEvent : Symbol(TEvent, Decl(types.ts, 164, 34))
+
+    : { context: InitialContext<LowInfer<TContext>, TActor, TInput, TEvent> });
+>context : Symbol(context, Decl(types.ts, 182, 7))
+>InitialContext : Symbol(InitialContext, Decl(types.ts, 144, 1))
+>LowInfer : Symbol(LowInfer)
+>TContext : Symbol(TContext, Decl(types.ts, 163, 26))
+>TActor : Symbol(TActor, Decl(types.ts, 165, 29))
+>TInput : Symbol(TInput, Decl(types.ts, 170, 31))
+>TEvent : Symbol(TEvent, Decl(types.ts, 164, 34))
+
+export interface MachineTypes<
+>MachineTypes : Symbol(MachineTypes, Decl(types.ts, 182, 79))
+
+  TContext extends MachineContext,
+>TContext : Symbol(TContext, Decl(types.ts, 184, 30))
+>MachineContext : Symbol(MachineContext)
+
+  TEvent extends EventObject,
+>TEvent : Symbol(TEvent, Decl(types.ts, 185, 34))
+>EventObject : Symbol(EventObject)
+
+  TActor extends ProvidedActor,
+>TActor : Symbol(TActor, Decl(types.ts, 186, 29))
+>ProvidedActor : Symbol(ProvidedActor)
+
+  TTransitionMeta extends MetaObject = TStateMeta
+>TTransitionMeta : Symbol(TTransitionMeta, Decl(types.ts, 187, 31))
+>MetaObject : Symbol(MetaObject)
+>TStateMeta : Symbol(TStateMeta)
+
+> {
+  actors?: TActor;
+>actors : Symbol(MachineTypes.actors, Decl(types.ts, 189, 3))
+>TActor : Symbol(TActor, Decl(types.ts, 186, 29))
+}
+
+export interface RaiseActionOptions<
+>RaiseActionOptions : Symbol(RaiseActionOptions, Decl(types.ts, 191, 1))
+
+> {
+}
+
+export type Mapper<
+>Mapper : Symbol(Mapper, Decl(types.ts, 195, 1))
+
+  TContext extends MachineContext,
+>TContext : Symbol(TContext, Decl(types.ts, 197, 19))
+>MachineContext : Symbol(MachineContext)
+
+  TExpressionEvent extends EventObject,
+>TExpressionEvent : Symbol(TExpressionEvent, Decl(types.ts, 198, 34))
+>EventObject : Symbol(EventObject)
+
+  TResult,
+>TResult : Symbol(TResult, Decl(types.ts, 199, 39))
+
+  TEvent extends EventObject
+>TEvent : Symbol(TEvent, Decl(types.ts, 200, 10))
+>EventObject : Symbol(EventObject)
+
+> = (args: {
+>args : Symbol(args, Decl(types.ts, 202, 5))
+
+  context: TContext;
+>context : Symbol(context, Decl(types.ts, 202, 12))
+>TContext : Symbol(TContext, Decl(types.ts, 197, 19))
+
+  self: ActorRef<
+>self : Symbol(self, Decl(types.ts, 203, 20))
+>ActorRef : Symbol(ActorRef)
+
+    AnyEventObject
+>AnyEventObject : Symbol(AnyEventObject)
+
+  >;
+}) => TResult;
+>TResult : Symbol(TResult, Decl(types.ts, 199, 39))
+
+export interface TransitionDefinition<
+>TransitionDefinition : Symbol(TransitionDefinition, Decl(types.ts, 207, 14))
+
+> {
+  select<TSelected>(
+>select : Symbol(TransitionDefinition.select, Decl(types.ts, 210, 3))
+>TSelected : Symbol(TSelected, Decl(types.ts, 211, 9))
+
+  ): Readable<TSelected>;
+>Readable : Symbol(Readable)
+>TSelected : Symbol(TSelected, Decl(types.ts, 211, 9))
+}
+
+export type AnyActorRef = ActorRef<
+>AnyActorRef : Symbol(AnyActorRef, Decl(types.ts, 213, 1))
+>ActorRef : Symbol(ActorRef)
+
+  EmittedFrom<T>
+>EmittedFrom : Symbol(EmittedFrom)
+>T : Symbol(T)
+
+>;
+
+export type InterpreterFrom<
+>InterpreterFrom : Symbol(InterpreterFrom, Decl(types.ts, 217, 2))
+
+> =
+  ReturnTypeOrValue<T> extends StateMachine<
+>ReturnTypeOrValue : Symbol(ReturnTypeOrValue)
+>T : Symbol(T)
+>StateMachine : Symbol(StateMachine, Decl(types.ts, 0, 13))
+
+    infer _TTransitionMeta
+>_TTransitionMeta : Symbol(_TTransitionMeta, Decl(types.ts, 222, 9))
+
+  >
+    ? InternalMachineImplementations<
+>InternalMachineImplementations : Symbol(InternalMachineImplementations)
+
+        ResolvedStateMachineTypes<
+>ResolvedStateMachineTypes : Symbol(ResolvedStateMachineTypes, Decl(types.ts, 232, 69))
+
+          TEmitted
+>TEmitted : Symbol(TEmitted)
+
+        >
+      >
+    : never;
+
+export type RequiredActorOptions<TActor extends ProvidedActor> =
+>RequiredActorOptions : Symbol(RequiredActorOptions, Decl(types.ts, 229, 12))
+>TActor : Symbol(TActor, Decl(types.ts, 231, 33))
+>ProvidedActor : Symbol(ProvidedActor)
+
+  | (undefined extends InputFrom<TActor['logic']> ? never : 'input');
+>InputFrom : Symbol(InputFrom, Decl(types.ts, 2, 60))
+>TActor : Symbol(TActor, Decl(types.ts, 231, 33))
+
+export interface ResolvedStateMachineTypes<
+>ResolvedStateMachineTypes : Symbol(ResolvedStateMachineTypes, Decl(types.ts, 232, 69))
+
+> {
+}
+
+export type GetConcreteByKey<
+>GetConcreteByKey : Symbol(GetConcreteByKey, Decl(types.ts, 236, 1))
+
+> = T & Record<TKey, TValue>;
+>T : Symbol(T)
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>TKey : Symbol(TKey)
+>TValue : Symbol(TValue)
+
+=== src/StateMachine.ts ===
+export class StateMachine<
+>StateMachine : Symbol(StateMachine, Decl(StateMachine.ts, 0, 0))
+
+  TAction extends ParameterizedObject,
+>TAction : Symbol(TAction, Decl(StateMachine.ts, 0, 26))
+>ParameterizedObject : Symbol(ParameterizedObject)
+
+  TGuard extends ParameterizedObject,
+>TGuard : Symbol(TGuard, Decl(StateMachine.ts, 1, 38))
+>ParameterizedObject : Symbol(ParameterizedObject)
+
+  TDelay extends string,
+>TDelay : Symbol(TDelay, Decl(StateMachine.ts, 2, 37))
+
+  TStateValue extends StateValue,
+>TStateValue : Symbol(TStateValue, Decl(StateMachine.ts, 3, 24))
+>StateValue : Symbol(StateValue)
+
+  TTag extends string,
+>TTag : Symbol(TTag, Decl(StateMachine.ts, 4, 33))
+
+  TInput,
+>TInput : Symbol(TInput, Decl(StateMachine.ts, 5, 22))
+
+  TOutput,
+>TOutput : Symbol(TOutput, Decl(StateMachine.ts, 6, 9))
+
+  TEmitted extends EventObject,
+>TEmitted : Symbol(TEmitted, Decl(StateMachine.ts, 7, 10))
+>EventObject : Symbol(EventObject)
+
+  TStateMeta extends MetaObject,
+>TStateMeta : Symbol(TStateMeta, Decl(StateMachine.ts, 8, 31))
+>MetaObject : Symbol(MetaObject)
+
+  TStateSchema extends StateSchema,
+>TStateSchema : Symbol(TStateSchema, Decl(StateMachine.ts, 9, 32))
+>StateSchema : Symbol(StateSchema)
+
+  TTransitionMeta extends MetaObject = TStateMeta
+>TTransitionMeta : Symbol(TTransitionMeta, Decl(StateMachine.ts, 10, 35))
+>MetaObject : Symbol(MetaObject)
+>TStateMeta : Symbol(TStateMeta, Decl(StateMachine.ts, 8, 31))
+
+> {
+  public restoreSnapshot(
+>restoreSnapshot : Symbol(StateMachine.restoreSnapshot, Decl(StateMachine.ts, 12, 3))
+
+    _actorScope: ActorScope<
+>_actorScope : Symbol(_actorScope, Decl(StateMachine.ts, 13, 25))
+>ActorScope : Symbol(ActorScope)
+
+      MachineSnapshot<
+>MachineSnapshot : Symbol(MachineSnapshot)
+
+        TStateSchema
+>TStateSchema : Symbol(TStateSchema, Decl(StateMachine.ts, 9, 32))
+
+      >,
+      TEmitted
+>TEmitted : Symbol(TEmitted, Decl(StateMachine.ts, 7, 10))
+
+    >
+  ): MachineSnapshot<
+>MachineSnapshot : Symbol(MachineSnapshot)
+
+    TStateSchema
+>TStateSchema : Symbol(TStateSchema, Decl(StateMachine.ts, 9, 32))
+
+  > {
+    const snapshotChildren: Record<
+>snapshotChildren : Symbol(snapshotChildren, Decl(StateMachine.ts, 23, 9))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+      {
+      }
+    > = (snapshot as any).children;
+
+  }
+}
+
+=== src/createMachine.ts ===
+import { StateMachine } from './StateMachine';
+>StateMachine : Symbol(StateMachine, Decl(createMachine.ts, 0, 8))
+
+import {
+  MachineConfig,
+>MachineConfig : Symbol(MachineConfig, Decl(createMachine.ts, 1, 8))
+
+  MachineTypes,
+>MachineTypes : Symbol(MachineTypes, Decl(createMachine.ts, 2, 16))
+
+} from './types';
+
+export function createMachine<
+>createMachine : Symbol(createMachine, Decl(createMachine.ts, 4, 17))
+
+  TContext extends MachineContext,
+>TContext : Symbol(TContext, Decl(createMachine.ts, 6, 30))
+>MachineContext : Symbol(MachineContext)
+
+  TActor extends ProvidedActor,
+>TActor : Symbol(TActor, Decl(createMachine.ts, 7, 34))
+>ProvidedActor : Symbol(ProvidedActor)
+
+  TInput,
+>TInput : Symbol(TInput, Decl(createMachine.ts, 8, 31))
+
+>(
+  config: {
+>config : Symbol(config, Decl(createMachine.ts, 10, 2))
+
+    types?: MachineTypes<
+>types : Symbol(types, Decl(createMachine.ts, 11, 11))
+>MachineTypes : Symbol(MachineTypes, Decl(createMachine.ts, 2, 16))
+
+      TContext,
+>TContext : Symbol(TContext, Decl(createMachine.ts, 6, 30))
+
+      TEvent,
+>TEvent : Symbol(TEvent)
+
+      TActor,
+>TActor : Symbol(TActor, Decl(createMachine.ts, 7, 34))
+
+      TTransitionMeta
+>TTransitionMeta : Symbol(TTransitionMeta)
+
+    >;
+  } & MachineConfig<
+>MachineConfig : Symbol(MachineConfig, Decl(createMachine.ts, 1, 8))
+
+    TContext,
+>TContext : Symbol(TContext, Decl(createMachine.ts, 6, 30))
+
+    TEvent,
+>TEvent : Symbol(TEvent)
+
+    TActor,
+>TActor : Symbol(TActor, Decl(createMachine.ts, 7, 34))
+
+    TAction,
+>TAction : Symbol(TAction)
+
+    TGuard,
+>TGuard : Symbol(TGuard)
+
+    TDelay,
+>TDelay : Symbol(TDelay)
+
+    TTag,
+>TTag : Symbol(TTag)
+
+    TInput,
+>TInput : Symbol(TInput, Decl(createMachine.ts, 8, 31))
+
+    TTransitionMeta
+>TTransitionMeta : Symbol(TTransitionMeta)
+
+  >,
+  implementations?: InternalMachineImplementations<
+>implementations : Symbol(implementations, Decl(createMachine.ts, 28, 4))
+>InternalMachineImplementations : Symbol(InternalMachineImplementations)
+
+    ResolvedStateMachineTypes<
+>ResolvedStateMachineTypes : Symbol(ResolvedStateMachineTypes)
+
+      TEmitted
+>TEmitted : Symbol(TEmitted)
+
+    >
+  >
+): StateMachine<
+>StateMachine : Symbol(StateMachine, Decl(createMachine.ts, 0, 8))
+
+  TContext,
+>TContext : Symbol(TContext, Decl(createMachine.ts, 6, 30))
+
+  TEvent,
+>TEvent : Symbol(TEvent)
+
+  Cast<ToChildren<TActor>, Record<string, AnyActorRef | undefined>>,
+>Cast : Symbol(Cast)
+>ToChildren : Symbol(ToChildren)
+>TActor : Symbol(TActor, Decl(createMachine.ts, 7, 34))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>AnyActorRef : Symbol(AnyActorRef)
+
+  TActor,
+>TActor : Symbol(TActor, Decl(createMachine.ts, 7, 34))
+
+  TAction,
+>TAction : Symbol(TAction)
+
+  TGuard,
+>TGuard : Symbol(TGuard)
+
+  TDelay,
+>TDelay : Symbol(TDelay)
+
+  StateValue,
+>StateValue : Symbol(StateValue)
+
+  TTag & string,
+>TTag : Symbol(TTag)
+
+  TInput,
+>TInput : Symbol(TInput, Decl(createMachine.ts, 8, 31))
+
+  TTransitionMeta
+>TTransitionMeta : Symbol(TTransitionMeta)
+
+> {
+}
+
+=== src/spawn.ts ===
+import {
+  ConditionalRequired,
+>ConditionalRequired : Symbol(ConditionalRequired, Decl(spawn.ts, 0, 8))
+
+  InputFrom,
+>InputFrom : Symbol(InputFrom, Decl(spawn.ts, 1, 22))
+
+  RequiredActorOptions,
+>RequiredActorOptions : Symbol(RequiredActorOptions, Decl(spawn.ts, 2, 12))
+
+} from './types';
+type SpawnOptions<
+>SpawnOptions : Symbol(SpawnOptions, Decl(spawn.ts, 4, 17))
+
+  TActor extends ProvidedActor,
+>TActor : Symbol(TActor, Decl(spawn.ts, 5, 18))
+>ProvidedActor : Symbol(ProvidedActor)
+
+  TSrc extends TActor['src']
+>TSrc : Symbol(TSrc, Decl(spawn.ts, 6, 31))
+>TActor : Symbol(TActor, Decl(spawn.ts, 5, 18))
+
+> = TActor extends {
+>TActor : Symbol(TActor, Decl(spawn.ts, 5, 18))
+}
+  ? ConditionalRequired<
+>ConditionalRequired : Symbol(ConditionalRequired, Decl(spawn.ts, 0, 8))
+
+      [
+        options?: {
+          input?: InputFrom<TActor['logic']>;
+>input : Symbol(input, Decl(spawn.ts, 12, 19))
+>InputFrom : Symbol(InputFrom, Decl(spawn.ts, 1, 22))
+>TActor : Symbol(TActor, Decl(spawn.ts, 5, 18))
+
+        } & { [K in RequiredActorOptions<TActor>]: unknown }
+>K : Symbol(K, Decl(spawn.ts, 14, 15))
+>RequiredActorOptions : Symbol(RequiredActorOptions, Decl(spawn.ts, 2, 12))
+>TActor : Symbol(TActor, Decl(spawn.ts, 5, 18))
+
+      ],
+      IsNotNever<RequiredActorOptions<TActor>>
+>IsNotNever : Symbol(IsNotNever)
+>RequiredActorOptions : Symbol(RequiredActorOptions, Decl(spawn.ts, 2, 12))
+>TActor : Symbol(TActor, Decl(spawn.ts, 5, 18))
+
+    >
+  : never;
+
+export type Spawner<TActor extends ProvidedActor> =
+>Spawner : Symbol(Spawner, Decl(spawn.ts, 18, 10))
+>TActor : Symbol(TActor, Decl(spawn.ts, 20, 20))
+>ProvidedActor : Symbol(ProvidedActor)
+
+  IsLiteralString<TActor['src']> extends true
+>IsLiteralString : Symbol(IsLiteralString)
+>TActor : Symbol(TActor, Decl(spawn.ts, 20, 20))
+
+    ? {
+        <TSrc extends TActor['src']>(
+>TSrc : Symbol(TSrc, Decl(spawn.ts, 23, 9))
+>TActor : Symbol(TActor, Decl(spawn.ts, 20, 20))
+
+          ...[options]: SpawnOptions<TActor, TSrc>
+>options : Symbol(options, Decl(spawn.ts, 24, 14))
+>SpawnOptions : Symbol(SpawnOptions, Decl(spawn.ts, 4, 17))
+>TActor : Symbol(TActor, Decl(spawn.ts, 20, 20))
+>TSrc : Symbol(TSrc, Decl(spawn.ts, 23, 9))
+
+        ): ActorRefFromLogic<GetConcreteByKey<TActor, 'src', TSrc>['logic']>;
+>ActorRefFromLogic : Symbol(ActorRefFromLogic)
+>GetConcreteByKey : Symbol(GetConcreteByKey)
+>TActor : Symbol(TActor, Decl(spawn.ts, 20, 20))
+>TSrc : Symbol(TSrc, Decl(spawn.ts, 23, 9))
+
+        <TLogic extends AnyActorLogic>(
+>TLogic : Symbol(TLogic, Decl(spawn.ts, 26, 9))
+>AnyActorLogic : Symbol(AnyActorLogic)
+
+          ...[options]: ConditionalRequired<
+>options : Symbol(options, Decl(spawn.ts, 27, 14))
+>ConditionalRequired : Symbol(ConditionalRequired, Decl(spawn.ts, 0, 8))
+
+            [
+              options?: {
+              } & { [K in RequiredLogicInput<TLogic>]: unknown }
+>K : Symbol(K, Decl(spawn.ts, 30, 21))
+>RequiredLogicInput : Symbol(RequiredLogicInput)
+>TLogic : Symbol(TLogic, Decl(spawn.ts, 26, 9))
+
+            ],
+            IsNotNever<RequiredLogicInput<TLogic>>
+>IsNotNever : Symbol(IsNotNever)
+>RequiredLogicInput : Symbol(RequiredLogicInput)
+>TLogic : Symbol(TLogic, Decl(spawn.ts, 26, 9))
+
+          >
+        ): ActorRefFromLogic<TLogic>;
+>ActorRefFromLogic : Symbol(ActorRefFromLogic)
+>TLogic : Symbol(TLogic, Decl(spawn.ts, 26, 9))
+      }
+    : <TLogic extends AnyActorLogic | string>(
+>TLogic : Symbol(TLogic, Decl(spawn.ts, 36, 7))
+>AnyActorLogic : Symbol(AnyActorLogic)
+
+        src: TLogic,
+>src : Symbol(src, Decl(spawn.ts, 36, 46))
+>TLogic : Symbol(TLogic, Decl(spawn.ts, 36, 7))
+
+        ...[options]: ConditionalRequired<
+>options : Symbol(options, Decl(spawn.ts, 38, 12))
+>ConditionalRequired : Symbol(ConditionalRequired, Decl(spawn.ts, 0, 8))
+
+          [
+            options?: {
+            } & (TLogic extends AnyActorLogic
+>TLogic : Symbol(TLogic, Decl(spawn.ts, 36, 7))
+>AnyActorLogic : Symbol(AnyActorLogic)
+
+              ? { [K in RequiredLogicInput<TLogic>]: unknown }
+>K : Symbol(K, Decl(spawn.ts, 42, 19))
+>RequiredLogicInput : Symbol(RequiredLogicInput)
+>TLogic : Symbol(TLogic, Decl(spawn.ts, 36, 7))
+
+              : {})
+          ],
+          IsNotNever<
+>IsNotNever : Symbol(IsNotNever)
+
+            TLogic extends AnyActorLogic ? RequiredLogicInput<TLogic> : never
+>TLogic : Symbol(TLogic, Decl(spawn.ts, 36, 7))
+>AnyActorLogic : Symbol(AnyActorLogic)
+>RequiredLogicInput : Symbol(RequiredLogicInput)
+>TLogic : Symbol(TLogic, Decl(spawn.ts, 36, 7))
+
+          >
+        >
+      ) => TLogic extends AnyActorLogic
+>TLogic : Symbol(TLogic, Decl(spawn.ts, 36, 7))
+>AnyActorLogic : Symbol(AnyActorLogic)
+
+        ? ActorRefFromLogic<TLogic>
+>ActorRefFromLogic : Symbol(ActorRefFromLogic)
+>TLogic : Symbol(TLogic, Decl(spawn.ts, 36, 7))
+
+        : AnyActorRef;
+>AnyActorRef : Symbol(AnyActorRef)
+
+=== t.ts ===
+import { createMachine } from './src/createMachine';
+>createMachine : Symbol(createMachine, Decl(t.ts, 0, 8))
+
+function f() {
+>f : Symbol(f, Decl(t.ts, 0, 52))
+
+    const child = createMachine({
+>child : Symbol(child, Decl(t.ts, 2, 9))
+>createMachine : Symbol(createMachine, Decl(t.ts, 0, 8))
+
+      context: ({ input }: { input: number }) => {
+>context : Symbol(context, Decl(t.ts, 2, 33))
+>input : Symbol(input, Decl(t.ts, 3, 17))
+>input : Symbol(input, Decl(t.ts, 3, 28))
+      }
+    });
+
+    const machine = createMachine(
+>machine : Symbol(machine, Decl(t.ts, 7, 9))
+>createMachine : Symbol(createMachine, Decl(t.ts, 0, 8))
+      {
+        types: {} as {
+>types : Symbol(types, Decl(t.ts, 8, 7))
+
+          actors: {
+>actors : Symbol(actors, Decl(t.ts, 9, 22))
+
+            logic: typeof child;
+>logic : Symbol(logic, Decl(t.ts, 10, 19))
+>child : Symbol(child, Decl(t.ts, 2, 9))
+
+          };
+          context: {
+>context : Symbol(context, Decl(t.ts, 12, 12))
+
+          };
+        },
+        context: ({ input }) => ({
+>context : Symbol(context, Decl(t.ts, 15, 10))
+>input : Symbol(input, Decl(t.ts, 16, 19))
+
+        }),
+        invoke: {
+>invoke : Symbol(invoke, Decl(t.ts, 17, 11))
+
+          input: ({ context }) => {
+>input : Symbol(input, Decl(t.ts, 18, 17))
+>context : Symbol(context, Decl(t.ts, 19, 19))
+          }
+        }
+      },
+      {
+        actors: {
+>actors : Symbol(actors, Decl(t.ts, 23, 7))
+        }
+      }
+    );
+}
+
+
