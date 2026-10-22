@@ -130,6 +130,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttBindingDefaultUnionSubtypeReduced': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBlockTypeParamPossiblyReferenced': {
         errors: true,
         symbols: true,

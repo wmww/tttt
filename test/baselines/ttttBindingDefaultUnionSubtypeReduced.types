@@ -1,0 +1,80 @@
+//// [test/cases/ttttBindingDefaultUnionSubtypeReduced.ts] ////
+
+=== ttttBindingDefaultUnionSubtypeReduced.ts ===
+// A destructuring default is unioned with the property's type subtype-reduced before it is widened (tsc's
+// getTypeForBindingElement): an object literal in a union default (`c ? { a: true } : undefined`) that fits a type
+// with optional properties is absorbed, so indexing the result with a key of either property is no TS7053/TS2339
+type Key = 'a' | 'b';
+>Key : Key
+
+interface Options {
+    flags?: Partial<Record<Key, boolean | { n?: number }>>;
+>flags : Partial<Record<Key, boolean | { n?: number; }>> | undefined
+>n : number | undefined
+
+    label?: string;
+>label : string | undefined
+}
+declare const options: Options;
+>options : Options
+
+declare const key: Key;
+>key : Key
+
+const { label, flags = !label ? { a: true } : undefined } = options;
+>label : string | undefined
+>flags : Partial<Record<Key, boolean | { n?: number; }>> | undefined
+>!label ? { a: true } : undefined : { a: true; } | undefined
+>!label : boolean
+>label : string | undefined
+>{ a: true } : { a: true; }
+>a : true
+>true : true
+>undefined : undefined
+>options : Options
+
+const v = flags?.[key];
+>v : boolean | { n?: number; } | undefined
+>flags?.[key] : boolean | { n?: number; } | undefined
+>flags : Partial<Record<Key, boolean | { n?: number; }>> | undefined
+>key : Key
+
+const w = flags?.b;
+>w : boolean | { n?: number; } | undefined
+>flags?.b : boolean | { n?: number; } | undefined
+>flags : Partial<Record<Key, boolean | { n?: number; }>> | undefined
+>b : boolean | { n?: number; } | undefined
+
+let { flags: m = label ? undefined : { b: false } } = options;
+>flags : any
+>m : Partial<Record<Key, boolean | { n?: number; }>> | undefined
+>label ? undefined : { b: false } : { b: false; } | undefined
+>label : string | undefined
+>undefined : undefined
+>{ b: false } : { b: false; }
+>b : false
+>false : false
+>options : Options
+
+m?.a;
+>m?.a : boolean | { n?: number; } | undefined
+>m : Partial<Record<Key, boolean | { n?: number; }>> | undefined
+>a : boolean | { n?: number; } | undefined
+
+function f({ flags: p = label ? { a: true } : undefined }: Options) {
+>f : ({ flags: p }: Options) => boolean | { n?: number; } | undefined
+>flags : any
+>p : Partial<Record<Key, boolean | { n?: number; }>> | undefined
+>label ? { a: true } : undefined : { a: true; } | undefined
+>label : string | undefined
+>{ a: true } : { a: true; }
+>a : true
+>true : true
+>undefined : undefined
+
+    return p?.[key];
+>p?.[key] : boolean | { n?: number; } | undefined
+>p : Partial<Record<Key, boolean | { n?: number; }>> | undefined
+>key : Key
+}
+

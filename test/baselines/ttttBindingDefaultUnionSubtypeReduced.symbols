@@ -1,0 +1,76 @@
+//// [test/cases/ttttBindingDefaultUnionSubtypeReduced.ts] ////
+
+=== ttttBindingDefaultUnionSubtypeReduced.ts ===
+// A destructuring default is unioned with the property's type subtype-reduced before it is widened (tsc's
+// getTypeForBindingElement): an object literal in a union default (`c ? { a: true } : undefined`) that fits a type
+// with optional properties is absorbed, so indexing the result with a key of either property is no TS7053/TS2339
+type Key = 'a' | 'b';
+>Key : Symbol(Key, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 0, 0))
+
+interface Options {
+>Options : Symbol(Options, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 3, 21))
+
+    flags?: Partial<Record<Key, boolean | { n?: number }>>;
+>flags : Symbol(Options.flags, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 4, 19))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Key : Symbol(Key, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 0, 0))
+>n : Symbol(n, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 5, 43))
+
+    label?: string;
+>label : Symbol(Options.label, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 5, 59))
+}
+declare const options: Options;
+>options : Symbol(options, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 8, 13))
+>Options : Symbol(Options, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 3, 21))
+
+declare const key: Key;
+>key : Symbol(key, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 9, 13))
+>Key : Symbol(Key, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 0, 0))
+
+const { label, flags = !label ? { a: true } : undefined } = options;
+>label : Symbol(label, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 11, 7))
+>flags : Symbol(flags, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 11, 14))
+>label : Symbol(label, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 11, 7))
+>a : Symbol(a, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 11, 33))
+>undefined : Symbol(undefined)
+>options : Symbol(options, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 8, 13))
+
+const v = flags?.[key];
+>v : Symbol(v, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 12, 5))
+>flags : Symbol(flags, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 11, 14))
+>key : Symbol(key, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 9, 13))
+
+const w = flags?.b;
+>w : Symbol(w, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 13, 5))
+>flags?.b : Symbol(b)
+>flags : Symbol(flags, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 11, 14))
+>b : Symbol(b)
+
+let { flags: m = label ? undefined : { b: false } } = options;
+>flags : Symbol(Options.flags, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 4, 19))
+>m : Symbol(m, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 15, 5))
+>label : Symbol(label, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 11, 7))
+>undefined : Symbol(undefined)
+>b : Symbol(b, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 15, 38))
+>options : Symbol(options, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 8, 13))
+
+m?.a;
+>m?.a : Symbol(a)
+>m : Symbol(m, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 15, 5))
+>a : Symbol(a)
+
+function f({ flags: p = label ? { a: true } : undefined }: Options) {
+>f : Symbol(f, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 16, 5))
+>flags : Symbol(Options.flags, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 4, 19))
+>p : Symbol(p, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 18, 12))
+>label : Symbol(label, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 11, 7))
+>a : Symbol(a, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 18, 33))
+>undefined : Symbol(undefined)
+>Options : Symbol(Options, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 3, 21))
+
+    return p?.[key];
+>p : Symbol(p, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 18, 12))
+>key : Symbol(key, Decl(ttttBindingDefaultUnionSubtypeReduced.ts, 9, 13))
+}
+

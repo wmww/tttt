@@ -3929,19 +3929,28 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
             Ty const* fresh[2] = { types[0], default_type };
             Ty const* reduced = ty_union_subtype_reduced(me, fresh, 2);
             TyList members = reduced->kind == TY_UNION ? reduced->composite.types : (TyList){ .data = &reduced, .len = 1 };
-            bool kept_default = false;
-            for (u32 i = 0; i < members.len && !kept_default; i++) kept_default = members.data[i] == default_type;
-            if (kept_default && types[1] != default_type) {
-                // (The kept members, the default widened)
-                TyBuf parts = {0};
-                for (u32 i = 0; i < members.len; i++) {
-                    ty_buf_push(&parts, members.data[i] == default_type ? types[1] : members.data[i]);
+            // (A union default, `c ? { light: true } : undefined`, is flattened into the reduction: what is kept of
+            // it is widened member by member. Widened first, its object literal would be no subtype of a type with
+            // optional properties and stay)
+            TyList defaults = default_type->kind == TY_UNION ? default_type->composite.types : (TyList){ .data = &default_type, .len = 1 };
+            bool widened_default = false;
+            TyBuf parts = {0};
+            for (u32 i = 0; i < members.len; i++) {
+                Ty const* m = members.data[i];
+                bool from_default = m == default_type;
+                for (u32 j = 0; j < defaults.len && !from_default; j++) from_default = m == defaults.data[j];
+                if (from_default && m != types[0]) {
+                    Ty const* widened = m == default_type ? types[1] : binding->tag == BINDING_IDENTIFIER ?
+                        ty_widened_for_declaration(me, m, !binding_in_const_declaration(binding)) :
+                        binding_in_const_declaration(binding) ? m : ty_widened_literal(me, m);
+                    widened_default |= widened != m;
+                    m = widened;
                 }
-                ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
-                ty_buf_drop(&parts);
-            } else {
-                ret = ty_union_subtype_reduced(me, types, 2);
+                ty_buf_push(&parts, m);
             }
+            // (The kept members, the default widened)
+            ret = widened_default ? ty_union(me, parts.data, parts.len, nullptr, (TyList){0}) : reduced;
+            ty_buf_drop(&parts);
         }
     }
     return ret;
