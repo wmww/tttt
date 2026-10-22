@@ -445,7 +445,8 @@ ModuleKind source_file_implied_format_for_emit(SourceFile const* me);
 void source_file_drop(SourceFile* me);
 // Source text as files mapped into memory (MAP_PRIVATE): the page cache holds them anyway, and their pages can leave
 // the process whenever nothing reads them (source_texts_release()) where read() copies would stay. Like clang's
-// MemoryBuffer, a file changed by another process during the run is read changed (or SIGBUS if truncated).
+// MemoryBuffer, a file changed by another process during the run is read changed (or SIGBUS if truncated). Files
+// under 16 KB are read() into packed chunks instead (source_text_read()): copies, as the file was when read
 // source_text_map(): the file at path mapped and wrapped in a cstr that must never be dropped or changed: the mapping's id
 // (SourceFile.text_mapping), 0 (out untouched) if it can't be mapped or the mapping has no terminator after it
 u32 source_text_map(csview path, cstr* out);

@@ -721,6 +721,23 @@ static struct {
     u32 live;
 } texts = { .lock = PTHREAD_MUTEX_INITIALIZER };
 
+// Small files are read() into packed read-write chunks instead, each thread its own: a mapping each would be a syscall
+// taking the mm lock for writing (while other threads fault pages) and a page of memory for ~1.4 KB of text (nest: 2230
+// of its 2309 files are under 16 KB, 44% of the bytes; vscode: 8.7k of 12.8k mmaps). Their pages stay (a copy can't be
+// dropped and read back, source_texts_release()), which the packing pays for. TTTT_TEXT_READ_BELOW=N: the size limit
+// (default 16 KB, 0: every file mapped)
+#define TEXT_READ_CHUNK ((size_t)256 << 10)
+static size_t text_read_below(void) {
+    static _Atomic i64 below = -1;
+    i64 ret = atomic_load_explicit(&below, memory_order_relaxed);
+    if (ret < 0) {
+        char const* env = getenv("TTTT_TEXT_READ_BELOW");
+        ret = env ? (i64)strtoull(env, nullptr, 0) : 16 * 1024;
+        atomic_store_explicit(&below, ret, memory_order_relaxed);
+    }
+    return (size_t)ret;
+}
+
 static size_t text_page_round(size_t n) {
     size_t page = (size_t)sysconf(_SC_PAGESIZE);
     return (n + page - 1) / page * page;
@@ -776,6 +793,59 @@ static void text_sigbus_install(void) {
     sigaction(SIGBUS, &action, nullptr);
 }
 
+// The calling thread's read chunk (each thread packs its own: threads writing into the same pages would fault on them
+// together)
+static thread_local char* text_read_at;
+static thread_local size_t text_read_left;
+
+// size + 1 bytes (the last one zero, a terminator) of the thread's read chunk
+static char* text_read_slot(size_t size) {
+    size_t need = (size + 1 + 7) & ~(size_t)7;
+    if (text_read_left < need) {
+        // (Populated: a read() faulting on its pages waits for the mm lock behind the other threads' mmap()s of the
+        // big files, which made the load phase 20-40% slower on vscode)
+        void* chunk = mmap(nullptr, TEXT_READ_CHUNK, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE, -1, 0);
+        if (chunk == MAP_FAILED) return nullptr;
+        text_read_at = chunk;
+        text_read_left = TEXT_READ_CHUNK;
+    }
+    char* ret = text_read_at;
+    text_read_at += need;
+    text_read_left -= need;
+    return ret;
+}
+
+// A small file read into a read chunk, wrapped like a mapping: the text's id (0 if it can't be read)
+static u32 source_text_read(int fd, size_t size, cstr* out) {
+    char* slot = text_read_slot(size);
+    size_t at = 0;
+    while (slot && at < size) {
+        ssize_t n = read(fd, slot + at, size - at);
+        if (n <= 0) break;
+        at += (size_t)n;
+    }
+    close(fd);
+    // (Truncated meanwhile: what there was. A failed read leaves its bytes in the chunk)
+    if (!slot || !at) return 0;
+    slot[at] = 0;
+    pthread_mutex_lock(&texts.lock);
+    if (texts.mapping_count == texts.mapping_cap) {
+        texts.mapping_cap = texts.mapping_cap ? texts.mapping_cap * 2 : 1024;
+        texts.mappings = realloc(texts.mappings, texts.mapping_cap * sizeof(TextMapping));
+    }
+    // (Not a mapping: the slot is null, so nothing unmaps or detaches it)
+    texts.mappings[texts.mapping_count++] = (TextMapping){ .size = at };
+    u32 id = texts.mapping_count;
+    pthread_mutex_unlock(&texts.lock);
+    cstr s = {0};
+    s.lon.data = slot;
+    s.lon.size = (isize)at;
+    cstr_l_set_cap(&s, (isize)at);
+    check(cstr_is_long(&s) && (size_t)cstr_size(&s) == at && cstr_str(&s) == slot);
+    *out = s;
+    return id;
+}
+
 u32 source_text_map(csview path, cstr* out) {
     static pthread_once_t installed = PTHREAD_ONCE_INIT;
     pthread_once(&installed, text_sigbus_install);
@@ -786,8 +856,12 @@ u32 source_text_map(csview path, cstr* out) {
     struct stat st;
     // (The mapping's last page is zero past the end of the file: the terminator the parser reads. A size that fills
     // its last page has none)
-    if (fstat(fd, &st) || !S_ISREG(st.st_mode) || st.st_size == 0 || st.st_size > INT32_MAX ||
-        (size_t)st.st_size == text_page_round((size_t)st.st_size)) {
+    if (fstat(fd, &st) || !S_ISREG(st.st_mode) || st.st_size == 0 || st.st_size > INT32_MAX) {
+        close(fd);
+        return 0;
+    }
+    if ((size_t)st.st_size < text_read_below()) return source_text_read(fd, (size_t)st.st_size, out);
+    if ((size_t)st.st_size == text_page_round((size_t)st.st_size)) {
         close(fd);
         return 0;
     }
@@ -826,6 +900,11 @@ u32 source_text_map(csview path, cstr* out) {
 void source_text_unmap(u32 id) {
     pthread_mutex_lock(&texts.lock);
     TextMapping* mapping = &texts.mappings[id - 1];
+    // (A read text stays in its chunk)
+    if (!mapping->slot) {
+        pthread_mutex_unlock(&texts.lock);
+        return;
+    }
     mmap(mapping->slot, text_page_round(mapping->size), PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED, -1, 0);
     mapping->slot = nullptr;
     texts.live--;
