@@ -7200,6 +7200,29 @@ bool ty_param_constraint_is_circular(Checker* me, Ty const* param) {
 
 Ty const* ty_declared_param_constraint(Checker* me, Ty const* param) { return declared_param_constraint(me, param); }
 
+// Whether a type parameter is known to have no constraint without working one out (tsc's getRestrictiveTypeParameter
+// test, `constraint === undefined && !getConstraintDeclaration(tp)`): a constraint known to be none, or no `extends` in
+// any of its declarations (not an `infer` one, whose constraint may be implied, nor a copy of one that has one)
+bool ty_param_declares_no_constraint(Checker* me, Ty const* param) {
+    TyParamState const* state = param->param.state;
+    uintptr_t v = sw_load(&state->constraint);
+    if (v == SW_NONE) return true;
+    if (v > SW_NONE) return false;
+    if (state->clone_of) return ty_param_declares_no_constraint(me, state->clone_of);
+    if (state->is_infer || state->is_this) return false;
+    if (state->constraint_node) return false;
+    GenericItem const* own_item = __atomic_load_n(&state->item, __ATOMIC_ACQUIRE);
+    if (!own_item) return false;
+    if (own_item->extends_explicit) return false;
+    Symbol const* symbol = param->param.symbol;
+    for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind != SYMBOL_DECL_TYPE_PARAMETER) continue;
+        GenericItem const* item = symbol->decls[i].node;
+        if (item && item->extends_explicit) return false;
+    }
+    return true;
+}
+
 Ty const* ty_param_constraint(Checker* me, Ty const* param) {
     TyParamState* state = param->param.state;
     // The declared constraint is lowered under the base constraint's push (tsc's getResolvedBaseConstraint)

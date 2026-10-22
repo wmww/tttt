@@ -2128,6 +2128,7 @@ typedef struct CallEffects {
 CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call);
 TyList ty_reference_args(Checker* me, Ty const* reference);
 Ty const* ty_param_constraint(Checker* me, Ty const* param); // null if unconstrained (or circularly constrained)
+bool ty_param_declares_no_constraint(Checker* me, Ty const* param);
 enum { PARAM_NOT_CIRCULAR = 3, PARAM_CIRCULAR = 4 }; // TyParamState.circular's values
 // A fresh type parameter's constraint (null: unconstrained), known from the start; `circular` false or not known
 static inline void ty_param_constraint_init(TyParamState* state, Ty const* constraint, bool not_circular) {

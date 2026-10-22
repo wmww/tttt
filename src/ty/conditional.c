@@ -490,8 +490,11 @@ static bool is_generic_mapped(Checker* me, Ty const* ty, u32 depth) {
     return ty->kind == TY_ANONYMOUS && ty_generic_mapped(me, ty) != nullptr;
 }
 
-// A type parameter without a constraint standing in for `param` (tsc's getRestrictiveTypeParameter)
+// A type parameter without a constraint standing in for `param` (tsc's getRestrictiveTypeParameter): itself when it has
+// none (variance measurement's super marker, a restrictive one), so its restrictive instantiations are the types
+// themselves, not new ones whose relations start over
 static Ty const* restrictive_type_param(Checker* me, Ty const* param) {
+    if (ty_param_declares_no_constraint(me, param)) return param;
     u64 key[2] = { KEY_RESTRICTIVE_PARAM, param->id };
     void const** slot = intern_slot(me, &my links, key, 2);
     if (!*slot) {
