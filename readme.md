@@ -13,7 +13,7 @@ open-source repositories. Single-threaded, tttt's check phase is ~5x faster than
 
 Internal documentation: [documentation.md](documentation.md). Standard library: [cleat](https://codeberg.org/sphi/cleat).
 
-Dependencies: GCC 13+ (tested up to GCC 16), meson, ninja, llvm-bolt (Debian/Ubuntu: `apt install llvm-bolt`; elsewhere LLVM's release tarball,
+Dependencies: GCC 13+ (tested up to GCC 16), meson, ninja, llvm-bolt (Debian/Ubuntu: `apt install llvm-bolt`; Arch: `pacman -S llvm-bolt`; elsewhere LLVM's release tarball,
 `BOLT=path/to/llvm-bolt scripts/fastbuild.sh`),
 python3; for the test scripts also valgrind and node 22 + npm (corpora). The test scripts fetch the oracle, TypeScript 7.1 (tsgo) at a pinned
 nightly commit, into `thirdparty/typescript` along with the Go toolchain it needs (`thirdparty/ensure-typescript.sh`,

@@ -87,9 +87,10 @@ creations for 138 MB of source, the top site 10%): structural.
 
 ## The 12-core box at 8e3f4fb0: BOLT and interning A/B (2026-10-22)
 Run by an agent on the human's laptop (the box of the 2989c0f0 section below): AC, `balanced`, but **Firefox open**
-(~25% of a core) and load 3-5 before each step (10 during B's runs, our own). llvm-bolt isn't packaged by Arch (`pacman
--F` finds neither llvm-bolt nor merge-fdata): `BOLT=` pointed at llvm-bolt from LLVM's own `LLVM-23.1.3-Linux-X64`
-release tarball (the box's clang is 23.1.3), extracted into the session scratchpad and gone with it. `scripts/fastbuild.sh`
+(~25% of a core) and load 3-5 before each step (10 during B's runs, our own). llvm-bolt wasn't installed (Arch
+packages it, `pacman -S llvm-bolt`: this agent's `pacman -F` missed it on a 2023 files database): `BOLT=` pointed at
+llvm-bolt from LLVM's own `LLVM-23.1.3-Linux-X64` release tarball (the box's clang is 23.1.3), extracted into the
+session scratchpad and gone with it. `scripts/fastbuild.sh`
 at 8e3f4fb0 then built pgo/tttt (the baseline) and bolt/tttt (fast/tttt); byte-identical output on vscode.
 
 **A. BOLT (pgo/tttt -> fast/tttt), vscode.** `perf stat -M PipelineL1 -r 3` and `perf stat -e
