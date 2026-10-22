@@ -1,0 +1,21 @@
+ttttConditionalAliasVarianceDefaultConstraint.ts(8,73): error TS2322: Type 'Ex<N, Ex<keyof S, string>>' is not assignable to type 'Ex<keyof S, number>'.
+  Type 'Ex<keyof S, string> & N' is not assignable to type 'Ex<keyof S, number>'.
+
+
+==== ttttConditionalAliasVarianceDefaultConstraint.ts (1 errors) ====
+    // Two instantiations of one conditional type alias whose type arguments fail its variances (Extract's U is invariant)
+    // are still related through the source's default constraint when tsc relates them with errors, as it does from the
+    // start for a diagnostic: only the structural comparison of object types keeps the failed variance check (tsc's
+    // varianceCheckFailed). `Extract<N, Extract<keyof S, string>>` satisfies `Extract<keyof S, string>` (better-drizzle's
+    // TS2344s, source sweep refresh 5); a target the default constraint doesn't meet still fails
+    type Ex<T, U> = T extends U ? T : never;
+    function h5<N, S>(x: Ex<N, Ex<keyof S, string>>): Ex<keyof S, string> { return x; }
+    function h6<N, S>(x: Ex<N, Ex<keyof S, string>>): Ex<keyof S, number> { return x; }
+                                                                            ~~~~~~
+!!! error TS2322: Type 'Ex<N, Ex<keyof S, string>>' is not assignable to type 'Ex<keyof S, number>'.
+!!! error TS2322:   Type 'Ex<keyof S, string> & N' is not assignable to type 'Ex<keyof S, number>'.
+    function h7<N, S>(x: Ex<N, Ex<keyof S, string>>): keyof S & string { return x; }
+    interface E1<S, N extends Extract<keyof S, string>> { n: N }
+    type X<S, N> = E1<S, Extract<N, Extract<keyof S, string>>>;
+    function h2<N, S>(x: Extract<N, Extract<keyof S, string>>): Extract<keyof S, string> { return x; }
+    

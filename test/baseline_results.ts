@@ -230,9 +230,9 @@ const baselines = {
         types: true,
     },
     'ttttConditionalAliasVarianceDefaultConstraint': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttConditionalCallableAgainstAnyFunction': {
         errors: true,

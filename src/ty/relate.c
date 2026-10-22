@@ -6095,9 +6095,16 @@ static Ternary structured_related_members(
                 while (vec_ty_report_line_size(&st->lines) > saved) {
                     vec_ty_report_line_push(&variance_lines, vec_ty_report_line_pull(&st->lines));
                 }
-                if (structured_related_passing(me, st, source, target, true, false)) {
-                    restore_variance_lines(st, saved, &variance_lines);
+                Ternary structural = structured_related_passing(me, st, source, target, true, false);
+                // (Only the structural comparison of object types keeps tsc's failed variance check: a conditional
+                // source related through its default constraint is related, explaining or not. tsc relates with errors
+                // from the start, so `Extract<N, Extract<keyof S, string>>` meets `Extract<keyof S, string>` that way)
+                if (structural && source->kind == TY_CONDITIONAL) {
+                    vec_ty_report_line_drop(&variance_lines);
+                    report_truncate(st, saved);
+                    return structural;
                 }
+                if (structural) restore_variance_lines(st, saved, &variance_lines);
                 vec_ty_report_line_drop(&variance_lines);
                 return TERNARY_FALSE;
             }

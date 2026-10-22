@@ -351,3 +351,8 @@ rest element; a spread instantiated to `undefined`). Left:
   `model(p, actions)` doesn't, so the cut needs MST's real types (Instance/SnapshotIn over IModelType). No repro yet.
 - **hono/tsconfig.build.json, hono/tsconfig.spec.json (+TS2769 at src/request.ts:214)**: in the full sweep on this
   branch and with main's release binary too (not from the refresh), not in the `--sample 4` quarter. Uninvestigated.
+- **better-drizzle (+TS2502 'transaction' at src/types/plugins.ts:742,2, default checkers only)**: after c0a04350a, tsc's
+  TS2502 at 467 is right at every checker count, but the default (K>1) run also reports the second `transaction`
+  (742, `PluginInterceptContext`-like context) where `--checkers 1` doesn't: which cycle is entered first depends on
+  the files a checker saw (scripts/kdiff.py territory, plan 62). Remaining at K1: TS2578 at
+  tests/types/order-by-relations.ts:24,26 (uninvestigated).
