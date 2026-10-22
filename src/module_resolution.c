@@ -790,8 +790,9 @@ static Search load_using_version_paths(
             best_prefix = prefix_len;
         }
     }
-    if (!best) return SEARCH_CONTINUE;
-    if (best->value.tag != JSON_ARRAY) return SEARCH_STOP;
+    // (A matched pattern whose substitutions find nothing falls back to the plain lookup, like tsc's
+    // tryLoadModuleUsingPaths: moment's `"*": ["ts3.1-typings/*"]` has no `locale/es`, its locale/es.js is found)
+    if (!best || best->value.tag != JSON_ARRAY) return SEARCH_CONTINUE;
     for (isize i = 0; i < best->value.count; i++) {
         JsonValue const* substitution = &best->value.items[i];
         if (substitution->tag != JSON_STRING) continue;
@@ -799,7 +800,7 @@ static Search load_using_version_paths(
             return SEARCH_FOUND;
         }
     }
-    return SEARCH_STOP;
+    return SEARCH_CONTINUE;
 }
 
 // tsc's tryLoadModuleUsingRootDirs(): a relative name is looked for below every root dir, as if they were one directory
@@ -1337,11 +1338,9 @@ static Search load_from_node_modules_dir(State* me, csview node_modules, csview 
         JsonValue const* version_paths = rest.size && root_package ? version_paths_of(root_package) : nullptr;
         bool versioned = false;
         if (version_paths) {
-            // A matching `typesVersions` pattern is the only way to the file, found or not
             result = load_using_version_paths(
                 me, version_paths, cstr_sv(&package_dir), rest, extensions, load_as_file_or_directory, out);
-            versioned = result != SEARCH_CONTINUE;
-            if (result == SEARCH_STOP) result = SEARCH_CONTINUE;
+            versioned = result == SEARCH_FOUND;
         }
         if (!versioned && directory_exists(me, parent_of(cstr_sv(&candidate)))) {
             bool found = (rest.size || !my esm_mode) && !directory_only && load_file(me, cstr_sv(&candidate), extensions, out);

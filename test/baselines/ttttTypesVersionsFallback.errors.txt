@@ -1,0 +1,29 @@
+/a.ts(2,8): error TS2882: Cannot find module or type declarations for side-effect import of 'moment/locale/missing'.
+/a.ts(5,14): error TS2322: Type 'string' is not assignable to type 'number'.
+/a.ts(6,14): error TS2322: Type 'number' is not assignable to type 'string'.
+
+
+==== /node_modules/moment/package.json (0 errors) ====
+    { "name": "moment", "main": "./moment.js", "typings": "./moment.d.ts", "typesVersions": { ">=3.1": { "*": ["ts3.1-typings/*"] } } }
+==== /node_modules/moment/moment.d.ts (0 errors) ====
+    export declare const old: number;
+==== /node_modules/moment/ts3.1-typings/moment.d.ts (0 errors) ====
+    export declare const now: number;
+==== /node_modules/moment/locale/es.js (0 errors) ====
+    export {};
+==== /node_modules/moment/sub.d.ts (0 errors) ====
+    export declare const sub: string;
+==== /a.ts (3 errors) ====
+    import "moment/locale/es";
+    import "moment/locale/missing";
+           ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2882: Cannot find module or type declarations for side-effect import of 'moment/locale/missing'.
+    import { sub } from "moment/sub";
+    import { now } from "moment";
+    export const x: number = sub;
+                 ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export const y: string = now;
+                 ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    
