@@ -68,8 +68,10 @@ typedef ResolvedModule const* ResolvedModulePtr;
 #define g_val ResolvedModulePtr, resolved_module_ptr
 #include <cleat/generic/hmap.h>
 
-// Sharded by key hash: the load pool's workers all resolve at once
-enum { RESOLVER_SHARDS = 64 };
+// Sharded by key hash: the load pool's workers all resolve at once. (At 64 shards a sixteenth of vscode's load-phase
+// thread blocking was here: ~1% of 350k lock takes contended, each wait ~90 us on a loaded machine, the holder preempted
+// or growing its map; 1024 take a seventh of the contended ones. ~130 KB a resolver)
+enum { RESOLVER_SHARDS = 1024 };
 
 typedef struct ResolverShard {
     // (A reader-writer lock: nearly every use is a lookup that finds, and a thread preempted holding it for one, on a
@@ -1689,14 +1691,13 @@ static ResolvedModule const* shard_insert(ResolverShard* shard, cstr key, Resolv
     return inserted.ref->second;
 }
 
-// Under the shard's lock: a box for value (taken), for shard_insert()
-static ResolvedModule const* shard_box(ResolverShard* shard, ResolvedModule value) {
+// Under the shard's lock: box (made before taking it) is the shard's to free from now on, for shard_insert()
+static ResolvedModule const* shard_box(ResolverShard* shard, ResolvedModule* box) {
     if (shard->box_count == shard->box_cap) {
-        shard->box_cap = shard->box_cap ? shard->box_cap * 2 : 64;
+        shard->box_cap = shard->box_cap ? shard->box_cap * 2 : 16;
         shard->boxes = realloc(shard->boxes, sizeof(ResolvedModule*) * (size_t)shard->box_cap);
         panic_if(!shard->boxes, "out of memory");
     }
-    ResolvedModule* box = c_new(ResolvedModule, value);
     shard->boxes[shard->box_count++] = box;
     return box;
 }
@@ -1742,9 +1743,9 @@ ResolvedModule const* module_resolver_resolve_shared(
             return ret;
         }
     }
-    ResolvedModule resolved = resolve_uncached(me, specifier, cstr_sv(&dir), mode);
+    ResolvedModule* box = c_new(ResolvedModule, resolve_uncached(me, specifier, cstr_sv(&dir), mode));
     pthread_rwlock_wrlock(&shard->lock);
-    ret = shard_insert(shard, key, shard_box(shard, resolved));
+    ret = shard_insert(shard, key, shard_box(shard, box));
     pthread_rwlock_unlock(&shard->lock);
     if (joined_shard) {
         pthread_rwlock_wrlock(&joined_shard->lock);
