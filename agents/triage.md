@@ -48,3 +48,6 @@ intersection's property symbol to bugs/type_core.md.
   side. Unexamined: which side's measurement order differs first.
 
 - Types baselines: import type specifiers differ from tsgo's. With `moduleResolution: bundler` tttt prints `import("./x.js")` where tsgo prints `import("./x")`; with nodenext + allowImportingTsExtensions tttt keeps `.ts`, tsgo drops it. Seen in test/cases/ttttTypeofLocalFreeParams.ts while its options were being chosen (repro: that file with `// @module: esnext` / `// @moduleResolution: bundler`).
+- (fe3, 2026-10-22) The debug build's suite aborts at `ttttJsDeclarationMapsTemplateTags`: `parser.c:518: check failed:
+  !parent->has_panding_child` (release builds don't check). So `./debug/baseline_tests` can't run the whole suite;
+  owner: the parser.

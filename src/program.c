@@ -3725,6 +3725,15 @@ static u32 chunked_walk_binding_chunk(ChunkedWalk const* walk, Symbol const* sym
         if (span_source(decl->full) != walk->file) return UINT32_MAX;
         if (!decl->block) log_error("A variable declaration without its scope");
         *top_level = decl->block == walk->file->scope;
+#ifdef DEBUG_BUILD
+        // (The first variable declaration is the first binding the serial walk reaches: source order in the file)
+        for (u32 j = i + 1; j < symbol->decl_count; j++) {
+            SymbolDecl const* later = &symbol->decls[j];
+            if (later->kind == SYMBOL_DECL_VARIABLE && span_source(later->full) == walk->file) {
+                check(span_start_ptr(later->full) >= span_start_ptr(decl->full));
+            }
+        }
+#endif
         return chunked_walk_chunk_at(walk, span_start_ptr(decl->full));
     }
     return UINT32_MAX;
