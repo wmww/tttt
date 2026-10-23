@@ -4630,7 +4630,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             ) {
                 private_access_check_emit_helpers(me, errs);
             }
-            expr_property_access_errors(me, expr_type, false, errs);
+            // (An incomplete never of control flow, silent: tsc's checkPropertyAccessExpressionOrQualifiedName returns it
+            // before any check)
+            if (expr_type != ty_intrinsic(current_checker, TY_SILENT_NEVER)) expr_property_access_errors(me, expr_type, false, errs);
         }   break;
 
         case EXPR_GENERIC_PARAMS: {

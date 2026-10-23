@@ -2978,6 +2978,9 @@ static void report_not_constructor_type(Checker* me, Ty const* callee, Span span
 
 static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs) {
     CallExpr const* call = info->call;
+    // An incomplete `never` of control flow calls to nothing, without errors (tsc's resolveCallExpression:
+    // silentNeverSignature), whichever path asks
+    if (callee == ty_intrinsic(me, TY_SILENT_NEVER)) return callee;
     Ty const* any = ty_intrinsic(me, TY_ANY);
     Ty const* apparent = callee->flags & TYF_ANY ? callee : ty_apparent_type(me, callee);
     // A type variable whose constraint is the error type isn't a constructor type (tsc's isConstructorType: no

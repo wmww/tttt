@@ -105,7 +105,14 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   then `if (!node) return`, then `() => node!.replaceWithText(..)` in a closure past the last assignment. Without the
   optional-chain read it matches. Guess: the closure's narrowing past the last assignment (tsc 5.4's
   isPastLastAssignment) goes through the optional chain's flow condition and narrows to never. Repro
-  test/cases/npm__tamagui_codemod-flat-values_TS2339.ts (13 lines). (claimed: cor10) [flip] [open]
+  test/cases/npm__tamagui_codemod-flat-values_TS2339.ts (13 lines). (claimed: cor10) Root cause: `node!` there is an
+  incomplete never in tsgo too (the K2 query, initial type = declared because of the `!`, reaches its loop label while
+  that loop is in progress through the optional chain's branches): the silent never. tttt's flow made it silent as well,
+  but the walk's property access check (src/expr.c, EXPR_PROPERTY) and resolve_call_inner (src/ty/call.c) reported on
+  it; tsc's checkPropertyAccessExpressionOrQualifiedName and resolveCallExpression return early for silentNeverType.
+  Errors fixed (the flip: tsgo 0, tttt 0 now) [flip] [fixed 2026-10-23]; left: the repro's types baseline, where tsgo's
+  type writer asks again after the loop caches are complete and prints `node!` as JsxAttribute while tttt prints the
+  memoized never (a harness-only difference: tttt memoizes the first, incomplete, evaluation). [text]
 
 ## Real-world flips from other sources
 - **rw_foldkit_TS6133** (source sweep, foldkit packages/foldkit/tsconfig.build.json and tsconfig.docs.json; tsgo 0,
