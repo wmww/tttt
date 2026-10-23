@@ -1,0 +1,51 @@
+//// [test/cases/ttttHackElseIfUnreachable.ts] ////
+
+=== ttttHackElseIfUnreachable.ts ===
+// An `else if` is an if statement of its own, where unreachable code can start (TS7027 from its `if` to the end;
+// hacks.md: tttt had no Statement for it and reported the branch's block instead)
+declare var a: boolean, b: boolean;
+>a : boolean
+>b : boolean
+
+function f() {
+>f : () => void
+
+    if (true) { return; } else if (b) { a; }
+>true : true
+>b : boolean
+>a : boolean
+}
+function g() {
+>g : () => void
+
+    if (a) { } else if (true) { return; } else /* c */ if (b) { a; } else { b; }
+>a : boolean
+>true : true
+>b : boolean
+>a : boolean
+>b : boolean
+}
+function h() {
+>h : () => void
+
+    while (true) { }
+>true : true
+
+    if (a) { } else if (b) { }
+>a : boolean
+>b : boolean
+}
+function k() {
+>k : () => void
+
+    if (true) { return; } else if (b) { a; } else if (a) { b; }
+>true : true
+>b : boolean
+>a : boolean
+>a : boolean
+>b : boolean
+
+    a;
+>a : boolean
+}
+

@@ -1,0 +1,36 @@
+ttttHackElseIfUnreachable.ts(5,32): error TS7027: Unreachable code detected.
+ttttHackElseIfUnreachable.ts(8,56): error TS7027: Unreachable code detected.
+ttttHackElseIfUnreachable.ts(12,5): error TS7027: Unreachable code detected.
+ttttHackElseIfUnreachable.ts(15,32): error TS7027: Unreachable code detected.
+ttttHackElseIfUnreachable.ts(16,5): error TS7027: Unreachable code detected.
+
+
+==== ttttHackElseIfUnreachable.ts (5 errors) ====
+    // An `else if` is an if statement of its own, where unreachable code can start (TS7027 from its `if` to the end;
+    // hacks.md: tttt had no Statement for it and reported the branch's block instead)
+    declare var a: boolean, b: boolean;
+    function f() {
+        if (true) { return; } else if (b) { a; }
+                                   ~~~~~~~~~~~~~
+!!! error TS7027: Unreachable code detected.
+    }
+    function g() {
+        if (a) { } else if (true) { return; } else /* c */ if (b) { a; } else { b; }
+                                                           ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7027: Unreachable code detected.
+    }
+    function h() {
+        while (true) { }
+        if (a) { } else if (b) { }
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7027: Unreachable code detected.
+    }
+    function k() {
+        if (true) { return; } else if (b) { a; } else if (a) { b; }
+                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7027: Unreachable code detected.
+        a;
+        ~~
+!!! error TS7027: Unreachable code detected.
+    }
+    

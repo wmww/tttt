@@ -1414,6 +1414,24 @@ static void lookup_names_condition_root(Expr* expr, Scope* names, ErrorCtx* errs
     scope_flow(names)->context_root = outer_root;
 }
 
+// Past whitespace and comments
+static char const* skip_trivia_forward(char const* at, char const* end) {
+    while (at < end) {
+        if (*at == ' ' || *at == '\t' || *at == '\n' || *at == '\r' || *at == '\v' || *at == '\f') {
+            at++;
+        } else if (at + 1 < end && at[0] == '/' && at[1] == '/') {
+            while (at < end && *at != '\n' && *at != '\r') at++;
+        } else if (at + 1 < end && at[0] == '/' && at[1] == '*') {
+            char const* close = at + 2;
+            while (close + 1 < end && !(close[0] == '*' && close[1] == '/')) close++;
+            at = close + 1 < end ? close + 2 : end;
+        } else {
+            break;
+        }
+    }
+    return at;
+}
+
 static void if_else_resolve_names(IfStatement* me, isize_t index, Scope* names, ErrorCtx* errs) {
     FlowBuilder* flow = scope_flow(names);
     FlowNode* then_label = flow_new_branch_label(flow);
@@ -1430,9 +1448,30 @@ static void if_else_resolve_names(IfStatement* me, isize_t index, Scope* names, 
     flow_add_antecedent(flow, post, flow->current);
     flow_set_current(flow, flow_finish_label(else_label));
     if (index + 1 < vec_expr_size(&my conditions)) {
-        // `else if`: an if statement of its own, which can be where unreachable code starts
-        // TODO: TS7027 for it (there is no Statement to hand to statement_check_unreachable())
+        // `else if`: an if statement of its own, which can be where unreachable code starts (tttt has no Statement
+        // for it: it is reported here like statement_check_unreachable() would)
+        bool was_dead = flow->dead;
+        bool was_within = flow->within_unreachable;
+        if (flow->current == &flow_unreachable) {
+            flow->current = &flow_reported_unreachable;
+            CompilerOptions const* options = compiler_options();
+            Span previous = vec_statement_at(&my statements, index)->span;
+            Span last = vec_statement_at(&my statements, vec_statement_size(&my statements) - 1)->span;
+            if (options->is_set[COMPILER_OPTION_allow_unreachable_code] && !options->allow_unreachable_code &&
+                !flow->ambient && !flow->within_unreachable && span_valid(previous) && span_valid(last)
+            ) {
+                // (From its `if`: after the previous branch's `else`)
+                char const* end = span_end_ptr(last);
+                char const* at = skip_trivia_forward(span_end_ptr(previous), end);
+                if (end - at > 4 && !memcmp(at, "else", 4)) at = skip_trivia_forward(at + 4, end);
+                error_ctx_error_d(flow->errs, span_make_in(last, at, end), 7027, "Unreachable code detected.");
+            }
+            flow->within_unreachable = true;
+        }
+        if (flow_is_unreachable(flow->current)) flow->dead = true;
         if_else_resolve_names(me, index + 1, names, errs);
+        flow->dead = was_dead;
+        flow->within_unreachable = was_within;
     } else if (index + 1 < vec_statement_size(&my statements)) {
         Statement* branch = vec_statement_at_mut(&my statements, index + 1);
         Scope* branch_scope = branch_names_scope(branch, names);

@@ -137,7 +137,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   syntaxstats.py.
 - Statements: `statement_takes_semicolon()` lists by tag who calls parseSemicolon(); statement spans include the `;`,
   port items' and class members' don't (`span_with_semicolon()`). `IfStatement` flattens `else if` (no Statement for
-  the nested if: no TS7027 there, statement.c TODO); `statement_start_needs_check()` gates isStartOfStatement by first
+  the nested if: `if_else_resolve_names()` reports its TS7027 itself, its span found by skipping `else` past the
+  previous branch; tested by ttttHackElseIfUnreachable); `statement_start_needs_check()` gates isStartOfStatement by first
   word (a new rejecting case must be added).
 - Private names outside classes have no flag: `object_item_is_private_name`, `interface_member_is_private_name`,
   `enum_decl_typecheck` check the first character (such an enum member is declared, prints `__missing`).
