@@ -1,0 +1,23 @@
+//// [test/cases/ttttExponentGoPow.ts] ////
+
+=== ttttExponentGoPow.ts ===
+// tsgo folds `**` in constant expressions with Go's math.Pow, which isn't correctly rounded like C's pow: `3 ** 34` is
+// 16677181699666568 and `10 ** -23` isn't the literal 1e-23 (bun's 42-C2a/b/c)
+const a: "3" = `${27 ** (1 / 3)}`;
+>a : Symbol(a, Decl(ttttExponentGoPow.ts, 2, 5))
+
+const b: "16677181699666570" = `${3 ** 34}`;
+>b : Symbol(b, Decl(ttttExponentGoPow.ts, 3, 5))
+
+enum E { G = 10 ** -23 }
+>E : Symbol(E, Decl(ttttExponentGoPow.ts, 3, 44))
+>G : Symbol(E.G, Decl(ttttExponentGoPow.ts, 4, 8))
+
+const g: E.G = 1e-23;
+>g : Symbol(g, Decl(ttttExponentGoPow.ts, 5, 5))
+>E : Symbol(E, Decl(ttttExponentGoPow.ts, 3, 44))
+>G : Symbol(E.G, Decl(ttttExponentGoPow.ts, 4, 8))
+
+const ok: "1024" = `${2 ** 10}`;
+>ok : Symbol(ok, Decl(ttttExponentGoPow.ts, 6, 5))
+

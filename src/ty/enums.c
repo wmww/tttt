@@ -65,6 +65,81 @@ static EnumValue member_value(Checker* me, Symbol const* decl, u32 depth) {
     if (type->flags & TYF_NUMBER_LITERAL) return enum_value_number(type->literal.value.number);
     return enum_value_unknown;
 }
+// tsgo's constant evaluation of `**`: Go's math.Pow (pow.go, pure Go on amd64), which isn't C's pow: `3 ** 34` is
+// 16677181699666568 there and `10 ** -23` isn't 1e-23. An exact port, but for the fractional part of the exponent:
+// Go's Exp and Log are amd64 assembly, C's are used (they may differ in the last bit)
+static bool go_is_odd_int(double x) {
+    if (fabs(x) >= 9007199254740992.0) return false; // (1 << 53)
+    double xi;
+    double xf = modf(x, &xi);
+    return xf == 0 && ((int64_t)xi & 1) == 1;
+}
+
+static double go_pow(double x, double y) {
+    if (y == 0 || x == 1) return 1;
+    if (y == 1) return x;
+    if (isnan(x) || isnan(y)) return NAN;
+    if (x == 0) {
+        if (y < 0) return signbit(x) && go_is_odd_int(y) ? -INFINITY : INFINITY;
+        if (y > 0) return signbit(x) && go_is_odd_int(y) ? x : 0;
+    }
+    if (isinf(y)) {
+        if (x == -1) return 1;
+        if ((fabs(x) < 1) == (y > 0)) return 0;
+        return INFINITY;
+    }
+    if (isinf(x)) {
+        if (x < 0) return go_pow(1 / x, -y); // Pow(-0, -y)
+        if (y < 0) return 0;
+        if (y > 0) return INFINITY;
+    }
+    if (y == 0.5) return sqrt(x);
+    if (y == -0.5) return 1 / sqrt(x);
+    double yi;
+    double yf = modf(fabs(y), &yi);
+    if (yf != 0 && x < 0) return NAN;
+    if (yi >= 9223372036854775808.0) { // (1 << 63)
+        if (x == -1) return 1;
+        if ((fabs(x) < 1) == (y > 0)) return 0;
+        return INFINITY;
+    }
+    double a1 = 1.0;
+    int64_t ae = 0;
+    if (yf != 0) {
+        if (yf > 0.5) {
+            yf--;
+            yi++;
+        }
+        a1 = exp(yf * log(x));
+    }
+    int xe_int;
+    double x1 = frexp(x, &xe_int);
+    int64_t xe = xe_int;
+    for (int64_t i = (int64_t)yi; i != 0; i >>= 1) {
+        if (xe < -(1 << 12) || (1 << 12) < xe) {
+            ae += xe;
+            break;
+        }
+        if (i & 1) {
+            a1 *= x1;
+            ae += xe;
+        }
+        x1 *= x1;
+        xe <<= 1;
+        if (x1 < .5) {
+            x1 += x1;
+            xe--;
+        }
+    }
+    if (y < 0) {
+        a1 = 1 / a1;
+        ae = -ae;
+    }
+    if (ae > 100000) ae = 100000;
+    if (ae < -100000) ae = -100000;
+    return ldexp(a1, (int)ae);
+}
+
 
 static EnumValue evaluate_binary(Checker* me, BinaryOpExpr const* op, u32 depth) {
     EnumValue left = evaluate(me, &op->left, depth);
@@ -86,7 +161,7 @@ static EnumValue evaluate_binary(Checker* me, BinaryOpExpr const* op, u32 depth)
             case BINARY_OP_PLUS: ret = enum_value_number(a + b); break;
             case BINARY_OP_MINUS: ret = enum_value_number(a - b); break;
             case BINARY_OP_MOD: ret = enum_value_number(fmod(a, b)); break;
-            case BINARY_OP_STAR_STAR: ret = enum_value_number(pow(a, b)); break;
+            case BINARY_OP_STAR_STAR: ret = enum_value_number(go_pow(a, b)); break;
             default: break;
         }
     } else if (left.known && right.known && op->op == BINARY_OP_PLUS) {

@@ -1,0 +1,20 @@
+ttttExponentGoPow.ts(3,7): error TS2322: Type '"2.9999999999999996"' is not assignable to type '"3"'.
+ttttExponentGoPow.ts(4,7): error TS2322: Type '"16677181699666568"' is not assignable to type '"16677181699666570"'.
+ttttExponentGoPow.ts(6,7): error TS2322: Type '1e-23' is not assignable to type 'E'.
+
+
+==== ttttExponentGoPow.ts (3 errors) ====
+    // tsgo folds `**` in constant expressions with Go's math.Pow, which isn't correctly rounded like C's pow: `3 ** 34` is
+    // 16677181699666568 and `10 ** -23` isn't the literal 1e-23 (bun's 42-C2a/b/c)
+    const a: "3" = `${27 ** (1 / 3)}`;
+          ~
+!!! error TS2322: Type '"2.9999999999999996"' is not assignable to type '"3"'.
+    const b: "16677181699666570" = `${3 ** 34}`;
+          ~
+!!! error TS2322: Type '"16677181699666568"' is not assignable to type '"16677181699666570"'.
+    enum E { G = 10 ** -23 }
+    const g: E.G = 1e-23;
+          ~
+!!! error TS2322: Type '1e-23' is not assignable to type 'E'.
+    const ok: "1024" = `${2 ** 10}`;
+    
