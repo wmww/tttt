@@ -61,7 +61,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   ...> chosen or combined differently). FromSchema itself agrees on both sides; a self-contained mimic of the two
   methods infers `{ [x: string]: {} }` in both, so the difference needs the real chain (597-line repro, reduce.py plus
   hand fixes for the names the cut left). Every one of the 101 extra diagnostics looks downstream of this (property
-  reads on `{} & { source: string }`, `unknown` entries): one root cause until a fix shows otherwise. [open]
+  reads on `{} & { source: string }`, `unknown` entries): one root cause until a fix shows otherwise. (claimed: corB) [open]
 - **npm__markw65_prettier-plugin-monkeyc_TS7034** (seed 20261031, @markw65/prettier-plugin-monkeyc@1.0.69,
   markw65/prettier-plugin-monkeyc; tsgo 13, tttt 15). src/printer.ts:74 `let rest, ...; ({ print: x, ..., ...rest } =
   estree)`: an auto-typed `let` (no initializer, no annotation) whose only assignment is an object rest element of a
@@ -97,7 +97,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   [boolean])`): tsgo's inference takes P from the arguments (no excess property check against Options), tttt the
   plugin's parameters `[options?: Readonly<Options> | null | undefined]`. Cut-down probes without unified's Plugin
   conditional return type and CallableInstance base didn't reproduce. Repro test/cases/npm__nirholas_crypto-news_TS2345.ts
-  (11 files from reduce.py). [open]
+  (11 files from reduce.py). (claimed: corB) [open]
 - Seed 20261028, tamagui/tamagui (@tamagui/codemod-flat-values@3.1.3, code/core/codemod-flat-values): spurious
   TS2339 "Property 'replaceWithText' does not exist on type 'never'" and TS2349 at src/transition.ts:302 (tsgo 0
   errors, tttt 2). `let node: A | B | null = null`, assigned in a loop after a type-predicate `continue`
