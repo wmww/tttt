@@ -1,0 +1,46 @@
+//// [test/cases/ttttImportAttributeErrorUnchecked.ts] ////
+
+=== /types.d.ts ===
+declare module "*.style" with { type: "css" } {
+>"*.style" : typeof import("*.style", { with: { type: "css" } })
+>type : "css"
+
+    export interface Style { kind: "css"; }
+>kind : "css"
+}
+declare module "formatted/*.style" with { type: "css", format: "module" } {
+>"formatted/*.style" : typeof import("formatted/*.style", { with: { format: "module", type: "css" } })
+>type : "css"
+>format : "module"
+
+    export interface FormattedStyle { kind: "css-module"; }
+>kind : "css-module"
+}
+=== /index.ts ===
+export type { FormattedStyle as A } from "formatted/a.style" with { type: 42, format: "module" };
+>FormattedStyle : any
+>A : any
+>type : any
+>format : any
+
+export type { FormattedStyle as B } from "formatted/b.style" with { type: "x", format: "module" };
+>FormattedStyle : any
+>B : any
+>type : any
+>format : any
+
+export type { Style as C } from "c.style" with { type: "x" };
+>Style : any
+>C : any
+>type : any
+
+export type { Style as D } from "d.style" with { type: 42 };
+>Style : any
+>D : any
+>type : any
+
+import type { Style as E } from "e.style" with { type: 42 };
+>Style : any
+>E : any
+>type : any
+

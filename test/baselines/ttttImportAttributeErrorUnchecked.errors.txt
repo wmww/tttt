@@ -1,0 +1,52 @@
+/index.ts(1,62): error TS2322: Type '{ format: "module"; type: 42; }' is not assignable to type 'ImportAttributes'.
+  Property 'type' is incompatible with index signature.
+    Type 'number' is not assignable to type 'string'.
+/index.ts(1,75): error TS2858: Import attribute values must be string literal expressions.
+/index.ts(2,42): error TS2307: Cannot find module 'formatted/b.style' or its corresponding type declarations.
+/index.ts(3,33): error TS2307: Cannot find module 'c.style' or its corresponding type declarations.
+/index.ts(4,43): error TS2322: Type '{ type: 42; }' is not assignable to type 'ImportAttributes'.
+  Property 'type' is incompatible with index signature.
+    Type 'number' is not assignable to type 'string'.
+/index.ts(4,56): error TS2858: Import attribute values must be string literal expressions.
+/index.ts(5,43): error TS2322: Type '{ type: 42; }' is not assignable to type 'ImportAttributes'.
+  Property 'type' is incompatible with index signature.
+    Type 'number' is not assignable to type 'string'.
+/index.ts(5,56): error TS2858: Import attribute values must be string literal expressions.
+
+
+==== /types.d.ts (0 errors) ====
+    declare module "*.style" with { type: "css" } {
+        export interface Style { kind: "css"; }
+    }
+    declare module "formatted/*.style" with { type: "css", format: "module" } {
+        export interface FormattedStyle { kind: "css-module"; }
+    }
+==== /index.ts (8 errors) ====
+    export type { FormattedStyle as A } from "formatted/a.style" with { type: 42, format: "module" };
+                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ format: "module"; type: 42; }' is not assignable to type 'ImportAttributes'.
+!!! error TS2322:   Property 'type' is incompatible with index signature.
+!!! error TS2322:     Type 'number' is not assignable to type 'string'.
+                                                                              ~~
+!!! error TS2858: Import attribute values must be string literal expressions.
+    export type { FormattedStyle as B } from "formatted/b.style" with { type: "x", format: "module" };
+                                             ~~~~~~~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module 'formatted/b.style' or its corresponding type declarations.
+    export type { Style as C } from "c.style" with { type: "x" };
+                                    ~~~~~~~~~
+!!! error TS2307: Cannot find module 'c.style' or its corresponding type declarations.
+    export type { Style as D } from "d.style" with { type: 42 };
+                                              ~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ type: 42; }' is not assignable to type 'ImportAttributes'.
+!!! error TS2322:   Property 'type' is incompatible with index signature.
+!!! error TS2322:     Type 'number' is not assignable to type 'string'.
+                                                           ~~
+!!! error TS2858: Import attribute values must be string literal expressions.
+    import type { Style as E } from "e.style" with { type: 42 };
+                                              ~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ type: 42; }' is not assignable to type 'ImportAttributes'.
+!!! error TS2322:   Property 'type' is incompatible with index signature.
+!!! error TS2322:     Type 'number' is not assignable to type 'string'.
+                                                           ~~
+!!! error TS2858: Import attribute values must be string literal expressions.
+    

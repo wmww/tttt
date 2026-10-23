@@ -1,0 +1,36 @@
+//// [test/cases/ttttImportAttributeErrorUnchecked.ts] ////
+
+=== /types.d.ts ===
+declare module "*.style" with { type: "css" } {
+>"*.style" : Symbol("*.style", Decl(types.d.ts, 0, 0))
+>type : Symbol(type, Decl(types.d.ts, 0, 31))
+
+    export interface Style { kind: "css"; }
+>Style : Symbol(Style, Decl(types.d.ts, 0, 47))
+>kind : Symbol(Style.kind, Decl(types.d.ts, 1, 28))
+}
+declare module "formatted/*.style" with { type: "css", format: "module" } {
+>"formatted/*.style" : Symbol("formatted/*.style", Decl(types.d.ts, 2, 1))
+>type : Symbol(type, Decl(types.d.ts, 3, 41))
+>format : Symbol(format, Decl(types.d.ts, 3, 54))
+
+    export interface FormattedStyle { kind: "css-module"; }
+>FormattedStyle : Symbol(FormattedStyle, Decl(types.d.ts, 3, 75))
+>kind : Symbol(FormattedStyle.kind, Decl(types.d.ts, 4, 37))
+}
+=== /index.ts ===
+export type { FormattedStyle as A } from "formatted/a.style" with { type: 42, format: "module" };
+>A : Symbol(A, Decl(index.ts, 0, 13))
+
+export type { FormattedStyle as B } from "formatted/b.style" with { type: "x", format: "module" };
+>B : Symbol(B, Decl(index.ts, 1, 13))
+
+export type { Style as C } from "c.style" with { type: "x" };
+>C : Symbol(C, Decl(index.ts, 2, 13))
+
+export type { Style as D } from "d.style" with { type: 42 };
+>D : Symbol(D, Decl(index.ts, 3, 13))
+
+import type { Style as E } from "e.style" with { type: 42 };
+>E : Symbol(E, Decl(index.ts, 4, 13))
+

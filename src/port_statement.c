@@ -179,6 +179,16 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
 
 
 // What tsc's checkGrammarImportClause says about a phase modifier (`import defer`, `import source`), 0 if nothing
+// An attribute value that isn't a string literal (TS2858): tsc's checkExternalImportOrExportDeclaration returns false on
+// checkGrammarImportAttributeValues, so the declaration's bindings aren't checked (resolved when something uses them)
+static bool attribute_value_error(PortStatement const* me) {
+    if (!my attributes || my jsdoc || my in_namespace || my is_import_require) return false;
+    for_each (i, vec_import_attribute, &my attributes->elements) {
+        if (!import_attribute_value_is_string_literal(&i->value)) return true;
+    }
+    return false;
+}
+
 static unsigned phase_clause_error(PortStatement const* me) {
     if (!span_valid(port_statement_rare(me)->phase_clause)) return 0;
     ModuleKind module = compiler_options()->module;
@@ -239,7 +249,7 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
     // (An import clause with a grammar error resolves nothing either: tsc's checkImportDeclaration skips its bindings
     // when checkGrammarImportClause reports, TS1363 or a deferred import's TS18058-TS18060)
     if (!my jsdoc && my main.tag == PORT_IMPORT_DEFAULT && my main.type_only && vec_port_item_size(&my items)) unchecked = true;
-    if (phase_clause_error(me)) unchecked = true;
+    if (phase_clause_error(me) || attribute_value_error(me)) unchecked = true;
     if (my module_ref && !unchecked && !my module_ref->file &&
         !binder_module_of_ref(scope->binder, my module_ref)
     ) {
