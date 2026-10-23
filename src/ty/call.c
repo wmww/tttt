@@ -3739,8 +3739,7 @@ void ty_tagged_template_typecheck(Checker* me, Ty const* callee, Expr const* tem
 }
 
 static Symbol const* awaited_alias(Checker* me) {
-    Symbol const* symbol = program_get_global(my program, c_sv("Awaited"), SYMBOL_TYPE);
-    return symbol && (symbol->flags & SYMBOL_TYPE_ALIAS) ? symbol : nullptr;
+    return ty_global_type_alias(me, c_sv("Awaited"), 1);
 }
 
 // tsc's maybeTypeOfKind(type, TypeVariable): a type parameter or indexed access, or a union or intersection with one

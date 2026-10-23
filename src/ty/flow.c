@@ -511,8 +511,8 @@ static Ty const* map_non_nullable(Checker* me, Ty const* ty, void const* arg) {
     if (!has_type_facts(me, ty, TF_EQ_UNDEFINED_OR_NULL)) return ty;
     // The lib's `NonNullable<T>` (`T & {}`) when there is one, which is how it prints (tsc's
     // getGlobalNonNullableTypeInstantiation)
-    Symbol const* alias = program_get_global(my program, c_sv("NonNullable"), SYMBOL_TYPE);
-    if (alias && (alias->flags & SYMBOL_TYPE_ALIAS)) return ty_alias_instance(me, alias, (TyList){ .data = &ty, .len = 1 });
+    Symbol const* alias = ty_global_type_alias(me, c_sv("NonNullable"), 1);
+    if (alias) return ty_alias_instance(me, alias, (TyList){ .data = &ty, .len = 1 });
     Ty const* types[2] = { ty, ty_empty_object_type(me) };
     return ty_intersection(me, types, 2, nullptr, (TyList){0});
 }
@@ -2711,8 +2711,8 @@ static Ty const* narrow_by_in(FlowQuery* q, Ty const* type, BinaryOpExpr const* 
     if (!is_known) {
         // A property no member declares: `x & Record<"a", unknown>` (tsc's narrowTypeByInKeyword)
         if (!assume_true) return type;
-        Symbol const* record = program_get_global(my program, c_sv("Record"), SYMBOL_TYPE);
-        if (!record || !(record->flags & SYMBOL_TYPE_ALIAS)) return type;
+        Symbol const* record = ty_global_type_alias(me, c_sv("Record"), 2);
+        if (!record) return type;
         Ty const* args[2] = { name_type, ty_intrinsic(me, TY_UNKNOWN_) };
         Ty const* parts[2] = { type, ty_alias_instance(me, record, (TyList){ .data = args, .len = 2 }) };
         return ty_intersection(me, parts, 2, nullptr, (TyList){0});

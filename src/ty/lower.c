@@ -512,6 +512,15 @@ TyList ty_alias_type_params(Checker* me, Symbol const* decl) {
     return ty_type_params_of(me, symbol_type_generic(decl));
 }
 
+// tsc's getGlobalTypeAliasSymbol without its errors: the global type alias `name` when it has `arity` type parameters
+// (a file's own `type NonNullable<T, U>` with noLib is no NonNullable for the checker to instantiate)
+Symbol const* ty_global_type_alias(Checker* me, csview name, u32 arity) {
+    Symbol const* symbol = program_get_global(my program, name, SYMBOL_TYPE);
+    if (symbol) symbol = binder_redirect(my binder, symbol);
+    if (!symbol || !(symbol->flags & SYMBOL_TYPE_ALIAS) || ty_alias_type_params(me, symbol).len != arity) return nullptr;
+    return symbol;
+}
+
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx, Symbol const* body_of);
 
 // An instantiation of a generic alias whose body is a union or intersection, made of the same constituents
@@ -688,9 +697,9 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         case JSDOC_INTRINSIC_ANY: return ty_intrinsic(me, TY_ANY);
         case JSDOC_INTRINSIC_INDEX_SIGNATURE: {
             // (tsgo's getIntendedTypeFromJSDocTypeReference: the global Record alias of a valid key, else any)
-            Symbol const* record = program_get_global(me->program, c_sv("Record"), SYMBOL_TYPE);
+            Symbol const* record = ty_global_type_alias(me, c_sv("Record"), 2);
             Ty const* key = ty_from_node(me, &vec_spanned_type_at(&identifier->generic_params, 0)->type, ctx);
-            if (!record || !(record->flags & SYMBOL_TYPE_ALIAS) || !ty_is_valid_index_key(key)) return ty_intrinsic(me, TY_ANY);
+            if (!record || !ty_is_valid_index_key(key)) return ty_intrinsic(me, TY_ANY);
             Ty const* args[2] = { key, ty_from_node(me, &vec_spanned_type_at(&identifier->generic_params, 1)->type, ctx) };
             return ty_alias_instance(me, record, (TyList){ .data = args, .len = 2 });
         }
@@ -3270,9 +3279,8 @@ static Ty const* generic_rest_type(Checker* me, Ty const* source, TyList pattern
     Ty const* omitted = keys.len ? ty_union(me, keys.data, keys.len, nullptr, (TyList){0}) : nullptr;
     ty_buf_drop(&keys);
     if (!omitted || (omitted->flags & TYF_NEVER)) return source;
-    Symbol const* omit = program_get_global(my program, c_sv("Omit"), SYMBOL_TYPE);
-    if (omit) omit = binder_redirect(my binder, omit);
-    if (!omit || !(omit->flags & SYMBOL_TYPE_ALIAS) || ty_alias_type_params(me, omit).len != 2) return ty_intrinsic(me, TY_ERROR);
+    Symbol const* omit = ty_global_type_alias(me, c_sv("Omit"), 2);
+    if (!omit) return ty_intrinsic(me, TY_ERROR);
     Ty const* args[2] = { source, omitted };
     return ty_alias_instance(me, omit, (TyList){ .data = args, .len = 2 });
 }

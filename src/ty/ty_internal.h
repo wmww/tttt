@@ -489,6 +489,7 @@ bool ty_alias_param_is_contravariant(Checker* me, Symbol const* alias, u32 index
 Ty const* ty_alias_instance(Checker* me, Symbol const* decl, TyList args);
 Signature const* ty_erased_signature(Checker* me, Signature const* sig); // relate.c, tsc's getErasedSignature
 TyList ty_alias_type_params(Checker* me, Symbol const* decl);
+Symbol const* ty_global_type_alias(Checker* me, csview name, u32 arity);
 bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional);
 bool ty_elides_default_type_args(Checker* me, Ty const* target); // iterate.c
 bool ty_is_tuple(Ty const* ty); // Not the empty tuple, which is its own target (TY_DECLARED)
