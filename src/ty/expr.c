@@ -2635,7 +2635,10 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         identifier->assume_initialized ||
         // A variable of another function than the one the reference is in (tsc's isOuterVariable): its initial type is
         // the declared type, which is also what the loop caches go by
-        (identifier->outer_reference && !ty_symbol_never_initialized(symbol));
+        (identifier->outer_reference && !ty_symbol_never_initialized(symbol)) ||
+        // A variable merged with an import (`import { X } from "./types-only"; const X = 1`): tsc's symbol is an alias
+        // too (checkIdentifier's isAlias)
+        symbol_find_node(symbol, SYMBOL_DECL_ALIAS);
     // (A type with undefined in it is its own optional type, tsc's getOptionalType: the same as assumed initialized)
     bool assume_initialized = tsc_assumes_initialized || includes_undefined(type);
     if (issue_only && assume_initialized) return nullptr;

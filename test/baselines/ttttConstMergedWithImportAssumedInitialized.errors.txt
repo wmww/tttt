@@ -1,0 +1,23 @@
+main.ts(2,13): error TS2448: Block-scoped variable 'X' used before its declaration.
+main.ts(4,13): error TS2448: Block-scoped variable 'Y' used before its declaration.
+main.ts(4,13): error TS2454: Variable 'Y' is used before being assigned.
+
+
+==== main.ts (3 errors) ====
+    import { X } from "./other";
+    console.log(X);
+                ~
+!!! error TS2448: Block-scoped variable 'X' used before its declaration.
+!!! related TS2728 main.ts:3:7: 'X' is declared here.
+    const X = 42;
+    console.log(Y);
+                ~
+!!! error TS2448: Block-scoped variable 'Y' used before its declaration.
+!!! related TS2728 main.ts:5:7: 'Y' is declared here.
+                ~
+!!! error TS2454: Variable 'Y' is used before being assigned.
+    const Y = 42;
+    export {};
+==== other.ts (0 errors) ====
+    export type X = {};
+    

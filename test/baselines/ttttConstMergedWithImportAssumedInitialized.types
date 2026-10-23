@@ -1,0 +1,33 @@
+//// [test/cases/ttttConstMergedWithImportAssumedInitialized.ts] ////
+
+=== main.ts ===
+import { X } from "./other";
+>X : 42
+
+console.log(X);
+>console.log(X) : void
+>console.log : (...data: any[]) => void
+>console : Console
+>log : (...data: any[]) => void
+>X : 42
+
+const X = 42;
+>X : 42
+>42 : 42
+
+console.log(Y);
+>console.log(Y) : void
+>console.log : (...data: any[]) => void
+>console : Console
+>log : (...data: any[]) => void
+>Y : 42
+
+const Y = 42;
+>Y : 42
+>42 : 42
+
+export {};
+=== other.ts ===
+export type X = {};
+>X : X
+
