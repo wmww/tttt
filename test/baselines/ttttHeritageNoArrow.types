@@ -1,0 +1,16 @@
+//// [test/cases/ttttHeritageNoArrow.ts] ////
+
+=== ttttHeritageNoArrow.ts ===
+// A heritage element is a left-hand side expression, which is no arrow function (tsc's
+// parseLeftHandSideExpressionOrHigher): `implements x => void` is `x` then TS1005 ',' expected. Babel's
+// arrow-function/invalid-class-implements fixture
+class Q implements x => void {}
+>Q : Q
+>void {} : undefined
+>{} : {}
+
+class R extends x => 1 {}
+>R : R
+>x : any
+>1 : 1
+

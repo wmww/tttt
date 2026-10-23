@@ -10718,7 +10718,11 @@ binary_rest:
     }
     if (binary_rest_only) goto operators;
 
-    if (left_and_ret->tag == EXPR_IDENTIFIER && *p.pos == '=' && *(p.pos + 1) == '>' && !ctx.entity_name) {
+    // (Not in a left-hand side expression, a heritage element: tsc's parseLeftHandSideExpressionOrHigher parses no
+    // arrow function, `implements x => void` is `x` then TS1005 ',' expected)
+    if (left_and_ret->tag == EXPR_IDENTIFIER && *p.pos == '=' && *(p.pos + 1) == '>' && !ctx.entity_name &&
+        !ctx.left_hand_side
+    ) {
         Parser sub_p = parser(&p);
         sub_p.pos = span_start_ptr(expr_outer_span(left_and_ret));
 

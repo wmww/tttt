@@ -1,0 +1,24 @@
+ttttHeritageNoArrow.ts(4,20): error TS2304: Cannot find name 'x'.
+ttttHeritageNoArrow.ts(4,22): error TS1005: ',' expected.
+ttttHeritageNoArrow.ts(4,25): error TS1109: Expression expected.
+ttttHeritageNoArrow.ts(5,17): error TS2304: Cannot find name 'x'.
+ttttHeritageNoArrow.ts(5,19): error TS1005: ',' expected.
+
+
+==== ttttHeritageNoArrow.ts (5 errors) ====
+    // A heritage element is a left-hand side expression, which is no arrow function (tsc's
+    // parseLeftHandSideExpressionOrHigher): `implements x => void` is `x` then TS1005 ',' expected. Babel's
+    // arrow-function/invalid-class-implements fixture
+    class Q implements x => void {}
+                       ~
+!!! error TS2304: Cannot find name 'x'.
+                         ~~
+!!! error TS1005: ',' expected.
+                            ~~~~
+!!! error TS1109: Expression expected.
+    class R extends x => 1 {}
+                    ~
+!!! error TS2304: Cannot find name 'x'.
+                      ~~
+!!! error TS1005: ',' expected.
+    
