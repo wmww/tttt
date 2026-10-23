@@ -1,0 +1,1461 @@
+//// [test/cases/npm__veto-party_baum__package_manager__npm_TS2339.ts] ////
+
+=== node_modules/@types/lodash-es/index.d.ts ===
+export { default as cloneDeep } from "./cloneDeep.js";
+>default : any
+>cloneDeep : any
+
+export { default as get } from "./get.js";
+>default : any
+>get : any
+
+export { default as isEqual } from "./isEqual.js";
+>default : any
+>isEqual : any
+
+export { default as merge } from "./merge.js";
+>default : any
+>merge : any
+
+export { default as set } from "./set.js";
+>default : any
+>set : any
+
+export { default as toPath } from "./toPath.js";
+>default : any
+>toPath : any
+
+=== node_modules/@types/node/crypto.d.ts ===
+/**
+ */
+declare module "crypto" {
+>"crypto" : typeof import("crypto")
+
+    /**
+     */
+    function randomInt(max: number): number;
+>randomInt : (max: number) => number
+>max : number
+
+    /**
+     */
+}
+declare module "node:crypto" {
+>"node:crypto" : typeof import("node:crypto")
+
+    export * from "crypto";
+}
+=== node_modules/@types/node/fs.d.ts ===
+declare module "fs" {
+>"fs" : typeof import("fs")
+
+    /**
+     */
+    export function readFileSync(
+>readFileSync : (options?: BufferEncoding) => string | Buffer
+
+        options?:
+>options : error
+
+            | BufferEncoding
+    ): string | Buffer;
+    export type WriteFileOptions =
+>WriteFileOptions : null
+
+        | null;
+    /**
+     */
+    export function existsSync(path: PathLike): boolean;
+>existsSync : (path: PathLike) => boolean
+>path : error
+}
+declare module "node:fs" {
+>"node:fs" : typeof import("node:fs")
+
+    export * from "fs";
+}
+=== node_modules/@types/node/fs/promises.d.ts ===
+declare module "fs/promises" {
+>"fs/promises" : typeof import("fs/promises")
+
+    /**
+     */
+    function rm(path: PathLike, options?: RmOptions): Promise<void>;
+>rm : (path: PathLike, options?: RmOptions) => Promise<void>
+>path : error
+>options : error
+
+    function stat(path: PathLike, opts?: StatOptions): Promise<Stats | BigIntStats>;
+>stat : (path: PathLike, opts?: StatOptions) => Promise<Stats | BigIntStats>
+>path : error
+>opts : error
+
+    /**
+     */
+    function writeFile(
+>writeFile : (file: PathLike | FileHandle, data: BufferEncoding) => Promise<void>
+
+        file: PathLike | FileHandle,
+>file : error
+
+        data:
+>data : error
+
+            | BufferEncoding
+    ): Promise<void>;
+    function appendFile(
+>appendFile : (data: string | Uint8Array, options?: (ObjectEncodingOptions & FlagAndOpenMode & { flush?: boolean | undefined; }) | BufferEncoding | null) => Promise<void>
+
+        data: string | Uint8Array,
+>data : string | Uint8Array<ArrayBufferLike>
+
+        options?: (ObjectEncodingOptions & FlagAndOpenMode & { flush?: boolean | undefined }) | BufferEncoding | null,
+>options : error
+>flush : boolean | undefined
+
+    ): Promise<void>;
+    function readFile(
+>readFile : (options?: BufferEncoding) => Promise<string | Buffer>
+
+        options?:
+>options : error
+
+            | BufferEncoding
+    ): Promise<string | Buffer>;
+}
+declare module "node:fs/promises" {
+>"node:fs/promises" : typeof import("node:fs/promises")
+
+    export * from "fs/promises";
+}
+=== node_modules/@types/node/index.d.ts ===
+
+/**
+ */
+/// <reference path="crypto.d.ts" />
+/// <reference path="fs.d.ts" />
+/// <reference path="fs/promises.d.ts" />
+/// <reference path="path.d.ts" />
+=== node_modules/@types/node/path.d.ts ===
+/**
+ */
+declare module "path" {
+>"path" : typeof import("path")
+
+    namespace path {
+        /**
+         */
+        interface PlatformPath {
+            /**
+             */
+            join(...paths: string[]): string;
+>join : (...paths: string[]) => string
+>paths : string[]
+
+            /**
+             */
+            resolve(...paths: string[]): string;
+>resolve : (...paths: string[]) => string
+>paths : string[]
+
+            /**
+             */
+            isAbsolute(path: string): boolean;
+>isAbsolute : (path: string) => boolean
+>path : string
+
+            /**
+             */
+            readonly sep: "\\" | "/";
+>sep : "/" | "\\"
+
+            /**
+             */
+        }
+    }
+    const path: path.PlatformPath;
+>path : import("path").PlatformPath
+>path : any
+
+    export = path;
+>path : import("path").PlatformPath
+}
+declare module "node:path" {
+>"node:path" : typeof import("node:path")
+
+    import path = require("path");
+>path : path.PlatformPath
+
+    export = path;
+>path : path.PlatformPath
+}
+=== node_modules/@veto-party/baum__steps__installer__features/src/abstract/AFeature.ts ===
+import AJV from 'ajv';
+>AJV : typeof AJV
+
+import type { FromSchema } from 'json-schema-to-ts';
+>FromSchema : FromSchema<SCHEMA, OPTIONS>
+
+import { get } from 'lodash-es';
+>get : any
+
+import type { IFeature, IngestResult } from '../interface/IFeature.js';
+>IFeature : IFeature<T, Path, From>
+>IngestResult : IngestResult<T>
+
+import type { FeatureContainer } from '../interface/IFeatureContainer.js';
+>FeatureContainer : FeatureContainer
+
+import type { ToDefinitionStructure } from '../interface/types/ToDefinitionStructure.js';
+>ToDefinitionStructure : ToDefinitionStructure<Path, Target>
+
+export abstract class AFeature<T extends {} | Record<string, any>, Path, From = T extends {} ? any[] | any : FromSchema<T>> implements IFeature<T, Path, From> {
+>AFeature : AFeature<T, Path, From>
+
+  private ajv = new AJV.default({
+>ajv : error
+>new AJV.default({  }) : error
+>AJV.default : error
+>AJV : typeof AJV
+>default : any
+>{  } : {}
+
+  });
+  protected constructor(
+    private schema: T,
+>schema : T
+
+    private lookup: Path extends string ? Path : undefined
+>lookup : Path extends string ? Path : undefined
+
+  ) {}
+  private getElementByLookupIfPresent(baseEl: any) {
+>getElementByLookupIfPresent : (baseEl: any) => any
+>baseEl : any
+
+    return this.lookup ? get(baseEl, this.lookup as string) : baseEl;
+>this.lookup ? get(baseEl, this.lookup as string) : baseEl : error
+>this.lookup : Path extends string ? Path : undefined
+>this : this
+>lookup : Path extends string ? Path : undefined
+>get(baseEl, this.lookup as string) : error
+>get : error
+>baseEl : any
+>this.lookup as string : string
+>this.lookup : string
+>this : this
+>lookup : string
+>baseEl : any
+  }
+  public getSchema(): T {
+>getSchema : () => T
+
+    return this.schema;
+>this.schema : T
+>this : this
+>schema : T
+  }
+  public getPath(): Path extends string ? Path : undefined {
+>getPath : () => Path extends string ? Path : undefined
+
+    return this.lookup as any;
+>this.lookup as any : any
+>this.lookup : string | undefined
+>this : this
+>lookup : string | undefined
+  }
+  public verifyObject(element: any): element is ToDefinitionStructure<Path, From> {
+>verifyObject : (element: any) => element is ToDefinitionStructure<Path, From>
+>element : any
+
+    return this.ajv.validate(this.schema, this.getElementByLookupIfPresent(element));
+>this.ajv.validate(this.schema, this.getElementByLookupIfPresent(element)) : error
+>this.ajv.validate : error
+>this.ajv : any
+>this : this
+>ajv : any
+>validate : any
+>this.schema : Record<string, any> | {}
+>this : this
+>schema : Record<string, any> | {}
+>this.getElementByLookupIfPresent(element) : error
+>this.getElementByLookupIfPresent : (baseEl: any) => any
+>this : this
+>getElementByLookupIfPresent : (baseEl: any) => any
+>element : any
+  }
+  public ingestObject(objects: Record<string, FeatureContainer>): Promise<IngestResult<From>[]> | IngestResult<From>[] {
+>ingestObject : (objects: Record<string, FeatureContainer>) => Promise<IngestResult<From>[]> | IngestResult<From>[]
+>objects : Record<string, FeatureContainer>
+
+    const items = Object.entries(objects).map(
+>items : { item: any; }[]
+>Object.entries(objects).map(      ([key, element]) =>        ({          item: this.getElementByLookupIfPresent(element.feature),        }) satisfies IngestResult<From>    ) : { item: any; }[]
+>Object.entries(objects).map : <U>(callbackfn: (value: [string, FeatureContainer], index: number, array: [string, FeatureContainer][]) => U, thisArg?: any) => U[]
+>Object.entries(objects) : [string, FeatureContainer][]
+>Object.entries : { <T_1>(o: { [s: string]: T_1; } | ArrayLike<T_1>): [string, T_1][]; (o: {}): [string, any][]; }
+>Object : ObjectConstructor
+>entries : { <T_1>(o: { [s: string]: T_1; } | ArrayLike<T_1>): [string, T_1][]; (o: {}): [string, any][]; }
+>objects : Record<string, FeatureContainer>
+>map : <U>(callbackfn: (value: [string, FeatureContainer], index: number, array: [string, FeatureContainer][]) => U, thisArg?: any) => U[]
+
+      ([key, element]) =>
+>([key, element]) =>        ({          item: this.getElementByLookupIfPresent(element.feature),        }) satisfies IngestResult<From> : ([key, element]: [string, FeatureContainer]) => { item: any; }
+>key : string
+>element : FeatureContainer
+
+        ({
+>({          item: this.getElementByLookupIfPresent(element.feature),        }) satisfies IngestResult<From> : { item: any; }
+>({          item: this.getElementByLookupIfPresent(element.feature),        }) : { item: any; }
+>{          item: this.getElementByLookupIfPresent(element.feature),        } : { item: any; }
+
+          item: this.getElementByLookupIfPresent(element.feature),
+>item : error
+>this.getElementByLookupIfPresent(element.feature) : error
+>this.getElementByLookupIfPresent : (baseEl: any) => any
+>this : this
+>getElementByLookupIfPresent : (baseEl: any) => any
+>element.feature : any
+>element : FeatureContainer
+>feature : any
+
+        }) satisfies IngestResult<From>
+    );
+    return items;
+>items : { item: any; }[]
+  }
+}
+=== node_modules/@veto-party/baum__steps__installer__features/src/abstract/GroupFeature/GroupFeature.ts ===
+import type { asConst, FromSchema, JSONSchema } from 'json-schema-to-ts';
+>asConst : any
+>FromSchema : FromSchema<SCHEMA, OPTIONS>
+>JSONSchema : JSONSchema
+
+import { cloneDeep, set, toPath } from 'lodash-es';
+>cloneDeep : any
+>set : any
+>toPath : any
+
+import type { IFeature } from '../../interface/IFeature.js';
+>IFeature : IFeature<T, Path, From>
+
+import { AFeature } from '../AFeature.js';
+>AFeature : typeof AFeature
+
+import type { ResolveFeaturePath } from '../types/MergeFeatures.js';
+>ResolveFeaturePath : ResolveFeaturePath<WritePath, B>
+
+import type { ToDefinitionStructureWithTupleMerge } from '../types/ToDefinitionStructureWithTupleMerge.js';
+>ToDefinitionStructureWithTupleMerge : ToDefinitionStructureWithTupleMerge<Path, Target, Obj>
+
+export class GroupFeature<T extends {} | Record<string, any>, Path, From = T extends {} ? any[] | any : FromSchema<T>> extends AFeature<T, Path, From> {
+>GroupFeature : GroupFeature<T, Path, From>
+>AFeature : AFeature<T, Path, From>
+
+  protected do_construct(newSchema: any, path: string | undefined): GroupFeature<any, Path> {
+>do_construct : (newSchema: any, path: string | undefined) => GroupFeature<any, Path>
+>newSchema : any
+>path : string | undefined
+
+    return new GroupFeature<any, Path>(newSchema, path as any);
+>new GroupFeature<any, Path>(newSchema, path as any) : GroupFeature<any, Path, any>
+>GroupFeature : typeof GroupFeature
+>newSchema : any
+>path as any : any
+>path : string | undefined
+  }
+  appendFeature<WritePath, Feature extends IFeature<any, any, any>>(
+>appendFeature : <WritePath, Feature extends IFeature<any, any, any>>(writePath: WritePath, feature: Feature) => Feature extends IFeature<infer D, infer B, infer _> ? ReturnType<typeof asConst<ToDefinitionStructureWithTupleMerge<ResolveFeaturePath<WritePath, B extends string | undefined ? B : undefined>, D, T>>> extends infer Some ? GroupFeature<Some extends Record<string, any> ? Some : never, Path, FromSchema<Some extends JSONSchema ? Some : never>> : never : never
+
+    writePath: WritePath,
+>writePath : WritePath
+
+    feature: Feature
+>feature : Feature
+
+  ): Feature extends IFeature<infer D, infer B, infer _>
+    ? ReturnType<typeof asConst<ToDefinitionStructureWithTupleMerge<ResolveFeaturePath<WritePath, B extends string | undefined ? B : undefined>, D, T>>> extends infer Some
+>asConst : <INPUT>(input: import("json-schema-to-ts/lib/types/type-utils/narrow.js").Narrow<INPUT>) => import("json-schema-to-ts/lib/types/type-utils/narrow.js").Narrow<INPUT>
+
+      ? GroupFeature<Some extends Record<string, any> ? Some : never, Path, FromSchema<Some extends JSONSchema ? Some : never>>
+      : never
+    : never {
+    const oldSchemaCloned = cloneDeep(this.getSchema());
+>oldSchemaCloned : error
+>cloneDeep(this.getSchema()) : error
+>cloneDeep : error
+>this.getSchema() : T
+>this.getSchema : () => T
+>this : this
+>getSchema : () => T
+
+    return this.do_construct(oldSchemaCloned, this.getPath()) as any;
+>this.do_construct(oldSchemaCloned, this.getPath()) as any : any
+>this.do_construct(oldSchemaCloned, this.getPath()) : GroupFeature<any, Path, any>
+>this.do_construct : (newSchema: any, path: string | undefined) => GroupFeature<any, Path>
+>this : this
+>do_construct : (newSchema: any, path: string | undefined) => GroupFeature<any, Path>
+>oldSchemaCloned : error
+>this.getPath() : Path extends string ? Path : undefined
+>this.getPath : () => Path extends string ? Path : undefined
+>this : this
+>getPath : () => Path extends string ? Path : undefined
+  }
+}
+=== node_modules/@veto-party/baum__steps__installer__features/src/abstract/types/MergeDeepForToDefinitionStructureWithTupleMerge.ts ===
+const MERGE_ELEM_NOT_FOUND = Symbol('MERGE_ELEM_NOT_FOUND');
+>MERGE_ELEM_NOT_FOUND : unique symbol
+>Symbol('MERGE_ELEM_NOT_FOUND') : unique symbol
+>Symbol : SymbolConstructor
+>'MERGE_ELEM_NOT_FOUND' : "MERGE_ELEM_NOT_FOUND"
+
+type MergeTuple<A extends any[], B extends any[]> = DoMergeTuple<A, A, B, B, []>;
+>MergeTuple : MergeTuple<A, B>
+
+type DoMergeTuple<A extends any[], AOriginal extends any[], B extends any[], BOriginal extends any[], Items extends any[]> = AOriginal['length'] extends Items['length']
+>DoMergeTuple : DoMergeTuple<A, AOriginal, B, BOriginal, Items>
+
+  ? BOriginal extends Items['length']
+    ? Items
+    : [...Items, ...B]
+  : BOriginal['length'] extends Items['length']
+    ? AOriginal['length'] extends Items['length']
+      ? Items
+      : [...Items, ...A]
+    : A extends [infer CurrentA, ...infer RestA]
+      ? B extends [infer CurrentB, ...infer RestB]
+        ? DoMergeTuple<RestA, AOriginal, RestB, BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+        : B extends [infer CurrentB]
+          ? DoMergeTuple<RestA, AOriginal, [], BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+          : DoMergeTuple<RestA, AOriginal, [], BOriginal, [...Items, CurrentA]>
+      : A extends [infer CurrentA]
+        ? B extends [infer CurrentB, ...infer RestB]
+          ? DoMergeTuple<[], AOriginal, RestB, BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+          : B extends [infer CurrentB]
+            ? DoMergeTuple<[], AOriginal, [], BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+            : DoMergeTuple<[], AOriginal, [], BOriginal, [...Items, CurrentA]>
+        : B extends [infer CurrentB, ...infer RestB]
+          ? A extends [infer CurrentA, ...infer RestA]
+            ? DoMergeTuple<RestA, AOriginal, RestB, BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+            : A extends [infer CurrentA]
+              ? DoMergeTuple<[], AOriginal, RestB, BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+              : DoMergeTuple<[], AOriginal, RestB, BOriginal, [...Items, CurrentB]>
+          : B extends [infer CurrentB]
+            ? A extends [infer CurrentA, ...infer RestA]
+              ? DoMergeTuple<RestA, AOriginal, [], BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+              : A extends [infer CurrentA]
+                ? DoMergeTuple<[], AOriginal, [], BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+                : DoMergeTuple<[], AOriginal, [], BOriginal, [...Items, CurrentB]>
+            : never;
+/**
+ */
+export type MergeDeepForToDefinitionStructureWithTupleMerge<A, B> = A extends typeof MERGE_ELEM_NOT_FOUND
+>MergeDeepForToDefinitionStructureWithTupleMerge : MergeDeepForToDefinitionStructureWithTupleMerge<A, B>
+>MERGE_ELEM_NOT_FOUND : unique symbol
+
+  ? B
+  : B extends typeof MERGE_ELEM_NOT_FOUND
+>MERGE_ELEM_NOT_FOUND : unique symbol
+
+    ? A
+    : A extends any[]
+      ? B extends any[]
+        ? MergeTuple<A, B>
+        : A
+      : B extends any[]
+        ? A extends any[]
+          ? MergeTuple<A, B>
+          : B
+        : A extends object
+          ? B extends object
+            ? { [Key in keyof (A & B)]: MergeDeepForToDefinitionStructureWithTupleMerge<Key extends keyof A ? A[Key] : typeof MERGE_ELEM_NOT_FOUND, Key extends keyof B ? B[Key] : typeof MERGE_ELEM_NOT_FOUND> }
+>MERGE_ELEM_NOT_FOUND : unique symbol
+>MERGE_ELEM_NOT_FOUND : unique symbol
+
+            : A
+          : B extends object
+            ? A extends object
+              ? { [Key in keyof (A & B)]: MergeDeepForToDefinitionStructureWithTupleMerge<Key extends keyof A ? A[Key] : typeof MERGE_ELEM_NOT_FOUND, Key extends keyof B ? B[Key] : typeof MERGE_ELEM_NOT_FOUND> }
+>MERGE_ELEM_NOT_FOUND : unique symbol
+>MERGE_ELEM_NOT_FOUND : unique symbol
+
+              : B
+            : A | B;
+=== node_modules/@veto-party/baum__steps__installer__features/src/abstract/types/MergeFeatures.ts ===
+import type { FromSchema, JSONSchema } from 'json-schema-to-ts';
+>FromSchema : FromSchema<SCHEMA, OPTIONS>
+>JSONSchema : JSONSchema
+
+import type { IFeature } from '../../interface/IFeature.js';
+>IFeature : IFeature<T, Path, From>
+
+import type { ToDefinitionStructureWithTupleMerge } from './ToDefinitionStructureWithTupleMerge.js';
+>ToDefinitionStructureWithTupleMerge : ToDefinitionStructureWithTupleMerge<Path, Target, Obj>
+
+export type ResolveFeaturePath<WritePath, B extends string | undefined> = WritePath extends string ? (B extends undefined ? WritePath : `${WritePath}.${B}`) : B;
+>ResolveFeaturePath : ResolveFeaturePath<WritePath, B>
+
+export type MergeFeatures<A extends IFeature<any, any, any>, Path, B extends IFeature<any, any, any>> = A extends IFeature<infer TypeA, infer PathA, any>
+>MergeFeatures : MergeFeatures<A, Path, B>
+
+  ? B extends IFeature<infer TypeB, infer PathB, any>
+    ? PathB extends string | undefined
+      ? ToDefinitionStructureWithTupleMerge<ResolveFeaturePath<Path, PathB>, TypeB, TypeA> extends infer NewType
+        ? NewType extends JSONSchema
+          ? IFeature<NewType, PathA, FromSchema<NewType>>
+          : never
+        : never
+      : never
+    : never
+  : never;
+=== node_modules/@veto-party/baum__steps__installer__features/src/abstract/types/ToDefinitionStructureWithTupleMerge.ts ===
+import type { asConst } from 'json-schema-to-ts';
+>asConst : any
+
+import type { ToDefinitionStructure } from '../../interface/types/ToDefinitionStructure.js';
+>ToDefinitionStructure : ToDefinitionStructure<Path, Target>
+
+import type { MergeDeepForToDefinitionStructureWithTupleMerge } from './MergeDeepForToDefinitionStructureWithTupleMerge.js';
+>MergeDeepForToDefinitionStructureWithTupleMerge : MergeDeepForToDefinitionStructureWithTupleMerge<A, B>
+
+export type ToDefinitionStructureWithTupleMerge<Path, Target, Obj> = ToDefinitionStructure<Path, Target> extends infer U ? (MergeDeepForToDefinitionStructureWithTupleMerge<Obj, U> extends infer R ? ReturnType<typeof asConst<R>> : never) : never;
+>ToDefinitionStructureWithTupleMerge : ToDefinitionStructureWithTupleMerge<Path, Target, Obj>
+>asConst : <INPUT>(input: import("json-schema-to-ts/lib/types/type-utils/narrow.js").Narrow<INPUT>) => import("json-schema-to-ts/lib/types/type-utils/narrow.js").Narrow<INPUT>
+
+=== node_modules/@veto-party/baum__steps__installer__features/src/implementation/Variable/Variable.ts ===
+import type { FromSchema } from 'json-schema-to-ts';
+>FromSchema : FromSchema<SCHEMA, OPTIONS>
+
+import { GroupFeature } from '../../abstract/GroupFeature/GroupFeature.js';
+>GroupFeature : typeof GroupFeature
+
+import { definition, variableAccessorPattern } from './definition.js';
+>definition : { type: "object"; patternProperties: { "^[a-zA-Z0-9_]*$": { type: "object"; }; }; }
+>variableAccessorPattern : "^[a-zA-Z0-9_]*$"
+
+export class VariableFeature<T extends typeof definition = typeof definition> extends GroupFeature<T, 'variable', FromSchema<T>> {
+>VariableFeature : VariableFeature<T>
+>definition : { type: "object"; patternProperties: { "^[a-zA-Z0-9_]*$": { type: "object"; }; }; }
+>definition : { type: "object"; patternProperties: { "^[a-zA-Z0-9_]*$": { type: "object"; }; }; }
+>GroupFeature : GroupFeature<T, "variable", FromSchema<T>>
+
+  protected constructor(value: any) {
+>value : any
+
+    super(value, 'variable');
+>super(value, 'variable') : void
+>super : typeof GroupFeature
+>value : any
+>'variable' : "variable"
+  }
+  public static makeInstance() {
+>makeInstance : () => VariableFeature<{ type: "object"; patternProperties: { "^[a-zA-Z0-9_]*$": { type: "object"; }; }; }>
+
+    const result = new VariableFeature(definition) //.appendFeature('patternProperties.["^[a-zA-Z0-9_]*$"]', new BaseVariableFeature());
+>result : VariableFeature<{ type: "object"; patternProperties: { "^[a-zA-Z0-9_]*$": { type: "object"; }; }; }>
+>new VariableFeature(definition) : VariableFeature<{ type: "object"; patternProperties: { "^[a-zA-Z0-9_]*$": { type: "object"; }; }; }>
+>VariableFeature : typeof VariableFeature
+>definition : { type: "object"; patternProperties: { "^[a-zA-Z0-9_]*$": { type: "object"; }; }; }
+
+    return result;
+>result : VariableFeature<{ type: "object"; patternProperties: { "^[a-zA-Z0-9_]*$": { type: "object"; }; }; }>
+  }
+}
+=== node_modules/@veto-party/baum__steps__installer__features/src/implementation/Variable/definition.ts ===
+import { asConst } from 'json-schema-to-ts';
+>asConst : <INPUT>(input: import("json-schema-to-ts/lib/types/type-utils/narrow.js").Narrow<INPUT>) => import("json-schema-to-ts/lib/types/type-utils/narrow.js").Narrow<INPUT>
+
+export const variableAccessorPattern = '^[a-zA-Z0-9_]*$' as const;
+>variableAccessorPattern : "^[a-zA-Z0-9_]*$"
+>'^[a-zA-Z0-9_]*$' as const : "^[a-zA-Z0-9_]*$"
+>'^[a-zA-Z0-9_]*$' : "^[a-zA-Z0-9_]*$"
+
+export const definition = asConst({
+>definition : { type: "object"; patternProperties: { "^[a-zA-Z0-9_]*$": { type: "object"; }; }; }
+>asConst({  type: 'object',  patternProperties: {    [variableAccessorPattern]: {      type: 'object',    }  },}) : { type: "object"; patternProperties: { "^[a-zA-Z0-9_]*$": { type: "object"; }; }; }
+>asConst : <INPUT>(input: import("json-schema-to-ts/lib/types/type-utils/narrow.js").Narrow<INPUT>) => import("json-schema-to-ts/lib/types/type-utils/narrow.js").Narrow<INPUT>
+>{  type: 'object',  patternProperties: {    [variableAccessorPattern]: {      type: 'object',    }  },} : { type: "object"; patternProperties: { "^[a-zA-Z0-9_]*$": { type: "object"; }; }; }
+
+  type: 'object',
+>type : "object"
+>'object' : "object"
+
+  patternProperties: {
+>patternProperties : { "^[a-zA-Z0-9_]*$": { type: "object"; }; }
+>{    [variableAccessorPattern]: {      type: 'object',    }  } : { "^[a-zA-Z0-9_]*$": { type: "object"; }; }
+
+    [variableAccessorPattern]: {
+>[variableAccessorPattern] : { type: "object"; }
+>variableAccessorPattern : "^[a-zA-Z0-9_]*$"
+>{      type: 'object',    } : { type: "object"; }
+
+      type: 'object',
+>type : "object"
+>'object' : "object"
+    }
+  },
+});
+=== node_modules/@veto-party/baum__steps__installer__features/src/index.ts ===
+export { VariableFeature } from './implementation/Variable/Variable.js';
+>VariableFeature : typeof import("./implementation/Variable/Variable.js").VariableFeature
+
+export type { IFeature, IngestResult } from './interface/IFeature.js';
+>IFeature : import("./interface/IFeature.js").IFeature<T, Path, From>
+>IngestResult : import("./interface/IFeature.js").IngestResult<T>
+
+=== node_modules/@veto-party/baum__steps__installer__features/src/interface/IFeature.ts ===
+import type { FromSchema } from 'json-schema-to-ts';
+>FromSchema : FromSchema<SCHEMA, OPTIONS>
+
+import type { FeatureContainer } from './IFeatureContainer.js';
+>FeatureContainer : FeatureContainer
+
+import type { ToDefinitionStructure } from './types/ToDefinitionStructure.js';
+>ToDefinitionStructure : ToDefinitionStructure<Path, Target>
+
+export type IngestResult<T> = {
+>IngestResult : IngestResult<T>
+
+  item: T;
+>item : T
+
+};
+export interface IFeature<T extends Record<string, any> | {}, Path, From = T extends {} ? any[] | any : FromSchema<T>> {
+  /**
+   */
+  verifyObject(element: any): element is ToDefinitionStructure<Path, From>;
+>verifyObject : (element: any) => element is ToDefinitionStructure<Path, From>
+>element : any
+
+  getSchema(): T;
+>getSchema : () => T
+
+  getPath(): Path extends string ? Path : undefined;
+>getPath : () => Path extends string ? Path : undefined
+
+  ingestObject(objects: Record<string, FeatureContainer>): Promise<IngestResult<From>[]> | IngestResult<From>[];
+>ingestObject : (objects: Record<string, FeatureContainer>) => Promise<IngestResult<From>[]> | IngestResult<From>[]
+>objects : Record<string, FeatureContainer>
+}
+=== node_modules/@veto-party/baum__steps__installer__features/src/interface/IFeatureContainer.ts ===
+export interface FeatureContainer {
+  feature: any;
+>feature : any
+}
+=== node_modules/@veto-party/baum__steps__installer__features/src/interface/types/KeyValuePair.ts ===
+export type KeyValuePair<A extends string | unknown, Target> = A extends string | number | symbol ? { [key in A]: Target } : Target;
+>KeyValuePair : KeyValuePair<A, Target>
+
+=== node_modules/@veto-party/baum__steps__installer__features/src/interface/types/MakeTuple.ts ===
+export type MakeTuple<T, N extends number = 1, Items extends any[] = []> = N extends Items['length'] ? [...Items, T] : MakeTuple<T, N, [void, ...Items]>;
+>MakeTuple : MakeTuple<T, N, Items>
+
+=== node_modules/@veto-party/baum__steps__installer__features/src/interface/types/StringToNumber.ts ===
+export type StringToNumber<S extends string | number, AlternativeBase = never, Alternative extends AlternativeBase = never> = S extends number
+>StringToNumber : StringToNumber<S, AlternativeBase, Alternative>
+
+  ? S
+                      : Alternative;
+=== node_modules/@veto-party/baum__steps__installer__features/src/interface/types/ToDefinitionStructure.ts ===
+import type { KeyValuePair } from './KeyValuePair.js';
+>KeyValuePair : KeyValuePair<A, Target>
+
+import type { MakeTuple } from './MakeTuple.js';
+>MakeTuple : MakeTuple<T, N, Items>
+
+import type { StringToNumber } from './StringToNumber.js';
+>StringToNumber : StringToNumber<S, AlternativeBase, Alternative>
+
+export type ToDefinitionStructure<Path, Target> = Path extends string
+>ToDefinitionStructure : ToDefinitionStructure<Path, Target>
+
+  ? // No path is given, return target
+    Path extends undefined
+    ? Target
+            : Path extends `${infer U}[${infer index}]`
+              ? ToDefinitionStructure<U, MakeTuple<Target, StringToNumber<index>>>
+                    : Path extends `[${infer index}].${infer Rest}`
+                      ? MakeTuple<ToDefinitionStructure<Rest, Target>, StringToNumber<index>>
+                      : Path extends `${infer U}.${infer Rest}`
+                        ? ToDefinitionStructure<U, ToDefinitionStructure<Rest, Target>>
+                        : KeyValuePair<Path, Target>
+  : Target;
+=== node_modules/ajv/dist/ajv.d.ts ===
+export default Ajv;
+>Ajv : any
+
+=== node_modules/json-schema-to-ts/lib/types/definitions/index.d.ts ===
+export type { JSONSchema, JSONSchemaType, JSONSchemaReference, } from "./jsonSchema";
+>JSONSchema : import("./jsonSchema").JSONSchema
+>JSONSchemaType : any
+>JSONSchemaReference : any
+
+=== node_modules/json-schema-to-ts/lib/types/definitions/jsonSchema.d.ts ===
+export type JSONSchema = boolean | Readonly<{
+>JSONSchema : JSONSchema
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/index.d.ts ===
+import type { M } from "ts-algebra";
+>M : any
+
+import type { ParseOptions } from "./parse-options";
+>ParseOptions : ParseOptions<ROOT_SCHEMA, OPTIONS>
+
+import type { ParseSchema } from "./parse-schema";
+>ParseSchema : ParseSchema<SCHEMA, OPTIONS, RESULT>
+
+export type { ExtendedJSONSchema, DeserializationPattern, FromSchemaOptions, FromExtendedSchemaOptions, FromSchemaDefaultOptions, JSONSchemaExtension, JSONSchema, } from "./definitions";
+>ExtendedJSONSchema : any
+>DeserializationPattern : any
+>FromSchemaOptions : any
+>FromExtendedSchemaOptions : any
+>FromSchemaDefaultOptions : any
+>JSONSchemaExtension : any
+>JSONSchema : import("json-schema-to-ts/lib/types/definitions/jsonSchema").JSONSchema
+
+export { wrapCompilerAsTypeGuard, wrapValidatorAsTypeGuard, asConst, } from "./utils";
+>wrapCompilerAsTypeGuard : any
+>wrapValidatorAsTypeGuard : any
+>asConst : <INPUT>(input: import("json-schema-to-ts/lib/types/type-utils").Narrow<INPUT>) => import("json-schema-to-ts/lib/types/type-utils").Narrow<INPUT>
+
+export type FromSchema<SCHEMA extends JSONSchema, OPTIONS extends FromSchemaOptions = FromSchemaDefaultOptions> = M.$Resolve<ParseSchema<SCHEMA, ParseOptions<SCHEMA, OPTIONS>>>;
+>FromSchema : FromSchema<SCHEMA, OPTIONS>
+>M : any
+
+=== node_modules/json-schema-to-ts/lib/types/parse-options.d.ts ===
+export type ParseOptions<ROOT_SCHEMA extends JSONSchema, OPTIONS extends FromSchemaOptions> = {
+>ParseOptions : ParseOptions<ROOT_SCHEMA, OPTIONS>
+
+};
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/allOf.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : JSONSchema
+
+export type AllOfSchema = JSONSchema & Readonly<{
+>AllOfSchema : AllOfSchema
+
+    allOf: readonly JSONSchema[];
+>allOf : readonly JSONSchema[]
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/anyOf.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : JSONSchema
+
+export type AnyOfSchema = JSONSchema & Readonly<{
+>AnyOfSchema : AnyOfSchema
+
+    anyOf: readonly JSONSchema[];
+>anyOf : readonly JSONSchema[]
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/array.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : JSONSchema
+
+export type ArrayOrTupleSchema = JSONSchema & Readonly<{
+>ArrayOrTupleSchema : ArrayOrTupleSchema
+
+    type: "array";
+>type : "array"
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/const.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : JSONSchema
+
+export type ConstSchema = JSONSchema & Readonly<{
+>ConstSchema : ConstSchema
+
+    const: unknown;
+>const : unknown
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/enum.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : JSONSchema
+
+export type EnumSchema = JSONSchema & Readonly<{
+>EnumSchema : EnumSchema
+
+    enum: readonly unknown[];
+>enum : readonly unknown[]
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/ifThenElse.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : JSONSchema
+
+export type IfThenElseSchema = JSONSchema & {
+>IfThenElseSchema : IfThenElseSchema
+
+    if: JSONSchema;
+>if : JSONSchema
+
+};
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/index.d.ts ===
+import type { M } from "ts-algebra";
+>M : any
+
+import type { DeserializationPattern, JSONSchema } from "../definitions";
+>DeserializationPattern : any
+>JSONSchema : JSONSchema
+
+import type { AllOfSchema, ParseAllOfSchema } from "./allOf";
+>AllOfSchema : AllOfSchema
+>ParseAllOfSchema : any
+
+import type { AnyOfSchema, ParseAnyOfSchema } from "./anyOf";
+>AnyOfSchema : AnyOfSchema
+>ParseAnyOfSchema : any
+
+import type { ConstSchema, ParseConstSchema } from "./const";
+>ConstSchema : ConstSchema
+>ParseConstSchema : any
+
+import type { EnumSchema, ParseEnumSchema } from "./enum";
+>EnumSchema : EnumSchema
+>ParseEnumSchema : any
+
+import type { IfThenElseSchema, ParseIfThenElseSchema } from "./ifThenElse";
+>IfThenElseSchema : IfThenElseSchema
+>ParseIfThenElseSchema : any
+
+import type { MultipleTypesSchema, ParseMultipleTypesSchema } from "./multipleTypes";
+>MultipleTypesSchema : MultipleTypesSchema
+>ParseMultipleTypesSchema : any
+
+import type { NotSchema, ParseNotSchema } from "./not";
+>NotSchema : NotSchema
+>ParseNotSchema : any
+
+import type { NullableSchema, ParseNullableSchema } from "./nullable";
+>NullableSchema : NullableSchema
+>ParseNullableSchema : any
+
+import type { OneOfSchema, ParseOneOfSchema } from "./oneOf";
+>OneOfSchema : OneOfSchema
+>ParseOneOfSchema : any
+
+import type { ParseReferenceSchema, ReferencingSchema } from "./references";
+>ParseReferenceSchema : any
+>ReferencingSchema : ReferencingSchema
+
+import type { ParseSingleTypeSchema, SingleTypeSchema } from "./singleType";
+>ParseSingleTypeSchema : ParseSingleTypeSchema<SINGLE_TYPE_SCHEMA, OPTIONS>
+>SingleTypeSchema : any
+
+export type ParseSchema<SCHEMA extends JSONSchema, OPTIONS extends ParseSchemaOptions, RESULT = JSONSchema extends SCHEMA ? M.Any : SCHEMA extends true | string ? M.Any : SCHEMA extends false ? M.Never : SCHEMA extends NullableSchema ? ParseNullableSchema<SCHEMA, OPTIONS> : SCHEMA extends ReferencingSchema ? ParseReferenceSchema<SCHEMA, OPTIONS> : And<DoesExtend<OPTIONS["parseIfThenElseKeywords"], true>, DoesExtend<SCHEMA, IfThenElseSchema>> extends true ? SCHEMA extends IfThenElseSchema ? ParseIfThenElseSchema<SCHEMA, OPTIONS> : never : And<DoesExtend<OPTIONS["parseNotKeyword"], true>, DoesExtend<SCHEMA, NotSchema>> extends true ? SCHEMA extends NotSchema ? ParseNotSchema<SCHEMA, OPTIONS> : never : SCHEMA extends AllOfSchema ? ParseAllOfSchema<SCHEMA, OPTIONS> : SCHEMA extends OneOfSchema ? ParseOneOfSchema<SCHEMA, OPTIONS> : SCHEMA extends AnyOfSchema ? ParseAnyOfSchema<SCHEMA, OPTIONS> : SCHEMA extends EnumSchema ? ParseEnumSchema<SCHEMA, OPTIONS> : SCHEMA extends ConstSchema ? ParseConstSchema<SCHEMA, OPTIONS> : SCHEMA extends MultipleTypesSchema ? ParseMultipleTypesSchema<SCHEMA, OPTIONS> : SCHEMA extends SingleTypeSchema ? ParseSingleTypeSchema<SCHEMA, OPTIONS> : M.Any> = OPTIONS extends {
+>ParseSchema : ParseSchema<SCHEMA, OPTIONS, RESULT>
+>M : any
+>true : true
+>M : any
+>false : false
+>M : any
+>true : true
+>true : true
+>true : true
+>true : true
+>M : any
+
+    deserialize: DeserializationPattern[];
+>deserialize : DeserializationPattern[]
+
+} ? M.$Intersect<DeserializeSchema<SCHEMA, OPTIONS>, RESULT> : RESULT;
+>M : any
+
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/multipleTypes.d.ts ===
+import type { JSONSchema, JSONSchemaType } from "../definitions";
+>JSONSchema : JSONSchema
+>JSONSchemaType : any
+
+export type MultipleTypesSchema = JSONSchema & Readonly<{
+>MultipleTypesSchema : MultipleTypesSchema
+
+    type: readonly JSONSchemaType[];
+>type : readonly JSONSchemaType[]
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/not.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : JSONSchema
+
+export type NotSchema = JSONSchema & Readonly<{
+>NotSchema : NotSchema
+
+    not: JSONSchema;
+>not : JSONSchema
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/nullable.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : JSONSchema
+
+export type NullableSchema = JSONSchema & Readonly<{
+>NullableSchema : NullableSchema
+
+    nullable: boolean;
+>nullable : boolean
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/object.d.ts ===
+import type { M } from "ts-algebra";
+>M : any
+
+import type { ParseSchema, ParseSchemaOptions } from "./index";
+>ParseSchema : ParseSchema<SCHEMA, OPTIONS, RESULT>
+>ParseSchemaOptions : any
+
+export type ParseObjectSchema<OBJECT_SCHEMA extends ObjectSchema, OPTIONS extends ParseSchemaOptions> = OBJECT_SCHEMA extends Readonly<{
+>ParseObjectSchema : ParseObjectSchema<OBJECT_SCHEMA, OPTIONS>
+
+}> ? M.$Object<{
+>M : any
+
+}, GetRequired<OBJECT_SCHEMA, OPTIONS>, GetOpenProps<OBJECT_SCHEMA, OPTIONS>, GetClosedOnResolve<OBJECT_SCHEMA>> : M.$Object<{}, GetRequired<OBJECT_SCHEMA, OPTIONS>, GetOpenProps<OBJECT_SCHEMA, OPTIONS>, GetClosedOnResolve<OBJECT_SCHEMA>>;
+>M : any
+
+type GetRequired<OBJECT_SCHEMA extends ObjectSchema, OPTIONS extends ParseSchemaOptions> = (OBJECT_SCHEMA extends Readonly<{
+>GetRequired : GetRequired<OBJECT_SCHEMA, OPTIONS>
+
+}> ? {
+}[keyof OBJECT_SCHEMA["properties"] & string] : never);
+type GetOpenProps<OBJECT_SCHEMA extends ObjectSchema, OPTIONS extends ParseSchemaOptions> = OBJECT_SCHEMA extends Readonly<{
+>GetOpenProps : GetOpenProps<OBJECT_SCHEMA, OPTIONS>
+
+    additionalProperties: JSONSchema;
+>additionalProperties : error
+
+}> ? OBJECT_SCHEMA extends Readonly<{
+}> ? AdditionalAndPatternProps<OBJECT_SCHEMA["additionalProperties"], OBJECT_SCHEMA["patternProperties"], OPTIONS> : ParseSchema<OBJECT_SCHEMA["additionalProperties"], OPTIONS> : OBJECT_SCHEMA extends Readonly<{
+    patternProperties: Record<string, JSONSchema>;
+>patternProperties : Record<string, JSONSchema>
+
+}> ? PatternProps<OBJECT_SCHEMA["patternProperties"], OPTIONS> : M.Any;
+>M : any
+
+type GetClosedOnResolve<OBJECT_SCHEMA extends ObjectSchema> = OBJECT_SCHEMA extends Readonly<{
+>GetClosedOnResolve : GetClosedOnResolve<OBJECT_SCHEMA>
+
+    unevaluatedProperties: false;
+>unevaluatedProperties : false
+>false : false
+
+}> ? true : false;
+>true : true
+>false : false
+
+type PatternProps<PATTERN_PROPERTY_SCHEMAS extends Readonly<Record<string, JSONSchema>>, OPTIONS extends ParseSchemaOptions> = M.$Union<{
+>PatternProps : PatternProps<PATTERN_PROPERTY_SCHEMAS, OPTIONS>
+>M : any
+
+    [KEY in keyof PATTERN_PROPERTY_SCHEMAS]: ParseSchema<PATTERN_PROPERTY_SCHEMAS[KEY], OPTIONS>;
+}[keyof PATTERN_PROPERTY_SCHEMAS]>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/oneOf.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : JSONSchema
+
+export type OneOfSchema = JSONSchema & Readonly<{
+>OneOfSchema : OneOfSchema
+
+    oneOf: readonly JSONSchema[];
+>oneOf : readonly JSONSchema[]
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/references/index.d.ts ===
+import type { JSONSchema } from "../../definitions";
+>JSONSchema : JSONSchema
+
+export type ReferencingSchema = JSONSchema & {
+>ReferencingSchema : ReferencingSchema
+
+    $ref: string;
+>$ref : string
+
+};
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/singleType.d.ts ===
+import type { ArrayOrTupleSchema, ParseArrayOrTupleSchema } from "./array";
+>ArrayOrTupleSchema : ArrayOrTupleSchema
+>ParseArrayOrTupleSchema : any
+
+import type { ObjectSchema, ParseObjectSchema } from "./object";
+>ObjectSchema : any
+>ParseObjectSchema : ParseObjectSchema<OBJECT_SCHEMA, OPTIONS>
+
+export type ParseSingleTypeSchema<SINGLE_TYPE_SCHEMA extends SingleTypeSchema, OPTIONS extends ParseSchemaOptions> = SINGLE_TYPE_SCHEMA extends Readonly<{
+>ParseSingleTypeSchema : ParseSingleTypeSchema<SINGLE_TYPE_SCHEMA, OPTIONS>
+
+    type: "string";
+>type : "string"
+
+}> ? M.Primitive<string> : SINGLE_TYPE_SCHEMA extends ArrayOrTupleSchema ? ParseArrayOrTupleSchema<SINGLE_TYPE_SCHEMA, OPTIONS> : SINGLE_TYPE_SCHEMA extends ObjectSchema ? ParseObjectSchema<SINGLE_TYPE_SCHEMA, OPTIONS> : M.Never;
+>M : any
+>M : any
+
+=== node_modules/json-schema-to-ts/lib/types/type-utils/index.d.ts ===
+export type { Narrow } from "./narrow";
+>Narrow : import("./narrow").Narrow<INPUT>
+
+=== node_modules/json-schema-to-ts/lib/types/type-utils/narrow.d.ts ===
+export type Narrow<INPUT> = INPUT extends Promise<infer AWAITED> ? Promise<Narrow<AWAITED>> : INPUT extends (...args: infer ARGS) => infer RETURN ? (...args: Narrow<ARGS>) => Narrow<RETURN> : INPUT extends [] ? [] : INPUT extends object ? {
+>Narrow : Narrow<INPUT>
+>args : ARGS
+>args : Narrow<ARGS>
+
+    [KEY in keyof INPUT]: Narrow<INPUT[KEY]>;
+} : INPUT extends string | number | boolean | bigint ? INPUT : never;
+=== node_modules/json-schema-to-ts/lib/types/utils/asConst.d.ts ===
+import type { Narrow } from "../type-utils";
+>Narrow : Narrow<INPUT>
+
+export declare const asConst: <INPUT>(input: Narrow<INPUT>) => Narrow<INPUT>;
+>asConst : <INPUT>(input: Narrow<INPUT>) => Narrow<INPUT>
+>input : Narrow<INPUT>
+
+=== node_modules/json-schema-to-ts/lib/types/utils/index.d.ts ===
+export { asConst } from "./asConst";
+>asConst : <INPUT>(input: import("json-schema-to-ts/lib/types/type-utils").Narrow<INPUT>) => import("json-schema-to-ts/lib/types/type-utils").Narrow<INPUT>
+
+=== node_modules/ts-algebra/lib/index.d.ts ===
+export * as M from "./meta-types";
+>M : typeof import("./meta-types")
+
+=== node_modules/ts-algebra/lib/meta-types/any.d.ts ===
+export declare type Any<IS_SERIALIZED extends boolean = false, DESERIALIZED = never> = {
+>Any : Any<IS_SERIALIZED, DESERIALIZED>
+>false : false
+
+    deserialized: DESERIALIZED;
+>deserialized : DESERIALIZED
+
+};
+export declare type AnyType = {
+>AnyType : AnyType
+
+    isSerialized: boolean;
+>isSerialized : boolean
+
+};
+=== node_modules/ts-algebra/lib/meta-types/array.d.ts ===
+export declare type ArrayType = {
+>ArrayType : ArrayType
+
+    type: ArrayTypeId;
+>type : error
+
+    deserialized: unknown;
+>deserialized : unknown
+
+};
+=== node_modules/ts-algebra/lib/meta-types/const.d.ts ===
+export declare type ConstType = {
+>ConstType : ConstType
+
+    isSerialized: boolean;
+>isSerialized : boolean
+
+};
+=== node_modules/ts-algebra/lib/meta-types/enum.d.ts ===
+export declare type EnumType = {
+>EnumType : EnumType
+
+    isSerialized: boolean;
+>isSerialized : boolean
+
+};
+=== node_modules/ts-algebra/lib/meta-types/index.d.ts ===
+import type { Any, AnyType } from "./any";
+>Any : Any<IS_SERIALIZED, DESERIALIZED>
+>AnyType : AnyType
+
+import type { _$Object, _Object, ObjectType } from "./object";
+>_$Object : _$Object<VALUES, REQUIRED_KEYS, OPEN_PROPS, CLOSE_ON_RESOLVE, IS_SERIALIZED, DESERIALIZED>
+>_Object : any
+>ObjectType : ObjectType
+
+import type { $Resolve, Resolve } from "./resolve";
+>$Resolve : $Resolve<META_TYPE, OPTIONS>
+>Resolve : Resolve<META_TYPE, OPTIONS>
+
+import type { $Union, Union, UnionType } from "./union";
+>$Union : import("ts-algebra/lib/meta-types/never").Never | (import("ts-algebra/lib/utils").DoesExtend<VALUES, import("ts-algebra/lib/meta-types/never").Never> extends true ? import("ts-algebra/lib/meta-types/never").Never : { values: VALUES; })
+>Union : any
+>UnionType : any
+
+export type { Never, Any, Const, Enum, Primitive, $Primitive, _Array as Array, _$Array as $Array, Tuple, $Tuple, _Object as Object, _$Object as $Object, Union, $Union, NeverType, AnyType, ConstType, EnumType, PrimitiveType, ArrayType, TupleType, ObjectType, UnionType, Type, $Resolve, Resolve, $Intersect, Intersect, _$Exclude as $Exclude, _Exclude as Exclude, };
+>Never : any
+>Any : Any<IS_SERIALIZED, DESERIALIZED>
+>Const : any
+>Enum : any
+>Primitive : any
+>$Primitive : any
+>_Array : any
+>Array : any
+>_$Array : any
+>$Array : any
+>Tuple : any
+>$Tuple : any
+>_Object : any
+>Object : any
+>_$Object : any
+>$Object : _$Object<VALUES, REQUIRED_KEYS, OPEN_PROPS, CLOSE_ON_RESOLVE, IS_SERIALIZED, DESERIALIZED>
+>Union : any
+>$Union : import("ts-algebra/lib/meta-types/never").Never | (import("ts-algebra/lib/utils").DoesExtend<VALUES, import("ts-algebra/lib/meta-types/never").Never> extends true ? import("ts-algebra/lib/meta-types/never").Never : { values: VALUES; })
+>NeverType : any
+>AnyType : AnyType
+>ConstType : any
+>EnumType : any
+>PrimitiveType : any
+>ArrayType : any
+>TupleType : any
+>ObjectType : ObjectType
+>UnionType : any
+>Type : any
+>$Resolve : $Resolve<META_TYPE, OPTIONS>
+>Resolve : Resolve<META_TYPE, OPTIONS>
+>$Intersect : any
+>Intersect : any
+>_$Exclude : any
+>$Exclude : any
+>_Exclude : any
+>Exclude : any
+
+=== node_modules/ts-algebra/lib/meta-types/never.d.ts ===
+export declare type Never = {
+>Never : Never
+
+    type: NeverTypeId;
+>type : error
+
+};
+export declare type NeverType = Never;
+>NeverType : Never
+
+export declare type ResolveNever = never;
+>ResolveNever : never
+
+=== node_modules/ts-algebra/lib/meta-types/object.d.ts ===
+import type { And, DeepMergeUnsafe, DoesExtend, If, IsNever, Not } from "../utils";
+>And : And<BOOL_A, BOOL_B>
+>DeepMergeUnsafe : DeepMergeUnsafe<TYPE_A, TYPE_B>
+>DoesExtend : DoesExtend<TYPE_A, TYPE_B>
+>If : If<CONDITION, THEN, ELSE>
+>IsNever : any
+>Not : Not<BOOL>
+
+import type { Never, NeverType } from "./never";
+>Never : Never
+>NeverType : Never
+
+import type { Resolve, ResolveOptions } from "./resolve";
+>Resolve : Resolve<META_TYPE, OPTIONS>
+>ResolveOptions : any
+
+import type { Deserialized, IsSerialized } from "./utils";
+>Deserialized : Deserialized<SERIALIZABLE_META_TYPE>
+>IsSerialized : any
+
+export declare type _$Object<VALUES = {}, REQUIRED_KEYS = never, OPEN_PROPS = Never, CLOSE_ON_RESOLVE = false, IS_SERIALIZED = false, DESERIALIZED = never> = DoesExtend<true, {
+>_$Object : _$Object<VALUES, REQUIRED_KEYS, OPEN_PROPS, CLOSE_ON_RESOLVE, IS_SERIALIZED, DESERIALIZED>
+>false : false
+>false : false
+>true : true
+
+}[Extract<REQUIRED_KEYS, string>]> extends true ? Never : {
+>true : true
+
+    isOpen: Not<DoesExtend<OPEN_PROPS, NeverType>>;
+>isOpen : Not<DoesExtend<OPEN_PROPS, Never>>
+
+    openProps: OPEN_PROPS;
+>openProps : OPEN_PROPS
+
+    closeOnResolve: CLOSE_ON_RESOLVE;
+>closeOnResolve : CLOSE_ON_RESOLVE
+
+    deserialized: DESERIALIZED;
+>deserialized : DESERIALIZED
+
+};
+export declare type ObjectType = {
+>ObjectType : ObjectType
+
+    deserialized: unknown;
+>deserialized : unknown
+
+};
+export declare type IsObjectOpen<META_OBJECT extends ObjectType> = META_OBJECT["isOpen"];
+>IsObjectOpen : IsObjectOpen<META_OBJECT>
+
+export declare type ObjectOpenProps<META_OBJECT extends ObjectType> = META_OBJECT["openProps"];
+>ObjectOpenProps : ObjectOpenProps<META_OBJECT>
+
+export declare type IsObjectClosedOnResolve<META_OBJECT extends ObjectType> = META_OBJECT["closeOnResolve"];
+>IsObjectClosedOnResolve : IsObjectClosedOnResolve<META_OBJECT>
+
+export declare type ResolveObject<META_OBJECT extends ObjectType, OPTIONS extends ResolveOptions> = If<And<OPTIONS["deserialize"], IsSerialized<META_OBJECT>>, Deserialized<META_OBJECT>, DeepMergeUnsafe<If<And<IsObjectOpen<META_OBJECT>, Not<IsObjectClosedOnResolve<META_OBJECT>>>, If<IsObjectEmpty<META_OBJECT>, {
+>ResolveObject : ResolveObject<META_OBJECT, OPTIONS>
+
+    [KEY: string]: Resolve<ObjectOpenProps<META_OBJECT>, OPTIONS>;
+>KEY : string
+
+}>, {}>, DeepMergeUnsafe<{
+}, {
+}>>>;
+=== node_modules/ts-algebra/lib/meta-types/primitive.d.ts ===
+export declare type PrimitiveType = {
+>PrimitiveType : PrimitiveType
+
+    isSerialized: boolean;
+>isSerialized : boolean
+
+};
+=== node_modules/ts-algebra/lib/meta-types/resolve.d.ts ===
+import type { AnyType, ResolveAny } from "./any";
+>AnyType : AnyType
+>ResolveAny : any
+
+import type { ArrayType, ResolveArray } from "./array";
+>ArrayType : ArrayType
+>ResolveArray : any
+
+import type { ConstType, ResolveConst } from "./const";
+>ConstType : ConstType
+>ResolveConst : any
+
+import type { EnumType, ResolveEnum } from "./enum";
+>EnumType : EnumType
+>ResolveEnum : any
+
+import type { NeverType, ResolveNever } from "./never";
+>NeverType : import("./never").Never
+>ResolveNever : never
+
+import type { ObjectType, ResolveObject } from "./object";
+>ObjectType : ObjectType
+>ResolveObject : ResolveObject<META_OBJECT, OPTIONS>
+
+import type { PrimitiveType, ResolvePrimitive } from "./primitive";
+>PrimitiveType : PrimitiveType
+>ResolvePrimitive : any
+
+import type { ResolveTuple, TupleType } from "./tuple";
+>ResolveTuple : any
+>TupleType : TupleType
+
+import type { ResolveUnion, UnionType } from "./union";
+>ResolveUnion : ResolveUnion<META_UNION, OPTIONS>
+>UnionType : any
+
+export declare type Resolve<META_TYPE extends Type, OPTIONS extends ResolveOptions = ResolveDefaultOptions> = $Resolve<META_TYPE, OPTIONS>;
+>Resolve : Resolve<META_TYPE, OPTIONS>
+
+export declare type $Resolve<META_TYPE, OPTIONS extends ResolveOptions = ResolveDefaultOptions> = META_TYPE extends AnyType ? ResolveAny<META_TYPE, OPTIONS> : META_TYPE extends NeverType ? ResolveNever : META_TYPE extends ConstType ? ResolveConst<META_TYPE, OPTIONS> : META_TYPE extends EnumType ? ResolveEnum<META_TYPE, OPTIONS> : META_TYPE extends PrimitiveType ? ResolvePrimitive<META_TYPE, OPTIONS> : META_TYPE extends ArrayType ? ResolveArray<META_TYPE, OPTIONS> : META_TYPE extends TupleType ? ResolveTuple<META_TYPE, OPTIONS> : META_TYPE extends ObjectType ? ResolveObject<META_TYPE, OPTIONS> : META_TYPE extends UnionType ? ResolveUnion<META_TYPE, OPTIONS> : never;
+>$Resolve : $Resolve<META_TYPE, OPTIONS>
+
+=== node_modules/ts-algebra/lib/meta-types/tuple.d.ts ===
+export declare type TupleType = {
+>TupleType : TupleType
+
+    type: TupleTypeId;
+>type : error
+
+    deserialized: unknown;
+>deserialized : unknown
+
+};
+=== node_modules/ts-algebra/lib/meta-types/union.d.ts ===
+import type { DoesExtend, If, IsNever } from "../utils";
+>DoesExtend : DoesExtend<TYPE_A, TYPE_B>
+>If : If<CONDITION, THEN, ELSE>
+>IsNever : any
+
+import type { Never, NeverType } from "./never";
+>Never : Never
+>NeverType : Never
+
+import type { $Resolve, ResolveOptions } from "./resolve";
+>$Resolve : $Resolve<META_TYPE, OPTIONS>
+>ResolveOptions : any
+
+export declare type $Union<VALUES> = If<IsNever<VALUES>, Never, DoesExtend<VALUES, NeverType> extends true ? Never : {
+>$Union : Never | (DoesExtend<VALUES, Never> extends true ? Never : { values: VALUES; })
+>true : true
+
+    values: VALUES;
+>values : VALUES
+
+}>;
+export declare type UnionValues<META_UNION extends UnionType> = META_UNION["values"];
+>UnionValues : UnionValues<META_UNION>
+
+export declare type ResolveUnion<META_UNION extends UnionType, OPTIONS extends ResolveOptions> = RecurseOnUnion<UnionValues<META_UNION>, OPTIONS>;
+>ResolveUnion : ResolveUnion<META_UNION, OPTIONS>
+
+declare type RecurseOnUnion<VALUES extends Type, OPTIONS extends ResolveOptions> = VALUES extends infer META_TYPE ? $Resolve<META_TYPE, OPTIONS> : never;
+>RecurseOnUnion : RecurseOnUnion<VALUES, OPTIONS>
+
+=== node_modules/ts-algebra/lib/meta-types/utils.d.ts ===
+export declare type Deserialized<SERIALIZABLE_META_TYPE extends SerializableType> = SERIALIZABLE_META_TYPE["deserialized"];
+>Deserialized : Deserialized<SERIALIZABLE_META_TYPE>
+
+=== node_modules/ts-algebra/lib/utils/and.d.ts ===
+export declare type And<BOOL_A, BOOL_B> = BOOL_A extends true ? BOOL_B extends true ? true : false : false;
+>And : And<BOOL_A, BOOL_B>
+>true : true
+>true : true
+>true : true
+>false : false
+>false : false
+
+=== node_modules/ts-algebra/lib/utils/extends.d.ts ===
+export declare type DoesExtend<TYPE_A, TYPE_B> = [TYPE_A] extends [TYPE_B] ? true : false;
+>DoesExtend : DoesExtend<TYPE_A, TYPE_B>
+>true : true
+>false : false
+
+declare type ArrayKeys = keyof [];
+>ArrayKeys : keyof []
+
+export declare type IsObject<TYPE> = TYPE extends object ? ArrayKeys extends Extract<keyof TYPE, ArrayKeys> ? false : true : false;
+>IsObject : IsObject<TYPE>
+>false : false
+>true : true
+>false : false
+
+=== node_modules/ts-algebra/lib/utils/if.d.ts ===
+export declare type If<CONDITION extends boolean, THEN, ELSE = never> = CONDITION extends true ? THEN : ELSE;
+>If : If<CONDITION, THEN, ELSE>
+>true : true
+
+=== node_modules/ts-algebra/lib/utils/index.d.ts ===
+export type { And } from "./and";
+>And : import("./and").And<BOOL_A, BOOL_B>
+
+export type { DoesExtend, IsObject, IsArray } from "./extends";
+>DoesExtend : import("./extends").DoesExtend<TYPE_A, TYPE_B>
+>IsObject : import("./extends").IsObject<TYPE>
+>IsArray : any
+
+export type { If } from "./if";
+>If : import("./if").If<CONDITION, THEN, ELSE>
+
+export type { DeepMergeUnsafe } from "./merge";
+>DeepMergeUnsafe : import("./merge").DeepMergeUnsafe<TYPE_A, TYPE_B>
+
+export type { Not } from "./not";
+>Not : import("./not").Not<BOOL>
+
+=== node_modules/ts-algebra/lib/utils/merge.d.ts ===
+import type { IsArray, IsObject } from "./extends";
+>IsArray : any
+>IsObject : IsObject<TYPE>
+
+export declare type DeepMergeUnsafe<TYPE_A, TYPE_B> = IsObject<TYPE_A> extends true ? IsObject<TYPE_B> extends true ? {
+>DeepMergeUnsafe : DeepMergeUnsafe<TYPE_A, TYPE_B>
+>true : true
+>true : true
+
+    [KEY in keyof (TYPE_A & TYPE_B)]: KEY extends keyof TYPE_B ? KEY extends keyof TYPE_A ? DeepMergeUnsafe<TYPE_A[KEY], TYPE_B[KEY]> : TYPE_B[KEY] : KEY extends keyof TYPE_A ? TYPE_A[KEY] : never;
+} : TYPE_B : IsArray<TYPE_A> extends true ? IsArray<TYPE_B> extends true ? TYPE_B extends unknown[] ? [
+>true : true
+>true : true
+
+] : never : TYPE_B : TYPE_B;
+=== node_modules/ts-algebra/lib/utils/not.d.ts ===
+export declare type Not<BOOL extends boolean> = BOOL extends false ? true : BOOL extends true ? false : never;
+>Not : Not<BOOL>
+>false : false
+>true : true
+>true : true
+>false : false
+
+=== steps/installer/renderer/src/implementation/helm/implementation/Secret/SecretRenderer.ts ===
+import { extractVariables } from '../../../utility/extractVariables.js';
+>extractVariables : (workspace: {} | undefined, map: Map<{} | undefined, import("../../interface/factory/IConfigMapRenderer.js").IConfigMapStructure>, binding: Map<string, string> | undefined) => Map<string | number, { [x: string]: {}; } & { source: string; }>
+
+declare const workspace: any, map: any, binding: any;
+>workspace : any
+>map : any
+>binding : any
+
+    const allItems = new Map(Array.from(extractVariables(workspace, map, binding).entries()).filter(([, value]) => value.secret === true));
+>allItems : Map<string | number, { [x: string]: {}; } & { source: string; }>
+>new Map(Array.from(extractVariables(workspace, map, binding).entries()).filter(([, value]) => value.secret === true)) : Map<string | number, { [x: string]: {}; } & { source: string; }>
+>Map : MapConstructor
+>Array.from(extractVariables(workspace, map, binding).entries()).filter(([, value]) => value.secret === true) : [string | number, { [x: string]: {}; } & { source: string; }][]
+>Array.from(extractVariables(workspace, map, binding).entries()).filter : { <S extends [string | number, { [x: string]: {}; } & { source: string; }]>(predicate: (value: [string | number, { [x: string]: {}; } & { source: string; }], index: number, array: [string | number, { [x: string]: {}; } & { source: string; }][]) => value is S, thisArg?: any): S[]; (predicate: (value: [string | number, { [x: string]: {}; } & { source: string; }], index: number, array: [string | number, { [x: string]: {}; } & { source: string; }][]) => unknown, thisArg?: any): [string | number, { [x: string]: {}; } & { source: string; }][]; }
+>Array.from(extractVariables(workspace, map, binding).entries()) : [string | number, { [x: string]: {}; } & { source: string; }][]
+>Array.from : { <T>(arrayLike: ArrayLike<T>): T[]; <T, U>(arrayLike: ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any): U[]; <T>(iterable: Iterable<T> | ArrayLike<T>): T[]; <T, U>(iterable: Iterable<T> | ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any): U[]; }
+>Array : ArrayConstructor
+>from : { <T>(arrayLike: ArrayLike<T>): T[]; <T, U>(arrayLike: ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any): U[]; <T>(iterable: Iterable<T> | ArrayLike<T>): T[]; <T, U>(iterable: Iterable<T> | ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any): U[]; }
+>extractVariables(workspace, map, binding).entries() : MapIterator<[string | number, { [x: string]: {}; } & { source: string; }]>
+>extractVariables(workspace, map, binding).entries : () => MapIterator<[string | number, { [x: string]: {}; } & { source: string; }]>
+>extractVariables(workspace, map, binding) : Map<string | number, { [x: string]: {}; } & { source: string; }>
+>extractVariables : (workspace: {} | undefined, map: Map<{} | undefined, import("../../interface/factory/IConfigMapRenderer.js").IConfigMapStructure>, binding: Map<string, string> | undefined) => Map<string | number, { [x: string]: {}; } & { source: string; }>
+>workspace : any
+>map : any
+>binding : any
+>entries : () => MapIterator<[string | number, { [x: string]: {}; } & { source: string; }]>
+>filter : { <S extends [string | number, { [x: string]: {}; } & { source: string; }]>(predicate: (value: [string | number, { [x: string]: {}; } & { source: string; }], index: number, array: [string | number, { [x: string]: {}; } & { source: string; }][]) => value is S, thisArg?: any): S[]; (predicate: (value: [string | number, { [x: string]: {}; } & { source: string; }], index: number, array: [string | number, { [x: string]: {}; } & { source: string; }][]) => unknown, thisArg?: any): [string | number, { [x: string]: {}; } & { source: string; }][]; }
+>([, value]) => value.secret === true : ([, value]: [string | number, { [x: string]: {}; } & { source: string; }]) => boolean
+>value : { [x: string]: {}; } & { source: string; }
+>value.secret === true : boolean
+>value.secret : {}
+>value : { [x: string]: {}; } & { source: string; }
+>secret : {}
+>true : true
+
+=== steps/installer/renderer/src/implementation/helm/interface/factory/IConfigMapRenderer.ts ===
+import type { IFeature, VariableFeature } from '@veto-party/baum__steps__installer__features';
+>IFeature : IFeature<T, Path, From>
+>VariableFeature : VariableFeature<T>
+
+export type IConfigMapStructure = typeof VariableFeature.makeInstance extends () => IFeature<any, any, infer Structure> ? (Structure extends Record<infer Key, infer Value> ? Map<Key, Value> : never) : never;
+>IConfigMapStructure : Map<string | number, { [x: string]: {}; }>
+>VariableFeature.makeInstance : () => VariableFeature<{ type: "object"; patternProperties: { "^[a-zA-Z0-9_]*$": { type: "object"; }; }; }>
+>VariableFeature : typeof VariableFeature
+>makeInstance : () => VariableFeature<{ type: "object"; patternProperties: { "^[a-zA-Z0-9_]*$": { type: "object"; }; }; }>
+
+=== steps/installer/renderer/src/implementation/utility/extractVariables.ts ===
+import type { IConfigMapStructure } from '../helm/interface/factory/IConfigMapRenderer.js';
+>IConfigMapStructure : Map<string | number, { [x: string]: {}; }>
+
+type IWorkspace = {};
+>IWorkspace : IWorkspace
+
+class VariableExtractor {
+>VariableExtractor : VariableExtractor
+
+  extractVariables(workspace: IWorkspace | undefined, map: Map<IWorkspace | undefined, IConfigMapStructure>, binding: Map<string, string> | undefined) {
+>extractVariables : (workspace: IWorkspace | undefined, map: Map<IWorkspace | undefined, IConfigMapStructure>, binding: Map<string, string> | undefined) => Map<string | number, { [x: string]: {}; } & { source: string; }>
+>workspace : IWorkspace | undefined
+>map : Map<IWorkspace | undefined, Map<string | number, { [x: string]: {}; }>>
+>binding : Map<string, string> | undefined
+
+    const allItems: IConfigMapStructure extends Map<infer Key, infer Value> ? Map<Key, Value & { source: string }> : never = new Map();
+>allItems : Map<string | number, { [x: string]: {}; } & { source: string; }>
+>source : string
+>new Map() : Map<any, any>
+>Map : MapConstructor
+
+    return allItems;
+>allItems : Map<string | number, { [x: string]: {}; } & { source: string; }>
+  }
+}
+const extractor = new VariableExtractor();
+>extractor : VariableExtractor
+>new VariableExtractor() : VariableExtractor
+>VariableExtractor : typeof VariableExtractor
+
+export const extractVariables = extractor.extractVariables.bind(extractor);
+>extractVariables : (workspace: IWorkspace | undefined, map: Map<IWorkspace | undefined, IConfigMapStructure>, binding: Map<string, string> | undefined) => Map<string | number, { [x: string]: {}; } & { source: string; }>
+>extractor.extractVariables.bind(extractor) : (workspace: IWorkspace | undefined, map: Map<IWorkspace | undefined, IConfigMapStructure>, binding: Map<string, string> | undefined) => Map<string | number, { [x: string]: {}; } & { source: string; }>
+>extractor.extractVariables.bind : { <T>(this: T, thisArg: ThisParameterType<T>): OmitThisParameter<T>; <T, A extends any[], B extends any[], R>(this: (this: T, ...args: [...A, ...B]) => R, thisArg: T, ...args: A): (...args: B) => R; }
+>extractor.extractVariables : (workspace: IWorkspace | undefined, map: Map<IWorkspace | undefined, IConfigMapStructure>, binding: Map<string, string> | undefined) => Map<string | number, { [x: string]: {}; } & { source: string; }>
+>extractor : VariableExtractor
+>extractVariables : (workspace: IWorkspace | undefined, map: Map<IWorkspace | undefined, IConfigMapStructure>, binding: Map<string, string> | undefined) => Map<string | number, { [x: string]: {}; } & { source: string; }>
+>bind : { <T>(this: T, thisArg: ThisParameterType<T>): OmitThisParameter<T>; <T, A extends any[], B extends any[], R>(this: (this: T, ...args: [...A, ...B]) => R, thisArg: T, ...args: A): (...args: B) => R; }
+>extractor : VariableExtractor
+

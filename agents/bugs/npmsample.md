@@ -43,3 +43,14 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   tttt goes on to @types/react (as if TypeScript extensions were tried everywhere before JavaScript, node10's two
   passes). Missing 3 TS7016 + 1 TS2503 there; not a flip (both have errors). Guess: the module resolver's extension
   passes for paths mappings (src/ module resolution). The clone is deleted. [open]
+- **npm__veto-party_baum__package_manager__npm_TS2339** (seed 20261024, @veto-party/baum__package_manager__npm@0.2.0-pre-54,
+  veto-party/baum; tsgo 5, tttt 106). `type IConfigMapStructure = typeof VariableFeature.makeInstance extends () =>
+  IFeature<any, any, infer Structure> ? (Structure extends Record<infer Key, infer Value> ? Map<Key, Value> : never) :
+  never`, with VariableFeature a class over json-schema-to-ts's FromSchema of a `patternProperties` schema. tsgo
+  infers Structure as the whole FromSchema result `{ [x: string]: { [x: string]: {} } }`; tttt as `{ [x: string]: {}
+  }` (IFeature's From appears in `verifyObject(): element is ToDefinitionStructure<Path, From>` and in
+  `ingestObject(): IngestResult<From>[]`: likely a candidate from the predicate through ToDefinitionStructure<any,
+  ...> chosen or combined differently). FromSchema itself agrees on both sides; a self-contained mimic of the two
+  methods infers `{ [x: string]: {} }` in both, so the difference needs the real chain (597-line repro, reduce.py plus
+  hand fixes for the names the cut left). Every one of the 101 extra diagnostics looks downstream of this (property
+  reads on `{} & { source: string }`, `unknown` entries): one root cause until a fix shows otherwise. [open]

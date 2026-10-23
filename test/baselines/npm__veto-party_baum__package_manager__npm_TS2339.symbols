@@ -1,0 +1,2354 @@
+//// [test/cases/npm__veto-party_baum__package_manager__npm_TS2339.ts] ////
+
+=== node_modules/@types/lodash-es/index.d.ts ===
+export { default as cloneDeep } from "./cloneDeep.js";
+>cloneDeep : Symbol(cloneDeep, Decl(index.d.ts, 0, 8))
+
+export { default as get } from "./get.js";
+>get : Symbol(get, Decl(index.d.ts, 1, 8))
+
+export { default as isEqual } from "./isEqual.js";
+>isEqual : Symbol(isEqual, Decl(index.d.ts, 2, 8))
+
+export { default as merge } from "./merge.js";
+>merge : Symbol(merge, Decl(index.d.ts, 3, 8))
+
+export { default as set } from "./set.js";
+>set : Symbol(set, Decl(index.d.ts, 4, 8))
+
+export { default as toPath } from "./toPath.js";
+>toPath : Symbol(toPath, Decl(index.d.ts, 5, 8))
+
+=== node_modules/@types/node/crypto.d.ts ===
+/**
+ */
+declare module "crypto" {
+>"crypto" : Symbol("crypto", Decl(crypto.d.ts, 0, 0))
+
+    /**
+     */
+    function randomInt(max: number): number;
+>randomInt : Symbol(randomInt, Decl(crypto.d.ts, 2, 25))
+>max : Symbol(max, Decl(crypto.d.ts, 5, 23))
+
+    /**
+     */
+}
+declare module "node:crypto" {
+>"node:crypto" : Symbol("node:crypto", Decl(crypto.d.ts, 8, 1))
+
+    export * from "crypto";
+}
+=== node_modules/@types/node/fs.d.ts ===
+declare module "fs" {
+>"fs" : Symbol("fs", Decl(fs.d.ts, 0, 0))
+
+    /**
+     */
+    export function readFileSync(
+>readFileSync : Symbol(readFileSync, Decl(fs.d.ts, 0, 21))
+
+        options?:
+>options : Symbol(options, Decl(fs.d.ts, 3, 33))
+
+            | BufferEncoding
+>BufferEncoding : Symbol(BufferEncoding)
+
+    ): string | Buffer;
+>Buffer : Symbol(Buffer)
+
+    export type WriteFileOptions =
+>WriteFileOptions : Symbol(WriteFileOptions, Decl(fs.d.ts, 6, 23))
+
+        | null;
+    /**
+     */
+    export function existsSync(path: PathLike): boolean;
+>existsSync : Symbol(existsSync, Decl(fs.d.ts, 8, 15))
+>path : Symbol(path, Decl(fs.d.ts, 11, 31))
+>PathLike : Symbol(PathLike)
+}
+declare module "node:fs" {
+>"node:fs" : Symbol("node:fs", Decl(fs.d.ts, 12, 1))
+
+    export * from "fs";
+}
+=== node_modules/@types/node/fs/promises.d.ts ===
+declare module "fs/promises" {
+>"fs/promises" : Symbol("fs/promises", Decl(promises.d.ts, 0, 0))
+
+    /**
+     */
+    function rm(path: PathLike, options?: RmOptions): Promise<void>;
+>rm : Symbol(rm, Decl(promises.d.ts, 0, 30))
+>path : Symbol(path, Decl(promises.d.ts, 3, 16))
+>PathLike : Symbol(PathLike)
+>options : Symbol(options, Decl(promises.d.ts, 3, 31))
+>RmOptions : Symbol(RmOptions)
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+    function stat(path: PathLike, opts?: StatOptions): Promise<Stats | BigIntStats>;
+>stat : Symbol(stat, Decl(promises.d.ts, 3, 68))
+>path : Symbol(path, Decl(promises.d.ts, 4, 18))
+>PathLike : Symbol(PathLike)
+>opts : Symbol(opts, Decl(promises.d.ts, 4, 33))
+>StatOptions : Symbol(StatOptions)
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Stats : Symbol(Stats)
+>BigIntStats : Symbol(BigIntStats)
+
+    /**
+     */
+    function writeFile(
+>writeFile : Symbol(writeFile, Decl(promises.d.ts, 4, 84))
+
+        file: PathLike | FileHandle,
+>file : Symbol(file, Decl(promises.d.ts, 7, 23))
+>PathLike : Symbol(PathLike)
+>FileHandle : Symbol(FileHandle)
+
+        data:
+>data : Symbol(data, Decl(promises.d.ts, 8, 36))
+
+            | BufferEncoding
+>BufferEncoding : Symbol(BufferEncoding)
+
+    ): Promise<void>;
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+    function appendFile(
+>appendFile : Symbol(appendFile, Decl(promises.d.ts, 11, 21))
+
+        data: string | Uint8Array,
+>data : Symbol(data, Decl(promises.d.ts, 12, 24))
+>Uint8Array : Symbol(Uint8Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+
+        options?: (ObjectEncodingOptions & FlagAndOpenMode & { flush?: boolean | undefined }) | BufferEncoding | null,
+>options : Symbol(options, Decl(promises.d.ts, 13, 34))
+>ObjectEncodingOptions : Symbol(ObjectEncodingOptions)
+>FlagAndOpenMode : Symbol(FlagAndOpenMode)
+>flush : Symbol(flush, Decl(promises.d.ts, 14, 62))
+>BufferEncoding : Symbol(BufferEncoding)
+
+    ): Promise<void>;
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+    function readFile(
+>readFile : Symbol(readFile, Decl(promises.d.ts, 15, 21))
+
+        options?:
+>options : Symbol(options, Decl(promises.d.ts, 16, 22))
+
+            | BufferEncoding
+>BufferEncoding : Symbol(BufferEncoding)
+
+    ): Promise<string | Buffer>;
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Buffer : Symbol(Buffer)
+}
+declare module "node:fs/promises" {
+>"node:fs/promises" : Symbol("node:fs/promises", Decl(promises.d.ts, 20, 1))
+
+    export * from "fs/promises";
+}
+=== node_modules/@types/node/index.d.ts ===
+
+/**
+ */
+/// <reference path="crypto.d.ts" />
+/// <reference path="fs.d.ts" />
+/// <reference path="fs/promises.d.ts" />
+/// <reference path="path.d.ts" />
+=== node_modules/@types/node/path.d.ts ===
+/**
+ */
+declare module "path" {
+>"path" : Symbol("path", Decl(path.d.ts, 0, 0))
+
+    namespace path {
+>path : Symbol(path, Decl(path.d.ts, 2, 23), Decl(path.d.ts, 23, 9))
+
+        /**
+         */
+        interface PlatformPath {
+>PlatformPath : Symbol(PlatformPath, Decl(path.d.ts, 3, 20))
+
+            /**
+             */
+            join(...paths: string[]): string;
+>join : Symbol(PlatformPath.join, Decl(path.d.ts, 6, 32))
+>paths : Symbol(paths, Decl(path.d.ts, 9, 17))
+
+            /**
+             */
+            resolve(...paths: string[]): string;
+>resolve : Symbol(PlatformPath.resolve, Decl(path.d.ts, 9, 45))
+>paths : Symbol(paths, Decl(path.d.ts, 12, 20))
+
+            /**
+             */
+            isAbsolute(path: string): boolean;
+>isAbsolute : Symbol(PlatformPath.isAbsolute, Decl(path.d.ts, 12, 48))
+>path : Symbol(path, Decl(path.d.ts, 15, 23))
+
+            /**
+             */
+            readonly sep: "\\" | "/";
+>sep : Symbol(PlatformPath.sep, Decl(path.d.ts, 15, 46))
+
+            /**
+             */
+        }
+    }
+    const path: path.PlatformPath;
+>path : Symbol(path, Decl(path.d.ts, 2, 23), Decl(path.d.ts, 23, 9))
+>path : Symbol(path, Decl(path.d.ts, 2, 23), Decl(path.d.ts, 23, 9))
+>PlatformPath : Symbol(path.PlatformPath, Decl(path.d.ts, 3, 20))
+
+    export = path;
+>path : Symbol(path, Decl(path.d.ts, 2, 23), Decl(path.d.ts, 23, 9))
+}
+declare module "node:path" {
+>"node:path" : Symbol("node:path", Decl(path.d.ts, 25, 1))
+
+    import path = require("path");
+>path : Symbol(path, Decl(path.d.ts, 26, 28))
+
+    export = path;
+>path : Symbol(path, Decl(path.d.ts, 26, 28))
+}
+=== node_modules/@veto-party/baum__steps__installer__features/src/abstract/AFeature.ts ===
+import AJV from 'ajv';
+>AJV : Symbol(AJV, Decl(AFeature.ts, 0, 6))
+
+import type { FromSchema } from 'json-schema-to-ts';
+>FromSchema : Symbol(FromSchema, Decl(AFeature.ts, 1, 13))
+
+import { get } from 'lodash-es';
+>get : Symbol(get, Decl(AFeature.ts, 2, 8))
+
+import type { IFeature, IngestResult } from '../interface/IFeature.js';
+>IFeature : Symbol(IFeature, Decl(AFeature.ts, 3, 13))
+>IngestResult : Symbol(IngestResult, Decl(AFeature.ts, 3, 23))
+
+import type { FeatureContainer } from '../interface/IFeatureContainer.js';
+>FeatureContainer : Symbol(FeatureContainer, Decl(AFeature.ts, 4, 13))
+
+import type { ToDefinitionStructure } from '../interface/types/ToDefinitionStructure.js';
+>ToDefinitionStructure : Symbol(ToDefinitionStructure, Decl(AFeature.ts, 5, 13))
+
+export abstract class AFeature<T extends {} | Record<string, any>, Path, From = T extends {} ? any[] | any : FromSchema<T>> implements IFeature<T, Path, From> {
+>AFeature : Symbol(AFeature, Decl(AFeature.ts, 5, 89))
+>T : Symbol(T, Decl(AFeature.ts, 6, 31))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Path : Symbol(Path, Decl(AFeature.ts, 6, 66))
+>From : Symbol(From, Decl(AFeature.ts, 6, 72))
+>T : Symbol(T, Decl(AFeature.ts, 6, 31))
+>FromSchema : Symbol(FromSchema, Decl(AFeature.ts, 1, 13))
+>T : Symbol(T, Decl(AFeature.ts, 6, 31))
+>IFeature : Symbol(IFeature, Decl(AFeature.ts, 3, 13))
+>T : Symbol(T, Decl(AFeature.ts, 6, 31))
+>Path : Symbol(Path, Decl(AFeature.ts, 6, 66))
+>From : Symbol(From, Decl(AFeature.ts, 6, 72))
+
+  private ajv = new AJV.default({
+>ajv : Symbol(AFeature.ajv, Decl(AFeature.ts, 6, 160))
+>AJV.default : Symbol(AJV.default, Decl(ajv.d.ts, 0, 0))
+>AJV : Symbol(AJV, Decl(AFeature.ts, 0, 6))
+>default : Symbol(AJV.default, Decl(ajv.d.ts, 0, 0))
+
+  });
+  protected constructor(
+    private schema: T,
+>schema : Symbol(AFeature.schema, Decl(AFeature.ts, 9, 24))
+>T : Symbol(T, Decl(AFeature.ts, 6, 31))
+
+    private lookup: Path extends string ? Path : undefined
+>lookup : Symbol(AFeature.lookup, Decl(AFeature.ts, 10, 22))
+>Path : Symbol(Path, Decl(AFeature.ts, 6, 66))
+>Path : Symbol(Path, Decl(AFeature.ts, 6, 66))
+
+  ) {}
+  private getElementByLookupIfPresent(baseEl: any) {
+>getElementByLookupIfPresent : Symbol(AFeature.getElementByLookupIfPresent, Decl(AFeature.ts, 12, 6))
+>baseEl : Symbol(baseEl, Decl(AFeature.ts, 13, 38))
+
+    return this.lookup ? get(baseEl, this.lookup as string) : baseEl;
+>this.lookup : Symbol(AFeature.lookup, Decl(AFeature.ts, 10, 22))
+>this : Symbol(AFeature, Decl(AFeature.ts, 5, 89))
+>lookup : Symbol(AFeature.lookup, Decl(AFeature.ts, 10, 22))
+>get : Symbol(get, Decl(AFeature.ts, 2, 8))
+>baseEl : Symbol(baseEl, Decl(AFeature.ts, 13, 38))
+>this.lookup : Symbol(AFeature.lookup, Decl(AFeature.ts, 10, 22))
+>this : Symbol(AFeature, Decl(AFeature.ts, 5, 89))
+>lookup : Symbol(AFeature.lookup, Decl(AFeature.ts, 10, 22))
+>baseEl : Symbol(baseEl, Decl(AFeature.ts, 13, 38))
+  }
+  public getSchema(): T {
+>getSchema : Symbol(AFeature.getSchema, Decl(AFeature.ts, 15, 3))
+>T : Symbol(T, Decl(AFeature.ts, 6, 31))
+
+    return this.schema;
+>this.schema : Symbol(AFeature.schema, Decl(AFeature.ts, 9, 24))
+>this : Symbol(AFeature, Decl(AFeature.ts, 5, 89))
+>schema : Symbol(AFeature.schema, Decl(AFeature.ts, 9, 24))
+  }
+  public getPath(): Path extends string ? Path : undefined {
+>getPath : Symbol(AFeature.getPath, Decl(AFeature.ts, 18, 3))
+>Path : Symbol(Path, Decl(AFeature.ts, 6, 66))
+>Path : Symbol(Path, Decl(AFeature.ts, 6, 66))
+
+    return this.lookup as any;
+>this.lookup : Symbol(AFeature.lookup, Decl(AFeature.ts, 10, 22))
+>this : Symbol(AFeature, Decl(AFeature.ts, 5, 89))
+>lookup : Symbol(AFeature.lookup, Decl(AFeature.ts, 10, 22))
+  }
+  public verifyObject(element: any): element is ToDefinitionStructure<Path, From> {
+>verifyObject : Symbol(AFeature.verifyObject, Decl(AFeature.ts, 21, 3))
+>element : Symbol(element, Decl(AFeature.ts, 22, 22))
+>element : Symbol(element, Decl(AFeature.ts, 22, 22))
+>ToDefinitionStructure : Symbol(ToDefinitionStructure, Decl(AFeature.ts, 5, 13))
+>Path : Symbol(Path, Decl(AFeature.ts, 6, 66))
+>From : Symbol(From, Decl(AFeature.ts, 6, 72))
+
+    return this.ajv.validate(this.schema, this.getElementByLookupIfPresent(element));
+>this.ajv : Symbol(AFeature.ajv, Decl(AFeature.ts, 6, 160))
+>this : Symbol(AFeature, Decl(AFeature.ts, 5, 89))
+>ajv : Symbol(AFeature.ajv, Decl(AFeature.ts, 6, 160))
+>this.schema : Symbol(AFeature.schema, Decl(AFeature.ts, 9, 24))
+>this : Symbol(AFeature, Decl(AFeature.ts, 5, 89))
+>schema : Symbol(AFeature.schema, Decl(AFeature.ts, 9, 24))
+>this.getElementByLookupIfPresent : Symbol(AFeature.getElementByLookupIfPresent, Decl(AFeature.ts, 12, 6))
+>this : Symbol(AFeature, Decl(AFeature.ts, 5, 89))
+>getElementByLookupIfPresent : Symbol(AFeature.getElementByLookupIfPresent, Decl(AFeature.ts, 12, 6))
+>element : Symbol(element, Decl(AFeature.ts, 22, 22))
+  }
+  public ingestObject(objects: Record<string, FeatureContainer>): Promise<IngestResult<From>[]> | IngestResult<From>[] {
+>ingestObject : Symbol(AFeature.ingestObject, Decl(AFeature.ts, 24, 3))
+>objects : Symbol(objects, Decl(AFeature.ts, 25, 22))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>FeatureContainer : Symbol(FeatureContainer, Decl(AFeature.ts, 4, 13))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>IngestResult : Symbol(IngestResult, Decl(AFeature.ts, 3, 23))
+>From : Symbol(From, Decl(AFeature.ts, 6, 72))
+>IngestResult : Symbol(IngestResult, Decl(AFeature.ts, 3, 23))
+>From : Symbol(From, Decl(AFeature.ts, 6, 72))
+
+    const items = Object.entries(objects).map(
+>items : Symbol(items, Decl(AFeature.ts, 26, 9))
+>Object.entries(objects).map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>Object.entries : Symbol(ObjectConstructor.entries, Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>entries : Symbol(ObjectConstructor.entries, Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --))
+>objects : Symbol(objects, Decl(AFeature.ts, 25, 22))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+
+      ([key, element]) =>
+>key : Symbol(key, Decl(AFeature.ts, 27, 8))
+>element : Symbol(element, Decl(AFeature.ts, 27, 12))
+
+        ({
+          item: this.getElementByLookupIfPresent(element.feature),
+>item : Symbol(item, Decl(AFeature.ts, 28, 10))
+>this.getElementByLookupIfPresent : Symbol(AFeature.getElementByLookupIfPresent, Decl(AFeature.ts, 12, 6))
+>this : Symbol(AFeature, Decl(AFeature.ts, 5, 89))
+>getElementByLookupIfPresent : Symbol(AFeature.getElementByLookupIfPresent, Decl(AFeature.ts, 12, 6))
+>element.feature : Symbol(FeatureContainer.feature, Decl(IFeatureContainer.ts, 0, 35))
+>element : Symbol(element, Decl(AFeature.ts, 27, 12))
+>feature : Symbol(FeatureContainer.feature, Decl(IFeatureContainer.ts, 0, 35))
+
+        }) satisfies IngestResult<From>
+>IngestResult : Symbol(IngestResult, Decl(AFeature.ts, 3, 23))
+>From : Symbol(From, Decl(AFeature.ts, 6, 72))
+
+    );
+    return items;
+>items : Symbol(items, Decl(AFeature.ts, 26, 9))
+  }
+}
+=== node_modules/@veto-party/baum__steps__installer__features/src/abstract/GroupFeature/GroupFeature.ts ===
+import type { asConst, FromSchema, JSONSchema } from 'json-schema-to-ts';
+>asConst : Symbol(asConst, Decl(GroupFeature.ts, 0, 13))
+>FromSchema : Symbol(FromSchema, Decl(GroupFeature.ts, 0, 22))
+>JSONSchema : Symbol(JSONSchema, Decl(GroupFeature.ts, 0, 34))
+
+import { cloneDeep, set, toPath } from 'lodash-es';
+>cloneDeep : Symbol(cloneDeep, Decl(GroupFeature.ts, 1, 8))
+>set : Symbol(set, Decl(GroupFeature.ts, 1, 19))
+>toPath : Symbol(toPath, Decl(GroupFeature.ts, 1, 24))
+
+import type { IFeature } from '../../interface/IFeature.js';
+>IFeature : Symbol(IFeature, Decl(GroupFeature.ts, 2, 13))
+
+import { AFeature } from '../AFeature.js';
+>AFeature : Symbol(AFeature, Decl(GroupFeature.ts, 3, 8))
+
+import type { ResolveFeaturePath } from '../types/MergeFeatures.js';
+>ResolveFeaturePath : Symbol(ResolveFeaturePath, Decl(GroupFeature.ts, 4, 13))
+
+import type { ToDefinitionStructureWithTupleMerge } from '../types/ToDefinitionStructureWithTupleMerge.js';
+>ToDefinitionStructureWithTupleMerge : Symbol(ToDefinitionStructureWithTupleMerge, Decl(GroupFeature.ts, 5, 13))
+
+export class GroupFeature<T extends {} | Record<string, any>, Path, From = T extends {} ? any[] | any : FromSchema<T>> extends AFeature<T, Path, From> {
+>GroupFeature : Symbol(GroupFeature, Decl(GroupFeature.ts, 5, 107))
+>T : Symbol(T, Decl(GroupFeature.ts, 6, 26))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Path : Symbol(Path, Decl(GroupFeature.ts, 6, 61))
+>From : Symbol(From, Decl(GroupFeature.ts, 6, 67))
+>T : Symbol(T, Decl(GroupFeature.ts, 6, 26))
+>FromSchema : Symbol(FromSchema, Decl(GroupFeature.ts, 0, 22))
+>T : Symbol(T, Decl(GroupFeature.ts, 6, 26))
+>AFeature : Symbol(AFeature, Decl(GroupFeature.ts, 3, 8))
+>T : Symbol(T, Decl(GroupFeature.ts, 6, 26))
+>Path : Symbol(Path, Decl(GroupFeature.ts, 6, 61))
+>From : Symbol(From, Decl(GroupFeature.ts, 6, 67))
+
+  protected do_construct(newSchema: any, path: string | undefined): GroupFeature<any, Path> {
+>do_construct : Symbol(GroupFeature.do_construct, Decl(GroupFeature.ts, 6, 152))
+>newSchema : Symbol(newSchema, Decl(GroupFeature.ts, 7, 25))
+>path : Symbol(path, Decl(GroupFeature.ts, 7, 40))
+>GroupFeature : Symbol(GroupFeature, Decl(GroupFeature.ts, 5, 107))
+>Path : Symbol(Path, Decl(GroupFeature.ts, 6, 61))
+
+    return new GroupFeature<any, Path>(newSchema, path as any);
+>GroupFeature : Symbol(GroupFeature, Decl(GroupFeature.ts, 5, 107))
+>Path : Symbol(Path, Decl(GroupFeature.ts, 6, 61))
+>newSchema : Symbol(newSchema, Decl(GroupFeature.ts, 7, 25))
+>path : Symbol(path, Decl(GroupFeature.ts, 7, 40))
+  }
+  appendFeature<WritePath, Feature extends IFeature<any, any, any>>(
+>appendFeature : Symbol(GroupFeature.appendFeature, Decl(GroupFeature.ts, 9, 3))
+>WritePath : Symbol(WritePath, Decl(GroupFeature.ts, 10, 16))
+>Feature : Symbol(Feature, Decl(GroupFeature.ts, 10, 26))
+>IFeature : Symbol(IFeature, Decl(GroupFeature.ts, 2, 13))
+
+    writePath: WritePath,
+>writePath : Symbol(writePath, Decl(GroupFeature.ts, 10, 68))
+>WritePath : Symbol(WritePath, Decl(GroupFeature.ts, 10, 16))
+
+    feature: Feature
+>feature : Symbol(feature, Decl(GroupFeature.ts, 11, 25))
+>Feature : Symbol(Feature, Decl(GroupFeature.ts, 10, 26))
+
+  ): Feature extends IFeature<infer D, infer B, infer _>
+>Feature : Symbol(Feature, Decl(GroupFeature.ts, 10, 26))
+>IFeature : Symbol(IFeature, Decl(GroupFeature.ts, 2, 13))
+>D : Symbol(D, Decl(GroupFeature.ts, 13, 35))
+>B : Symbol(B, Decl(GroupFeature.ts, 13, 44))
+>_ : Symbol(_, Decl(GroupFeature.ts, 13, 53))
+
+    ? ReturnType<typeof asConst<ToDefinitionStructureWithTupleMerge<ResolveFeaturePath<WritePath, B extends string | undefined ? B : undefined>, D, T>>> extends infer Some
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>asConst : Symbol(asConst, Decl(GroupFeature.ts, 0, 13))
+>ToDefinitionStructureWithTupleMerge : Symbol(ToDefinitionStructureWithTupleMerge, Decl(GroupFeature.ts, 5, 13))
+>ResolveFeaturePath : Symbol(ResolveFeaturePath, Decl(GroupFeature.ts, 4, 13))
+>WritePath : Symbol(WritePath, Decl(GroupFeature.ts, 10, 16))
+>B : Symbol(B, Decl(GroupFeature.ts, 13, 44))
+>B : Symbol(B, Decl(GroupFeature.ts, 13, 44))
+>D : Symbol(D, Decl(GroupFeature.ts, 13, 35))
+>T : Symbol(T, Decl(GroupFeature.ts, 6, 26))
+>Some : Symbol(Some, Decl(GroupFeature.ts, 14, 166))
+
+      ? GroupFeature<Some extends Record<string, any> ? Some : never, Path, FromSchema<Some extends JSONSchema ? Some : never>>
+>GroupFeature : Symbol(GroupFeature, Decl(GroupFeature.ts, 5, 107))
+>Some : Symbol(Some, Decl(GroupFeature.ts, 14, 166))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Some : Symbol(Some, Decl(GroupFeature.ts, 14, 166))
+>Path : Symbol(Path, Decl(GroupFeature.ts, 6, 61))
+>FromSchema : Symbol(FromSchema, Decl(GroupFeature.ts, 0, 22))
+>Some : Symbol(Some, Decl(GroupFeature.ts, 14, 166))
+>JSONSchema : Symbol(JSONSchema, Decl(GroupFeature.ts, 0, 34))
+>Some : Symbol(Some, Decl(GroupFeature.ts, 14, 166))
+
+      : never
+    : never {
+    const oldSchemaCloned = cloneDeep(this.getSchema());
+>oldSchemaCloned : Symbol(oldSchemaCloned, Decl(GroupFeature.ts, 18, 9))
+>cloneDeep : Symbol(cloneDeep, Decl(GroupFeature.ts, 1, 8))
+>this.getSchema : Symbol(AFeature.getSchema, Decl(AFeature.ts, 15, 3))
+>this : Symbol(GroupFeature, Decl(GroupFeature.ts, 5, 107))
+>getSchema : Symbol(AFeature.getSchema, Decl(AFeature.ts, 15, 3))
+
+    return this.do_construct(oldSchemaCloned, this.getPath()) as any;
+>this.do_construct : Symbol(GroupFeature.do_construct, Decl(GroupFeature.ts, 6, 152))
+>this : Symbol(GroupFeature, Decl(GroupFeature.ts, 5, 107))
+>do_construct : Symbol(GroupFeature.do_construct, Decl(GroupFeature.ts, 6, 152))
+>oldSchemaCloned : Symbol(oldSchemaCloned, Decl(GroupFeature.ts, 18, 9))
+>this.getPath : Symbol(AFeature.getPath, Decl(AFeature.ts, 18, 3))
+>this : Symbol(GroupFeature, Decl(GroupFeature.ts, 5, 107))
+>getPath : Symbol(AFeature.getPath, Decl(AFeature.ts, 18, 3))
+  }
+}
+=== node_modules/@veto-party/baum__steps__installer__features/src/abstract/types/MergeDeepForToDefinitionStructureWithTupleMerge.ts ===
+const MERGE_ELEM_NOT_FOUND = Symbol('MERGE_ELEM_NOT_FOUND');
+>MERGE_ELEM_NOT_FOUND : Symbol(MERGE_ELEM_NOT_FOUND, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 0, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+type MergeTuple<A extends any[], B extends any[]> = DoMergeTuple<A, A, B, B, []>;
+>MergeTuple : Symbol(MergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 0, 60))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 16))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 32))
+>DoMergeTuple : Symbol(DoMergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 81))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 16))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 16))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 32))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 32))
+
+type DoMergeTuple<A extends any[], AOriginal extends any[], B extends any[], BOriginal extends any[], Items extends any[]> = AOriginal['length'] extends Items['length']
+>DoMergeTuple : Symbol(DoMergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 81))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 18))
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 59))
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+
+  ? BOriginal extends Items['length']
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+
+    ? Items
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+
+    : [...Items, ...B]
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 59))
+
+  : BOriginal['length'] extends Items['length']
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+
+    ? AOriginal['length'] extends Items['length']
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+
+      ? Items
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+
+      : [...Items, ...A]
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 18))
+
+    : A extends [infer CurrentA, ...infer RestA]
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 18))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 10, 22))
+>RestA : Symbol(RestA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 10, 41))
+
+      ? B extends [infer CurrentB, ...infer RestB]
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 59))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 11, 24))
+>RestB : Symbol(RestB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 11, 43))
+
+        ? DoMergeTuple<RestA, AOriginal, RestB, BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+>DoMergeTuple : Symbol(DoMergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 81))
+>RestA : Symbol(RestA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 10, 41))
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>RestB : Symbol(RestB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 11, 43))
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>MergeDeepForToDefinitionStructureWithTupleMerge : Symbol(MergeDeepForToDefinitionStructureWithTupleMerge, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 34, 20))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 10, 22))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 11, 24))
+
+        : B extends [infer CurrentB]
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 59))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 13, 26))
+
+          ? DoMergeTuple<RestA, AOriginal, [], BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+>DoMergeTuple : Symbol(DoMergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 81))
+>RestA : Symbol(RestA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 10, 41))
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>MergeDeepForToDefinitionStructureWithTupleMerge : Symbol(MergeDeepForToDefinitionStructureWithTupleMerge, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 34, 20))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 10, 22))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 13, 26))
+
+          : DoMergeTuple<RestA, AOriginal, [], BOriginal, [...Items, CurrentA]>
+>DoMergeTuple : Symbol(DoMergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 81))
+>RestA : Symbol(RestA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 10, 41))
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 10, 22))
+
+      : A extends [infer CurrentA]
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 18))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 16, 24))
+
+        ? B extends [infer CurrentB, ...infer RestB]
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 59))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 17, 26))
+>RestB : Symbol(RestB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 17, 45))
+
+          ? DoMergeTuple<[], AOriginal, RestB, BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+>DoMergeTuple : Symbol(DoMergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 81))
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>RestB : Symbol(RestB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 17, 45))
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>MergeDeepForToDefinitionStructureWithTupleMerge : Symbol(MergeDeepForToDefinitionStructureWithTupleMerge, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 34, 20))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 16, 24))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 17, 26))
+
+          : B extends [infer CurrentB]
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 59))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 19, 28))
+
+            ? DoMergeTuple<[], AOriginal, [], BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+>DoMergeTuple : Symbol(DoMergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 81))
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>MergeDeepForToDefinitionStructureWithTupleMerge : Symbol(MergeDeepForToDefinitionStructureWithTupleMerge, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 34, 20))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 16, 24))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 19, 28))
+
+            : DoMergeTuple<[], AOriginal, [], BOriginal, [...Items, CurrentA]>
+>DoMergeTuple : Symbol(DoMergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 81))
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 16, 24))
+
+        : B extends [infer CurrentB, ...infer RestB]
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 59))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 22, 26))
+>RestB : Symbol(RestB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 22, 45))
+
+          ? A extends [infer CurrentA, ...infer RestA]
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 18))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 23, 28))
+>RestA : Symbol(RestA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 23, 47))
+
+            ? DoMergeTuple<RestA, AOriginal, RestB, BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+>DoMergeTuple : Symbol(DoMergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 81))
+>RestA : Symbol(RestA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 23, 47))
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>RestB : Symbol(RestB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 22, 45))
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>MergeDeepForToDefinitionStructureWithTupleMerge : Symbol(MergeDeepForToDefinitionStructureWithTupleMerge, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 34, 20))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 23, 28))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 22, 26))
+
+            : A extends [infer CurrentA]
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 18))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 25, 30))
+
+              ? DoMergeTuple<[], AOriginal, RestB, BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+>DoMergeTuple : Symbol(DoMergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 81))
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>RestB : Symbol(RestB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 22, 45))
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>MergeDeepForToDefinitionStructureWithTupleMerge : Symbol(MergeDeepForToDefinitionStructureWithTupleMerge, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 34, 20))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 25, 30))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 22, 26))
+
+              : DoMergeTuple<[], AOriginal, RestB, BOriginal, [...Items, CurrentB]>
+>DoMergeTuple : Symbol(DoMergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 81))
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>RestB : Symbol(RestB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 22, 45))
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 22, 26))
+
+          : B extends [infer CurrentB]
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 59))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 28, 28))
+
+            ? A extends [infer CurrentA, ...infer RestA]
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 18))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 29, 30))
+>RestA : Symbol(RestA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 29, 49))
+
+              ? DoMergeTuple<RestA, AOriginal, [], BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+>DoMergeTuple : Symbol(DoMergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 81))
+>RestA : Symbol(RestA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 29, 49))
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>MergeDeepForToDefinitionStructureWithTupleMerge : Symbol(MergeDeepForToDefinitionStructureWithTupleMerge, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 34, 20))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 29, 30))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 28, 28))
+
+              : A extends [infer CurrentA]
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 18))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 31, 32))
+
+                ? DoMergeTuple<[], AOriginal, [], BOriginal, [...Items, MergeDeepForToDefinitionStructureWithTupleMerge<CurrentA, CurrentB>]>
+>DoMergeTuple : Symbol(DoMergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 81))
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>MergeDeepForToDefinitionStructureWithTupleMerge : Symbol(MergeDeepForToDefinitionStructureWithTupleMerge, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 34, 20))
+>CurrentA : Symbol(CurrentA, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 31, 32))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 28, 28))
+
+                : DoMergeTuple<[], AOriginal, [], BOriginal, [...Items, CurrentB]>
+>DoMergeTuple : Symbol(DoMergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 1, 81))
+>AOriginal : Symbol(AOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 34))
+>BOriginal : Symbol(BOriginal, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 76))
+>Items : Symbol(Items, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 2, 101))
+>CurrentB : Symbol(CurrentB, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 28, 28))
+
+            : never;
+/**
+ */
+export type MergeDeepForToDefinitionStructureWithTupleMerge<A, B> = A extends typeof MERGE_ELEM_NOT_FOUND
+>MergeDeepForToDefinitionStructureWithTupleMerge : Symbol(MergeDeepForToDefinitionStructureWithTupleMerge, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 34, 20))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+>MERGE_ELEM_NOT_FOUND : Symbol(MERGE_ELEM_NOT_FOUND, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 0, 5))
+
+  ? B
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+
+  : B extends typeof MERGE_ELEM_NOT_FOUND
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+>MERGE_ELEM_NOT_FOUND : Symbol(MERGE_ELEM_NOT_FOUND, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 0, 5))
+
+    ? A
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+
+    : A extends any[]
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+
+      ? B extends any[]
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+
+        ? MergeTuple<A, B>
+>MergeTuple : Symbol(MergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 0, 60))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+
+        : A
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+
+      : B extends any[]
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+
+        ? A extends any[]
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+
+          ? MergeTuple<A, B>
+>MergeTuple : Symbol(MergeTuple, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 0, 60))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+
+          : B
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+
+        : A extends object
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+
+          ? B extends object
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+
+            ? { [Key in keyof (A & B)]: MergeDeepForToDefinitionStructureWithTupleMerge<Key extends keyof A ? A[Key] : typeof MERGE_ELEM_NOT_FOUND, Key extends keyof B ? B[Key] : typeof MERGE_ELEM_NOT_FOUND> }
+>Key : Symbol(Key, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 51, 17))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+>MergeDeepForToDefinitionStructureWithTupleMerge : Symbol(MergeDeepForToDefinitionStructureWithTupleMerge, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 34, 20))
+>Key : Symbol(Key, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 51, 17))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+>Key : Symbol(Key, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 51, 17))
+>MERGE_ELEM_NOT_FOUND : Symbol(MERGE_ELEM_NOT_FOUND, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 0, 5))
+>Key : Symbol(Key, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 51, 17))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+>Key : Symbol(Key, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 51, 17))
+>MERGE_ELEM_NOT_FOUND : Symbol(MERGE_ELEM_NOT_FOUND, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 0, 5))
+
+            : A
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+
+          : B extends object
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+
+            ? A extends object
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+
+              ? { [Key in keyof (A & B)]: MergeDeepForToDefinitionStructureWithTupleMerge<Key extends keyof A ? A[Key] : typeof MERGE_ELEM_NOT_FOUND, Key extends keyof B ? B[Key] : typeof MERGE_ELEM_NOT_FOUND> }
+>Key : Symbol(Key, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 55, 19))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+>MergeDeepForToDefinitionStructureWithTupleMerge : Symbol(MergeDeepForToDefinitionStructureWithTupleMerge, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 34, 20))
+>Key : Symbol(Key, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 55, 19))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+>Key : Symbol(Key, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 55, 19))
+>MERGE_ELEM_NOT_FOUND : Symbol(MERGE_ELEM_NOT_FOUND, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 0, 5))
+>Key : Symbol(Key, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 55, 19))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+>Key : Symbol(Key, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 55, 19))
+>MERGE_ELEM_NOT_FOUND : Symbol(MERGE_ELEM_NOT_FOUND, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 0, 5))
+
+              : B
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+
+            : A | B;
+>A : Symbol(A, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 60))
+>B : Symbol(B, Decl(MergeDeepForToDefinitionStructureWithTupleMerge.ts, 37, 62))
+
+=== node_modules/@veto-party/baum__steps__installer__features/src/abstract/types/MergeFeatures.ts ===
+import type { FromSchema, JSONSchema } from 'json-schema-to-ts';
+>FromSchema : Symbol(FromSchema, Decl(MergeFeatures.ts, 0, 13))
+>JSONSchema : Symbol(JSONSchema, Decl(MergeFeatures.ts, 0, 25))
+
+import type { IFeature } from '../../interface/IFeature.js';
+>IFeature : Symbol(IFeature, Decl(MergeFeatures.ts, 1, 13))
+
+import type { ToDefinitionStructureWithTupleMerge } from './ToDefinitionStructureWithTupleMerge.js';
+>ToDefinitionStructureWithTupleMerge : Symbol(ToDefinitionStructureWithTupleMerge, Decl(MergeFeatures.ts, 2, 13))
+
+export type ResolveFeaturePath<WritePath, B extends string | undefined> = WritePath extends string ? (B extends undefined ? WritePath : `${WritePath}.${B}`) : B;
+>ResolveFeaturePath : Symbol(ResolveFeaturePath, Decl(MergeFeatures.ts, 2, 100))
+>WritePath : Symbol(WritePath, Decl(MergeFeatures.ts, 3, 31))
+>B : Symbol(B, Decl(MergeFeatures.ts, 3, 41))
+>WritePath : Symbol(WritePath, Decl(MergeFeatures.ts, 3, 31))
+>B : Symbol(B, Decl(MergeFeatures.ts, 3, 41))
+>WritePath : Symbol(WritePath, Decl(MergeFeatures.ts, 3, 31))
+>WritePath : Symbol(WritePath, Decl(MergeFeatures.ts, 3, 31))
+>B : Symbol(B, Decl(MergeFeatures.ts, 3, 41))
+>B : Symbol(B, Decl(MergeFeatures.ts, 3, 41))
+
+export type MergeFeatures<A extends IFeature<any, any, any>, Path, B extends IFeature<any, any, any>> = A extends IFeature<infer TypeA, infer PathA, any>
+>MergeFeatures : Symbol(MergeFeatures, Decl(MergeFeatures.ts, 3, 161))
+>A : Symbol(A, Decl(MergeFeatures.ts, 4, 26))
+>IFeature : Symbol(IFeature, Decl(MergeFeatures.ts, 1, 13))
+>Path : Symbol(Path, Decl(MergeFeatures.ts, 4, 60))
+>B : Symbol(B, Decl(MergeFeatures.ts, 4, 66))
+>IFeature : Symbol(IFeature, Decl(MergeFeatures.ts, 1, 13))
+>A : Symbol(A, Decl(MergeFeatures.ts, 4, 26))
+>IFeature : Symbol(IFeature, Decl(MergeFeatures.ts, 1, 13))
+>TypeA : Symbol(TypeA, Decl(MergeFeatures.ts, 4, 128))
+>PathA : Symbol(PathA, Decl(MergeFeatures.ts, 4, 141))
+
+  ? B extends IFeature<infer TypeB, infer PathB, any>
+>B : Symbol(B, Decl(MergeFeatures.ts, 4, 66))
+>IFeature : Symbol(IFeature, Decl(MergeFeatures.ts, 1, 13))
+>TypeB : Symbol(TypeB, Decl(MergeFeatures.ts, 5, 28))
+>PathB : Symbol(PathB, Decl(MergeFeatures.ts, 5, 41))
+
+    ? PathB extends string | undefined
+>PathB : Symbol(PathB, Decl(MergeFeatures.ts, 5, 41))
+
+      ? ToDefinitionStructureWithTupleMerge<ResolveFeaturePath<Path, PathB>, TypeB, TypeA> extends infer NewType
+>ToDefinitionStructureWithTupleMerge : Symbol(ToDefinitionStructureWithTupleMerge, Decl(MergeFeatures.ts, 2, 13))
+>ResolveFeaturePath : Symbol(ResolveFeaturePath, Decl(MergeFeatures.ts, 2, 100))
+>Path : Symbol(Path, Decl(MergeFeatures.ts, 4, 60))
+>PathB : Symbol(PathB, Decl(MergeFeatures.ts, 5, 41))
+>TypeB : Symbol(TypeB, Decl(MergeFeatures.ts, 5, 28))
+>TypeA : Symbol(TypeA, Decl(MergeFeatures.ts, 4, 128))
+>NewType : Symbol(NewType, Decl(MergeFeatures.ts, 7, 104))
+
+        ? NewType extends JSONSchema
+>NewType : Symbol(NewType, Decl(MergeFeatures.ts, 7, 104))
+>JSONSchema : Symbol(JSONSchema, Decl(MergeFeatures.ts, 0, 25))
+
+          ? IFeature<NewType, PathA, FromSchema<NewType>>
+>IFeature : Symbol(IFeature, Decl(MergeFeatures.ts, 1, 13))
+>NewType : Symbol(NewType, Decl(MergeFeatures.ts, 7, 104))
+>PathA : Symbol(PathA, Decl(MergeFeatures.ts, 4, 141))
+>FromSchema : Symbol(FromSchema, Decl(MergeFeatures.ts, 0, 13))
+>NewType : Symbol(NewType, Decl(MergeFeatures.ts, 7, 104))
+
+          : never
+        : never
+      : never
+    : never
+  : never;
+=== node_modules/@veto-party/baum__steps__installer__features/src/abstract/types/ToDefinitionStructureWithTupleMerge.ts ===
+import type { asConst } from 'json-schema-to-ts';
+>asConst : Symbol(asConst, Decl(ToDefinitionStructureWithTupleMerge.ts, 0, 13))
+
+import type { ToDefinitionStructure } from '../../interface/types/ToDefinitionStructure.js';
+>ToDefinitionStructure : Symbol(ToDefinitionStructure, Decl(ToDefinitionStructureWithTupleMerge.ts, 1, 13))
+
+import type { MergeDeepForToDefinitionStructureWithTupleMerge } from './MergeDeepForToDefinitionStructureWithTupleMerge.js';
+>MergeDeepForToDefinitionStructureWithTupleMerge : Symbol(MergeDeepForToDefinitionStructureWithTupleMerge, Decl(ToDefinitionStructureWithTupleMerge.ts, 2, 13))
+
+export type ToDefinitionStructureWithTupleMerge<Path, Target, Obj> = ToDefinitionStructure<Path, Target> extends infer U ? (MergeDeepForToDefinitionStructureWithTupleMerge<Obj, U> extends infer R ? ReturnType<typeof asConst<R>> : never) : never;
+>ToDefinitionStructureWithTupleMerge : Symbol(ToDefinitionStructureWithTupleMerge, Decl(ToDefinitionStructureWithTupleMerge.ts, 2, 124))
+>Path : Symbol(Path, Decl(ToDefinitionStructureWithTupleMerge.ts, 3, 48))
+>Target : Symbol(Target, Decl(ToDefinitionStructureWithTupleMerge.ts, 3, 53))
+>Obj : Symbol(Obj, Decl(ToDefinitionStructureWithTupleMerge.ts, 3, 61))
+>ToDefinitionStructure : Symbol(ToDefinitionStructure, Decl(ToDefinitionStructureWithTupleMerge.ts, 1, 13))
+>Path : Symbol(Path, Decl(ToDefinitionStructureWithTupleMerge.ts, 3, 48))
+>Target : Symbol(Target, Decl(ToDefinitionStructureWithTupleMerge.ts, 3, 53))
+>U : Symbol(U, Decl(ToDefinitionStructureWithTupleMerge.ts, 3, 118))
+>MergeDeepForToDefinitionStructureWithTupleMerge : Symbol(MergeDeepForToDefinitionStructureWithTupleMerge, Decl(ToDefinitionStructureWithTupleMerge.ts, 2, 13))
+>Obj : Symbol(Obj, Decl(ToDefinitionStructureWithTupleMerge.ts, 3, 61))
+>U : Symbol(U, Decl(ToDefinitionStructureWithTupleMerge.ts, 3, 118))
+>R : Symbol(R, Decl(ToDefinitionStructureWithTupleMerge.ts, 3, 193))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>asConst : Symbol(asConst, Decl(ToDefinitionStructureWithTupleMerge.ts, 0, 13))
+>R : Symbol(R, Decl(ToDefinitionStructureWithTupleMerge.ts, 3, 193))
+
+=== node_modules/@veto-party/baum__steps__installer__features/src/implementation/Variable/Variable.ts ===
+import type { FromSchema } from 'json-schema-to-ts';
+>FromSchema : Symbol(FromSchema, Decl(Variable.ts, 0, 13))
+
+import { GroupFeature } from '../../abstract/GroupFeature/GroupFeature.js';
+>GroupFeature : Symbol(GroupFeature, Decl(Variable.ts, 1, 8))
+
+import { definition, variableAccessorPattern } from './definition.js';
+>definition : Symbol(definition, Decl(Variable.ts, 2, 8))
+>variableAccessorPattern : Symbol(variableAccessorPattern, Decl(Variable.ts, 2, 20))
+
+export class VariableFeature<T extends typeof definition = typeof definition> extends GroupFeature<T, 'variable', FromSchema<T>> {
+>VariableFeature : Symbol(VariableFeature, Decl(Variable.ts, 2, 70))
+>T : Symbol(T, Decl(Variable.ts, 3, 29))
+>definition : Symbol(definition, Decl(Variable.ts, 2, 8))
+>definition : Symbol(definition, Decl(Variable.ts, 2, 8))
+>GroupFeature : Symbol(GroupFeature, Decl(Variable.ts, 1, 8))
+>T : Symbol(T, Decl(Variable.ts, 3, 29))
+>FromSchema : Symbol(FromSchema, Decl(Variable.ts, 0, 13))
+>T : Symbol(T, Decl(Variable.ts, 3, 29))
+
+  protected constructor(value: any) {
+>value : Symbol(value, Decl(Variable.ts, 4, 24))
+
+    super(value, 'variable');
+>super : Symbol(GroupFeature, Decl(GroupFeature.ts, 5, 107))
+>value : Symbol(value, Decl(Variable.ts, 4, 24))
+  }
+  public static makeInstance() {
+>makeInstance : Symbol(VariableFeature.makeInstance, Decl(Variable.ts, 6, 3))
+
+    const result = new VariableFeature(definition) //.appendFeature('patternProperties.["^[a-zA-Z0-9_]*$"]', new BaseVariableFeature());
+>result : Symbol(result, Decl(Variable.ts, 8, 9))
+>VariableFeature : Symbol(VariableFeature, Decl(Variable.ts, 2, 70))
+>definition : Symbol(definition, Decl(Variable.ts, 2, 8))
+
+    return result;
+>result : Symbol(result, Decl(Variable.ts, 8, 9))
+  }
+}
+=== node_modules/@veto-party/baum__steps__installer__features/src/implementation/Variable/definition.ts ===
+import { asConst } from 'json-schema-to-ts';
+>asConst : Symbol(asConst, Decl(definition.ts, 0, 8))
+
+export const variableAccessorPattern = '^[a-zA-Z0-9_]*$' as const;
+>variableAccessorPattern : Symbol(variableAccessorPattern, Decl(definition.ts, 1, 12))
+>const : Symbol(const)
+
+export const definition = asConst({
+>definition : Symbol(definition, Decl(definition.ts, 2, 12))
+>asConst : Symbol(asConst, Decl(definition.ts, 0, 8))
+
+  type: 'object',
+>type : Symbol(type, Decl(definition.ts, 2, 35))
+
+  patternProperties: {
+>patternProperties : Symbol(patternProperties, Decl(definition.ts, 3, 17))
+
+    [variableAccessorPattern]: {
+>[variableAccessorPattern] : Symbol([variableAccessorPattern], Decl(definition.ts, 4, 22))
+>variableAccessorPattern : Symbol(variableAccessorPattern, Decl(definition.ts, 1, 12))
+
+      type: 'object',
+>type : Symbol(type, Decl(definition.ts, 5, 32))
+    }
+  },
+});
+=== node_modules/@veto-party/baum__steps__installer__features/src/index.ts ===
+export { VariableFeature } from './implementation/Variable/Variable.js';
+>VariableFeature : Symbol(VariableFeature, Decl(index.ts, 0, 8))
+
+export type { IFeature, IngestResult } from './interface/IFeature.js';
+>IFeature : Symbol(IFeature, Decl(index.ts, 1, 13))
+>IngestResult : Symbol(IngestResult, Decl(index.ts, 1, 23))
+
+=== node_modules/@veto-party/baum__steps__installer__features/src/interface/IFeature.ts ===
+import type { FromSchema } from 'json-schema-to-ts';
+>FromSchema : Symbol(FromSchema, Decl(IFeature.ts, 0, 13))
+
+import type { FeatureContainer } from './IFeatureContainer.js';
+>FeatureContainer : Symbol(FeatureContainer, Decl(IFeature.ts, 1, 13))
+
+import type { ToDefinitionStructure } from './types/ToDefinitionStructure.js';
+>ToDefinitionStructure : Symbol(ToDefinitionStructure, Decl(IFeature.ts, 2, 13))
+
+export type IngestResult<T> = {
+>IngestResult : Symbol(IngestResult, Decl(IFeature.ts, 2, 78))
+>T : Symbol(T, Decl(IFeature.ts, 3, 25))
+
+  item: T;
+>item : Symbol(item, Decl(IFeature.ts, 3, 31))
+>T : Symbol(T, Decl(IFeature.ts, 3, 25))
+
+};
+export interface IFeature<T extends Record<string, any> | {}, Path, From = T extends {} ? any[] | any : FromSchema<T>> {
+>IFeature : Symbol(IFeature, Decl(IFeature.ts, 5, 2))
+>T : Symbol(T, Decl(IFeature.ts, 6, 26))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Path : Symbol(Path, Decl(IFeature.ts, 6, 61))
+>From : Symbol(From, Decl(IFeature.ts, 6, 67))
+>T : Symbol(T, Decl(IFeature.ts, 6, 26))
+>FromSchema : Symbol(FromSchema, Decl(IFeature.ts, 0, 13))
+>T : Symbol(T, Decl(IFeature.ts, 6, 26))
+
+  /**
+   */
+  verifyObject(element: any): element is ToDefinitionStructure<Path, From>;
+>verifyObject : Symbol(IFeature.verifyObject, Decl(IFeature.ts, 6, 120))
+>element : Symbol(element, Decl(IFeature.ts, 9, 15))
+>element : Symbol(element, Decl(IFeature.ts, 9, 15))
+>ToDefinitionStructure : Symbol(ToDefinitionStructure, Decl(IFeature.ts, 2, 13))
+>Path : Symbol(Path, Decl(IFeature.ts, 6, 61))
+>From : Symbol(From, Decl(IFeature.ts, 6, 67))
+
+  getSchema(): T;
+>getSchema : Symbol(IFeature.getSchema, Decl(IFeature.ts, 9, 75))
+>T : Symbol(T, Decl(IFeature.ts, 6, 26))
+
+  getPath(): Path extends string ? Path : undefined;
+>getPath : Symbol(IFeature.getPath, Decl(IFeature.ts, 10, 17))
+>Path : Symbol(Path, Decl(IFeature.ts, 6, 61))
+>Path : Symbol(Path, Decl(IFeature.ts, 6, 61))
+
+  ingestObject(objects: Record<string, FeatureContainer>): Promise<IngestResult<From>[]> | IngestResult<From>[];
+>ingestObject : Symbol(IFeature.ingestObject, Decl(IFeature.ts, 11, 52))
+>objects : Symbol(objects, Decl(IFeature.ts, 12, 15))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>FeatureContainer : Symbol(FeatureContainer, Decl(IFeature.ts, 1, 13))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>IngestResult : Symbol(IngestResult, Decl(IFeature.ts, 2, 78))
+>From : Symbol(From, Decl(IFeature.ts, 6, 67))
+>IngestResult : Symbol(IngestResult, Decl(IFeature.ts, 2, 78))
+>From : Symbol(From, Decl(IFeature.ts, 6, 67))
+}
+=== node_modules/@veto-party/baum__steps__installer__features/src/interface/IFeatureContainer.ts ===
+export interface FeatureContainer {
+>FeatureContainer : Symbol(FeatureContainer, Decl(IFeatureContainer.ts, 0, 0))
+
+  feature: any;
+>feature : Symbol(FeatureContainer.feature, Decl(IFeatureContainer.ts, 0, 35))
+}
+=== node_modules/@veto-party/baum__steps__installer__features/src/interface/types/KeyValuePair.ts ===
+export type KeyValuePair<A extends string | unknown, Target> = A extends string | number | symbol ? { [key in A]: Target } : Target;
+>KeyValuePair : Symbol(KeyValuePair, Decl(KeyValuePair.ts, 0, 0))
+>A : Symbol(A, Decl(KeyValuePair.ts, 0, 25))
+>Target : Symbol(Target, Decl(KeyValuePair.ts, 0, 52))
+>A : Symbol(A, Decl(KeyValuePair.ts, 0, 25))
+>key : Symbol(key, Decl(KeyValuePair.ts, 0, 103))
+>A : Symbol(A, Decl(KeyValuePair.ts, 0, 25))
+>Target : Symbol(Target, Decl(KeyValuePair.ts, 0, 52))
+>Target : Symbol(Target, Decl(KeyValuePair.ts, 0, 52))
+
+=== node_modules/@veto-party/baum__steps__installer__features/src/interface/types/MakeTuple.ts ===
+export type MakeTuple<T, N extends number = 1, Items extends any[] = []> = N extends Items['length'] ? [...Items, T] : MakeTuple<T, N, [void, ...Items]>;
+>MakeTuple : Symbol(MakeTuple, Decl(MakeTuple.ts, 0, 0))
+>T : Symbol(T, Decl(MakeTuple.ts, 0, 22))
+>N : Symbol(N, Decl(MakeTuple.ts, 0, 24))
+>Items : Symbol(Items, Decl(MakeTuple.ts, 0, 46))
+>N : Symbol(N, Decl(MakeTuple.ts, 0, 24))
+>Items : Symbol(Items, Decl(MakeTuple.ts, 0, 46))
+>Items : Symbol(Items, Decl(MakeTuple.ts, 0, 46))
+>T : Symbol(T, Decl(MakeTuple.ts, 0, 22))
+>MakeTuple : Symbol(MakeTuple, Decl(MakeTuple.ts, 0, 0))
+>T : Symbol(T, Decl(MakeTuple.ts, 0, 22))
+>N : Symbol(N, Decl(MakeTuple.ts, 0, 24))
+>Items : Symbol(Items, Decl(MakeTuple.ts, 0, 46))
+
+=== node_modules/@veto-party/baum__steps__installer__features/src/interface/types/StringToNumber.ts ===
+export type StringToNumber<S extends string | number, AlternativeBase = never, Alternative extends AlternativeBase = never> = S extends number
+>StringToNumber : Symbol(StringToNumber, Decl(StringToNumber.ts, 0, 0))
+>S : Symbol(S, Decl(StringToNumber.ts, 0, 27))
+>AlternativeBase : Symbol(AlternativeBase, Decl(StringToNumber.ts, 0, 53))
+>Alternative : Symbol(Alternative, Decl(StringToNumber.ts, 0, 78))
+>AlternativeBase : Symbol(AlternativeBase, Decl(StringToNumber.ts, 0, 53))
+>S : Symbol(S, Decl(StringToNumber.ts, 0, 27))
+
+  ? S
+>S : Symbol(S, Decl(StringToNumber.ts, 0, 27))
+
+                      : Alternative;
+>Alternative : Symbol(Alternative, Decl(StringToNumber.ts, 0, 78))
+
+=== node_modules/@veto-party/baum__steps__installer__features/src/interface/types/ToDefinitionStructure.ts ===
+import type { KeyValuePair } from './KeyValuePair.js';
+>KeyValuePair : Symbol(KeyValuePair, Decl(ToDefinitionStructure.ts, 0, 13))
+
+import type { MakeTuple } from './MakeTuple.js';
+>MakeTuple : Symbol(MakeTuple, Decl(ToDefinitionStructure.ts, 1, 13))
+
+import type { StringToNumber } from './StringToNumber.js';
+>StringToNumber : Symbol(StringToNumber, Decl(ToDefinitionStructure.ts, 2, 13))
+
+export type ToDefinitionStructure<Path, Target> = Path extends string
+>ToDefinitionStructure : Symbol(ToDefinitionStructure, Decl(ToDefinitionStructure.ts, 2, 58))
+>Path : Symbol(Path, Decl(ToDefinitionStructure.ts, 3, 34))
+>Target : Symbol(Target, Decl(ToDefinitionStructure.ts, 3, 39))
+>Path : Symbol(Path, Decl(ToDefinitionStructure.ts, 3, 34))
+
+  ? // No path is given, return target
+    Path extends undefined
+>Path : Symbol(Path, Decl(ToDefinitionStructure.ts, 3, 34))
+
+    ? Target
+>Target : Symbol(Target, Decl(ToDefinitionStructure.ts, 3, 39))
+
+            : Path extends `${infer U}[${infer index}]`
+>Path : Symbol(Path, Decl(ToDefinitionStructure.ts, 3, 34))
+>U : Symbol(U, Decl(ToDefinitionStructure.ts, 7, 35))
+>index : Symbol(index, Decl(ToDefinitionStructure.ts, 7, 46))
+
+              ? ToDefinitionStructure<U, MakeTuple<Target, StringToNumber<index>>>
+>ToDefinitionStructure : Symbol(ToDefinitionStructure, Decl(ToDefinitionStructure.ts, 2, 58))
+>U : Symbol(U, Decl(ToDefinitionStructure.ts, 7, 35))
+>MakeTuple : Symbol(MakeTuple, Decl(ToDefinitionStructure.ts, 1, 13))
+>Target : Symbol(Target, Decl(ToDefinitionStructure.ts, 3, 39))
+>StringToNumber : Symbol(StringToNumber, Decl(ToDefinitionStructure.ts, 2, 13))
+>index : Symbol(index, Decl(ToDefinitionStructure.ts, 7, 46))
+
+                    : Path extends `[${infer index}].${infer Rest}`
+>Path : Symbol(Path, Decl(ToDefinitionStructure.ts, 3, 34))
+>index : Symbol(index, Decl(ToDefinitionStructure.ts, 9, 44))
+>Rest : Symbol(Rest, Decl(ToDefinitionStructure.ts, 9, 60))
+
+                      ? MakeTuple<ToDefinitionStructure<Rest, Target>, StringToNumber<index>>
+>MakeTuple : Symbol(MakeTuple, Decl(ToDefinitionStructure.ts, 1, 13))
+>ToDefinitionStructure : Symbol(ToDefinitionStructure, Decl(ToDefinitionStructure.ts, 2, 58))
+>Rest : Symbol(Rest, Decl(ToDefinitionStructure.ts, 9, 60))
+>Target : Symbol(Target, Decl(ToDefinitionStructure.ts, 3, 39))
+>StringToNumber : Symbol(StringToNumber, Decl(ToDefinitionStructure.ts, 2, 13))
+>index : Symbol(index, Decl(ToDefinitionStructure.ts, 9, 44))
+
+                      : Path extends `${infer U}.${infer Rest}`
+>Path : Symbol(Path, Decl(ToDefinitionStructure.ts, 3, 34))
+>U : Symbol(U, Decl(ToDefinitionStructure.ts, 11, 45))
+>Rest : Symbol(Rest, Decl(ToDefinitionStructure.ts, 11, 56))
+
+                        ? ToDefinitionStructure<U, ToDefinitionStructure<Rest, Target>>
+>ToDefinitionStructure : Symbol(ToDefinitionStructure, Decl(ToDefinitionStructure.ts, 2, 58))
+>U : Symbol(U, Decl(ToDefinitionStructure.ts, 11, 45))
+>ToDefinitionStructure : Symbol(ToDefinitionStructure, Decl(ToDefinitionStructure.ts, 2, 58))
+>Rest : Symbol(Rest, Decl(ToDefinitionStructure.ts, 11, 56))
+>Target : Symbol(Target, Decl(ToDefinitionStructure.ts, 3, 39))
+
+                        : KeyValuePair<Path, Target>
+>KeyValuePair : Symbol(KeyValuePair, Decl(ToDefinitionStructure.ts, 0, 13))
+>Path : Symbol(Path, Decl(ToDefinitionStructure.ts, 3, 34))
+>Target : Symbol(Target, Decl(ToDefinitionStructure.ts, 3, 39))
+
+  : Target;
+>Target : Symbol(Target, Decl(ToDefinitionStructure.ts, 3, 39))
+
+=== node_modules/ajv/dist/ajv.d.ts ===
+
+export default Ajv;
+=== node_modules/json-schema-to-ts/lib/types/definitions/index.d.ts ===
+export type { JSONSchema, JSONSchemaType, JSONSchemaReference, } from "./jsonSchema";
+>JSONSchema : Symbol(JSONSchema, Decl(index.d.ts, 0, 13))
+>JSONSchemaType : Symbol(JSONSchemaType, Decl(index.d.ts, 0, 25))
+>JSONSchemaReference : Symbol(JSONSchemaReference, Decl(index.d.ts, 0, 41))
+
+=== node_modules/json-schema-to-ts/lib/types/definitions/jsonSchema.d.ts ===
+export type JSONSchema = boolean | Readonly<{
+>JSONSchema : Symbol(JSONSchema, Decl(jsonSchema.d.ts, 0, 0))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/index.d.ts ===
+import type { M } from "ts-algebra";
+>M : Symbol(M, Decl(index.d.ts, 0, 13))
+
+import type { ParseOptions } from "./parse-options";
+>ParseOptions : Symbol(ParseOptions, Decl(index.d.ts, 1, 13))
+
+import type { ParseSchema } from "./parse-schema";
+>ParseSchema : Symbol(ParseSchema, Decl(index.d.ts, 2, 13))
+
+export type { ExtendedJSONSchema, DeserializationPattern, FromSchemaOptions, FromExtendedSchemaOptions, FromSchemaDefaultOptions, JSONSchemaExtension, JSONSchema, } from "./definitions";
+>ExtendedJSONSchema : Symbol(ExtendedJSONSchema, Decl(index.d.ts, 3, 13))
+>DeserializationPattern : Symbol(DeserializationPattern, Decl(index.d.ts, 3, 33))
+>FromSchemaOptions : Symbol(FromSchemaOptions, Decl(index.d.ts, 3, 57))
+>FromExtendedSchemaOptions : Symbol(FromExtendedSchemaOptions, Decl(index.d.ts, 3, 76))
+>FromSchemaDefaultOptions : Symbol(FromSchemaDefaultOptions, Decl(index.d.ts, 3, 103))
+>JSONSchemaExtension : Symbol(JSONSchemaExtension, Decl(index.d.ts, 3, 129))
+>JSONSchema : Symbol(JSONSchema, Decl(index.d.ts, 3, 150))
+
+export { wrapCompilerAsTypeGuard, wrapValidatorAsTypeGuard, asConst, } from "./utils";
+>wrapCompilerAsTypeGuard : Symbol(wrapCompilerAsTypeGuard, Decl(index.d.ts, 4, 8))
+>wrapValidatorAsTypeGuard : Symbol(wrapValidatorAsTypeGuard, Decl(index.d.ts, 4, 33))
+>asConst : Symbol(asConst, Decl(index.d.ts, 4, 59))
+
+export type FromSchema<SCHEMA extends JSONSchema, OPTIONS extends FromSchemaOptions = FromSchemaDefaultOptions> = M.$Resolve<ParseSchema<SCHEMA, ParseOptions<SCHEMA, OPTIONS>>>;
+>FromSchema : Symbol(FromSchema, Decl(index.d.ts, 4, 86))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 5, 23))
+>JSONSchema : Symbol(JSONSchema)
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 5, 49))
+>FromSchemaOptions : Symbol(FromSchemaOptions)
+>FromSchemaDefaultOptions : Symbol(FromSchemaDefaultOptions)
+>M : Symbol(M, Decl(index.d.ts, 0, 13))
+>$Resolve : Symbol(M.$Resolve, Decl(index.d.ts, 4, 274))
+>ParseSchema : Symbol(ParseSchema, Decl(index.d.ts, 2, 13))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 5, 23))
+>ParseOptions : Symbol(ParseOptions, Decl(index.d.ts, 1, 13))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 5, 23))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 5, 49))
+
+=== node_modules/json-schema-to-ts/lib/types/parse-options.d.ts ===
+export type ParseOptions<ROOT_SCHEMA extends JSONSchema, OPTIONS extends FromSchemaOptions> = {
+>ParseOptions : Symbol(ParseOptions, Decl(parse-options.d.ts, 0, 0))
+>ROOT_SCHEMA : Symbol(ROOT_SCHEMA, Decl(parse-options.d.ts, 0, 25))
+>JSONSchema : Symbol(JSONSchema)
+>OPTIONS : Symbol(OPTIONS, Decl(parse-options.d.ts, 0, 56))
+>FromSchemaOptions : Symbol(FromSchemaOptions)
+
+};
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/allOf.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : Symbol(JSONSchema, Decl(allOf.d.ts, 0, 13))
+
+export type AllOfSchema = JSONSchema & Readonly<{
+>AllOfSchema : Symbol(AllOfSchema, Decl(allOf.d.ts, 0, 49))
+>JSONSchema : Symbol(JSONSchema, Decl(allOf.d.ts, 0, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+    allOf: readonly JSONSchema[];
+>allOf : Symbol(allOf, Decl(allOf.d.ts, 1, 49))
+>JSONSchema : Symbol(JSONSchema, Decl(allOf.d.ts, 0, 13))
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/anyOf.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : Symbol(JSONSchema, Decl(anyOf.d.ts, 0, 13))
+
+export type AnyOfSchema = JSONSchema & Readonly<{
+>AnyOfSchema : Symbol(AnyOfSchema, Decl(anyOf.d.ts, 0, 49))
+>JSONSchema : Symbol(JSONSchema, Decl(anyOf.d.ts, 0, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+    anyOf: readonly JSONSchema[];
+>anyOf : Symbol(anyOf, Decl(anyOf.d.ts, 1, 49))
+>JSONSchema : Symbol(JSONSchema, Decl(anyOf.d.ts, 0, 13))
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/array.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : Symbol(JSONSchema, Decl(array.d.ts, 0, 13))
+
+export type ArrayOrTupleSchema = JSONSchema & Readonly<{
+>ArrayOrTupleSchema : Symbol(ArrayOrTupleSchema, Decl(array.d.ts, 0, 49))
+>JSONSchema : Symbol(JSONSchema, Decl(array.d.ts, 0, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+    type: "array";
+>type : Symbol(type, Decl(array.d.ts, 1, 56))
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/const.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : Symbol(JSONSchema, Decl(const.d.ts, 0, 13))
+
+export type ConstSchema = JSONSchema & Readonly<{
+>ConstSchema : Symbol(ConstSchema, Decl(const.d.ts, 0, 49))
+>JSONSchema : Symbol(JSONSchema, Decl(const.d.ts, 0, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+    const: unknown;
+>const : Symbol(const, Decl(const.d.ts, 1, 49))
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/enum.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : Symbol(JSONSchema, Decl(enum.d.ts, 0, 13))
+
+export type EnumSchema = JSONSchema & Readonly<{
+>EnumSchema : Symbol(EnumSchema, Decl(enum.d.ts, 0, 49))
+>JSONSchema : Symbol(JSONSchema, Decl(enum.d.ts, 0, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+    enum: readonly unknown[];
+>enum : Symbol(enum, Decl(enum.d.ts, 1, 48))
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/ifThenElse.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : Symbol(JSONSchema, Decl(ifThenElse.d.ts, 0, 13))
+
+export type IfThenElseSchema = JSONSchema & {
+>IfThenElseSchema : Symbol(IfThenElseSchema, Decl(ifThenElse.d.ts, 0, 49))
+>JSONSchema : Symbol(JSONSchema, Decl(ifThenElse.d.ts, 0, 13))
+
+    if: JSONSchema;
+>if : Symbol(if, Decl(ifThenElse.d.ts, 1, 45))
+>JSONSchema : Symbol(JSONSchema, Decl(ifThenElse.d.ts, 0, 13))
+
+};
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/index.d.ts ===
+import type { M } from "ts-algebra";
+>M : Symbol(M, Decl(index.d.ts, 0, 13))
+
+import type { DeserializationPattern, JSONSchema } from "../definitions";
+>DeserializationPattern : Symbol(DeserializationPattern, Decl(index.d.ts, 1, 13))
+>JSONSchema : Symbol(JSONSchema, Decl(index.d.ts, 1, 37))
+
+import type { AllOfSchema, ParseAllOfSchema } from "./allOf";
+>AllOfSchema : Symbol(AllOfSchema, Decl(index.d.ts, 2, 13))
+>ParseAllOfSchema : Symbol(ParseAllOfSchema, Decl(index.d.ts, 2, 26))
+
+import type { AnyOfSchema, ParseAnyOfSchema } from "./anyOf";
+>AnyOfSchema : Symbol(AnyOfSchema, Decl(index.d.ts, 3, 13))
+>ParseAnyOfSchema : Symbol(ParseAnyOfSchema, Decl(index.d.ts, 3, 26))
+
+import type { ConstSchema, ParseConstSchema } from "./const";
+>ConstSchema : Symbol(ConstSchema, Decl(index.d.ts, 4, 13))
+>ParseConstSchema : Symbol(ParseConstSchema, Decl(index.d.ts, 4, 26))
+
+import type { EnumSchema, ParseEnumSchema } from "./enum";
+>EnumSchema : Symbol(EnumSchema, Decl(index.d.ts, 5, 13))
+>ParseEnumSchema : Symbol(ParseEnumSchema, Decl(index.d.ts, 5, 25))
+
+import type { IfThenElseSchema, ParseIfThenElseSchema } from "./ifThenElse";
+>IfThenElseSchema : Symbol(IfThenElseSchema, Decl(index.d.ts, 6, 13))
+>ParseIfThenElseSchema : Symbol(ParseIfThenElseSchema, Decl(index.d.ts, 6, 31))
+
+import type { MultipleTypesSchema, ParseMultipleTypesSchema } from "./multipleTypes";
+>MultipleTypesSchema : Symbol(MultipleTypesSchema, Decl(index.d.ts, 7, 13))
+>ParseMultipleTypesSchema : Symbol(ParseMultipleTypesSchema, Decl(index.d.ts, 7, 34))
+
+import type { NotSchema, ParseNotSchema } from "./not";
+>NotSchema : Symbol(NotSchema, Decl(index.d.ts, 8, 13))
+>ParseNotSchema : Symbol(ParseNotSchema, Decl(index.d.ts, 8, 24))
+
+import type { NullableSchema, ParseNullableSchema } from "./nullable";
+>NullableSchema : Symbol(NullableSchema, Decl(index.d.ts, 9, 13))
+>ParseNullableSchema : Symbol(ParseNullableSchema, Decl(index.d.ts, 9, 29))
+
+import type { OneOfSchema, ParseOneOfSchema } from "./oneOf";
+>OneOfSchema : Symbol(OneOfSchema, Decl(index.d.ts, 10, 13))
+>ParseOneOfSchema : Symbol(ParseOneOfSchema, Decl(index.d.ts, 10, 26))
+
+import type { ParseReferenceSchema, ReferencingSchema } from "./references";
+>ParseReferenceSchema : Symbol(ParseReferenceSchema, Decl(index.d.ts, 11, 13))
+>ReferencingSchema : Symbol(ReferencingSchema, Decl(index.d.ts, 11, 35))
+
+import type { ParseSingleTypeSchema, SingleTypeSchema } from "./singleType";
+>ParseSingleTypeSchema : Symbol(ParseSingleTypeSchema, Decl(index.d.ts, 12, 13))
+>SingleTypeSchema : Symbol(SingleTypeSchema, Decl(index.d.ts, 12, 36))
+
+export type ParseSchema<SCHEMA extends JSONSchema, OPTIONS extends ParseSchemaOptions, RESULT = JSONSchema extends SCHEMA ? M.Any : SCHEMA extends true | string ? M.Any : SCHEMA extends false ? M.Never : SCHEMA extends NullableSchema ? ParseNullableSchema<SCHEMA, OPTIONS> : SCHEMA extends ReferencingSchema ? ParseReferenceSchema<SCHEMA, OPTIONS> : And<DoesExtend<OPTIONS["parseIfThenElseKeywords"], true>, DoesExtend<SCHEMA, IfThenElseSchema>> extends true ? SCHEMA extends IfThenElseSchema ? ParseIfThenElseSchema<SCHEMA, OPTIONS> : never : And<DoesExtend<OPTIONS["parseNotKeyword"], true>, DoesExtend<SCHEMA, NotSchema>> extends true ? SCHEMA extends NotSchema ? ParseNotSchema<SCHEMA, OPTIONS> : never : SCHEMA extends AllOfSchema ? ParseAllOfSchema<SCHEMA, OPTIONS> : SCHEMA extends OneOfSchema ? ParseOneOfSchema<SCHEMA, OPTIONS> : SCHEMA extends AnyOfSchema ? ParseAnyOfSchema<SCHEMA, OPTIONS> : SCHEMA extends EnumSchema ? ParseEnumSchema<SCHEMA, OPTIONS> : SCHEMA extends ConstSchema ? ParseConstSchema<SCHEMA, OPTIONS> : SCHEMA extends MultipleTypesSchema ? ParseMultipleTypesSchema<SCHEMA, OPTIONS> : SCHEMA extends SingleTypeSchema ? ParseSingleTypeSchema<SCHEMA, OPTIONS> : M.Any> = OPTIONS extends {
+>ParseSchema : Symbol(ParseSchema, Decl(index.d.ts, 12, 76))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>JSONSchema : Symbol(JSONSchema, Decl(index.d.ts, 1, 37))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>ParseSchemaOptions : Symbol(ParseSchemaOptions)
+>RESULT : Symbol(RESULT, Decl(index.d.ts, 13, 86))
+>JSONSchema : Symbol(JSONSchema, Decl(index.d.ts, 1, 37))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>M : Symbol(M, Decl(index.d.ts, 0, 13))
+>Any : Symbol(M.Any, Decl(index.d.ts, 4, 20))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>M : Symbol(M, Decl(index.d.ts, 0, 13))
+>Any : Symbol(M.Any, Decl(index.d.ts, 4, 20))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>M : Symbol(M, Decl(index.d.ts, 0, 13))
+>Never : Symbol(M.Never, Decl(index.d.ts, 4, 13))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>NullableSchema : Symbol(NullableSchema, Decl(index.d.ts, 9, 13))
+>ParseNullableSchema : Symbol(ParseNullableSchema, Decl(index.d.ts, 9, 29))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>ReferencingSchema : Symbol(ReferencingSchema, Decl(index.d.ts, 11, 35))
+>ParseReferenceSchema : Symbol(ParseReferenceSchema, Decl(index.d.ts, 11, 13))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>And : Symbol(And)
+>DoesExtend : Symbol(DoesExtend)
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>DoesExtend : Symbol(DoesExtend)
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>IfThenElseSchema : Symbol(IfThenElseSchema, Decl(index.d.ts, 6, 13))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>IfThenElseSchema : Symbol(IfThenElseSchema, Decl(index.d.ts, 6, 13))
+>ParseIfThenElseSchema : Symbol(ParseIfThenElseSchema, Decl(index.d.ts, 6, 31))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>And : Symbol(And)
+>DoesExtend : Symbol(DoesExtend)
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>DoesExtend : Symbol(DoesExtend)
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>NotSchema : Symbol(NotSchema, Decl(index.d.ts, 8, 13))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>NotSchema : Symbol(NotSchema, Decl(index.d.ts, 8, 13))
+>ParseNotSchema : Symbol(ParseNotSchema, Decl(index.d.ts, 8, 24))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>AllOfSchema : Symbol(AllOfSchema, Decl(index.d.ts, 2, 13))
+>ParseAllOfSchema : Symbol(ParseAllOfSchema, Decl(index.d.ts, 2, 26))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>OneOfSchema : Symbol(OneOfSchema, Decl(index.d.ts, 10, 13))
+>ParseOneOfSchema : Symbol(ParseOneOfSchema, Decl(index.d.ts, 10, 26))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>AnyOfSchema : Symbol(AnyOfSchema, Decl(index.d.ts, 3, 13))
+>ParseAnyOfSchema : Symbol(ParseAnyOfSchema, Decl(index.d.ts, 3, 26))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>EnumSchema : Symbol(EnumSchema, Decl(index.d.ts, 5, 13))
+>ParseEnumSchema : Symbol(ParseEnumSchema, Decl(index.d.ts, 5, 25))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>ConstSchema : Symbol(ConstSchema, Decl(index.d.ts, 4, 13))
+>ParseConstSchema : Symbol(ParseConstSchema, Decl(index.d.ts, 4, 26))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>MultipleTypesSchema : Symbol(MultipleTypesSchema, Decl(index.d.ts, 7, 13))
+>ParseMultipleTypesSchema : Symbol(ParseMultipleTypesSchema, Decl(index.d.ts, 7, 34))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>SingleTypeSchema : Symbol(SingleTypeSchema, Decl(index.d.ts, 12, 36))
+>ParseSingleTypeSchema : Symbol(ParseSingleTypeSchema, Decl(index.d.ts, 12, 13))
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>M : Symbol(M, Decl(index.d.ts, 0, 13))
+>Any : Symbol(M.Any, Decl(index.d.ts, 4, 20))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+
+    deserialize: DeserializationPattern[];
+>deserialize : Symbol(deserialize, Decl(index.d.ts, 13, 1214))
+>DeserializationPattern : Symbol(DeserializationPattern, Decl(index.d.ts, 1, 13))
+
+} ? M.$Intersect<DeserializeSchema<SCHEMA, OPTIONS>, RESULT> : RESULT;
+>M : Symbol(M, Decl(index.d.ts, 0, 13))
+>$Intersect : Symbol(M.$Intersect, Decl(index.d.ts, 4, 293))
+>DeserializeSchema : Symbol(DeserializeSchema)
+>SCHEMA : Symbol(SCHEMA, Decl(index.d.ts, 13, 24))
+>OPTIONS : Symbol(OPTIONS, Decl(index.d.ts, 13, 50))
+>RESULT : Symbol(RESULT, Decl(index.d.ts, 13, 86))
+>RESULT : Symbol(RESULT, Decl(index.d.ts, 13, 86))
+
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/multipleTypes.d.ts ===
+import type { JSONSchema, JSONSchemaType } from "../definitions";
+>JSONSchema : Symbol(JSONSchema, Decl(multipleTypes.d.ts, 0, 13))
+>JSONSchemaType : Symbol(JSONSchemaType, Decl(multipleTypes.d.ts, 0, 25))
+
+export type MultipleTypesSchema = JSONSchema & Readonly<{
+>MultipleTypesSchema : Symbol(MultipleTypesSchema, Decl(multipleTypes.d.ts, 0, 65))
+>JSONSchema : Symbol(JSONSchema, Decl(multipleTypes.d.ts, 0, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+    type: readonly JSONSchemaType[];
+>type : Symbol(type, Decl(multipleTypes.d.ts, 1, 57))
+>JSONSchemaType : Symbol(JSONSchemaType, Decl(multipleTypes.d.ts, 0, 25))
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/not.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : Symbol(JSONSchema, Decl(not.d.ts, 0, 13))
+
+export type NotSchema = JSONSchema & Readonly<{
+>NotSchema : Symbol(NotSchema, Decl(not.d.ts, 0, 49))
+>JSONSchema : Symbol(JSONSchema, Decl(not.d.ts, 0, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+    not: JSONSchema;
+>not : Symbol(not, Decl(not.d.ts, 1, 47))
+>JSONSchema : Symbol(JSONSchema, Decl(not.d.ts, 0, 13))
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/nullable.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : Symbol(JSONSchema, Decl(nullable.d.ts, 0, 13))
+
+export type NullableSchema = JSONSchema & Readonly<{
+>NullableSchema : Symbol(NullableSchema, Decl(nullable.d.ts, 0, 49))
+>JSONSchema : Symbol(JSONSchema, Decl(nullable.d.ts, 0, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+    nullable: boolean;
+>nullable : Symbol(nullable, Decl(nullable.d.ts, 1, 52))
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/object.d.ts ===
+import type { M } from "ts-algebra";
+>M : Symbol(M, Decl(object.d.ts, 0, 13))
+
+import type { ParseSchema, ParseSchemaOptions } from "./index";
+>ParseSchema : Symbol(ParseSchema, Decl(object.d.ts, 1, 13))
+>ParseSchemaOptions : Symbol(ParseSchemaOptions, Decl(object.d.ts, 1, 26))
+
+export type ParseObjectSchema<OBJECT_SCHEMA extends ObjectSchema, OPTIONS extends ParseSchemaOptions> = OBJECT_SCHEMA extends Readonly<{
+>ParseObjectSchema : Symbol(ParseObjectSchema, Decl(object.d.ts, 1, 63))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 2, 30))
+>ObjectSchema : Symbol(ObjectSchema)
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 2, 65))
+>ParseSchemaOptions : Symbol(ParseSchemaOptions, Decl(object.d.ts, 1, 26))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 2, 30))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+}> ? M.$Object<{
+>M : Symbol(M, Decl(object.d.ts, 0, 13))
+>$Object : Symbol(M.$Object, Decl(index.d.ts, 4, 131))
+
+}, GetRequired<OBJECT_SCHEMA, OPTIONS>, GetOpenProps<OBJECT_SCHEMA, OPTIONS>, GetClosedOnResolve<OBJECT_SCHEMA>> : M.$Object<{}, GetRequired<OBJECT_SCHEMA, OPTIONS>, GetOpenProps<OBJECT_SCHEMA, OPTIONS>, GetClosedOnResolve<OBJECT_SCHEMA>>;
+>GetRequired : Symbol(GetRequired, Decl(object.d.ts, 4, 239))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 2, 30))
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 2, 65))
+>GetOpenProps : Symbol(GetOpenProps, Decl(object.d.ts, 7, 55))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 2, 30))
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 2, 65))
+>GetClosedOnResolve : Symbol(GetClosedOnResolve, Decl(object.d.ts, 13, 71))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 2, 30))
+>M : Symbol(M, Decl(object.d.ts, 0, 13))
+>$Object : Symbol(M.$Object, Decl(index.d.ts, 4, 131))
+>GetRequired : Symbol(GetRequired, Decl(object.d.ts, 4, 239))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 2, 30))
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 2, 65))
+>GetOpenProps : Symbol(GetOpenProps, Decl(object.d.ts, 7, 55))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 2, 30))
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 2, 65))
+>GetClosedOnResolve : Symbol(GetClosedOnResolve, Decl(object.d.ts, 13, 71))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 2, 30))
+
+type GetRequired<OBJECT_SCHEMA extends ObjectSchema, OPTIONS extends ParseSchemaOptions> = (OBJECT_SCHEMA extends Readonly<{
+>GetRequired : Symbol(GetRequired, Decl(object.d.ts, 4, 239))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 5, 17))
+>ObjectSchema : Symbol(ObjectSchema)
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 5, 52))
+>ParseSchemaOptions : Symbol(ParseSchemaOptions, Decl(object.d.ts, 1, 26))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 5, 17))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+}> ? {
+}[keyof OBJECT_SCHEMA["properties"] & string] : never);
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 5, 17))
+
+type GetOpenProps<OBJECT_SCHEMA extends ObjectSchema, OPTIONS extends ParseSchemaOptions> = OBJECT_SCHEMA extends Readonly<{
+>GetOpenProps : Symbol(GetOpenProps, Decl(object.d.ts, 7, 55))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 8, 18))
+>ObjectSchema : Symbol(ObjectSchema)
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 8, 53))
+>ParseSchemaOptions : Symbol(ParseSchemaOptions, Decl(object.d.ts, 1, 26))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 8, 18))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+    additionalProperties: JSONSchema;
+>additionalProperties : Symbol(additionalProperties, Decl(object.d.ts, 8, 124))
+>JSONSchema : Symbol(JSONSchema)
+
+}> ? OBJECT_SCHEMA extends Readonly<{
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 8, 18))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+}> ? AdditionalAndPatternProps<OBJECT_SCHEMA["additionalProperties"], OBJECT_SCHEMA["patternProperties"], OPTIONS> : ParseSchema<OBJECT_SCHEMA["additionalProperties"], OPTIONS> : OBJECT_SCHEMA extends Readonly<{
+>AdditionalAndPatternProps : Symbol(AdditionalAndPatternProps)
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 8, 18))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 8, 18))
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 8, 53))
+>ParseSchema : Symbol(ParseSchema, Decl(object.d.ts, 1, 13))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 8, 18))
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 8, 53))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 8, 18))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+    patternProperties: Record<string, JSONSchema>;
+>patternProperties : Symbol(patternProperties, Decl(object.d.ts, 11, 211))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>JSONSchema : Symbol(JSONSchema)
+
+}> ? PatternProps<OBJECT_SCHEMA["patternProperties"], OPTIONS> : M.Any;
+>PatternProps : Symbol(PatternProps, Decl(object.d.ts, 16, 18))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 8, 18))
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 8, 53))
+>M : Symbol(M, Decl(object.d.ts, 0, 13))
+>Any : Symbol(M.Any, Decl(index.d.ts, 4, 20))
+
+type GetClosedOnResolve<OBJECT_SCHEMA extends ObjectSchema> = OBJECT_SCHEMA extends Readonly<{
+>GetClosedOnResolve : Symbol(GetClosedOnResolve, Decl(object.d.ts, 13, 71))
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 14, 24))
+>ObjectSchema : Symbol(ObjectSchema)
+>OBJECT_SCHEMA : Symbol(OBJECT_SCHEMA, Decl(object.d.ts, 14, 24))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+    unevaluatedProperties: false;
+>unevaluatedProperties : Symbol(unevaluatedProperties, Decl(object.d.ts, 14, 94))
+
+}> ? true : false;
+type PatternProps<PATTERN_PROPERTY_SCHEMAS extends Readonly<Record<string, JSONSchema>>, OPTIONS extends ParseSchemaOptions> = M.$Union<{
+>PatternProps : Symbol(PatternProps, Decl(object.d.ts, 16, 18))
+>PATTERN_PROPERTY_SCHEMAS : Symbol(PATTERN_PROPERTY_SCHEMAS, Decl(object.d.ts, 17, 18))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>JSONSchema : Symbol(JSONSchema)
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 17, 88))
+>ParseSchemaOptions : Symbol(ParseSchemaOptions, Decl(object.d.ts, 1, 26))
+>M : Symbol(M, Decl(object.d.ts, 0, 13))
+>$Union : Symbol(M.$Union, Decl(index.d.ts, 4, 159))
+
+    [KEY in keyof PATTERN_PROPERTY_SCHEMAS]: ParseSchema<PATTERN_PROPERTY_SCHEMAS[KEY], OPTIONS>;
+>KEY : Symbol(KEY, Decl(object.d.ts, 18, 5))
+>PATTERN_PROPERTY_SCHEMAS : Symbol(PATTERN_PROPERTY_SCHEMAS, Decl(object.d.ts, 17, 18))
+>ParseSchema : Symbol(ParseSchema, Decl(object.d.ts, 1, 13))
+>PATTERN_PROPERTY_SCHEMAS : Symbol(PATTERN_PROPERTY_SCHEMAS, Decl(object.d.ts, 17, 18))
+>KEY : Symbol(KEY, Decl(object.d.ts, 18, 5))
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 17, 88))
+
+}[keyof PATTERN_PROPERTY_SCHEMAS]>;
+>PATTERN_PROPERTY_SCHEMAS : Symbol(PATTERN_PROPERTY_SCHEMAS, Decl(object.d.ts, 17, 18))
+
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/oneOf.d.ts ===
+import type { JSONSchema } from "../definitions";
+>JSONSchema : Symbol(JSONSchema, Decl(oneOf.d.ts, 0, 13))
+
+export type OneOfSchema = JSONSchema & Readonly<{
+>OneOfSchema : Symbol(OneOfSchema, Decl(oneOf.d.ts, 0, 49))
+>JSONSchema : Symbol(JSONSchema, Decl(oneOf.d.ts, 0, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+    oneOf: readonly JSONSchema[];
+>oneOf : Symbol(oneOf, Decl(oneOf.d.ts, 1, 49))
+>JSONSchema : Symbol(JSONSchema, Decl(oneOf.d.ts, 0, 13))
+
+}>;
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/references/index.d.ts ===
+import type { JSONSchema } from "../../definitions";
+>JSONSchema : Symbol(JSONSchema, Decl(index.d.ts, 0, 13))
+
+export type ReferencingSchema = JSONSchema & {
+>ReferencingSchema : Symbol(ReferencingSchema, Decl(index.d.ts, 0, 52))
+>JSONSchema : Symbol(JSONSchema, Decl(index.d.ts, 0, 13))
+
+    $ref: string;
+>$ref : Symbol($ref, Decl(index.d.ts, 1, 46))
+
+};
+=== node_modules/json-schema-to-ts/lib/types/parse-schema/singleType.d.ts ===
+import type { ArrayOrTupleSchema, ParseArrayOrTupleSchema } from "./array";
+>ArrayOrTupleSchema : Symbol(ArrayOrTupleSchema, Decl(singleType.d.ts, 0, 13))
+>ParseArrayOrTupleSchema : Symbol(ParseArrayOrTupleSchema, Decl(singleType.d.ts, 0, 33))
+
+import type { ObjectSchema, ParseObjectSchema } from "./object";
+>ObjectSchema : Symbol(ObjectSchema, Decl(singleType.d.ts, 1, 13))
+>ParseObjectSchema : Symbol(ParseObjectSchema, Decl(singleType.d.ts, 1, 27))
+
+export type ParseSingleTypeSchema<SINGLE_TYPE_SCHEMA extends SingleTypeSchema, OPTIONS extends ParseSchemaOptions> = SINGLE_TYPE_SCHEMA extends Readonly<{
+>ParseSingleTypeSchema : Symbol(ParseSingleTypeSchema, Decl(singleType.d.ts, 1, 64))
+>SINGLE_TYPE_SCHEMA : Symbol(SINGLE_TYPE_SCHEMA, Decl(singleType.d.ts, 2, 34))
+>SingleTypeSchema : Symbol(SingleTypeSchema)
+>OPTIONS : Symbol(OPTIONS, Decl(singleType.d.ts, 2, 78))
+>ParseSchemaOptions : Symbol(ParseSchemaOptions)
+>SINGLE_TYPE_SCHEMA : Symbol(SINGLE_TYPE_SCHEMA, Decl(singleType.d.ts, 2, 34))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+    type: "string";
+>type : Symbol(type, Decl(singleType.d.ts, 2, 154))
+
+}> ? M.Primitive<string> : SINGLE_TYPE_SCHEMA extends ArrayOrTupleSchema ? ParseArrayOrTupleSchema<SINGLE_TYPE_SCHEMA, OPTIONS> : SINGLE_TYPE_SCHEMA extends ObjectSchema ? ParseObjectSchema<SINGLE_TYPE_SCHEMA, OPTIONS> : M.Never;
+>M : Symbol(M)
+>Primitive : Symbol(M.Primitive)
+>SINGLE_TYPE_SCHEMA : Symbol(SINGLE_TYPE_SCHEMA, Decl(singleType.d.ts, 2, 34))
+>ArrayOrTupleSchema : Symbol(ArrayOrTupleSchema, Decl(singleType.d.ts, 0, 13))
+>ParseArrayOrTupleSchema : Symbol(ParseArrayOrTupleSchema, Decl(singleType.d.ts, 0, 33))
+>SINGLE_TYPE_SCHEMA : Symbol(SINGLE_TYPE_SCHEMA, Decl(singleType.d.ts, 2, 34))
+>OPTIONS : Symbol(OPTIONS, Decl(singleType.d.ts, 2, 78))
+>SINGLE_TYPE_SCHEMA : Symbol(SINGLE_TYPE_SCHEMA, Decl(singleType.d.ts, 2, 34))
+>ObjectSchema : Symbol(ObjectSchema, Decl(singleType.d.ts, 1, 13))
+>ParseObjectSchema : Symbol(ParseObjectSchema, Decl(singleType.d.ts, 1, 27))
+>SINGLE_TYPE_SCHEMA : Symbol(SINGLE_TYPE_SCHEMA, Decl(singleType.d.ts, 2, 34))
+>OPTIONS : Symbol(OPTIONS, Decl(singleType.d.ts, 2, 78))
+>M : Symbol(M)
+>Never : Symbol(M.Never)
+
+=== node_modules/json-schema-to-ts/lib/types/type-utils/index.d.ts ===
+export type { Narrow } from "./narrow";
+>Narrow : Symbol(Narrow, Decl(index.d.ts, 0, 13))
+
+=== node_modules/json-schema-to-ts/lib/types/type-utils/narrow.d.ts ===
+export type Narrow<INPUT> = INPUT extends Promise<infer AWAITED> ? Promise<Narrow<AWAITED>> : INPUT extends (...args: infer ARGS) => infer RETURN ? (...args: Narrow<ARGS>) => Narrow<RETURN> : INPUT extends [] ? [] : INPUT extends object ? {
+>Narrow : Symbol(Narrow, Decl(narrow.d.ts, 0, 0))
+>INPUT : Symbol(INPUT, Decl(narrow.d.ts, 0, 19))
+>INPUT : Symbol(INPUT, Decl(narrow.d.ts, 0, 19))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>AWAITED : Symbol(AWAITED, Decl(narrow.d.ts, 0, 55))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Narrow : Symbol(Narrow, Decl(narrow.d.ts, 0, 0))
+>AWAITED : Symbol(AWAITED, Decl(narrow.d.ts, 0, 55))
+>INPUT : Symbol(INPUT, Decl(narrow.d.ts, 0, 19))
+>args : Symbol(args, Decl(narrow.d.ts, 0, 109))
+>ARGS : Symbol(ARGS, Decl(narrow.d.ts, 0, 123))
+>RETURN : Symbol(RETURN, Decl(narrow.d.ts, 0, 138))
+>args : Symbol(args, Decl(narrow.d.ts, 0, 149))
+>Narrow : Symbol(Narrow, Decl(narrow.d.ts, 0, 0))
+>ARGS : Symbol(ARGS, Decl(narrow.d.ts, 0, 123))
+>Narrow : Symbol(Narrow, Decl(narrow.d.ts, 0, 0))
+>RETURN : Symbol(RETURN, Decl(narrow.d.ts, 0, 138))
+>INPUT : Symbol(INPUT, Decl(narrow.d.ts, 0, 19))
+>INPUT : Symbol(INPUT, Decl(narrow.d.ts, 0, 19))
+
+    [KEY in keyof INPUT]: Narrow<INPUT[KEY]>;
+>KEY : Symbol(KEY, Decl(narrow.d.ts, 1, 5))
+>INPUT : Symbol(INPUT, Decl(narrow.d.ts, 0, 19))
+>Narrow : Symbol(Narrow, Decl(narrow.d.ts, 0, 0))
+>INPUT : Symbol(INPUT, Decl(narrow.d.ts, 0, 19))
+>KEY : Symbol(KEY, Decl(narrow.d.ts, 1, 5))
+
+} : INPUT extends string | number | boolean | bigint ? INPUT : never;
+>INPUT : Symbol(INPUT, Decl(narrow.d.ts, 0, 19))
+>INPUT : Symbol(INPUT, Decl(narrow.d.ts, 0, 19))
+
+=== node_modules/json-schema-to-ts/lib/types/utils/asConst.d.ts ===
+import type { Narrow } from "../type-utils";
+>Narrow : Symbol(Narrow, Decl(asConst.d.ts, 0, 13))
+
+export declare const asConst: <INPUT>(input: Narrow<INPUT>) => Narrow<INPUT>;
+>asConst : Symbol(asConst, Decl(asConst.d.ts, 1, 20))
+>INPUT : Symbol(INPUT, Decl(asConst.d.ts, 1, 31))
+>input : Symbol(input, Decl(asConst.d.ts, 1, 38))
+>Narrow : Symbol(Narrow, Decl(asConst.d.ts, 0, 13))
+>INPUT : Symbol(INPUT, Decl(asConst.d.ts, 1, 31))
+>Narrow : Symbol(Narrow, Decl(asConst.d.ts, 0, 13))
+>INPUT : Symbol(INPUT, Decl(asConst.d.ts, 1, 31))
+
+=== node_modules/json-schema-to-ts/lib/types/utils/index.d.ts ===
+export { asConst } from "./asConst";
+>asConst : Symbol(asConst, Decl(index.d.ts, 0, 8))
+
+=== node_modules/ts-algebra/lib/index.d.ts ===
+export * as M from "./meta-types";
+>M : Symbol(M, Decl(index.d.ts, 0, 6))
+
+=== node_modules/ts-algebra/lib/meta-types/any.d.ts ===
+export declare type Any<IS_SERIALIZED extends boolean = false, DESERIALIZED = never> = {
+>Any : Symbol(Any, Decl(any.d.ts, 0, 0))
+>IS_SERIALIZED : Symbol(IS_SERIALIZED, Decl(any.d.ts, 0, 24))
+>DESERIALIZED : Symbol(DESERIALIZED, Decl(any.d.ts, 0, 62))
+
+    deserialized: DESERIALIZED;
+>deserialized : Symbol(deserialized, Decl(any.d.ts, 0, 88))
+>DESERIALIZED : Symbol(DESERIALIZED, Decl(any.d.ts, 0, 62))
+
+};
+export declare type AnyType = {
+>AnyType : Symbol(AnyType, Decl(any.d.ts, 2, 2))
+
+    isSerialized: boolean;
+>isSerialized : Symbol(isSerialized, Decl(any.d.ts, 3, 31))
+
+};
+=== node_modules/ts-algebra/lib/meta-types/array.d.ts ===
+export declare type ArrayType = {
+>ArrayType : Symbol(ArrayType, Decl(array.d.ts, 0, 0))
+
+    type: ArrayTypeId;
+>type : Symbol(type, Decl(array.d.ts, 0, 33))
+>ArrayTypeId : Symbol(ArrayTypeId)
+
+    deserialized: unknown;
+>deserialized : Symbol(deserialized, Decl(array.d.ts, 1, 22))
+
+};
+=== node_modules/ts-algebra/lib/meta-types/const.d.ts ===
+export declare type ConstType = {
+>ConstType : Symbol(ConstType, Decl(const.d.ts, 0, 0))
+
+    isSerialized: boolean;
+>isSerialized : Symbol(isSerialized, Decl(const.d.ts, 0, 33))
+
+};
+=== node_modules/ts-algebra/lib/meta-types/enum.d.ts ===
+export declare type EnumType = {
+>EnumType : Symbol(EnumType, Decl(enum.d.ts, 0, 0))
+
+    isSerialized: boolean;
+>isSerialized : Symbol(isSerialized, Decl(enum.d.ts, 0, 32))
+
+};
+=== node_modules/ts-algebra/lib/meta-types/index.d.ts ===
+import type { Any, AnyType } from "./any";
+>Any : Symbol(Any, Decl(index.d.ts, 0, 13))
+>AnyType : Symbol(AnyType, Decl(index.d.ts, 0, 18))
+
+import type { _$Object, _Object, ObjectType } from "./object";
+>_$Object : Symbol(_$Object, Decl(index.d.ts, 1, 13))
+>_Object : Symbol(_Object, Decl(index.d.ts, 1, 23))
+>ObjectType : Symbol(ObjectType, Decl(index.d.ts, 1, 32))
+
+import type { $Resolve, Resolve } from "./resolve";
+>$Resolve : Symbol($Resolve, Decl(index.d.ts, 2, 13))
+>Resolve : Symbol(Resolve, Decl(index.d.ts, 2, 23))
+
+import type { $Union, Union, UnionType } from "./union";
+>$Union : Symbol($Union, Decl(index.d.ts, 3, 13))
+>Union : Symbol(Union, Decl(index.d.ts, 3, 21))
+>UnionType : Symbol(UnionType, Decl(index.d.ts, 3, 28))
+
+export type { Never, Any, Const, Enum, Primitive, $Primitive, _Array as Array, _$Array as $Array, Tuple, $Tuple, _Object as Object, _$Object as $Object, Union, $Union, NeverType, AnyType, ConstType, EnumType, PrimitiveType, ArrayType, TupleType, ObjectType, UnionType, Type, $Resolve, Resolve, $Intersect, Intersect, _$Exclude as $Exclude, _Exclude as Exclude, };
+>Never : Symbol(Never, Decl(index.d.ts, 4, 13))
+>Any : Symbol(Any, Decl(index.d.ts, 4, 20))
+>Const : Symbol(Const, Decl(index.d.ts, 4, 25))
+>Enum : Symbol(Enum, Decl(index.d.ts, 4, 32))
+>Primitive : Symbol(Primitive, Decl(index.d.ts, 4, 38))
+>$Primitive : Symbol($Primitive, Decl(index.d.ts, 4, 49))
+>Array : Symbol(Array, Decl(index.d.ts, 4, 61))
+>$Array : Symbol($Array, Decl(index.d.ts, 4, 78))
+>Tuple : Symbol(Tuple, Decl(index.d.ts, 4, 97))
+>$Tuple : Symbol($Tuple, Decl(index.d.ts, 4, 104))
+>_Object : Symbol(_Object, Decl(index.d.ts, 1, 23))
+>Object : Symbol(Object, Decl(index.d.ts, 4, 112))
+>_$Object : Symbol(_$Object, Decl(index.d.ts, 1, 13))
+>$Object : Symbol($Object, Decl(index.d.ts, 4, 131))
+>Union : Symbol(Union, Decl(index.d.ts, 4, 152))
+>$Union : Symbol($Union, Decl(index.d.ts, 4, 159))
+>NeverType : Symbol(NeverType, Decl(index.d.ts, 4, 167))
+>AnyType : Symbol(AnyType, Decl(index.d.ts, 4, 178))
+>ConstType : Symbol(ConstType, Decl(index.d.ts, 4, 187))
+>EnumType : Symbol(EnumType, Decl(index.d.ts, 4, 198))
+>PrimitiveType : Symbol(PrimitiveType, Decl(index.d.ts, 4, 208))
+>ArrayType : Symbol(ArrayType, Decl(index.d.ts, 4, 223))
+>TupleType : Symbol(TupleType, Decl(index.d.ts, 4, 234))
+>ObjectType : Symbol(ObjectType, Decl(index.d.ts, 4, 245))
+>UnionType : Symbol(UnionType, Decl(index.d.ts, 4, 257))
+>Type : Symbol(Type, Decl(index.d.ts, 4, 268))
+>$Resolve : Symbol($Resolve, Decl(index.d.ts, 4, 274))
+>Resolve : Symbol(Resolve, Decl(index.d.ts, 4, 284))
+>$Intersect : Symbol($Intersect, Decl(index.d.ts, 4, 293))
+>Intersect : Symbol(Intersect, Decl(index.d.ts, 4, 305))
+>$Exclude : Symbol($Exclude, Decl(index.d.ts, 4, 316))
+>Exclude : Symbol(Exclude, Decl(index.d.ts, 4, 339))
+
+=== node_modules/ts-algebra/lib/meta-types/never.d.ts ===
+export declare type Never = {
+>Never : Symbol(Never, Decl(never.d.ts, 0, 0))
+
+    type: NeverTypeId;
+>type : Symbol(type, Decl(never.d.ts, 0, 29))
+>NeverTypeId : Symbol(NeverTypeId)
+
+};
+export declare type NeverType = Never;
+>NeverType : Symbol(NeverType, Decl(never.d.ts, 2, 2))
+>Never : Symbol(Never, Decl(never.d.ts, 0, 0))
+
+export declare type ResolveNever = never;
+>ResolveNever : Symbol(ResolveNever, Decl(never.d.ts, 3, 38))
+
+=== node_modules/ts-algebra/lib/meta-types/object.d.ts ===
+import type { And, DeepMergeUnsafe, DoesExtend, If, IsNever, Not } from "../utils";
+>And : Symbol(And, Decl(object.d.ts, 0, 13))
+>DeepMergeUnsafe : Symbol(DeepMergeUnsafe, Decl(object.d.ts, 0, 18))
+>DoesExtend : Symbol(DoesExtend, Decl(object.d.ts, 0, 35))
+>If : Symbol(If, Decl(object.d.ts, 0, 47))
+>IsNever : Symbol(IsNever, Decl(object.d.ts, 0, 51))
+>Not : Symbol(Not, Decl(object.d.ts, 0, 60))
+
+import type { Never, NeverType } from "./never";
+>Never : Symbol(Never, Decl(object.d.ts, 1, 13))
+>NeverType : Symbol(NeverType, Decl(object.d.ts, 1, 20))
+
+import type { Resolve, ResolveOptions } from "./resolve";
+>Resolve : Symbol(Resolve, Decl(object.d.ts, 2, 13))
+>ResolveOptions : Symbol(ResolveOptions, Decl(object.d.ts, 2, 22))
+
+import type { Deserialized, IsSerialized } from "./utils";
+>Deserialized : Symbol(Deserialized, Decl(object.d.ts, 3, 13))
+>IsSerialized : Symbol(IsSerialized, Decl(object.d.ts, 3, 27))
+
+export declare type _$Object<VALUES = {}, REQUIRED_KEYS = never, OPEN_PROPS = Never, CLOSE_ON_RESOLVE = false, IS_SERIALIZED = false, DESERIALIZED = never> = DoesExtend<true, {
+>_$Object : Symbol(_$Object, Decl(object.d.ts, 3, 58))
+>VALUES : Symbol(VALUES, Decl(object.d.ts, 4, 29))
+>REQUIRED_KEYS : Symbol(REQUIRED_KEYS, Decl(object.d.ts, 4, 41))
+>OPEN_PROPS : Symbol(OPEN_PROPS, Decl(object.d.ts, 4, 64))
+>Never : Symbol(Never, Decl(object.d.ts, 1, 13))
+>CLOSE_ON_RESOLVE : Symbol(CLOSE_ON_RESOLVE, Decl(object.d.ts, 4, 84))
+>IS_SERIALIZED : Symbol(IS_SERIALIZED, Decl(object.d.ts, 4, 110))
+>DESERIALIZED : Symbol(DESERIALIZED, Decl(object.d.ts, 4, 133))
+>DoesExtend : Symbol(DoesExtend, Decl(object.d.ts, 0, 35))
+
+}[Extract<REQUIRED_KEYS, string>]> extends true ? Never : {
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>REQUIRED_KEYS : Symbol(REQUIRED_KEYS, Decl(object.d.ts, 4, 41))
+>Never : Symbol(Never, Decl(object.d.ts, 1, 13))
+
+    isOpen: Not<DoesExtend<OPEN_PROPS, NeverType>>;
+>isOpen : Symbol(isOpen, Decl(object.d.ts, 5, 59))
+>Not : Symbol(Not, Decl(object.d.ts, 0, 60))
+>DoesExtend : Symbol(DoesExtend, Decl(object.d.ts, 0, 35))
+>OPEN_PROPS : Symbol(OPEN_PROPS, Decl(object.d.ts, 4, 64))
+>NeverType : Symbol(NeverType, Decl(object.d.ts, 1, 20))
+
+    openProps: OPEN_PROPS;
+>openProps : Symbol(openProps, Decl(object.d.ts, 6, 51))
+>OPEN_PROPS : Symbol(OPEN_PROPS, Decl(object.d.ts, 4, 64))
+
+    closeOnResolve: CLOSE_ON_RESOLVE;
+>closeOnResolve : Symbol(closeOnResolve, Decl(object.d.ts, 7, 26))
+>CLOSE_ON_RESOLVE : Symbol(CLOSE_ON_RESOLVE, Decl(object.d.ts, 4, 84))
+
+    deserialized: DESERIALIZED;
+>deserialized : Symbol(deserialized, Decl(object.d.ts, 8, 37))
+>DESERIALIZED : Symbol(DESERIALIZED, Decl(object.d.ts, 4, 133))
+
+};
+export declare type ObjectType = {
+>ObjectType : Symbol(ObjectType, Decl(object.d.ts, 10, 2))
+
+    deserialized: unknown;
+>deserialized : Symbol(deserialized, Decl(object.d.ts, 11, 34))
+
+};
+export declare type IsObjectOpen<META_OBJECT extends ObjectType> = META_OBJECT["isOpen"];
+>IsObjectOpen : Symbol(IsObjectOpen, Decl(object.d.ts, 13, 2))
+>META_OBJECT : Symbol(META_OBJECT, Decl(object.d.ts, 14, 33))
+>ObjectType : Symbol(ObjectType, Decl(object.d.ts, 10, 2))
+>META_OBJECT : Symbol(META_OBJECT, Decl(object.d.ts, 14, 33))
+
+export declare type ObjectOpenProps<META_OBJECT extends ObjectType> = META_OBJECT["openProps"];
+>ObjectOpenProps : Symbol(ObjectOpenProps, Decl(object.d.ts, 14, 89))
+>META_OBJECT : Symbol(META_OBJECT, Decl(object.d.ts, 15, 36))
+>ObjectType : Symbol(ObjectType, Decl(object.d.ts, 10, 2))
+>META_OBJECT : Symbol(META_OBJECT, Decl(object.d.ts, 15, 36))
+
+export declare type IsObjectClosedOnResolve<META_OBJECT extends ObjectType> = META_OBJECT["closeOnResolve"];
+>IsObjectClosedOnResolve : Symbol(IsObjectClosedOnResolve, Decl(object.d.ts, 15, 95))
+>META_OBJECT : Symbol(META_OBJECT, Decl(object.d.ts, 16, 44))
+>ObjectType : Symbol(ObjectType, Decl(object.d.ts, 10, 2))
+>META_OBJECT : Symbol(META_OBJECT, Decl(object.d.ts, 16, 44))
+
+export declare type ResolveObject<META_OBJECT extends ObjectType, OPTIONS extends ResolveOptions> = If<And<OPTIONS["deserialize"], IsSerialized<META_OBJECT>>, Deserialized<META_OBJECT>, DeepMergeUnsafe<If<And<IsObjectOpen<META_OBJECT>, Not<IsObjectClosedOnResolve<META_OBJECT>>>, If<IsObjectEmpty<META_OBJECT>, {
+>ResolveObject : Symbol(ResolveObject, Decl(object.d.ts, 16, 108))
+>META_OBJECT : Symbol(META_OBJECT, Decl(object.d.ts, 17, 34))
+>ObjectType : Symbol(ObjectType, Decl(object.d.ts, 10, 2))
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 17, 65))
+>ResolveOptions : Symbol(ResolveOptions, Decl(object.d.ts, 2, 22))
+>If : Symbol(If, Decl(object.d.ts, 0, 47))
+>And : Symbol(And, Decl(object.d.ts, 0, 13))
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 17, 65))
+>IsSerialized : Symbol(IsSerialized, Decl(object.d.ts, 3, 27))
+>META_OBJECT : Symbol(META_OBJECT, Decl(object.d.ts, 17, 34))
+>Deserialized : Symbol(Deserialized, Decl(object.d.ts, 3, 13))
+>META_OBJECT : Symbol(META_OBJECT, Decl(object.d.ts, 17, 34))
+>DeepMergeUnsafe : Symbol(DeepMergeUnsafe, Decl(object.d.ts, 0, 18))
+>If : Symbol(If, Decl(object.d.ts, 0, 47))
+>And : Symbol(And, Decl(object.d.ts, 0, 13))
+>IsObjectOpen : Symbol(IsObjectOpen, Decl(object.d.ts, 13, 2))
+>META_OBJECT : Symbol(META_OBJECT, Decl(object.d.ts, 17, 34))
+>Not : Symbol(Not, Decl(object.d.ts, 0, 60))
+>IsObjectClosedOnResolve : Symbol(IsObjectClosedOnResolve, Decl(object.d.ts, 15, 95))
+>META_OBJECT : Symbol(META_OBJECT, Decl(object.d.ts, 17, 34))
+>If : Symbol(If, Decl(object.d.ts, 0, 47))
+>IsObjectEmpty : Symbol(IsObjectEmpty)
+>META_OBJECT : Symbol(META_OBJECT, Decl(object.d.ts, 17, 34))
+
+    [KEY: string]: Resolve<ObjectOpenProps<META_OBJECT>, OPTIONS>;
+>KEY : Symbol(KEY, Decl(object.d.ts, 18, 5))
+>Resolve : Symbol(Resolve, Decl(object.d.ts, 2, 13))
+>ObjectOpenProps : Symbol(ObjectOpenProps, Decl(object.d.ts, 14, 89))
+>META_OBJECT : Symbol(META_OBJECT, Decl(object.d.ts, 17, 34))
+>OPTIONS : Symbol(OPTIONS, Decl(object.d.ts, 17, 65))
+
+}>, {}>, DeepMergeUnsafe<{
+>DeepMergeUnsafe : Symbol(DeepMergeUnsafe, Decl(object.d.ts, 0, 18))
+
+}, {
+}>>>;
+=== node_modules/ts-algebra/lib/meta-types/primitive.d.ts ===
+export declare type PrimitiveType = {
+>PrimitiveType : Symbol(PrimitiveType, Decl(primitive.d.ts, 0, 0))
+
+    isSerialized: boolean;
+>isSerialized : Symbol(isSerialized, Decl(primitive.d.ts, 0, 37))
+
+};
+=== node_modules/ts-algebra/lib/meta-types/resolve.d.ts ===
+import type { AnyType, ResolveAny } from "./any";
+>AnyType : Symbol(AnyType, Decl(resolve.d.ts, 0, 13))
+>ResolveAny : Symbol(ResolveAny, Decl(resolve.d.ts, 0, 22))
+
+import type { ArrayType, ResolveArray } from "./array";
+>ArrayType : Symbol(ArrayType, Decl(resolve.d.ts, 1, 13))
+>ResolveArray : Symbol(ResolveArray, Decl(resolve.d.ts, 1, 24))
+
+import type { ConstType, ResolveConst } from "./const";
+>ConstType : Symbol(ConstType, Decl(resolve.d.ts, 2, 13))
+>ResolveConst : Symbol(ResolveConst, Decl(resolve.d.ts, 2, 24))
+
+import type { EnumType, ResolveEnum } from "./enum";
+>EnumType : Symbol(EnumType, Decl(resolve.d.ts, 3, 13))
+>ResolveEnum : Symbol(ResolveEnum, Decl(resolve.d.ts, 3, 23))
+
+import type { NeverType, ResolveNever } from "./never";
+>NeverType : Symbol(NeverType, Decl(resolve.d.ts, 4, 13))
+>ResolveNever : Symbol(ResolveNever, Decl(resolve.d.ts, 4, 24))
+
+import type { ObjectType, ResolveObject } from "./object";
+>ObjectType : Symbol(ObjectType, Decl(resolve.d.ts, 5, 13))
+>ResolveObject : Symbol(ResolveObject, Decl(resolve.d.ts, 5, 25))
+
+import type { PrimitiveType, ResolvePrimitive } from "./primitive";
+>PrimitiveType : Symbol(PrimitiveType, Decl(resolve.d.ts, 6, 13))
+>ResolvePrimitive : Symbol(ResolvePrimitive, Decl(resolve.d.ts, 6, 28))
+
+import type { ResolveTuple, TupleType } from "./tuple";
+>ResolveTuple : Symbol(ResolveTuple, Decl(resolve.d.ts, 7, 13))
+>TupleType : Symbol(TupleType, Decl(resolve.d.ts, 7, 27))
+
+import type { ResolveUnion, UnionType } from "./union";
+>ResolveUnion : Symbol(ResolveUnion, Decl(resolve.d.ts, 8, 13))
+>UnionType : Symbol(UnionType, Decl(resolve.d.ts, 8, 27))
+
+export declare type Resolve<META_TYPE extends Type, OPTIONS extends ResolveOptions = ResolveDefaultOptions> = $Resolve<META_TYPE, OPTIONS>;
+>Resolve : Symbol(Resolve, Decl(resolve.d.ts, 8, 55))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 9, 28))
+>Type : Symbol(Type)
+>OPTIONS : Symbol(OPTIONS, Decl(resolve.d.ts, 9, 51))
+>ResolveOptions : Symbol(ResolveOptions)
+>ResolveDefaultOptions : Symbol(ResolveDefaultOptions)
+>$Resolve : Symbol($Resolve, Decl(resolve.d.ts, 9, 139))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 9, 28))
+>OPTIONS : Symbol(OPTIONS, Decl(resolve.d.ts, 9, 51))
+
+export declare type $Resolve<META_TYPE, OPTIONS extends ResolveOptions = ResolveDefaultOptions> = META_TYPE extends AnyType ? ResolveAny<META_TYPE, OPTIONS> : META_TYPE extends NeverType ? ResolveNever : META_TYPE extends ConstType ? ResolveConst<META_TYPE, OPTIONS> : META_TYPE extends EnumType ? ResolveEnum<META_TYPE, OPTIONS> : META_TYPE extends PrimitiveType ? ResolvePrimitive<META_TYPE, OPTIONS> : META_TYPE extends ArrayType ? ResolveArray<META_TYPE, OPTIONS> : META_TYPE extends TupleType ? ResolveTuple<META_TYPE, OPTIONS> : META_TYPE extends ObjectType ? ResolveObject<META_TYPE, OPTIONS> : META_TYPE extends UnionType ? ResolveUnion<META_TYPE, OPTIONS> : never;
+>$Resolve : Symbol($Resolve, Decl(resolve.d.ts, 9, 139))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>OPTIONS : Symbol(OPTIONS, Decl(resolve.d.ts, 10, 39))
+>ResolveOptions : Symbol(ResolveOptions)
+>ResolveDefaultOptions : Symbol(ResolveDefaultOptions)
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>AnyType : Symbol(AnyType, Decl(resolve.d.ts, 0, 13))
+>ResolveAny : Symbol(ResolveAny, Decl(resolve.d.ts, 0, 22))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>OPTIONS : Symbol(OPTIONS, Decl(resolve.d.ts, 10, 39))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>NeverType : Symbol(NeverType, Decl(resolve.d.ts, 4, 13))
+>ResolveNever : Symbol(ResolveNever, Decl(resolve.d.ts, 4, 24))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>ConstType : Symbol(ConstType, Decl(resolve.d.ts, 2, 13))
+>ResolveConst : Symbol(ResolveConst, Decl(resolve.d.ts, 2, 24))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>OPTIONS : Symbol(OPTIONS, Decl(resolve.d.ts, 10, 39))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>EnumType : Symbol(EnumType, Decl(resolve.d.ts, 3, 13))
+>ResolveEnum : Symbol(ResolveEnum, Decl(resolve.d.ts, 3, 23))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>OPTIONS : Symbol(OPTIONS, Decl(resolve.d.ts, 10, 39))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>PrimitiveType : Symbol(PrimitiveType, Decl(resolve.d.ts, 6, 13))
+>ResolvePrimitive : Symbol(ResolvePrimitive, Decl(resolve.d.ts, 6, 28))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>OPTIONS : Symbol(OPTIONS, Decl(resolve.d.ts, 10, 39))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>ArrayType : Symbol(ArrayType, Decl(resolve.d.ts, 1, 13))
+>ResolveArray : Symbol(ResolveArray, Decl(resolve.d.ts, 1, 24))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>OPTIONS : Symbol(OPTIONS, Decl(resolve.d.ts, 10, 39))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>TupleType : Symbol(TupleType, Decl(resolve.d.ts, 7, 27))
+>ResolveTuple : Symbol(ResolveTuple, Decl(resolve.d.ts, 7, 13))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>OPTIONS : Symbol(OPTIONS, Decl(resolve.d.ts, 10, 39))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>ObjectType : Symbol(ObjectType, Decl(resolve.d.ts, 5, 13))
+>ResolveObject : Symbol(ResolveObject, Decl(resolve.d.ts, 5, 25))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>OPTIONS : Symbol(OPTIONS, Decl(resolve.d.ts, 10, 39))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>UnionType : Symbol(UnionType, Decl(resolve.d.ts, 8, 27))
+>ResolveUnion : Symbol(ResolveUnion, Decl(resolve.d.ts, 8, 13))
+>META_TYPE : Symbol(META_TYPE, Decl(resolve.d.ts, 10, 29))
+>OPTIONS : Symbol(OPTIONS, Decl(resolve.d.ts, 10, 39))
+
+=== node_modules/ts-algebra/lib/meta-types/tuple.d.ts ===
+export declare type TupleType = {
+>TupleType : Symbol(TupleType, Decl(tuple.d.ts, 0, 0))
+
+    type: TupleTypeId;
+>type : Symbol(type, Decl(tuple.d.ts, 0, 33))
+>TupleTypeId : Symbol(TupleTypeId)
+
+    deserialized: unknown;
+>deserialized : Symbol(deserialized, Decl(tuple.d.ts, 1, 22))
+
+};
+=== node_modules/ts-algebra/lib/meta-types/union.d.ts ===
+import type { DoesExtend, If, IsNever } from "../utils";
+>DoesExtend : Symbol(DoesExtend, Decl(union.d.ts, 0, 13))
+>If : Symbol(If, Decl(union.d.ts, 0, 25))
+>IsNever : Symbol(IsNever, Decl(union.d.ts, 0, 29))
+
+import type { Never, NeverType } from "./never";
+>Never : Symbol(Never, Decl(union.d.ts, 1, 13))
+>NeverType : Symbol(NeverType, Decl(union.d.ts, 1, 20))
+
+import type { $Resolve, ResolveOptions } from "./resolve";
+>$Resolve : Symbol($Resolve, Decl(union.d.ts, 2, 13))
+>ResolveOptions : Symbol(ResolveOptions, Decl(union.d.ts, 2, 23))
+
+export declare type $Union<VALUES> = If<IsNever<VALUES>, Never, DoesExtend<VALUES, NeverType> extends true ? Never : {
+>$Union : Symbol($Union, Decl(union.d.ts, 2, 58))
+>VALUES : Symbol(VALUES, Decl(union.d.ts, 3, 27))
+>If : Symbol(If, Decl(union.d.ts, 0, 25))
+>IsNever : Symbol(IsNever, Decl(union.d.ts, 0, 29))
+>VALUES : Symbol(VALUES, Decl(union.d.ts, 3, 27))
+>Never : Symbol(Never, Decl(union.d.ts, 1, 13))
+>DoesExtend : Symbol(DoesExtend, Decl(union.d.ts, 0, 13))
+>VALUES : Symbol(VALUES, Decl(union.d.ts, 3, 27))
+>NeverType : Symbol(NeverType, Decl(union.d.ts, 1, 20))
+>Never : Symbol(Never, Decl(union.d.ts, 1, 13))
+
+    values: VALUES;
+>values : Symbol(values, Decl(union.d.ts, 3, 118))
+>VALUES : Symbol(VALUES, Decl(union.d.ts, 3, 27))
+
+}>;
+export declare type UnionValues<META_UNION extends UnionType> = META_UNION["values"];
+>UnionValues : Symbol(UnionValues, Decl(union.d.ts, 5, 3))
+>META_UNION : Symbol(META_UNION, Decl(union.d.ts, 6, 32))
+>UnionType : Symbol(UnionType)
+>META_UNION : Symbol(META_UNION, Decl(union.d.ts, 6, 32))
+
+export declare type ResolveUnion<META_UNION extends UnionType, OPTIONS extends ResolveOptions> = RecurseOnUnion<UnionValues<META_UNION>, OPTIONS>;
+>ResolveUnion : Symbol(ResolveUnion, Decl(union.d.ts, 6, 85))
+>META_UNION : Symbol(META_UNION, Decl(union.d.ts, 7, 33))
+>UnionType : Symbol(UnionType)
+>OPTIONS : Symbol(OPTIONS, Decl(union.d.ts, 7, 62))
+>ResolveOptions : Symbol(ResolveOptions, Decl(union.d.ts, 2, 23))
+>RecurseOnUnion : Symbol(RecurseOnUnion, Decl(union.d.ts, 7, 146))
+>UnionValues : Symbol(UnionValues, Decl(union.d.ts, 5, 3))
+>META_UNION : Symbol(META_UNION, Decl(union.d.ts, 7, 33))
+>OPTIONS : Symbol(OPTIONS, Decl(union.d.ts, 7, 62))
+
+declare type RecurseOnUnion<VALUES extends Type, OPTIONS extends ResolveOptions> = VALUES extends infer META_TYPE ? $Resolve<META_TYPE, OPTIONS> : never;
+>RecurseOnUnion : Symbol(RecurseOnUnion, Decl(union.d.ts, 7, 146))
+>VALUES : Symbol(VALUES, Decl(union.d.ts, 8, 28))
+>Type : Symbol(Type)
+>OPTIONS : Symbol(OPTIONS, Decl(union.d.ts, 8, 48))
+>ResolveOptions : Symbol(ResolveOptions, Decl(union.d.ts, 2, 23))
+>VALUES : Symbol(VALUES, Decl(union.d.ts, 8, 28))
+>META_TYPE : Symbol(META_TYPE, Decl(union.d.ts, 8, 103))
+>$Resolve : Symbol($Resolve, Decl(union.d.ts, 2, 13))
+>META_TYPE : Symbol(META_TYPE, Decl(union.d.ts, 8, 103))
+>OPTIONS : Symbol(OPTIONS, Decl(union.d.ts, 8, 48))
+
+=== node_modules/ts-algebra/lib/meta-types/utils.d.ts ===
+export declare type Deserialized<SERIALIZABLE_META_TYPE extends SerializableType> = SERIALIZABLE_META_TYPE["deserialized"];
+>Deserialized : Symbol(Deserialized, Decl(utils.d.ts, 0, 0))
+>SERIALIZABLE_META_TYPE : Symbol(SERIALIZABLE_META_TYPE, Decl(utils.d.ts, 0, 33))
+>SerializableType : Symbol(SerializableType)
+>SERIALIZABLE_META_TYPE : Symbol(SERIALIZABLE_META_TYPE, Decl(utils.d.ts, 0, 33))
+
+=== node_modules/ts-algebra/lib/utils/and.d.ts ===
+export declare type And<BOOL_A, BOOL_B> = BOOL_A extends true ? BOOL_B extends true ? true : false : false;
+>And : Symbol(And, Decl(and.d.ts, 0, 0))
+>BOOL_A : Symbol(BOOL_A, Decl(and.d.ts, 0, 24))
+>BOOL_B : Symbol(BOOL_B, Decl(and.d.ts, 0, 31))
+>BOOL_A : Symbol(BOOL_A, Decl(and.d.ts, 0, 24))
+>BOOL_B : Symbol(BOOL_B, Decl(and.d.ts, 0, 31))
+
+=== node_modules/ts-algebra/lib/utils/extends.d.ts ===
+export declare type DoesExtend<TYPE_A, TYPE_B> = [TYPE_A] extends [TYPE_B] ? true : false;
+>DoesExtend : Symbol(DoesExtend, Decl(extends.d.ts, 0, 0))
+>TYPE_A : Symbol(TYPE_A, Decl(extends.d.ts, 0, 31))
+>TYPE_B : Symbol(TYPE_B, Decl(extends.d.ts, 0, 38))
+>TYPE_A : Symbol(TYPE_A, Decl(extends.d.ts, 0, 31))
+>TYPE_B : Symbol(TYPE_B, Decl(extends.d.ts, 0, 38))
+
+declare type ArrayKeys = keyof [];
+>ArrayKeys : Symbol(ArrayKeys, Decl(extends.d.ts, 0, 90))
+
+export declare type IsObject<TYPE> = TYPE extends object ? ArrayKeys extends Extract<keyof TYPE, ArrayKeys> ? false : true : false;
+>IsObject : Symbol(IsObject, Decl(extends.d.ts, 1, 34))
+>TYPE : Symbol(TYPE, Decl(extends.d.ts, 2, 29))
+>TYPE : Symbol(TYPE, Decl(extends.d.ts, 2, 29))
+>ArrayKeys : Symbol(ArrayKeys, Decl(extends.d.ts, 0, 90))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>TYPE : Symbol(TYPE, Decl(extends.d.ts, 2, 29))
+>ArrayKeys : Symbol(ArrayKeys, Decl(extends.d.ts, 0, 90))
+
+=== node_modules/ts-algebra/lib/utils/if.d.ts ===
+export declare type If<CONDITION extends boolean, THEN, ELSE = never> = CONDITION extends true ? THEN : ELSE;
+>If : Symbol(If, Decl(if.d.ts, 0, 0))
+>CONDITION : Symbol(CONDITION, Decl(if.d.ts, 0, 23))
+>THEN : Symbol(THEN, Decl(if.d.ts, 0, 49))
+>ELSE : Symbol(ELSE, Decl(if.d.ts, 0, 55))
+>CONDITION : Symbol(CONDITION, Decl(if.d.ts, 0, 23))
+>THEN : Symbol(THEN, Decl(if.d.ts, 0, 49))
+>ELSE : Symbol(ELSE, Decl(if.d.ts, 0, 55))
+
+=== node_modules/ts-algebra/lib/utils/index.d.ts ===
+export type { And } from "./and";
+>And : Symbol(And, Decl(index.d.ts, 0, 13))
+
+export type { DoesExtend, IsObject, IsArray } from "./extends";
+>DoesExtend : Symbol(DoesExtend, Decl(index.d.ts, 1, 13))
+>IsObject : Symbol(IsObject, Decl(index.d.ts, 1, 25))
+>IsArray : Symbol(IsArray, Decl(index.d.ts, 1, 35))
+
+export type { If } from "./if";
+>If : Symbol(If, Decl(index.d.ts, 2, 13))
+
+export type { DeepMergeUnsafe } from "./merge";
+>DeepMergeUnsafe : Symbol(DeepMergeUnsafe, Decl(index.d.ts, 3, 13))
+
+export type { Not } from "./not";
+>Not : Symbol(Not, Decl(index.d.ts, 4, 13))
+
+=== node_modules/ts-algebra/lib/utils/merge.d.ts ===
+import type { IsArray, IsObject } from "./extends";
+>IsArray : Symbol(IsArray, Decl(merge.d.ts, 0, 13))
+>IsObject : Symbol(IsObject, Decl(merge.d.ts, 0, 22))
+
+export declare type DeepMergeUnsafe<TYPE_A, TYPE_B> = IsObject<TYPE_A> extends true ? IsObject<TYPE_B> extends true ? {
+>DeepMergeUnsafe : Symbol(DeepMergeUnsafe, Decl(merge.d.ts, 0, 51))
+>TYPE_A : Symbol(TYPE_A, Decl(merge.d.ts, 1, 36))
+>TYPE_B : Symbol(TYPE_B, Decl(merge.d.ts, 1, 43))
+>IsObject : Symbol(IsObject, Decl(merge.d.ts, 0, 22))
+>TYPE_A : Symbol(TYPE_A, Decl(merge.d.ts, 1, 36))
+>IsObject : Symbol(IsObject, Decl(merge.d.ts, 0, 22))
+>TYPE_B : Symbol(TYPE_B, Decl(merge.d.ts, 1, 43))
+
+    [KEY in keyof (TYPE_A & TYPE_B)]: KEY extends keyof TYPE_B ? KEY extends keyof TYPE_A ? DeepMergeUnsafe<TYPE_A[KEY], TYPE_B[KEY]> : TYPE_B[KEY] : KEY extends keyof TYPE_A ? TYPE_A[KEY] : never;
+>KEY : Symbol(KEY, Decl(merge.d.ts, 2, 5))
+>TYPE_A : Symbol(TYPE_A, Decl(merge.d.ts, 1, 36))
+>TYPE_B : Symbol(TYPE_B, Decl(merge.d.ts, 1, 43))
+>KEY : Symbol(KEY, Decl(merge.d.ts, 2, 5))
+>TYPE_B : Symbol(TYPE_B, Decl(merge.d.ts, 1, 43))
+>KEY : Symbol(KEY, Decl(merge.d.ts, 2, 5))
+>TYPE_A : Symbol(TYPE_A, Decl(merge.d.ts, 1, 36))
+>DeepMergeUnsafe : Symbol(DeepMergeUnsafe, Decl(merge.d.ts, 0, 51))
+>TYPE_A : Symbol(TYPE_A, Decl(merge.d.ts, 1, 36))
+>KEY : Symbol(KEY, Decl(merge.d.ts, 2, 5))
+>TYPE_B : Symbol(TYPE_B, Decl(merge.d.ts, 1, 43))
+>KEY : Symbol(KEY, Decl(merge.d.ts, 2, 5))
+>TYPE_B : Symbol(TYPE_B, Decl(merge.d.ts, 1, 43))
+>KEY : Symbol(KEY, Decl(merge.d.ts, 2, 5))
+>KEY : Symbol(KEY, Decl(merge.d.ts, 2, 5))
+>TYPE_A : Symbol(TYPE_A, Decl(merge.d.ts, 1, 36))
+>TYPE_A : Symbol(TYPE_A, Decl(merge.d.ts, 1, 36))
+>KEY : Symbol(KEY, Decl(merge.d.ts, 2, 5))
+
+} : TYPE_B : IsArray<TYPE_A> extends true ? IsArray<TYPE_B> extends true ? TYPE_B extends unknown[] ? [
+>TYPE_B : Symbol(TYPE_B, Decl(merge.d.ts, 1, 43))
+>IsArray : Symbol(IsArray, Decl(merge.d.ts, 0, 13))
+>TYPE_A : Symbol(TYPE_A, Decl(merge.d.ts, 1, 36))
+>IsArray : Symbol(IsArray, Decl(merge.d.ts, 0, 13))
+>TYPE_B : Symbol(TYPE_B, Decl(merge.d.ts, 1, 43))
+>TYPE_B : Symbol(TYPE_B, Decl(merge.d.ts, 1, 43))
+
+] : never : TYPE_B : TYPE_B;
+>TYPE_B : Symbol(TYPE_B, Decl(merge.d.ts, 1, 43))
+>TYPE_B : Symbol(TYPE_B, Decl(merge.d.ts, 1, 43))
+
+=== node_modules/ts-algebra/lib/utils/not.d.ts ===
+export declare type Not<BOOL extends boolean> = BOOL extends false ? true : BOOL extends true ? false : never;
+>Not : Symbol(Not, Decl(not.d.ts, 0, 0))
+>BOOL : Symbol(BOOL, Decl(not.d.ts, 0, 24))
+>BOOL : Symbol(BOOL, Decl(not.d.ts, 0, 24))
+>BOOL : Symbol(BOOL, Decl(not.d.ts, 0, 24))
+
+=== steps/installer/renderer/src/implementation/helm/implementation/Secret/SecretRenderer.ts ===
+import { extractVariables } from '../../../utility/extractVariables.js';
+>extractVariables : Symbol(extractVariables, Decl(SecretRenderer.ts, 0, 8))
+
+declare const workspace: any, map: any, binding: any;
+>workspace : Symbol(workspace, Decl(SecretRenderer.ts, 1, 13))
+>map : Symbol(map, Decl(SecretRenderer.ts, 1, 29))
+>binding : Symbol(binding, Decl(SecretRenderer.ts, 1, 39))
+
+    const allItems = new Map(Array.from(extractVariables(workspace, map, binding).entries()).filter(([, value]) => value.secret === true));
+>allItems : Symbol(allItems, Decl(SecretRenderer.ts, 2, 9))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+>Array.from(extractVariables(workspace, map, binding).entries()).filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>Array.from : Symbol(ArrayConstructor.from, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>from : Symbol(ArrayConstructor.from, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --))
+>extractVariables(workspace, map, binding).entries : Symbol(Map.entries, Decl(lib.es2015.iterable.d.ts, --, --))
+>extractVariables : Symbol(extractVariables, Decl(SecretRenderer.ts, 0, 8))
+>workspace : Symbol(workspace, Decl(SecretRenderer.ts, 1, 13))
+>map : Symbol(map, Decl(SecretRenderer.ts, 1, 29))
+>binding : Symbol(binding, Decl(SecretRenderer.ts, 1, 39))
+>entries : Symbol(Map.entries, Decl(lib.es2015.iterable.d.ts, --, --))
+>filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>value : Symbol(value, Decl(SecretRenderer.ts, 2, 103))
+>value : Symbol(value, Decl(SecretRenderer.ts, 2, 103))
+
+=== steps/installer/renderer/src/implementation/helm/interface/factory/IConfigMapRenderer.ts ===
+import type { IFeature, VariableFeature } from '@veto-party/baum__steps__installer__features';
+>IFeature : Symbol(IFeature, Decl(IConfigMapRenderer.ts, 0, 13))
+>VariableFeature : Symbol(VariableFeature, Decl(IConfigMapRenderer.ts, 0, 23))
+
+export type IConfigMapStructure = typeof VariableFeature.makeInstance extends () => IFeature<any, any, infer Structure> ? (Structure extends Record<infer Key, infer Value> ? Map<Key, Value> : never) : never;
+>IConfigMapStructure : Symbol(IConfigMapStructure, Decl(IConfigMapRenderer.ts, 0, 94))
+>VariableFeature.makeInstance : Symbol(VariableFeature.makeInstance, Decl(Variable.ts, 6, 3))
+>VariableFeature : Symbol(VariableFeature, Decl(IConfigMapRenderer.ts, 0, 23))
+>makeInstance : Symbol(VariableFeature.makeInstance, Decl(Variable.ts, 6, 3))
+>IFeature : Symbol(IFeature, Decl(IConfigMapRenderer.ts, 0, 13))
+>Structure : Symbol(Structure, Decl(IConfigMapRenderer.ts, 1, 108))
+>Structure : Symbol(Structure, Decl(IConfigMapRenderer.ts, 1, 108))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Key : Symbol(Key, Decl(IConfigMapRenderer.ts, 1, 153))
+>Value : Symbol(Value, Decl(IConfigMapRenderer.ts, 1, 164))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+>Key : Symbol(Key, Decl(IConfigMapRenderer.ts, 1, 153))
+>Value : Symbol(Value, Decl(IConfigMapRenderer.ts, 1, 164))
+
+=== steps/installer/renderer/src/implementation/utility/extractVariables.ts ===
+import type { IConfigMapStructure } from '../helm/interface/factory/IConfigMapRenderer.js';
+>IConfigMapStructure : Symbol(IConfigMapStructure, Decl(extractVariables.ts, 0, 13))
+
+type IWorkspace = {};
+>IWorkspace : Symbol(IWorkspace, Decl(extractVariables.ts, 0, 91))
+
+class VariableExtractor {
+>VariableExtractor : Symbol(VariableExtractor, Decl(extractVariables.ts, 1, 21))
+
+  extractVariables(workspace: IWorkspace | undefined, map: Map<IWorkspace | undefined, IConfigMapStructure>, binding: Map<string, string> | undefined) {
+>extractVariables : Symbol(VariableExtractor.extractVariables, Decl(extractVariables.ts, 2, 25))
+>workspace : Symbol(workspace, Decl(extractVariables.ts, 3, 19))
+>IWorkspace : Symbol(IWorkspace, Decl(extractVariables.ts, 0, 91))
+>map : Symbol(map, Decl(extractVariables.ts, 3, 53))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+>IWorkspace : Symbol(IWorkspace, Decl(extractVariables.ts, 0, 91))
+>IConfigMapStructure : Symbol(IConfigMapStructure, Decl(extractVariables.ts, 0, 13))
+>binding : Symbol(binding, Decl(extractVariables.ts, 3, 108))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+
+    const allItems: IConfigMapStructure extends Map<infer Key, infer Value> ? Map<Key, Value & { source: string }> : never = new Map();
+>allItems : Symbol(allItems, Decl(extractVariables.ts, 4, 9))
+>IConfigMapStructure : Symbol(IConfigMapStructure, Decl(extractVariables.ts, 0, 13))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+>Key : Symbol(Key, Decl(extractVariables.ts, 4, 57))
+>Value : Symbol(Value, Decl(extractVariables.ts, 4, 68))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+>Key : Symbol(Key, Decl(extractVariables.ts, 4, 57))
+>Value : Symbol(Value, Decl(extractVariables.ts, 4, 68))
+>source : Symbol(source, Decl(extractVariables.ts, 4, 96))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+
+    return allItems;
+>allItems : Symbol(allItems, Decl(extractVariables.ts, 4, 9))
+  }
+}
+const extractor = new VariableExtractor();
+>extractor : Symbol(extractor, Decl(extractVariables.ts, 8, 5))
+>VariableExtractor : Symbol(VariableExtractor, Decl(extractVariables.ts, 1, 21))
+
+export const extractVariables = extractor.extractVariables.bind(extractor);
+>extractVariables : Symbol(extractVariables, Decl(extractVariables.ts, 9, 12))
+>extractor.extractVariables.bind : Symbol(CallableFunction.bind, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>extractor.extractVariables : Symbol(VariableExtractor.extractVariables, Decl(extractVariables.ts, 2, 25))
+>extractor : Symbol(extractor, Decl(extractVariables.ts, 8, 5))
+>extractVariables : Symbol(VariableExtractor.extractVariables, Decl(extractVariables.ts, 2, 25))
+>bind : Symbol(CallableFunction.bind, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>extractor : Symbol(extractor, Decl(extractVariables.ts, 8, 5))
+
