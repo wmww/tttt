@@ -86,10 +86,19 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   interface @vitest/expect declares never has CustomMatchers as a base: no conflict with JestAssertion's
   jest.Matchers members. tttt's aug_merge_symbol/aug_merge_fixup (scope.c) put the second augmentation's base into
   what the declaration means. Symbols differ too (tsgo's import from 'outer' has 2 declarations). Repro
-  test/cases/npm_My-first-stencil-project-001_TS2320.ts (inner/outer/aug, 30 lines). (claimed: corB) [flip] [open]
+  test/cases/npm_My-first-stencil-project-001_TS2320.ts (inner/outer/aug, 30 lines). Also seed 20261028's
+  0115-ionic-team-stencil-component-starter (tsgo 0, tttt 13 TS2320, the same augmentation). (claimed: corB) [flip] [open]
 - Seed 20261029, nirholas/free-crypto-news: spurious TS2345 on unified's `.use(rehypeHighlight.default, { detect:
   true, ignoreMissing: true })` (`use<P extends unknown[]>(plugin: Plugin<P, Input, Output>, ...parameters: P |
   [boolean])`): tsgo's inference takes P from the arguments (no excess property check against Options), tttt the
   plugin's parameters `[options?: Readonly<Options> | null | undefined]`. Cut-down probes without unified's Plugin
   conditional return type and CallableInstance base didn't reproduce. Repro test/cases/npm__nirholas_crypto-news_TS2345.ts
   (11 files from reduce.py). [open]
+- Seed 20261028, tamagui/tamagui (@tamagui/codemod-flat-values@3.1.3, code/core/codemod-flat-values): spurious
+  TS2339 "Property 'replaceWithText' does not exist on type 'never'" and TS2349 at src/transition.ts:302 (tsgo 0
+  errors, tttt 2). `let node: A | B | null = null`, assigned in a loop after a type-predicate `continue`
+  (`if (!isJsxAttribute(attribute)) continue; node = attribute`), then read through an optional chain (`node?.m()`),
+  then `if (!node) return`, then `() => node!.replaceWithText(..)` in a closure past the last assignment. Without the
+  optional-chain read it matches. Guess: the closure's narrowing past the last assignment (tsc 5.4's
+  isPastLastAssignment) goes through the optional chain's flow condition and narrows to never. Repro
+  test/cases/npm__tamagui_codemod-flat-values_TS2339.ts (13 lines). [flip] [open]
