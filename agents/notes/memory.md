@@ -1,4 +1,4 @@
-# Peak RSS: attribution, the budget sweep, cheap levers (2026-10-23, worker "memfree"; IN PROGRESS)
+# Peak RSS: attribution, the budget sweep, cheap levers (2026-10-23, worker "memfree")
 
 Question (the human, via the coordinator): the cheapest mechanisms that cut peak RSS substantially (vscode -30% or
 better, drizzle likewise) at < 2-3% wall at the defaults. This box: 16 vCPUs (8 physical cores), 60 GB (so the
@@ -72,6 +72,53 @@ At the defaults: dokploy 1536 +186% CPU, 2048 +79%; monkeytype 1536 +16%.
   over the second half's rate) is 0.47-0.82 on monkeytype but -0.9..0.9 on dokploy and -0.1..0.4 on vscode, per
   segment; source KB per MB of checker growth separates vscode (75) from dokploy/monkeytype (11-15) but not nest
   (50-60 KB/MB, +12..25%). (Per-file `TTTT_FILE_TIMES` lines now carry the file's types made and source bytes.)
+
+## The default since 1e71cfc86: a process-wide pool
+`main.c memory_pool_default()`: the process's resident set at start plus 80% of what is available (MemAvailable, cgroup
+v2 headroom up the hierarchy, `TTTT_MEM_AVAILABLE_MB` for tests); past it after a file, a checker holding at least the
+average and 64 MB recycles (`program.c pool_recycle_due()`). On a machine with free memory nothing recycles (as with
+the old default on every measured project); it bounds a small machine or a container. vscode with 3000 MB available:
+peak 2.5 GB instead of 5.3, CPU +3-8% (1 s more user: the rebuilds), 44 pool recycles. `--checker-memory` is the old
+per-checker split, the explicit override.
+
+## Reusing a recycled checker's arena chunks (declined, 2026-10-23)
+What a recycle spends in the kernel (munmap of the old arena with its TLB shootdowns, faulting and zeroing the new
+one's pages), vscode at the defaults, 3 interleaved runs each: no recycle 0.62-0.63 s sys (one outlier 1.05), 183-188k
+minor faults; 44 pool recycles (`TTTT_MEM_AVAILABLE_MB=3000`) 0.77-0.81 s sys, 212-216k faults, while user grows
+22.7-23.3 -> 24.0-25.1 s. So keeping the chunks for the next incarnation could save at most ~0.15 s of ~24 s CPU
+(0.6%), only when recycles happen, which by default is only under memory pressure, where holding the old chunks
+(still resident, and memset before reuse since arena memory is assumed zero) would defeat the recycle's purpose.
+The cost of a recycle is the rebuild (user time), not the memory traffic: not built.
+
+## vscode's per-file census, and the memo/scratch region priced (declined, 2026-10-23)
+`scripts/filecensus.sh -p vscode --checkers 1 --threads 1 --checker-memory off` (177 s, 5.9 GB): arena 1556 MB
+(checker_memory 1894), 9929 files. Kept (made for a file, needed later) 369 MB (24%), droppable and still referenced
+871 MB (56%), dead 317 MB (20%). By category (kept / droppable MB): "other" (members, props, signatures, mappers,
+call resolutions) 253 / 718; types 86 / 192 (anonymous 36 / 112, literals 28 / 44); intern identities 24 / 116;
+LazyMemo pages 0.3 / 132 (expression memos 7.86M of 10M); node-keyed memos 0 / 20. Tables outside the arena: node links
+3.75M (117 MB, 3.44M droppable: call resolutions 1.19M, flow reachability 377k, literal contexts 248k...), types and
+links 64 MB each, relations 1.6M (30 MB, 1.0M naming a droppable type). Later files re-derive 293k intern entries
+and 48k node links if everything droppable went (of 2.4M / 3.9M looked at).
+**Like zod, the bulk is instantiated type structure** (prop_new_declared via ty_object_literal_alternative 177 MB,
+instantiate_members ~170, builder_finish ~50), reachable only through a per-file region with promotion (the copying
+recycle, declined 2026-10-17). What a placement-by-kind region (no promotion) could take: expression memos (~94 MB of
+the 132 MB of LazyMemo pages; but memo pages are per declaring file and mix in declaration memos other files read, so
+it needs per-kind paging), call resolution data in the arena (call_return_type 54, resolve_with_signatures 15, call
+anchors ~21, contextual signatures 6, call effects 3: ~100 MB), node-keyed memo blocks 20: **~210 MB, 13.5% of the
+arena** (plus ~60 MB of node-link table), under the 15% bar, and at the defaults ~13% of each checker's ~145 MB is
+~6% of the 5.2 GB peak. Not built.
+
+## What would cut the peak (for a next round)
+1. **Cheaper rebuilds after a recycle** (the cost is user time: lib and library type structure made again), so that a
+   lower pool or the per-checker split pays everywhere: a kept region for what declarations of non-checked files
+   (`.d.ts` in node_modules, the libs) derive, made there from the start rather than copied out (the copying recycle's
+   cost was the copy). Needs every type made while resolving such a declaration to be placed by its inputs, not by its
+   site: the interning makes that a design question first.
+2. **Fewer checkers when they only duplicate** (drizzle: K6 = K8 wall here, -17% RSS): auto_checker_count() by
+   measured scaling rather than bytes; machine-dependent, the laptop judges.
+3. **Materialized bodies** (1.2 GB of vscode's peak at the defaults): dropped only with a checker incarnation because
+   types and memos point into them; a body whose function no other file reaches (no exported inferred return type, no
+   expando) could go at its file's end. Unmeasured: count functions whose bodies' nodes are referenced by kept types.
 
 # Per-file release of checker results: census (PARTIAL, 2026-10-23, worker "memc")
 
