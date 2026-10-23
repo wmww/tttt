@@ -2078,7 +2078,9 @@ static bool parameter_index(FunctionImpl const* function, Symbol const* symbol, 
 
 // The property an element of `pattern` destructures, if `symbol` is one without a default or `...`
 static Atom const* pattern_element_name(Checker* me, Binding const* pattern, Symbol const* symbol) {
-    if (!symbol || symbol->decl_count != 1 || symbol->decls[0].kind != SYMBOL_DECL_VARIABLE) return nullptr;
+    // (By its value declaration, the first: a `var kind` redeclaring a parameter's element keeps it, tsc's
+    // getCandidateDiscriminantPropertyAccess)
+    if (!symbol || !symbol->decl_count || symbol->decls[0].kind != SYMBOL_DECL_VARIABLE) return nullptr;
     Binding const* binding = symbol->decls[0].node;
     if (binding->parent != pattern || binding->default_value || binding->rest) return nullptr;
     if (pattern->tag == BINDING_ARRAY) {

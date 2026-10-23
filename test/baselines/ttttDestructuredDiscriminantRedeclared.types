@@ -1,0 +1,68 @@
+//// [test/cases/ttttDestructuredDiscriminantRedeclared.ts] ////
+
+=== ttttDestructuredDiscriminantRedeclared.ts ===
+// A destructured parameter's discriminant narrows its siblings by the element's value declaration, the first, also when
+// a `var` redeclares it later (tsc's getCandidateDiscriminantPropertyAccess; bun's 21-C21a, 07-C6b)
+type Action = { kind: 'A', payload: number } | { kind: 'B', payload: string };
+>Action : Action
+>kind : "A"
+>payload : number
+>kind : "B"
+>payload : string
+
+function f1({ kind, payload }: Action) { var kind: 'A' | 'B'; if (kind === 'A') { payload.toFixed(); } }
+>f1 : ({ kind, payload }: Action) => void
+>kind : "A" | "B"
+>payload : string | number
+>kind : "A" | "B"
+>kind === 'A' : boolean
+>kind : "A" | "B"
+>'A' : "A"
+>payload.toFixed() : string
+>payload.toFixed : (fractionDigits?: number) => string
+>payload : number
+>toFixed : (fractionDigits?: number) => string
+
+function f2({ kind, payload }: Action) { var kind: 'A' | 'B' = 'B'; if (kind === 'A') { payload.toFixed(); } }
+>f2 : ({ kind, payload }: Action) => void
+>kind : "A" | "B"
+>payload : string | number
+>kind : "A" | "B"
+>'B' : "B"
+>kind === 'A' : boolean
+>kind : "B"
+>'A' : "A"
+>payload.toFixed() : string
+>payload.toFixed : (fractionDigits?: number) => string
+>payload : number
+>toFixed : (fractionDigits?: number) => string
+
+function f3({ kind, payload }: Action) { if (kind === 'A') { payload.toFixed(); } var kind: 'A' | 'B'; }
+>f3 : ({ kind, payload }: Action) => void
+>kind : "A" | "B"
+>payload : string | number
+>kind === 'A' : boolean
+>kind : "A" | "B"
+>'A' : "A"
+>payload.toFixed() : string
+>payload.toFixed : (fractionDigits?: number) => string
+>payload : number
+>toFixed : (fractionDigits?: number) => string
+>kind : "A" | "B"
+
+function f4(a: Action) { const { kind, payload } = a; var q = 1; if (kind === 'A') { payload.toFixed(); } }
+>f4 : (a: Action) => void
+>a : Action
+>kind : "A" | "B"
+>payload : string | number
+>a : Action
+>q : number
+>1 : 1
+>kind === 'A' : boolean
+>kind : "A" | "B"
+>'A' : "A"
+>payload.toFixed() : string
+>payload.toFixed : (fractionDigits?: number) => string
+>payload : number
+>toFixed : (fractionDigits?: number) => string
+

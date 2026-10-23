@@ -1,0 +1,58 @@
+//// [test/cases/ttttDestructuredDiscriminantRedeclared.ts] ////
+
+=== ttttDestructuredDiscriminantRedeclared.ts ===
+// A destructured parameter's discriminant narrows its siblings by the element's value declaration, the first, also when
+// a `var` redeclares it later (tsc's getCandidateDiscriminantPropertyAccess; bun's 21-C21a, 07-C6b)
+type Action = { kind: 'A', payload: number } | { kind: 'B', payload: string };
+>Action : Symbol(Action, Decl(ttttDestructuredDiscriminantRedeclared.ts, 0, 0))
+>kind : Symbol(kind, Decl(ttttDestructuredDiscriminantRedeclared.ts, 2, 15))
+>payload : Symbol(payload, Decl(ttttDestructuredDiscriminantRedeclared.ts, 2, 26))
+>kind : Symbol(kind, Decl(ttttDestructuredDiscriminantRedeclared.ts, 2, 48))
+>payload : Symbol(payload, Decl(ttttDestructuredDiscriminantRedeclared.ts, 2, 59))
+
+function f1({ kind, payload }: Action) { var kind: 'A' | 'B'; if (kind === 'A') { payload.toFixed(); } }
+>f1 : Symbol(f1, Decl(ttttDestructuredDiscriminantRedeclared.ts, 2, 78))
+>kind : Symbol(kind, Decl(ttttDestructuredDiscriminantRedeclared.ts, 3, 13), Decl(ttttDestructuredDiscriminantRedeclared.ts, 3, 44))
+>payload : Symbol(payload, Decl(ttttDestructuredDiscriminantRedeclared.ts, 3, 19))
+>Action : Symbol(Action, Decl(ttttDestructuredDiscriminantRedeclared.ts, 0, 0))
+>kind : Symbol(kind, Decl(ttttDestructuredDiscriminantRedeclared.ts, 3, 13), Decl(ttttDestructuredDiscriminantRedeclared.ts, 3, 44))
+>kind : Symbol(kind, Decl(ttttDestructuredDiscriminantRedeclared.ts, 3, 13), Decl(ttttDestructuredDiscriminantRedeclared.ts, 3, 44))
+>payload.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>payload : Symbol(payload, Decl(ttttDestructuredDiscriminantRedeclared.ts, 3, 19))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+function f2({ kind, payload }: Action) { var kind: 'A' | 'B' = 'B'; if (kind === 'A') { payload.toFixed(); } }
+>f2 : Symbol(f2, Decl(ttttDestructuredDiscriminantRedeclared.ts, 3, 104))
+>kind : Symbol(kind, Decl(ttttDestructuredDiscriminantRedeclared.ts, 4, 13), Decl(ttttDestructuredDiscriminantRedeclared.ts, 4, 44))
+>payload : Symbol(payload, Decl(ttttDestructuredDiscriminantRedeclared.ts, 4, 19))
+>Action : Symbol(Action, Decl(ttttDestructuredDiscriminantRedeclared.ts, 0, 0))
+>kind : Symbol(kind, Decl(ttttDestructuredDiscriminantRedeclared.ts, 4, 13), Decl(ttttDestructuredDiscriminantRedeclared.ts, 4, 44))
+>kind : Symbol(kind, Decl(ttttDestructuredDiscriminantRedeclared.ts, 4, 13), Decl(ttttDestructuredDiscriminantRedeclared.ts, 4, 44))
+>payload.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>payload : Symbol(payload, Decl(ttttDestructuredDiscriminantRedeclared.ts, 4, 19))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+function f3({ kind, payload }: Action) { if (kind === 'A') { payload.toFixed(); } var kind: 'A' | 'B'; }
+>f3 : Symbol(f3, Decl(ttttDestructuredDiscriminantRedeclared.ts, 4, 110))
+>kind : Symbol(kind, Decl(ttttDestructuredDiscriminantRedeclared.ts, 5, 13), Decl(ttttDestructuredDiscriminantRedeclared.ts, 5, 85))
+>payload : Symbol(payload, Decl(ttttDestructuredDiscriminantRedeclared.ts, 5, 19))
+>Action : Symbol(Action, Decl(ttttDestructuredDiscriminantRedeclared.ts, 0, 0))
+>kind : Symbol(kind, Decl(ttttDestructuredDiscriminantRedeclared.ts, 5, 13), Decl(ttttDestructuredDiscriminantRedeclared.ts, 5, 85))
+>payload.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>payload : Symbol(payload, Decl(ttttDestructuredDiscriminantRedeclared.ts, 5, 19))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>kind : Symbol(kind, Decl(ttttDestructuredDiscriminantRedeclared.ts, 5, 13), Decl(ttttDestructuredDiscriminantRedeclared.ts, 5, 85))
+
+function f4(a: Action) { const { kind, payload } = a; var q = 1; if (kind === 'A') { payload.toFixed(); } }
+>f4 : Symbol(f4, Decl(ttttDestructuredDiscriminantRedeclared.ts, 5, 104))
+>a : Symbol(a, Decl(ttttDestructuredDiscriminantRedeclared.ts, 6, 12))
+>Action : Symbol(Action, Decl(ttttDestructuredDiscriminantRedeclared.ts, 0, 0))
+>kind : Symbol(kind, Decl(ttttDestructuredDiscriminantRedeclared.ts, 6, 32))
+>payload : Symbol(payload, Decl(ttttDestructuredDiscriminantRedeclared.ts, 6, 38))
+>a : Symbol(a, Decl(ttttDestructuredDiscriminantRedeclared.ts, 6, 12))
+>q : Symbol(q, Decl(ttttDestructuredDiscriminantRedeclared.ts, 6, 57))
+>kind : Symbol(kind, Decl(ttttDestructuredDiscriminantRedeclared.ts, 6, 32))
+>payload.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>payload : Symbol(payload, Decl(ttttDestructuredDiscriminantRedeclared.ts, 6, 38))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
